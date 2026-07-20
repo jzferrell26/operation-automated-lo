@@ -41,6 +41,7 @@ Give each loan officer a clear campaign-to-loan view and give Cuantico an except
 ### Founding cohort
 
 - Internal reporting tracks purchase, install, setup, first generation, first approval, first publish, first lead, first appointment or application, support time, and continuation.
+- Internal reporting tracks permission preflight, routing verification, Meta verification, synthetic lead pass, Launch Ready, blocker code, and time to readiness.
 - Cohort metrics support the product gates in PRD 001.
 - Support-time entry is simple enough to be used consistently.
 
@@ -87,3 +88,4 @@ Give each loan officer a clear campaign-to-loan view and give Cuantico an except
 - Theme tests cover first visit, persisted Light, persisted Dark, System, operating-system changes, reload, embedded GHL navigation, standalone access, and tenant switching.
 - Visual regression and accessibility checks pass in both modes for every supported dashboard route and state.
 - CPU-throttled hard refresh shows no visible flash of the wrong theme.
+- Onboarding funnel reports distinguish viewed, started, blocked, resumed, abandoned, Launch Ready, first campaign generated, and first campaign published.

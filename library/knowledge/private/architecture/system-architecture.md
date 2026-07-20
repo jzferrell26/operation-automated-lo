@@ -42,6 +42,7 @@ flowchart LR
 | GHL adapter | OAuth, rate limiting, contacts, opportunities, calendars, forms, tags, workflows, ads, and reporting |
 | Public campaign renderer | Fast server-rendered page using a deliberately limited published projection |
 | Attribution service | Links public visits and captured leads to GHL contacts, opportunities, appointments, and outcomes |
+| Onboarding orchestrator | Resumable permission, profile, routing, Meta, role, and synthetic-test setup with server-verified completion |
 
 ## Dashboard theme architecture
 
@@ -64,6 +65,39 @@ Components reference semantic tokens only. Primitive palette values and raw colo
 For a React or Next.js implementation, the theme provider must run at the application root, apply the resolved class before first paint, declare `color-scheme`, and prevent hydration mismatch. Theme-dependent JavaScript rendering waits until the client is mounted; CSS-driven differences do not require conditional rendering. A strict content security policy must allow the nonce-bearing pre-paint theme script without weakening the remaining script policy.
 
 The theme selector must be keyboard operable, expose an accessible name and selected state, retain visible focus, and never communicate status through color alone. Text and interactive controls must meet WCAG AA contrast in both modes. Charts use labels, shapes, or patterns in addition to color.
+
+## Self-onboarding architecture
+
+Self-onboarding is a durable location-level workflow, not a front-end tour. It combines server-verified configuration tasks with optional contextual guidance. The user can leave and return on another device without losing progress.
+
+The onboarding state machine is:
+
+```text
+not_started -> in_progress -> blocked | launch_ready
+blocked -> in_progress
+launch_ready -> attention_required -> launch_ready
+```
+
+Each step records status, evidence timestamp, safe provider identifiers, blocking code, remediation, and last verifier version. The application recomputes readiness when tokens, GHL mappings, Meta assets, compliance profiles, or role assignments change.
+
+Two progressive checklists keep the experience short:
+
+1. **Get Connected:** validate installer authority and scopes, complete brand and compliance profile, map GHL routing, select connected Meta assets, and assign application roles.
+2. **Launch Readiness:** revalidate dependencies, run the synthetic lead path, show the resulting GHL objects and notifications, and issue the Launch Ready state.
+
+Checklist completion is based on observed system state. Users cannot mark a technical step complete manually. Attestations remain explicit user actions and record their disclosure version.
+
+The core value milestone is `launch_ready`, not checklist completion. A location is Launch Ready only when:
+
+- The Marketplace installation and signed user context are valid.
+- Required OAuth scopes are granted and the token is healthy.
+- Required brand, license, disclosure, consent, and Realtor fields are complete.
+- Pipeline, stage, owner or assignment rule, calendar, campaign tag, and optional workflow mappings resolve in the active GHL location.
+- Required Meta integration and assets are connected and accessible through HighLevel.
+- Creator, approver, and publisher responsibilities are assigned according to tenant policy.
+- A synthetic lead proves the configured contact, tag, opportunity, owner, workflow, and notification path.
+
+Onboarding actions are idempotent. Refreshing or retrying cannot duplicate tags, contacts, opportunities, tests, role bindings, or external commands. Blocking states expose a stable code, plain-language cause, exact owner, next action, and correlation ID without exposing secrets.
 
 ## Tenant boundary
 

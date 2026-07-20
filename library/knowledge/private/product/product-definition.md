@@ -90,6 +90,7 @@ The job is complete when the campaign is live in the client-owned Meta ad accoun
 - Immutable campaign versions and write audit log
 - Basic portfolio metrics for internal Cuantico operations
 - Switchable light and dark themes across the authenticated dashboard, with a system-preference default
+- Self-service onboarding from Marketplace install through verified launch readiness, with no required Cuantico setup call
 
 ### Defer
 
@@ -113,6 +114,7 @@ The job is complete when the campaign is live in the client-owned Meta ad accoun
 
 - 70 percent complete GHL, brand, and campaign setup
 - 50 percent publish a campaign within 14 days
+- A prepared location admin can reach Launch Ready in 30 minutes without operator intervention
 - Median time from campaign start to approval under 30 minutes after initial account setup
 - Under 30 minutes of human support per account per month
 

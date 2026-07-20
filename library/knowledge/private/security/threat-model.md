@@ -33,6 +33,9 @@ This threat model covers the proposed Marketplace installation, embedded app, pu
 | Tenant swaps a location ID in a request | Derive location from a validated server session. Never authorize from a client-supplied location. |
 | Forged embedded user context | Use HighLevel signed context and backend validation. Do not trust query parameters. |
 | OAuth login CSRF or install confusion | Signed, random, expiring state bound to the expected installation. Exact redirect URL. Single use nonce. |
+| Installer self-elevates through onboarding | Derive installer authority from validated signed HighLevel context, grant only the mapped default role, and require an authorized location administrator for local setup. |
+| Browser forges checklist completion or Launch Ready | Compute completion server-side from current provider reads, validated configuration, and test evidence. Treat client progress as display state only. |
+| Agency or support operator completes customer attestations | Bind attestations to the authenticated location actor, forbid support-role substitution, and show role concentration in the final setup summary. |
 | Token theft | Envelope encryption, server-only access, secret redaction, restricted database role, rotation, and uninstall revocation. |
 | Refresh race invalidates rotating token | Location-scoped refresh lock and atomic token-envelope update. |
 | Broad `adPublishing.write` scope is abused | Separate Ads Publisher capability where feasible, strict action allowlist, no deletion or audience uploads, approval checks, and audited commands. |
@@ -85,6 +88,8 @@ Every external write command must pass these checks in order:
 - Cross-tenant access tests cover every repository query and object-storage path.
 - OAuth state, token refresh, uninstall, and reconnect tests pass.
 - Signed HighLevel user context is verified server-side.
+- Installer authority, application-role assignment, and role-escalation tests pass for direct and agency install paths.
+- Launch Ready cannot be produced from browser state, stale evidence, or a support-role action.
 - Webhook Ed25519 verification and replay tests pass.
 - No token, secret, lead payload, phone, email, or property-photo URL leaks into logs unexpectedly.
 - Public-page injection, upload, SSRF, CSRF, clickjacking, and open-redirect tests pass.

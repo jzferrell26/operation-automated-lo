@@ -23,6 +23,7 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 7. Property and consumer data are minimized.
 8. The initial release is Meta-only and Open House Boost-only.
 9. The authenticated dashboard supports switchable light and dark modes without changing approved campaign output.
+10. A prepared customer can complete permissions, configuration, verification, and launch readiness without required operator onboarding.
 
 ## Sub-PRDs
 
@@ -35,6 +36,7 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 | [001e](prd-001e-meta-ad-launch.md) | GHL Ad Manager discovery, draft, approval, publish, pause, resume, and reporting | 001c, 001d |
 | [001f](prd-001f-ghl-lead-routing-and-attribution.md) | Lead capture, GHL contact/opportunity routing, workflow handoff, and outcomes | 001a, 001c, 001d |
 | [001g](prd-001g-campaign-and-portfolio-reporting.md) | Loan officer dashboard, exception health, blueprint metrics, and founding-cohort operations | 001e, 001f |
+| [001h](prd-001h-self-onboarding-and-launch-readiness.md) | Self-service permission setup, resumable configuration, synthetic test, and Launch Ready state | 001a, 001b, 001e, 001f |
 
 ## End-to-end acceptance criteria
 
@@ -44,6 +46,8 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 - An agency admin can bulk install, and the application obtains a location token for every selected location.
 - The backend validates signed HighLevel user context and never trusts a browser-supplied location ID.
 - Uninstall blocks new sessions and jobs for that location.
+- An authorized administrator can complete the entire location setup without a required Cuantico call or manual operator configuration.
+- Missing authority, scope, token, mapping, connection, or policy requirements produce a resumable blocked state with a precise remediation.
 
 ### Campaign creation
 
@@ -87,6 +91,8 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 - Failed rendering, routing, or provider jobs retry safely and appear in an exception queue.
 - Support can diagnose a campaign by correlation ID without viewing secrets or unnecessary consumer data.
 - Location export, uninstall, retention, and deletion procedures are documented and tested.
+- Onboarding progress persists across sessions and devices, and every completion state is based on current server-verified evidence.
+- A location cannot become Launch Ready until the synthetic lead path and all required permission and configuration checks pass.
 
 ### Dashboard experience
 
@@ -118,16 +124,17 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 3. Implement 001a through 001d and operate Meta launch manually for an internal proof.
 4. Implement 001e and prove the full sandbox publish path.
 5. Implement 001f and pass a synthetic lead test.
-6. Implement 001g for the founding cohort.
-7. Complete security review.
-8. Complete quality verification against every acceptance criterion.
-9. Run the founding beta in no more than the permitted private-app agency count.
-10. Submit for public Marketplace review or private-app security review.
+6. Implement 001h and prove a prepared administrator can reach Launch Ready without operator configuration.
+7. Implement 001g for the founding cohort.
+8. Complete security review.
+9. Complete quality verification against every acceptance criterion.
+10. Run the founding beta in no more than the permitted private-app agency count.
+11. Submit for public Marketplace review or private-app security review.
 
 ## Product gates
 
 - At least 15 paid founders before full implementation
-- 70 percent setup completion
+- 70 percent reach Launch Ready within 30 minutes without operator configuration
 - 50 percent first campaign publish within 14 days
 - Under 30 minutes of support per account per month
 - 70 percent continuation at $197 per month after 90 days

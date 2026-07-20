@@ -12,7 +12,7 @@ Use the AutomatedLO community to validate the product and generate the requested
 | Capacity | 20 founding accounts |
 | Included period | 90 days |
 | Continuation | $197 per month after 90 days |
-| Onboarding | One live group setup workshop, recording, checklist, and office-hours thread |
+| Onboarding | Self-service setup wizard, recording, checklist, and optional office-hours thread |
 | Included product | GHL connection, brand/compliance profile, one Open House Boost blueprint, page/PDF/creative generation, Meta launch flow, GHL routing, reporting |
 | Not included | Individual funnel builds, custom automation, ad management service, custom compliance drafting, database cleanup, voice agent, database reactivation |
 
@@ -32,6 +32,8 @@ The launch needs a working demonstration, not a full SaaS:
 8. A clear founding scope and refund policy
 
 The demo can use a concierge backend. The promise must clearly distinguish working automation from manual founding-cohort operations.
+
+The customer-facing setup cannot depend on concierge work. Any temporary manual backend action used during the founding demo must be labeled, tracked, and removed before the first customer is marked Launch Ready.
 
 ## Launch message
 
@@ -70,7 +72,7 @@ Avoid leading with AI agents, 21 tools, or Marketplace architecture. Those are i
 
 - Close enrollment at 20 seats or the stated deadline.
 - Send one pre-work checklist.
-- Run one group setup workshop.
+- Offer one optional group setup workshop without making attendance a setup dependency.
 - Publish the cohort build and release calendar.
 
 ## Validation events
@@ -82,7 +84,12 @@ Track the funnel as events:
 - Checkout started
 - Purchase completed
 - GHL install completed
+- Permission preflight passed
 - Brand profile completed
+- Routing profile verified
+- Meta assets verified
+- Synthetic lead path passed
+- Launch Ready achieved
 - First campaign generated
 - First campaign approved
 - First campaign published
@@ -95,7 +102,7 @@ Track the funnel as events:
 | Decision point | Go | Reshape or stop |
 | --- | --- | --- |
 | Founding demand | 15 or more paid | Under 10 after a working demo and direct follow-up |
-| Setup | 70 percent complete setup | Under 50 percent without heavy support |
+| Setup | 70 percent reach Launch Ready within 30 minutes without operator configuration | Under 50 percent or repeated operator intervention |
 | Launch | 50 percent publish in 14 days | Under 30 percent publish in 30 days |
 | Support | Under 30 minutes per account per month | Over 60 minutes after month one |
 | Continuation | 70 percent at $197 per month | Under 50 percent |
@@ -108,6 +115,7 @@ Track the funnel as events:
 - Meta spend is paid directly by the client's ad account.
 - No ad-spend float, shared card, or Realtor reimbursement in the first release.
 - Support is group-first, documentation-first, and exception-based.
+- A normal prepared account must reach Launch Ready without Cuantico changing GHL settings on the customer's behalf.
 
 ## Expansion path
 

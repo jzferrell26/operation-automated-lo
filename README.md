@@ -19,6 +19,7 @@ This repository currently contains the research and requirements package. It doe
 - Treat HighLevel as the front door and CRM system of record, not as the application database.
 - Host public campaign pages and generated assets in the application, not in one Lovable project per client.
 - Provide a switchable light and dark dashboard, with system preference as the first-visit default.
+- Make installation through launch readiness fully self-service, with permission checks, resumable setup, and a synthetic lead test.
 - Use HighLevel's connected Meta assets and Ad Manager APIs where possible.
 - Start with Meta and Open House Boost. Defer Google, LinkedIn, audience uploads, automated budget changes, and ad-spend rebilling.
 - Position the product as compliance-aware and approval-gated. Never position it as automatically compliant.

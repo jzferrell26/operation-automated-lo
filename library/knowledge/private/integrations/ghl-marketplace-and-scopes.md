@@ -96,6 +96,40 @@ Founding-beta fallback: use one private app with `adPublishing.write`, but enfor
 
 Whether HighLevel accepts paired core and Ads Publisher applications should be confirmed before public Marketplace submission.
 
+## Self-onboarding permission contract
+
+Onboarding validates two different permission layers: HighLevel installation authority and Operation Automated LO application roles.
+
+### HighLevel authority
+
+- A direct sub-account install must be initiated by a user permitted to install Marketplace applications for that location.
+- An agency bulk install may create the location installation, but each location still requires an authorized location administrator to confirm brand, compliance, routing, Meta assets, and team roles.
+- The application derives company, location, user, and HighLevel role from signed user context. A query parameter or form field never supplies authority.
+- Missing or declined OAuth scopes produce a blocked step with the exact required capability and a reconnect action. The app never presents partial access as complete setup.
+
+### Scope activation
+
+The onboarding permission screen groups permissions by business purpose and links them to the existing scope profiles:
+
+1. **Core workspace:** Profile A scopes for location context, users, contacts, opportunities, routing metadata, calendars, forms, workflows, and read-only ad discovery.
+2. **Agency bulk install:** Profile B scopes only when the app is installed and managed through an agency.
+3. **Ads Publisher:** Profile C only when the customer activates Meta publishing. Prefer the separately reviewed capability; if HighLevel requires one app, display the broad-scope warning and keep the documented server-side action allowlist.
+
+Scopes are not application roles. OAuth permission only makes an endpoint technically callable. Every command still requires the correct application role, active installation, tenant, current approval, and allowlisted operation.
+
+### Default application-role mapping
+
+| Role | Onboarding behavior |
+| --- | --- |
+| `location_admin` | Granted to the installer only when signed context confirms appropriate HighLevel authority. Can configure the location and assign non-support application roles. |
+| `campaign_creator` | Can create and edit drafts after setup. Cannot alter installation, token, or tenant compliance settings. |
+| `campaign_approver` | Can approve the exact frozen version when tenant policy permits. |
+| `campaign_publisher` | Can publish, pause, and resume after all command gates pass. |
+| `viewer` | Can read dashboards and campaign history. |
+| `platform_support` | Never self-granted. Time-limited audited access only. |
+
+One user may hold multiple business roles for a small team, but the setup summary must make that concentration visible. Platform support cannot silently complete customer attestations, approvals, or publish actions.
+
 ## Meta launch sequence
 
 1. Call read-only onboarding and integration endpoints to confirm that Meta is connected in the HighLevel location.

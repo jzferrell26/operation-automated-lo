@@ -12,6 +12,7 @@ Give each loan officer a clear campaign-to-loan view and give Cuantico an except
 - Blueprint performance
 - Internal founding-cohort activation and support metrics
 - Agency portfolio view after tenant authorization is defined
+- Switchable light, dark, and system dashboard themes
 
 ## Acceptance criteria
 
@@ -40,6 +41,7 @@ Give each loan officer a clear campaign-to-loan view and give Cuantico an except
 ### Founding cohort
 
 - Internal reporting tracks purchase, install, setup, first generation, first approval, first publish, first lead, first appointment or application, support time, and continuation.
+- Internal reporting tracks permission preflight, routing verification, Meta verification, synthetic lead pass, Launch Ready, blocker code, and time to readiness.
 - Cohort metrics support the product gates in PRD 001.
 - Support-time entry is simple enough to be used consistently.
 
@@ -49,6 +51,24 @@ Give each loan officer a clear campaign-to-loan view and give Cuantico an except
 - Agency users cannot access locations where the app is not installed.
 - Portfolio totals link to exceptions and campaign detail only for authorized locations.
 
+### Theme switching
+
+- The dashboard exposes Light, Dark, and System choices from a keyboard-accessible control with a visible selected state.
+- A first-time user receives the resolved browser or operating-system preference.
+- A manual Light or Dark choice persists under a product-specific browser storage key and wins over later system changes.
+- Choosing System clears the manual override and follows live `prefers-color-scheme` changes.
+- Switching applies immediately without navigation, data refetch, dashboard-state loss, or page reload.
+- The resolved theme is applied before first paint with no visible flash of the wrong theme.
+- Server rendering and hydration complete without theme-related warnings or content mismatch.
+- The browser receives the matching `color-scheme` so native controls, scrollbars, and form fields follow the active mode.
+- Every dashboard surface, chart, tooltip, table, modal, loading state, empty state, warning, error, hover, focus, selected, and disabled state uses semantic theme tokens.
+- Components do not reference primitive palette tokens or raw color literals.
+- Tenant branding overrides only allowlisted semantic tokens and defines valid values for both Light and Dark.
+- Text and interactive controls meet WCAG AA contrast in both modes.
+- Status and chart meaning are available through labels, shapes, patterns, or icons in addition to color.
+- Theme preference contains no PII and cannot be selected for a different user or tenant through a request parameter.
+- Theme changes do not modify campaign data, public pages, generated assets, approval state, or reporting calculations.
+
 ## Out of scope
 
 - Full business intelligence platform
@@ -56,6 +76,8 @@ Give each loan officer a clear campaign-to-loan view and give Cuantico an except
 - Automated campaign optimization
 - Cross-customer leaderboards
 - Revenue recognition or accounting
+- User-authored themes or arbitrary CSS
+- Theme switching for public campaign pages, PDFs, or ad creative
 
 ## Verification
 
@@ -63,3 +85,7 @@ Give each loan officer a clear campaign-to-loan view and give Cuantico an except
 - Permission tests cover location user, agency admin, platform support, and unauthorized cross-tenant access.
 - Reconciliation tests cover missing, duplicated, late, and corrected provider events.
 - A quality review traces every visible metric to its source event or current GHL read.
+- Theme tests cover first visit, persisted Light, persisted Dark, System, operating-system changes, reload, embedded GHL navigation, standalone access, and tenant switching.
+- Visual regression and accessibility checks pass in both modes for every supported dashboard route and state.
+- CPU-throttled hard refresh shows no visible flash of the wrong theme.
+- Onboarding funnel reports distinguish viewed, started, blocked, resumed, abandoned, Launch Ready, first campaign generated, and first campaign published.

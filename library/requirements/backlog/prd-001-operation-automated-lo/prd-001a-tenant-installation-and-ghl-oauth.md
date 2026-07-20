@@ -15,6 +15,7 @@ Create the multi-tenant security and installation foundation for direct sub-acco
 - Encrypted token vault and coordinated refresh
 - Install, uninstall, and app-update lifecycle events
 - Per-location API client with rate-limit and retry behavior
+- Self-service installer-authority, granted-scope, and token-health preflight
 
 ## Acceptance criteria
 
@@ -70,6 +71,17 @@ Create the multi-tenant security and installation foundation for direct sub-acco
 - Requests are bounded per location.
 - `429` and transient `5xx` responses retry with exponential backoff and jitter.
 - Write retries require an application idempotency record.
+
+### Self-service permission setup
+
+- The installer sees every required permission grouped by business purpose before authorization.
+- The backend compares granted scopes with the active product capabilities and stores the result with the installation.
+- Missing core scopes block onboarding and identify the exact reconnect action.
+- Ads publishing permission is activated only through the documented Profile C path and never inferred from read-only ad access.
+- The installer receives `location_admin` only when signed HighLevel context confirms appropriate authority.
+- Agency bulk install does not imply permission to complete customer attestations or configure every selected location.
+- Permission and token checks are repeatable and do not create duplicate installations or role bindings.
+- Onboarding can resume after reconnect, reinstall, scope upgrade, or token recovery.
 
 ## Out of scope
 

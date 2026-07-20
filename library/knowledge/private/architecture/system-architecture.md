@@ -17,6 +17,8 @@ flowchart LR
     API --> DB["Tenant campaign database"]
     API --> OBJ["Asset object storage"]
     API --> Q["Durable job queue"]
+    Q --> AI["LLM model router"]
+    AI --> LLM["Approved model providers"]
     Q --> R["Page, PDF, and creative renderer"]
     Q --> G["HighLevel adapter"]
     G --> CRM["GHL contacts, opportunities, calendars, workflows"]
@@ -42,6 +44,67 @@ flowchart LR
 | GHL adapter | OAuth, rate limiting, contacts, opportunities, calendars, forms, tags, workflows, ads, and reporting |
 | Public campaign renderer | Fast server-rendered page using a deliberately limited published projection |
 | Attribution service | Links public visits and captured leads to GHL contacts, opportunities, appointments, and outcomes |
+| Onboarding orchestrator | Resumable permission, profile, routing, Meta, role, and synthetic-test setup with server-verified completion |
+| LLM model router | Versioned primary, cheap, and fallback model policy for brand assistance and campaign copy |
+| Prompt compiler | Confirmed brand and campaign versions become a compact tenant-isolated prompt snapshot and strict output schema |
+| AI usage ledger | Per-location token, cache, latency, retry, estimated-cost, quota, and reconciliation events |
+
+## Dashboard theme architecture
+
+The authenticated dashboard supports three explicit preferences: `light`, `dark`, and `system`. The first visit uses the browser or operating-system preference. A user selection applies immediately without reloading and persists under a product-specific browser storage key. Choosing `system` removes the manual override and resumes following `prefers-color-scheme`.
+
+The approved decorative animation pattern for authentication and onboarding is documented in [`../frontend/ambient-motion-background.md`](../frontend/ambient-motion-background.md). Dense campaign, reporting, approval, and compliance surfaces do not use ambient icon motion.
+
+Theme behavior is an application-interface preference, not tenant campaign content:
+
+- The preference affects the embedded dashboard and standalone authenticated workspace.
+- Public property pages, PDFs, QR destinations, Meta creative, and approval artifacts keep their frozen campaign and brand styling.
+- Changing dashboard theme does not create a campaign version, invalidate approval, or change an artifact hash.
+- One tenant's brand tokens cannot leak into another location or support session.
+
+The runtime contract uses two independent layers:
+
+1. Semantic light and dark tokens control dashboard roles such as background, surface, border, text, primary action, destructive action, charts, and status.
+2. Validated tenant brand overrides can replace a limited set of semantic tokens for both modes without injecting arbitrary CSS.
+
+Components reference semantic tokens only. Primitive palette values and raw color literals never appear in component code. Both modes must cover default, hover, focus, active, selected, disabled, loading, empty, warning, error, and success states.
+
+For a React or Next.js implementation, the theme provider must run at the application root, apply the resolved class before first paint, declare `color-scheme`, and prevent hydration mismatch. Theme-dependent JavaScript rendering waits until the client is mounted; CSS-driven differences do not require conditional rendering. A strict content security policy must allow the nonce-bearing pre-paint theme script without weakening the remaining script policy.
+
+The theme selector must be keyboard operable, expose an accessible name and selected state, retain visible focus, and never communicate status through color alone. Text and interactive controls must meet WCAG AA contrast in both modes. Charts use labels, shapes, or patterns in addition to color.
+
+## Self-onboarding architecture
+
+Self-onboarding is a durable location-level workflow, not a front-end tour. It combines server-verified configuration tasks with optional contextual guidance. The user can leave and return on another device without losing progress.
+
+The onboarding state machine is:
+
+```text
+not_started -> in_progress -> blocked | launch_ready
+blocked -> in_progress
+launch_ready -> attention_required -> launch_ready
+```
+
+Each step records status, evidence timestamp, safe provider identifiers, blocking code, remediation, and last verifier version. The application recomputes readiness when tokens, GHL mappings, Meta assets, compliance profiles, or role assignments change.
+
+Two progressive checklists keep the experience short:
+
+1. **Get Connected:** validate installer authority and scopes, complete brand and compliance profile, map GHL routing, select connected Meta assets, and assign application roles.
+2. **Launch Readiness:** revalidate dependencies, run the synthetic lead path, show the resulting GHL objects and notifications, and issue the Launch Ready state.
+
+Checklist completion is based on observed system state. Users cannot mark a technical step complete manually. Attestations remain explicit user actions and record their disclosure version.
+
+The core value milestone is `launch_ready`, not checklist completion. A location is Launch Ready only when:
+
+- The Marketplace installation and signed user context are valid.
+- Required OAuth scopes are granted and the token is healthy.
+- Required brand, license, disclosure, consent, and Realtor fields are complete.
+- Pipeline, stage, owner or assignment rule, calendar, campaign tag, and optional workflow mappings resolve in the active GHL location.
+- Required Meta integration and assets are connected and accessible through HighLevel.
+- Creator, approver, and publisher responsibilities are assigned according to tenant policy.
+- A synthetic lead proves the configured contact, tag, opportunity, owner, workflow, and notification path.
+
+Onboarding actions are idempotent. Refreshing or retrying cannot duplicate tags, contacts, opportunities, tests, role bindings, or external commands. Blocking states expose a stable code, plain-language cause, exact owner, next action, and correlation ID without exposing secrets.
 
 ## Tenant boundary
 
@@ -90,6 +153,8 @@ Every command carries the authenticated location from the server session. The cl
 - `PartnerProfile`
 - `GhlRoutingProfile`
 - `ChannelConnectionSnapshot`
+- `BrandPromptSnapshot`
+- `BrandRuleSet`
 
 ### Campaign
 
@@ -103,6 +168,35 @@ Every command carries the authenticated location from the server session. The cl
 - `ExecutionEvent`
 - `AttributionLink`
 - `OutcomeEvent`
+- `LlmGenerationRun`
+- `AiUsageEvent`
+
+## AI generation pipeline
+
+Claude and ChatGPT consumer subscriptions are operator tools, not application infrastructure. Production generation uses server-only product API credentials through a provider-neutral client. The initial model policy uses a quality model for brand synthesis and final campaign copy, a cheap model for extraction and repair, and an evaluated fallback for provider failure.
+
+```text
+Approved brand samples
++ structured profile fields
+-> suggested voice fields
+-> field-level user confirmation
+-> BrandProfileVersion
+-> BrandPromptSnapshot + BrandRuleSet
+
+BrandPromptSnapshot
++ CampaignBlueprintVersion
++ CampaignInputVersion
++ ComplianceProfileVersion
++ PartnerProfile snapshot
+-> structured model draft
+-> schema validation
+-> deterministic preflight
+-> named human approval
+```
+
+Static prompt policy, brand snapshot, blueprint instructions, and output schema form the cacheable prefix. Per-piece campaign values are appended after that prefix. Cache keys include location, brand version, blueprint version, and model-policy version. The system records cache-write, cache-read, uncached-input, and output tokens separately.
+
+The model never determines legal disclosures, targeting eligibility, approval, publish state, or budget changes. Model output is untrusted draft content. A successful generation creates an immutable draft version; regeneration creates a new version.
 
 ## Campaign state machine
 
@@ -224,6 +318,7 @@ Recommended first implementation:
 
 - TypeScript monorepo
 - React or Next.js web application with server rendering for public pages
+- Root-level theme provider with semantic light and dark tokens, system fallback, and pre-paint theme resolution
 - Node backend with strict schema validation at every external boundary
 - PostgreSQL with row-level tenant assertions in application and database tests
 - S3-compatible object storage and CDN
@@ -256,6 +351,9 @@ Operational dashboards should cover:
 - Lead-routing lag and failures
 - Attribution reconciliation gaps
 - Per-account support time
+- Model cost per location, campaign, feature, and accepted generation
+- Input, cached-input, output, cache-hit, retry, refusal, and structured-output failure metrics
+- Plan allowance consumption and projected budget exceptions
 
 ## Migration from the proofs
 

@@ -14,6 +14,7 @@ This threat model covers the proposed Marketplace installation, embedded app, pu
 - Campaign budgets and publish authority
 - GHL contact, opportunity, appointment, and campaign identifiers
 - Approval and execution audit history
+- Product model-provider credentials, tenant brand samples, compiled prompt snapshots, and AI usage records
 
 ## Trust boundaries
 
@@ -25,6 +26,7 @@ This threat model covers the proposed Marketplace installation, embedded app, pu
 6. Public campaign visitor to lead-capture endpoint
 7. Rendering worker to object storage
 8. Approval link recipient to approval command
+9. Application worker to approved LLM provider
 
 ## Threats and required controls
 
@@ -33,6 +35,9 @@ This threat model covers the proposed Marketplace installation, embedded app, pu
 | Tenant swaps a location ID in a request | Derive location from a validated server session. Never authorize from a client-supplied location. |
 | Forged embedded user context | Use HighLevel signed context and backend validation. Do not trust query parameters. |
 | OAuth login CSRF or install confusion | Signed, random, expiring state bound to the expected installation. Exact redirect URL. Single use nonce. |
+| Installer self-elevates through onboarding | Derive installer authority from validated signed HighLevel context, grant only the mapped default role, and require an authorized location administrator for local setup. |
+| Browser forges checklist completion or Launch Ready | Compute completion server-side from current provider reads, validated configuration, and test evidence. Treat client progress as display state only. |
+| Agency or support operator completes customer attestations | Bind attestations to the authenticated location actor, forbid support-role substitution, and show role concentration in the final setup summary. |
 | Token theft | Envelope encryption, server-only access, secret redaction, restricted database role, rotation, and uninstall revocation. |
 | Refresh race invalidates rotating token | Location-scoped refresh lock and atomic token-envelope update. |
 | Broad `adPublishing.write` scope is abused | Separate Ads Publisher capability where feasible, strict action allowlist, no deletion or audience uploads, approval checks, and audited commands. |
@@ -46,7 +51,16 @@ This threat model covers the proposed Marketplace installation, embedded app, pu
 | Consent evidence is changed | Store immutable disclosure text or content hash plus rendered version, page, timestamp, and submission ID. |
 | Logs leak PII or provider secrets | Structured allowlist logging, centralized redaction, no raw bodies, and automated secret-pattern tests. |
 | Renderer reaches internal network | Sandboxed worker, blocked metadata endpoints, outbound allowlist, resource caps, and no tenant-provided executable code. |
+| Uploaded brand sample injects model instructions | Treat samples as untrusted quoted data, use strict prompt boundaries and schemas, prohibit sample content from changing policy or tools, and run adversarial evaluation fixtures. |
+| Brand or campaign context crosses tenants through caching | Use location and immutable version IDs in cache keys, keep provider organizations product-controlled, and test identical cross-location prompts for isolation. |
+| Model invents license, disclosure, rate, proof, testimonial, or consent facts | Collect sensitive facts structurally, label model suggestions, require field-level confirmation, and block output through deterministic preflight and named approval. |
+| Model output creates a publish or compliance decision | Keep model clients outside command authorization, expose no publish tools, and require the normal command gate after deterministic checks. |
+| Model retries create unbounded spend or duplicate drafts | Per-user and per-location quotas, bounded retry classes, idempotency keys, one accepted result, token caps, and budget exceptions. |
+| Prompt, response, or provider log leaks tenant or borrower data | Exclude borrower and private CRM data, minimize prompts, redact telemetry, restrict raw-output retention, disable training opt-in, and review provider retention terms. |
+| Browser or tenant supplies a provider key or model override | Product credentials and model policy remain server-only; reject client-supplied provider, key, endpoint, model, or budget fields. |
 | Broken object access | Private buckets by default, signed short-lived URLs, tenant-prefixed keys, and public copies only for approved projections. |
+| Theme or brand input injects arbitrary CSS | Accept only `light`, `dark`, or `system` as theme values; derive the tenant brand from the authenticated location; compile allowlisted semantic tokens; never accept raw tenant CSS, selectors, scripts, or unapproved URLs. |
+| Pre-paint theme script weakens CSP | Use a per-request nonce for the minimal theme bootstrap and retain a strict script policy for every other source. |
 | Dependency or CI compromise | Lockfiles, provenance checks, least-privilege CI token, secret scanning, and reviewed release artifacts. |
 
 ## Authorization roles
@@ -83,12 +97,18 @@ Every external write command must pass these checks in order:
 - Cross-tenant access tests cover every repository query and object-storage path.
 - OAuth state, token refresh, uninstall, and reconnect tests pass.
 - Signed HighLevel user context is verified server-side.
+- Installer authority, application-role assignment, and role-escalation tests pass for direct and agency install paths.
+- Launch Ready cannot be produced from browser state, stale evidence, or a support-role action.
 - Webhook Ed25519 verification and replay tests pass.
 - No token, secret, lead payload, phone, email, or property-photo URL leaks into logs unexpectedly.
 - Public-page injection, upload, SSRF, CSRF, clickjacking, and open-redirect tests pass.
 - Publish command cannot run without current approval and exact version match.
 - Destructive ad and audience endpoints are unreachable from product code.
+- Theme values and tenant brand keys are server-validated enums, and no arbitrary CSS reaches the browser.
+- The pre-paint theme bootstrap passes strict CSP nonce tests and exposes no tenant or user data.
 - Rate limits, retries, idempotency, and uncertain-write reconciliation are tested.
+- Prompt injection, cross-tenant cache isolation, structured-output, model-failover, token-cap, and budget-exhaustion tests pass.
+- Provider training opt-in is disabled, prompt content excludes borrower data, and retention and data-processing terms are approved before production.
 - Tenant export, uninstall, retention, and deletion procedures are tested.
 
 ## Open security decisions

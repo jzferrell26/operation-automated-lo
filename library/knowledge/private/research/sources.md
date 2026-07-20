@@ -2,6 +2,8 @@
 
 Research snapshot: July 19, 2026.
 
+AI pricing and data-term snapshot: July 20, 2026.
+
 ## HighLevel primary sources
 
 - [HighLevel scopes catalog](https://marketplace.gohighlevel.com/docs/Authorization/Scopes/index.html)
@@ -58,6 +60,17 @@ Research snapshot: July 19, 2026.
 ### Broker Marketplace
 
 - [Broker Marketplace product and tool catalog](https://broker-marketplace.com/)
+
+## AI platform primary sources
+
+- [Anthropic API pricing](https://platform.claude.com/docs/en/about-claude/pricing)
+- [Anthropic prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)
+- [Anthropic commercial API retention](https://privacy.anthropic.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)
+- [Anthropic API billing is separate from Claude subscriptions](https://support.anthropic.com/en/articles/9876003-i-subscribe-to-a-paid-claude-ai-plan-why-do-i-have-to-pay-separately-for-api-usage-on-console)
+- [OpenAI API pricing](https://developers.openai.com/api/docs/pricing)
+- [OpenAI prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching)
+- [OpenAI API data controls](https://platform.openai.com/docs/models/default-usage-policies-by-endpoint)
+- [OpenAI API billing is separate from ChatGPT](https://help.openai.com/en/articles/9039756-billing-settings-in-chatgpt-vs-platform)
 
 ## Compliance and policy sources
 

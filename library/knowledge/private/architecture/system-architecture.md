@@ -1,0 +1,268 @@
+# System Architecture
+
+## Architectural decision
+
+Build one multi-tenant product with an embedded HighLevel surface and externally hosted public campaign assets. Do not create one Lovable project, Supabase project, or deployment per loan officer.
+
+Lovable proved the workflows and page designs. The scalable system turns those proofs into shared components, tenant configuration, immutable campaign versions, and adapters around HighLevel.
+
+## System context
+
+```mermaid
+flowchart LR
+    LO["Loan officer in HighLevel"] --> CP["Embedded Custom Page"]
+    RV["Realtor or compliance reviewer"] --> AP["Approval link"]
+    CP --> API["Operation Automated LO API"]
+    AP --> API
+    API --> DB["Tenant campaign database"]
+    API --> OBJ["Asset object storage"]
+    API --> Q["Durable job queue"]
+    Q --> R["Page, PDF, and creative renderer"]
+    Q --> G["HighLevel adapter"]
+    G --> CRM["GHL contacts, opportunities, calendars, workflows"]
+    G --> ADS["GHL Ad Manager and connected Meta account"]
+    PUB["Public campaign page"] --> API
+    PUB --> LEAD["Lead capture endpoint"]
+    LEAD --> API
+    ADS --> API
+```
+
+## Runtime components
+
+| Component | Responsibility |
+| --- | --- |
+| Web application | Embedded loan-officer workspace, standalone support view, approvals, campaign editor, and dashboards |
+| API and session gateway | Signed HighLevel context verification, application sessions, authorization, validation, and command intake |
+| Tenant database | Product-owned configuration, campaigns, versions, artifacts, approvals, attribution links, and audits |
+| Encrypted token vault | Per-installation GHL access and refresh tokens with rotation metadata |
+| Object storage and CDN | Original approved property photos, generated PDFs, creative, and public-page assets |
+| Durable job system | Rendering, provider writes, reporting sync, retries, and reconciliation |
+| Asset compiler | Blueprint plus brand plus partner plus property becomes deterministic page/PDF/ad/email/SMS inputs |
+| Preflight engine | Brand, mortgage disclosure, consent, ad policy, and asset-permission checks |
+| GHL adapter | OAuth, rate limiting, contacts, opportunities, calendars, forms, tags, workflows, ads, and reporting |
+| Public campaign renderer | Fast server-rendered page using a deliberately limited published projection |
+| Attribution service | Links public visits and captured leads to GHL contacts, opportunities, appointments, and outcomes |
+
+## Tenant boundary
+
+The security boundary is a HighLevel location. Every tenant-owned table includes `location_id`, and every unique key is location-scoped. Agency ID is retained for install, billing, support, and portfolio grouping, but agency context never grants implicit access to a location without an active installation and an authorized role.
+
+Recommended identity keys:
+
+- `agency_id`
+- `location_id`
+- `ghl_user_id`
+- application `user_id`
+- `install_id`
+
+Every command carries the authenticated location from the server session. The client cannot choose a different location by sending a request field.
+
+## Data ownership
+
+| Data | System of record | Local persistence rule |
+| --- | --- | --- |
+| Contact and consent status | HighLevel | Store only GHL ID and campaign attribution key unless a frozen consent receipt is required. |
+| Opportunity and pipeline status | HighLevel | Store GHL opportunity ID and normalized attribution milestones. |
+| Appointment | HighLevel | Store GHL appointment ID and milestone timestamp. |
+| Meta account, page, form, pixel, campaign, ad set, and ad | HighLevel or Meta through HighLevel | Store selected IDs, safe display labels, normalized state, and last reconciliation time. |
+| Loan officer brand and disclosures | Operation Automated LO | Append-only versions with one current version. |
+| Realtor partner profile and approvals | Operation Automated LO | Store only fields needed to produce and approve co-branded assets. |
+| Property campaign input | Operation Automated LO | Store the approved marketing projection, source attribution, and permission attestation. Do not store borrower or application data. |
+| Campaign blueprint | Operation Automated LO | Versioned platform-owned definition. |
+| Generated artifact | Operation Automated LO | Immutable object plus checksum and input-version references. |
+| Approval and publish decision | Operation Automated LO | Append-only event with actor, timestamp, version, and summary. |
+
+## Core domain model
+
+### Tenant and installation
+
+- `Agency`
+- `Location`
+- `MarketplaceInstall`
+- `GhlTokenEnvelope`
+- `AppUser`
+- `RoleBinding`
+
+### Configuration
+
+- `BrandProfileVersion`
+- `ComplianceProfileVersion`
+- `PartnerProfile`
+- `GhlRoutingProfile`
+- `ChannelConnectionSnapshot`
+
+### Campaign
+
+- `Campaign`
+- `CampaignInputVersion`
+- `CampaignBlueprintVersion`
+- `CampaignArtifact`
+- `PreflightRun`
+- `ApprovalDecision`
+- `ChannelLaunch`
+- `ExecutionEvent`
+- `AttributionLink`
+- `OutcomeEvent`
+
+## Campaign state machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Generating: Generate
+    Generating --> PreflightFailed: Blocking finding
+    Generating --> AwaitingApproval: Passed
+    PreflightFailed --> Draft: Correct inputs
+    AwaitingApproval --> Draft: Requested changes
+    AwaitingApproval --> Approved: Named approval
+    Approved --> Publishing: Explicit publish confirmation
+    Publishing --> Live: Provider confirms
+    Publishing --> PublishFailed: Terminal error
+    PublishFailed --> Approved: Retry remains same version
+    Live --> Paused: Explicit pause
+    Paused --> Live: Explicit resume
+    Live --> Completed: End date or manual completion
+    Draft --> Archived: Archive
+    Completed --> Archived: Archive
+```
+
+Any material change to copy, creative, targeting, budget, dates, form mapping, landing page, partner identity, or disclosures creates a new campaign version and invalidates prior approval.
+
+## Deterministic asset pipeline
+
+The asset compiler receives only versioned inputs:
+
+```text
+CampaignBlueprintVersion
++ CampaignInputVersion
++ BrandProfileVersion
++ ComplianceProfileVersion
++ PartnerProfile snapshot
+= RenderManifest
+```
+
+The render manifest is validated, hashed, and sent to isolated renderers. Each artifact records:
+
+- Source version IDs
+- Renderer version
+- Template version
+- Content hash
+- Object key
+- MIME type and dimensions
+- Creation timestamp
+- Preflight status
+
+The browser can preview assets, but production PDFs and images are generated server-side. This prevents browser differences from changing approved output and makes exact regeneration possible.
+
+## Public property and campaign pages
+
+Public pages should use a frozen `PublishedCampaignProjection` containing only:
+
+- Public property facts and approved description
+- Approved property photos
+- Open-house details
+- Loan officer and Realtor public business contact fields
+- Required license and disclosure blocks
+- Approved calls to action
+- Public tracking and campaign identifiers
+
+The page must never expose:
+
+- GHL OAuth data
+- Internal IDs beyond opaque public identifiers
+- Borrower or application data
+- Private notes
+- Provider error details
+- Unapproved campaign drafts
+
+The public lead endpoint validates the campaign state, consent evidence, rate limits, bot signals, and destination mapping before the durable GHL write job is accepted.
+
+## Attribution model
+
+Use first-party campaign parameters and server-issued opaque visitor and submission IDs. Store attribution as an event chain rather than overwriting one source field:
+
+```text
+page_view -> lead_submitted -> ghl_contact_linked -> opportunity_created
+-> appointment_booked -> application_received -> funded_or_closed
+```
+
+Each event includes tenant, campaign, version, timestamp, source, external object ID when applicable, and idempotency key. Do not store full ad-platform payloads when normalized fields are enough.
+
+## Build versus buy
+
+### Build
+
+- Campaign blueprint model
+- Multi-tenant brand and compliance profile
+- Co-branded page, PDF, and creative compiler
+- Approval, audit, and campaign state machine
+- HighLevel-native routing and attribution
+- Mortgage-specific campaign dashboard
+
+### Use HighLevel
+
+- CRM contacts and opportunities
+- Calendars and appointments
+- Existing workflows and outbound messaging
+- Connected Meta assets
+- Ad publishing and reporting endpoints
+- Marketplace installation and embedded navigation
+
+### Buy or license later
+
+- MLS or listing data
+- Property valuation and equity data
+- Rate and mortgage market data
+- Address normalization and enrichment
+- Image moderation if volume justifies it
+
+Do not build a data product until a licensed source, unit economics, permitted use, retention, and deletion contract are documented.
+
+## Deployment shape
+
+Recommended first implementation:
+
+- TypeScript monorepo
+- React or Next.js web application with server rendering for public pages
+- Node backend with strict schema validation at every external boundary
+- PostgreSQL with row-level tenant assertions in application and database tests
+- S3-compatible object storage and CDN
+- Durable job engine for rendering, provider calls, and reconciliation
+- Structured logs, traces, error monitoring, and product analytics
+
+The exact vendors are implementation decisions. The invariants are multi-tenancy, durable execution, deterministic rendering, server-only secrets, and auditable external writes.
+
+## Observability
+
+Every consequential path receives a correlation ID spanning:
+
+- User command
+- Campaign version
+- Preflight run
+- Approval
+- Job attempt
+- GHL request
+- Meta publish progress
+- Webhook or reconciliation event
+
+Operational dashboards should cover:
+
+- Install and token health
+- Rendering latency and failures
+- Preflight failure reasons
+- Approval age
+- Provider rate limits and errors
+- Publish progress and uncertain writes
+- Lead-routing lag and failures
+- Attribution reconciliation gaps
+- Per-account support time
+
+## Migration from the proofs
+
+1. Freeze existing Lovable products as reference implementations.
+2. Capture golden examples of pages and PDFs from representative listings.
+3. Define tenant-neutral schemas and render manifests.
+4. Rebuild shared components in this repository with visual regression fixtures.
+5. Validate output against the golden examples.
+6. Migrate only newly created campaigns at first.
+7. Import old public pages only if there is a business need and an explicit data-permission review.

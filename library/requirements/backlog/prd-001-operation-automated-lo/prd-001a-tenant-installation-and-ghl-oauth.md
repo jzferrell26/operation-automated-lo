@@ -4,6 +4,8 @@
 
 Create the multi-tenant security and installation foundation for direct sub-account and agency bulk installs.
 
+This feature depends on the database, runtime-role, session, token-envelope, command, inbox, outbox, task, and delivery foundation in [PRD-001j](prd-001j-operation-automated-lo-platform-foundation-runtime-and-delivery.md).
+
 ## Scope
 
 - Marketplace app configuration for sub-account target, both installers, and bulk install
@@ -21,7 +23,7 @@ Create the multi-tenant security and installation foundation for direct sub-acco
 
 ### Tenant identity
 
-- Every tenant resource is bound to `company_id`, `location_id`, and `install_id`.
+- Every tenant-owned resource has a non-null product `location_id`. Agency and install identifiers are required only where their lifecycle applies.
 - Server authorization derives location from validated session context.
 - A request cannot select or override `location_id` in its body or query string.
 - Cross-location access tests fail closed for every repository method.
@@ -31,7 +33,8 @@ Create the multi-tenant security and installation foundation for direct sub-acco
 - The Custom Page requests signed context from the HighLevel parent.
 - The encrypted context is sent to the backend and validated there.
 - Shared secret and decrypted context are never logged or stored in the browser.
-- The resulting session is short-lived, secure, same-site compatible for the supported embed path, and bound to the active location and user.
+- The resulting embedded application token is short-lived, held only in browser memory, and bound to the active installation, location, user, audience, nonce, and product session.
+- Partitioned embedded cookies can improve compatible browsers but are not the sole session mechanism.
 - Direct first-party access has an authenticated fallback that resolves the same tenant and role.
 
 ### OAuth

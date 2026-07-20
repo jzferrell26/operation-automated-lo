@@ -1,5 +1,16 @@
 # System Architecture
 
+> Category: Architecture | Version: 1.1 | Date: July 2026 | Status: Active
+
+The product-level architecture and domain boundaries for Operation Automated LO.
+
+**Construction specifications:**
+
+- [System build blueprint](system-build-blueprint.md)
+- [System data model](system-data-model.md)
+- [System runtime contracts](system-runtime-contracts.md)
+- [System delivery and operations](system-delivery-and-operations.md)
+
 ## Architectural decision
 
 Build one multi-tenant product with an embedded HighLevel surface and externally hosted public campaign assets. Do not create one Lovable project, Supabase project, or deployment per loan officer.
@@ -314,20 +325,23 @@ Do not build a data product until a licensed source, unit economics, permitted u
 
 ## Deployment shape
 
-The July 20, 2026 build-readiness decision selects the following first implementation. See [`../research/2026-build-readiness-and-research-gate.md`](../research/2026-build-readiness-and-research-gate.md) for evidence and implementation gates.
+The July 20, 2026 construction decision selects a modular monolith with two deployable units and one product database. See [the system build blueprint](system-build-blueprint.md) for the repository topology and [the build-readiness gate](../research/2026-build-readiness-and-research-gate.md) for external validation blockers.
 
-- TypeScript monorepo
-- Current supported stable Next.js App Router, pinned at implementation start, for the embedded workspace, first-party fallback, approval surfaces, API handlers, and server-rendered public pages
+- pnpm and Turborepo TypeScript monorepo on Node 24 LTS
+- `apps/web`: Next.js 16.2.10 or a later patched stable 16.2 App Router release on Vercel for the embedded workspace, first-party fallback, approval surfaces, thin API handlers, and server-rendered public pages
+- `apps/tasks`: Trigger.dev task package for durable work and version-pinned Chromium rendering
 - Vercel for the web application and short request handlers
 - Root-level theme provider with semantic light and dark tokens, system fallback, and pre-paint theme resolution
-- Node backend with strict schema validation at every external boundary
-- One managed PostgreSQL cluster, initially Supabase Postgres, with database row-level security, tenant-scoped keys, migrations, backups, point-in-time recovery, and cross-tenant tests
-- One private Cloudflare R2 bucket with tenant-prefixed keys, short-lived presigned transfers, and a separate intentionally public campaign projection
-- Inngest for durable rendering, provider calls, publish polling, lead routing, and reconciliation, with product-owned idempotency records and tenant-scoped concurrency
-- Durable workflow events carry opaque tenant and job references only. Workers fetch authorized data server-side, and OAuth tokens, raw lead payloads, and unnecessary campaign content are excluded from third-party workflow history.
-- A containerized, version-pinned Playwright Chromium renderer with bundled fonts and deterministic golden fixtures
+- Strict TypeScript and Zod validation at every external boundary
+- One Supabase Postgres system with database-enforced location RLS, transaction-local tenant context, migrations, backups, point-in-time recovery, and cross-tenant tests
+- Supavisor transaction pooling for web and task runtime, plus a separate direct migration connection
+- One private and one published Cloudflare R2 bucket per environment, with immutable keys, short-lived presigned transfers, validation, and lifecycle rules
+- Trigger.dev durable tasks with product-owned inbox, outbox, command, provider-operation, and idempotency records plus tenant-scoped concurrency
+- Durable task payloads carry opaque identifiers only. Workers fetch authorized data server-side, and OAuth tokens, raw lead payloads, full prompts, and unnecessary campaign content are excluded from third-party task history.
+- Playwright Chromium installed into the pinned Trigger.dev task image with bundled fonts and deterministic golden fixtures
+- HighLevel token envelope encryption with per-version AES-256-GCM data keys protected by environment-specific AWS KMS keys
 - Stripe-hosted Checkout and Customer Portal for the founding external-billing path
-- Structured logs, traces, error monitoring, and product analytics
+- OpenTelemetry correlation, structured redacted logs, error monitoring, and privacy-configured product analytics
 
 Vendor changes require an architecture decision that preserves multi-tenancy, database-enforced tenant isolation, durable execution, deterministic rendering, server-only secrets, PII-safe observability, and auditable external writes.
 

@@ -2,7 +2,7 @@
 
 ## Research boundary
 
-This is a public-artifact review completed July 19, 2026. It uses official sites and help centers. No authenticated competitor account was inspected, so implementation details and private screens remain unverified.
+This review began with public artifacts on July 19, 2026. Broker Marketplace received an authorized authenticated supplement on July 20, 2026 using one paid Loan Officer account and its reversible Realtor view. See [`broker-marketplace-authenticated-teardown.md`](broker-marketplace-authenticated-teardown.md) for the evidence boundary, private-surface findings, and coverage limits. Other competitors remain public-artifact reviews unless their sections say otherwise.
 
 ## Strategic conclusion
 
@@ -110,6 +110,8 @@ The useful lesson is a clear division of labor and a conversational entry point.
 ## Broker Marketplace
 
 Broker Marketplace publicly lists 21 tools across open houses, home equity, refinance mining, loan presentations, wholesale-lender matching, e-signature, home search, calculators, design, video, AI content, websites, rates, rankings, guidelines, Realtor partnerships, CRM integrations, and operations.
+
+The authenticated supplement confirmed a 20-tool Loan Officer marketplace, a narrower 14-tool Realtor view, a central brand and integration profile, searchable open-house history with lead counts, prompted HTML templates with multi-format export, project-based website and funnel publishing, and data-heavy homeowner and refinance surfaces. The full evidence and Operation Automated LO inclusion matrix are in [`broker-marketplace-authenticated-teardown.md`](broker-marketplace-authenticated-teardown.md).
 
 ### Build now
 

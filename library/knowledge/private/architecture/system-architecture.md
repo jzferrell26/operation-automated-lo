@@ -53,6 +53,8 @@ flowchart LR
 
 The authenticated dashboard supports three explicit preferences: `light`, `dark`, and `system`. The first visit uses the browser or operating-system preference. A user selection applies immediately without reloading and persists under a product-specific browser storage key. Choosing `system` removes the manual override and resumes following `prefers-color-scheme`.
 
+The approved decorative animation pattern for authentication and onboarding is documented in [`../frontend/ambient-motion-background.md`](../frontend/ambient-motion-background.md). Dense campaign, reporting, approval, and compliance surfaces do not use ambient icon motion.
+
 Theme behavior is an application-interface preference, not tenant campaign content:
 
 - The preference affects the embedded dashboard and standalone authenticated workspace.

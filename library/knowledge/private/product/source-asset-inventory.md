@@ -50,6 +50,8 @@ The Brand Engine establishes four important design rules:
 3. Merge tokens require an allowlist.
 4. Generation and publication are separate actions.
 
+The current operating model also exposes two migration requirements. Human intake work relies on Claude or ChatGPT subscriptions, while the template runtime expects one Anthropic API key. Neither pattern is the correct multi-tenant SaaS billing boundary. The runtime also injects the complete `BRAND-GUIDE.md` and `brand-voice-pack.md` into every generated piece even though those files overlap with `brand-config.json`. Operation Automated LO should replace that three-file contract with one versioned structured profile, a compact derived prompt snapshot, prompt caching, provider-neutral model routing, and per-location usage metering.
+
 Operation Automated LO should add these preflight rule groups:
 
 - Required NMLS and company disclosures

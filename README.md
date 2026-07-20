@@ -20,6 +20,7 @@ This repository currently contains the research and requirements package. It doe
 - Host public campaign pages and generated assets in the application, not in one Lovable project per client.
 - Provide a switchable light and dark dashboard, with system preference as the first-visit default.
 - Make installation through launch readiness fully self-service, with permission checks, resumable setup, and a synthetic lead test.
+- Fund production LLM API usage inside the product, meter it per location, and show customers campaign allowances instead of raw AI tokens.
 - Use HighLevel's connected Meta assets and Ad Manager APIs where possible.
 - Start with Meta and Open House Boost. Defer Google, LinkedIn, audience uploads, automated budget changes, and ad-spend rebilling.
 - Position the product as compliance-aware and approval-gated. Never position it as automatically compliant.
@@ -35,6 +36,7 @@ This repository currently contains the research and requirements package. It doe
 - [Competitive landscape](library/knowledge/private/competitive/competitive-landscape.md)
 - [Mortgage marketing compliance boundaries](library/knowledge/private/compliance/compliance-and-risk.md)
 - [Founding cohort and validation plan](library/knowledge/private/commercial/founding-cohort-plan.md)
+- [LLM generation and unit economics](library/knowledge/private/ai/llm-generation-and-unit-economics.md)
 - [Security threat model](library/knowledge/private/security/threat-model.md)
 - [Research sources](library/knowledge/private/research/sources.md)
 - [PRD 001](library/requirements/backlog/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md)

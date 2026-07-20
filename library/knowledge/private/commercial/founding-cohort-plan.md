@@ -13,7 +13,7 @@ Use the AutomatedLO community to validate the product and generate the requested
 | Included period | 90 days |
 | Continuation | $197 per month after 90 days |
 | Onboarding | Self-service setup wizard, recording, checklist, and optional office-hours thread |
-| Included product | GHL connection, brand/compliance profile, one Open House Boost blueprint, page/PDF/creative generation, Meta launch flow, GHL routing, reporting |
+| Included product | GHL connection, AI-assisted brand/compliance profile, one Open House Boost blueprint, page/PDF/creative and campaign-text generation, Meta launch flow, GHL routing, reporting |
 | Not included | Individual funnel builds, custom automation, ad management service, custom compliance drafting, database cleanup, voice agent, database reactivation |
 
 Twenty buyers at $500 produce $10,000. That is about 5.8 percent of a 343-member community.
@@ -112,6 +112,10 @@ Track the funnel as events:
 - Founding payments fund the vertical slice, not custom account work.
 - Property, rate, equity, and listing data costs must be metered by campaign or active contact before they are added.
 - Model and rendering costs need per-campaign budgets and hard caps.
+- Claude and ChatGPT subscriptions do not fund the application. Product-owned API usage is included for founders and metered per location.
+- Founders see campaign-pack and regeneration allowances, not raw model tokens or provider costs.
+- Budget $150 to $230 for text-model usage across 20 founders producing 10 campaign packs per month during the included 90 days.
+- Do not enable paid AI overages until 30, 60, and 90-day usage data validates the allowance and support model.
 - Meta spend is paid directly by the client's ad account.
 - No ad-spend float, shared card, or Realtor reimbursement in the first release.
 - Support is group-first, documentation-first, and exception-based.

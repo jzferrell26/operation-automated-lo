@@ -13,6 +13,7 @@ Collect every reusable tenant input once, validate it, version it, and make it a
 - Append-only versioning and rollback
 - Setup wizard and completeness state
 - Server-verified onboarding readiness contribution
+- AI-assisted brand-sample extraction and profile drafting with field-level confirmation
 
 ## Profile contracts
 
@@ -23,6 +24,7 @@ Collect every reusable tenant input once, validate it, version it, and make it a
 - Logo, headshot, palette, typography, contact fields, and approved URLs
 - Voice instructions, approved proof points, banned phrases, and allowed merge tokens
 - Email sender identity and physical address
+- Approved marketing sample references, source permission, suggested voice fields, confirmation state, and compact prompt snapshot
 
 ### Compliance profile
 
@@ -67,12 +69,17 @@ Collect every reusable tenant input once, validate it, version it, and make it a
 - The setup wizard saves after each verified section and resumes on another authenticated device.
 - Required fields are determined by the selected blueprint, location, lender policy, state, and channel instead of a hardcoded universal checklist.
 - Profile completion contributes to Launch Ready only after provider mappings and uploaded assets are revalidated.
+- The model may suggest voice, tone, pattern, framework, signature-language, and banned-language fields from approved samples, but no suggestion becomes current until a user confirms it.
+- Identity, license, NMLS, lender, disclosure, rate, proof, consent, and partner-permission fields cannot be inferred into an approved state.
+- Brand samples are rejected or quarantined when they contain borrower, application, credit, income, bank, Social Security, or private CRM data.
+- One compact prompt snapshot and deterministic brand ruleset are compiled from the same confirmed version and cannot drift independently.
 
 ## Out of scope
 
 - Automated lender disclosure interpretation
 - Automatic NMLS or license verification
 - General-purpose brand interrogation
+- Fine-tuning or retaining a cross-tenant model from customer samples
 - Realtor CRM or team management
 
 ## Verification

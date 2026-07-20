@@ -82,6 +82,7 @@ The job is complete when the campaign is live in the client-owned Meta ad accoun
 
 - One GHL location per tenant installation
 - Loan officer and Realtor co-brand profile
+- AI-assisted brand-profile drafting from approved marketing samples, with field-level human confirmation
 - Open House Boost blueprint
 - External single-property page and PDF generation
 - Meta connection discovery through HighLevel
@@ -91,6 +92,7 @@ The job is complete when the campaign is live in the client-owned Meta ad accoun
 - Basic portfolio metrics for internal Cuantico operations
 - Switchable light and dark themes across the authenticated dashboard, with a system-preference default
 - Self-service onboarding from Marketplace install through verified launch readiness, with no required Cuantico setup call
+- Product-funded LLM API generation with per-location metering, deterministic preflight, and campaign-based plan allowances
 
 ### Defer
 
@@ -101,6 +103,7 @@ The job is complete when the campaign is live in the client-owned Meta ad accoun
 - Autonomous budget optimization
 - Ad-spend rebilling or Realtor cost-sharing
 - A generic design studio, video editor, podcast tool, e-signature system, LOS, CRM, or lender marketplace
+- Generative image, video, and voice allowances in the text-generation plan
 - Automated voice and database reactivation, which remain Product 1
 
 ## Success measures
@@ -117,6 +120,7 @@ The job is complete when the campaign is live in the client-owned Meta ad accoun
 - A prepared location admin can reach Launch Ready in 30 minutes without operator intervention
 - Median time from campaign start to approval under 30 minutes after initial account setup
 - Under 30 minutes of human support per account per month
+- Text-model cost under $5 per active location per month at normal included usage
 
 ### Retention and value
 
@@ -130,6 +134,7 @@ The job is complete when the campaign is live in the client-owned Meta ad accoun
 - More than 60 minutes of manual support per account per month after the first month
 - Fewer than 30 percent of paid accounts launch a campaign within 30 days
 - Required property data or ad integrations cannot be licensed or safely accessed at founding-cohort economics
+- Text-model cost exceeds 10 percent of recurring revenue after prompt caching and task routing are proven
 - Lender compliance teams refuse the approval model or require company-specific controls that cannot be expressed as tenant configuration
 
 If any of these occur, retain the asset compiler as an internal Cuantico service and do not fund the full Marketplace product.

@@ -13,6 +13,7 @@ Create an immutable Open House Boost campaign version from tenant profiles and p
 - Brand, compliance, consent, targeting, and data-quality preflight
 - Approval state machine
 - Material-change detection
+- Versioned structured LLM draft generation from confirmed prompt snapshots
 
 ## Open House Boost inputs
 
@@ -44,6 +45,7 @@ Create an immutable Open House Boost campaign version from tenant profiles and p
 - Rate, APR, payment, or program terms are blocked in the first blueprint unless an explicitly approved tenant rule enables them.
 - Custom audiences, ZIP targeting, protected targeting dimensions, Google, and LinkedIn are blocked.
 - A preflight result records all input version IDs and the ruleset version.
+- Model output cannot satisfy, waive, or override a deterministic preflight rule.
 
 ### Approval
 
@@ -53,16 +55,20 @@ Create an immutable Open House Boost campaign version from tenant profiles and p
 - Required Realtor and lender approvals are policy-driven.
 - Approval links are short-lived, single-purpose, and cannot expose other tenant data.
 - Publish checks approval freshness again instead of trusting UI state.
+- Model output cannot create an approval or publish decision.
 
 ### State machine
 
 - Invalid transitions fail closed.
 - Generation, preflight, approval, publishing, live, pause, resume, completion, and archive events are append-only.
 - Retrying a failed operation does not create a new campaign version.
+- Each generated draft records the prompt snapshot, model policy, prompt policy, provider request, token usage, and accepted-output hash.
+- Regeneration creates a new immutable draft version and consumes the applicable plan allowance only when a usable generation is returned.
 
 ## Out of scope
 
 - Model-generated legal disclosures
+- Customer-supplied model keys, generative images, and raw token billing
 - Automatic legal or lender approval
 - More than one campaign blueprint
 - Autonomous optimization

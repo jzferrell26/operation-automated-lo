@@ -17,6 +17,8 @@ flowchart LR
     API --> DB["Tenant campaign database"]
     API --> OBJ["Asset object storage"]
     API --> Q["Durable job queue"]
+    Q --> AI["LLM model router"]
+    AI --> LLM["Approved model providers"]
     Q --> R["Page, PDF, and creative renderer"]
     Q --> G["HighLevel adapter"]
     G --> CRM["GHL contacts, opportunities, calendars, workflows"]
@@ -43,6 +45,9 @@ flowchart LR
 | Public campaign renderer | Fast server-rendered page using a deliberately limited published projection |
 | Attribution service | Links public visits and captured leads to GHL contacts, opportunities, appointments, and outcomes |
 | Onboarding orchestrator | Resumable permission, profile, routing, Meta, role, and synthetic-test setup with server-verified completion |
+| LLM model router | Versioned primary, cheap, and fallback model policy for brand assistance and campaign copy |
+| Prompt compiler | Confirmed brand and campaign versions become a compact tenant-isolated prompt snapshot and strict output schema |
+| AI usage ledger | Per-location token, cache, latency, retry, estimated-cost, quota, and reconciliation events |
 
 ## Dashboard theme architecture
 
@@ -146,6 +151,8 @@ Every command carries the authenticated location from the server session. The cl
 - `PartnerProfile`
 - `GhlRoutingProfile`
 - `ChannelConnectionSnapshot`
+- `BrandPromptSnapshot`
+- `BrandRuleSet`
 
 ### Campaign
 
@@ -159,6 +166,35 @@ Every command carries the authenticated location from the server session. The cl
 - `ExecutionEvent`
 - `AttributionLink`
 - `OutcomeEvent`
+- `LlmGenerationRun`
+- `AiUsageEvent`
+
+## AI generation pipeline
+
+Claude and ChatGPT consumer subscriptions are operator tools, not application infrastructure. Production generation uses server-only product API credentials through a provider-neutral client. The initial model policy uses a quality model for brand synthesis and final campaign copy, a cheap model for extraction and repair, and an evaluated fallback for provider failure.
+
+```text
+Approved brand samples
++ structured profile fields
+-> suggested voice fields
+-> field-level user confirmation
+-> BrandProfileVersion
+-> BrandPromptSnapshot + BrandRuleSet
+
+BrandPromptSnapshot
++ CampaignBlueprintVersion
++ CampaignInputVersion
++ ComplianceProfileVersion
++ PartnerProfile snapshot
+-> structured model draft
+-> schema validation
+-> deterministic preflight
+-> named human approval
+```
+
+Static prompt policy, brand snapshot, blueprint instructions, and output schema form the cacheable prefix. Per-piece campaign values are appended after that prefix. Cache keys include location, brand version, blueprint version, and model-policy version. The system records cache-write, cache-read, uncached-input, and output tokens separately.
+
+The model never determines legal disclosures, targeting eligibility, approval, publish state, or budget changes. Model output is untrusted draft content. A successful generation creates an immutable draft version; regeneration creates a new version.
 
 ## Campaign state machine
 
@@ -313,6 +349,9 @@ Operational dashboards should cover:
 - Lead-routing lag and failures
 - Attribution reconciliation gaps
 - Per-account support time
+- Model cost per location, campaign, feature, and accepted generation
+- Input, cached-input, output, cache-hit, retry, refusal, and structured-output failure metrics
+- Plan allowance consumption and projected budget exceptions
 
 ## Migration from the proofs
 

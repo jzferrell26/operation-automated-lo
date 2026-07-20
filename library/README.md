@@ -24,4 +24,11 @@ New PRD folders contain an index, independently implementable sub-PRDs, and a `q
 
 ## Current build gate
 
-- [2026 build-readiness and research gate](knowledge/private/research/2026-build-readiness-and-research-gate.md): the core architecture is defined, but production implementation remains blocked until the recorded App Test, Marketplace, compliance, billing, lead-path, and demand gates close.
+- [2026 build-readiness and research gate](knowledge/private/research/2026-build-readiness-and-research-gate.md): product and construction research are complete. Phase 0 scaffold and evidence-harness work is authorized, while production feature traffic remains blocked until the recorded App Test, Marketplace, compliance, billing, lead-path, and demand gates close.
+
+## Construction specifications
+
+- [System build blueprint](knowledge/private/architecture/system-build-blueprint.md): deployables, monorepo, modules, runtimes, tokens, sessions, rendering, storage, billing, and AI.
+- [System data model](knowledge/private/architecture/system-data-model.md): schemas, tables, roles, RLS, integrity, retention, migrations, and scale triggers.
+- [System runtime contracts](knowledge/private/architecture/system-runtime-contracts.md): HTTP, commands, events, tasks, provider operations, failures, approvals, lead routing, and billing.
+- [System delivery and operations](knowledge/private/architecture/system-delivery-and-operations.md): environments, CI, testing, observability, SLOs, recovery, capacity, and phased build order.

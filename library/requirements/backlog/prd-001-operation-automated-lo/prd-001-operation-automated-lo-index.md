@@ -31,7 +31,8 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 
 | PRD | Scope | Dependency |
 | --- | --- | --- |
-| [001a](prd-001a-tenant-installation-and-ghl-oauth.md) | Tenant foundation, Marketplace install, signed user context, OAuth, token lifecycle | None |
+| [001j](prd-001j-operation-automated-lo-platform-foundation-runtime-and-delivery.md) | Monorepo, tenant database, runtime contracts, durable tasks, rendering plane, environments, CI, observability, and recovery | None, Phase 0 prerequisite for all product modules |
+| [001a](prd-001a-tenant-installation-and-ghl-oauth.md) | Tenant foundation, Marketplace install, signed user context, OAuth, token lifecycle | 001j |
 | [001b](prd-001b-brand-partner-and-compliance-profile.md) | Versioned loan officer brand, Realtor partner, compliance, and routing profiles | 001a |
 | [001c](prd-001c-campaign-blueprint-and-preflight.md) | Open House Boost blueprint, campaign versions, deterministic preflight, approval state | 001a, 001b |
 | [001d](prd-001d-page-pdf-and-creative-rendering.md) | Public campaign page, PDF, QR link, and Meta creative rendering | 001c |
@@ -138,18 +139,19 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 
 1. Run the $500 founding offer against a working demo.
 2. Proceed only if at least 15 customers pay.
-3. Build only the time-boxed App Test harness, golden render fixtures, and paid-founder demo needed to close research gates G1 through G7.
+3. Implement the Phase 0 portion of 001j: monorepo scaffold, verification, preview environments, App Test harness, golden render fixtures, threat-model harness, and paid-founder demo.
 4. Record `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE` for every core research gate.
-5. Implement 001a through 001d and operate Meta launch manually for an internal proof.
-6. Implement 001e against the verified sandbox contract.
-7. Implement 001f and pass the verified synthetic lead test.
-8. Implement 001h and prove a prepared administrator can reach Launch Ready without operator configuration.
-9. Implement 001g for the founding cohort.
-10. Implement 001i and prove tenant-isolated model routing, prompt caching, usage reconciliation, and budget enforcement.
-11. Complete security review.
-12. Complete quality verification against every acceptance criterion.
-13. Run the founding beta in no more than the permitted private-app agency count.
-14. Submit for public Marketplace review or private-app security review.
+5. Complete the tenant, identity, session, token, command, inbox, outbox, durable-task, rendering, observability, and recovery foundation in 001j.
+6. Implement 001a through 001d and operate Meta launch manually for an internal proof.
+7. Implement 001e against the verified sandbox contract.
+8. Implement 001f and pass the verified synthetic lead test.
+9. Implement 001h and prove a prepared administrator can reach Launch Ready without operator configuration.
+10. Implement 001g for the founding cohort.
+11. Implement 001i and prove tenant-isolated model routing, prompt caching, usage reconciliation, and budget enforcement.
+12. Complete security review.
+13. Complete quality verification against every acceptance criterion.
+14. Run the founding beta in no more than the permitted private-app agency count.
+15. Submit for public Marketplace review or private-app security review.
 
 ## Pre-implementation research gates
 
@@ -180,5 +182,9 @@ Failure of the demand gate stops implementation. Failure of activation or suppor
 ## Related
 
 - [2026 build-readiness and research gate](../../../knowledge/private/research/2026-build-readiness-and-research-gate.md)
+- [System build blueprint](../../../knowledge/private/architecture/system-build-blueprint.md)
+- [System data model](../../../knowledge/private/architecture/system-data-model.md)
+- [System runtime contracts](../../../knowledge/private/architecture/system-runtime-contracts.md)
+- [System delivery and operations](../../../knowledge/private/architecture/system-delivery-and-operations.md)
 - [Authenticated Broker Marketplace teardown](../../../knowledge/private/competitive/broker-marketplace-authenticated-teardown.md)
 - [PRD-002: Operation Automated LO add-on portfolio](../prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md)

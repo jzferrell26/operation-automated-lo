@@ -22,6 +22,7 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 6. The product is compliance-aware, not a substitute for counsel or lender approval.
 7. Property and consumer data are minimized.
 8. The initial release is Meta-only and Open House Boost-only.
+9. The authenticated dashboard supports switchable light and dark modes without changing approved campaign output.
 
 ## Sub-PRDs
 
@@ -86,6 +87,16 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 - Failed rendering, routing, or provider jobs retry safely and appear in an exception queue.
 - Support can diagnose a campaign by correlation ID without viewing secrets or unnecessary consumer data.
 - Location export, uninstall, retention, and deletion procedures are documented and tested.
+
+### Dashboard experience
+
+- The authenticated dashboard offers Light, Dark, and System theme preferences.
+- First visit follows the browser or operating-system color-scheme preference.
+- A manual preference persists for later visits and applies without a page reload.
+- The correct theme is applied before first paint with no visible flash or hydration warning.
+- Tenant brand overrides compose with both modes through validated semantic tokens.
+- Both modes meet WCAG AA contrast and preserve visible focus, non-color status cues, readable charts, and every interactive state.
+- Dashboard theme changes do not affect public pages, PDFs, Meta creative, approval versions, or artifact hashes.
 
 ## Non-goals
 

@@ -47,6 +47,8 @@ This threat model covers the proposed Marketplace installation, embedded app, pu
 | Logs leak PII or provider secrets | Structured allowlist logging, centralized redaction, no raw bodies, and automated secret-pattern tests. |
 | Renderer reaches internal network | Sandboxed worker, blocked metadata endpoints, outbound allowlist, resource caps, and no tenant-provided executable code. |
 | Broken object access | Private buckets by default, signed short-lived URLs, tenant-prefixed keys, and public copies only for approved projections. |
+| Theme or brand input injects arbitrary CSS | Accept only `light`, `dark`, or `system` as theme values; derive the tenant brand from the authenticated location; compile allowlisted semantic tokens; never accept raw tenant CSS, selectors, scripts, or unapproved URLs. |
+| Pre-paint theme script weakens CSP | Use a per-request nonce for the minimal theme bootstrap and retain a strict script policy for every other source. |
 | Dependency or CI compromise | Lockfiles, provenance checks, least-privilege CI token, secret scanning, and reviewed release artifacts. |
 
 ## Authorization roles
@@ -88,6 +90,8 @@ Every external write command must pass these checks in order:
 - Public-page injection, upload, SSRF, CSRF, clickjacking, and open-redirect tests pass.
 - Publish command cannot run without current approval and exact version match.
 - Destructive ad and audience endpoints are unreachable from product code.
+- Theme values and tenant brand keys are server-validated enums, and no arbitrary CSS reaches the browser.
+- The pre-paint theme bootstrap passes strict CSP nonce tests and exposes no tenant or user data.
 - Rate limits, retries, idempotency, and uncertain-write reconciliation are tested.
 - Tenant export, uninstall, retention, and deletion procedures are tested.
 

@@ -43,6 +43,28 @@ flowchart LR
 | Public campaign renderer | Fast server-rendered page using a deliberately limited published projection |
 | Attribution service | Links public visits and captured leads to GHL contacts, opportunities, appointments, and outcomes |
 
+## Dashboard theme architecture
+
+The authenticated dashboard supports three explicit preferences: `light`, `dark`, and `system`. The first visit uses the browser or operating-system preference. A user selection applies immediately without reloading and persists under a product-specific browser storage key. Choosing `system` removes the manual override and resumes following `prefers-color-scheme`.
+
+Theme behavior is an application-interface preference, not tenant campaign content:
+
+- The preference affects the embedded dashboard and standalone authenticated workspace.
+- Public property pages, PDFs, QR destinations, Meta creative, and approval artifacts keep their frozen campaign and brand styling.
+- Changing dashboard theme does not create a campaign version, invalidate approval, or change an artifact hash.
+- One tenant's brand tokens cannot leak into another location or support session.
+
+The runtime contract uses two independent layers:
+
+1. Semantic light and dark tokens control dashboard roles such as background, surface, border, text, primary action, destructive action, charts, and status.
+2. Validated tenant brand overrides can replace a limited set of semantic tokens for both modes without injecting arbitrary CSS.
+
+Components reference semantic tokens only. Primitive palette values and raw color literals never appear in component code. Both modes must cover default, hover, focus, active, selected, disabled, loading, empty, warning, error, and success states.
+
+For a React or Next.js implementation, the theme provider must run at the application root, apply the resolved class before first paint, declare `color-scheme`, and prevent hydration mismatch. Theme-dependent JavaScript rendering waits until the client is mounted; CSS-driven differences do not require conditional rendering. A strict content security policy must allow the nonce-bearing pre-paint theme script without weakening the remaining script policy.
+
+The theme selector must be keyboard operable, expose an accessible name and selected state, retain visible focus, and never communicate status through color alone. Text and interactive controls must meet WCAG AA contrast in both modes. Charts use labels, shapes, or patterns in addition to color.
+
 ## Tenant boundary
 
 The security boundary is a HighLevel location. Every tenant-owned table includes `location_id`, and every unique key is location-scoped. Agency ID is retained for install, billing, support, and portfolio grouping, but agency context never grants implicit access to a location without an active installation and an authorized role.
@@ -224,6 +246,7 @@ Recommended first implementation:
 
 - TypeScript monorepo
 - React or Next.js web application with server rendering for public pages
+- Root-level theme provider with semantic light and dark tokens, system fallback, and pre-paint theme resolution
 - Node backend with strict schema validation at every external boundary
 - PostgreSQL with row-level tenant assertions in application and database tests
 - S3-compatible object storage and CDN

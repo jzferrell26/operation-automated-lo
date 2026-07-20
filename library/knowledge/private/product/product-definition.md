@@ -89,6 +89,7 @@ The job is complete when the campaign is live in the client-owned Meta ad accoun
 - HighLevel contact and opportunity routing
 - Immutable campaign versions and write audit log
 - Basic portfolio metrics for internal Cuantico operations
+- Switchable light and dark themes across the authenticated dashboard, with a system-preference default
 
 ### Defer
 

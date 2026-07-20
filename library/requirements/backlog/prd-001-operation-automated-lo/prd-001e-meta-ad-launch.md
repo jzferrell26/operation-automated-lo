@@ -30,7 +30,8 @@ Before public release, validate whether Ads Publisher can be a separate Marketpl
 
 ### Mortgage and housing controls
 
-- Open House Boost always uses the required Special Ad Category.
+- The blueprint always uses the lender-approved Special Ad Category value or combination proven by HighLevel App Test for its exact campaign type.
+- Property-only, mortgage-only, and combined property-plus-mortgage campaign fixtures are tested separately. The product does not assume that one legacy category fits all three.
 - Targeting UI exposes only the approved geographic and platform fields.
 - Age, gender, marital status, parental status, ZIP, protected-class proxies, custom audiences, and lookalike audiences are unavailable.
 - Budget and duration must fit tenant and platform bounds.
@@ -84,5 +85,6 @@ Before public release, validate whether Ads Publisher can be a separate Marketpl
 
 ## Verification
 
-- HighLevel App Test proves connection discovery, draft, read-back, publish progress, pause, resume, reporting, expired token, disconnection, provider rejection, duplicate command, and uncertain response.
+- HighLevel App Test proves connection discovery, draft, read-back, explicit publish, publish progress, pause, resume, reporting, expired token, disconnection, provider rejection, duplicate command, and uncertain response.
+- HighLevel App Test records accepted Special Ad Category values and combinations for property-only, mortgage-only, and combined campaign fixtures, plus the targeting fields actually accepted for each.
 - No-spend test assets are used until lender compliance and an authorized operator approve a controlled live test.

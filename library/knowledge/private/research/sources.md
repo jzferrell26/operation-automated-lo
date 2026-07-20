@@ -4,6 +4,8 @@ Research snapshot: July 19, 2026.
 
 AI pricing and data-term snapshot: July 20, 2026.
 
+Build-readiness and platform-policy snapshot: July 20, 2026. See [the 2026 build-readiness and research gate](2026-build-readiness-and-research-gate.md) for confirmed findings, required App Test evidence, and implementation blockers.
+
 ## HighLevel primary sources
 
 - [HighLevel scopes catalog](https://marketplace.gohighlevel.com/docs/Authorization/Scopes/index.html)
@@ -20,8 +22,11 @@ AI pricing and data-term snapshot: July 20, 2026.
 - [Webhook integration and signatures](https://marketplace.gohighlevel.com/docs/2021-07-28/webhook/WebhookIntegrationGuide/index.html)
 - [OAuth FAQ, token duration and rate limits](https://marketplace.gohighlevel.com/docs/oauth/Faqs/)
 - [Facebook Ad Manager API](https://marketplace.gohighlevel.com/docs/ghl/ad-publishing/facebook-ads/index.html)
+- [Facebook campaign upsert](https://marketplace.gohighlevel.com/docs/ghl/ad-publishing/fb-upsert-campaign/)
+- [Facebook campaign publish](https://marketplace.gohighlevel.com/docs/ghl/ad-publishing/fb-publish-campaign/)
 - [Google Ad Manager API](https://marketplace.gohighlevel.com/docs/ghl/ad-publishing/google-ads/)
 - [External billing webhook](https://marketplace.gohighlevel.com/docs/oauth/Billing/index.html)
+- [Marketplace wallet charge](https://marketplace.gohighlevel.com/docs/ghl/marketplace/charge/)
 
 ## Competitor primary sources
 
@@ -80,10 +85,26 @@ AI pricing and data-term snapshot: July 20, 2026.
 - [Google housing advertising restrictions](https://support.google.com/adspolicy/answer/16701755?hl=en)
 - [Google personalized-advertising targeting restrictions](https://support.google.com/adspolicy/answer/143465?hl=en-419)
 - [Meta ad creation and Special Ad Category guidance](https://www.facebook.com/help/messenger-app/621956575422138/)
+- [Meta audience guidance and detailed-targeting exclusions](https://www.facebook.com/help/messenger-app/717368264947302/)
+- [Meta discriminatory-practices policy](https://transparency.meta.com/policies/ad-standards/unacceptable-content/discriminatory-practices/)
 - [FTC CAN-SPAM compliance guide](https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business)
 - [FCC TCPA small-entity guide](https://docs.fcc.gov/public/attachments/DA-24-910A1.pdf)
 - [Eleventh Circuit opinion vacating the FCC one-to-one consent rule](https://media.ca11.uscourts.gov/opinions/pub/files/202410277.pdf)
 - [FCC filing confirming the rule was vacated and further review was not sought](https://docs.fcc.gov/public/attachments/DOC-411016A1.pdf)
+
+## Architecture and billing primary sources
+
+- [Next.js App Router production checklist](https://nextjs.org/docs/app/guides/production-checklist)
+- [Next.js deployment options](https://nextjs.org/docs/app/getting-started/deploying)
+- [Supabase Postgres row-level security](https://supabase.com/docs/guides/database/postgres/row-level-security)
+- [Supabase Storage access control](https://supabase.com/docs/guides/storage/security/access-control)
+- [Inngest durable execution](https://www.inngest.com/docs/learn/how-functions-are-executed)
+- [Inngest retries and failure handling](https://www.inngest.com/docs/guides/error-handling)
+- [Inngest idempotency](https://www.inngest.com/docs/guides/handling-idempotency)
+- [Cloudflare R2 presigned URLs](https://developers.cloudflare.com/r2/api/s3/presigned-urls/)
+- [Playwright PDF rendering](https://playwright.dev/docs/api/class-page#page-pdf)
+- [Stripe Checkout](https://docs.stripe.com/payments/checkout)
+- [Stripe subscriptions](https://docs.stripe.com/payments/subscriptions)
 
 ## Internal source evidence
 
@@ -98,8 +119,8 @@ The following repositories were reviewed read-only at the revisions recorded in 
 
 ## Confidence notes
 
-- High confidence: current public GHL scopes, distribution model, Custom Page behavior, rate limits, ad endpoints, private-app cap, and webhook signature transition.
+- High confidence: current public GHL scopes, distribution model, Custom Page behavior, rate limits, separate ad upsert and publish endpoints, private-app cap, external billing contract, and webhook signature transition.
 - High confidence: public competitor capabilities stated on the linked official pages.
-- Medium confidence: exact provider payload shapes and account-state behavior, which require authenticated sandbox tests.
+- Medium confidence: exact provider payload shapes, Special Ad Category values or combinations, lead-form behavior, and account-state behavior, which require authenticated sandbox tests.
 - Medium confidence: paired core and Ads Publisher app strategy, which should be validated with HighLevel Marketplace review.
 - Legal review required: RESPA, Regulation Z, fair lending, TCPA, CAN-SPAM, state law, lender policy, and data licensing as applied to the final implementation.

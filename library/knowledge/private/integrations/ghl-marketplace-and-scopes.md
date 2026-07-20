@@ -96,6 +96,8 @@ Founding-beta fallback: use one private app with `adPublishing.write`, but enfor
 
 Whether HighLevel accepts paired core and Ads Publisher applications should be confirmed before public Marketplace submission.
 
+Public documentation does not establish the paired-app pattern as approved. Treat written HighLevel confirmation as an implementation gate, not a post-build question. If HighLevel rejects it, the one-app fallback requires the broad-scope warning, allowlist tests, and dedicated security review before the first production install.
+
 ## Self-onboarding permission contract
 
 Onboarding validates two different permission layers: HighLevel installation authority and Operation Automated LO application roles.
@@ -137,7 +139,7 @@ One user may hold multiple business roles for a small team, but the setup summar
 3. Save only the selected provider IDs and safe display metadata in the campaign version.
 4. Compile the approved blueprint to HighLevel's campaign, ad-set, ad, creative, targeting, and lead-form contract.
 5. Create or update a draft through an allowlisted adapter.
-6. Read the draft back and compare budget, dates, category, page, form, geography, copy, and creative with the frozen approved version.
+6. Read the draft back and compare budget, dates, Special Ad Category values, page, form, geography, copy, and creative with the frozen approved version.
 7. Ask the named approver to confirm the exact final launch summary.
 8. Publish the campaign.
 9. Poll publishing progress until it reaches a terminal state.
@@ -185,7 +187,7 @@ Minimum subscriptions:
 Webhook rules:
 
 - Verify `X-GHL-Signature` using Ed25519 against the raw body.
-- Support legacy `X-WH-Signature` only during HighLevel's transition and remove it before the documented September 1, 2026 deprecation.
+- Do not implement the legacy `X-WH-Signature` verifier in this new application. HighLevel documents its deprecation for September 1, 2026, so the product starts on Ed25519.
 - Store and reject duplicate webhook IDs.
 - Return a successful acknowledgement quickly and process through a durable queue.
 - Partition idempotency and ordering by location and resource.

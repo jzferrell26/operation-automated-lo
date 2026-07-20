@@ -106,6 +106,8 @@ The job is complete when the campaign is live in the client-owned Meta ad accoun
 - Generative image, video, and voice allowances in the text-generation plan
 - Automated voice and database reactivation, which remain Product 1
 
+The independently gated expansion requirements are maintained in [PRD-002: Operation Automated LO Add-On Portfolio](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md).
+
 ## Success measures
 
 ### Founding validation

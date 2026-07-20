@@ -35,6 +35,8 @@ Create an immutable Open House Boost campaign version from tenant profiles and p
 - A canonical manifest hash changes when any material field changes.
 - A material edit creates a new version and invalidates approvals for prior content.
 - Prior versions and decisions remain readable.
+- Page, PDF, QR destination, Meta inputs, email and SMS package, approval, lead attribution, and artifact history share the same campaign and campaign-version identifiers.
+- Duplicating a completed or approved campaign creates a new draft that references its source campaign and revalidates current profiles, permissions, mappings, provider assets, and policies.
 
 ### Preflight
 

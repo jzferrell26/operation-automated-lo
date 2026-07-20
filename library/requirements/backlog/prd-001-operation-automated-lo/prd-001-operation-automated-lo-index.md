@@ -2,7 +2,7 @@
 
 ## Status
 
-Backlog. Demand validation required before full implementation.
+Backlog. Production implementation is blocked by the research, App Test, compliance, and paid-founder gates in the [2026 build-readiness decision](../../../knowledge/private/research/2026-build-readiness-and-research-gate.md).
 
 ## Objective
 
@@ -25,6 +25,7 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 9. The authenticated dashboard supports switchable light and dark modes without changing approved campaign output.
 10. A prepared customer can complete permissions, configuration, verification, and launch readiness without required operator onboarding.
 11. Product-owned LLM APIs assist brand and campaign drafting, while deterministic rules and humans retain compliance, approval, and publish authority.
+12. The page, PDF, QR destination, Meta launch, email and SMS package, approval, artifact history, and GHL outcomes belong to one campaign record.
 
 ## Sub-PRDs
 
@@ -57,6 +58,8 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 - The user must attest to property-marketing and asset rights before generation.
 - The system creates immutable campaign input and blueprint versions.
 - A deterministic preflight blocks missing disclosures, unapproved targeting, unconfirmed tokens, and asset-rights gaps.
+- A user can search and filter prior campaigns by Realtor, property, status, event date, and publish date.
+- Duplicating a prior campaign creates a new draft with current dependency checks and never mutates the prior campaign or its artifacts.
 
 ### Assets
 
@@ -72,6 +75,7 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 - The user sees and confirms page, ad account, budget, dates, category, geography, copy, creative, form, and destination before publish.
 - The product can publish, observe progress, pause, and resume through HighLevel.
 - Delete, custom-audience upload, Google, LinkedIn, reselling, and autonomous budget-change operations are unreachable.
+- The supported Special Ad Category value or combination for property-only, mortgage-only, and combined property-plus-mortgage campaigns is based on recorded HighLevel App Test responses and lender-compliance approval, not a hardcoded legacy assumption.
 
 ### Lead path and outcomes
 
@@ -95,6 +99,8 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 - Location export, uninstall, retention, and deletion procedures are documented and tested.
 - Onboarding progress persists across sessions and devices, and every completion state is based on current server-verified evidence.
 - A location cannot become Launch Ready until the synthetic lead path and all required permission and configuration checks pass.
+- A restricted Realtor collaborator can view, approve, download, or share only explicitly assigned campaigns and approved artifacts.
+- Realtor access never exposes unrelated partners, other campaigns, GHL contact records, borrower details, opportunity notes, credentials, or support data.
 
 ### AI generation and economics
 
@@ -132,16 +138,33 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 
 1. Run the $500 founding offer against a working demo.
 2. Proceed only if at least 15 customers pay.
-3. Implement 001a through 001d and operate Meta launch manually for an internal proof.
-4. Implement 001e and prove the full sandbox publish path.
-5. Implement 001f and pass a synthetic lead test.
-6. Implement 001h and prove a prepared administrator can reach Launch Ready without operator configuration.
-7. Implement 001g for the founding cohort.
-8. Implement 001i and prove tenant-isolated model routing, prompt caching, usage reconciliation, and budget enforcement.
-9. Complete security review.
-10. Complete quality verification against every acceptance criterion.
-11. Run the founding beta in no more than the permitted private-app agency count.
-12. Submit for public Marketplace review or private-app security review.
+3. Build only the time-boxed App Test harness, golden render fixtures, and paid-founder demo needed to close research gates G1 through G7.
+4. Record `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE` for every core research gate.
+5. Implement 001a through 001d and operate Meta launch manually for an internal proof.
+6. Implement 001e against the verified sandbox contract.
+7. Implement 001f and pass the verified synthetic lead test.
+8. Implement 001h and prove a prepared administrator can reach Launch Ready without operator configuration.
+9. Implement 001g for the founding cohort.
+10. Implement 001i and prove tenant-isolated model routing, prompt caching, usage reconciliation, and budget enforcement.
+11. Complete security review.
+12. Complete quality verification against every acceptance criterion.
+13. Run the founding beta in no more than the permitted private-app agency count.
+14. Submit for public Marketplace review or private-app security review.
+
+## Pre-implementation research gates
+
+The production feature build is a no-go until the linked evidence register closes these gates:
+
+1. Direct and agency installation, location-token exchange, signed context, refresh, uninstall, reconnect, and iframe fallback pass in HighLevel App Test.
+2. HighLevel provides a written decision on paired core and Ads Publisher apps, requested scopes, and the distribution path beyond five agencies.
+3. Meta draft, read-back, explicit publish, progress, pause, resume, rejection, uncertain-write reconciliation, and reporting pass with test assets and no uncontrolled spend.
+4. Property-only, mortgage-only, and combined campaign category and targeting behavior pass HighLevel and Meta tests and receive lender-compliance approval.
+5. A no-spend Meta test lead proves form mapping, GHL contact, opportunity, assignment, workflow, notification, and attribution behavior.
+6. Stripe-hosted external billing and HighLevel install authorization pass success, failure, cancellation, duplicate, delayed, bulk, uninstall, and reinstall cases.
+7. Counsel and lender compliance approve the operating model, disclosures, consent, RESPA, Regulation Z, fair-lending, retention, privacy, and communication rules.
+8. At least 15 paid founders validate demand for the defined core offer.
+
+The App Test harness, golden render fixtures, threat model, and paid-founder demo are evidence-producing work and are allowed before these gates close. They must not become an unreviewed production shortcut.
 
 ## Product gates
 
@@ -153,3 +176,9 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 - Text-model cost under $5 per active location per month at normal included usage
 
 Failure of the demand gate stops implementation. Failure of activation or support gates triggers a narrower managed service or internal-tool decision before additional channels are built.
+
+## Related
+
+- [2026 build-readiness and research gate](../../../knowledge/private/research/2026-build-readiness-and-research-gate.md)
+- [Authenticated Broker Marketplace teardown](../../../knowledge/private/competitive/broker-marketplace-authenticated-teardown.md)
+- [PRD-002: Operation Automated LO add-on portfolio](../prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md)

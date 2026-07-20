@@ -314,18 +314,22 @@ Do not build a data product until a licensed source, unit economics, permitted u
 
 ## Deployment shape
 
-Recommended first implementation:
+The July 20, 2026 build-readiness decision selects the following first implementation. See [`../research/2026-build-readiness-and-research-gate.md`](../research/2026-build-readiness-and-research-gate.md) for evidence and implementation gates.
 
 - TypeScript monorepo
-- React or Next.js web application with server rendering for public pages
+- Current supported stable Next.js App Router, pinned at implementation start, for the embedded workspace, first-party fallback, approval surfaces, API handlers, and server-rendered public pages
+- Vercel for the web application and short request handlers
 - Root-level theme provider with semantic light and dark tokens, system fallback, and pre-paint theme resolution
 - Node backend with strict schema validation at every external boundary
-- PostgreSQL with row-level tenant assertions in application and database tests
-- S3-compatible object storage and CDN
-- Durable job engine for rendering, provider calls, and reconciliation
+- One managed PostgreSQL cluster, initially Supabase Postgres, with database row-level security, tenant-scoped keys, migrations, backups, point-in-time recovery, and cross-tenant tests
+- One private Cloudflare R2 bucket with tenant-prefixed keys, short-lived presigned transfers, and a separate intentionally public campaign projection
+- Inngest for durable rendering, provider calls, publish polling, lead routing, and reconciliation, with product-owned idempotency records and tenant-scoped concurrency
+- Durable workflow events carry opaque tenant and job references only. Workers fetch authorized data server-side, and OAuth tokens, raw lead payloads, and unnecessary campaign content are excluded from third-party workflow history.
+- A containerized, version-pinned Playwright Chromium renderer with bundled fonts and deterministic golden fixtures
+- Stripe-hosted Checkout and Customer Portal for the founding external-billing path
 - Structured logs, traces, error monitoring, and product analytics
 
-The exact vendors are implementation decisions. The invariants are multi-tenancy, durable execution, deterministic rendering, server-only secrets, and auditable external writes.
+Vendor changes require an architecture decision that preserves multi-tenancy, database-enforced tenant isolation, durable execution, deterministic rendering, server-only secrets, PII-safe observability, and auditable external writes.
 
 ## Observability
 

@@ -19,11 +19,13 @@ Collect every reusable tenant input once, validate it, version it, and make it a
 
 ### Brand profile
 
-- Public loan officer and company names
-- NMLS and license display values
+- Public loan officer name, company name, title, and approved public contact values
+- Personal and company NMLS display values
+- Licensed states and license display values
 - Logo, headshot, palette, typography, contact fields, and approved URLs
 - Voice instructions, approved proof points, banned phrases, and allowed merge tokens
 - Email sender identity and physical address
+- Professional disclaimer, scheduling URL, website, approved social links, privacy policy, and terms URL
 - Approved marketing sample references, source permission, suggested voice fields, confirmation state, and compact prompt snapshot
 
 ### Compliance profile
@@ -67,6 +69,7 @@ Collect every reusable tenant input once, validate it, version it, and make it a
 - The user attests that brand, license, disclosure, Realtor, and asset values are authorized and current.
 - The product does not claim that profile completion constitutes legal approval.
 - The setup wizard saves after each verified section and resumes on another authenticated device.
+- Setup presents one canonical profile instead of asking for the same identity, license, disclosure, link, or brand value in each campaign tool.
 - Required fields are determined by the selected blueprint, location, lender policy, state, and channel instead of a hardcoded universal checklist.
 - Profile completion contributes to Launch Ready only after provider mappings and uploaded assets are revalidated.
 - The model may suggest voice, tone, pattern, framework, signature-language, and banned-language fields from approved samples, but no suggestion becomes current until a user confirms it.

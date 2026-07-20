@@ -177,6 +177,8 @@ The checklist is persistent but dismissible. Dismissing guidance never marks wor
 - Test every registered `data-tour` selector in CI.
 - Run a founding-cohort setup exercise with no operator configuration and record time to Launch Ready, blocker rate, abandonment, and support minutes.
 
+The first verification cycle is executed as the evidence-producing App Test harness defined in the [2026 build-readiness and research gate](../../../knowledge/private/research/2026-build-readiness-and-research-gate.md). Production onboarding implementation cannot treat an unverified role, scope, token, billing, iframe, or Meta behavior as a platform contract.
+
 ## Open questions
 
 - [ ] Will HighLevel approve a paired core and Ads Publisher application, or must the broad write permission be disclosed during one install?

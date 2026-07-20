@@ -19,6 +19,9 @@ Give each loan officer a clear campaign-to-loan view and give Cuantico an except
 ### Loan officer dashboard
 
 - Each campaign shows current version, status, approvers, publish time, budget, spend, leads, cost per lead, appointments, applications, and funded or closed outcomes when available.
+- Campaign history can be searched and filtered by Realtor, property, status, event date, generation date, and publish date.
+- Campaign detail presents page, PDF, QR destination, creative, email and SMS package, approval, Meta state, lead count, and GHL outcome summary as one record.
+- Users can preview an artifact version, open its approved public link, and duplicate the campaign as a new draft without modifying prior history.
 - Metrics display source and last-updated time.
 - Missing data is shown as unavailable, not zero.
 - Test leads are excluded.
@@ -50,6 +53,14 @@ Give each loan officer a clear campaign-to-loan view and give Cuantico an except
 - Agency rollup is disabled until an agency installation and role explicitly authorize every included location.
 - Agency users cannot access locations where the app is not installed.
 - Portfolio totals link to exceptions and campaign detail only for authorized locations.
+
+### Realtor collaborator view
+
+- A Realtor sees only partner records and campaigns explicitly assigned to that identity.
+- The view exposes campaign status, approval request, approved artifacts, sharing actions, and tenant-permitted aggregate lead or appointment counts.
+- It never exposes GHL contact records, borrower details, opportunity notes, other Realtors, other campaigns, credentials, internal support data, or cross-tenant benchmarks.
+- Invitation, acceptance, session, approval, download, share, and revocation events are audited.
+- Aggregate lead or appointment counts are disabled by default and require tenant policy plus a minimum-data rule.
 
 ### Theme switching
 

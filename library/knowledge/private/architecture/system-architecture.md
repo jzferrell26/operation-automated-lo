@@ -10,6 +10,7 @@ The product-level architecture and domain boundaries for Operation Automated LO.
 - [System data model](system-data-model.md)
 - [System runtime contracts](system-runtime-contracts.md)
 - [System delivery and operations](system-delivery-and-operations.md)
+- [Backend readiness assessment, July 21, 2026](backend-readiness-assessment-2026-07-21.md)
 
 ## Architectural decision
 

@@ -1,0 +1,15 @@
+.git/
+.github/
+.next/
+.turbo/
+coverage/
+dist/
+docs/
+library/
+node_modules/
+pnpm-lock.yaml
+reports/
+supabase/
+EXECUTION_LEDGER.md
+README.md
+tests/visual/rendering/v1/*.canonical.json

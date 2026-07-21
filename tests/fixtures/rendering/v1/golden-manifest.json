@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "canonicalizer": "oalo-json-nfc-lf-sorted-v1",
+  "fixtures": [
+    {
+      "file": "common-property.json",
+      "canonicalFile": "common-property.canonical.json",
+      "sha256": "7e2ac912cd526e4f954039fa25128961fdffd49bd5fb793af0bb6955120c2106"
+    },
+    {
+      "file": "long-content.json",
+      "canonicalFile": "long-content.canonical.json",
+      "sha256": "75cccd2a274226de5da5d9986f7170a6cc15ad6426d420349d8805e3ce23dac0"
+    },
+    {
+      "file": "adversarial-content.json",
+      "canonicalFile": "adversarial-content.canonical.json",
+      "sha256": "c2dfb9e19500afa369347545176dd97542718a5aaf776dc8dfc5da16e88f0df0"
+    }
+  ]
+}

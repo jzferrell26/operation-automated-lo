@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": "ghl-app-test-evidence-v1",
+  "fixtureId": "g1_distribution_blocked",
+  "gateId": "G1",
+  "caseId": "direct_and_agency_install",
+  "source": "synthetic-fixture",
+  "capturedAt": "2026-07-20T12:00:00.000Z",
+  "provider": {
+    "name": "highlevel",
+    "apiVersion": "2021-07-28",
+    "environment": "synthetic"
+  },
+  "request": {
+    "transport": "fixture-replay",
+    "method": "GET",
+    "actionClass": "READ_ONLY",
+    "path": "/oauth/installedLocations",
+    "headers": {
+      "Accept": "application/json",
+      "Version": "2021-07-28"
+    }
+  },
+  "response": {
+    "httpStatus": 424,
+    "body": {
+      "installMode": "direct-and-agency",
+      "verified": false
+    }
+  },
+  "evidence": {
+    "externalStatus": "BLOCKED",
+    "blockerReason": "Direct and agency App Test results and a Marketplace distribution decision are not recorded.",
+    "requiredExternalEvidence": [
+      "Direct sub-account and agency bulk-install App Test evidence",
+      "Written HighLevel decision on paired apps and the post-five-agency path"
+    ],
+    "safeProviderIds": {
+      "appRef": "synthetic_app_001"
+    },
+    "grantedScopes": ["oauth.readonly", "oauth.write"],
+    "observedAccountState": "marketplace-review-required",
+    "requestHash": "sha256:ad7346470af39123f67bf2882824e5b55c2554f49f788ff364040d5fbe72953b",
+    "responseHash": "sha256:f90b9b6ce5a5deae8ea69f9eb9016109e0130d6e2a916b858f6cac0dd6a7b0b5"
+  }
+}

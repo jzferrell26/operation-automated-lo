@@ -1,0 +1,15 @@
+{
+  "threshold": 0,
+  "reporters": ["console"],
+  "ignore": [
+    "**/dist/**",
+    "**/.next/**",
+    "**/node_modules/**",
+    "**/*.d.ts",
+    "**/package.json",
+    "**/tsconfig.json"
+  ],
+  "path": ["apps", "packages"],
+  "minLines": 10,
+  "minTokens": 60
+}

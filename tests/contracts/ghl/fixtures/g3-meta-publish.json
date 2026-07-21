@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": "ghl-app-test-evidence-v1",
+  "fixtureId": "g3_meta_publish_blocked",
+  "gateId": "G3",
+  "caseId": "draft_readback_publish_separation",
+  "source": "synthetic-fixture",
+  "capturedAt": "2026-07-20T12:00:00.000Z",
+  "provider": {
+    "name": "highlevel",
+    "apiVersion": "2021-07-28",
+    "environment": "synthetic"
+  },
+  "request": {
+    "transport": "fixture-replay",
+    "method": "POST",
+    "actionClass": "SIMULATED_WRITE",
+    "path": "/ad-publishing/facebook/campaigns/upsert",
+    "headers": {
+      "Accept": "application/json",
+      "Version": "2021-07-28",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "campaignRef": "synthetic_campaign_001",
+      "publish": false
+    }
+  },
+  "response": {
+    "httpStatus": 424,
+    "body": {
+      "draftCreated": false,
+      "publishSeparated": true
+    }
+  },
+  "evidence": {
+    "externalStatus": "BLOCKED",
+    "blockerReason": "Draft, read-back, explicit publish, progress, pause, resume, rejection, and uncertain-write behavior require controlled App Test assets.",
+    "requiredExternalEvidence": [
+      "HighLevel App Test Meta draft and explicit publish lifecycle results"
+    ],
+    "safeProviderIds": {
+      "campaignRef": "synthetic_campaign_001"
+    },
+    "grantedScopes": ["adPublishing.readOnly", "adPublishing.write"],
+    "observedAccountState": "meta-test-assets-required",
+    "requestHash": "sha256:7f56e776732d929893ea39e2b123eb2b359428b7f68e8d5c6b01482269a71711",
+    "responseHash": "sha256:69c1b286f71d08d7f8e04f8d8eda0090ff22067ed386067636743d9c04aebea6"
+  }
+}

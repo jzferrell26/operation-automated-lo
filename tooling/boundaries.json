@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    { "name": "@oalo/domain", "path": "packages/domain", "allowedInternalDependencies": [] },
+    { "name": "@oalo/contracts", "path": "packages/contracts", "allowedInternalDependencies": [] },
+    { "name": "@oalo/config", "path": "packages/config", "allowedInternalDependencies": [] },
+    { "name": "@oalo/ui", "path": "packages/ui", "allowedInternalDependencies": [] },
+    {
+      "name": "@oalo/application",
+      "path": "packages/application",
+      "allowedInternalDependencies": ["@oalo/contracts", "@oalo/domain"]
+    },
+    {
+      "name": "@oalo/db",
+      "path": "packages/db",
+      "allowedInternalDependencies": ["@oalo/application", "@oalo/contracts"]
+    },
+    {
+      "name": "@oalo/auth",
+      "path": "packages/auth",
+      "allowedInternalDependencies": ["@oalo/application", "@oalo/contracts"]
+    },
+    {
+      "name": "@oalo/ghl",
+      "path": "packages/ghl",
+      "allowedInternalDependencies": ["@oalo/application", "@oalo/contracts"]
+    },
+    {
+      "name": "@oalo/ai",
+      "path": "packages/ai",
+      "allowedInternalDependencies": ["@oalo/application", "@oalo/contracts"]
+    },
+    {
+      "name": "@oalo/billing",
+      "path": "packages/billing",
+      "allowedInternalDependencies": ["@oalo/application", "@oalo/contracts"]
+    },
+    {
+      "name": "@oalo/rendering",
+      "path": "packages/rendering",
+      "allowedInternalDependencies": ["@oalo/application", "@oalo/contracts"]
+    },
+    {
+      "name": "@oalo/storage",
+      "path": "packages/storage",
+      "allowedInternalDependencies": ["@oalo/application", "@oalo/contracts"]
+    },
+    {
+      "name": "@oalo/observability",
+      "path": "packages/observability",
+      "allowedInternalDependencies": ["@oalo/application", "@oalo/contracts"]
+    },
+    {
+      "name": "@oalo/test-support",
+      "path": "packages/test-support",
+      "allowedInternalDependencies": ["@oalo/contracts"]
+    },
+    { "name": "@oalo/web", "path": "apps/web", "allowedInternalDependencies": ["*"] },
+    { "name": "@oalo/tasks", "path": "apps/tasks", "allowedInternalDependencies": ["*"] }
+  ]
+}

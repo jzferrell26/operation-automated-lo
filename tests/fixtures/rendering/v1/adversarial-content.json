@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "adversarial-content",
+  "renderer": {
+    "id": "phase0-canonical-fixture",
+    "version": "1.0.0"
+  },
+  "template": {
+    "id": "single-property-campaign",
+    "version": "1.0.0"
+  },
+  "fonts": [
+    {
+      "family": "Inter",
+      "version": "4.1",
+      "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+    }
+  ],
+  "content": {
+    "headline": "<script>alert(\"fixture\")</script> must remain inert text 🔒",
+    "address": "../../private/records | 127.0.0.1 | [::1] | file:///etc/passwd",
+    "disclosure": "Line one uses CRLF.\r\nLine two contains https://example.invalid/remote-image.png, javascript:alert(1), & < > \" ' and a decomposed Café value. These values are canonicalized as text only and are never interpreted as HTML, a path, or a network destination.",
+    "partner": "Synthetic Partner </style><iframe src=\"https://example.invalid\"></iframe>"
+  },
+  "assets": []
+}

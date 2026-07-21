@@ -1,0 +1,8 @@
+# Generated only by the local Supabase CLI.
+.branches/
+.temp/
+
+# Local connection strings and credentials are never committed.
+.env
+.env.*
+!.env.example

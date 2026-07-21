@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "fixtures": [
+    {
+      "schemaVersion": 1,
+      "fixtureId": "active-content-image",
+      "vector": "image",
+      "fileName": "active.png",
+      "declaredMediaType": "image/png",
+      "payloadBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII8c2NyaXB0PmFsZXJ0KDEpPC9zY3JpcHQ+",
+      "declaredSizeBytes": 93,
+      "expected": { "disposition": "rejected", "reason": "ACTIVE_CONTENT_DETECTED" }
+    },
+    {
+      "schemaVersion": 1,
+      "fixtureId": "active-svg-document",
+      "vector": "svg",
+      "fileName": "active.svg",
+      "declaredMediaType": "image/svg+xml",
+      "payloadBase64": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxzY3JpcHQ+YWxlcnQoMSk8L3NjcmlwdD48L3N2Zz4=",
+      "declaredSizeBytes": 71,
+      "expected": { "disposition": "rejected", "reason": "ACTIVE_DOCUMENT_TYPE" }
+    },
+    {
+      "schemaVersion": 1,
+      "fixtureId": "active-html-document",
+      "vector": "html",
+      "fileName": "active.html",
+      "declaredMediaType": "text/html",
+      "payloadBase64": "PGh0bWw+PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0PjwvaHRtbD4=",
+      "declaredSizeBytes": 38,
+      "expected": { "disposition": "rejected", "reason": "ACTIVE_DOCUMENT_TYPE" }
+    },
+    {
+      "schemaVersion": 1,
+      "fixtureId": "remote-url-input",
+      "vector": "url",
+      "fileName": "remote.png",
+      "declaredMediaType": "image/png",
+      "payloadBase64": "",
+      "declaredSizeBytes": 0,
+      "sourceUrl": "http://169.254.169.254/latest/meta-data/",
+      "expected": { "disposition": "rejected", "reason": "REMOTE_URL_FORBIDDEN" }
+    },
+    {
+      "schemaVersion": 1,
+      "fixtureId": "oversized-image",
+      "vector": "oversized",
+      "fileName": "oversized.png",
+      "declaredMediaType": "image/png",
+      "payloadBase64": "",
+      "declaredSizeBytes": 10485761,
+      "expected": { "disposition": "rejected", "reason": "FILE_TOO_LARGE" }
+    },
+    {
+      "schemaVersion": 1,
+      "fixtureId": "mislabeled-image",
+      "vector": "mislabeled",
+      "fileName": "mislabeled.png",
+      "declaredMediaType": "image/png",
+      "payloadBase64": "dGhpcy1pcy1ub3QtYS1wbmc=",
+      "declaredSizeBytes": 17,
+      "expected": { "disposition": "rejected", "reason": "MIME_SIGNATURE_MISMATCH" }
+    },
+    {
+      "schemaVersion": 1,
+      "fixtureId": "corrupt-base64-image",
+      "vector": "corrupt",
+      "fileName": "corrupt.png",
+      "declaredMediaType": "image/png",
+      "payloadBase64": "***not-base64***",
+      "declaredSizeBytes": 1,
+      "expected": { "disposition": "rejected", "reason": "CORRUPT_ENCODING" }
+    },
+    {
+      "schemaVersion": 1,
+      "fixtureId": "high-decompression-image",
+      "vector": "high-decompression",
+      "fileName": "bomb.png",
+      "declaredMediaType": "image/png",
+      "payloadBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII=",
+      "declaredSizeBytes": 68,
+      "expandedSizeBytes": 52428800,
+      "expected": { "disposition": "rejected", "reason": "DECOMPRESSION_LIMIT" }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# Phase 0 intentionally contains no production migrations.
+#
+# Product schemas, roles, RLS policies, and tenant tables are deferred until the
+# named external gates are resolved and a separately authorized implementation
+# phase begins.

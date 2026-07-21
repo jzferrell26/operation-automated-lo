@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": "ghl-app-test-evidence-v1",
+  "fixtureId": "g4_special_category_blocked",
+  "gateId": "G4",
+  "caseId": "classification_matrix",
+  "source": "synthetic-fixture",
+  "capturedAt": "2026-07-20T12:00:00.000Z",
+  "provider": {
+    "name": "highlevel",
+    "apiVersion": "2021-07-28",
+    "environment": "synthetic"
+  },
+  "request": {
+    "transport": "fixture-replay",
+    "method": "POST",
+    "actionClass": "SIMULATED_WRITE",
+    "path": "/ad-publishing/facebook/campaigns/validate",
+    "headers": {
+      "Accept": "application/json",
+      "Version": "2021-07-28",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "classificationCase": "property-plus-mortgage",
+      "publish": false
+    }
+  },
+  "response": {
+    "httpStatus": 424,
+    "body": {
+      "classificationObserved": false,
+      "approvalRecorded": false
+    }
+  },
+  "evidence": {
+    "externalStatus": "BLOCKED",
+    "blockerReason": "HighLevel and Meta responses plus counsel and lender approval are required for the classification matrix.",
+    "requiredExternalEvidence": [
+      "App Test responses for property-only, mortgage-only, and combined cases",
+      "Counsel and lender compliance approval"
+    ],
+    "safeProviderIds": {
+      "caseRef": "synthetic_case_001"
+    },
+    "grantedScopes": ["adPublishing.readOnly", "adPublishing.write"],
+    "observedAccountState": "meta-test-assets-required",
+    "requestHash": "sha256:194fc8885f4784da6997ab1f124bad535fa58a961de2c1888877b006c7b33c07",
+    "responseHash": "sha256:78cfdc5cc5788205644057cbd2709ddb09dc863d09694e4ad90c8b8bee8dcfd2"
+  }
+}

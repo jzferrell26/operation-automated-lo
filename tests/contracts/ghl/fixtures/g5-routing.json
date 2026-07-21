@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": "ghl-app-test-evidence-v1",
+  "fixtureId": "g5_routing_blocked",
+  "gateId": "G5",
+  "caseId": "no_spend_routing_chain",
+  "source": "synthetic-fixture",
+  "capturedAt": "2026-07-20T12:00:00.000Z",
+  "provider": {
+    "name": "highlevel",
+    "apiVersion": "2021-07-28",
+    "environment": "synthetic"
+  },
+  "request": {
+    "transport": "fixture-replay",
+    "method": "GET",
+    "actionClass": "READ_ONLY",
+    "path": "/forms/submissions/test-routing",
+    "headers": {
+      "Accept": "application/json",
+      "Version": "2021-07-28"
+    }
+  },
+  "response": {
+    "httpStatus": 424,
+    "body": {
+      "chainObserved": false,
+      "attributionObserved": false
+    }
+  },
+  "evidence": {
+    "externalStatus": "BLOCKED",
+    "blockerReason": "A no-spend Meta test submission must prove the complete HighLevel routing chain.",
+    "requiredExternalEvidence": [
+      "No-spend Meta test lead evidence through assignment, workflow, notification, and attribution"
+    ],
+    "safeProviderIds": {
+      "submissionRef": "synthetic_submission_001"
+    },
+    "grantedScopes": ["forms.readonly", "opportunities.readonly"],
+    "observedAccountState": "meta-test-assets-required",
+    "requestHash": "sha256:b3b0f437fd4282f92fc1d2558e53274947b08a1b04a3c5017286b6a48ad93a5b",
+    "responseHash": "sha256:83d699125312332cd0979c64095bbfc2b20ebbac937e0cd9dfaae63959500957"
+  }
+}

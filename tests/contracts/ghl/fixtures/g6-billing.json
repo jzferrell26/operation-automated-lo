@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": "ghl-app-test-evidence-v1",
+  "fixtureId": "g6_billing_blocked",
+  "gateId": "G6",
+  "caseId": "billing_lifecycle",
+  "source": "synthetic-fixture",
+  "capturedAt": "2026-07-20T12:00:00.000Z",
+  "provider": {
+    "name": "highlevel",
+    "apiVersion": "2021-07-28",
+    "environment": "synthetic"
+  },
+  "request": {
+    "transport": "fixture-replay",
+    "method": "POST",
+    "actionClass": "SIMULATED_WRITE",
+    "path": "/oauth/billing/authorize",
+    "headers": {
+      "Accept": "application/json",
+      "Version": "2021-07-28",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "billingCaseRef": "synthetic_billing_case_001",
+      "authorized": false
+    }
+  },
+  "response": {
+    "httpStatus": 424,
+    "body": {
+      "authorizationObserved": false,
+      "lifecycleVerified": false
+    }
+  },
+  "evidence": {
+    "externalStatus": "BLOCKED",
+    "blockerReason": "Stripe test mode and HighLevel billing authorization state transitions have not been observed.",
+    "requiredExternalEvidence": [
+      "Stripe test lifecycle and HighLevel billing authorization evidence"
+    ],
+    "safeProviderIds": {
+      "billingCaseRef": "synthetic_billing_case_001"
+    },
+    "grantedScopes": ["oauth.readonly"],
+    "observedAccountState": "stripe-test-required",
+    "requestHash": "sha256:c58be5254b2f81617d464e30fc4f1dc9e27a0effdaa5f318446c1d08da18a560",
+    "responseHash": "sha256:84b6a23d5f3601d3bca46095d13a77925a443cebf0ef1a39109496667e788478"
+  }
+}

@@ -13,6 +13,8 @@ The final UI Foundation implementation passes Quality with no Critical, Warning,
 
 The first Quality preflight found the root zero-duplication gate failing on seven clone groups. Implementation consolidated the duplicated structures, Security reran with unchanged 0 Critical and 0 High findings, and the final `pnpm verify` passed with 0 clones.
 
+The first GitHub verification attempt exposed a CI-only browser prerequisite gap: Linux had no Playwright Chromium executable. The read-only canonical job now installs the pinned project's Chromium build and its system dependencies before `pnpm verify`. Security reran first, then the full local Quality gate passed again. UIF-029 remains open until the repaired GitHub run is green and GitHub reports the ready PR mergeable.
+
 ## Scorecard
 
 | Category | Status | Notes |
@@ -75,6 +77,7 @@ None.
 The audited implementation contains 105 changed or added paths. The inventory below groups related files while preserving every path family and its purpose.
 
 - `.prettierignore` (M): excludes generated Playwright output from the canonical formatting gate.
+- `.github/workflows/ci.yml` (M): installs the pinned Playwright Chromium build and system dependencies before canonical verification.
 - `EXECUTION_LEDGER.md` (M): appends UIF-000 through UIF-029 and the complete raid evidence log while preserving the Phase 0 prefix.
 - `apps/web/package.json` (M): declares the web package's exact test dependencies.
 - `apps/web/src/app/(authenticated)/**` (A, 9 files): authenticated shell layout plus Overview and Onboarding pages, loading states, and error boundaries.
@@ -124,4 +127,5 @@ The audited implementation contains 105 changed or added paths. The inventory be
 - Accessibility: axe clean for Overview and Onboarding in Light and Dark at 1180 by 900 and 390 by 844, plus the open drawer.
 - Duplication: 0 clones and 0.00 percent duplication.
 - Audits: boundaries, product types, secrets, and dependency threshold passed.
+- Workflow: read-only permissions and SHA-pinned actions are unchanged; the canonical job now provisions Playwright Chromium before the browser suite.
 - Build: 16 of 16 workspace packages passed; `/overview` and `/onboarding` prerender successfully.

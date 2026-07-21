@@ -88,6 +88,7 @@ The package-boundary gate found that `apps/web` test files imported Vitest and T
 - Resolved framework versions: Next.js 16.2.10 and React 19.2.7, outside the applicable Critical watchlist ranges reviewed by the Weapon.
 - Pinned Chromium evidence: theme transitions generate zero provider or artifact requests and do not change approval bytes, hashes, manifest IDs, approval IDs, or artifact IDs.
 - Post-repair security rerun: secret, product-type, 16-package boundary, production dependency, and diff checks pass after the zero-duplication refactor. Finding counts and trust-boundary conclusions are unchanged.
+- Post-CI-repair security rerun: secret, product-type, 16-package boundary, full dependency-threshold, and diff checks pass after adding the scoped Playwright Chromium prerequisite to the read-only CI job. No action pin, permission, secret, trigger, or trust boundary changed.
 
 ## Close-out
 

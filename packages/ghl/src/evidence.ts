@@ -27,14 +27,14 @@ export const GhlFixtureRequestSchema = z
         "Content-Type": z.literal("application/json").optional(),
       })
       .strict(),
-    body: z.record(z.string(), z.unknown()).optional(),
+    body: z.record(z.string(), z.json()).optional(),
   })
   .strict();
 
 export const GhlFixtureResponseSchema = z
   .object({
     httpStatus: z.number().int().min(100).max(599),
-    body: z.record(z.string(), z.unknown()),
+    body: z.record(z.string(), z.json()),
   })
   .strict();
 
@@ -100,7 +100,7 @@ function canonicalize(value: unknown): unknown {
 }
 
 export function hashFixtureValue(value: unknown): `sha256:${string}` {
-  const canonical = JSON.stringify(canonicalize(value));
+  const canonical = JSON.stringify(canonicalize(z.json().parse(value)));
   return `sha256:${createHash("sha256").update(canonical).digest("hex")}`;
 }
 

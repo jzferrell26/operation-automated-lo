@@ -13,7 +13,7 @@
     "dev": "turbo run dev --parallel",
     "format:check": "prettier --check . --ignore-path .prettierignore",
     "lint": "oxlint apps packages tests tooling",
-    "typecheck": "turbo run typecheck",
+    "typecheck": "turbo run typecheck && tsc -p tsconfig.tooling.json",
     "test:unit": "vitest run --project unit --coverage",
     "test:integration": "vitest run --project integration",
     "test:db": "vitest run --project database",

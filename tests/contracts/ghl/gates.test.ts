@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   GhlEvidenceRecordSchema,
+  GhlFixtureResponseSchema,
   createEvidenceRecord,
   replayEvidenceRecord,
   type EvidenceRecordInput,
@@ -67,5 +68,14 @@ describe("HighLevel G1 through G6 evidence gates", () => {
     };
 
     expect(() => replayEvidenceRecord(tampered)).toThrow(/hash mismatch/i);
+  });
+
+  it("rejects non-JSON values at the provider response boundary", () => {
+    expect(
+      GhlFixtureResponseSchema.safeParse({
+        httpStatus: 200,
+        body: { providerPayload: new Map([["not", "json"]]) },
+      }).success,
+    ).toBe(false);
   });
 });

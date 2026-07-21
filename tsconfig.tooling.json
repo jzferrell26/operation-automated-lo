@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "declaration": false,
+    "declarationMap": false,
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "paths": {
+      "@oalo/*": ["./packages/*/src/index.ts"]
+    },
+    "types": ["node"]
+  },
+  "include": ["vitest.config.ts", "tests/**/*.ts", "tooling/tests/**/*.ts"]
+}

@@ -4,9 +4,15 @@
 
 **Gate:** At least 15 paid founders accept the defined core offer.
 
-**Current status:** BLOCKED: COMMERCIAL VALIDATION.
+**Current status:** ACCEPTED CONSTRAINT, not PASS.
 
-This file defines the evidence contract. It contains no live participant records and cannot close G8 by itself.
+**Product-owner direction:** On 2026-07-20, the product owner directed the team to proceed without the 15 paid founders.
+
+**Evidence state:** No evidence packet currently demonstrates 15 eligible, distinct paid founder accounts. Commercial validation remains unproven.
+
+This file defines the evidence contract. It contains no live participant records and cannot establish G8 PASS by itself. The experiment remains available as post-start learning.
+
+This decision applies only to G8. G1 through G7 remain separate and unchanged.
 
 ## Authoritative Sources
 
@@ -82,11 +88,13 @@ The actual register belongs in an access-controlled system, not this repository.
 | qualifying_paid_founder_accounts | Pending |
 | reconciliation_checksum | Pending |
 | independent_reviewer | Pending |
-| decision | BLOCKED |
+| decision | ACCEPTED CONSTRAINT on 2026-07-20, not PASS |
 
 ## Decision Rules
 
 - 15 to 20 qualifying paid accounts: eligible for independent G8 PASS review.
-- 10 to 14 qualifying paid accounts: inconclusive. Keep G8 BLOCKED and hold a decision review.
+- 10 to 14 qualifying paid accounts: commercially inconclusive. Hold a documented learning review.
 - 0 to 9 qualifying paid accounts: reshape or stop after validating experiment execution integrity.
 - Any material offer, price, eligibility, refund, or demo-boundary change creates a new experiment version. Do not pool incomparable results.
+
+These rules classify evidence from any later experiment. They do not prohibit implementation under the 2026-07-20 product-owner decision, and they do not convert the current ACCEPTED CONSTRAINT status into PASS.

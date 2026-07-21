@@ -12,11 +12,15 @@
 
 **Cycle started:** 2026-07-20
 
-**Status:** active, G8 remains BLOCKED until verified commercial evidence satisfies the target.
+**Status:** ACCEPTED CONSTRAINT as of 2026-07-20. The product owner directed the team to proceed without evidence of 15 paid founders. G8 is not PASS, and commercial validation remains unproven.
+
+**Evidence state:** No evidence packet currently demonstrates 15 eligible, distinct paid founder accounts. The experiment remains available as post-start learning.
 
 ## Decision boundary
 
-- 15 or more paid accounts: demand criterion is eligible for independent verification.
-- 10 to 14 paid accounts: inconclusive for production authorization. Run a decision review and do not mark G8 PASS.
+- 15 or more paid accounts: demand criterion is eligible for independent verification and a separate PASS review.
+- 10 to 14 paid accounts: commercially inconclusive. Run a documented learning review and do not mark G8 PASS.
 - Fewer than 10 paid accounts: reshape or stop after confirming the demo and follow-up protocol were executed as designed.
 - Refunded, duplicated, ineligible, test, complimentary, or team-owned purchases do not count.
+
+These thresholds define the interpretation of a later demand experiment. They do not prohibit implementation under the product owner's 2026-07-20 accepted-constraint decision.

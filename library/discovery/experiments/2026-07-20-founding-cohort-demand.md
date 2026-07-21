@@ -4,7 +4,9 @@
 
 **Gate:** G8 Demand
 
-**Status:** READY FOR INPUTS. G8 remains BLOCKED.
+**Status:** AVAILABLE FOR POST-START LEARNING. G8 is ACCEPTED CONSTRAINT, never PASS.
+
+**Product-owner decision:** On 2026-07-20, the product owner directed the team to proceed without the 15 paid founders. No evidence currently proves that threshold, and commercial validation remains unproven.
 
 **Assumption under test:** At least 15 eligible, distinct founder accounts will complete a $500 payment for the same versioned offer after seeing a truthful working demo.
 
@@ -12,9 +14,9 @@
 
 **Run window:** 14 calendar days from the approved launch timestamp.
 
-## Preconditions
+## Experiment Preconditions
 
-The experiment must not start until all items below are complete:
+If the team runs this experiment after implementation starts, the experiment must not start until all items below are complete. These conditions protect the validity and safety of the demand test. They are not implementation prerequisites under the 2026-07-20 accepted-constraint decision.
 
 - The UI Foundation Raid has produced a working demo suitable for a founder walkthrough.
 - Every demo surface labels automated, manual, synthetic, unavailable, and future behavior accurately.
@@ -33,7 +35,7 @@ The experiment must not start until all items below are complete:
 | Capacity | 20 eligible founder accounts |
 | Included period | 90 days |
 | Continuation | $197 per month after 90 days, subject to final approved terms |
-| Demand gate | At least 15 eligible accounts remain paid |
+| Demand evidence threshold | At least 15 eligible accounts remain paid for an independent PASS review |
 | Product boundary | The demo may include synthetic or manual operations. Production provider behavior remains gated by G1 through G7. |
 
 The final customer-facing refund and delivery terms require explicit product approval before the experiment begins. This plan does not invent those terms.
@@ -42,12 +44,12 @@ The final customer-facing refund and delivery terms require explicit product app
 
 The criteria are fixed before launch:
 
-- PASS candidate: At least 15 eligible, distinct founder accounts complete payment and remain paid under the approved terms at the decision timestamp.
-- INCONCLUSIVE: 10 to 14 qualifying accounts. Do not authorize production. Conduct a documented decision review.
+- PASS candidate for commercial validation review: At least 15 eligible, distinct founder accounts complete payment and remain paid under the approved terms at the decision timestamp.
+- INCONCLUSIVE: 10 to 14 qualifying accounts. Conduct a documented learning review.
 - INVALIDATED OR RESHAPE: Fewer than 10 qualifying accounts after the complete demo, application, checkout window, and approved direct follow-up run as designed.
 - Capacity stop: Close enrollment at 20 qualifying paid accounts.
 
-Only independent verification may change G8 from BLOCKED. Test, duplicated, complimentary, team-owned, ineligible, canceled, charged-back, or refunded payments do not count.
+No experiment result may support a G8 PASS claim without independent verification. The current accepted-constraint decision is not a PASS. Test, duplicated, complimentary, team-owned, ineligible, canceled, charged-back, or refunded payments do not count.
 
 ## Run Protocol
 
@@ -85,7 +87,7 @@ Only independent verification may change G8 from BLOCKED. Test, duplicated, comp
 1. Close at 20 qualifying accounts or the stated deadline.
 2. Reconcile application, eligibility, payment, cancellation, refund, and duplicate status.
 3. Produce aggregate counts and the decision packet.
-4. Keep G8 BLOCKED until an independent reviewer verifies the evidence.
+4. Preserve the ACCEPTED CONSTRAINT status unless an independent reviewer verifies evidence for a separate gate decision. Do not claim PASS from unverified results.
 
 ## Eligibility Contract
 
@@ -129,6 +131,6 @@ Complete after the experiment. Never place live participant data in this file.
 | Refunds, cancellations, or chargebacks | Pending |
 | Qualifying paid founder accounts | Pending |
 
-**Decision:** Pending independent verification.
+**Decision:** On 2026-07-20, the product owner directed the team to proceed without the 15 paid founders. No commercial-validation evidence was supplied for this decision.
 
-**G8 status:** BLOCKED.
+**G8 status:** ACCEPTED CONSTRAINT, not PASS.

@@ -112,7 +112,9 @@ The independently gated expansion requirements are maintained in [PRD-002: Opera
 
 ### Founding validation
 
-- At least 15 paid founding customers at $500 before committing to the full public Marketplace build
+- On July 20, 2026, the product owner directed: "Proceed, we are moving without the 15 paid founders." G8 is `ACCEPTED CONSTRAINT`, never `PASS`.
+- No 15-paid-founder evidence exists, and commercial validation remains unproven.
+- Post-start target: at least 15 paid founding customers at $500 after implementation begins
 - Target 20 customers, which produces $10,000 and represents about 5.8 percent of the 343-member AutomatedLO community
 
 ### Activation

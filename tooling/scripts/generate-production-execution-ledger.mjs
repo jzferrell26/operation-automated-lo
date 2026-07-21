@@ -145,6 +145,8 @@ const deferredAuthPatterns = [
   /install, uninstall, and app-update webhooks/i,
   /cookie CSRF, null origin/i,
   /signed HighLevel context/i,
+  /uninstall revokes application sessions/i,
+  /authorized user can send a clearly labeled test lead/i,
   /installer authority from signed context/i,
   /missing required core permission/i,
   /read-only ad access/i,
@@ -409,6 +411,10 @@ const doneEvidence = new Map([
     "001F-AC-016",
     "public success is returned only after the transactional acceptance port confirms durable work",
   ],
+  [
+    "001F-AC-017",
+    "provider failures enter the exception queue and schedule bounded idempotent durable retries",
+  ],
   ["001F-AC-018", "routing reconciles stored and provider partial progress before any new write"],
   [
     "001F-AC-019",
@@ -443,8 +449,21 @@ const doneEvidence = new Map([
     "permission readiness returns the missing capabilities and exact reconnect action",
   ],
   [
+    "001A-AC-032",
+    "retry planner applies bounded exponential backoff, deterministic jitter, and Retry-After precedence",
+  ],
+  [
     "001A-AC-039",
     "agency bulk activation records installation only; attestations and customer roles remain separate",
+  ],
+  [
+    "001A-AC-027",
+    "installation lifecycle delivery wrapper acknowledges duplicate webhook references without reprocessing",
+  ],
+  ["001A-AC-029", "uninstall schedules deletion once from the validated tenant retention policy"],
+  [
+    "001A-AC-040",
+    "installation and onboarding role-binding ledgers converge repeated operations without duplicates",
   ],
   ["001G-AC-001", "normalized campaign record includes every required campaign and funnel field"],
   ["001G-AC-002", "campaign history filter covers Realtor, property, status, and all three dates"],
@@ -489,10 +508,50 @@ const doneEvidence = new Map([
     "001G-AC-028",
     "aggregate counts require tenant opt-in, assignment opt-in, and a minimum-data rule",
   ],
+  [
+    "001C-AC-006",
+    "campaign manifest links page, PDF, QR, creative, email, SMS, approval, routing, and attribution identities",
+  ],
+  [
+    "001C-AC-022",
+    "approval creation rejects model and service principals before consulting approval authority",
+  ],
+  [
+    "001D-AC-013",
+    "strict consent disclosure version is rendered visibly before submission and linked for assistive technology",
+  ],
+  [
+    "001D-AC-021",
+    "validated focal points and square/story safe zones produce deterministic crop and padding geometry",
+  ],
+  [
+    "001D-AC-024",
+    "pinned Sharp adapter decodes bounded JPEG and PNG input through the production processor",
+  ],
+  [
+    "001D-AC-025",
+    "production normalization strips EXIF, ICC, IPTC, XMP, and TIFF Photoshop metadata",
+  ],
+  [
+    "001D-AC-026",
+    "production normalization auto-orients, validates decoded MIME, and re-encodes bounded output",
+  ],
+  [
+    "001B-AC-007",
+    "HTTPS fetch plans resolve once, reject mixed private or invalid DNS answers, pin public addresses, and forbid redirects",
+  ],
   ["001H-AC-007", "permission readiness blocks missing core access and requires reconnect"],
   ["001H-AC-008", "permission readiness rejects read-only advertising access"],
   ["001H-AC-009", "role assignment forbids self-elevation and requires separate authority"],
   ["001H-AC-010", "policy-driven readiness derives requirements from enabled features"],
+  [
+    "001H-AC-011",
+    "every selected GHL and Meta object is read back and matched to the active location before completion",
+  ],
+  [
+    "001H-AC-012",
+    "safe namespaced objects are reused first and only allowlisted tag or custom-field creation is idempotent",
+  ],
   [
     "001H-AC-013",
     "provider allowlists omit workflow creation, DND changes, imports, and direct Meta credentials",
@@ -501,6 +560,10 @@ const doneEvidence = new Map([
   ["001H-AC-015", "complete synthetic evidence produces a passed readiness result"],
   ["001H-AC-016", "partial or uncertain synthetic evidence produces reconciliation work"],
   ["001H-AC-017", "launch readiness stores current observed evidence and immutable history"],
+  [
+    "001H-AC-018",
+    "launch-sensitive provider commands fail closed unless observed readiness is launch ready",
+  ],
   ["001H-AC-019", "operator checklist is capped at the five highest-priority actions"],
   ["001H-AC-021", "readiness consumes observed server evidence instead of browser flags"],
   ["001H-AC-024", "onboarding events use a strict safe schema without payload PII"],
@@ -529,38 +592,6 @@ const inProgressEvidence = new Map([
   ],
   ["001J-AC-034", "correlation and runbook contracts are green; external alert transport remains"],
   [
-    "001A-AC-028",
-    "uninstall blocks work and token use; live application-session revocation remains deferred",
-  ],
-  [
-    "001A-AC-032",
-    "transient classification exists; bounded exponential backoff and jitter remains",
-  ],
-  [
-    "001A-AC-040",
-    "installation convergence is idempotent; role-binding idempotency remains deferred",
-  ],
-  [
-    "001A-AC-027",
-    "durable delivery references deduplicate webhook work; lifecycle webhook orchestration remains deferred",
-  ],
-  [
-    "001A-AC-029",
-    "retention-safe deletion ports exist for private payloads; tenant lifecycle scheduler remains",
-  ],
-  [
-    "001B-AC-007",
-    "HTTPS and private IP literals are blocked; DNS resolution and rebinding-safe fetch proof remains",
-  ],
-  [
-    "001C-AC-006",
-    "campaign and artifact identities align; email, SMS, and attribution package linkage remains",
-  ],
-  [
-    "001C-AC-022",
-    "approval requires explicit authority; dedicated non-human principal denial proof remains",
-  ],
-  [
     "001I-AC-001",
     "fixture extraction and confirmation contracts are green; self-onboarding presentation remains",
   ],
@@ -584,7 +615,6 @@ const inProgressEvidence = new Map([
     "001J-AC-021",
     "Production manifest rejects raw HTML and unapproved asset state; Phase 0 corpus covers all eight vectors",
   ],
-  ["001D-AC-013", "consent disclosure version is not yet present in the render manifest"],
   ["001D-AC-016", "server-side render port exists; production task-worker binding remains"],
   [
     "001D-AC-014",
@@ -592,19 +622,9 @@ const inProgressEvidence = new Map([
   ],
   ["001D-AC-017", "semantic print source exists; tagged-PDF binary inspection remains"],
   ["001D-AC-019", "self-contained print source exists; final binary inspection remains"],
-  ["001D-AC-021", "cover crop and safe zones are fixed; configurable manifest focal point remains"],
   [
     "001D-AC-023",
     "immutable originals and private transfer contracts exist; creative preview and download presentation remains",
-  ],
-  [
-    "001D-AC-024",
-    "strict image decode and output contract exists; production processor adapter remains",
-  ],
-  ["001D-AC-025", "metadata stripping contract exists; production processor adapter remains"],
-  [
-    "001D-AC-026",
-    "re-encode and MIME validation contract exists; production processor adapter remains",
   ],
   ["001D-AC-031", "source and PDF-page fingerprints exist; browser-raster regression remains"],
   [
@@ -623,23 +643,6 @@ const inProgressEvidence = new Map([
   [
     "001E-AC-018",
     "durable state and polling contracts exist; production Trigger.dev worker remains",
-  ],
-  ["001F-AC-017", "provider failures enter an exception queue; durable retry scheduling remains"],
-  [
-    "001F-AC-026",
-    "synthetic lead contract and labeling exist; authenticated operator authorization remains",
-  ],
-  [
-    "001H-AC-011",
-    "mapping and asset verifier seams exist; onboarding read-back orchestration remains",
-  ],
-  [
-    "001H-AC-012",
-    "idempotent provider object contracts exist; onboarding reuse orchestration remains",
-  ],
-  [
-    "001H-AC-018",
-    "attention-required readiness exists; remaining command handlers still need readiness guards",
   ],
 ]);
 
@@ -735,7 +738,10 @@ function statusFor(id, prdKey, section, criterion) {
       evidence: "Adapter and fixtures may proceed; live acceptance cannot",
     };
   }
-  if (prdKey === "001f" && /ghl|provider|workflow|opportunity|contact|synthetic/i.test(criterion)) {
+  if (
+    prdKey === "001f" &&
+    /ghl|provider|workflow|opportunity|contact|synthetic|test lead/i.test(`${section} ${criterion}`)
+  ) {
     return {
       status: "BLOCKED: G5",
       evidence: "Local contract work may proceed; live acceptance cannot",

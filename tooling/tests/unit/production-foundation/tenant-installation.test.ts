@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   InstallationLifecycleService,
@@ -6,6 +6,7 @@ import {
   assertResourceLocation,
   deriveServerTenantContext,
   evaluateInstallationCapability,
+  processInstallationLifecycleDelivery,
 } from "../../../../packages/application/src/index.js";
 import {
   EMBEDDED_SESSION_ALGORITHM,
@@ -25,6 +26,7 @@ import {
   UnsafeFixtureError,
   classifyFixtureProviderResponse,
   createLiveOAuthAdapter,
+  planFixtureRetry,
 } from "../../../../packages/ghl/src/index.js";
 
 const session = {
@@ -176,6 +178,94 @@ describe("tenant and installation fixture contracts", () => {
     );
   });
 
+  it("schedules retention-policy deletion once when an installation is removed", async () => {
+    const service = new InstallationLifecycleService();
+    service.activate({
+      locationId: "location_alpha",
+      installationMode: "DIRECT",
+      grantedScopes: ["locations.read"],
+      scopeProfiles: ["PROFILE_A_READ"],
+    });
+    const schedule = vi.fn(async () => undefined);
+    const policy = { policyVersion: "retention-v1", retentionDays: 30 };
+    const first = await service.uninstallAndScheduleDeletion(
+      "location_alpha",
+      policy,
+      new Date("2026-07-21T20:00:00.000Z"),
+      { schedule },
+    );
+    const duplicate = await service.uninstallAndScheduleDeletion(
+      "location_alpha",
+      policy,
+      new Date("2026-07-22T20:00:00.000Z"),
+      { schedule },
+    );
+    expect(first.schedule).toEqual({
+      locationId: "location_alpha",
+      installationId: "installation_location_alpha",
+      policyVersion: "retention-v1",
+      deleteAt: "2026-08-20T20:00:00.000Z",
+      reason: "tenant-uninstalled",
+    });
+    expect(duplicate.schedule).toEqual(first.schedule);
+    expect(schedule).toHaveBeenCalledOnce();
+    for (const invalid of [
+      { policyVersion: "retention-v1", retentionDays: -1 },
+      { policyVersion: "retention-v1", retentionDays: 3_651 },
+      { policyVersion: "retention-v1", retentionDays: 1.5 },
+      { policyVersion: " ", retentionDays: 30 },
+    ]) {
+      await expect(
+        service.uninstallAndScheduleDeletion("location_alpha", invalid, new Date(), { schedule }),
+      ).rejects.toThrow(LocationAuthorizationError);
+    }
+  });
+
+  it("acknowledges duplicate lifecycle webhook deliveries without applying them twice", async () => {
+    let claimed = false;
+    const guard = {
+      claim: vi.fn(async () => {
+        if (claimed) return false;
+        claimed = true;
+        return true;
+      }),
+      complete: vi.fn(async () => undefined),
+      release: vi.fn(async () => undefined),
+    };
+    const apply = vi.fn(async () => "installed" as const);
+    const delivery = {
+      schemaVersion: 1,
+      deliveryKind: "webhook",
+      deliveryRef: "webhook_01Install",
+      businessOutcomeKey: "a".repeat(64),
+      locationRef: "location_01Alpha",
+      correlationId: "correlation_01Install",
+    };
+    await expect(processInstallationLifecycleDelivery(delivery, guard, apply)).resolves.toEqual({
+      kind: "processed",
+      value: "installed",
+    });
+    await expect(processInstallationLifecycleDelivery(delivery, guard, apply)).resolves.toEqual({
+      kind: "duplicate",
+    });
+    expect(apply).toHaveBeenCalledOnce();
+    expect(guard.complete).toHaveBeenCalledOnce();
+
+    const invalidGuard = {
+      claim: vi.fn(async () => true),
+      complete: vi.fn(async () => undefined),
+      release: vi.fn(async () => undefined),
+    };
+    await expect(
+      processInstallationLifecycleDelivery(
+        { ...delivery, deliveryKind: "command", deliveryRef: "command_01Install" },
+        invalidGuard,
+        apply,
+      ),
+    ).rejects.toThrow(LocationAuthorizationError);
+    expect(invalidGuard.release).toHaveBeenCalledOnce();
+  });
+
   it("fails session claims closed for every pinned identity and lifecycle check", () => {
     expect(validateFixtureSessionClaims(fixtureClaims())).toMatchObject({
       locationId: "location_alpha",
@@ -234,6 +324,80 @@ describe("tenant and installation fixture contracts", () => {
       retryAfterMilliseconds: 4_000,
       returnedRateLimitHeaders: { "retry-after": "4", "x-ratelimit-remaining": "0" },
     });
+    expect(
+      planFixtureRetry({
+        decision: rateLimited,
+        attempt: 3,
+        baseDelayMilliseconds: 1_000,
+        maximumDelayMilliseconds: 30_000,
+        jitterUnit: 0,
+      }),
+    ).toEqual({
+      retry: true,
+      attempt: 3,
+      delayMilliseconds: 4_000,
+      reason: "rate-limit",
+    });
+    const transient = classifyFixtureProviderResponse({
+      locationId: "location_alpha",
+      request: { transport: "fixture-replay", method: "GET", path: "/opportunities" },
+      httpStatus: 503,
+    });
+    expect(
+      planFixtureRetry({
+        decision: transient,
+        attempt: 2,
+        baseDelayMilliseconds: 1_000,
+        maximumDelayMilliseconds: 30_000,
+        jitterUnit: 1,
+      }),
+    ).toEqual({
+      retry: true,
+      attempt: 2,
+      delayMilliseconds: 2_000,
+      reason: "transient-provider",
+    });
+    const uncertain = classifyFixtureProviderResponse({
+      locationId: "location_alpha",
+      request: { transport: "fixture-replay", method: "POST", path: "/opportunities" },
+      httpStatus: 503,
+      writeMayHaveReachedProvider: true,
+    });
+    expect(
+      planFixtureRetry({
+        decision: uncertain,
+        attempt: 1,
+        baseDelayMilliseconds: 1_000,
+        maximumDelayMilliseconds: 30_000,
+        jitterUnit: 0.5,
+      }),
+    ).toEqual({
+      retry: false,
+      attempt: 1,
+      delayMilliseconds: undefined,
+      reason: "terminal-or-reconcile",
+    });
+    for (const invalid of [
+      { attempt: 0 },
+      { attempt: 13 },
+      { attempt: 1.5 },
+      { baseDelayMilliseconds: 99 },
+      { maximumDelayMilliseconds: 500 },
+      { jitterUnit: -0.1 },
+      { jitterUnit: 1.1 },
+      { jitterUnit: Number.NaN },
+    ]) {
+      expect(() =>
+        planFixtureRetry({
+          decision: transient,
+          attempt: 1,
+          baseDelayMilliseconds: 1_000,
+          maximumDelayMilliseconds: 30_000,
+          jitterUnit: 0.5,
+          ...invalid,
+        }),
+      ).toThrow(RangeError);
+    }
 
     const ledger = new FixtureWriteIdempotencyLedger();
     const request = {

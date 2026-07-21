@@ -42,15 +42,20 @@ export {
   compileBrandRules,
   confirmBrandSuggestion,
   evaluateValidatedProfileReadiness,
+  fetchExternalProfileUrl,
   ingestProfileAsset,
   previewProfileVersion,
   rollBackProfileVersion,
+  resolveExternalProfileUrl,
   validateExternalProfileUrl,
   type AppendProfileVersionInput,
   type PrivateProfileAssetPort,
+  type PinnedProfileRetrieverPort,
   type ProfileAssetDecoderPort,
+  type ProfileDnsResolverPort,
   type ProfileRepository,
   type ProfileTransaction,
+  type ValidatedExternalProfileFetchPlan,
 } from "./profile-foundation.js";
 
 export {
@@ -90,7 +95,9 @@ export {
 export {
   LaunchReadinessError,
   ONBOARDING_CHECKLIST,
+  OnboardingRoleBindingLedger,
   authorizeOnboardingRoleAssignment,
+  configureOnboardingProviderObjects,
   evaluatePermissionReadiness,
   recomputeLaunchReadiness,
   recordOnboardingEvent,
@@ -104,6 +111,10 @@ export {
   type LaunchReadinessRepositoryPort,
   type LaunchReadinessVerifierPort,
   type OnboardingEventPort,
+  type OnboardingConfigurationPort,
+  type OnboardingConfigurationRequest,
+  type OnboardingProviderObject,
+  type OnboardingRoleBinding,
 } from "./launch-readiness.js";
 
 export {

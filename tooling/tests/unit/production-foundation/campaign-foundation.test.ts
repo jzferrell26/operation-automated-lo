@@ -78,6 +78,8 @@ const manifest: CampaignManifest = CampaignManifestSchema.parse({
     pdfVersionRef: "pdf_01Approved",
     creativeVersionRef: "creative_01Approved",
     copyVersionRef: "copy_01Approved",
+    emailPackageVersionRef: "email_01Approved",
+    smsPackageVersionRef: "sms_01Approved",
     disclosureVersionRef: "disclosure_01Approved",
     formVersionRef: "form_01Approved",
     destinationVersionRef: "destination_01Approved",
@@ -394,6 +396,7 @@ describe("deterministic preflight and approval", () => {
           campaignVersion: { ...version, manifestHash: sha("f") },
           preflight: passing,
           actorRef: "user_01Approver",
+          actorKind: "human",
           actorRole: "approver",
           decidedAt: now,
           ipAuditHash: sha("a"),
@@ -409,6 +412,7 @@ describe("deterministic preflight and approval", () => {
           campaignVersion: version,
           preflight: { ...passing, blocking: true },
           actorRef: "user_01Approver",
+          actorKind: "human",
           actorRole: "approver",
           decidedAt: now,
           ipAuditHash: sha("a"),
@@ -425,6 +429,25 @@ describe("deterministic preflight and approval", () => {
     const deniedAuthority = {
       assertMayApprove: vi.fn(async () => Promise.reject(new Error("not authorized"))),
     };
+    for (const actorKind of ["model", "service"] as const) {
+      await expect(
+        createApprovalDecision(
+          {
+            approvalRef: `approval_01${actorKind}`,
+            campaignVersion: version,
+            preflight,
+            actorRef: `principal_01${actorKind}`,
+            actorKind,
+            actorRole: "approver",
+            decidedAt: now,
+            ipAuditHash: sha("a"),
+            decision: "approved",
+          },
+          deniedAuthority,
+        ),
+      ).rejects.toThrow("Only a human principal");
+    }
+    expect(deniedAuthority.assertMayApprove).not.toHaveBeenCalled();
     await expect(
       createApprovalDecision(
         {
@@ -432,6 +455,7 @@ describe("deterministic preflight and approval", () => {
           campaignVersion: version,
           preflight,
           actorRef: "user_01Viewer",
+          actorKind: "human",
           actorRole: "approver",
           decidedAt: now,
           ipAuditHash: sha("a"),
@@ -447,6 +471,7 @@ describe("deterministic preflight and approval", () => {
         campaignVersion: version,
         preflight,
         actorRef: "user_01Realtor",
+        actorKind: "human",
         actorRole: "realtor_approver",
         decidedAt: now,
         ipAuditHash: sha("a"),
@@ -460,6 +485,7 @@ describe("deterministic preflight and approval", () => {
         campaignVersion: version,
         preflight,
         actorRef: "user_01Lender",
+        actorKind: "human",
         actorRole: "lender_approver",
         decidedAt: now,
         ipAuditHash: sha("b"),
@@ -473,6 +499,8 @@ describe("deterministic preflight and approval", () => {
       pdfVersionRef: manifest.artifacts.pdfVersionRef,
       creativeVersionRef: manifest.artifacts.creativeVersionRef,
       copyVersionRef: manifest.artifacts.copyVersionRef,
+      emailPackageVersionRef: manifest.artifacts.emailPackageVersionRef,
+      smsPackageVersionRef: manifest.artifacts.smsPackageVersionRef,
       disclosureVersionRef: manifest.artifacts.disclosureVersionRef,
       formVersionRef: manifest.artifacts.formVersionRef,
       destinationVersionRef: manifest.artifacts.destinationVersionRef,

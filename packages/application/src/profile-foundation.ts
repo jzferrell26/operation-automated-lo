@@ -147,13 +147,24 @@ export function evaluateValidatedProfileReadiness(
 }
 
 function isPrivateIpv4(hostname: string): boolean {
-  const [first, second] = hostname.split(".").map(Number) as [number, number, number, number];
+  const [first, second, third] = hostname.split(".").map(Number) as [
+    number,
+    number,
+    number,
+    number,
+  ];
   return (
     first === 10 ||
     first === 127 ||
+    (first === 100 && second >= 64 && second <= 127) ||
     (first === 169 && second === 254) ||
     (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 0) ||
     (first === 192 && second === 168) ||
+    (first === 198 && (second === 18 || second === 19)) ||
+    (first === 198 && second === 51 && third === 100) ||
+    (first === 203 && second === 0 && third === 113) ||
+    first >= 224 ||
     first === 0
   );
 }
@@ -165,8 +176,18 @@ function isPrivateIpv6(hostname: string): boolean {
     normalized === "::" ||
     normalized.startsWith("fc") ||
     normalized.startsWith("fd") ||
-    /^fe[89ab]/u.test(normalized)
+    /^fe[89ab]/u.test(normalized) ||
+    normalized.startsWith("ff") ||
+    normalized.startsWith("2001:db8") ||
+    normalized.startsWith("::ffff:")
   );
+}
+
+function isProhibitedAddress(address: string): boolean {
+  const family = isIP(address);
+  if (family === 4) return isPrivateIpv4(address);
+  if (family === 6) return isPrivateIpv6(address);
+  return true;
 }
 
 export function validateExternalProfileUrl(untrustedUrl: unknown): URL {
@@ -186,6 +207,50 @@ export function validateExternalProfileUrl(untrustedUrl: unknown): URL {
     throw new Error("Profile URL resolves to a prohibited private address literal");
   }
   return parsed;
+}
+
+export interface ProfileDnsResolverPort {
+  resolveAll(hostname: string): Promise<readonly string[]>;
+}
+
+export interface ValidatedExternalProfileFetchPlan {
+  readonly url: string;
+  readonly hostname: string;
+  readonly approvedAddresses: readonly string[];
+  readonly redirect: "error";
+}
+
+export interface PinnedProfileRetrieverPort<T> {
+  retrieve(plan: ValidatedExternalProfileFetchPlan): Promise<T>;
+}
+
+export async function resolveExternalProfileUrl(
+  untrustedUrl: unknown,
+  resolver: ProfileDnsResolverPort,
+): Promise<ValidatedExternalProfileFetchPlan> {
+  const url = validateExternalProfileUrl(untrustedUrl);
+  const literal = url.hostname.replace(/^\[|\]$/gu, "");
+  const addresses = isIP(literal) === 0 ? await resolver.resolveAll(url.hostname) : [literal];
+  const approvedAddresses = [...new Set(addresses)].sort((left, right) =>
+    left.localeCompare(right, "en"),
+  );
+  if (approvedAddresses.length === 0 || approvedAddresses.some(isProhibitedAddress)) {
+    throw new Error("Profile URL DNS result includes a prohibited address");
+  }
+  return Object.freeze({
+    url: url.href,
+    hostname: url.hostname,
+    approvedAddresses: Object.freeze(approvedAddresses),
+    redirect: "error" as const,
+  });
+}
+
+export async function fetchExternalProfileUrl<T>(
+  untrustedUrl: unknown,
+  ports: Readonly<{ resolver: ProfileDnsResolverPort; retriever: PinnedProfileRetrieverPort<T> }>,
+): Promise<T> {
+  const plan = await resolveExternalProfileUrl(untrustedUrl, ports.resolver);
+  return ports.retriever.retrieve(plan);
 }
 
 export interface ProfileAssetDecoderPort {

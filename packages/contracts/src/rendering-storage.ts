@@ -8,6 +8,36 @@ const OpaqueReferenceSchema = z
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/u);
 const VersionSchema = z.string().regex(/^[0-9]+\.[0-9]+\.[0-9]+$/u);
 
+const FocalPointSchema = z
+  .object({
+    x: z.number().min(0).max(1),
+    y: z.number().min(0).max(1),
+  })
+  .strict();
+
+const SafeZoneInsetsSchema = z
+  .object({
+    top: z.number().min(0).max(0.45),
+    right: z.number().min(0).max(0.45),
+    bottom: z.number().min(0).max(0.45),
+    left: z.number().min(0).max(0.45),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.left + value.right > 0.5) {
+      context.addIssue({
+        code: "custom",
+        message: "Creative safe zone must retain at least half of the output width",
+      });
+    }
+    if (value.top + value.bottom > 0.5) {
+      context.addIssue({
+        code: "custom",
+        message: "Creative safe zone must retain at least half of the output height",
+      });
+    }
+  });
+
 export const ArtifactTypeSchema = z.enum([
   "public-page-projection",
   "pdf",
@@ -26,6 +56,7 @@ export const RenderManifestSchema = z
     campaignRef: OpaqueReferenceSchema,
     campaignVersionRef: OpaqueReferenceSchema,
     blueprintVersionRef: OpaqueReferenceSchema,
+    consentDisclosureVersion: OpaqueReferenceSchema,
     profileVersions: z
       .object({
         brand: OpaqueReferenceSchema,
@@ -49,6 +80,12 @@ export const RenderManifestSchema = z
       )
       .min(1)
       .max(8),
+    creativeSafeZones: z
+      .object({
+        metaSquare: SafeZoneInsetsSchema,
+        metaStory: SafeZoneInsetsSchema,
+      })
+      .strict(),
     publicContent: z
       .object({
         headline: z.string().min(1).max(500),
@@ -71,6 +108,7 @@ export const RenderManifestSchema = z
             mimeType: z.enum(["image/jpeg", "image/png"]),
             width: z.number().int().min(400).max(10_000),
             height: z.number().int().min(400).max(10_000),
+            focalPoint: FocalPointSchema,
             approvalStatus: z.literal("approved"),
           })
           .strict(),

@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -5,6 +6,7 @@ import {
   publicCampaignPerformanceBudget,
   renderArtifactBatch,
   renderSourceForManifest,
+  SharpImageNormalizationAdapter,
   type ImageNormalizationPort,
 } from "../../../../packages/rendering/src/index.js";
 import {
@@ -26,7 +28,7 @@ const projection = {
   disclosureBlocks: commonRenderManifest.publicContent.disclosureBlocks,
   callToActionLabel: commonRenderManifest.publicContent.callToActionLabel,
   artifactUrls: {},
-  consentDisclosureVersion: "disclosure_01Approved",
+  consentDisclosureVersion: commonRenderManifest.consentDisclosureVersion,
   activeFrom: "2026-07-21T12:00:00.000Z",
   activeUntil: "2026-07-28T12:00:00.000Z",
 };
@@ -99,7 +101,11 @@ describe("PRD-001d safe campaign rendering", () => {
     expect(href).toMatch(/t=track_[a-f0-9]{24}/u);
     expect(href).not.toContain("Alex");
     expect(href).not.toContain("Main");
-    expect(page.html.indexOf("Compliance profile version")).toBeLessThan(
+    expect(page.html).toContain(
+      `Consent disclosure version: ${commonRenderManifest.consentDisclosureVersion}`,
+    );
+    expect(page.html).toContain('aria-describedby="compliance-version consent-disclosure-version"');
+    expect(page.html.indexOf("Consent disclosure version")).toBeLessThan(
       page.html.indexOf('class="cta"'),
     );
   });
@@ -153,6 +159,53 @@ describe("PRD-001d safe campaign rendering", () => {
         "meta-square",
       ),
     ).toThrow("readable safe-zone budget");
+  });
+
+  it("applies manifest-configured focal points and format-specific safe text zones", () => {
+    const manifest = {
+      ...commonRenderManifest,
+      assets: [
+        {
+          ...commonRenderManifest.assets[0]!,
+          focalPoint: { x: 0.27, y: 0.68 },
+        },
+      ],
+      creativeSafeZones: {
+        metaSquare: { top: 0.04, right: 0.07, bottom: 0.08, left: 0.09 },
+        metaStory: { top: 0.06, right: 0.1, bottom: 0.14, left: 0.11 },
+      },
+    };
+    const square = renderSourceForManifest(manifest, "meta-square");
+    const story = renderSourceForManifest(manifest, "meta-story");
+
+    expect(square.html).toContain("object-position:27% 68%");
+    expect(square.html).toContain("padding:43px 76px 86px 97px");
+    expect(square.html).toContain('data-safe-zone="4%,7%,8%,9%"');
+    expect(story.html).toContain("object-position:27% 68%");
+    expect(story.html).toContain("padding:115px 108px 269px 119px");
+    expect(story.html).toContain('data-safe-zone="6%,10%,14%,11%"');
+
+    expect(() =>
+      renderSourceForManifest(
+        {
+          ...manifest,
+          assets: [{ ...manifest.assets[0]!, focalPoint: { x: 1.01, y: 0.5 } }],
+        },
+        "meta-square",
+      ),
+    ).toThrow();
+    expect(() =>
+      renderSourceForManifest(
+        {
+          ...manifest,
+          creativeSafeZones: {
+            ...manifest.creativeSafeZones,
+            metaSquare: { top: 0.3, right: 0.07, bottom: 0.3, left: 0.09 },
+          },
+        },
+        "meta-square",
+      ),
+    ).toThrow("retain at least half of the output height");
   });
 
   it("enforces the approved image dimensions at the renderer boundary", async () => {
@@ -221,6 +274,74 @@ describe("PRD-001d safe campaign rendering", () => {
 });
 
 describe("PRD-001d upload normalization and withdrawal", () => {
+  it("uses the production decoder to auto-orient, strip metadata and re-encode trusted bytes", async () => {
+    const source = await sharp({
+      create: {
+        width: 400,
+        height: 600,
+        channels: 3,
+        background: "#12556f",
+      },
+    })
+      .withMetadata({ orientation: 6 })
+      .jpeg()
+      .toBuffer();
+    const sourceMetadata = await sharp(source).metadata();
+    expect(sourceMetadata.exif).toBeDefined();
+
+    const [normalized] = await normalizeUploadedImages(
+      {
+        schemaVersion: 1,
+        locationRef: "location_01TenantA",
+        files: [
+          {
+            assetRef: "asset_01Production",
+            bytes: new Uint8Array(source),
+            declaredMimeType: "image/jpeg",
+          },
+        ],
+      },
+      new SharpImageNormalizationAdapter(),
+    );
+
+    expect(normalized).toMatchObject({
+      mimeType: "image/jpeg",
+      width: 600,
+      height: 400,
+      metadataRetained: false,
+    });
+    const outputMetadata = await sharp(normalized?.bytes).metadata();
+    expect(outputMetadata.orientation).toBeUndefined();
+    expect(outputMetadata.exif).toBeUndefined();
+    expect(outputMetadata.icc).toBeUndefined();
+    expect(outputMetadata.xmp).toBeUndefined();
+  });
+
+  it("rejects decoded content that does not match its declared MIME type", async () => {
+    const jpeg = await sharp({
+      create: { width: 400, height: 400, channels: 3, background: "#ffffff" },
+    })
+      .jpeg()
+      .toBuffer();
+
+    await expect(
+      normalizeUploadedImages(
+        {
+          schemaVersion: 1,
+          locationRef: "location_01TenantA",
+          files: [
+            {
+              assetRef: "asset_01Mismatch",
+              bytes: new Uint8Array(jpeg),
+              declaredMimeType: "image/png",
+            },
+          ],
+        },
+        new SharpImageNormalizationAdapter(),
+      ),
+    ).rejects.toThrow("does not match decoded content");
+  });
+
   it("decodes, re-encodes, auto-orients and strips metadata before accepting image bytes", async () => {
     const outputBytes = new Uint8Array([9, 8, 7, 6]);
     const port: ImageNormalizationPort = {

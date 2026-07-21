@@ -131,11 +131,45 @@ export interface LeadRoutingClockPort {
   now(): Date;
 }
 
+export interface LeadRoutingRetryPort {
+  schedule(input: {
+    readonly commandRef: string;
+    readonly correlationRef: string;
+    readonly encryptedPayloadRef: string;
+    readonly idempotencyRef: string;
+    readonly attempt: number;
+    readonly maxAttempts: number;
+    readonly runAt: string;
+  }): Promise<void>;
+}
+
 export interface LeadRoutingPorts {
   readonly provider: GhlLeadProviderPort;
   readonly state: LeadRoutingStatePort;
   readonly workflowPolicy: LeadWorkflowPolicyPort;
   readonly clock: LeadRoutingClockPort;
+  readonly retry: LeadRoutingRetryPort;
+}
+
+const MAX_LEAD_ROUTING_ATTEMPTS = 5;
+
+export function planLeadRoutingRetry(
+  attempt: number,
+  now: Date,
+): Readonly<{
+  attempt: number;
+  maxAttempts: number;
+  runAt: string;
+}> {
+  if (!Number.isInteger(attempt) || attempt < 1 || attempt >= MAX_LEAD_ROUTING_ATTEMPTS) {
+    throw new RangeError("A retry may be planned only after attempts one through four");
+  }
+  const delayMilliseconds = Math.min(5_000 * 2 ** (attempt - 1), 300_000);
+  return Object.freeze({
+    attempt: attempt + 1,
+    maxAttempts: MAX_LEAD_ROUTING_ATTEMPTS,
+    runAt: new Date(now.getTime() + delayMilliseconds).toISOString(),
+  });
 }
 
 function mergeProgress(
@@ -201,6 +235,7 @@ export async function routeLeadToGhl(
   unsafePayload: PrivateLeadPayload,
   ports: LeadRoutingPorts,
   auditWindowEndsAt: Date,
+  attempt = 1,
 ): Promise<LeadRoutingResult> {
   const command = LeadRoutingCommandSchema.parse(unsafeCommand);
   const payload = PrivateLeadPayloadSchema.parse(unsafePayload);
@@ -350,6 +385,16 @@ export async function routeLeadToGhl(
       encryptedPayloadRef: command.encryptedPayloadRef,
       classification: classified.classification,
     });
+    if (classified.classification === "provider_failure" && attempt < MAX_LEAD_ROUTING_ATTEMPTS) {
+      const retry = planLeadRoutingRetry(attempt, ports.clock.now());
+      await ports.retry.schedule({
+        commandRef: command.commandRef,
+        correlationRef: command.correlationRef,
+        encryptedPayloadRef: command.encryptedPayloadRef,
+        idempotencyRef: `${command.idempotencyRef}:retry:${String(retry.attempt)}`,
+        ...retry,
+      });
+    }
     throw classified;
   }
 }

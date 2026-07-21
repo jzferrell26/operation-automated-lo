@@ -48,4 +48,24 @@ describe("PRD-001d golden rendering corpus", () => {
       }
     }
   });
+
+  it("keeps consent and configured crop geometry in the golden render sources", () => {
+    const page = renderSourceForManifest(renderingGoldenFixtures.common, "public-page-projection");
+    const commonSquare = renderSourceForManifest(renderingGoldenFixtures.common, "meta-square");
+    const portraitStory = renderSourceForManifest(
+      renderingGoldenFixtures.portraitPhoto,
+      "meta-story",
+    );
+
+    expect(page.html).toContain(
+      `Consent disclosure version: ${renderingGoldenFixtures.common.consentDisclosureVersion}`,
+    );
+    expect(page.html.indexOf("Consent disclosure version")).toBeLessThan(
+      page.html.indexOf('class="cta"'),
+    );
+    expect(commonSquare.html).toContain('data-focal-point="50%,50%"');
+    expect(commonSquare.html).toContain('data-safe-zone="5%,6%,5%,6%"');
+    expect(portraitStory.html).toContain('data-focal-point="50%,35%"');
+    expect(portraitStory.html).toContain('data-safe-zone="5%,8%,10%,8%"');
+  });
 });

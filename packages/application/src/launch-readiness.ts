@@ -9,6 +9,7 @@ import {
   type ReadinessDependency,
   type ReadinessEvidence,
 } from "@oalo/contracts";
+import { z } from "zod";
 
 export const ONBOARDING_CHECKLIST = Object.freeze({
   get_connected: Object.freeze([
@@ -68,6 +69,189 @@ export interface LaunchReadinessClockPort {
 
 export interface OnboardingEventPort {
   append(event: OnboardingEvent): Promise<void>;
+}
+
+const ProviderObjectRefSchema = z
+  .string()
+  .min(8)
+  .max(160)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._:-]+$/u);
+
+const OnboardingProviderObjectTypeSchema = z.enum([
+  "owner",
+  "pipeline",
+  "stage",
+  "calendar",
+  "workflow",
+  "tag",
+  "custom_field",
+  "ad_account",
+  "page",
+  "instagram_identity",
+  "lead_form",
+  "pixel",
+]);
+
+const OnboardingProviderObjectSchema = z
+  .object({
+    provider: z.enum(["ghl", "meta"]),
+    objectType: OnboardingProviderObjectTypeSchema,
+    providerId: ProviderObjectRefSchema,
+    locationRef: LaunchReadinessResultSchema.shape.locationRef,
+    active: z.boolean(),
+  })
+  .strict();
+
+const OnboardingConfigurationRequestSchema = z.discriminatedUnion("mode", [
+  z
+    .object({
+      mode: z.literal("select_existing"),
+      provider: z.enum(["ghl", "meta"]),
+      objectType: OnboardingProviderObjectTypeSchema,
+      providerId: ProviderObjectRefSchema,
+    })
+    .strict(),
+  z
+    .object({
+      mode: z.literal("ensure_namespaced"),
+      provider: z.literal("ghl"),
+      objectType: z.enum(["tag", "custom_field"]),
+      namespace: z
+        .string()
+        .min(8)
+        .max(96)
+        .regex(/^oalo:[a-z0-9][a-z0-9:-]+$/u),
+      idempotencyRef: ProviderObjectRefSchema,
+    })
+    .strict(),
+]);
+
+export type OnboardingProviderObject = z.infer<typeof OnboardingProviderObjectSchema>;
+export type OnboardingConfigurationRequest = z.infer<typeof OnboardingConfigurationRequestSchema>;
+
+export interface OnboardingConfigurationPort {
+  readBack(input: {
+    readonly locationRef: string;
+    readonly provider: OnboardingProviderObject["provider"];
+    readonly objectType: OnboardingProviderObject["objectType"];
+    readonly providerId: string;
+  }): Promise<unknown>;
+  findReusableNamespaced(input: {
+    readonly locationRef: string;
+    readonly objectType: "tag" | "custom_field";
+    readonly namespace: string;
+  }): Promise<unknown | undefined>;
+  createNamespaced(input: {
+    readonly locationRef: string;
+    readonly objectType: "tag" | "custom_field";
+    readonly namespace: string;
+    readonly idempotencyRef: string;
+  }): Promise<unknown>;
+}
+
+const ghlObjectTypes = new Set<OnboardingProviderObject["objectType"]>([
+  "owner",
+  "pipeline",
+  "stage",
+  "calendar",
+  "workflow",
+  "tag",
+  "custom_field",
+]);
+
+function assertProviderObjectType(
+  provider: OnboardingProviderObject["provider"],
+  objectType: OnboardingProviderObject["objectType"],
+): void {
+  if ((provider === "ghl") !== ghlObjectTypes.has(objectType)) {
+    throw new LaunchReadinessError("provider object type does not belong to the selected provider");
+  }
+}
+
+async function verifiedReadBack(
+  expected: Readonly<{
+    locationRef: string;
+    provider: OnboardingProviderObject["provider"];
+    objectType: OnboardingProviderObject["objectType"];
+    providerId: string;
+  }>,
+  port: OnboardingConfigurationPort,
+): Promise<OnboardingProviderObject> {
+  const observed = OnboardingProviderObjectSchema.parse(await port.readBack(expected));
+  assertProviderObjectType(observed.provider, observed.objectType);
+  if (
+    !observed.active ||
+    observed.locationRef !== expected.locationRef ||
+    observed.provider !== expected.provider ||
+    observed.objectType !== expected.objectType ||
+    observed.providerId !== expected.providerId
+  ) {
+    throw new LaunchReadinessError(
+      "provider read-back did not match the active location selection",
+    );
+  }
+  return observed;
+}
+
+export async function configureOnboardingProviderObjects(
+  locationRefInput: string,
+  untrustedRequests: readonly unknown[],
+  port: OnboardingConfigurationPort,
+): Promise<readonly OnboardingProviderObject[]> {
+  const locationRef = LaunchReadinessResultSchema.shape.locationRef.parse(locationRefInput);
+  const requests = z
+    .array(OnboardingConfigurationRequestSchema)
+    .min(1)
+    .max(50)
+    .parse(untrustedRequests);
+  const verified: OnboardingProviderObject[] = [];
+  for (const request of requests) {
+    if (request.mode === "select_existing") {
+      assertProviderObjectType(request.provider, request.objectType);
+      verified.push(
+        await verifiedReadBack(
+          {
+            locationRef,
+            provider: request.provider,
+            objectType: request.objectType,
+            providerId: request.providerId,
+          },
+          port,
+        ),
+      );
+      continue;
+    }
+
+    const reusableInput = {
+      locationRef,
+      objectType: request.objectType,
+      namespace: request.namespace,
+    };
+    const reusable = await port.findReusableNamespaced(reusableInput);
+    const candidate = OnboardingProviderObjectSchema.extend({
+      provider: z.literal("ghl"),
+      objectType: z.literal(request.objectType),
+      locationRef: z.literal(locationRef),
+    }).parse(
+      reusable ??
+        (await port.createNamespaced({
+          ...reusableInput,
+          idempotencyRef: request.idempotencyRef,
+        })),
+    );
+    verified.push(
+      await verifiedReadBack(
+        {
+          locationRef,
+          provider: "ghl",
+          objectType: request.objectType,
+          providerId: candidate.providerId,
+        },
+        port,
+      ),
+    );
+  }
+  return Object.freeze(verified);
 }
 
 export interface LaunchReadinessPorts {
@@ -212,6 +396,46 @@ export function authorizeOnboardingRoleAssignment(input: {
     );
   }
   return { allowed: true, concentratedDuties: input.actorRef === input.subjectRef };
+}
+
+export interface OnboardingRoleBinding {
+  readonly locationRef: string;
+  readonly subjectRef: string;
+  readonly role: ApplicationRole;
+  readonly assignedByRef: string;
+  readonly concentratedDuties: boolean;
+}
+
+export class OnboardingRoleBindingLedger {
+  readonly #bindings = new Map<string, OnboardingRoleBinding>();
+
+  public assign(input: {
+    readonly locationRef: string;
+    readonly actorRole: ApplicationRole;
+    readonly requestedRole: ApplicationRole;
+    readonly actorRef: string;
+    readonly subjectRef: string;
+  }): Readonly<{ binding: OnboardingRoleBinding; duplicate: boolean }> {
+    const locationRef = LaunchReadinessResultSchema.shape.locationRef.parse(input.locationRef);
+    const key = `${locationRef}:${input.subjectRef}`;
+    const existing = this.#bindings.get(key);
+    if (existing !== undefined) {
+      if (existing.role !== input.requestedRole) {
+        throw new LaunchReadinessError("an existing role binding requires explicit replacement");
+      }
+      return { binding: existing, duplicate: true };
+    }
+    const authorization = authorizeOnboardingRoleAssignment(input);
+    const binding = Object.freeze({
+      locationRef,
+      subjectRef: input.subjectRef,
+      role: ApplicationRoleSchema.parse(input.requestedRole),
+      assignedByRef: input.actorRef,
+      concentratedDuties: authorization.concentratedDuties,
+    });
+    this.#bindings.set(key, binding);
+    return { binding, duplicate: false };
+  }
 }
 
 export function safeReadinessDiagnostics(result: LaunchReadinessResult): {

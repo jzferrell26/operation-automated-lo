@@ -7,6 +7,8 @@ import {
 } from "@oalo/contracts";
 import { isInstallationActive, type LocationInstallation } from "@oalo/domain";
 
+import { processDelivery, type DeliveryGuardPort } from "./durable-foundation.js";
+
 export interface ServerSessionIdentity {
   readonly locationId: string;
   readonly installationId: string;
@@ -68,6 +70,7 @@ function installationIdFor(locationId: string): string {
 
 export class InstallationLifecycleService {
   readonly #installations = new Map<string, LocationInstallation>();
+  readonly #deletionSchedules = new Map<string, TenantDeletionSchedule>();
 
   public activate(input: InstallationActivation): LocationInstallation {
     const activation = InstallationActivationSchema.parse(input);
@@ -118,6 +121,35 @@ export class InstallationLifecycleService {
     return this.#installations.get(locationId);
   }
 
+  public async uninstallAndScheduleDeletion(
+    locationId: string,
+    policy: TenantRetentionPolicy,
+    now: Date,
+    scheduler: TenantDeletionSchedulerPort,
+  ): Promise<Readonly<{ installation: LocationInstallation; schedule: TenantDeletionSchedule }>> {
+    if (
+      !Number.isInteger(policy.retentionDays) ||
+      policy.retentionDays < 0 ||
+      policy.retentionDays > 3_650 ||
+      policy.policyVersion.trim().length === 0
+    ) {
+      throw new LocationAuthorizationError();
+    }
+    const installation = this.uninstall(locationId);
+    const existing = this.#deletionSchedules.get(installation.installationId);
+    if (existing !== undefined) return { installation, schedule: existing };
+    const schedule = Object.freeze({
+      locationId,
+      installationId: installation.installationId,
+      policyVersion: policy.policyVersion,
+      deleteAt: new Date(now.getTime() + policy.retentionDays * 86_400_000).toISOString(),
+      reason: "tenant-uninstalled" as const,
+    });
+    await scheduler.schedule(schedule);
+    this.#deletionSchedules.set(installation.installationId, schedule);
+    return { installation, schedule };
+  }
+
   public assertMayStartWork(context: ServerTenantContext): LocationInstallation {
     const installation = this.#installations.get(context.locationId);
     if (
@@ -129,6 +161,36 @@ export class InstallationLifecycleService {
     }
     return installation;
   }
+}
+
+export interface TenantRetentionPolicy {
+  readonly policyVersion: string;
+  readonly retentionDays: number;
+}
+
+export interface TenantDeletionSchedule {
+  readonly locationId: string;
+  readonly installationId: string;
+  readonly policyVersion: string;
+  readonly deleteAt: string;
+  readonly reason: "tenant-uninstalled";
+}
+
+export interface TenantDeletionSchedulerPort {
+  schedule(request: TenantDeletionSchedule): Promise<void>;
+}
+
+export async function processInstallationLifecycleDelivery<T>(
+  untrustedDelivery: unknown,
+  guard: DeliveryGuardPort,
+  applyVerifiedLifecycleEvent: () => Promise<T>,
+): Promise<Readonly<{ kind: "processed"; value: T }> | Readonly<{ kind: "duplicate" }>> {
+  return processDelivery(untrustedDelivery, guard, async (delivery) => {
+    if (delivery.deliveryKind !== "webhook") {
+      throw new LocationAuthorizationError();
+    }
+    return applyVerifiedLifecycleEvent();
+  });
 }
 
 const CAPABILITY_PROFILE: Readonly<Record<ProductCapability, ScopeProfile>> = Object.freeze({

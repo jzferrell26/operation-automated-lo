@@ -117,6 +117,7 @@ export async function createApprovalDecision(
     campaignVersion: unknown;
     preflight: unknown;
     actorRef: string;
+    actorKind: "human" | "service" | "model";
     actorRole: ApprovalDecision["actorRole"];
     decidedAt: Date;
     ipAuditHash: string;
@@ -126,6 +127,9 @@ export async function createApprovalDecision(
 ): Promise<Readonly<ApprovalDecision>> {
   const version = CampaignVersionSchema.parse(input.campaignVersion);
   const preflight = PreflightResultSchema.parse(input.preflight);
+  if (input.actorKind !== "human") {
+    throw new Error("Only a human principal can create an approval decision");
+  }
   if (hash(version.manifest) !== version.manifestHash) {
     throw new Error("Campaign manifest hash does not match its immutable content");
   }
@@ -147,6 +151,8 @@ export async function createApprovalDecision(
     pdfVersionRef: version.manifest.artifacts.pdfVersionRef,
     creativeVersionRef: version.manifest.artifacts.creativeVersionRef,
     copyVersionRef: version.manifest.artifacts.copyVersionRef,
+    emailPackageVersionRef: version.manifest.artifacts.emailPackageVersionRef,
+    smsPackageVersionRef: version.manifest.artifacts.smsPackageVersionRef,
     disclosureVersionRef: version.manifest.artifacts.disclosureVersionRef,
     targetingHash: hash(version.manifest.meta.targeting),
     budgetHash: hash({
@@ -170,6 +176,7 @@ export async function createApprovalDecision(
       manifestHash: version.manifestHash,
       preflightResultHash: preflight.resultHash,
       actorRef: input.actorRef,
+      actorKind: input.actorKind,
       actorRole: input.actorRole,
       decidedAt: input.decidedAt.toISOString(),
       ipAuditHash: input.ipAuditHash,

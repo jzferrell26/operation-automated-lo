@@ -114,6 +114,7 @@ export const AuthoritySnapshotSchema = z
     entitlementActive: z.boolean(),
     actorAuthorized: z.boolean(),
     tokenHealth: z.enum(["healthy", "unavailable", "reconnect-required"]),
+    readinessState: z.enum(["not_ready", "launch_ready", "attention_required"]),
   })
   .strict();
 

@@ -9,6 +9,7 @@ export const commonRenderManifest: RenderManifest = {
   campaignRef: "campaign_01OpenHouse",
   campaignVersionRef: "version_01Approved",
   blueprintVersionRef: "blueprint_01Approved",
+  consentDisclosureVersion: "disclosure_01Approved",
   profileVersions: {
     brand: "brand_01Approved",
     compliance: "compliance_01Approved",
@@ -19,6 +20,10 @@ export const commonRenderManifest: RenderManifest = {
   browser: { id: "chromium", version: "140.0.0" },
   template: { id: "open-house-boost", version: "1.0.0" },
   fonts: [{ family: "Inter", version: "4.1", sha256: sha("f") }],
+  creativeSafeZones: {
+    metaSquare: { top: 0.05, right: 0.06, bottom: 0.05, left: 0.06 },
+    metaStory: { top: 0.05, right: 0.08, bottom: 0.1, left: 0.08 },
+  },
   publicContent: {
     headline: "Tour 123 Main Street",
     propertyAddress: "123 Main Street, Orlando, Florida 32801",
@@ -37,6 +42,7 @@ export const commonRenderManifest: RenderManifest = {
       mimeType: "image/jpeg",
       width: 1600,
       height: 900,
+      focalPoint: { x: 0.5, y: 0.5 },
       approvalStatus: "approved",
     },
   ],
@@ -74,6 +80,7 @@ export const renderingGoldenFixtures = Object.freeze({
         assetRef: "asset_02Portrait",
         width: 900,
         height: 1600,
+        focalPoint: { x: 0.5, y: 0.35 },
       },
     ],
   },

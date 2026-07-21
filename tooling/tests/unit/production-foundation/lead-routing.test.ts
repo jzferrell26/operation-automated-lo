@@ -23,6 +23,7 @@ import {
   GhlLeadRoutingError,
   createEmptyLeadRoutingProgress,
   processAttributionWebhook,
+  planLeadRoutingRetry,
   reconcileAttributionEvents,
   routeLeadToGhl,
   verifySyntheticLeadPath,
@@ -219,6 +220,7 @@ function routePorts(
     state,
     workflowPolicy: { mayEnroll: async () => workflowAllowed },
     clock: { now: () => now },
+    retry: { schedule: vi.fn(async () => undefined) },
   };
 }
 
@@ -498,33 +500,56 @@ describe("fixture-only GHL lead routing", () => {
       ]),
     });
     const collisionState = routingState();
+    const collisionPorts = routePorts(collisionProvider, collisionState.port);
     await expect(
-      routeLeadToGhl(
-        routingCommand(),
-        privatePayload,
-        routePorts(collisionProvider, collisionState.port),
-        now,
-      ),
+      routeLeadToGhl(routingCommand(), privatePayload, collisionPorts, now),
     ).rejects.toMatchObject({ classification: "contact_collision" });
     expect(collisionState.exceptions).toEqual(["contact_collision"]);
+    expect(collisionPorts.retry.schedule).not.toHaveBeenCalled();
 
     const failedState = routingState();
+    const failedPorts = routePorts(
+      provider({
+        createContact: vi.fn().mockRejectedValue(new Error("secret upstream error")),
+      }),
+      failedState.port,
+    );
     await expect(
-      routeLeadToGhl(
-        routingCommand(),
-        privatePayload,
-        routePorts(
-          provider({
-            createContact: vi.fn().mockRejectedValue(new Error("secret upstream error")),
-          }),
-          failedState.port,
-        ),
-        now,
-      ),
+      routeLeadToGhl(routingCommand(), privatePayload, failedPorts, now),
     ).rejects.toEqual(
       new GhlLeadRoutingError("provider_failure", "provider step did not complete"),
     );
     expect(failedState.exceptions).toEqual(["provider_failure"]);
+    expect(failedPorts.retry.schedule).toHaveBeenCalledWith({
+      commandRef: "command_01RouteLead",
+      correlationRef: "correlation_01RouteLead",
+      encryptedPayloadRef: "payload_01Encrypted",
+      idempotencyRef: "idempotency_01RouteLead:retry:2",
+      attempt: 2,
+      maxAttempts: 5,
+      runAt: "2026-07-21T19:00:05.000Z",
+    });
+  });
+
+  it("uses bounded retry scheduling and stops after the final provider attempt", async () => {
+    expect(planLeadRoutingRetry(4, now)).toEqual({
+      attempt: 5,
+      maxAttempts: 5,
+      runAt: "2026-07-21T19:00:40.000Z",
+    });
+    expect(() => planLeadRoutingRetry(0, now)).toThrow(RangeError);
+    expect(() => planLeadRoutingRetry(5, now)).toThrow(RangeError);
+
+    const finalState = routingState();
+    const finalPorts = routePorts(
+      provider({ createContact: vi.fn().mockRejectedValue(new Error("provider failed")) }),
+      finalState.port,
+    );
+    await expect(
+      routeLeadToGhl(routingCommand(), privatePayload, finalPorts, now, 5),
+    ).rejects.toMatchObject({ classification: "provider_failure" });
+    expect(finalPorts.retry.schedule).not.toHaveBeenCalled();
+    expect(finalState.exceptions).toEqual(["provider_failure"]);
   });
 
   it("handles absent owner and workflow plus tenant workflow policy denial", async () => {

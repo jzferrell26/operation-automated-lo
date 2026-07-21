@@ -7,9 +7,11 @@ import {
   compileBrandRules,
   confirmBrandSuggestion,
   evaluateValidatedProfileReadiness,
+  fetchExternalProfileUrl,
   ingestProfileAsset,
   previewProfileVersion,
   rollBackProfileVersion,
+  resolveExternalProfileUrl,
   validateExternalProfileUrl,
   type ProfileRepository,
   type ProfileTransaction,
@@ -364,6 +366,12 @@ describe("profile readiness, assets, and brand compilation", () => {
       "https://10.1.2.3/secret",
       "https://172.16.1.1/secret",
       "https://192.168.1.1/secret",
+      "https://192.0.2.1/secret",
+      "https://198.18.1.1/secret",
+      "https://198.51.100.1/secret",
+      "https://203.0.113.1/secret",
+      "https://224.0.0.1/secret",
+      "https://100.64.0.1/secret",
       "https://[::1]/secret",
       "https://[::]/secret",
       "https://[fc00::1]/secret",
@@ -372,6 +380,45 @@ describe("profile readiness, assets, and brand compilation", () => {
       "https://user:pass@example.com/secret",
     ]) {
       expect(() => validateExternalProfileUrl(url)).toThrow();
+    }
+  });
+
+  it("pins public DNS results for one no-redirect fetch and blocks rebinding candidates", async () => {
+    const resolver = {
+      resolveAll: vi.fn(async () => ["8.8.8.8", "2001:4860:4860::8888", "8.8.8.8"]),
+    };
+    const plan = await resolveExternalProfileUrl("https://example.com/brand", resolver);
+    expect(plan).toEqual({
+      url: "https://example.com/brand",
+      hostname: "example.com",
+      approvedAddresses: ["2001:4860:4860::8888", "8.8.8.8"],
+      redirect: "error",
+    });
+    const retriever = { retrieve: vi.fn(async () => "safe-response") };
+    await expect(
+      fetchExternalProfileUrl("https://example.com/brand", { resolver, retriever }),
+    ).resolves.toBe("safe-response");
+    expect(retriever.retrieve).toHaveBeenCalledWith(plan);
+
+    resolver.resolveAll.mockClear();
+    await expect(
+      resolveExternalProfileUrl("https://8.8.8.8/brand", resolver),
+    ).resolves.toMatchObject({ approvedAddresses: ["8.8.8.8"] });
+    expect(resolver.resolveAll).not.toHaveBeenCalled();
+
+    for (const addresses of [
+      [],
+      ["8.8.8.8", "127.0.0.1"],
+      ["not-an-address"],
+      ["ff02::1"],
+      ["2001:db8::1"],
+      ["::ffff:127.0.0.1"],
+    ]) {
+      await expect(
+        resolveExternalProfileUrl("https://example.com/brand", {
+          resolveAll: async () => addresses,
+        }),
+      ).rejects.toThrow("prohibited address");
     }
   });
 

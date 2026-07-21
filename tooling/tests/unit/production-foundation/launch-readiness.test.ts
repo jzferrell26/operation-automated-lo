@@ -3,13 +3,16 @@ import { describe, expect, it, vi } from "vitest";
 import {
   LaunchReadinessError,
   ONBOARDING_CHECKLIST,
+  OnboardingRoleBindingLedger,
   authorizeOnboardingRoleAssignment,
+  configureOnboardingProviderObjects,
   evaluatePermissionReadiness,
   recomputeLaunchReadiness,
   recordOnboardingEvent,
   safeReadinessDiagnostics,
   validateChecklistCardinality,
   type LaunchReadinessPorts,
+  type OnboardingConfigurationPort,
 } from "@oalo/application";
 import type {
   LaunchReadinessResult,
@@ -275,6 +278,269 @@ describe("launch readiness", () => {
         }),
       ).toThrow("cannot grant");
     }
+  });
+
+  it("converges repeated role binding and rejects implicit role replacement", () => {
+    const ledger = new OnboardingRoleBindingLedger();
+    const input = {
+      locationRef: "location_01TenantAlpha",
+      actorRole: "location_admin" as const,
+      requestedRole: "campaign_creator" as const,
+      actorRef: "actor_01Admin",
+      subjectRef: "actor_02Creator",
+    };
+    const first = ledger.assign(input);
+    const duplicate = ledger.assign(input);
+    expect(first).toEqual({
+      duplicate: false,
+      binding: {
+        locationRef: "location_01TenantAlpha",
+        subjectRef: "actor_02Creator",
+        role: "campaign_creator",
+        assignedByRef: "actor_01Admin",
+        concentratedDuties: false,
+      },
+    });
+    expect(duplicate).toEqual({ binding: first.binding, duplicate: true });
+    expect(() => ledger.assign({ ...input, requestedRole: "viewer" })).toThrow(
+      "explicit replacement",
+    );
+    expect(() => ledger.assign({ ...input, locationRef: "invalid" })).toThrow();
+  });
+
+  it("reads every selected GHL and Meta object back from the active location", async () => {
+    const readBack = vi.fn(async (input) => ({ ...input, active: true }));
+    const port: OnboardingConfigurationPort = {
+      readBack,
+      findReusableNamespaced: vi.fn(async () => undefined),
+      createNamespaced: vi.fn(async () => undefined),
+    };
+    const verified = await configureOnboardingProviderObjects(
+      "location_01TenantAlpha",
+      [
+        {
+          mode: "select_existing",
+          provider: "ghl",
+          objectType: "pipeline",
+          providerId: "pipeline-provider-1",
+        },
+        {
+          mode: "select_existing",
+          provider: "meta",
+          objectType: "ad_account",
+          providerId: "account-provider-1",
+        },
+      ],
+      port,
+    );
+
+    expect(verified).toHaveLength(2);
+    expect(readBack).toHaveBeenCalledTimes(2);
+    expect(readBack).toHaveBeenNthCalledWith(1, {
+      locationRef: "location_01TenantAlpha",
+      provider: "ghl",
+      objectType: "pipeline",
+      providerId: "pipeline-provider-1",
+    });
+  });
+
+  it("reuses safe namespaced objects and creates only allowlisted object types idempotently", async () => {
+    const reusable = {
+      provider: "ghl" as const,
+      objectType: "tag" as const,
+      providerId: "tag-provider-reused",
+      locationRef: "location_01TenantAlpha",
+      active: true,
+    };
+    let reusableResult: unknown | undefined = reusable;
+    const findReusableNamespaced = vi.fn(async (): Promise<unknown | undefined> => reusableResult);
+    const createNamespaced = vi.fn(async () => ({
+      ...reusable,
+      objectType: "custom_field" as const,
+      providerId: "field-provider-created",
+    }));
+    const readBack = vi.fn(async (input) => ({ ...input, active: true }));
+    const port: OnboardingConfigurationPort = {
+      readBack,
+      findReusableNamespaced,
+      createNamespaced,
+    };
+
+    expect(
+      await configureOnboardingProviderObjects(
+        "location_01TenantAlpha",
+        [
+          {
+            mode: "ensure_namespaced",
+            provider: "ghl",
+            objectType: "tag",
+            namespace: "oalo:campaign:open-house",
+            idempotencyRef: "idempotency:tag:open-house",
+          },
+        ],
+        port,
+      ),
+    ).toEqual([reusable]);
+    expect(createNamespaced).not.toHaveBeenCalled();
+
+    reusableResult = undefined;
+    const created = await configureOnboardingProviderObjects(
+      "location_01TenantAlpha",
+      [
+        {
+          mode: "ensure_namespaced",
+          provider: "ghl",
+          objectType: "custom_field",
+          namespace: "oalo:field:campaign-attribution",
+          idempotencyRef: "idempotency:field:campaign-attribution",
+        },
+      ],
+      port,
+    );
+    expect(created[0]).toMatchObject({
+      objectType: "custom_field",
+      providerId: "field-provider-created",
+    });
+    expect(createNamespaced).toHaveBeenCalledWith({
+      locationRef: "location_01TenantAlpha",
+      objectType: "custom_field",
+      namespace: "oalo:field:campaign-attribution",
+      idempotencyRef: "idempotency:field:campaign-attribution",
+    });
+    await expect(
+      configureOnboardingProviderObjects(
+        "location_01TenantAlpha",
+        [
+          {
+            mode: "ensure_namespaced",
+            provider: "ghl",
+            objectType: "workflow",
+            namespace: "oalo:workflow:forbidden",
+            idempotencyRef: "idempotency:workflow:forbidden",
+          },
+        ],
+        port,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("fails a configuration step when provider read-back is stale or cross-location", async () => {
+    const port: OnboardingConfigurationPort = {
+      readBack: vi.fn(async (input) => ({
+        ...input,
+        locationRef: "location_02TenantBravo",
+        active: true,
+      })),
+      findReusableNamespaced: vi.fn(async () => undefined),
+      createNamespaced: vi.fn(async () => undefined),
+    };
+    await expect(
+      configureOnboardingProviderObjects(
+        "location_01TenantAlpha",
+        [
+          {
+            mode: "select_existing",
+            provider: "meta",
+            objectType: "page",
+            providerId: "page-provider-1",
+          },
+        ],
+        port,
+      ),
+    ).rejects.toThrow("active location selection");
+
+    await expect(
+      configureOnboardingProviderObjects(
+        "location_01TenantAlpha",
+        [
+          {
+            mode: "select_existing",
+            provider: "ghl",
+            objectType: "ad_account",
+            providerId: "account-provider-1",
+          },
+        ],
+        port,
+      ),
+    ).rejects.toThrow("does not belong to the selected provider");
+
+    await expect(
+      configureOnboardingProviderObjects(
+        "location_01TenantAlpha",
+        [
+          {
+            mode: "ensure_namespaced",
+            provider: "ghl",
+            objectType: "tag",
+            namespace: "oalo:campaign:wrong-location",
+            idempotencyRef: "idempotency:tag:wrong-location",
+          },
+        ],
+        {
+          readBack: vi.fn(),
+          findReusableNamespaced: vi.fn(async () => ({
+            provider: "ghl",
+            objectType: "tag",
+            providerId: "tag-provider-wrong-location",
+            locationRef: "location_02TenantBravo",
+            active: true,
+          })),
+          createNamespaced: vi.fn(),
+        },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      configureOnboardingProviderObjects(
+        "location_01TenantAlpha",
+        [
+          {
+            mode: "ensure_namespaced",
+            provider: "ghl",
+            objectType: "tag",
+            namespace: "oalo:campaign:wrong-type",
+            idempotencyRef: "idempotency:tag:wrong-type",
+          },
+        ],
+        {
+          readBack: vi.fn(),
+          findReusableNamespaced: vi.fn(async () => ({
+            provider: "ghl",
+            objectType: "custom_field",
+            providerId: "field-provider-wrong-type",
+            locationRef: "location_01TenantAlpha",
+            active: true,
+          })),
+          createNamespaced: vi.fn(),
+        },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      configureOnboardingProviderObjects(
+        "location_01TenantAlpha",
+        [
+          {
+            mode: "ensure_namespaced",
+            provider: "ghl",
+            objectType: "tag",
+            namespace: "oalo:campaign:wrong-provider",
+            idempotencyRef: "idempotency:tag:wrong-provider",
+          },
+        ],
+        {
+          readBack: vi.fn(),
+          findReusableNamespaced: vi.fn(async () => ({
+            provider: "meta",
+            objectType: "tag",
+            providerId: "tag-provider-wrong-provider",
+            locationRef: "location_01TenantAlpha",
+            active: true,
+          })),
+          createNamespaced: vi.fn(),
+        },
+      ),
+    ).rejects.toThrow();
   });
 
   it("produces tenant-safe diagnostics and PII-free onboarding events", async () => {

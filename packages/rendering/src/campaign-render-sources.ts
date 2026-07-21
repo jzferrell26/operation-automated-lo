@@ -87,7 +87,7 @@ body{margin:0;width:100vw;height:100vh;overflow:hidden;background:#07111f}
 .creative h1{font-size:64px;line-height:1.05;margin:0;overflow-wrap:anywhere}
 .creative p{font-size:32px;line-height:1.25;margin:0;overflow-wrap:anywhere}
 .creative .disclosure{font-size:28px;line-height:1.25;color:#f8fafc}
-.safe-zone{position:absolute;inset:5%;border:2px solid transparent;pointer-events:none}
+.safe-zone{position:absolute;border:2px solid transparent;pointer-events:none}
 .story{grid-template-rows:62% 38%}
 .story .creative-copy{padding:96px 84px 180px}
 .story h1{font-size:76px}
@@ -102,6 +102,30 @@ function escapeHtml(value: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function percentage(value: number): string {
+  return `${String(Number((value * 100).toFixed(4)))}%`;
+}
+
+function creativeCss(manifest: RenderManifest, story: boolean): string {
+  const focalPoint = manifest.assets[0]?.focalPoint ?? { x: 0.5, y: 0.5 };
+  const safeZone = story
+    ? manifest.creativeSafeZones.metaStory
+    : manifest.creativeSafeZones.metaSquare;
+  const width = 1080;
+  const height = story ? 1920 : 1080;
+  const safeZonePixels = {
+    top: Math.round(safeZone.top * height),
+    right: Math.round(safeZone.right * width),
+    bottom: Math.round(safeZone.bottom * height),
+    left: Math.round(safeZone.left * width),
+  };
+  return `${CREATIVE_CSS}
+.creative img{object-position:${percentage(focalPoint.x)} ${percentage(focalPoint.y)}}
+.creative .creative-copy{padding:${String(safeZonePixels.top)}px ${String(safeZonePixels.right)}px ${String(safeZonePixels.bottom)}px ${String(safeZonePixels.left)}px}
+.safe-zone{top:${percentage(safeZone.top)};right:${percentage(safeZone.right)};bottom:${percentage(safeZone.bottom)};left:${percentage(safeZone.left)}}
+`;
 }
 
 function validatePublicText(manifest: RenderManifest): void {
@@ -213,7 +237,8 @@ function publicPageBody(manifest: RenderManifest): string {
 </section>
 <section class="disclosures" aria-labelledby="disclosure-heading"><h2 id="disclosure-heading">Required disclosures</h2>${renderDisclosureBlocks(manifest)}</section>
 <p id="compliance-version" class="consent">Compliance profile version: ${escapeHtml(manifest.profileVersions.compliance)}</p>
-<a class="cta" aria-describedby="compliance-version" href="${escapeHtml(trackingPath(manifest))}">${escapeHtml(content.callToActionLabel)}</a>
+<p id="consent-disclosure-version" class="consent">Consent disclosure version: ${escapeHtml(manifest.consentDisclosureVersion)}</p>
+<a class="cta" aria-describedby="compliance-version consent-disclosure-version" href="${escapeHtml(trackingPath(manifest))}">${escapeHtml(content.callToActionLabel)}</a>
 </main>`;
 }
 
@@ -276,7 +301,11 @@ function creativeBody(manifest: RenderManifest, story: boolean): string {
     hero === undefined
       ? '<div class="creative-photo" role="img" aria-label="Property photo unavailable"></div>'
       : `<img src="${hero}" alt="Approved property exterior">`;
-  return `<main class="creative${story ? " story" : ""}">${photo}<section class="creative-copy"><h1>${escapeHtml(content.headline)}</h1><p>${escapeHtml(content.propertyAddress)}</p><p>${escapeHtml(content.openHouseLabel)}</p><p class="disclosure">${escapeHtml(content.disclosureBlocks.join(" "))}</p></section><div class="safe-zone" aria-hidden="true"></div></main>`;
+  const focalPoint = manifest.assets[0]?.focalPoint ?? { x: 0.5, y: 0.5 };
+  const safeZone = story
+    ? manifest.creativeSafeZones.metaStory
+    : manifest.creativeSafeZones.metaSquare;
+  return `<main class="creative${story ? " story" : ""}" data-focal-point="${percentage(focalPoint.x)},${percentage(focalPoint.y)}" data-safe-zone="${percentage(safeZone.top)},${percentage(safeZone.right)},${percentage(safeZone.bottom)},${percentage(safeZone.left)}">${photo}<section class="creative-copy"><h1>${escapeHtml(content.headline)}</h1><p>${escapeHtml(content.propertyAddress)}</p><p>${escapeHtml(content.openHouseLabel)}</p><p class="disclosure">${escapeHtml(content.disclosureBlocks.join(" "))}</p></section><div class="safe-zone" aria-hidden="true"></div></main>`;
 }
 
 function qrBody(manifest: RenderManifest): string {
@@ -331,30 +360,34 @@ export function renderSourceForManifest(
         responseHeaders: sourceHeaders(PDF_CSS),
         networkPolicy: "deny-all",
       });
-    case "meta-square":
+    case "meta-square": {
+      const css = creativeCss(manifest, false);
       return Object.freeze({
         artifactType,
-        html: documentShell(manifest, CREATIVE_CSS, creativeBody(manifest, false), {
+        html: documentShell(manifest, css, creativeBody(manifest, false), {
           description,
         }),
         inputMimeType: "text/html",
         viewport: { width: 1080, height: 1080 },
         output: { format: "png" as const, width: 1080, height: 1080 },
-        responseHeaders: sourceHeaders(CREATIVE_CSS),
+        responseHeaders: sourceHeaders(css),
         networkPolicy: "deny-all",
       });
-    case "meta-story":
+    }
+    case "meta-story": {
+      const css = creativeCss(manifest, true);
       return Object.freeze({
         artifactType,
-        html: documentShell(manifest, CREATIVE_CSS, creativeBody(manifest, true), {
+        html: documentShell(manifest, css, creativeBody(manifest, true), {
           description,
         }),
         inputMimeType: "text/html",
         viewport: { width: 1080, height: 1920 },
         output: { format: "png" as const, width: 1080, height: 1920 },
-        responseHeaders: sourceHeaders(CREATIVE_CSS),
+        responseHeaders: sourceHeaders(css),
         networkPolicy: "deny-all",
       });
+    }
     case "qr":
       return Object.freeze({
         artifactType,

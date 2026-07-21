@@ -20,6 +20,13 @@ export interface FixtureResilienceDecision {
   readonly returnedRateLimitHeaders: Readonly<Record<string, string>>;
 }
 
+export interface FixtureRetryPlan {
+  readonly retry: boolean;
+  readonly attempt: number;
+  readonly delayMilliseconds: number | undefined;
+  readonly reason: "rate-limit" | "transient-provider" | "terminal-or-reconcile";
+}
+
 function retryAfterMilliseconds(headers: Readonly<Record<string, string>>): number | undefined {
   const seconds = headers["retry-after"];
   return seconds === undefined ? undefined : Number(seconds) * 1_000;
@@ -66,6 +73,58 @@ export function classifyFixtureProviderResponse(input: {
     classification,
     retryAfterMilliseconds: retryAfterMilliseconds(headers),
     returnedRateLimitHeaders: headers,
+  });
+}
+
+export function planFixtureRetry(input: {
+  readonly decision: FixtureResilienceDecision;
+  readonly attempt: number;
+  readonly baseDelayMilliseconds: number;
+  readonly maximumDelayMilliseconds: number;
+  readonly jitterUnit: number;
+}): FixtureRetryPlan {
+  if (!Number.isInteger(input.attempt) || input.attempt < 1 || input.attempt > 12) {
+    throw new RangeError("Retry attempt must be an integer from one through twelve");
+  }
+  if (
+    !Number.isInteger(input.baseDelayMilliseconds) ||
+    input.baseDelayMilliseconds < 100 ||
+    !Number.isInteger(input.maximumDelayMilliseconds) ||
+    input.maximumDelayMilliseconds < input.baseDelayMilliseconds
+  ) {
+    throw new RangeError("Retry delay bounds are invalid");
+  }
+  if (!Number.isFinite(input.jitterUnit) || input.jitterUnit < 0 || input.jitterUnit > 1) {
+    throw new RangeError("Retry jitter must be between zero and one");
+  }
+  if (
+    input.decision.classification !== "RATE_LIMITED" &&
+    input.decision.classification !== "TRANSIENT_PROVIDER"
+  ) {
+    return Object.freeze({
+      retry: false,
+      attempt: input.attempt,
+      delayMilliseconds: undefined,
+      reason: "terminal-or-reconcile" as const,
+    });
+  }
+  const exponential = Math.min(
+    input.maximumDelayMilliseconds,
+    input.baseDelayMilliseconds * 2 ** (input.attempt - 1),
+  );
+  const jittered = Math.floor(exponential * (0.5 + input.jitterUnit * 0.5));
+  const delayMilliseconds = Math.min(
+    input.maximumDelayMilliseconds,
+    Math.max(jittered, input.decision.retryAfterMilliseconds ?? 0),
+  );
+  return Object.freeze({
+    retry: true,
+    attempt: input.attempt,
+    delayMilliseconds,
+    reason:
+      input.decision.classification === "RATE_LIMITED"
+        ? ("rate-limit" as const)
+        : ("transient-provider" as const),
   });
 }
 

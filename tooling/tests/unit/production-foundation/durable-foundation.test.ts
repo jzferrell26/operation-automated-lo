@@ -112,6 +112,7 @@ const healthyAuthority: AuthoritySnapshot = {
   entitlementActive: true,
   actorAuthorized: true,
   tokenHealth: "healthy",
+  readinessState: "launch_ready",
 };
 
 const operation: ProviderOperation = {
@@ -330,6 +331,37 @@ describe("tenant queues and provider reconciliation", () => {
     });
     expect(port.writes).not.toHaveBeenCalled();
   });
+
+  it.each(["not_ready", "attention_required"] as const)(
+    "blocks launch-sensitive provider writes when readiness is %s",
+    async (readinessState) => {
+      const port = providerPort({
+        currentAuthority: vi.fn(async () => ({ ...healthyAuthority, readinessState })),
+      });
+      await expect(executeProviderOperation(operation, port)).resolves.toEqual({
+        kind: "blocked",
+        reason: "READINESS_REQUIRED",
+      });
+      expect(port.writes).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["ghl.meta.pause", "ghl.meta.draft.upsert"] as const)(
+    "allows safety or configuration operation %s while launch readiness needs attention",
+    async (operationName) => {
+      const safeOperation = { ...operation, operation: operationName };
+      const port = providerPort({
+        currentAuthority: vi.fn(async () => ({
+          ...healthyAuthority,
+          readinessState: "attention_required" as const,
+        })),
+      });
+      await expect(executeProviderOperation(safeOperation, port)).resolves.toMatchObject({
+        kind: "confirmed",
+        source: "write",
+      });
+    },
+  );
 
   it("reconciles an uncertain operation to confirmed without writing again", async () => {
     const port = providerPort({

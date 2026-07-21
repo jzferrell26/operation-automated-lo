@@ -201,18 +201,38 @@ export type ProviderOperationOutcome =
       normalizedResultRef: string;
       source: "prior" | "write" | "reconciliation";
     }>
-  | Readonly<{ kind: "blocked"; reason: "AUTHORITY_REVOKED" }>
+  | Readonly<{ kind: "blocked"; reason: "AUTHORITY_REVOKED" | "READINESS_REQUIRED" }>
   | Readonly<{ kind: "failed"; failureClass: string }>
   | Readonly<{ kind: "uncertain" }>;
 
-function isAuthorized(snapshot: AuthoritySnapshot): boolean {
+const readinessRequiredOperations = new Set<ProviderOperation["operation"]>([
+  "ghl.meta.publish",
+  "ghl.meta.resume",
+  "ghl.contact.upsert",
+  "ghl.opportunity.upsert",
+  "ghl.workflow.enroll",
+]);
+
+function providerOperationBlockReason(
+  snapshot: AuthoritySnapshot,
+  operation: ProviderOperation,
+): "AUTHORITY_REVOKED" | "READINESS_REQUIRED" | undefined {
   const authority = AuthoritySnapshotSchema.parse(snapshot);
-  return (
-    authority.installationActive &&
-    authority.entitlementActive &&
-    authority.actorAuthorized &&
-    authority.tokenHealth === "healthy"
-  );
+  if (
+    !authority.installationActive ||
+    !authority.entitlementActive ||
+    !authority.actorAuthorized ||
+    authority.tokenHealth !== "healthy"
+  ) {
+    return "AUTHORITY_REVOKED";
+  }
+  if (
+    readinessRequiredOperations.has(operation.operation) &&
+    authority.readinessState !== "launch_ready"
+  ) {
+    return "READINESS_REQUIRED";
+  }
+  return undefined;
 }
 
 export async function executeProviderOperation(
@@ -229,9 +249,11 @@ export async function executeProviderOperation(
     };
   }
 
-  if (!isAuthorized(await port.currentAuthority(operation))) {
-    return { kind: "blocked", reason: "AUTHORITY_REVOKED" };
-  }
+  const initialBlock = providerOperationBlockReason(
+    await port.currentAuthority(operation),
+    operation,
+  );
+  if (initialBlock !== undefined) return { kind: "blocked", reason: initialBlock };
 
   if (existing.status === "uncertain") {
     const reconciliation = await port.reconcile(operation);
@@ -247,9 +269,11 @@ export async function executeProviderOperation(
   }
 
   await port.reserve(operation);
-  if (!isAuthorized(await port.currentAuthority(operation))) {
-    return { kind: "blocked", reason: "AUTHORITY_REVOKED" };
-  }
+  const sideEffectBlock = providerOperationBlockReason(
+    await port.currentAuthority(operation),
+    operation,
+  );
+  if (sideEffectBlock !== undefined) return { kind: "blocked", reason: sideEffectBlock };
 
   const result = await port.write(operation);
   if (result.kind === "confirmed") {

@@ -25,6 +25,7 @@ export {
 
 export {
   normalizeUploadedImages,
+  SharpImageNormalizationAdapter,
   type ImageNormalizationPort,
   type NormalizedImage,
 } from "./image-normalization.js";

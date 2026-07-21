@@ -1,6 +1,8 @@
 import { contractVersion } from "@oalo/contracts";
 import { foundationPhase, type FoundationStatus } from "@oalo/domain";
 
+export * from "./tenant-installation.js";
+
 export interface FoundationSnapshot extends FoundationStatus {
   readonly contractVersion: typeof contractVersion;
 }
@@ -12,3 +14,114 @@ export function getFoundationSnapshot(): FoundationSnapshot {
     contractVersion,
   });
 }
+
+export {
+  executeCommand,
+  executeProviderOperation,
+  processDelivery,
+  queueConstraint,
+  sweepOutbox,
+  type CommandAuthorityPort,
+  type CommandTransaction,
+  type CommittedCommand,
+  type DeliveryGuardPort,
+  type ExecuteCommandResult,
+  type OutboxDispatcher,
+  type OutboxLease,
+  type OutboxPort,
+  type ProviderOperationOutcome,
+  type ProviderOperationPort,
+  type QueueClass,
+  type QueueConstraint,
+  type SweepResult,
+  type TransactionPort,
+} from "./durable-foundation.js";
+
+export {
+  appendProfileVersion,
+  compileBrandRules,
+  confirmBrandSuggestion,
+  evaluateValidatedProfileReadiness,
+  ingestProfileAsset,
+  previewProfileVersion,
+  rollBackProfileVersion,
+  validateExternalProfileUrl,
+  type AppendProfileVersionInput,
+  type PrivateProfileAssetPort,
+  type ProfileAssetDecoderPort,
+  type ProfileRepository,
+  type ProfileTransaction,
+} from "./profile-foundation.js";
+
+export {
+  appendCampaignTransition,
+  completeRegeneration,
+  createApprovalDecision,
+  createCampaignVersion,
+  duplicateCampaign,
+  recordGeneration,
+  redeemApprovalLink,
+  retryCampaignOperation,
+  runCampaignPreflight,
+  type ApprovalAuthorityPort,
+  type ApprovalLinkPort,
+  type CampaignEventPort,
+  type CampaignVersionRepository,
+  type CampaignVersionTransaction,
+} from "./campaign-foundation.js";
+
+export {
+  LeadSubmissionRejectedError,
+  acceptPublicLeadSubmission,
+  evaluateLeadPathLaunchGate,
+  normalizeLeadEmail,
+  normalizeLeadPhone,
+  type LeadAbuseGuardPort,
+  type LeadCampaignResolverPort,
+  type LeadSubmissionAcceptancePort,
+  type LeadSubmissionClockPort,
+  type LeadSubmissionIdentityPort,
+  type LeadSubmissionPorts,
+  type PublicLeadAcceptedResponse,
+  type PublicLeadRequestMetadata,
+  type ResolvedLeadCampaign,
+} from "./lead-intake.js";
+
+export {
+  LaunchReadinessError,
+  ONBOARDING_CHECKLIST,
+  authorizeOnboardingRoleAssignment,
+  evaluatePermissionReadiness,
+  recomputeLaunchReadiness,
+  recordOnboardingEvent,
+  safeReadinessDiagnostics,
+  validateChecklistCardinality,
+  type LaunchReadinessClockPort,
+  type LaunchReadinessHashPort,
+  type LaunchReadinessIdentityPort,
+  type LaunchReadinessPolicy,
+  type LaunchReadinessPorts,
+  type LaunchReadinessRepositoryPort,
+  type LaunchReadinessVerifierPort,
+  type OnboardingEventPort,
+} from "./launch-readiness.js";
+
+export {
+  REPORTING_METRIC_DEFINITIONS,
+  ReportingError,
+  aggregateBlueprintMetrics,
+  authorizeAgencyPortfolio,
+  buildCampaignReportingRecord,
+  buildSafeSupportNotification,
+  canOpenReportingTarget,
+  createReportingException,
+  filterCampaignHistory,
+  projectRealtorCampaigns,
+  recordCollaboratorAuditEvent,
+  summarizeCohortEvents,
+  type CampaignHistoryFilter,
+  type CampaignReportingInput,
+  type CohortSummary,
+  type CollaboratorAuditPort,
+  type ReportingTargetAuthorization,
+} from "./reporting.js";

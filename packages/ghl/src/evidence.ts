@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 
 import { z } from "zod";
 
+import { canonicalizeJson } from "./canonical-json.js";
+
 import { assertFixtureIsSanitized, assertFixtureOnlyRequest } from "./sanitization.js";
 
 export const GHL_EVIDENCE_SCHEMA_VERSION = 1 as const;
@@ -85,22 +87,8 @@ export type EvidenceRecordInput = Omit<GhlEvidenceRecord, "evidence"> & {
   readonly evidence: Omit<GhlEvidenceRecord["evidence"], "requestHash" | "responseHash">;
 };
 
-function canonicalize(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(canonicalize);
-  }
-  if (value !== null && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, entry]) => [key, canonicalize(entry)]),
-    );
-  }
-  return value;
-}
-
 export function hashFixtureValue(value: unknown): `sha256:${string}` {
-  const canonical = JSON.stringify(canonicalize(z.json().parse(value)));
+  const canonical = JSON.stringify(canonicalizeJson(z.json().parse(value)));
   return `sha256:${createHash("sha256").update(canonical).digest("hex")}`;
 }
 

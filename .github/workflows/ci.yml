@@ -61,9 +61,104 @@ jobs:
       - name: Run the canonical verification gate
         run: pnpm verify
 
+  release-contract:
+    name: Release and recovery contract
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      RELEASE_BUILD_ID: github-${{ github.run_id }}-${{ github.run_attempt }}
+      RELEASE_COMMIT: ${{ github.sha }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24.18.0
+          package-manager-cache: false
+
+      - name: Enable Corepack and confirm pnpm
+        run: |
+          corepack enable
+          pnpm --version
+
+      - name: Resolve pnpm store path
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore pnpm store cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build release contract code
+        run: pnpm --filter @oalo/config build
+
+      - name: Create a synthetic preview candidate manifest
+        shell: bash
+        run: |
+          generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          node tooling/scripts/release/create-release-manifest.mjs \
+            --environment preview \
+            --commit "$RELEASE_COMMIT" \
+            --build-id "$RELEASE_BUILD_ID" \
+            --generated-at "$generated_at" \
+            --verification-reference "github:${{ github.repository }}:actions:${{ github.run_id }}:${{ github.run_attempt }}" \
+            --web-version "$RELEASE_BUILD_ID" \
+            --tasks-version "$RELEASE_BUILD_ID" \
+            --database-migration-version phase0 \
+            --contract-version phase0 \
+            --renderer-version phase0 \
+            --template-version phase0 \
+            --write \
+            --output "$RUNNER_TEMP/release-manifest.json"
+
+      - name: Validate manifest compatibility
+        run: |
+          node tooling/scripts/release/validate-release-manifest.mjs \
+            --manifest "$RUNNER_TEMP/release-manifest.json" \
+            --expected-environment preview \
+            --expected-commit "$RELEASE_COMMIT" \
+            --expected-build-id "$RELEASE_BUILD_ID"
+
+      - name: Confirm candidate cannot satisfy production evidence
+        shell: bash
+        run: |
+          if node tooling/scripts/release/validate-release-manifest.mjs \
+            --manifest "$RUNNER_TEMP/release-manifest.json" \
+            --expected-environment preview \
+            --expected-commit "$RELEASE_COMMIT" \
+            --expected-build-id "$RELEASE_BUILD_ID" \
+            --require-production-evidence; then
+            echo "Candidate manifest unexpectedly passed the production evidence gate"
+            exit 1
+          fi
+
+      - name: Validate environment isolation contract
+        run: node tooling/scripts/release/validate-environment-isolation.mjs --input tooling/scripts/release/fixtures/environment-isolation.synthetic.json
+
+      - name: Validate recovery runbook inventory
+        run: node tooling/scripts/release/validate-runbook-inventory.mjs
+
+      - name: Confirm operation evidence stays dry-run
+        run: node tooling/scripts/release/create-operation-evidence.mjs --operation deployment --environment preview --correlation-id corr_ci_dry_run_001
+
   preview-smoke:
     name: Preview smoke contract
-    needs: verify
+    needs:
+      - verify
+      - release-contract
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     permissions:
@@ -71,7 +166,7 @@ jobs:
     env:
       OALO_ENVIRONMENT: preview
       OALO_PROVIDER_MODE: stub
-      OALO_SYNTHETIC_DATA_ONLY: 'true'
+      OALO_SYNTHETIC_DATA_ONLY: "true"
       OALO_TRIGGER_ENVIRONMENT: preview
       OALO_SUPABASE_MODE: ephemeral-preview
     steps:

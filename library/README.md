@@ -28,6 +28,7 @@ New PRD folders contain an index, independently implementable sub-PRDs, and a `q
 
 ## Construction specifications
 
+- [UX/UI design scope](knowledge/private/ux-ui/README.md): approved platform information architecture, visual system, responsive behavior, component contracts, screen specifications, and preserved Claude Design canvases.
 - [System build blueprint](knowledge/private/architecture/system-build-blueprint.md): deployables, monorepo, modules, runtimes, tokens, sessions, rendering, storage, billing, and AI.
 - [System data model](knowledge/private/architecture/system-data-model.md): schemas, tables, roles, RLS, integrity, retention, migrations, and scale triggers.
 - [System runtime contracts](knowledge/private/architecture/system-runtime-contracts.md): HTTP, commands, events, tasks, provider operations, failures, approvals, lead routing, and billing.

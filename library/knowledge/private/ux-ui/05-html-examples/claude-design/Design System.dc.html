@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Claude Design runtime disabled in repository copy. -->
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>body{margin:0;background:#eceef1;font-family:Geist,system-ui,sans-serif;color:#1c2431}a{color:#2f6fed;text-decoration:none}a:hover{color:#1f4bb8}</style></helmet>
+<div style="padding:40px 48px;max-width:1500px">
+  <div style="font:700 24px Geist,sans-serif;letter-spacing:-.02em">AutomatedLO Design System</div>
+  <div style="font:400 13px Geist,sans-serif;color:#5b6574;margin-top:6px;max-width:720px">Semantic tokens for the approved baseline. Screens consume tokens (CSS custom properties), never raw hex. Dashboard themes never affect public pages, PDFs, or approved artifacts — those render from tenant brand tokens only.</div>
+
+  <!-- SURFACE / TEXT / BORDER TOKENS -->
+  <div style="display:flex;gap:28px;margin-top:30px;flex-wrap:wrap;align-items:flex-start">
+  <div style="flex:none;width:640px">
+    <div style="font:700 15px Geist,sans-serif;letter-spacing:-.01em;margin-bottom:12px">Surface, text &amp; border tokens</div>
+    <div style="background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(23,32,50,.08);overflow:hidden">
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:10px 18px;background:#fafbfd;border-bottom:1px solid #f0f3f8;font:600 10px 'Geist Mono',monospace;color:#8b96a7;letter-spacing:.06em"><span>TOKEN</span><span>LIGHT</span><span>DARK</span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--sf-canvas</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#f3f6fa;border:1px solid #e4e9f1"></i>#F3F6FA</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#14161b"></i>#14161B</span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--sf-card</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#fff;border:1px solid #e4e9f1"></i>#FFFFFF</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#1b1e25"></i>#1B1E25</span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--sf-sunken</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#f7f9fc;border:1px solid #e4e9f1"></i>#F7F9FC</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#22262f"></i>#22262F</span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--sf-nav</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#0e1730"></i>#0E1730</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#0b1122"></i>#0B1122</span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--tx-strong</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#1c2431"></i>#1C2431</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#e8eaef;border:1px solid #d0d4dc"></i>#E8EAEF</span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--tx-body</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#5b6574"></i>#5B6574</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#9aa1b0"></i>#9AA1B0</span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--tx-faint</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#98a2b3"></i>#98A2B3</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#697083"></i>#697083</span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--bd-hairline</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#e9edf3;border:1px solid #dde2ea"></i>#E9EDF3</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#262a33"></i>#262A33</span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--bd-input</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#dfe5ee;border:1px solid #d2d9e4"></i>#DFE5EE</span><span style="display:flex;align-items:center;gap:8px"><i style="width:22px;height:22px;border-radius:6px;background:#333947"></i>#333947</span></div>
+    </div>
+  </div>
+  <!-- ACTION + STATUS TOKENS -->
+  <div style="flex:none;width:640px">
+    <div style="font:700 15px Geist,sans-serif;letter-spacing:-.01em;margin-bottom:12px">Action &amp; status tokens</div>
+    <div style="background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(23,32,50,.08);overflow:hidden">
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:10px 18px;background:#fafbfd;border-bottom:1px solid #f0f3f8;font:600 10px 'Geist Mono',monospace;color:#8b96a7;letter-spacing:.06em"><span>TOKEN</span><span>LIGHT (fg / bg)</span><span>DARK (fg / bg)</span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--ac-primary</span><span style="display:flex;gap:8px;align-items:center"><i style="width:22px;height:22px;border-radius:6px;background:#2f6fed"></i>#2F6FED</span><span style="display:flex;gap:8px;align-items:center"><i style="width:22px;height:22px;border-radius:6px;background:#4a7bf0"></i>#4A7BF0</span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--ac-secondary</span><span style="display:flex;gap:8px;align-items:center"><i style="width:22px;height:22px;border-radius:6px;background:#2b9d8f"></i>#2B9D8F</span><span style="display:flex;gap:8px;align-items:center"><i style="width:22px;height:22px;border-radius:6px;background:#3db3a4"></i>#3DB3A4</span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--st-success</span><span><span style="padding:3px 10px;border-radius:99px;background:#e6f6ec;color:#157a46;font:600 10.5px Geist,sans-serif">● Healthy</span></span><span><span style="padding:3px 10px;border-radius:99px;background:#132a20;color:#4ecb8d;font:600 10.5px Geist,sans-serif">● Healthy</span></span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--st-warning</span><span><span style="padding:3px 10px;border-radius:99px;background:#fdf3dd;color:#8a6112;font:600 10.5px Geist,sans-serif">▲ Stale</span></span><span><span style="padding:3px 10px;border-radius:99px;background:#2d2413;color:#e8b64c;font:600 10.5px Geist,sans-serif">▲ Stale</span></span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--st-critical</span><span><span style="padding:3px 10px;border-radius:99px;background:#fdecea;color:#c03a2e;font:600 10.5px Geist,sans-serif">✕ Blocked</span></span><span><span style="padding:3px 10px;border-radius:99px;background:#2f1715;color:#e0574a;font:600 10.5px Geist,sans-serif">✕ Blocked</span></span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;border-bottom:1px solid #f0f3f8;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--st-info</span><span><span style="padding:3px 10px;border-radius:99px;background:#eaf2ff;color:#2f6fed;font:600 10.5px Geist,sans-serif">◆ Generated</span></span><span><span style="padding:3px 10px;border-radius:99px;background:#16233f;color:#6f9cf5;font:600 10.5px Geist,sans-serif">◆ Generated</span></span></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;padding:9px 18px;font:500 11.5px Geist,sans-serif;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:11px">--st-neutral</span><span><span style="padding:3px 10px;border-radius:99px;background:#eef1f6;color:#5b6574;font:600 10.5px Geist,sans-serif">○ Draft</span></span><span><span style="padding:3px 10px;border-radius:99px;background:#242833;color:#9aa1b0;font:600 10.5px Geist,sans-serif">○ Draft</span></span></div>
+    </div>
+    <div style="font:400 11px/1.6 Geist,sans-serif;color:#6b7688;margin-top:10px;max-width:620px">Status is never color-only: every badge pairs its color with a glyph (● ▲ ✕ ◆ ○ ◐ ✓) and a text label. Tenant accent overrides are allowlisted to <span style="font-family:'Geist Mono',monospace;font-size:10px">--ac-primary/--ac-secondary</span> and validated for AA contrast against both themes.</div>
+  </div>
+  </div>
+
+  <!-- SCALES -->
+  <div style="display:flex;gap:28px;margin-top:34px;flex-wrap:wrap;align-items:flex-start">
+    <div style="width:400px;background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(23,32,50,.08);padding:18px 20px">
+      <div style="font:700 13.5px Geist,sans-serif">Typography · Geist / Geist Mono</div>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:9px">
+        <div style="display:flex;align-items:baseline;gap:12px"><span style="font:700 23px Geist,sans-serif;letter-spacing:-.02em">Page title</span><span style="font:400 10px 'Geist Mono',monospace;color:#98a2b3">23/700 · -0.02em</span></div>
+        <div style="display:flex;align-items:baseline;gap:12px"><span style="font:700 17px Geist,sans-serif;letter-spacing:-.01em">Section title</span><span style="font:400 10px 'Geist Mono',monospace;color:#98a2b3">17/700</span></div>
+        <div style="display:flex;align-items:baseline;gap:12px"><span style="font:700 14px Geist,sans-serif">Card title</span><span style="font:400 10px 'Geist Mono',monospace;color:#98a2b3">14/700</span></div>
+        <div style="display:flex;align-items:baseline;gap:12px"><span style="font:500 13px Geist,sans-serif">Body / controls</span><span style="font:400 10px 'Geist Mono',monospace;color:#98a2b3">13/500</span></div>
+        <div style="display:flex;align-items:baseline;gap:12px"><span style="font:400 11.5px Geist,sans-serif;color:#5b6574">Secondary</span><span style="font:400 10px 'Geist Mono',monospace;color:#98a2b3">11.5/400</span></div>
+        <div style="display:flex;align-items:baseline;gap:12px"><span style="font:400 10.5px Geist,sans-serif;color:#98a2b3">Caption / freshness</span><span style="font:400 10px 'Geist Mono',monospace;color:#98a2b3">10.5/400</span></div>
+        <div style="display:flex;align-items:baseline;gap:12px"><span style="font:500 11px 'Geist Mono',monospace">DATA · IDs · versions</span><span style="font:400 10px 'Geist Mono',monospace;color:#98a2b3">Geist Mono</span></div>
+      </div>
+    </div>
+    <div style="width:330px;background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(23,32,50,.08);padding:18px 20px">
+      <div style="font:700 13.5px Geist,sans-serif">Radius &amp; spacing</div>
+      <div style="display:flex;gap:12px;margin-top:12px;align-items:flex-end">
+        <div style="text-align:center"><div style="width:44px;height:44px;border:1.5px solid #2f6fed;border-radius:8px"></div><div style="font:400 9.5px 'Geist Mono',monospace;color:#98a2b3;margin-top:4px">8 controls</div></div>
+        <div style="text-align:center"><div style="width:44px;height:44px;border:1.5px solid #2f6fed;border-radius:10px"></div><div style="font:400 9.5px 'Geist Mono',monospace;color:#98a2b3;margin-top:4px">10 buttons</div></div>
+        <div style="text-align:center"><div style="width:44px;height:44px;border:1.5px solid #2f6fed;border-radius:12px"></div><div style="font:400 9.5px 'Geist Mono',monospace;color:#98a2b3;margin-top:4px">12–14 cards</div></div>
+        <div style="text-align:center"><div style="width:44px;height:44px;border:1.5px solid #2f6fed;border-radius:16px"></div><div style="font:400 9.5px 'Geist Mono',monospace;color:#98a2b3;margin-top:4px">16 panels</div></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:16px;align-items:flex-end">
+        <div style="width:4px;height:16px;background:#c9d4e5"></div><div style="width:8px;height:16px;background:#c9d4e5"></div><div style="width:12px;height:16px;background:#9db4e8"></div><div style="width:16px;height:16px;background:#9db4e8"></div><div style="width:20px;height:16px;background:#6f9cf5"></div><div style="width:24px;height:16px;background:#6f9cf5"></div><div style="width:32px;height:16px;background:#2f6fed"></div>
+      </div>
+      <div style="font:400 9.5px 'Geist Mono',monospace;color:#98a2b3;margin-top:5px">4 · 8 · 12 · 16 · 20 · 24 · 32 spacing scale (px)</div>
+    </div>
+    <div style="width:330px;background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(23,32,50,.08);padding:18px 20px">
+      <div style="font:700 13.5px Geist,sans-serif">Shadow tiers &amp; motion</div>
+      <div style="display:flex;gap:14px;margin-top:14px">
+        <div style="width:76px;height:52px;background:#fff;border-radius:10px;box-shadow:0 1px 2px rgba(23,32,50,.06);display:flex;align-items:center;justify-content:center;font:400 9px 'Geist Mono',monospace;color:#98a2b3">sh-1 rest</div>
+        <div style="width:76px;height:52px;background:#fff;border-radius:10px;box-shadow:0 1px 2px rgba(23,32,50,.05),0 10px 24px -16px rgba(23,32,50,.18);display:flex;align-items:center;justify-content:center;font:400 9px 'Geist Mono',monospace;color:#98a2b3">sh-2 card</div>
+        <div style="width:76px;height:52px;background:#fff;border-radius:10px;box-shadow:0 2px 5px rgba(23,32,50,.07),0 14px 30px -18px rgba(23,32,50,.28);display:flex;align-items:center;justify-content:center;font:400 9px 'Geist Mono',monospace;color:#98a2b3">sh-3 raised</div>
+      </div>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:5px;font:500 11px Geist,sans-serif;color:#5b6574">
+        <div style="display:flex"><span style="font-family:'Geist Mono',monospace;font-size:10px;width:110px">motion-fast 120ms</span>hover, press, toggles</div>
+        <div style="display:flex"><span style="font-family:'Geist Mono',monospace;font-size:10px;width:110px">motion-base 180ms</span>reveals, tabs, badges</div>
+        <div style="display:flex"><span style="font-family:'Geist Mono',monospace;font-size:10px;width:110px">motion-slow 240ms</span>drawers, modals, theme</div>
+      </div>
+      <div style="font:400 10px/1.5 Geist,sans-serif;color:#98a2b3;margin-top:9px">Ambient motion only on Welcome/install. No continuous motion behind tables or metrics. All motion collapses under prefers-reduced-motion.</div>
+    </div>
+    <div style="width:330px;background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(23,32,50,.08);padding:18px 20px">
+      <div style="font:700 13.5px Geist,sans-serif">Icons &amp; focus</div>
+      <div style="display:flex;gap:12px;margin-top:12px;align-items:center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5b6574" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5b6574" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"></path></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5b6574" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5b6574" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5b6574" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5b6574" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        <span style="font:400 10px 'Geist Mono',monospace;color:#98a2b3">Lucide · 1.5px · 16/20/24</span>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:12px;align-items:center">
+        <span style="padding:8px 16px;background:#2f6fed;color:#fff;border-radius:10px;font:600 12.5px Geist,sans-serif;outline:2px solid #2f6fed;outline-offset:3px">Focused action</span>
+        <span style="font:400 10.5px/1.5 Geist,sans-serif;color:#98a2b3">2px ring, 3px offset,<br>--ac-primary in both themes</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CORE COMPONENTS STRIP -->
+  <div style="margin-top:34px">
+    <div style="font:700 15px Geist,sans-serif;letter-spacing:-.01em;margin-bottom:12px">Core components — light / dark</div>
+    <div style="display:flex;gap:0;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(23,32,50,.08)">
+      <div style="flex:1;background:#f3f6fa;padding:22px 24px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start">
+        <span style="padding:9px 18px;background:#2f6fed;color:#fff;border-radius:10px;font:600 13px Geist,sans-serif;box-shadow:0 6px 14px -5px rgba(47,111,237,.5)">Primary</span>
+        <span style="padding:9px 18px;background:#fff;border:1px solid #dfe5ee;color:#5b6574;border-radius:10px;font:600 13px Geist,sans-serif">Secondary</span>
+        <span style="padding:9px 18px;background:#c9d4e5;color:#7c8798;border-radius:10px;font:600 13px Geist,sans-serif">Disabled — reason shown inline</span>
+        <div style="width:100%;display:flex;gap:10px;flex-wrap:wrap">
+          <div style="padding:10px 13px;border:1px solid #dfe5ee;border-radius:9px;font:500 12.5px Geist,sans-serif;background:#fff;min-width:170px">Input value</div>
+          <div style="padding:10px 13px;border:2px solid #2f6fed;border-radius:9px;font:500 12.5px Geist,sans-serif;background:#fff;min-width:170px">Focused input</div>
+          <div style="padding:10px 13px;border:1px solid #d64545;border-radius:9px;font:500 12.5px Geist,sans-serif;background:#fff;min-width:170px;color:#c03a2e">Invalid · error below field</div>
+        </div>
+        <div style="background:#fff;border-radius:14px;padding:13px 15px;box-shadow:0 1px 2px rgba(23,32,50,.05),0 10px 24px -16px rgba(23,32,50,.18);width:170px"><div style="font:500 11px Geist,sans-serif;color:#6b7688">Metric card</div><div style="font:700 19px Geist,sans-serif;margin-top:6px">$412.68</div><div style="font:400 10px Geist,sans-serif;color:#98a2b3;margin-top:2px">Meta · 12 min ago</div></div>
+        <div style="background:#fff;border-radius:14px;padding:13px 15px;box-shadow:0 1px 2px rgba(23,32,50,.05),0 10px 24px -16px rgba(23,32,50,.18);width:170px"><div style="font:500 11px Geist,sans-serif;color:#6b7688">Unavailable metric</div><div style="font:600 13px Geist,sans-serif;color:#98a2b3;margin-top:9px">Unavailable</div><div style="font:400 10px Geist,sans-serif;color:#98a2b3;margin-top:2px">never shown as zero</div></div>
+        <div style="width:100%;display:flex;gap:8px;flex-wrap:wrap;font:600 10.5px Geist,sans-serif">
+          <span style="padding:3px 10px;border-radius:99px;background:#e6f6ec;color:#157a46">● Live</span><span style="padding:3px 10px;border-radius:99px;background:#fdf3dd;color:#8a6112">◐ Awaiting approval</span><span style="padding:3px 10px;border-radius:99px;background:#fdecea;color:#c03a2e">✕ Preflight failed</span><span style="padding:3px 10px;border-radius:99px;background:#eaf2ff;color:#2f6fed">◆ Publishing</span><span style="padding:3px 10px;border-radius:99px;background:#f3ecff;color:#6d5fd4">◈ Uncertain — reconciling</span><span style="padding:3px 10px;border-radius:99px;background:#eef1f6;color:#5b6574">✓ Completed</span>
+        </div>
+      </div>
+      <div style="flex:1;background:#14161b;padding:22px 24px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start">
+        <span style="padding:9px 18px;background:#4a7bf0;color:#fff;border-radius:10px;font:600 13px Geist,sans-serif">Primary</span>
+        <span style="padding:9px 18px;background:#1b1e25;border:1px solid #333947;color:#9aa1b0;border-radius:10px;font:600 13px Geist,sans-serif">Secondary</span>
+        <span style="padding:9px 18px;background:#2a2f3b;color:#697083;border-radius:10px;font:600 13px Geist,sans-serif">Disabled — reason shown inline</span>
+        <div style="width:100%;display:flex;gap:10px;flex-wrap:wrap">
+          <div style="padding:10px 13px;border:1px solid #333947;border-radius:9px;font:500 12.5px Geist,sans-serif;background:#1b1e25;color:#e8eaef;min-width:170px">Input value</div>
+          <div style="padding:10px 13px;border:2px solid #4a7bf0;border-radius:9px;font:500 12.5px Geist,sans-serif;background:#1b1e25;color:#e8eaef;min-width:170px">Focused input</div>
+          <div style="padding:10px 13px;border:1px solid #e0574a;border-radius:9px;font:500 12.5px Geist,sans-serif;background:#1b1e25;min-width:170px;color:#e0574a">Invalid · error below field</div>
+        </div>
+        <div style="background:#1b1e25;border:1px solid #262a33;border-radius:14px;padding:13px 15px;width:170px"><div style="font:500 11px Geist,sans-serif;color:#9aa1b0">Metric card</div><div style="font:700 19px Geist,sans-serif;margin-top:6px;color:#fff">$412.68</div><div style="font:400 10px Geist,sans-serif;color:#697083;margin-top:2px">Meta · 12 min ago</div></div>
+        <div style="background:#1b1e25;border:1px solid #262a33;border-radius:14px;padding:13px 15px;width:170px"><div style="font:500 11px Geist,sans-serif;color:#9aa1b0">Unavailable metric</div><div style="font:600 13px Geist,sans-serif;color:#697083;margin-top:9px">Unavailable</div><div style="font:400 10px Geist,sans-serif;color:#697083;margin-top:2px">never shown as zero</div></div>
+        <div style="width:100%;display:flex;gap:8px;flex-wrap:wrap;font:600 10.5px Geist,sans-serif">
+          <span style="padding:3px 10px;border-radius:99px;background:#132a20;color:#4ecb8d">● Live</span><span style="padding:3px 10px;border-radius:99px;background:#2d2413;color:#e8b64c">◐ Awaiting approval</span><span style="padding:3px 10px;border-radius:99px;background:#2f1715;color:#e0574a">✕ Preflight failed</span><span style="padding:3px 10px;border-radius:99px;background:#16233f;color:#6f9cf5">◆ Publishing</span><span style="padding:3px 10px;border-radius:99px;background:#241d3d;color:#a495e8">◈ Uncertain — reconciling</span><span style="padding:3px 10px;border-radius:99px;background:#242833;color:#9aa1b0">✓ Completed</span>
+        </div>
+      </div>
+    </div>
+    <div style="font:400 11px/1.6 Geist,sans-serif;color:#6b7688;margin-top:12px;max-width:860px"><b style="color:#1c2431">Theme selector spec.</b> Light / Dark / System segmented control lives in the user menu and page headers. Selected option shows a ✓ glyph plus fill — never color alone. Theme applies instantly (no reload), persists per user, and System tracks the OS preference live. Public campaign pages, PDFs, creative, and approved artifacts never re-theme.</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

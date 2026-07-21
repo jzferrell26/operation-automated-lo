@@ -29,6 +29,7 @@ This repository currently contains the research and requirements package. It doe
 
 ## Research package
 
+- [UX/UI design scope](library/knowledge/private/ux-ui/README.md)
 - [Product definition](library/knowledge/private/product/product-definition.md)
 - [Reusable source-asset inventory](library/knowledge/private/product/source-asset-inventory.md)
 - [GHL Marketplace, OAuth, and scope plan](library/knowledge/private/integrations/ghl-marketplace-and-scopes.md)

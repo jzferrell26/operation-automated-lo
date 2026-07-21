@@ -21,6 +21,8 @@ Launch Readiness:
 
 Each item supports not started, in progress, blocked, complete, and stale. Completion comes from server-verified evidence, not browser state.
 
+Use `OnboardingChecklist` for the five Get Connected items and four Launch Readiness items. Each shows its validated responsible role, evidence freshness, state glyph and text, and next safe action. Synthetic lead is explicitly synthetic, excluded from business metrics and production routing, and cannot create a false production-success claim. Launch Ready is server-verified only.
+
 ## Brand Engine
 
 Required brand and compliance sections:
@@ -40,6 +42,8 @@ Required brand and compliance sections:
 
 AI suggestions require field-level confirmation. Human-verified identity, license, lender, disclosure, consent, and compliance values cannot be approved by AI.
 
+Permission-restricted users never receive protected brand or compliance data as placeholders. The state names the required role, reason, and next safe action. Loading, empty, error, degraded, and permission-restricted regions use `AsyncState`; unavailable, stale, partial, and uncertain values retain source and freshness rather than presenting zero.
+
 ## Platform settings scope
 
 The full platform design must add or maintain specifications for:
@@ -56,6 +60,8 @@ The full platform design must add or maintain specifications for:
 - Marketplace module status
 
 These surfaces must use the same application shell, status taxonomy, semantic tokens, responsive behavior, and safe-action rules.
+
+At 1180px, keep each checklist phase, current blocker, and next safe action visible while secondary evidence may compact. At 390px, use one column, place the next safe action before optional evidence, and preserve 44 by 44px targets. Focus uses the shared ring and cannot be obscured by sticky actions. Motion uses named buckets only, with immediate or opacity-only reduced-motion behavior.
 
 ## Design completion status
 

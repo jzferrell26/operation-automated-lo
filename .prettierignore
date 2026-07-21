@@ -7,9 +7,11 @@ dist/
 docs/
 library/
 node_modules/
+playwright-report/
 pnpm-lock.yaml
 reports/
 supabase/
+test-results/
 EXECUTION_LEDGER.md
 README.md
 tests/visual/rendering/v1/*.canonical.json

@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+
+import {
+  DEFAULT_TENANT_ACCENT_KEY,
+  ThemeRuntimeProvider,
+  getTenantAccentCssVariables,
+  getThemeBootstrapScript,
+  resolveServerTenantAccentKey,
+} from "../theme/index.js";
 
 import "./globals.css";
 
@@ -9,9 +17,23 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const tenantAccent = resolveServerTenantAccentKey(DEFAULT_TENANT_ACCENT_KEY);
+  const tenantAccentVariables = getTenantAccentCssVariables(tenantAccent) as CSSProperties;
+
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html
+      lang="en"
+      data-tenant-accent={tenantAccent}
+      style={tenantAccentVariables}
+      suppressHydrationWarning
+    >
+      <head>
+        <meta name="color-scheme" content="light dark" />
+        <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
+      </head>
+      <body>
+        <ThemeRuntimeProvider>{children}</ThemeRuntimeProvider>
+      </body>
     </html>
   );
 }

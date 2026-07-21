@@ -1,5 +1,6 @@
+@import "@oalo/ui/tokens.css";
+
 :root {
-  color-scheme: dark;
   font-family:
     Inter,
     ui-sans-serif,
@@ -8,8 +9,46 @@
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  background: #07111f;
-  color: #f8fafc;
+  background: var(--sf-canvas);
+  color: var(--tx-strong);
+}
+
+html,
+body {
+  background: var(--sf-canvas);
+  color: var(--tx-strong);
+}
+
+.oalo-action-link {
+  display: inline-flex;
+  min-block-size: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--bd-input);
+  border-radius: var(--radius-button);
+  background: var(--sf-card);
+  color: var(--tx-strong);
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+}
+
+.oalo-action-link:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+
+html[data-tenant-accent][data-theme="light"] {
+  --ac-primary: var(--tenant-accent-light-action);
+  --ac-primary-hover: var(--tenant-accent-light-action-hover);
+  --tx-on-action: var(--tenant-accent-light-on-action);
+}
+
+html[data-tenant-accent][data-theme="dark"] {
+  --ac-primary: var(--tenant-accent-dark-action);
+  --ac-primary-hover: var(--tenant-accent-dark-action-hover);
+  --tx-on-action: var(--tenant-accent-dark-on-action);
 }
 
 * {
@@ -32,5 +71,5 @@ section {
 }
 
 code {
-  color: #38bdf8;
+  color: var(--ac-primary);
 }

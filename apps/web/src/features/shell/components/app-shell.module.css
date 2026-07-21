@@ -1,0 +1,328 @@
+.shell {
+  min-block-size: 100vh;
+  background: var(--sf-canvas);
+  color: var(--tx-strong);
+  font-family: var(--font-interface);
+}
+
+.desktopSidebar {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: 20;
+  display: flex;
+  inline-size: 17rem;
+  flex-direction: column;
+  gap: var(--space-4);
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--sf-nav);
+  color: var(--tx-on-nav);
+  transition: inline-size var(--motion-base) var(--ease-standard);
+}
+
+.desktopSidebar[data-collapsed="true"] {
+  inline-size: 5rem;
+}
+
+.brand {
+  display: flex;
+  min-block-size: 44px;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.brandMark {
+  display: grid;
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  place-items: center;
+  border: 1px solid var(--bd-input);
+  border-radius: var(--radius-control);
+  color: var(--tx-on-nav);
+  font-family: var(--font-data);
+  font-weight: var(--weight-bold);
+}
+
+.navigation {
+  flex: 1;
+}
+
+.navigationList,
+.subnavigation {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navigationLink {
+  display: grid;
+  min-block-size: 44px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  color: var(--tx-on-nav);
+  font-size: var(--text-body-size);
+  text-decoration: none;
+}
+
+.navigationLink:hover,
+.navigationLink:focus-visible,
+.navigationLink[data-selected="true"] {
+  background: var(--ac-primary-active);
+}
+
+.navigationLink:focus-visible,
+.subnavToggle:focus-visible,
+.railToggle:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+
+.navigationLink[aria-disabled="true"] {
+  color: var(--tx-on-nav);
+  cursor: not-allowed;
+  opacity: 0.82;
+}
+
+.navigationLink[data-subordinate="true"] {
+  padding-inline-start: var(--space-6);
+}
+
+.navigationState {
+  border-radius: var(--radius-pill);
+  background: var(--st-neutral-bg);
+  color: var(--st-neutral-fg);
+  font-size: var(--text-caption-size);
+  padding: var(--space-1) var(--space-2);
+}
+
+.navigationDetail {
+  grid-column: 2 / -1;
+  color: var(--tx-on-nav);
+  font-size: var(--text-caption-size);
+  line-height: var(--leading-normal);
+}
+
+.subnavToggle,
+.railToggle {
+  inline-size: 100%;
+  color: var(--tx-on-nav);
+  justify-content: flex-start;
+}
+
+.subnavigation {
+  margin-block: var(--space-1) var(--space-3);
+}
+
+.identity {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--tx-on-nav);
+}
+
+.shell .identity[data-variant="card"] {
+  border-color: var(--bd-input);
+  background: var(--sf-nav);
+  box-shadow: none;
+  color: var(--tx-on-nav);
+}
+
+.identity div {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--space-1);
+}
+
+.identity span,
+.identity small {
+  color: var(--tx-on-nav);
+  font-size: var(--text-caption-size);
+}
+
+.workspace {
+  min-block-size: 100vh;
+  margin-inline-start: 17rem;
+  transition: margin-inline-start var(--motion-base) var(--ease-standard);
+}
+
+.desktopSidebar[data-collapsed="true"] + .workspace {
+  margin-inline-start: 5rem;
+}
+
+.topbar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 10;
+  display: flex;
+  min-block-size: 4.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  border-block-end: 1px solid var(--bd-hairline);
+  background: var(--sf-card);
+}
+
+.mobileMenu {
+  display: none;
+}
+
+.locationContext {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-body-size);
+}
+
+.locationContext > span:last-child,
+.eyebrow {
+  color: var(--tx-body);
+  font-size: var(--text-caption-size);
+}
+
+.themeControl {
+  flex: none;
+}
+
+.syntheticDisclosure {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-6);
+  background: var(--st-info-bg);
+  color: var(--st-info-fg);
+  font-size: var(--text-secondary-size);
+}
+
+.syntheticDisclosure strong {
+  margin-inline-start: auto;
+}
+
+.content {
+  padding: var(--space-6);
+}
+
+.drawerLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;
+}
+
+.drawerBackdrop {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--sf-overlay);
+  box-shadow: none;
+  color: transparent;
+}
+
+.drawer {
+  position: relative;
+  display: flex;
+  block-size: 100%;
+  inline-size: min(22rem, 88vw);
+  flex-direction: column;
+  gap: var(--space-4);
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--sf-nav);
+  color: var(--tx-on-nav);
+  box-shadow: var(--shadow-raised);
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.drawerHeader h2 {
+  margin: 0;
+  font-size: var(--text-section-size);
+}
+
+@media (max-width: 1180px) and (min-width: 769px) {
+  .desktopSidebar {
+    inline-size: 5rem;
+  }
+
+  .desktopSidebar .brand strong,
+  .desktopSidebar .navigationLink > span,
+  .desktopSidebar .subnavToggle,
+  .desktopSidebar .subnavigation,
+  .desktopSidebar .railToggle,
+  .desktopSidebar .identity div {
+    display: none;
+  }
+
+  .workspace,
+  .desktopSidebar[data-collapsed="true"] + .workspace {
+    margin-inline-start: 5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .desktopSidebar {
+    display: none;
+  }
+
+  .workspace,
+  .desktopSidebar[data-collapsed="true"] + .workspace {
+    margin-inline-start: 0;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .mobileMenu,
+  .drawerLayer {
+    display: block;
+  }
+
+  .locationContext {
+    flex: 1;
+  }
+
+  .themeControl {
+    flex-basis: 100%;
+    inline-size: 100%;
+  }
+
+  .syntheticDisclosure {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding-inline: var(--space-4);
+  }
+
+  .syntheticDisclosure strong {
+    inline-size: 100%;
+    margin-inline-start: calc(var(--space-4) + var(--space-2));
+  }
+
+  .content {
+    padding: var(--space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktopSidebar,
+  .workspace {
+    transition-duration: 0ms;
+  }
+}

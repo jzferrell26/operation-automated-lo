@@ -1,0 +1,219 @@
+.overview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  color: var(--tx-strong);
+}
+
+.pageHeader,
+.sectionHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.pageHeader h1,
+.sectionHeading h2,
+.listGrid h3,
+.workspaceGrid h3 {
+  margin: 0;
+}
+
+.pageHeader h1 {
+  font-size: var(--text-page-size);
+  letter-spacing: var(--tracking-page);
+  line-height: var(--leading-tight);
+}
+
+.pageHeader p,
+.sectionHeading p,
+.listGrid p,
+.workspaceGrid p {
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+}
+
+.eyebrow,
+.itemMeta {
+  margin-block: 0 var(--space-1);
+  color: var(--tx-faint);
+  font-size: var(--text-caption-size);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.headerActions {
+  display: grid;
+  min-inline-size: min(22rem, 100%);
+  gap: var(--space-3);
+  justify-items: end;
+}
+
+.readiness,
+.statusLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--st-neutral-bg);
+  color: var(--st-neutral-fg);
+  font-size: var(--text-caption-size);
+  font-weight: var(--weight-medium);
+  padding: var(--space-1) var(--space-2);
+  text-transform: capitalize;
+}
+
+.readiness[data-status="launch_ready"],
+.statusLabel[data-status="healthy"] {
+  background: var(--st-success-bg);
+  color: var(--st-success-fg);
+}
+
+.readiness[data-status="attention_required"],
+.statusLabel[data-status="attention"],
+.statusLabel[data-status="setup_required"],
+.statusLabel[data-status="warning"] {
+  background: var(--st-warning-bg);
+  color: var(--st-warning-fg);
+}
+
+.statusLabel[data-status="critical"] {
+  background: var(--st-critical-bg);
+  color: var(--st-critical-fg);
+}
+
+.statusLabel[data-status="restricted"],
+.statusLabel[data-status="uncertain"] {
+  background: var(--st-uncertain-bg);
+  color: var(--st-uncertain-fg);
+}
+
+.healthStrip,
+.metricGrid,
+.workspaceGrid,
+.stateGrid,
+.listGrid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.healthStrip {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.healthItem,
+.workspaceGrid article,
+.listGrid article {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+}
+
+.healthItem span:not(.statusLabel),
+.healthItem small,
+.workspaceGrid small,
+.listGrid time {
+  color: var(--tx-body);
+  font-size: var(--text-caption-size);
+}
+
+.section,
+.healthSection,
+.quickActionsSection,
+.secondaryActionsSection {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.quickActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.metricGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.listGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.workspaceGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stateGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.evidenceList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.evidenceList div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.evidenceList dt {
+  color: var(--tx-faint);
+  font-size: var(--text-caption-size);
+}
+
+.evidenceList dd {
+  margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-body-size);
+}
+
+@media (max-width: 1180px) {
+  .healthStrip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .overview {
+    gap: var(--space-6);
+  }
+
+  .pageHeader,
+  .sectionHeading {
+    flex-direction: column;
+  }
+
+  .headerActions {
+    inline-size: 100%;
+    justify-items: start;
+  }
+
+  .healthStrip,
+  .metricGrid,
+  .workspaceGrid,
+  .stateGrid,
+  .listGrid,
+  .quickActions,
+  .evidenceList {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filters {
+    justify-content: flex-start;
+  }
+}

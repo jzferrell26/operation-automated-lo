@@ -28,6 +28,8 @@ Every actionable attention item includes:
 - Stable exception code when applicable
 - Correlation ID in secondary details
 
+An attention item identifies the state with text and a distinct glyph as well as the semantic status token. It can represent `loading`, `empty`, `error`, `permission_restricted`, and `degraded` conditions without collapsing them into a generic alert.
+
 Attention items must not expose credentials, raw webhook payloads, or unnecessary consumer data.
 
 ## Disabled action contract
@@ -51,12 +53,20 @@ Do not hide the reason only inside a tooltip.
 - Provide a correlation ID
 - Enable retry only after reconciliation reaches a terminal result
 
+During reconciliation, retain the last safe known state, label the provider scope, and prevent a second write. Never call this state complete, successful, or retryable before read-back reaches a terminal result.
+
 ## Data feedback
 
 - `Unavailable` means the system has no authoritative value.
 - `Stale` means a prior authoritative value exists but freshness is outside policy.
 - `Partial` means some required sources have not completed.
 - Zero is displayed only when a source explicitly reports zero.
+
+All data feedback shows source and freshness. Synthetic leads are visibly marked and excluded from business metrics and production routing. Permission-restricted views do not display cross-tenant or unauthorized placeholder data.
+
+## Focus and motion
+
+Focus uses the shared 2px ring with 3px offset and remains unobscured by sticky attention panels. Status changes announce material updates without stealing focus. Small status changes use `--motion-base`; reduced motion is immediate or opacity-only.
 
 ## Reference canvases
 

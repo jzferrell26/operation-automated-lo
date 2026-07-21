@@ -8,6 +8,8 @@ import {
 } from "@oalo/contracts";
 import { z } from "zod";
 
+import { NodeQrEncoderAdapter, encodeApprovedCampaignQr } from "./render-evidence.js";
+
 const UnsafeTextSchema = z
   .string()
   .refine(
@@ -309,8 +311,8 @@ function creativeBody(manifest: RenderManifest, story: boolean): string {
 }
 
 function qrBody(manifest: RenderManifest): string {
-  const path = trackingPath(manifest);
-  return `<main class="shell"><h1>Open house link</h1><p data-qr-payload="${escapeHtml(path)}">${escapeHtml(path)}</p></main>`;
+  const qr = encodeApprovedCampaignQr(manifest, new NodeQrEncoderAdapter());
+  return `<main class="shell"><h1>Open house link</h1><div aria-label="Scannable approved campaign QR code">${qr.svg}</div><p data-qr-payload="${escapeHtml(qr.payload)}">${escapeHtml(qr.payload)}</p></main>`;
 }
 
 function sourceHeaders(css: string): Readonly<Record<string, string>> {

@@ -103,6 +103,30 @@ export interface AiProviderPort {
   }): Promise<ProviderAttempt | { readonly kind: "not_found" }>;
 }
 
+export interface InjectedAiProviderTransport {
+  generate(input: ProviderCallInput): Promise<ProviderAttempt>;
+  reconcile(input: {
+    readonly locationRef: string;
+    readonly idempotencyRef: string;
+    readonly providerRequestRef: string;
+    readonly route: ModelRoute;
+  }): Promise<ProviderAttempt | { readonly kind: "not_found" }>;
+}
+
+export function createInjectedProviderPort(input: {
+  readonly primary: InjectedAiProviderTransport;
+  readonly fallback: InjectedAiProviderTransport;
+}): AiProviderPort {
+  const transportFor = (route: ModelRoute): InjectedAiProviderTransport =>
+    route.purpose === "fallback" ? input.fallback : input.primary;
+  return Object.freeze({
+    generate: async (request: Parameters<AiProviderPort["generate"]>[0]) =>
+      transportFor(request.route).generate(request),
+    reconcile: async (request: Parameters<AiProviderPort["reconcile"]>[0]) =>
+      transportFor(request.route).reconcile(request),
+  });
+}
+
 export interface AiUsagePort {
   record(event: AiUsageEvent): Promise<void>;
 }

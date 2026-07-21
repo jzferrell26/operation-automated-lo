@@ -13,6 +13,8 @@
     "@oalo/application": "workspace:*",
     "@oalo/config": "workspace:*",
     "@oalo/contracts": "workspace:*",
+    "@oalo/ghl": "workspace:*",
+    "@oalo/rendering": "workspace:*",
     "@trigger.dev/sdk": "4.5.5",
     "zod": "catalog:"
   },

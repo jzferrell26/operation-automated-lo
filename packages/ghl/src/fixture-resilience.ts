@@ -46,13 +46,14 @@ export function classifyFixtureProviderResponse(input: {
   assertFixtureOnlyRequest(input.request);
   SafeTenantReferenceSchema.parse(input.locationId);
   const parsedHeaders = FixtureRateLimitHeadersSchema.parse(input.rateLimitHeaders ?? {});
-  const headers: Readonly<Record<string, string>> = Object.freeze(
-    Object.fromEntries(
-      Object.entries(parsedHeaders).filter((entry): entry is [string, string] => {
-        return entry[1] !== undefined;
-      }),
-    ),
-  );
+  const headerValues: Record<string, string> = {};
+  for (const name of ["retry-after", "x-ratelimit-remaining", "x-ratelimit-reset"] as const) {
+    const value = parsedHeaders[name];
+    if (value !== undefined) {
+      headerValues[name] = value;
+    }
+  }
+  const headers: Readonly<Record<string, string>> = Object.freeze(headerValues);
   const classification: FixtureProviderClassification =
     input.writeMayHaveReachedProvider && input.httpStatus >= 500
       ? "UNCERTAIN_WRITE"

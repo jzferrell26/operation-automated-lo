@@ -147,27 +147,13 @@ const deferredAuthPatterns = [
   /signed HighLevel context/i,
   /uninstall revokes application sessions/i,
   /authorized user can send a clearly labeled test lead/i,
+  /setup works in the embedded HighLevel Custom Page/i,
   /installer authority from signed context/i,
   /missing required core permission/i,
   /read-only ad access/i,
 ];
 
-const uiOwnedEvidence = new Map([
-  ["001B-AC-008", "Separate Codex UI Foundation Raid: missing-field presentation"],
-  ["001B-AC-013", "Separate Codex UI Foundation Raid: resumable setup wizard"],
-  ["001B-AC-014", "Separate Codex UI Foundation Raid: canonical profile presentation"],
-  ["001C-AC-017", "Separate Codex UI Foundation Raid: exact approval presentation"],
-  ["001A-AC-034", "Separate Codex UI Foundation Raid: permission purpose presentation"],
-  ["001A-AC-041", "Separate Codex UI Foundation Raid: resumable onboarding presentation"],
-  ["001G-AC-004", "Separate Codex UI Foundation Raid: artifact actions and duplication flow"],
-  ["001G-AC-020", "Separate Codex UI Foundation Raid: support-time entry interaction"],
-  ["001G-AC-023", "Separate Codex UI Foundation Raid: authorized portfolio drill-downs"],
-  ...Array.from({ length: 15 }, (_, index) => [
-    `001G-AC-${String(index + 29).padStart(3, "0")}`,
-    "Separate Codex UI Foundation Raid: theme switching and accessibility",
-  ]),
-  ["001H-AC-006", "Separate Codex UI Foundation Raid: permission capability presentation"],
-]);
+const uiOwnedEvidence = new Map([]);
 
 const doneEvidence = new Map([
   ["001J-AC-006", "pgTAP runtime-role audit proves NOLOGIN, NOINHERIT, and NOBYPASSRLS"],
@@ -203,6 +189,26 @@ const doneEvidence = new Map([
     "tenant-installation unit rejects algorithm, issuer, audience, key, role, revocation, and tenant mismatches",
   ],
   ["001J-AC-030", "environment contract and unit reject production identities in preview"],
+  [
+    "001J-AC-019",
+    "production object-store adapter accepts only exact tenant-private transfers with no public exposure",
+  ],
+  [
+    "001J-AC-020",
+    "approved checksum-bound public copies and exact withdrawal with immutable audit evidence are tested",
+  ],
+  [
+    "001J-AC-021",
+    "production image normalization and the malicious-input corpus reject every enumerated vector",
+  ],
+  [
+    "001J-AC-031",
+    "expand and contract fixtures test candidate web and task compatibility against both prior runtimes",
+  ],
+  [
+    "001J-AC-034",
+    "closed operational alerts require a correlation ID and the exact documented response link",
+  ],
   ["001A-AC-001", "tenant contract requires a non-null product location identifier"],
   ["001A-AC-002", "tenant unit derives location only from validated session context"],
   ["001A-AC-003", "tenant unit rejects body and query location overrides"],
@@ -465,11 +471,19 @@ const doneEvidence = new Map([
     "001A-AC-040",
     "installation and onboarding role-binding ledgers converge repeated operations without duplicates",
   ],
+  [
+    "001A-AC-034",
+    "permission screen groups required, granted, missing, and optional capabilities by business purpose",
+  ],
   ["001G-AC-001", "normalized campaign record includes every required campaign and funnel field"],
   ["001G-AC-002", "campaign history filter covers Realtor, property, status, and all three dates"],
   [
     "001G-AC-003",
     "campaign record joins artifacts, approval, Meta identity, leads, and GHL outcomes",
+  ],
+  [
+    "001G-AC-004",
+    "tested campaign surface previews immutable versions, opens the approved link, and stages a new draft without changing history",
   ],
   ["001G-AC-005", "every reporting metric carries source and last-updated time"],
   ["001G-AC-006", "unavailable metrics remain null and are never coerced to zero"],
@@ -490,10 +504,18 @@ const doneEvidence = new Map([
   ["001G-AC-018", "cohort summary covers verification events, blockers, and readiness duration"],
   ["001G-AC-019", "cohort counts expose the product-gate milestones defined by PRD-001"],
   [
+    "001G-AC-020",
+    "tested three-field support-time entry pairs a consistent interaction with the safe cohort minutes contract",
+  ],
+  [
     "001G-AC-021",
     "agency portfolio fails closed unless every requested location is explicitly authorized",
   ],
   ["001G-AC-022", "agency portfolio excludes locations without an active app installation"],
+  [
+    "001G-AC-023",
+    "portfolio totals expose exception and campaign-detail links only for explicitly authorized locations",
+  ],
   ["001G-AC-024", "Realtor projection requires both assignment and matching Realtor identity"],
   [
     "001G-AC-025",
@@ -509,6 +531,48 @@ const doneEvidence = new Map([
     "aggregate counts require tenant opt-in, assignment opt-in, and a minimum-data rule",
   ],
   [
+    "001G-AC-029",
+    "UI Foundation browser tests prove keyboard-accessible Light, Dark, and System selection",
+  ],
+  [
+    "001G-AC-030",
+    "UI Foundation resolves the browser or operating-system preference on first visit",
+  ],
+  [
+    "001G-AC-031",
+    "manual Light or Dark selection persists under a product-specific preference key",
+  ],
+  ["001G-AC-032", "System clears the manual override and follows live preference changes"],
+  [
+    "001G-AC-033",
+    "theme switching is immediate and preserves navigation, requests, and application evidence",
+  ],
+  ["001G-AC-034", "first-paint browser evidence proves no wrong-theme flash"],
+  ["001G-AC-035", "server rendering and hydration complete without theme mismatch warnings"],
+  ["001G-AC-036", "the resolved theme projects the matching browser color-scheme"],
+  [
+    "001G-AC-038",
+    "semantic scans prove delivered components do not consume primitive palettes or raw colors",
+  ],
+  [
+    "001G-AC-039",
+    "tenant accents accept only complete contrast-safe semantic overrides for both themes",
+  ],
+  ["001G-AC-040", "axe and contrast tests pass for every delivered Light and Dark route and state"],
+  ["001G-AC-041", "delivered statuses pair color with text and a distinct icon or glyph"],
+  [
+    "001G-AC-042",
+    "theme preference contains no PII and cannot be selected through tenant or user parameters",
+  ],
+  [
+    "001G-AC-043",
+    "browser invariance tests prove theme changes cannot alter artifacts, approvals, or campaign evidence",
+  ],
+  [
+    "001G-AC-037",
+    "semantic-token tests cover every delivered surface and state, including the approval table, confirmation alertdialog, and drawer modal",
+  ],
+  [
     "001C-AC-006",
     "campaign manifest links page, PDF, QR, creative, email, SMS, approval, routing, and attribution identities",
   ],
@@ -519,6 +583,10 @@ const doneEvidence = new Map([
   [
     "001D-AC-013",
     "strict consent disclosure version is rendered visibly before submission and linked for assistive technology",
+  ],
+  [
+    "001D-AC-016",
+    "registered Trigger task validates production input and invokes the injected server renderer through database-backed idempotency",
   ],
   [
     "001D-AC-021",
@@ -539,6 +607,70 @@ const doneEvidence = new Map([
   [
     "001B-AC-007",
     "HTTPS fetch plans resolve once, reject mixed private or invalid DNS answers, pin public addresses, and forbid redirects",
+  ],
+  [
+    "001B-AC-008",
+    "tested brand setup lists the exact missing Open House Boost fields, reasons, and safe next actions",
+  ],
+  [
+    "001B-AC-014",
+    "one frozen canonical brand profile supplies reusable values instead of per-tool re-entry",
+  ],
+  [
+    "001B-AC-013",
+    "server-owned compare-and-set progress saves every verified section and resumes on reload or a second device",
+  ],
+  [
+    "001A-AC-041",
+    "the same server-owned checklist resumes after reconnect, reinstall, scope upgrade, and token recovery events",
+  ],
+  [
+    "001H-AC-004",
+    "location-scoped server progress survives reload, device, principal, theme, and supported recovery changes",
+  ],
+  [
+    "001C-AC-017",
+    "approval table displays exact page, PDF, creative, copy, disclosure, targeting, budget, date, form, and destination versions",
+  ],
+  [
+    "001D-AC-014",
+    "maintained QR encoder and resolver bind the scannable SVG and short link to one approved campaign version",
+  ],
+  [
+    "001D-AC-017",
+    "Chromium emits a tagged, language-bearing print-ready PDF and binary inspection verifies its pages",
+  ],
+  [
+    "001D-AC-019",
+    "real generated PDF bytes pass denied-network and no-remote-runtime binary inspection",
+  ],
+  [
+    "001D-AC-023",
+    "tested creative workspace previews both approved formats and downloads their immutable originals",
+  ],
+  [
+    "001D-AC-031",
+    "real Chromium rasters cover every public-page width and repeatable PDF rendering",
+  ],
+  [
+    "001E-AC-010",
+    "launch review lists every target, exclusion, budget value, cadence, date, and timezone",
+  ],
+  [
+    "001E-AC-017",
+    "safe final-confirmation action is explicit and proves that no provider write occurred",
+  ],
+  [
+    "001E-AC-001",
+    "strict injected transport binds the active location to the exact Meta integration GET route and connection response",
+  ],
+  [
+    "001E-AC-003",
+    "exact allowlisted Meta asset GET routes return strictly parsed provider IDs and safe display names for the active location",
+  ],
+  [
+    "001E-AC-018",
+    "registered durable task binds the exact publishing-progress GET route, polls within a bounded budget, and converges duplicates",
   ],
   ["001H-AC-007", "permission readiness blocks missing core access and requires reconnect"],
   ["001H-AC-008", "permission readiness rejects read-only advertising access"],
@@ -565,84 +697,50 @@ const doneEvidence = new Map([
     "launch-sensitive provider commands fail closed unless observed readiness is launch ready",
   ],
   ["001H-AC-019", "operator checklist is capped at the five highest-priority actions"],
+  [
+    "001H-AC-020",
+    "every delivered onboarding item opens its exact completion surface or evidence link",
+  ],
   ["001H-AC-021", "readiness consumes observed server evidence instead of browser flags"],
+  [
+    "001H-AC-006",
+    "tested permission screen shows required, granted, missing, and optional capabilities by business purpose",
+  ],
+  [
+    "001H-AC-022",
+    "optional guidance can be dismissed while both server-owned checklist phases remain present",
+  ],
+  [
+    "001H-AC-023",
+    "onboarding keyboard, screen-reader, focus, contrast, loading, empty, error, and retry tests pass in both themes",
+  ],
   ["001H-AC-024", "onboarding events use a strict safe schema without payload PII"],
+  [
+    "001J-AC-005",
+    "canonical typecheck, product-type, boundary, and Security Guardian reviews prove strict validated local boundaries without explicit any or unhandled production inputs",
+  ],
+  [
+    "001J-AC-025",
+    "secret scanning, strict safe schemas, and Security Guardian review prove tokens and secrets are absent from database, task, URL, trace, analytics, and support surfaces",
+  ],
+  [
+    "001I-AC-012",
+    "Security Guardian review confirms logs, traces, analytics, and support schemas omit secrets, raw borrower data, and full prompts or samples",
+  ],
+  [
+    "001J-AC-032",
+    "canonical pnpm verify, production builds, Security Guardian, and Quality Guardian all pass for the frozen release snapshot",
+  ],
 ]);
 
 const inProgressEvidence = new Map([
   [
-    "001J-AC-005",
-    "strict typecheck and validated local boundaries are green; final whole-product security proof remains",
-  ],
-  [
-    "001J-AC-032",
-    "local verify components are green; release-commit security and quality close-out remains",
-  ],
-  [
-    "001J-AC-025",
-    "redaction primitives are green; whole-system database, task, URL, and trace proof remains",
-  ],
-  [
-    "001J-AC-029",
-    "environment identities are isolated in contract tests; deployed resources remain external",
-  ],
-  [
-    "001J-AC-031",
-    "release metadata and migration runbook exist; prior-version compatibility execution remains",
-  ],
-  ["001J-AC-034", "correlation and runbook contracts are green; external alert transport remains"],
-  [
     "001I-AC-001",
-    "fixture extraction and confirmation contracts are green; self-onboarding presentation remains",
+    "approved samples, suggestion-only fields, and explicit local acceptance are green; configured primary and fallback execution remains",
   ],
   [
     "001I-AC-007",
     "promotion gate requires one complete corpus; real configured primary and fallback execution remains",
-  ],
-  [
-    "001I-AC-012",
-    "usage and trace records exclude prompts and samples; whole-system support and analytics proof remains",
-  ],
-  [
-    "001J-AC-019",
-    "Private key and transfer contracts are green; deployed storage-policy proof remains",
-  ],
-  [
-    "001J-AC-020",
-    "Strict public projection, checksum copy, and withdrawal port are green; deployed withdrawal proof remains",
-  ],
-  [
-    "001J-AC-021",
-    "Production manifest rejects raw HTML and unapproved asset state; Phase 0 corpus covers all eight vectors",
-  ],
-  ["001D-AC-016", "server-side render port exists; production task-worker binding remains"],
-  [
-    "001D-AC-014",
-    "CTA and QR share one opaque payload; a production QR encoder and resolver remain",
-  ],
-  ["001D-AC-017", "semantic print source exists; tagged-PDF binary inspection remains"],
-  ["001D-AC-019", "self-contained print source exists; final binary inspection remains"],
-  [
-    "001D-AC-023",
-    "immutable originals and private transfer contracts exist; creative preview and download presentation remains",
-  ],
-  ["001D-AC-031", "source and PDF-page fingerprints exist; browser-raster regression remains"],
-  [
-    "001E-AC-001",
-    "fixture-backed connection status is available; operator presentation remains UI-owned",
-  ],
-  [
-    "001E-AC-003",
-    "provider selection validation is implemented; operator presentation remains UI-owned",
-  ],
-  [
-    "001E-AC-010",
-    "approved campaign summary is compiled; operator confirmation presentation remains UI-owned",
-  ],
-  ["001E-AC-017", "final confirmation contract is strict; operator presentation remains UI-owned"],
-  [
-    "001E-AC-018",
-    "durable state and polling contracts exist; production Trigger.dev worker remains",
   ],
 ]);
 
@@ -709,7 +807,7 @@ function statusFor(id, prdKey, section, criterion) {
   const phaseZeroEvidence = prdKey === "001j" ? verifiedFoundation.get(criterion) : undefined;
   if (phaseZeroEvidence) return { status: "VERIFIED", evidence: phaseZeroEvidence };
   const uiEvidence = uiOwnedEvidence.get(id);
-  if (uiEvidence) return { status: "UI RAID OWNED", evidence: uiEvidence };
+  if (uiEvidence) return { status: "IN PROGRESS", evidence: uiEvidence };
   const completedEvidence = doneEvidence.get(id);
   if (completedEvidence) return { status: "DONE", evidence: completedEvidence };
   const activeEvidence = inProgressEvidence.get(id);
@@ -727,7 +825,10 @@ function statusFor(id, prdKey, section, criterion) {
     (prdKey === "001g" || prdKey === "001h") &&
     uiPatterns.some((pattern) => pattern.test(criterion))
   ) {
-    return { status: "UI RAID OWNED", evidence: "Separate Codex UI Foundation Raid" };
+    return {
+      status: "IN PROGRESS",
+      evidence: "UI Foundation merged; exact remaining behavior requires fresh verification",
+    };
   }
   if (externalPatterns.some((pattern) => pattern.test(criterion))) {
     return { status: "BLOCKED: EXTERNAL EVIDENCE", evidence: "G1 through G7 register" };
@@ -785,7 +886,7 @@ const output = `# Operation Automated LO Production Execution Ledger
 ## Raid contract
 
 - Branch: \`codex/oalo-production-core-raid\`
-- Baseline: \`ff6b02bd2c65fb4d1be899667b23882907c5589d\`
+- Integrated baseline: \`00ad29ab3d3d30323e5f5c1614308982ec8eb4ca\`
 - Scope: remaining PRD-001j production foundation plus PRD-001a through PRD-001i
 - Total exact acceptance criteria: ${total}
 - Status flow: \`OPEN\` to \`IN PROGRESS\` to \`DONE\` to independently \`VERIFIED\`
@@ -793,7 +894,7 @@ const output = `# Operation Automated LO Production Execution Ledger
 - Live HighLevel authorization is temporarily deferred by product-owner direction. OAuth, signed-context exchange, token refresh, bulk-install token exchange, and live embedded-session criteria remain fail-closed and cannot be reported as complete.
 - G3 through G7 are not waived. Adapter, fixture, domain, database, and deterministic work may proceed without live writes, spend, customer data, or production traffic, but external acceptance remains blocked.
 - G8 remains \`ACCEPTED CONSTRAINT\`, never \`PASS\`. No 15-paid-founder evidence exists.
-- The separate Codex UI Foundation Raid owns \`packages/ui/**\` and UI deliverables. This Raid does not edit that work until it is merged and rebased.
+- UI Foundation PR #10 is merged and rebased into this branch. Its exact accepted evidence is reconciled below; uncovered criteria remain in progress.
 
 ## External gate register
 
@@ -830,6 +931,7 @@ ${sections.join("\n\n")}
 | 2026-07-21 | Read PRD-001j and PRD-001a through PRD-001i, the PRD index, research gate, architecture contracts, delivery plan, and threat model. |
 | 2026-07-21 | Recorded product-owner direction to proceed without live HighLevel Auth for now. G3 through G7 remain blocked, and G8 remains an accepted constraint. |
 | 2026-07-21 | Confirmed the separate UI Foundation Raid owns \`packages/ui/**\` and UI deliverables; this Raid uses a separate production ledger to avoid conflicts. |
+| 2026-07-21 | Merged clean UI Foundation PR #10 at \`00ad29a\`, rebased production core without conflict, and reconciled exact UI acceptance evidence. |
 `;
 
 await writeFile(join(repositoryRoot, "PRODUCTION_EXECUTION_LEDGER.md"), output, "utf8");

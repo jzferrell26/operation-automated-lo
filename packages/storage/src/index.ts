@@ -19,3 +19,13 @@ export {
   type ProjectionWithdrawalAuditPort,
   type ProjectionWithdrawalRecord,
 } from "./projection-withdrawal.js";
+
+export {
+  ProductionObjectStorePolicySchema,
+  authorizePrivateObjectTransfer,
+  publishProjectionWithObjectStore,
+  withdrawProjectionWithObjectStoreAudit,
+  type PrivateTransferAuthorization,
+  type ProductionObjectStoreAdapter,
+  type ProductionObjectStorePolicy,
+} from "./production-object-store.js";

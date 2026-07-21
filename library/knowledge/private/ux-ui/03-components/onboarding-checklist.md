@@ -22,3 +22,5 @@ Synthetic lead is visibly labeled as synthetic and is excluded from business met
 ## Interaction and responsive behavior
 
 Items use buttons or disclosure controls, not drag-only ordering. Keyboard users can reach each item and its action in a predictable order. At 390px, each item remains one column with the status and next safe action visible before optional evidence; at larger widths, evidence may sit in a secondary column. Focus uses the shared ring, and progress or disclosure uses `--motion-base` with reduced-motion fallback.
+
+Optional guidance is a separate dismissible region before the checklist. Dismissing it removes only the guidance region for the current rendered session. Both checklist phases, their ordered items, progress, and server-shaped evidence remain mounted and unchanged. This interaction does not claim cross-device dismissal persistence or browser authority over checklist completion.

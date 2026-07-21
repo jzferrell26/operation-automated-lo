@@ -21,6 +21,15 @@ export {
   type StructuredLogRecordInput,
 } from "./redaction.js";
 
+export {
+  OperationalAlertRecordSchema,
+  OperationalAlertTaxonomy,
+  createOperationalAlert,
+  documentedResponseLink,
+  type OperationalAlertKind,
+  type OperationalAlertRecord,
+} from "./operational-alerts.js";
+
 export const observabilityPackage = Object.freeze({
   contractVersion,
   implementation: "otel-correlation-and-structured-redaction-primitives",

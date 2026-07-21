@@ -1,8 +1,10 @@
 import { render, screen, within } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { loadSyntheticUiFixture } from "../../ui-foundation/data/load-synthetic-ui.js";
 import { OnboardingScreen } from "./onboarding-screen.js";
+import { PermissionScreen } from "./permission-screen.js";
 
 describe("Onboarding screen", () => {
   it("renders exactly five Get Connected and four locked Launch Readiness items", () => {
@@ -38,5 +40,39 @@ describe("Onboarding screen", () => {
     expect(
       within(brandItem).getByRole("link", { name: "Open completion surface" }),
     ).toHaveAttribute("href", "/brand");
+  });
+
+  it("dismisses optional guidance without removing the persistent checklist", async () => {
+    const user = userEvent.setup();
+    const fixture = loadSyntheticUiFixture();
+    render(<OnboardingScreen onboarding={fixture.onboarding} session={fixture.session} />);
+
+    await user.click(screen.getByRole("button", { name: "Dismiss optional guidance" }));
+
+    expect(screen.queryByText("Review the setup guide when you need it")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Optional guidance dismissed. The setup checklist remains available below.",
+    );
+    expect(
+      within(screen.getByRole("region", { name: "Get Connected" })).getAllByRole("listitem"),
+    ).toHaveLength(5);
+    expect(
+      within(screen.getByRole("region", { name: "Launch Readiness" })).getAllByRole("listitem"),
+    ).toHaveLength(4);
+  });
+
+  it("groups permissions by business purpose and preserves the safe return path", () => {
+    const fixture = loadSyntheticUiFixture();
+    render(<PermissionScreen onboarding={fixture.onboarding} />);
+
+    for (const group of ["Required", "Granted", "Missing", "Optional"]) {
+      expect(screen.getByRole("heading", { name: group })).toBeInTheDocument();
+    }
+    expect(screen.getAllByText("Business purpose")).toHaveLength(4);
+    expect(screen.getByText("No provider authorization occurs here")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Return to setup checklist" })).toHaveAttribute(
+      "href",
+      "/onboarding",
+    );
   });
 });

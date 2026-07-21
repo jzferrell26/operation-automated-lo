@@ -6,6 +6,7 @@ export * from "./lead-routing.js";
 export * from "./live-capture.js";
 export * from "./live-oauth-disabled.js";
 export * from "./meta-adapter.js";
+export * from "./production-meta-read-transport.js";
 export * from "./sanitization.js";
 export * from "./signed-context.js";
 

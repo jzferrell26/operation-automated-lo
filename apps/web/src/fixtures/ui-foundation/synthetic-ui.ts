@@ -454,6 +454,74 @@ export const rawSyntheticUiFixture: unknown = {
       disclosure:
         "Synthetic workspace. Provider reads, provider writes, and customer data are disabled.",
     },
+    guidance: {
+      title: "Review the setup guide when you need it",
+      description:
+        "This optional synthetic guide can be dismissed for this view. Dismissal does not complete, hide, or change the persistent setup checklist.",
+      dismissLabel: "Dismiss optional guidance",
+    },
+    permissionGroups: [
+      {
+        category: "required",
+        label: "Required",
+        description: "Core access the installation must request for the product workflow.",
+        capabilities: [
+          {
+            id: "synthetic-permission-location-read",
+            label: "Location read",
+            businessPurpose: "Identify the authorized workspace and its safe routing context.",
+            evidence: "Included in the synthetic installation manifest.",
+            impact: "Setup cannot verify the selected location without it.",
+            nextAction: "Ask a Location Owner to review the installation request.",
+          },
+        ],
+      },
+      {
+        category: "granted",
+        label: "Granted",
+        description: "Required access with current read-only synthetic evidence.",
+        capabilities: [
+          {
+            id: "synthetic-permission-campaign-create",
+            label: "Campaign workspace",
+            businessPurpose: "Prepare campaign drafts inside the authorized location.",
+            evidence: "Synthetic App Test evidence verified 8 minutes ago.",
+            impact: "Draft preparation is available; provider writes remain disabled.",
+            nextAction: "No action is required for this synthetic projection.",
+          },
+        ],
+      },
+      {
+        category: "missing",
+        label: "Missing",
+        description: "Required access that blocks a named business outcome.",
+        capabilities: [
+          {
+            id: "synthetic-permission-reports-read",
+            label: "Agency reports read",
+            businessPurpose: "Show authorized multi-location portfolio totals and exceptions.",
+            evidence: "No synthetic reports capability is present for the current session.",
+            impact: "Agency totals remain unavailable in this loan officer session.",
+            nextAction: "Ask an Owner or Agency User to open the authorized report projection.",
+          },
+        ],
+      },
+      {
+        category: "optional",
+        label: "Optional",
+        description: "Enhancements that are not required to complete core setup.",
+        capabilities: [
+          {
+            id: "synthetic-permission-workflow-read",
+            label: "Workflow read",
+            businessPurpose: "Display optional workflow context during routing review.",
+            evidence: "Not requested by this synthetic installation.",
+            impact: "Core routing verification remains available without it.",
+            nextAction: "Leave unrequested unless the location adopts workflow-based routing.",
+          },
+        ],
+      },
+    ],
     getConnected: [
       {
         id: "install_permissions",

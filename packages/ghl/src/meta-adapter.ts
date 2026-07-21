@@ -107,12 +107,11 @@ function parameterizeRoute(
   });
 }
 
-export function planMetaFixtureOperation(input: {
+export function planMetaAllowedOperation(input: {
   readonly action: MetaAllowedAction;
   readonly locationRef: string;
   readonly parameters?: z.input<typeof MetaOperationParametersSchema>;
 }): Readonly<{
-  transport: typeof META_ADAPTER_MODE;
   documentationVersion: typeof META_DOCUMENTATION_VERSION;
   action: MetaAllowedAction;
   locationRef: string;
@@ -125,12 +124,18 @@ export function planMetaFixtureOperation(input: {
   const descriptor = META_ROUTE_ALLOWLIST[action];
 
   return Object.freeze({
-    transport: META_ADAPTER_MODE,
     documentationVersion: META_DOCUMENTATION_VERSION,
     action,
     locationRef,
     method: descriptor.method,
     route: parameterizeRoute(descriptor.route, parameters),
+  });
+}
+
+export function planMetaFixtureOperation(input: Parameters<typeof planMetaAllowedOperation>[0]) {
+  return Object.freeze({
+    transport: META_ADAPTER_MODE,
+    ...planMetaAllowedOperation(input),
   });
 }
 

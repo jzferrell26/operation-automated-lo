@@ -247,6 +247,27 @@ export const onboardingItemSchema = z.discriminatedUnion("state", [
   incompleteOnboardingItemSchema,
 ]);
 
+const permissionCapabilitySchema = z
+  .object({
+    id: z.string().startsWith("synthetic-permission-"),
+    label: z.string().min(1),
+    businessPurpose: z.string().min(1),
+    evidence: z.string().min(1),
+    impact: z.string().min(1),
+    nextAction: z.string().min(1),
+  })
+  .strict();
+
+const exactPermissionGroup = (category: "required" | "granted" | "missing" | "optional") =>
+  z
+    .object({
+      category: z.literal(category),
+      label: z.string().min(1),
+      description: z.string().min(1),
+      capabilities: z.array(permissionCapabilitySchema).min(1),
+    })
+    .strict();
+
 const exactOnboardingItem = (id: string, title: string) =>
   onboardingItemSchema.refine((item) => item.id === id && item.title === title, {
     message: `Expected onboarding item ${id}: ${title}`,
@@ -255,6 +276,19 @@ const exactOnboardingItem = (id: string, title: string) =>
 export const onboardingSchema = z
   .object({
     safety: runtimeSafetySchema,
+    guidance: z
+      .object({
+        title: z.string().min(1),
+        description: z.string().min(1),
+        dismissLabel: z.string().min(1),
+      })
+      .strict(),
+    permissionGroups: z.tuple([
+      exactPermissionGroup("required"),
+      exactPermissionGroup("granted"),
+      exactPermissionGroup("missing"),
+      exactPermissionGroup("optional"),
+    ]),
     getConnected: z.tuple([
       exactOnboardingItem("install_permissions", "Install and permissions"),
       exactOnboardingItem("brand_compliance", "Brand and compliance"),
@@ -288,6 +322,7 @@ export type Overview = z.infer<typeof overviewSchema>;
 export type OverviewStateKind = z.infer<typeof overviewStateKindSchema>;
 export type Onboarding = z.infer<typeof onboardingSchema>;
 export type OnboardingItem = z.infer<typeof onboardingItemSchema>;
+export type PermissionGroup = Onboarding["permissionGroups"][number];
 export type SyntheticUiFixture = z.infer<typeof syntheticUiFixtureSchema>;
 
 export type DeepReadonly<T> = T extends (...args: never[]) => unknown

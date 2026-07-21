@@ -29,3 +29,21 @@ export {
   type ImageNormalizationPort,
   type NormalizedImage,
 } from "./image-normalization.js";
+
+export {
+  PdfBinaryInspectionSchema,
+  NodeQrEncoderAdapter,
+  approvedCampaignLink,
+  encodeApprovedCampaignQr,
+  inspectPdfBinary,
+  resolveApprovedCampaignLink,
+  type ApprovedCampaignLink,
+  type PdfBinaryInspection,
+  type ProductionQrEncoderPort,
+  type QrEncodingEvidence,
+} from "./render-evidence.js";
+
+export {
+  PlaywrightBrowserAdapter,
+  type ApprovedRenderAssetLoaderPort,
+} from "./playwright-browser.js";

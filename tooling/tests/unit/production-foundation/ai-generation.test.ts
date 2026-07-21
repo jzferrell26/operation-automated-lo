@@ -6,6 +6,7 @@ import {
   LocationAiSpendGuard,
   UnsafeAiInputError,
   compileCampaignPrompt,
+  createInjectedProviderPort,
   customerAllowanceView,
   evaluateModelPromotion,
   extractBrandSuggestions,
@@ -253,6 +254,36 @@ const options = {
 };
 
 describe("production AI generation", () => {
+  it("routes injected production-shaped transports by primary and evaluated fallback route", async () => {
+    const primary = new QueueProvider([success(validPack, "providerrequest_01Primary")]);
+    const fallback = new QueueProvider([success(validPack, "providerrequest_02Fallback")]);
+    const provider = createInjectedProviderPort({ primary, fallback });
+    await provider.generate({
+      locationRef: "location_01TenantAlpha",
+      correlationRef: "correlation_01GeneratePack",
+      idempotencyRef: "idempotency_01GeneratePack",
+      operation: "campaign_generation",
+      route: primaryRoute,
+      cacheKey: "cache_01Primary",
+      stablePrefix: "fixture",
+      variablePayload: "fixture",
+      maximumOutputTokens: 100,
+    });
+    await provider.generate({
+      locationRef: "location_01TenantAlpha",
+      correlationRef: "correlation_01GeneratePack",
+      idempotencyRef: "idempotency_01GeneratePack",
+      operation: "campaign_generation",
+      route: fallbackRoute,
+      cacheKey: "cache_01Fallback",
+      stablePrefix: "fixture",
+      variablePayload: "fixture",
+      maximumOutputTokens: 100,
+    });
+    expect(primary.calls).toHaveLength(1);
+    expect(fallback.calls).toHaveLength(1);
+  });
+
   it("rejects private samples and returns source-bound suggestions that require confirmation", async () => {
     expect(() =>
       validateBrandSamples([

@@ -3,9 +3,15 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   normalizeUploadedImages,
+  NodeQrEncoderAdapter,
+  PdfBinaryInspectionSchema,
+  approvedCampaignLink,
+  encodeApprovedCampaignQr,
+  inspectPdfBinary,
   publicCampaignPerformanceBudget,
   renderArtifactBatch,
   renderSourceForManifest,
+  resolveApprovedCampaignLink,
   SharpImageNormalizationAdapter,
   type ImageNormalizationPort,
 } from "../../../../packages/rendering/src/index.js";
@@ -108,6 +114,36 @@ describe("PRD-001d safe campaign rendering", () => {
     expect(page.html.indexOf("Consent disclosure version")).toBeLessThan(
       page.html.indexOf('class="cta"'),
     );
+  });
+
+  it("binds an encoded QR and resolver to the exact approved campaign version", () => {
+    const link = approvedCampaignLink(commonRenderManifest);
+    const qr = encodeApprovedCampaignQr(commonRenderManifest, new NodeQrEncoderAdapter());
+    expect(resolveApprovedCampaignLink(commonRenderManifest, qr.payload)).toEqual(link);
+    expect(qr.svg).toContain('shape-rendering="crispEdges"');
+    expect(qr.svg.match(/h1v1h-1z/gu)?.length).toBeGreaterThan(100);
+    expect(qr.sha256).toMatch(/^[a-f0-9]{64}$/u);
+    expect(() =>
+      resolveApprovedCampaignLink(
+        commonRenderManifest,
+        qr.payload.replace("v=version_01Approved", "v=version_02Other"),
+      ),
+    ).toThrow("approved campaign version");
+  });
+
+  it("inspects tagged, self-contained PDF binaries before acceptance", () => {
+    const bytes = new TextEncoder().encode(
+      "%PDF-1.7\n1 0 obj<</Type/Page>>endobj\n2 0 obj<</StructTreeRoot 3 0 R/MarkInfo<</Marked true>>/Lang(en-US)>>endobj\n%%EOF\n",
+    );
+    expect(PdfBinaryInspectionSchema.parse(inspectPdfBinary(bytes))).toMatchObject({
+      pageCount: 1,
+      hasRemoteRuntimeDependency: false,
+    });
+    expect(
+      inspectPdfBinary(new TextEncoder().encode("%PDF-1.7\n/URI(https://bad.invalid)\n%%EOF")),
+    ).toMatchObject({
+      hasRemoteRuntimeDependency: true,
+    });
   });
 
   it("creates paginated print source without remote runtime dependencies or lost long text", () => {

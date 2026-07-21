@@ -4,6 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { evidencePath, writeEvidenceSummary } from "./helpers/ui-foundation-evidence.js";
 
 const applicationOrigin = "http://127.0.0.1:3100";
+const regenerateEvidence = process.env["OALO_REGENERATE_UI_EVIDENCE"] === "true";
 const screenshots: string[] = [];
 
 type ThemeSample = Readonly<{
@@ -236,7 +237,7 @@ for (const route of ["overview", "onboarding"] as const) {
       { width: 1180, height: 900 },
       { width: 390, height: 844 },
     ] as const) {
-      test(`${route} ${theme} ${viewport.width}x${viewport.height} is axe-clean and captured`, async ({
+      test(`${route} ${theme} ${viewport.width}x${viewport.height} is axe-clean`, async ({
         page,
       }) => {
         const guard = await guardSyntheticLocalPage(page);
@@ -244,24 +245,28 @@ for (const route of ["overview", "onboarding"] as const) {
         await page.goto(`/${route}`);
         await chooseTheme(page, theme);
         await assertAxeClean(page);
-        const fileName = `${route}-${theme.toLowerCase()}-${viewport.width}x${viewport.height}.png`;
-        await page.screenshot({ path: evidencePath(fileName) });
-        screenshots.push(fileName);
+        if (regenerateEvidence) {
+          const fileName = `${route}-${theme.toLowerCase()}-${viewport.width}x${viewport.height}.png`;
+          await page.screenshot({ path: evidencePath(fileName) });
+          screenshots.push(fileName);
+        }
         await assertGuardClean(guard);
       });
     }
   }
 }
 
-test("open drawer and Overview state gallery are captured", async ({ page }) => {
+test("open drawer and Overview state gallery meet accessibility contracts", async ({ page }) => {
   const guard = await guardSyntheticLocalPage(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/overview");
   await chooseTheme(page, "Light");
   await page.getByRole("button", { name: "Open navigation" }).click();
   await assertAxeClean(page);
-  await page.screenshot({ path: evidencePath("overview-light-mobile-drawer-open-390x844.png") });
-  screenshots.push("overview-light-mobile-drawer-open-390x844.png");
+  if (regenerateEvidence) {
+    await page.screenshot({ path: evidencePath("overview-light-mobile-drawer-open-390x844.png") });
+    screenshots.push("overview-light-mobile-drawer-open-390x844.png");
+  }
 
   await page.setViewportSize({ width: 1180, height: 900 });
   await page.goto("/overview");
@@ -273,12 +278,194 @@ test("open drawer and Overview state gallery are captured", async ({ page }) => 
     .getByRole("heading", { name: "Overview edge-state matrix" })
     .locator("xpath=ancestor::section");
   await gallery.scrollIntoViewIfNeeded();
-  await gallery.screenshot({ path: evidencePath("overview-dark-state-gallery-1180x900.png") });
-  screenshots.push("overview-dark-state-gallery-1180x900.png");
+  if (regenerateEvidence) {
+    await gallery.screenshot({ path: evidencePath("overview-dark-state-gallery-1180x900.png") });
+    screenshots.push("overview-dark-state-gallery-1180x900.png");
+  }
+  await assertGuardClean(guard);
+});
+
+test("synthetic acceptance surfaces preserve history, checklist, and authorization boundaries", async ({
+  page,
+}) => {
+  const guard = await guardSyntheticLocalPage(page);
+  await page.setViewportSize({ width: 1180, height: 900 });
+
+  await page.goto("/onboarding");
+  await page.getByRole("button", { name: "Dismiss optional guidance" }).click();
+  await expect(page.getByRole("region", { name: "Get Connected" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Launch Readiness" })).toBeVisible();
+
+  await page.goto("/settings/connections");
+  for (const group of ["Required", "Granted", "Missing", "Optional"]) {
+    await expect(page.getByRole("heading", { name: group })).toBeVisible();
+  }
+
+  await page.goto("/marketing/campaigns/synthetic-open-house-001");
+  await page.getByRole("button", { name: "Preview version 2" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Cedar Street open house, disclosure revision" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Duplicate as new draft" }).click();
+  await expect(page.getByText("Local draft projection staged from version 2")).toBeVisible();
+  await expect(page.getByText("Immutable history: 3 versions")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open approved public link" })).toHaveAttribute(
+    "href",
+    "/public/synthetic-open-house-v3",
+  );
+
+  await page.goto("/reports");
+  const authorized = page.locator("[data-location-state='authorized']");
+  const restricted = page.locator("[data-location-state='restricted']");
+  await expect(authorized.getByRole("link")).toHaveCount(2);
+  await expect(restricted.getByRole("link")).toHaveCount(0);
+  await page.getByLabel("Activity").selectOption("Campaign review");
+  await page.getByLabel("Minutes").fill("25");
+  await page.getByRole("button", { name: "Add local entry" }).click();
+  await expect(page.getByRole("status")).toContainText("No support record was saved");
+
+  await assertGuardClean(guard);
+});
+
+for (const route of [
+  "brand",
+  "settings/connections",
+  "marketing/campaigns/synthetic-open-house-001",
+  "reports",
+] as const) {
+  test(`${route} is accessible and responsive in Light and Dark themes`, async ({ page }) => {
+    const guard = await guardSyntheticLocalPage(page);
+
+    for (const contract of [
+      { theme: "Light" as const, viewport: { width: 1180, height: 900 } },
+      { theme: "Dark" as const, viewport: { width: 390, height: 844 } },
+    ]) {
+      await page.setViewportSize(contract.viewport);
+      await page.goto(`/${route}`);
+      await chooseTheme(page, contract.theme);
+      await assertAxeClean(page);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+    }
+
+    await assertGuardClean(guard);
+  });
+}
+
+test("canonical profile, creative delivery, Meta assets, approval scope, and launch confirmation remain synthetic", async ({
+  page,
+}) => {
+  const guard = await guardSyntheticLocalPage(page);
+  await page.setViewportSize({ width: 1180, height: 900 });
+
+  await page.goto("/brand");
+  await expect(page.getByText("brand-v3, current")).toBeVisible();
+  await expect(page.locator('[data-profile-field-state="missing"]')).toHaveCount(2);
+  await expect(page.getByText("Approved spring newsletter")).toBeVisible();
+  await page.getByRole("button", { name: "Accept Voice suggestion" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "1 suggestion accepted into the local profile draft",
+  );
+  await expect(page.getByText("brand-v3, current")).toBeVisible();
+
+  await page.goto("/marketing/campaigns/synthetic-open-house-001");
+  await expect(page.getByAltText("Open House feed creative preview")).toBeVisible();
+  await expect(page.getByAltText("Open House story creative preview")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Download original Open House feed creative" }),
+  ).toHaveAttribute("download", "synthetic-open-house-feed-v3.svg");
+  await expect(
+    page.getByRole("link", { name: "Download original Open House story creative" }),
+  ).toHaveAttribute("download", "synthetic-open-house-story-v3.svg");
+  for (const creative of [
+    {
+      linkName: "Download original Open House feed creative",
+      fileName: "synthetic-open-house-feed-v3.svg",
+    },
+    {
+      linkName: "Download original Open House story creative",
+      fileName: "synthetic-open-house-story-v3.svg",
+    },
+  ]) {
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("link", { name: creative.linkName }).click(),
+    ]);
+    expect(download.suggestedFilename()).toBe(creative.fileName);
+  }
+  await expect(page.locator("[data-meta-asset-kind]")).toHaveCount(5);
+  await expect(page.getByText("synthetic-provider-instagram-001")).toBeVisible();
+  await expect(page.getByRole("table")).toContainText("destination-v3");
+  await expect(page.getByRole("table").getByRole("row")).toHaveCount(11);
+  await expect(page.getByText("Austin metro geography class")).toBeVisible();
+  await expect(page.getByText("ZIP targeting unavailable")).toBeVisible();
+  await expect(page.getByText("USD 25 daily")).toBeVisible();
+  await expect(page.getByText("2026-07-25")).toBeVisible();
+  await expect(page.getByText("2026-07-27")).toBeVisible();
+
+  await page.getByRole("button", { name: "Confirm final launch summary" }).click();
+  const confirmation = page.getByRole("alertdialog", {
+    name: "Confirm the exact synthetic launch summary",
+  });
+  await expect(confirmation).toBeVisible();
+  await expect(confirmation).toContainText("Campaign synthetic-campaign-open-house-001, version 3");
+  await confirmation.getByRole("button", { name: "Confirm exact local summary" }).click();
+  await expect(
+    page.getByText(
+      "Final launch summary confirmed locally for campaign version 3. No provider write occurred.",
+    ),
+  ).toBeVisible();
+
+  await assertGuardClean(guard);
+});
+
+test("delivered approval table, alertdialog, and drawer modal resolve semantic Light and Dark surfaces", async ({
+  page,
+}) => {
+  const guard = await guardSyntheticLocalPage(page);
+  await page.setViewportSize({ width: 1180, height: 900 });
+  const samples: Array<{ dialog: string; table: string; theme: string }> = [];
+
+  for (const theme of ["Light", "Dark"] as const) {
+    await page.goto("/marketing/campaigns/synthetic-open-house-001");
+    await chooseTheme(page, theme);
+    const tableRegion = page.getByRole("region", {
+      name: "Exact approved artifact and launch versions",
+    });
+    await tableRegion.focus();
+    expect(
+      await tableRegion.evaluate((element) => getComputedStyle(element).outlineWidth),
+    ).not.toBe("0px");
+    await page.getByRole("button", { name: "Confirm final launch summary" }).click();
+    const alertdialog = page.getByRole("alertdialog", {
+      name: "Confirm the exact synthetic launch summary",
+    });
+    samples.push({
+      theme: theme.toLowerCase(),
+      table: await tableRegion.evaluate((element) => getComputedStyle(element).backgroundColor),
+      dialog: await alertdialog.evaluate((element) => getComputedStyle(element).backgroundColor),
+    });
+    await alertdialog.getByRole("button", { name: "Cancel" }).click();
+  }
+
+  expect(samples).toHaveLength(2);
+  expect(samples[0]?.table).not.toBe(samples[1]?.table);
+  expect(samples[0]?.dialog).not.toBe(samples[1]?.dialog);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/overview");
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  const drawer = page.getByRole("dialog", { name: "Workspace navigation" });
+  await expect(drawer).toHaveCSS("background-color", /rgb/u);
   await assertGuardClean(guard);
 });
 
 test.afterAll(() => {
+  if (!regenerateEvidence) {
+    return;
+  }
+
   writeEvidenceSummary({
     generatedAt: new Date().toISOString(),
     syntheticOnly: true,

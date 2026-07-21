@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "fixtureOnly": true,
+  "runtime": "tasks",
+  "phase": "expand",
+  "buildId": "tasks-candidate-contract-incompatible",
+  "contractVersion": "contract-003",
+  "readContractVersions": ["contract-003"],
+  "writeContractVersions": ["contract-003"],
+  "activeMigration": "migration-002",
+  "supportedMigrations": ["migration-001", "migration-002"]
+}

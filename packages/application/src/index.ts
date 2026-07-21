@@ -118,6 +118,26 @@ export {
 } from "./launch-readiness.js";
 
 export {
+  ONBOARDING_PROGRESS_STEP_IDS,
+  OnboardingProgressConflictError,
+  OnboardingProgressRecordSchema,
+  OnboardingProgressScopeSchema,
+  OnboardingProgressStepIdSchema,
+  OnboardingRecoveryEventSchema,
+  OnboardingRecoveryKindSchema,
+  OnboardingSectionVerificationSchema,
+  ServerOnboardingProgressRepository,
+  onboardingProgressRecordKey,
+  type OnboardingProgressRecord,
+  type OnboardingProgressRecordStorePort,
+  type OnboardingProgressScope,
+  type OnboardingProgressStepId,
+  type OnboardingRecoveryEvent,
+  type OnboardingRecoveryKind,
+  type OnboardingSectionVerification,
+} from "./onboarding-progress.js";
+
+export {
   REPORTING_METRIC_DEFINITIONS,
   ReportingError,
   aggregateBlueprintMetrics,

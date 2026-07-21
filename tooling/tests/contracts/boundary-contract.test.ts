@@ -34,6 +34,16 @@ describe("versioned contract boundaries", () => {
       { cwd: process.cwd() },
     );
 
-    expect(result.stdout).toContain("Boundary fixture rejected 1 prohibited edge.");
+    expect(result.stdout).toContain("Boundary fixture rejected 2 prohibited edges.");
+  });
+
+  it("rejects unapproved fixture paths before filesystem access", async () => {
+    await expect(
+      execFileAsync(
+        process.execPath,
+        ["tooling/scripts/audit-boundaries.mjs", "--assert-reject", "../outside.json"],
+        { cwd: process.cwd() },
+      ),
+    ).rejects.toThrow();
   });
 });

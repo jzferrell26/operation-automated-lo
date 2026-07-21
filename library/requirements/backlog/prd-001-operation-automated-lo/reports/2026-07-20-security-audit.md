@@ -13,7 +13,7 @@
 
 No Critical or High vulnerability was detected in the Phase 0 React, Next.js, TypeScript, Node.js, Supabase, or CI surface. One Medium configuration finding was remediated with a tested non-CSP security-header baseline; four Medium follow-ups remain: three accepted transitive dependency advisories and the planned per-request nonce CSP required before interactive or tenant routes are authorized. Financial and PII exposure risk is low in this phase because the executable surface contains synthetic fixtures only, rejects secrets and customer data, has no production feature traffic, and exposes no live provider transport.
 
-Phase 0 implementation QA has not run. The existing quality reports apply to documentation-only branches and explicitly state that no executable implementation was in their audit boundary, so this security close-out is correctly ordered before implementation quality verification.
+The earlier Phase 0 QA evidence predated the PR #5 repair diff reviewed below. A fresh `quality-guardian` pass completed after this security close-out and verified the reconciled repair tree.
 
 ---
 
@@ -376,6 +376,45 @@ PASS: formatting, lint, database, contracts, preview, visual goldens, duplicatio
 ### pnpm 11 refresh conclusion
 
 The exact-version `allowBuilds` policy restores clean pnpm 11 installs without broadening package-script execution. The workspace remains fail-closed for every unlisted dependency, the lockfile is unchanged, and the existing three Moderate advisories remain the only dependency findings. No implementation remediation beyond the policy migration was required. The workflow, `EXECUTION_LEDGER.md`, and QA report were not edited during this security refresh.
+
+---
+
+## PR #5 Repair Security Close-Out
+
+- **Refresh scope:** Full executable repository plus the repair changes in `package.json`, `packages/ghl/src/evidence.ts`, `tests/contracts/ghl/gates.test.ts`, `tooling/boundaries.json`, `tooling/fixtures/boundaries/reverse-dependency.json`, `tooling/scripts/audit-boundaries.mjs`, `tooling/tests/contracts/boundary-contract.test.ts`, and `tsconfig.tooling.json`. The reconciled tree also preserves main's exact-version pnpm 11 build policy in `pnpm-workspace.yaml`.
+- **Refresh result:** PASS. No Critical or High finding was confirmed, and no security remediation was required.
+- **GHL evidence boundary:** PASS. `packages/ghl/src/evidence.ts:30`, `packages/ghl/src/evidence.ts:37`, and `packages/ghl/src/evidence.ts:103` now require JSON-compatible request and response values before canonical SHA-256 hashing. `tests/contracts/ghl/gates.test.ts:73` rejects a `Map` payload. Strict schemas, recursive token and PII screening, fixture-only transport, disabled live capture, and `BLOCKED` external status remain intact.
+- **Filesystem and CLI boundary:** PASS. `tooling/scripts/audit-boundaries.mjs:195` accepts only no arguments or the exact repository-owned reverse-dependency fixture path before `readFile` runs. `packages/test-support/src/rendering.ts:143` validates fixture basenames and confirms the resolved file remains directly under the immutable fixture directory. Remote render URLs are rejected at `packages/test-support/src/render-security.ts:105` before any network operation.
+- **CI and dependency lifecycle:** PASS. `.github/workflows/ci.yml:12` and `.github/workflows/ci.yml:23` retain read-only permissions, all actions remain SHA-pinned, checkout credentials are not persisted, and installs use the frozen lockfile. `pnpm-workspace.yaml:22` permits install scripts only for exact keys `@depot/cli@0.0.1-cli.2.80.0`, `esbuild@0.23.1`, and `sharp@0.34.5`.
+- **Secrets, PII, and logging:** PASS. No tracked `.env` file, hardcoded credential, raw card field, unsafe log sink, client-side sensitive storage, or live customer/provider payload was detected. HighLevel fixtures remain visibly synthetic, and the only provider adapter rejects live capture.
+- **Web surface:** PASS for the Phase 0 scope. Next.js 16.2.10 and React 19.2.7 are outside the weapon's known critical CVE ranges. The route surface is limited to liveness, version metadata, and static synthetic pages. The existing nonce-based CSP follow-up remains open at `apps/web/next.config.ts:5` before interactive, embedded, tenant, or user-data routes are authorized.
+- **Dependency audit:** ATTN. `pnpm audit --json` reports 0 Critical, 0 High, 3 Moderate, and 0 Low advisories. The unchanged Moderate advisories are PostCSS GHSA-qx2v-qp2m-jg93, OpenTelemetry Core GHSA-8988-4f7v-96qf, and esbuild GHSA-67mh-4wv8-2f99.
+- **Ordering note:** The required fresh `quality-guardian` pass completed after security and verified the reconciled PR #5 repair tree.
+
+### PR #5 verification evidence
+
+```text
+security-weapon deterministic scan
+PASS: no Critical or High secret, Unicode, PCI, XSS, injection, JWT, prototype-pollution, CORS, or unsafe-log pattern
+
+pnpm audit --json
+PASS: 0 Critical, 0 High, 3 Moderate, 0 Low
+
+pnpm install --frozen-lockfile && pnpm config get allow-builds
+PASS: lockfile unchanged; lifecycle allowlist contains only @depot/cli@0.0.1-cli.2.80.0, esbuild@0.23.1, and sharp@0.34.5
+
+pnpm verify
+PASS in 27.6 seconds
+PASS: formatting, lint, 16 package typechecks, 7 contract files and 29 contract tests
+PASS: unit, integration, database, visual, preview, duplication, boundaries, product types, secrets, dependency gate, and 16 package builds
+PASS: boundary fixture rejected both prohibited edges, including the external React edge
+CAVEAT: local verification ran on Node 22.19.0 and emitted the expected engine warning; CI pins the declared Node 24.18.0 runtime
+
+Post-security quality-guardian verification
+PASS: exact Node 24.18.0 and pnpm 11.15.1
+PASS: frozen install, 16 package typechecks plus tooling typecheck, 12 test files and 37 tests, and 16 builds
+PASS: focused GHL and boundary contracts, 2 files and 13 tests
+```
 
 ---
 

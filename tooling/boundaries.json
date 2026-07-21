@@ -1,7 +1,12 @@
 {
   "schemaVersion": 1,
   "packages": [
-    { "name": "@oalo/domain", "path": "packages/domain", "allowedInternalDependencies": [] },
+    {
+      "name": "@oalo/domain",
+      "path": "packages/domain",
+      "allowedInternalDependencies": [],
+      "allowExternalDependencies": false
+    },
     { "name": "@oalo/contracts", "path": "packages/contracts", "allowedInternalDependencies": [] },
     { "name": "@oalo/config", "path": "packages/config", "allowedInternalDependencies": [] },
     { "name": "@oalo/ui", "path": "packages/ui", "allowedInternalDependencies": [] },

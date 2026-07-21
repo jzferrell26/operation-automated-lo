@@ -124,13 +124,59 @@ jobs:
             --write \
             --output "$RUNNER_TEMP/release-manifest.json"
 
+      - name: Create validated migration compatibility evidence
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { writeFile } from "node:fs/promises";
+          import { join } from "node:path";
+
+          const outputDirectory = process.env.RUNNER_TEMP;
+          const releaseBuildId = process.env.RELEASE_BUILD_ID;
+          if (!outputDirectory || !releaseBuildId) {
+            throw new Error("Release migration evidence requires runner and build identity.");
+          }
+
+          const manifest = (runtime, phase, buildId) => ({
+            schemaVersion: 1,
+            fixtureOnly: true,
+            runtime,
+            phase,
+            buildId,
+            contractVersion: "phase0",
+            readContractVersions: ["phase0"],
+            writeContractVersions: ["phase0"],
+            activeMigration: "phase0",
+            supportedMigrations: ["phase0"],
+          });
+
+          const documents = [
+            ["prior-web.json", manifest("web", "baseline", "phase0-prior-web")],
+            ["prior-tasks.json", manifest("tasks", "baseline", "phase0-prior-tasks")],
+            ["candidate-web.json", manifest("web", "expand", releaseBuildId)],
+            ["candidate-tasks.json", manifest("tasks", "expand", releaseBuildId)],
+          ];
+          await Promise.all(
+            documents.map(([name, document]) =>
+              writeFile(join(outputDirectory, name), `${JSON.stringify(document)}\n`, "utf8"),
+            ),
+          );
+          NODE
+          node tooling/scripts/release/validate-migration-compatibility.mjs \
+            --prior-web-manifest "$RUNNER_TEMP/prior-web.json" \
+            --prior-tasks-manifest "$RUNNER_TEMP/prior-tasks.json" \
+            --candidate-web-manifest "$RUNNER_TEMP/candidate-web.json" \
+            --candidate-tasks-manifest "$RUNNER_TEMP/candidate-tasks.json" \
+            > "$RUNNER_TEMP/migration-compatibility.json"
+
       - name: Validate manifest compatibility
         run: |
           node tooling/scripts/release/validate-release-manifest.mjs \
             --manifest "$RUNNER_TEMP/release-manifest.json" \
             --expected-environment preview \
             --expected-commit "$RELEASE_COMMIT" \
-            --expected-build-id "$RELEASE_BUILD_ID"
+            --expected-build-id "$RELEASE_BUILD_ID" \
+            --migration-compatibility "$RUNNER_TEMP/migration-compatibility.json"
 
       - name: Confirm candidate cannot satisfy production evidence
         shell: bash
@@ -140,6 +186,7 @@ jobs:
             --expected-environment preview \
             --expected-commit "$RELEASE_COMMIT" \
             --expected-build-id "$RELEASE_BUILD_ID" \
+            --migration-compatibility "$RUNNER_TEMP/migration-compatibility.json" \
             --require-production-evidence; then
             echo "Candidate manifest unexpectedly passed the production evidence gate"
             exit 1

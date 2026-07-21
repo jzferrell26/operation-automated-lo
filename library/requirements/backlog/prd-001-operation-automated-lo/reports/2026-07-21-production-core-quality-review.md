@@ -108,6 +108,15 @@ The audited branch contains the two committed production-foundation waves plus t
 - Audits: package boundaries, product types, secrets, and dependency threshold pass.
 - Repository hygiene: formatting and `git diff --check` pass, with no TODO, FIXME, HACK, or forbidden dash character in changed text.
 
+## Post-CI-repair quality rerun
+
+GitHub run `29825818357` found two clean-runner gaps after the first ready PR opened. Quality reran after Security on the frozen two-file repair:
+
+- `.github/workflows/ci.yml` now generates validated synthetic migration-compatibility evidence, passes it to both release-manifest checks, and preserves the required rejection of a preview candidate as production evidence.
+- `vitest.config.ts` now resolves `@oalo/ghl` and `@oalo/rendering` to workspace source during tests, matching the existing workspace alias contract instead of relying on stale local `dist` output.
+
+Both task-worker suites pass with the two generated package `dist` directories temporarily absent. The release validation passes with matching build identity and migration evidence, while the production-evidence check remains rejected. The full canonical gate then passed in 117.3 seconds. No Critical, Warning, or Suggestion finding was introduced, and the Quality verdict remains unchanged.
+
 ## Verdict
 
 Ship after the release criterion is regenerated to DONE, the exact canonical gate passes on the resulting release commit, the branch is rebased onto current `origin/main`, and GitHub reports green checks with a CLEAN, MERGEABLE pull request. Keep the two real-provider AI criteria in progress and all deferred or external criteria explicit.

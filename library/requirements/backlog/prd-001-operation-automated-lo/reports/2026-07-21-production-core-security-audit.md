@@ -100,6 +100,12 @@ Live provider connectivity, provider data terms, KMS and environment isolation, 
 - Security Weapon static and manual review: no hardcoded secret, token plaintext, raw card data, unsafe JWT pattern, SQL injection, command injection, wildcard CORS, Unicode concealment, sensitive browser storage, or unvalidated production fallback finding.
 - Resolved framework versions: Next.js 16.2.10 and React 19.2.7, outside the applicable Critical watchlist ranges reviewed by the Weapon.
 
+## Post-CI-repair security rerun
+
+GitHub run `29825818357` exposed two clean-runner contract failures. The repair adds explicit source aliases for `@oalo/ghl` and `@oalo/rendering` to the test-only Vitest resolver and creates synthetic migration-compatibility evidence in the release-contract job before manifest validation.
+
+Security reviewed the two-file delta after the full canonical gate passed again. Workflow permissions remain read-only, every action remains pinned to its existing commit SHA, no secret or external input enters the generated runtime manifests, every generated document is marked `fixtureOnly: true`, and all files stay under `RUNNER_TEMP`. The preview candidate continues to fail closed when production evidence is required. Secret, package-boundary, product-type, and dependency-threshold audits pass with the same three Moderate advisories and no new finding.
+
 ## Close-out
 
 No Critical or High remediation remains. Quality Guardian may proceed. The three Moderate transitive dependency advisories remain documented as non-blocking follow-up work, and the external or deferred production proofs remain explicit in the execution ledger.

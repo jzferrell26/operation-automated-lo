@@ -14,6 +14,11 @@ const workspaceResolve = {
 };
 
 export default defineConfig({
+  oxc: {
+    jsx: {
+      runtime: "automatic",
+    },
+  },
   resolve: workspaceResolve,
   test: {
     projects: [
@@ -22,15 +27,29 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
-          include: ["tooling/tests/unit/**/*.test.ts"],
+          include: [
+            "tooling/tests/unit/**/*.test.ts",
+            "apps/web/src/**/*.unit.test.ts",
+            "apps/web/src/theme/**/*.test.ts",
+          ],
         },
       },
       {
+        oxc: {
+          jsx: {
+            runtime: "automatic",
+          },
+        },
         resolve: workspaceResolve,
         test: {
           name: "integration",
-          environment: "node",
-          include: ["tooling/tests/integration/**/*.test.ts"],
+          environment: "jsdom",
+          include: [
+            "tooling/tests/integration/**/*.test.ts",
+            "apps/web/src/**/*.integration.test.tsx",
+            "apps/web/src/theme/**/*.test.tsx",
+          ],
+          setupFiles: ["apps/web/src/testing/setup.ts"],
         },
       },
       {

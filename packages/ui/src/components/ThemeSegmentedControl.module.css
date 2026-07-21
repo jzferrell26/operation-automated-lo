@@ -1,0 +1,88 @@
+.group {
+  inline-size: fit-content;
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-1);
+  padding: var(--space-1);
+  color: var(--tx-strong);
+  background: var(--sf-sunken);
+  border: 1px solid var(--bd-input);
+  border-radius: var(--radius-button);
+}
+
+.segment {
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  display: inline-grid;
+  grid-template-columns: auto auto var(--space-4);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  padding-inline: var(--space-3);
+  color: var(--tx-body);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  box-shadow: none;
+  font: inherit;
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-normal);
+  cursor: pointer;
+  transition-duration: var(--motion-base);
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-timing-function: var(--ease-standard);
+}
+
+.segment:hover:not(:disabled):not([aria-checked="true"]) {
+  color: var(--tx-strong);
+  background: var(--sf-card);
+  border-color: var(--bd-hairline);
+}
+
+.segment[aria-checked="true"] {
+  color: var(--tx-on-action);
+  background: var(--ac-primary-hover);
+  border-color: var(--ac-primary-hover);
+  box-shadow: var(--shadow-rest);
+}
+
+.segment:focus-visible {
+  position: relative;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+
+.segment:disabled {
+  color: var(--tx-body);
+  background: var(--sf-sunken);
+  border-color: transparent;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.selectedGlyph {
+  inline-size: var(--space-4);
+  block-size: var(--space-4);
+}
+
+@media (max-width: 390px) {
+  .group {
+    inline-size: 100%;
+  }
+
+  .segment {
+    padding-inline: var(--space-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segment {
+    transition-duration: 0ms;
+  }
+}

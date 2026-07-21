@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-07-21T08:37:18.627Z",
+  "syntheticOnly": true,
+  "externalRequestsAllowed": false,
+  "screenshots": [
+    "onboarding-dark-1180x900.png",
+    "onboarding-dark-390x844.png",
+    "onboarding-light-1180x900.png",
+    "onboarding-light-390x844.png",
+    "overview-dark-1180x900.png",
+    "overview-dark-390x844.png",
+    "overview-dark-state-gallery-1180x900.png",
+    "overview-light-1180x900.png",
+    "overview-light-390x844.png",
+    "overview-light-mobile-drawer-open-390x844.png"
+  ],
+  "viewportContracts": [
+    "1180x900",
+    "390x844"
+  ]
+}

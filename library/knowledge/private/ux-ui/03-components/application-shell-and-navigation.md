@@ -35,11 +35,23 @@ Present Operation Automated LO as one platform with connected modules. The shell
 - An authorized agency user may switch only among installed and authorized locations.
 - Location identity comes from the validated session, never a browser-supplied location parameter.
 
+### Roles and restricted navigation
+
+- The shell exposes the validated role context: Loan Officer, Team Member, Agency User, Owner, or Compliance Approver, only where it informs an available action.
+- Permission-restricted modules remain understandable without revealing protected records. The restricted state names the required role and a next safe action.
+- Plan-restricted and planned modules are visually and semantically distinct. Planned means unavailable, not a disabled operational tool.
+- Provider-degraded navigation retains the last safe known state and routes to status details; it must not initiate another uncertain provider write.
+
 ### Theme control
 
 - Light, Dark, and System form one keyboard-accessible segmented control.
 - Selection includes a check glyph and fill.
 - The control may live in the page header and user menu during the founding release.
+
+### Focus and motion
+
+- Every shell control uses the shared 2px focus ring and 3px offset. Sticky headers, rails, and drawers must not obscure focused content.
+- Hover and rail-toggle feedback use `--motion-fast`; drawer and modal navigation uses `--motion-slow`. Reduced motion removes spatial movement or uses opacity-only changes.
 
 ## Navigation inventory
 

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "fixtureOnly": true,
+  "runtime": "web",
+  "phase": "expand",
+  "buildId": "web-candidate-002",
+  "contractVersion": "contract-002",
+  "readContractVersions": ["contract-002"],
+  "writeContractVersions": ["contract-002"],
+  "activeMigration": "migration-002",
+  "supportedMigrations": ["migration-001", "migration-002"]
+}

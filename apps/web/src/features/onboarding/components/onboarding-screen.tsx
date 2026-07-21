@@ -7,6 +7,7 @@ import type {
   SyntheticSession,
 } from "../../ui-foundation/model/synthetic-ui.js";
 import { isLaunchReadinessLocked } from "../model/readiness.js";
+import { OnboardingGuidance } from "./onboarding-guidance.js";
 import styles from "./onboarding.module.css";
 
 type OnboardingScreenProps = Readonly<{
@@ -49,6 +50,8 @@ export function OnboardingScreen({ onboarding, session }: OnboardingScreenProps)
           </p>
         </div>
       </Card>
+
+      <OnboardingGuidance guidance={onboarding.guidance} />
 
       <OnboardingChecklist
         data-tour="onboarding-get-connected"

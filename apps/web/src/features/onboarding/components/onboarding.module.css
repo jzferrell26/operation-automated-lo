@@ -22,10 +22,7 @@
   letter-spacing: var(--tracking-page);
 }
 
-.pageHeader p,
-.safetyNotice p,
-.itemDescription p,
-.policyGrid p {
+:is(.pageHeader, .safetyNotice, .itemDescription, .policyGrid) p {
   color: var(--tx-body);
   line-height: var(--leading-normal);
 }
@@ -58,6 +55,90 @@
   gap: var(--space-3);
   background: var(--st-info-bg);
   color: var(--st-info-fg);
+}
+
+.guidance {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+  background: var(--st-info-bg);
+}
+
+.guidance p,
+.guidanceDismissed,
+.permissionGroups p {
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+}
+
+.guidance p,
+.guidanceDismissed {
+  margin: 0;
+}
+
+.guidanceDismissed {
+  min-block-size: 44px;
+  padding: var(--space-3);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-control);
+}
+
+.permissionGroups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.permissionGroups section {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  max-inline-size: none;
+}
+
+.permissionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.permissionHeading h2,
+.permissionGroups h3 {
+  margin: 0;
+}
+
+.permissionHeading span {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--st-neutral-bg);
+  color: var(--st-neutral-fg);
+  font-size: var(--text-caption-size);
+  text-transform: capitalize;
+}
+
+.permissionDetails {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+}
+
+.permissionDetails div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.35fr) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.permissionDetails dt {
+  color: var(--tx-faint);
+  font-size: var(--text-caption-size);
+  font-weight: var(--weight-medium);
+}
+
+.permissionDetails dd {
+  margin: 0;
+  color: var(--tx-body);
 }
 
 .safetyNotice p,
@@ -97,7 +178,22 @@
     flex-direction: column;
   }
 
-  .policyGrid {
+  .guidance {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .guidance button {
+    grid-column: 1 / -1;
+    inline-size: 100%;
+  }
+
+  .policyGrid,
+  .permissionGroups {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .permissionDetails div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
   }
 }

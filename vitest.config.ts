@@ -8,6 +8,8 @@ const workspaceResolve = {
     "@oalo/config": resolve("packages/config/src/index.ts"),
     "@oalo/contracts": resolve("packages/contracts/src/index.ts"),
     "@oalo/domain": resolve("packages/domain/src/index.ts"),
+    "@oalo/ghl": resolve("packages/ghl/src/index.ts"),
+    "@oalo/rendering": resolve("packages/rendering/src/index.ts"),
     "@oalo/test-support": resolve("packages/test-support/src/index.ts"),
     "@oalo/ui": resolve("packages/ui/src/index.ts"),
   },

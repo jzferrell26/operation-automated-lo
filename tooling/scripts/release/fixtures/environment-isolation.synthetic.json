@@ -1,0 +1,58 @@
+[
+  {
+    "environment": "local",
+    "identity": {
+      "database": "local:database",
+      "tasks": "local:tasks",
+      "secrets": "local:secrets",
+      "privateStorage": "local:private-storage",
+      "publishedStorage": "local:published-storage",
+      "providerApp": "local:provider-app"
+    },
+    "stripeMode": "test",
+    "providerMode": "stub",
+    "dataClassification": "synthetic-only"
+  },
+  {
+    "environment": "preview",
+    "identity": {
+      "database": "preview:database",
+      "tasks": "preview:tasks",
+      "secrets": "preview:secrets",
+      "privateStorage": "preview:private-storage",
+      "publishedStorage": "preview:published-storage",
+      "providerApp": "preview:provider-app"
+    },
+    "stripeMode": "test",
+    "providerMode": "stub",
+    "dataClassification": "synthetic-only"
+  },
+  {
+    "environment": "staging",
+    "identity": {
+      "database": "staging:database",
+      "tasks": "staging:tasks",
+      "secrets": "staging:secrets",
+      "privateStorage": "staging:private-storage",
+      "publishedStorage": "staging:published-storage",
+      "providerApp": "staging:provider-app"
+    },
+    "stripeMode": "test",
+    "providerMode": "contract-test",
+    "dataClassification": "approved-test-only"
+  },
+  {
+    "environment": "production",
+    "identity": {
+      "database": "production:database",
+      "tasks": "production:tasks",
+      "secrets": "production:secrets",
+      "privateStorage": "production:private-storage",
+      "publishedStorage": "production:published-storage",
+      "providerApp": "production:provider-app"
+    },
+    "stripeMode": "live",
+    "providerMode": "live",
+    "dataClassification": "minimum-customer-data"
+  }
+]

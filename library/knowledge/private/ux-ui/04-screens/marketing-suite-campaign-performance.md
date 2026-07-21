@@ -26,6 +26,14 @@ Show campaign-specific advertising and conversion performance inside the Marketi
 - Property images and artifact thumbnails use approved or safe placeholder assets.
 - A campaign row links to the campaign record, not directly to an unauthorized provider resource.
 
+## Founding-cohort support entry
+
+Support-time entry uses one activity selector, one minutes field with a five-minute step, and one Add local entry action. The location is taken from the authorized screen context and is not re-entered. Validation is inline, the result is announced, and repeated entries follow the same field order. UI Foundation evidence stages the entry locally and makes no network request or saved-record claim.
+
+## Authorized agency portfolio
+
+Agency totals are computed and labeled as authorized-location totals. Each included location names its authorization evidence and may link to its own exception region and campaign detail. A location without explicit authorization renders no totals, protected values, exception link, or campaign link. Portfolio presentation never uses an inaccessible location as a placeholder.
+
 ## Edge cases
 
 - No campaigns

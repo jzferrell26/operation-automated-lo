@@ -102,22 +102,25 @@ function freezeRecursively(value: unknown, seen = new WeakSet<object>()): void {
 }
 
 function canonicalJson(value: z.infer<ReturnType<typeof z.json>>): string {
-  if (value === null || typeof value === "boolean" || typeof value === "number") {
-    return JSON.stringify(value);
+  switch (typeof value) {
+    case "string":
+      return JSON.stringify(value.replace(/\r\n?/gu, "\n").normalize("NFC"));
+    case "boolean":
+    case "number":
+      return JSON.stringify(value);
+    default:
+      break;
   }
-
-  if (typeof value === "string") {
-    return JSON.stringify(value.replace(/\r\n?/gu, "\n").normalize("NFC"));
+  if (value === null) return "null";
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  const fields: string[] = [];
+  const sortedKeys = Object.keys(value).sort((left, right) => left.localeCompare(right, "en"));
+  for (const key of sortedKeys) {
+    const entry = value[key];
+    if (entry === undefined) throw new Error("Canonical JSON object cannot contain undefined");
+    fields.push(`${JSON.stringify(key.normalize("NFC"))}:${canonicalJson(entry)}`);
   }
-
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => canonicalJson(item)).join(",")}]`;
-  }
-
-  const entries = Object.entries(value).sort(([left], [right]) => left.localeCompare(right, "en"));
-  return `{${entries
-    .map(([key, item]) => `${JSON.stringify(key.normalize("NFC"))}:${canonicalJson(item)}`)
-    .join(",")}}`;
+  return `{${fields.join(",")}}`;
 }
 
 export function canonicalBytes(input: unknown): Uint8Array {

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "fixtureOnly": true,
+  "runtime": "tasks",
+  "phase": "baseline",
+  "buildId": "tasks-prior-001",
+  "contractVersion": "contract-002",
+  "readContractVersions": ["contract-002"],
+  "writeContractVersions": ["contract-002"],
+  "activeMigration": "migration-001",
+  "supportedMigrations": ["migration-001", "migration-002"]
+}

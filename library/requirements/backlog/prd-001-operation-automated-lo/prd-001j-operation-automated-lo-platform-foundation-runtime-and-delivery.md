@@ -2,7 +2,7 @@
 
 ## Status
 
-Backlog. This is the technical prerequisite for PRD-001a through PRD-001i. Only Phase 0 evidence-harness work is authorized while the core research gates remain blocked.
+Backlog. This is the technical prerequisite for PRD-001a through PRD-001i. Production implementation remains unauthorized while G1 through G7 are blocked. G8 is `ACCEPTED CONSTRAINT`, never `PASS`: no 15-paid-founder evidence exists, commercial validation is unproven, and 15 paid founders is a post-start target rather than an implementation prerequisite.
 
 ## Objective
 
@@ -30,7 +30,7 @@ The customer does not buy this module directly. It ensures that installation, se
 - Replacing HighLevel as CRM, workflow, calendar, contact, opportunity, or connected-Meta system of record.
 - General-purpose workflow-builder, page-builder, or AI-agent infrastructure.
 - Implementing PRD-002 add-ons.
-- Authorizing production feature traffic before research gates G1 through G8 close.
+- Authorizing production feature traffic before G1 through G7 are each `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE`. G8's accepted constraint does not authorize production traffic.
 
 ## Architecture contract
 

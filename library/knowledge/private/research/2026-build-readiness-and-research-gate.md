@@ -6,7 +6,9 @@ Research decision date: July 20, 2026.
 
 The public-source research pass is complete for the PRD-001 product and construction architecture. It confirms that HighLevel exposes the installation, embedded UI, CRM, ad draft, explicit ad publish, and reporting surfaces required by Operation Automated LO. It also defines the deployable units, repository topology, tenant database, runtime contracts, durable work, rendering, delivery, testing, observability, and recovery model needed to construct the system.
 
-Feature implementation is not yet authorized. Public documentation cannot prove several account-state and policy behaviors. The authorized next technical phase is Phase 0: the platform scaffold, golden rendering fixtures, security harness, and time-boxed HighLevel App Test integration harness defined in the construction documents. Production feature implementation begins only after every core gate is marked `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE` by its named owner.
+Production feature implementation is not yet authorized because G1 through G7 remain blocked. Public documentation cannot prove several account-state and policy behaviors. The authorized next technical phase is Phase 0: the platform scaffold, golden rendering fixtures, security harness, and time-boxed HighLevel App Test integration harness defined in the construction documents. Production feature implementation begins only after each of G1 through G7 is marked `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE` by its named owner.
+
+On July 20, 2026, the product owner explicitly directed: "Proceed, we are moving without the 15 paid founders." G8 is therefore `ACCEPTED CONSTRAINT`, never `PASS`. No evidence of 15 paid founders exists, and commercial validation remains unproven. The 15-paid-founder threshold is a post-start commercial validation target, not an implementation prerequisite. This decision does not resolve G1 through G7 or authorize production traffic.
 
 PRD-002 add-ons are not research-complete for implementation as a group. Add-ons that depend on licensed property, valuation, mortgage, or consumer data remain blocked until a provider contract proves permitted use, resale rights, retention, deletion, refresh cadence, and unit economics.
 
@@ -145,9 +147,9 @@ The harness records sanitized request and response fixtures, HTTP status, safe p
 | G5: Lead routing contract | One no-spend Meta test lead proves form mapping, GHL contact, opportunity, assignment, workflow, notification, and attribution behavior | Engineering and operations | `BLOCKED: APP TEST` |
 | G6: Billing lifecycle | Hosted Stripe flow and HighLevel billing authorization pass every listed state transition | Product, finance, and engineering | `BLOCKED: APP TEST` |
 | G7: Legal operating model | Terms, privacy, DPA, retention, consent, RESPA, Regulation Z, fair-lending, email, SMS, and lender blueprint approvals are documented | Counsel and lender compliance | `BLOCKED: COUNSEL / LENDER` |
-| G8: Demand | At least 15 paid founders accept the defined core offer | Product | `BLOCKED: COMMERCIAL VALIDATION` |
+| G8: Demand | At least 15 paid founders accept the defined core offer | Product | `ACCEPTED CONSTRAINT: COMMERCIAL VALIDATION UNPROVEN` |
 
-No feature team should build the production campaign system while any gate remains `BLOCKED`. The App Test harness, golden render fixtures, security threat modeling, and paid-founder demo are permitted because they produce the missing evidence rather than depending on it.
+No feature team should build the production campaign system while any of G1 through G7 remains `BLOCKED`. Production stays unauthorized until each is `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE`. The App Test harness, golden render fixtures, security threat modeling, and paid-founder demo are permitted because they produce missing evidence rather than depending on it. G8 remains an accepted commercial risk and must not be reported as validated demand.
 
 ## PRD-002 add-on readiness
 
@@ -172,4 +174,4 @@ No feature team should build the production campaign system while any gate remai
 
 ## Final research conclusion
 
-Operation Automated LO is technically viable as a scalable HighLevel Marketplace application. The correct 2026 build is a shared modular monolith with a web deployable, a durable task deployable, one RLS-enforced product database, immutable object storage, and HighLevel as the CRM and connected-ad authority. It is not a collection of per-customer Lovable deployments and not a direct-Meta credential store. Product and construction research are complete enough to begin the Phase 0 evidence harness and platform scaffold. Production feature traffic remains a no-go until G1 through G8 are resolved.
+Operation Automated LO is technically viable as a scalable HighLevel Marketplace application. The correct 2026 build is a shared modular monolith with a web deployable, a durable task deployable, one RLS-enforced product database, immutable object storage, and HighLevel as the CRM and connected-ad authority. It is not a collection of per-customer Lovable deployments and not a direct-Meta credential store. Product and construction research are complete enough to begin the Phase 0 evidence harness and platform scaffold. G8 is an accepted constraint with unproven commercial validation. Production feature traffic remains a no-go until G1 through G7 are resolved.

@@ -2,7 +2,7 @@
 
 ## Status
 
-Backlog. Production implementation is blocked by the research, App Test, compliance, and paid-founder gates in the [2026 build-readiness decision](../../../knowledge/private/research/2026-build-readiness-and-research-gate.md).
+Backlog. Production implementation remains blocked by research, App Test, and compliance gates G1 through G7 in the [2026 build-readiness decision](../../../knowledge/private/research/2026-build-readiness-and-research-gate.md). G8 is `ACCEPTED CONSTRAINT`, never `PASS`: no 15-paid-founder evidence exists, commercial validation is unproven, and 15 paid founders is a post-start target rather than an implementation prerequisite.
 
 ## Objective
 
@@ -138,7 +138,7 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 ## Delivery sequence
 
 1. Run the $500 founding offer against a working demo.
-2. Proceed only if at least 15 customers pay.
+2. Proceed under the July 20, 2026 G8 `ACCEPTED CONSTRAINT` decision. Treat 15 paid founders as a post-start commercial validation target, not an implementation prerequisite.
 3. Implement the Phase 0 portion of 001j: monorepo scaffold, verification, preview environments, App Test harness, golden render fixtures, threat-model harness, and paid-founder demo.
 4. Record `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE` for every core research gate.
 5. Complete the tenant, identity, session, token, command, inbox, outbox, durable-task, rendering, observability, and recovery foundation in 001j.
@@ -155,7 +155,7 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 
 ## Pre-implementation research gates
 
-The production feature build is a no-go until the linked evidence register closes these gates:
+The production feature build is a no-go until G1 through G7 in the linked evidence register are each `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE`. G8 is listed for traceability as an accepted constraint and must never be reported as `PASS`:
 
 1. Direct and agency installation, location-token exchange, signed context, refresh, uninstall, reconnect, and iframe fallback pass in HighLevel App Test.
 2. HighLevel provides a written decision on paired core and Ads Publisher apps, requested scopes, and the distribution path beyond five agencies.
@@ -164,20 +164,20 @@ The production feature build is a no-go until the linked evidence register close
 5. A no-spend Meta test lead proves form mapping, GHL contact, opportunity, assignment, workflow, notification, and attribution behavior.
 6. Stripe-hosted external billing and HighLevel install authorization pass success, failure, cancellation, duplicate, delayed, bulk, uninstall, and reinstall cases.
 7. Counsel and lender compliance approve the operating model, disclosures, consent, RESPA, Regulation Z, fair-lending, retention, privacy, and communication rules.
-8. At least 15 paid founders validate demand for the defined core offer.
+8. G8 Demand is `ACCEPTED CONSTRAINT` by explicit product-owner direction to proceed without 15 paid founders. No 15-paid-founder evidence exists, commercial validation remains unproven, and the threshold is now a post-start target.
 
 The App Test harness, golden render fixtures, threat model, and paid-founder demo are evidence-producing work and are allowed before these gates close. They must not become an unreviewed production shortcut.
 
 ## Product gates
 
-- At least 15 paid founders before full implementation
+- Post-start target of at least 15 paid founders. No current evidence establishes this target or validated demand.
 - 70 percent reach Launch Ready within 30 minutes without operator configuration
 - 50 percent first campaign publish within 14 days
 - Under 30 minutes of support per account per month
 - 70 percent continuation at $197 per month after 90 days
 - Text-model cost under $5 per active location per month at normal included usage
 
-Failure of the demand gate stops implementation. Failure of activation or support gates triggers a narrower managed service or internal-tool decision before additional channels are built.
+Failure to reach the post-start demand target triggers a stop, kill, or reshape review before expansion or additional investment. Failure of activation or support gates triggers a narrower managed service or internal-tool decision before additional channels are built.
 
 ## Related
 

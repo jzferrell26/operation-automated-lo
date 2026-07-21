@@ -6,7 +6,7 @@
 - Baseline: `f3f2b05d33ffb5ca1657278f85ab816fba147727`
 - Scope authority: PRD-001 index, PRD-001j, and the 2026 Build Readiness and Research Gate
 - Authorized scope: evidence-producing Phase 0 scaffold and harnesses only
-- Prohibited scope: production campaign functionality, live customer changes, live provider writes, external spending, production advertising, and any assumption that closes G1 through G8 without named external evidence
+- Prohibited scope: production campaign functionality, live customer changes, live provider writes, external spending, production advertising, any assumption that closes G1 through G7 without named external evidence, and any treatment of G8 as `PASS`
 - Status flow: `OPEN` -> `IN PROGRESS` -> `DONE` -> `VERIFIED`
 
 ## Acceptance-criteria ledger
@@ -38,7 +38,7 @@
 
 ## External gate register
 
-These gates are not acceptance criteria for this implementation raid. They remain external blockers and must not be silently converted to `PASS`.
+These gates are not acceptance criteria for this implementation raid. G1 through G7 remain external blockers and must not be silently converted to `PASS`. G8 is recorded as `ACCEPTED CONSTRAINT`, never `PASS`, under the product-owner decision in the raid log.
 
 | Gate | Current state | Required external evidence |
 | --- | --- | --- |
@@ -49,7 +49,7 @@ These gates are not acceptance criteria for this implementation raid. They remai
 | G5 Lead routing contract | BLOCKED | No-spend Meta test lead evidence |
 | G6 Billing lifecycle | BLOCKED | Stripe test mode plus HighLevel billing evidence |
 | G7 Legal operating model | BLOCKED | Counsel and lender approval |
-| G8 Demand | BLOCKED | At least 15 paid founders |
+| G8 Demand | ACCEPTED CONSTRAINT | No 15-paid-founder evidence exists. The product owner directed proceeding without it, commercial validation remains unproven, and 15 paid founders is now a post-start target. |
 
 ## Dependency waves
 
@@ -101,3 +101,5 @@ Fetch `origin/main`, resolve conflicts, rerun `pnpm verify`, confirm mergeabilit
 | 2026-07-20 | `typescript-node-guardian` added the no-network `pnpm tasks:local` runner, and `readme-writing-guardian` rebuilt onboarding around verified Phase 0 commands. |
 | 2026-07-20 | `security-guardian` refreshed the audit after the onboarding repair. Exact Node 24 verification passed with no new finding. |
 | 2026-07-20 | `quality-guardian` completed independent close-out: 22 of 22 criteria passed with zero Criticals, Warnings, or Suggestions. Every P0 row is VERIFIED; G1 through G8 remain BLOCKED. |
+| 2026-07-20 | Watchdog found that the initial documentation worker made no filesystem progress. The worker was terminated and the task was decomposed. |
+| 2026-07-20 | Product owner explicitly directed: "Proceed, we are moving without the 15 paid founders." G8 is `ACCEPTED CONSTRAINT`, never `PASS`. No 15-paid-founder evidence exists, and commercial validation remains unproven. G1 through G7 remain `BLOCKED`, and production stays unauthorized until each is `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE`. |

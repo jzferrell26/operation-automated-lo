@@ -26,7 +26,7 @@
 | Assumption | Why it can kill the offer |
 | --- | --- |
 | A1 | Without a recurring customer problem, the offer is a product thesis without a job to be done. |
-| A2 | Fewer than 15 paid accounts leaves G8 blocked and prohibits full production implementation. |
+| A2 | Fewer than 15 paid accounts leaves commercial demand unproven. On 2026-07-20, the product owner accepted that constraint and directed implementation to proceed without claiming G8 PASS. |
 | A3 | If buyers pay only when synthetic or manual boundaries are hidden, the demand signal is invalid and unethical. |
 | A4 | If buyers mainly want custom services, the scalable SaaS offer is mis-shaped. |
 | A6 | Buyers without the required account authority cannot become valid founding locations. |
@@ -41,6 +41,8 @@
 **Rationale:** Completed payment is the strongest available behavioral test of viability and desirability. The concierge format permits an honest demonstration before production provider functionality exists, provided every manual, synthetic, unavailable, and gated behavior is disclosed.
 
 **Experiment:** `library/discovery/experiments/2026-07-20-founding-cohort-demand.md`
+
+**Decision state:** No evidence currently proves the 15-paid-founder threshold. A2 remains an unvalidated commercial assumption and the experiment remains available as post-start learning. It is not an implementation prerequisite under the 2026-07-20 product-owner decision.
 
 ## Required Companion Evidence
 

@@ -74,10 +74,14 @@ describe("production Meta read transport", () => {
       transport,
     });
 
-    await expect(progress.poll()).resolves.toMatchObject({ state: "live" });
-    expect(transport.get).toHaveBeenCalledWith({
-      locationRef,
-      route: "/ad-publishing/facebook/campaigns/campaign_meta_01/publishing-progress",
-    });
+    const signal = new AbortController().signal;
+    await expect(progress.poll(signal)).resolves.toMatchObject({ state: "live" });
+    expect(transport.get).toHaveBeenCalledWith(
+      {
+        locationRef,
+        route: "/ad-publishing/facebook/campaigns/campaign_meta_01/publishing-progress",
+      },
+      signal,
+    );
   });
 });

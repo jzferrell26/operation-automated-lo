@@ -231,6 +231,7 @@ describe("tenant and installation fixture contracts", () => {
       }),
       complete: vi.fn(async () => undefined),
       release: vi.fn(async () => undefined),
+      markCompletionUncertain: vi.fn(async () => undefined),
     };
     const apply = vi.fn(async () => "installed" as const);
     const delivery = {
@@ -255,6 +256,7 @@ describe("tenant and installation fixture contracts", () => {
       claim: vi.fn(async () => true),
       complete: vi.fn(async () => undefined),
       release: vi.fn(async () => undefined),
+      markCompletionUncertain: vi.fn(async () => undefined),
     };
     await expect(
       processInstallationLifecycleDelivery(

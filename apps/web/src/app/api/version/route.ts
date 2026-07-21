@@ -1,14 +1,22 @@
 import { getFoundationSnapshot } from "@oalo/application";
-import { parsePhaseZeroEnvironment } from "@oalo/config";
+import { parseRuntimeEnvironment } from "@oalo/config";
 
-export function GET(): Response {
-  const environment = parsePhaseZeroEnvironment(process.env);
+export function versionEvidenceForEnvironment(input: unknown) {
+  const environment = parseRuntimeEnvironment(input);
   const foundation = getFoundationSnapshot();
 
-  return Response.json({
-    buildId: environment.OALO_BUILD_ID,
-    commit: environment.OALO_BUILD_COMMIT,
+  return Object.freeze({
+    environment: environment.environment,
+    buildId: environment.buildId,
+    commit: environment.buildCommit,
     contractVersion: foundation.contractVersion,
     phase: foundation.phase,
+    releaseVersions: environment.releaseManifest?.versions ?? null,
+  });
+}
+
+export function GET(): Response {
+  return Response.json(versionEvidenceForEnvironment(process.env), {
+    headers: { "Cache-Control": "no-store, max-age=0" },
   });
 }

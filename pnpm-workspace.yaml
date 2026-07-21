@@ -21,10 +21,14 @@ minimumReleaseAgeExclude:
   - trigger.dev@4.5.5
 allowBuilds:
   "@depot/cli@0.0.1-cli.2.80.0": true
-  esbuild@0.23.1: true
+  esbuild: set this to true or false
+  esbuild@0.25.0: true
   sharp@0.34.5: true
 overrides:
+  "@opentelemetry/core": 2.8.0
   engine.io: 6.6.7
+  esbuild: 0.25.0
+  postcss: 8.5.10
   tar: 7.5.19
   ws: 8.21.0
 peerDependencyRules:

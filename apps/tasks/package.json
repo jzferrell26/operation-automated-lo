@@ -10,11 +10,14 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@oalo/ai": "workspace:*",
     "@oalo/application": "workspace:*",
     "@oalo/config": "workspace:*",
     "@oalo/contracts": "workspace:*",
+    "@oalo/db": "workspace:*",
     "@oalo/ghl": "workspace:*",
     "@oalo/rendering": "workspace:*",
+    "@oalo/storage": "workspace:*",
     "@trigger.dev/sdk": "4.5.5",
     "zod": "catalog:"
   },

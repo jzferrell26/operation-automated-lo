@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   AiGenerationError,
   AiSpendLimitError,
+  AiTelemetryReconciliationError,
   LocationAiSpendGuard,
   UnsafeAiInputError,
   compileCampaignPrompt,
@@ -207,14 +208,29 @@ class QueueProvider implements AiProviderPort {
 function fixturePorts(provider: AiProviderPort, blockingRuleCodes: readonly string[] = []) {
   const usage: AiUsageEvent[] = [];
   const traces: AiTraceRecord[] = [];
+  const telemetryReconciliation: Array<Readonly<{ usage: AiUsageEvent; trace: AiTraceRecord }>> =
+    [];
   const accepted = new Map<string, AcceptedGeneration>();
   const charges: string[] = [];
   const failures: string[] = [];
+  let spendReservations = 0;
   let sequence = 0;
+  const spendGuard = new LocationAiSpendGuard({
+    maximumConcurrentRequests: 1,
+    maximumRequestsPerWindow: 20,
+    monthlyCostGuardrailUsd: 15,
+  });
   const ports: CampaignGenerationPorts = {
     provider,
-    usage: { record: async (event) => void usage.push(event) },
-    trace: { record: async (trace) => void traces.push(trace) },
+    telemetry: {
+      recordAtomically: async ({ usage: event, trace }) => {
+        usage.push(event);
+        traces.push(trace);
+      },
+      markReconciliationRequired: async ({ usage: event, trace }) => {
+        telemetryReconciliation.push({ usage: event, trace });
+      },
+    },
     identity: {
       next: (prefix) => `${prefix}_${String(++sequence).padStart(8, "0")}`,
     },
@@ -223,6 +239,7 @@ function fixturePorts(provider: AiProviderPort, blockingRuleCodes: readonly stri
     ledger: {
       findAccepted: async (idempotencyRef) => accepted.get(idempotencyRef),
       reserve: async () => "reserved",
+      waitForAccepted: async ({ idempotencyRef }) => accepted.get(idempotencyRef),
       markFailed: async ({ classification }) => void failures.push(classification),
     },
     commit: {
@@ -238,13 +255,23 @@ function fixturePorts(provider: AiProviderPort, blockingRuleCodes: readonly stri
     preflight: {
       evaluate: async () => ({ blockingRuleCodes, warningRuleCodes: ["warning_fixture"] }),
     },
-    spend: new LocationAiSpendGuard({
-      maximumConcurrentRequests: 1,
-      maximumRequestsPerWindow: 20,
-      monthlyCostGuardrailUsd: 15,
-    }),
+    spend: {
+      reserve: (input) => {
+        spendReservations += 1;
+        return spendGuard.reserve(input);
+      },
+    },
   };
-  return { ports, usage, traces, accepted, charges, failures };
+  return {
+    ports,
+    usage,
+    traces,
+    telemetryReconciliation,
+    accepted,
+    charges,
+    failures,
+    spendReservations: () => spendReservations,
+  };
 }
 
 const options = {
@@ -381,6 +408,54 @@ describe("production AI generation", () => {
 
     expect(second).toEqual(first);
     expect(provider.calls).toHaveLength(1);
+    expect(fixture.charges).toEqual(["campaign_pack"]);
+  });
+
+  it("lets only the reservation owner spend while a concurrent caller waits for its result", async () => {
+    let resolveProvider: ((attempt: ProviderAttempt) => void) | undefined;
+    const generate = vi.fn(
+      async (input: ProviderCallInput): Promise<ProviderAttempt> =>
+        new Promise((resolve) => {
+          void input;
+          resolveProvider = resolve;
+        }),
+    );
+    const provider: AiProviderPort = {
+      generate,
+      reconcile: async () => ({ kind: "not_found" }),
+    };
+    const fixture = fixturePorts(provider);
+    let reserved = false;
+    let resolveWaiter: ((generation: AcceptedGeneration) => void) | undefined;
+    fixture.ports.ledger.reserve = vi.fn(async () => {
+      if (reserved) return "already_reserved";
+      reserved = true;
+      return "reserved";
+    });
+    fixture.ports.ledger.waitForAccepted = vi.fn(
+      async () =>
+        new Promise<AcceptedGeneration>((resolve) => {
+          resolveWaiter = resolve;
+        }),
+    );
+    const commitAccepted = fixture.ports.commit.commitAccepted.bind(fixture.ports.commit);
+    fixture.ports.commit.commitAccepted = async (input) => {
+      const generation = await commitAccepted(input);
+      resolveWaiter?.(generation);
+      return generation;
+    };
+
+    const request = generationRequest();
+    const first = generateCampaignTextPack(request, fixture.ports, options);
+    await vi.waitFor(() => expect(generate).toHaveBeenCalledOnce());
+    const second = generateCampaignTextPack(request, fixture.ports, options);
+    await vi.waitFor(() => expect(fixture.ports.ledger.waitForAccepted).toHaveBeenCalledOnce());
+    resolveProvider?.(success());
+
+    const [ownerResult, waitingResult] = await Promise.all([first, second]);
+    expect(waitingResult).toEqual(ownerResult);
+    expect(generate).toHaveBeenCalledOnce();
+    expect(fixture.spendReservations()).toBe(1);
     expect(fixture.charges).toEqual(["campaign_pack"]);
   });
 
@@ -579,14 +654,49 @@ describe("production AI generation", () => {
     ).toThrow("same evaluation corpus");
   });
 
-  it("fails closed when metering or tracing cannot be persisted", async () => {
+  it("keeps valid output accepted when atomic telemetry persistence needs reconciliation", async () => {
     const provider = new QueueProvider([success()]);
     const fixture = fixturePorts(provider);
-    fixture.ports.usage.record = vi.fn().mockRejectedValue(new Error("meter unavailable"));
+    fixture.ports.telemetry.recordAtomically = vi
+      .fn()
+      .mockRejectedValue(new Error("telemetry transaction unavailable"));
 
     await expect(
       generateCampaignTextPack(generationRequest(), fixture.ports, options),
-    ).rejects.toThrow("meter unavailable");
-    expect(fixture.charges).toHaveLength(0);
+    ).resolves.toMatchObject({
+      sourceProviderRequestRef: "providerrequest_01Primary",
+    });
+    expect(provider.calls.map((call) => call.operation)).toEqual(["campaign_generation"]);
+    expect(fixture.charges).toEqual(["campaign_pack"]);
+    expect(fixture.usage).toHaveLength(0);
+    expect(fixture.traces).toHaveLength(0);
+    expect(fixture.telemetryReconciliation).toHaveLength(1);
+    expect(fixture.telemetryReconciliation[0]).toMatchObject({
+      usage: { outcome: "accepted" },
+      trace: { outcome: "accepted" },
+    });
+  });
+
+  it("commits valid output before surfacing an unavailable telemetry reconciliation marker", async () => {
+    const provider = new QueueProvider([success()]);
+    const fixture = fixturePorts(provider);
+    fixture.ports.telemetry.recordAtomically = vi
+      .fn()
+      .mockRejectedValue(new Error("telemetry transaction unavailable"));
+    fixture.ports.telemetry.markReconciliationRequired = vi
+      .fn()
+      .mockRejectedValue(new Error("telemetry reconciliation unavailable"));
+    const request = generationRequest();
+
+    await expect(generateCampaignTextPack(request, fixture.ports, options)).rejects.toBeInstanceOf(
+      AiTelemetryReconciliationError,
+    );
+    await expect(generateCampaignTextPack(request, fixture.ports, options)).resolves.toMatchObject({
+      sourceProviderRequestRef: "providerrequest_01Primary",
+    });
+
+    expect(provider.calls.map((call) => call.operation)).toEqual(["campaign_generation"]);
+    expect(fixture.charges).toEqual(["campaign_pack"]);
+    expect(fixture.ports.telemetry.markReconciliationRequired).toHaveBeenCalledOnce();
   });
 });

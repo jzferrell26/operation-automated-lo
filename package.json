@@ -16,7 +16,7 @@
     "typecheck": "turbo run typecheck && tsc -p tsconfig.tooling.json",
     "test:unit": "vitest run --project unit --coverage",
     "test:integration": "vitest run --project integration",
-    "test:db": "vitest run --project database",
+    "test:db": "node tooling/scripts/database/run-real-database-tests.mjs",
     "test:contracts": "vitest run --project contracts",
     "test:visual": "vitest run --project visual",
     "test:e2e:preview": "vitest run --project e2e-preview",
@@ -28,7 +28,8 @@
     "audit:dependencies": "pnpm audit --audit-level=high",
     "audit:product-types": "node tooling/scripts/audit-product-types.mjs",
     "audit:secrets": "node tooling/scripts/audit-secrets.mjs",
-    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:integration && pnpm test:db && pnpm test:contracts && pnpm test:visual && pnpm test:e2e:preview && pnpm test:browser && pnpm jscpd && pnpm audit:boundaries && pnpm audit:product-types && pnpm audit:secrets && pnpm audit:dependencies && pnpm build"
+    "verify:offline": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:integration && pnpm test:contracts && pnpm test:visual && pnpm test:e2e:preview && pnpm test:browser && pnpm jscpd && pnpm audit:boundaries && pnpm audit:product-types && pnpm audit:secrets && pnpm audit:dependencies && pnpm build",
+    "verify": "pnpm verify:offline && pnpm test:db"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",

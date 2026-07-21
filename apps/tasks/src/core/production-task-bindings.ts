@@ -1,15 +1,20 @@
 import type { DeliveryGuardPort } from "@oalo/application";
+import type { AiTelemetryPort, AnthropicMessagesProviderClient } from "@oalo/ai";
+import type { DeliveryReference } from "@oalo/contracts";
 import {
   createMetaPublishingProgressPollingPort,
   type ProductionMetaReadTransport,
 } from "@oalo/ghl";
 import type { DeterministicBrowserPort, PrivateArtifactPort } from "@oalo/rendering";
+import type {
+  ProductionObjectStoreAdapter,
+  PublicationCleanupReconciliationPort,
+} from "@oalo/storage";
 
 import type {
   ProductionMetaPublishPollTaskRequest,
   ProductionMetaPublishPollingPort,
 } from "./production-poll-meta-publish.js";
-import { TaskPermanentError } from "./task-retry-classification.js";
 
 export interface DatabaseBackedDeliveryGuardPort extends DeliveryGuardPort {
   readonly idempotencyStore: "database";
@@ -33,32 +38,22 @@ export function createMetaReadPollingPortFactory(
  */
 export interface ProductionTaskBindings {
   readonly deliveryGuard: DatabaseBackedDeliveryGuardPort;
+  readonly aiProvider: AnthropicMessagesProviderClient;
+  readonly aiTelemetry: AiTelemetryPort;
   readonly pdfBrowser: DeterministicBrowserPort;
   readonly pdfStorage: PrivateArtifactPort;
+  readonly publicationCleanupReconciliation: PublicationCleanupReconciliationPort;
+  readonly publicationObjectStore: Pick<
+    ProductionObjectStoreAdapter,
+    "quarantinePartialPublication"
+  >;
+  readonly withDeliveryAuthority: <Result>(
+    proof: unknown,
+    delivery: DeliveryReference,
+    request: unknown,
+    work: () => Promise<Result>,
+  ) => Promise<Result>;
   readonly createMetaPublishPollingPort: (
     request: ProductionMetaPublishPollTaskRequest,
   ) => ProductionMetaPublishPollingPort | Promise<ProductionMetaPublishPollingPort>;
-}
-
-let bindings: ProductionTaskBindings | undefined;
-
-export function configureProductionTaskBindings(next: ProductionTaskBindings): void {
-  if (bindings !== undefined) {
-    throw new TaskPermanentError("Production task bindings are already configured.");
-  }
-  if (next.deliveryGuard.idempotencyStore !== "database") {
-    throw new TaskPermanentError(
-      "Production task bindings require a database-backed idempotency guard.",
-    );
-  }
-  bindings = Object.freeze({ ...next });
-}
-
-export function requireProductionTaskBindings(): ProductionTaskBindings {
-  if (bindings === undefined) {
-    throw new TaskPermanentError(
-      "Production task bindings are not configured. Refusing to run with fixture or in-memory ports.",
-    );
-  }
-  return bindings;
 }

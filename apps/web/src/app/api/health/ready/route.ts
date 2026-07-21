@@ -1,10 +1,16 @@
 import { parseRuntimeEnvironment, type RuntimeEnvironment } from "@oalo/config";
 
+import {
+  productionReadinessRuntime,
+  type ProductionDependencyProbeResult,
+} from "../../../../server/production-readiness-runtime.js";
+
 export type ReadinessCheckCode =
   | "READY"
   | "CONFIGURATION_INVALID"
   | "RELEASE_MANIFEST_INVALID"
   | "DEPENDENCY_PROBES_NOT_CONFIGURED"
+  | "DEPENDENCY_DEGRADED"
   | "DEPENDENCY_UNAVAILABLE";
 
 export interface ReadinessCheck {
@@ -14,7 +20,7 @@ export interface ReadinessCheck {
 }
 
 export interface ReadinessSummary {
-  readonly status: "ready" | "not-ready";
+  readonly status: "ready" | "degraded" | "unavailable";
   readonly checks: readonly ReadinessCheck[];
 }
 
@@ -24,6 +30,7 @@ const SafeCheckCodes = new Set<ReadinessCheckCode>([
   "CONFIGURATION_INVALID",
   "RELEASE_MANIFEST_INVALID",
   "DEPENDENCY_PROBES_NOT_CONFIGURED",
+  "DEPENDENCY_DEGRADED",
   "DEPENDENCY_UNAVAILABLE",
 ]);
 
@@ -39,9 +46,40 @@ export function aggregateReadiness(checks: readonly ReadinessCheck[]): Readiness
   }
 
   return Object.freeze({
-    status: checks.every((check) => check.ready) ? "ready" : "not-ready",
+    status: checks.every((check) => check.ready)
+      ? "ready"
+      : checks.some((check) => !check.ready && check.code !== "DEPENDENCY_DEGRADED")
+        ? "unavailable"
+        : "degraded",
     checks: Object.freeze(checks.map((check) => Object.freeze({ ...check }))),
   });
+}
+
+export function dependencyReadinessChecks(
+  result: ProductionDependencyProbeResult,
+): readonly ReadinessCheck[] {
+  return Object.freeze([
+    {
+      name: "database",
+      ready: result.database === "ready",
+      code: result.database === "ready" ? "READY" : "DEPENDENCY_UNAVAILABLE",
+    },
+    {
+      name: "highlevel",
+      ready: result.highLevel === "ready",
+      code: result.highLevel === "ready" ? "READY" : "DEPENDENCY_DEGRADED",
+    },
+    {
+      name: "ai-provider",
+      ready: result.ai === "ready",
+      code: result.ai === "ready" ? "READY" : "DEPENDENCY_DEGRADED",
+    },
+    {
+      name: "object-store",
+      ready: result.objectStore === "ready",
+      code: result.objectStore === "ready" ? "READY" : "DEPENDENCY_UNAVAILABLE",
+    },
+  ]);
 }
 
 export function evaluateEnvironmentReadiness(
@@ -81,11 +119,25 @@ export function evaluateRuntimeReadiness(
   }
 }
 
-export function GET(): Response {
-  const summary = evaluateRuntimeReadiness(process.env);
+export async function GET(): Promise<Response> {
+  let summary: ReadinessSummary;
+  try {
+    const environment = parseRuntimeEnvironment(process.env);
+    summary =
+      environment.environment === "local"
+        ? evaluateEnvironmentReadiness(environment)
+        : evaluateEnvironmentReadiness(
+            environment,
+            dependencyReadinessChecks(await productionReadinessRuntime(process.env).probe()),
+          );
+  } catch {
+    summary = aggregateReadiness([
+      { name: "configuration", ready: false, code: "CONFIGURATION_INVALID" },
+    ]);
+  }
 
   return Response.json(summary, {
-    status: summary.status === "ready" ? 200 : 503,
+    status: summary.status === "unavailable" ? 503 : 200,
     headers: {
       "Cache-Control": "no-store, max-age=0",
     },

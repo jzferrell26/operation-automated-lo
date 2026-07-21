@@ -90,13 +90,83 @@ export async function executePdfRenderDelivery(
 }
 
 export interface SharedMetaPollingPort {
-  poll(): Promise<unknown>;
+  poll(signal?: AbortSignal): Promise<unknown>;
 }
 
 export interface SharedMetaPollingPorts {
   readonly guard: DeliveryGuardPort;
   readonly progress: SharedMetaPollingPort;
   readonly pollBudgetError: () => Error;
+  readonly wait?: (delayMilliseconds: number, signal?: AbortSignal) => Promise<void>;
+  readonly random?: () => number;
+  readonly abortSignal?: AbortSignal;
+  readonly backoff?: Readonly<{
+    baseDelayMilliseconds: number;
+    maximumDelayMilliseconds: number;
+    jitterRatio: number;
+  }>;
+}
+
+const DEFAULT_META_POLL_BACKOFF = Object.freeze({
+  baseDelayMilliseconds: 1_000,
+  maximumDelayMilliseconds: 30_000,
+  jitterRatio: 0.2,
+});
+
+function abortError(): Error {
+  const error = new Error("Meta publish polling was aborted during backoff.");
+  error.name = "AbortError";
+  return error;
+}
+
+async function waitWithAbort(delayMilliseconds: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted === true) throw abortError();
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, delayMilliseconds);
+    const onAbort = () => {
+      clearTimeout(timeout);
+      signal?.removeEventListener("abort", onAbort);
+      reject(abortError());
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+export function metaPollingBackoffMilliseconds(
+  completedPolls: number,
+  policy: SharedMetaPollingPorts["backoff"] = DEFAULT_META_POLL_BACKOFF,
+  randomValue = Math.random(),
+): number {
+  if (!Number.isInteger(completedPolls) || completedPolls < 1) {
+    throw new Error("Completed Meta poll count must be a positive integer.");
+  }
+  const resolved = policy ?? DEFAULT_META_POLL_BACKOFF;
+  if (
+    !Number.isFinite(resolved.baseDelayMilliseconds) ||
+    resolved.baseDelayMilliseconds < 1 ||
+    !Number.isFinite(resolved.maximumDelayMilliseconds) ||
+    resolved.maximumDelayMilliseconds < resolved.baseDelayMilliseconds ||
+    !Number.isFinite(resolved.jitterRatio) ||
+    resolved.jitterRatio < 0 ||
+    resolved.jitterRatio > 1 ||
+    !Number.isFinite(randomValue) ||
+    randomValue < 0 ||
+    randomValue > 1
+  ) {
+    throw new Error("Meta poll backoff policy or random value is invalid.");
+  }
+  const exponential = Math.min(
+    resolved.maximumDelayMilliseconds,
+    resolved.baseDelayMilliseconds * 2 ** (completedPolls - 1),
+  );
+  const jitterMultiplier = 1 + (randomValue * 2 - 1) * resolved.jitterRatio;
+  return Math.min(
+    resolved.maximumDelayMilliseconds,
+    Math.max(1, Math.round(exponential * jitterMultiplier)),
+  );
 }
 
 export async function executeMetaPublishPollingDelivery(
@@ -117,9 +187,21 @@ export async function executeMetaPublishPollingDelivery(
     assertMetaPublishAuthorized(input.authority);
     let polls = 0;
     while (polls < input.maximumPolls) {
-      const progress = normalizeMetaPublishingProgress(await ports.progress.poll());
+      const progress = normalizeMetaPublishingProgress(
+        await ports.progress.poll(ports.abortSignal),
+      );
       polls += 1;
-      if (!progress.terminal) continue;
+      if (!progress.terminal) {
+        if (polls < input.maximumPolls) {
+          const delayMilliseconds = metaPollingBackoffMilliseconds(
+            polls,
+            ports.backoff,
+            ports.random?.(),
+          );
+          await (ports.wait ?? waitWithAbort)(delayMilliseconds, ports.abortSignal);
+        }
+        continue;
+      }
       if (progress.state === "live") {
         advanceMetaPublishProgress("publishing", "provider_confirmed_live");
         return { disposition: "terminal-live" as const, polls, finalState: "live" as const };

@@ -132,6 +132,21 @@ export interface DeliveryGuardPort {
   claim(delivery: DeliveryReference): Promise<boolean>;
   complete(delivery: DeliveryReference): Promise<void>;
   release(delivery: DeliveryReference): Promise<void>;
+  markCompletionUncertain(
+    delivery: DeliveryReference,
+    problemCode: "DELIVERY_COMPLETION_UNCERTAIN",
+  ): Promise<void>;
+}
+
+export class DeliveryCompletionUncertainError extends Error {
+  public readonly problemCode = "DELIVERY_COMPLETION_UNCERTAIN" as const;
+  public override readonly cause: unknown;
+
+  public constructor(cause: unknown) {
+    super("Delivery side effect succeeded, but durable completion could not be confirmed.");
+    this.name = "DeliveryCompletionUncertainError";
+    this.cause = cause;
+  }
 }
 
 export async function processDelivery<T>(
@@ -141,14 +156,28 @@ export async function processDelivery<T>(
 ): Promise<Readonly<{ kind: "processed"; value: T }> | Readonly<{ kind: "duplicate" }>> {
   const delivery = DeliveryReferenceSchema.parse(untrustedDelivery);
   if (!(await guard.claim(delivery))) return { kind: "duplicate" };
+  let value: T;
   try {
-    const value = await handler(delivery);
-    await guard.complete(delivery);
-    return { kind: "processed", value };
+    value = await handler(delivery);
   } catch (error: unknown) {
     await guard.release(delivery);
     throw error;
   }
+
+  try {
+    await guard.complete(delivery);
+  } catch (completionError: unknown) {
+    try {
+      await guard.markCompletionUncertain(delivery, "DELIVERY_COMPLETION_UNCERTAIN");
+    } catch (reconciliationError: unknown) {
+      throw new AggregateError(
+        [completionError, reconciliationError],
+        "Delivery completion failed and durable reconciliation could not be recorded.",
+      );
+    }
+    throw new DeliveryCompletionUncertainError(completionError);
+  }
+  return { kind: "processed", value };
 }
 
 export type QueueClass = "provider" | "renderer" | "ai";

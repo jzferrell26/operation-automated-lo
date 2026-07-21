@@ -14,14 +14,13 @@ Postgres, `55423` for Studio, `55424` through `55426` for local mail, and
 The pgTAP test proves that the Phase 0 local database has not acquired the
 named production tables.
 
-Run the local contract checks from the repository root:
+Run the canonical local database verification from the repository root:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File supabase/scripts/validate-phase0.ps1
-npx --yes supabase@2.109.1 start
-npx --yes supabase@2.109.1 db reset --local
-npx --yes supabase@2.109.1 test db --local supabase/tests
+pnpm test:db
 ```
+
+The cross-platform Node runner uses Supabase CLI `2.109.1`, recreates the local database from every migration, runs each `supabase/tests/*.pgtap.sql` file, and stops the stack without preserving database state. CI invokes the same command. Docker must be available, but no linked project, access token, production URL, or production secret is used.
 
 Do not run `supabase link`, `supabase db push --linked`, `supabase db reset
 --linked`, or `supabase config push` from this scaffold. Those commands target

@@ -1,6 +1,6 @@
 begin;
 
-select plan(27);
+select plan(34);
 
 create function pg_temp.assert_is(actual anyelement, expected anyelement, description text)
 returns text
@@ -97,11 +97,11 @@ begin
     );
     insert into integration.outbox_events (
       location_id, command_id, event_name, schema_version, aggregate_type,
-      aggregate_id, idempotency_key, payload_ref, correlation_id
+      aggregate_id, aggregate_version, idempotency_key, payload_ref, correlation_id
     ) values (
       '00000000-0000-4000-8000-000000000131',
       '00000000-0000-4000-8000-000000000531',
-      'campaign.created.v1', 1, 'campaign', 'failed-safe-ref', repeat('3', 64),
+      'campaign.render-requested.v1', 1, 'campaign', 'failed-safe-ref', 0, repeat('3', 64),
       'payload.failed-safe-ref', 'corr.forced-failure'
     );
     raise exception 'forced transaction failure';
@@ -159,12 +159,12 @@ insert into audit.events (
 );
 insert into integration.outbox_events (
   id, location_id, command_id, event_name, schema_version, aggregate_type,
-  aggregate_id, idempotency_key, payload_ref, correlation_id
+  aggregate_id, aggregate_version, idempotency_key, payload_ref, correlation_id
 ) values (
   '00000000-0000-4000-8000-000000000732',
   '00000000-0000-4000-8000-000000000131',
   '00000000-0000-4000-8000-000000000532',
-  'campaign.created.v1', 1, 'campaign', 'campaign-safe-ref', repeat('6', 64),
+  'campaign.render-requested.v1', 1, 'campaign', 'campaign-safe-ref', 7, repeat('6', 64),
   'payload.campaign-safe-ref', 'corr.command-success'
 );
 
@@ -191,16 +191,46 @@ select pg_temp.assert_is(
   pg_temp.capture_sqlstate($sql$
     insert into integration.outbox_events (
       location_id, command_id, event_name, schema_version, aggregate_type,
-      aggregate_id, idempotency_key, payload_ref, correlation_id
+      aggregate_id, aggregate_version, idempotency_key, payload_ref, correlation_id
     ) values (
       '00000000-0000-4000-8000-000000000131',
       '00000000-0000-4000-8000-000000000532',
-      'campaign.created.v1', 1, 'campaign', 'duplicate', repeat('6', 64),
+      'campaign.render-requested.v1', 1, 'campaign', 'duplicate', 7, repeat('6', 64),
       'payload.duplicate', 'corr.outbox-duplicate'
     )
   $sql$),
   '23505',
   'duplicate outbox event idempotency is rejected'
+);
+select pg_temp.assert_is(
+  pg_temp.capture_sqlstate($sql$
+    insert into integration.outbox_events (
+      location_id, command_id, event_name, schema_version, aggregate_type,
+      aggregate_id, aggregate_version, idempotency_key, payload_ref, correlation_id
+    ) values (
+      '00000000-0000-4000-8000-000000000131',
+      '00000000-0000-4000-8000-000000000532',
+      'campaign.render-requested.v1', 2, 'campaign', 'wrong-version', 7,
+      repeat('0', 64), 'payload.wrong-version', 'corr.outbox-wrong-version'
+    )
+  $sql$),
+  '23514',
+  'outbox event suffix must match schema version'
+);
+select pg_temp.assert_is(
+  pg_temp.capture_sqlstate($sql$
+    insert into integration.outbox_events (
+      location_id, command_id, event_name, schema_version, aggregate_type,
+      aggregate_id, aggregate_version, idempotency_key, payload_ref, correlation_id
+    ) values (
+      '00000000-0000-4000-8000-000000000131',
+      '00000000-0000-4000-8000-000000000532',
+      'campaign.unknown-requested.v1', 1, 'campaign', 'unknown-event', 7,
+      repeat('f', 64), 'payload.unknown-event', 'corr.outbox-unknown-event'
+    )
+  $sql$),
+  '23514',
+  'outbox accepts only application event contract names'
 );
 
 insert into integration.delivery_claims (
@@ -270,11 +300,40 @@ select pg_temp.assert_is(
 
 reset role;
 set local role scheduler_runtime;
+with leased as materialized (
+  select * from integration.lease_outbox_batch('scheduler-test', 60, 10)
+),
+lease_summary as (
+  select
+    pg_catalog.count(*)::integer as lease_count,
+    pg_catalog.max(event_name) as event_name,
+    pg_catalog.max(aggregate_version) as aggregate_version,
+    pg_catalog.max(command_ref::text) as command_ref,
+    pg_catalog.bool_and(available_at is not null) as has_availability,
+    pg_catalog.max(lease_owner) as lease_owner
+  from leased
+)
+select pg_temp.assert_is(lease_count, 1, 'sweeper leases the undispatched outbox event')
+from lease_summary
+union all
+select pg_temp.assert_is(event_name, 'campaign.render-requested.v1', 'lease preserves the versioned event name')
+from lease_summary
+union all
+select pg_temp.assert_is(aggregate_version, 7::bigint, 'lease preserves aggregate version')
+from lease_summary
+union all
 select pg_temp.assert_is(
-  (select pg_catalog.count(*)::integer from integration.lease_outbox_batch('scheduler-test', 60, 10)),
-  1,
-  'sweeper leases the undispatched outbox event'
-);
+  command_ref,
+  '00000000-0000-4000-8000-000000000532',
+  'lease preserves command reference'
+)
+from lease_summary
+union all
+select pg_temp.assert_ok(has_availability, 'lease preserves availability')
+from lease_summary
+union all
+select pg_temp.assert_is(lease_owner, 'scheduler-test', 'lease returns its owner')
+from lease_summary;
 reset role;
 set local role migration_owner;
 select pg_temp.assert_is(

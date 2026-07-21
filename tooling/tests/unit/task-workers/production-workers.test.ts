@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { FixtureOnlyDeliveryGuard } from "../../../../apps/tasks/src/core/fixture-delivery-guard.js";
 import {
@@ -6,6 +6,7 @@ import {
   runProductionMetaPublishPollTask,
 } from "../../../../apps/tasks/src/core/production-poll-meta-publish.js";
 import { runProductionPdfRenderTask } from "../../../../apps/tasks/src/core/production-render-campaign-pdf.js";
+import { metaPollingBackoffMilliseconds } from "../../../../apps/tasks/src/core/shared-task-execution.js";
 import { classifyFixtureTaskFailure } from "../../../../apps/tasks/src/core/task-retry-classification.js";
 import { commonRenderManifest } from "../../fixtures/prd001d-render-manifests.js";
 
@@ -98,6 +99,7 @@ describe("production Trigger worker cores", () => {
         observedAt: "2026-07-21T12:01:00.000Z",
       },
     ];
+    const delays: number[] = [];
     const ports = {
       guard,
       progress: {
@@ -108,6 +110,8 @@ describe("production Trigger worker cores", () => {
           return response;
         },
       },
+      wait: async (delayMilliseconds: number) => void delays.push(delayMilliseconds),
+      random: () => 0.5,
     };
     const request = {
       schemaVersion: 1,
@@ -124,6 +128,67 @@ describe("production Trigger worker cores", () => {
     expect(terminal).not.toHaveProperty("providerCallsMade");
     expect(duplicate).toMatchObject({ disposition: "duplicate", polls: 0 });
     expect(providerPolls).toBe(2);
+    expect(delays).toEqual([1_000]);
+  });
+
+  it("uses bounded exponential polling backoff instead of exhausting reads in a tight loop", async () => {
+    const guard = new FakeDatabaseDeliveryGuard();
+    const delays: number[] = [];
+    const poll = vi.fn(async () => ({
+      state: "publishing",
+      completedSteps: 1,
+      totalSteps: 2,
+      observedAt: "2026-07-21T12:00:00.000Z",
+    }));
+    const request = {
+      schemaVersion: 1,
+      delivery: delivery("delivery_03ProductionMetaBackoff"),
+      campaignId: "campaign_meta_03",
+      authority: publishAuthority(),
+      maximumPolls: 4,
+    };
+    const ports = {
+      guard,
+      progress: { poll },
+      wait: async (delayMilliseconds: number) => void delays.push(delayMilliseconds),
+      random: () => 0.5,
+    };
+
+    await expect(runProductionMetaPublishPollTask(request, ports)).rejects.toThrow(
+      "bounded poll budget",
+    );
+    expect(poll).toHaveBeenCalledTimes(4);
+    expect(delays).toEqual([1_000, 2_000, 4_000]);
+    expect(metaPollingBackoffMilliseconds(20, undefined, 1)).toBe(30_000);
+  });
+
+  it("stops polling immediately when an abort signal fires during the bounded wait", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const poll = vi.fn(async () => ({
+      state: "publishing",
+      completedSteps: 1,
+      totalSteps: 2,
+      observedAt: "2026-07-21T12:00:00.000Z",
+    }));
+
+    await expect(
+      runProductionMetaPublishPollTask(
+        {
+          schemaVersion: 1,
+          delivery: delivery("delivery_04ProductionMetaAbort"),
+          campaignId: "campaign_meta_04",
+          authority: publishAuthority(),
+          maximumPolls: 30,
+        },
+        {
+          guard: new FakeDatabaseDeliveryGuard(),
+          progress: { poll },
+          abortSignal: controller.signal,
+        },
+      ),
+    ).rejects.toMatchObject({ name: "AbortError" });
+    expect(poll).toHaveBeenCalledOnce();
   });
 
   it("rejects fixture-only fields as non-retryable production input", () => {

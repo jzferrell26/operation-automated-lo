@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   aggregateReadiness,
+  dependencyReadinessChecks,
   evaluateEnvironmentReadiness,
   evaluateRuntimeReadiness,
 } from "../../../../apps/web/src/app/api/health/ready/route.js";
@@ -65,11 +66,50 @@ describe("readiness aggregation", () => {
   it("fails closed when non-local dependency probes are absent", () => {
     const summary = evaluateEnvironmentReadiness(previewEnvironment());
 
-    expect(summary.status).toBe("not-ready");
+    expect(summary.status).toBe("unavailable");
     expect(summary.checks).toContainEqual({
       name: "external-dependencies",
       ready: false,
       code: "DEPENDENCY_PROBES_NOT_CONFIGURED",
+    });
+  });
+
+  it("reports degraded when optional providers fail but durable dependencies are ready", () => {
+    const checks = dependencyReadinessChecks({
+      database: "ready",
+      highLevel: "degraded",
+      ai: "degraded",
+      objectStore: "ready",
+    });
+
+    expect(evaluateEnvironmentReadiness(previewEnvironment(), checks)).toMatchObject({
+      status: "degraded",
+    });
+  });
+
+  it("reports ready when every non-local dependency probe succeeds", () => {
+    const checks = dependencyReadinessChecks({
+      database: "ready",
+      highLevel: "ready",
+      ai: "ready",
+      objectStore: "ready",
+    });
+
+    expect(evaluateEnvironmentReadiness(previewEnvironment(), checks)).toMatchObject({
+      status: "ready",
+    });
+  });
+
+  it("reports unavailable when a durable dependency is unavailable", () => {
+    const checks = dependencyReadinessChecks({
+      database: "unavailable",
+      highLevel: "ready",
+      ai: "ready",
+      objectStore: "ready",
+    });
+
+    expect(evaluateEnvironmentReadiness(previewEnvironment(), checks)).toMatchObject({
+      status: "unavailable",
     });
   });
 
@@ -83,7 +123,7 @@ describe("readiness aggregation", () => {
 
   it("reduces invalid configuration to a safe code", () => {
     expect(evaluateRuntimeReadiness({ OALO_ENVIRONMENT: "production" })).toEqual({
-      status: "not-ready",
+      status: "unavailable",
       checks: [{ name: "configuration", ready: false, code: "CONFIGURATION_INVALID" }],
     });
   });

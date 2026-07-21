@@ -4,7 +4,6 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { FixtureOnlyDeliveryGuard } from "../../../../apps/tasks/src/core/fixture-delivery-guard.js";
-import { requireProductionTaskBindings } from "../../../../apps/tasks/src/core/production-task-bindings.js";
 import {
   createFixtureOnlyPdfRenderPorts,
   runPdfRenderTask,
@@ -13,6 +12,7 @@ import {
   createFixtureOnlyMetaPublishPollingPort,
   runMetaPublishPollTask,
 } from "../../../../apps/tasks/src/core/poll-meta-publish.js";
+import { createDeployedProductionTaskBindings } from "../../../../apps/tasks/src/core/production-runtime-composition.js";
 import {
   FixtureTaskPermanentError,
   classifyFixtureTaskFailure,
@@ -47,9 +47,9 @@ function publishAuthority() {
 }
 
 describe("fixture-only Trigger worker cores", () => {
-  it("refuses registered runtime work until durable production bindings are installed", () => {
-    expect(() => requireProductionTaskBindings()).toThrow(
-      "Production task bindings are not configured",
+  it("refuses registered runtime work when production configuration is absent", () => {
+    expect(() => createDeployedProductionTaskBindings({})).toThrow(
+      "Production task runtime configuration is absent or invalid",
     );
   });
 
@@ -109,6 +109,25 @@ describe("fixture-only Trigger worker cores", () => {
   });
 
   it("polls only fixture progress to a terminal state and fails closed when no terminal state arrives", async () => {
+    const livePorts = {
+      guard: new FixtureOnlyDeliveryGuard(),
+      progress: createFixtureOnlyMetaPublishPollingPort([
+        {
+          state: "publishing" as const,
+          completedSteps: 2,
+          totalSteps: 4,
+          observedAt: "2026-07-21T12:00:00.000Z",
+        },
+        {
+          state: "live" as const,
+          completedSteps: 4,
+          totalSteps: 4,
+          observedAt: "2026-07-21T12:01:00.000Z",
+        },
+      ]),
+      wait: async () => undefined,
+      random: () => 0.5,
+    };
     const live = await runMetaPublishPollTask(
       {
         schemaVersion: 1,
@@ -131,23 +150,7 @@ describe("fixture-only Trigger worker cores", () => {
           },
         ],
       },
-      {
-        guard: new FixtureOnlyDeliveryGuard(),
-        progress: createFixtureOnlyMetaPublishPollingPort([
-          {
-            state: "publishing",
-            completedSteps: 2,
-            totalSteps: 4,
-            observedAt: "2026-07-21T12:00:00.000Z",
-          },
-          {
-            state: "live",
-            completedSteps: 4,
-            totalSteps: 4,
-            observedAt: "2026-07-21T12:01:00.000Z",
-          },
-        ]),
-      },
+      livePorts,
     );
     expect(live).toMatchObject({
       disposition: "terminal-live",
@@ -196,7 +199,7 @@ describe("fixture-only Trigger worker cores", () => {
 
     expect(pdfTask).toContain('id: "render-campaign-pdf"');
     expect(metaTask).toContain('id: "poll-meta-publish"');
-    expect(`${pdfTask}\n${metaTask}`).toContain("requireProductionTaskBindings");
+    expect(`${pdfTask}\n${metaTask}`).toContain("productionTaskBindings");
     expect(`${pdfTask}\n${metaTask}`).not.toContain("FixtureOnlyDeliveryGuard");
     expect(`${pdfTask}\n${metaTask}`).not.toContain("fixtureOnly");
     expect(metaTask).not.toContain("progressFixtures");

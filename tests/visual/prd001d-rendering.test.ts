@@ -108,5 +108,5 @@ describe("PRD-001d golden rendering corpus", () => {
       hasTaggedStructure: true,
       pageCount: pdf.pageCount,
     });
-  }, 45_000);
+  }, 60_000);
 });

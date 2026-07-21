@@ -106,6 +106,12 @@ GitHub run `29825818357` exposed two clean-runner contract failures. The repair 
 
 Security reviewed the two-file delta after the full canonical gate passed again. Workflow permissions remain read-only, every action remains pinned to its existing commit SHA, no secret or external input enters the generated runtime manifests, every generated document is marked `fixtureOnly: true`, and all files stay under `RUNNER_TEMP`. The preview candidate continues to fail closed when production evidence is required. Secret, package-boundary, product-type, and dependency-threshold audits pass with the same three Moderate advisories and no new finding.
 
+## Post-visual-stability security rerun
+
+The final post-rebase gate reproduced an intermittent Chromium screenshot timeout, so the rendering adapter now permits one fresh-browser retry only for Playwright screenshot timeout and capture-protocol failures. Each attempt is capped at 15 seconds, every prepared page and browser still closes in `finally`, and a second failure is surfaced unchanged. Network denial, approved-asset lookup, checksum verification, manifest validation, and PDF inspection remain outside the retry classifier and continue to fail immediately.
+
+Security reviewed the renderer delta after five consecutive real-browser corpus runs and a complete canonical verification pass. No authority, input, storage, network, secret, or data-handling boundary changed. Finding counts remain 0 Critical, 0 High, 3 Moderate, and 0 Low.
+
 ## Close-out
 
 No Critical or High remediation remains. Quality Guardian may proceed. The three Moderate transitive dependency advisories remain documented as non-blocking follow-up work, and the external or deferred production proofs remain explicit in the execution ledger.

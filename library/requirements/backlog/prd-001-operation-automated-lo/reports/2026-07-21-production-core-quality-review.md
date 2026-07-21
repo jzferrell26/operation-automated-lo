@@ -117,6 +117,12 @@ GitHub run `29825818357` found two clean-runner gaps after the first ready PR op
 
 Both task-worker suites pass with the two generated package `dist` directories temporarily absent. The release validation passes with matching build identity and migration evidence, while the production-evidence check remains rejected. The full canonical gate then passed in 117.3 seconds. No Critical, Warning, or Suggestion finding was introduced, and the Quality verdict remains unchanged.
 
+## Post-visual-stability quality rerun
+
+The final post-rebase gate reproduced the Chromium capture flake, this time as the visual corpus test reaching its 45-second limit. The adapter now shares one bounded screenshot path across production PNG rendering and visual evidence capture, retries only a recognized Playwright screenshot failure with a fresh browser, and preserves the original output dimensions, print-media behavior, network policy, and deterministic byte assertions.
+
+Five consecutive real-browser corpus runs passed after the repair. The first exercised the bounded slow path and completed in 20.7 seconds; the next four completed in 1.5 to 1.9 seconds. The visual test budget is now 60 seconds, while each screenshot attempt remains capped at 15 seconds. A subsequent complete canonical gate passed in 101.2 seconds. Security reran first and reported no new finding. Quality therefore retains no Critical, Warning, or Suggestion finding.
+
 ## Verdict
 
 Ship after the release criterion is regenerated to DONE, the exact canonical gate passes on the resulting release commit, the branch is rebased onto current `origin/main`, and GitHub reports green checks with a CLEAN, MERGEABLE pull request. Keep the two real-provider AI criteria in progress and all deferred or external criteria explicit.

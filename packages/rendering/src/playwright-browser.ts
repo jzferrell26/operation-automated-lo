@@ -22,6 +22,18 @@ interface PreparedPage {
   readonly close: () => Promise<void>;
 }
 
+const ScreenshotTimeoutMilliseconds = 15_000;
+const ScreenshotAttemptLimit = 2;
+
+function isRetryableScreenshotFailure(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return (
+    error.name === "TimeoutError" ||
+    error.message.includes("Page.captureScreenshot") ||
+    error.message.startsWith("page.screenshot")
+  );
+}
+
 export class PlaywrightBrowserAdapter implements DeterministicBrowserPort {
   constructor(private readonly assetLoader?: ApprovedRenderAssetLoaderPort) {}
 
@@ -37,6 +49,19 @@ export class PlaywrightBrowserAdapter implements DeterministicBrowserPort {
       throw new Error(
         "Browser rendering requires a matching artifact type and denied network policy",
       );
+    }
+    if (input.source.output.format !== "html" && input.source.output.format !== "pdf") {
+      return {
+        bytes: await this.captureScreenshot(
+          input.manifest,
+          input.source,
+          input.source.viewport,
+          false,
+        ),
+        mimeType: "image/png",
+        width: input.source.output.width,
+        height: input.source.output.height,
+      };
     }
     const prepared = await this.preparePage(input.manifest, input.source);
     try {
@@ -63,21 +88,7 @@ export class PlaywrightBrowserAdapter implements DeterministicBrowserPort {
           pageCount: inspection.pageCount,
         };
       }
-      const bytes = new Uint8Array(
-        await prepared.page.screenshot({
-          animations: "disabled",
-          caret: "hide",
-          fullPage: false,
-          scale: "css",
-          type: "png",
-        }),
-      );
-      return {
-        bytes,
-        mimeType: "image/png",
-        width: input.source.output.width,
-        height: input.source.output.height,
-      };
+      throw new Error("Unsupported browser rendering output format");
     } finally {
       await prepared.close();
     }
@@ -88,23 +99,40 @@ export class PlaywrightBrowserAdapter implements DeterministicBrowserPort {
     source: RenderSourceDocument,
     viewport: Readonly<{ width: number; height: number }>,
   ): Promise<Uint8Array> {
-    const prepared = await this.preparePage(manifest, source, viewport);
-    try {
-      if (source.output.format === "pdf") {
-        await prepared.page.emulateMedia({ media: "print" });
+    return this.captureScreenshot(manifest, source, viewport, true);
+  }
+
+  private async captureScreenshot(
+    manifest: RenderManifest,
+    source: RenderSourceDocument,
+    viewport: Readonly<{ width: number; height: number }>,
+    fullPage: boolean,
+  ): Promise<Uint8Array> {
+    let lastFailure: unknown;
+    for (let attempt = 1; attempt <= ScreenshotAttemptLimit; attempt += 1) {
+      const prepared = await this.preparePage(manifest, source, viewport);
+      try {
+        if (source.output.format === "pdf") {
+          await prepared.page.emulateMedia({ media: "print" });
+        }
+        return new Uint8Array(
+          await prepared.page.screenshot({
+            animations: "disabled",
+            caret: "hide",
+            fullPage,
+            scale: "css",
+            timeout: ScreenshotTimeoutMilliseconds,
+            type: "png",
+          }),
+        );
+      } catch (error) {
+        lastFailure = error;
+        if (!isRetryableScreenshotFailure(error) || attempt === ScreenshotAttemptLimit) throw error;
+      } finally {
+        await prepared.close();
       }
-      return new Uint8Array(
-        await prepared.page.screenshot({
-          animations: "disabled",
-          caret: "hide",
-          fullPage: true,
-          scale: "css",
-          type: "png",
-        }),
-      );
-    } finally {
-      await prepared.close();
     }
+    throw lastFailure;
   }
 
   private async preparePage(

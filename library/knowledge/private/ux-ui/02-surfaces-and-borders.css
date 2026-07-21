@@ -1,0 +1,99 @@
+/* Named visual utilities. Production integration may express these through
+ * product component wrappers or Tailwind utilities backed by the same tokens.
+ */
+
+.ui-canvas {
+  min-height: 100%;
+  background: var(--sf-canvas);
+  color: var(--tx-strong);
+}
+
+.ui-card {
+  background: var(--sf-card);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.ui-panel {
+  background: var(--sf-card);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-raised);
+}
+
+.ui-sunken {
+  background: var(--sf-sunken);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-control);
+}
+
+.ui-nav {
+  background: var(--sf-nav);
+  color: var(--tx-on-nav);
+}
+
+.ui-focusable:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+
+.ui-interactive {
+  transition-duration: var(--motion-fast);
+  transition-property: background-color, border-color, color, box-shadow, opacity, transform;
+  transition-timing-function: var(--ease-standard);
+}
+
+.ui-reveal {
+  transition-duration: var(--motion-base);
+  transition-property: opacity, transform;
+  transition-timing-function: var(--ease-standard);
+}
+
+.ui-overlay-motion {
+  transition-duration: var(--motion-slow);
+  transition-property: opacity, transform;
+  transition-timing-function: var(--ease-standard);
+}
+
+.ui-status-success {
+  background: var(--st-success-bg);
+  color: var(--st-success-fg);
+}
+
+.ui-status-warning {
+  background: var(--st-warning-bg);
+  color: var(--st-warning-fg);
+}
+
+.ui-status-critical {
+  background: var(--st-critical-bg);
+  color: var(--st-critical-fg);
+}
+
+.ui-status-info {
+  background: var(--st-info-bg);
+  color: var(--st-info-fg);
+}
+
+.ui-status-neutral {
+  background: var(--st-neutral-bg);
+  color: var(--st-neutral-fg);
+}
+
+.ui-status-uncertain {
+  background: var(--st-uncertain-bg);
+  color: var(--st-uncertain-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-interactive,
+  .ui-reveal,
+  .ui-overlay-motion {
+    transition-duration: 0ms;
+  }
+
+  .ui-ambient-motion {
+    animation: none !important;
+  }
+}

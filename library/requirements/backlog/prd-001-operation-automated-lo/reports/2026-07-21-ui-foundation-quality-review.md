@@ -4,22 +4,22 @@
 **Source requirements:** `prd-001g-campaign-and-portfolio-reporting.md`, `prd-001h-self-onboarding-and-launch-readiness.md`, and the governed UX specifications
 **Audit date:** 2026-07-21
 **Base branch:** `main` at `ff6b02bd2c65fb4d1be899667b23882907c5589d`
-**Head:** `codex/oalo-ui-foundation`, pre-ship working snapshot
+**Head:** `codex/oalo-ui-foundation` at `f917a3543360b2b23c380a056332322920cb251b`, before this docs-only shipping evidence commit
 **Auditor:** quality-guardian
 
 ## Summary
 
-The final UI Foundation implementation passes Quality with no Critical, Warning, or Suggestion findings. UIF-000 through UIF-028 are independently verified by source inspection, exact-runtime automation, ten visual artifacts, a 15-test Chromium suite, accessibility scans, and an ordinal comparison proving the original Phase 0 ledger prefix is unchanged. UIF-029 is intentionally reserved for the post-QA rebase, ready PR, CI, and GitHub mergeability check.
+The final UI Foundation implementation passes Quality with no Critical, Warning, or Suggestion findings. UIF-000 through UIF-029 are independently verified by source inspection, exact-runtime automation, ten visual artifacts, a 15-test Chromium suite, accessibility scans, an ordinal comparison proving the original Phase 0 ledger prefix is unchanged, and green GitHub shipping evidence.
 
 The first Quality preflight found the root zero-duplication gate failing on seven clone groups. Implementation consolidated the duplicated structures, Security reran with unchanged 0 Critical and 0 High findings, and the final `pnpm verify` passed with 0 clones.
 
-The first GitHub verification attempt exposed a CI-only browser prerequisite gap: Linux had no Playwright Chromium executable. The read-only canonical job now installs the pinned project's Chromium build and its system dependencies before `pnpm verify`. Security reran first, then the full local Quality gate passed again. UIF-029 remains open until the repaired GitHub run is green and GitHub reports the ready PR mergeable.
+The first GitHub verification attempt exposed a CI-only browser prerequisite gap: Linux had no Playwright Chromium executable. The read-only canonical job now installs the pinned project's Chromium build and its system dependencies before `pnpm verify`. Security reran first, then the full local Quality gate passed again. Repaired run `29815891707` passed canonical verification and preview smoke, and GitHub reports ready PR #10 `MERGEABLE` with a clean merge state.
 
 ## Scorecard
 
 | Category | Status | Notes |
 | --- | --- | --- |
-| Completeness | ✅ | UIF-000 through UIF-028 are implemented and evidenced; UIF-029 is the ordered post-QA shipping step. |
+| Completeness | ✅ | UIF-000 through UIF-029 are implemented and evidenced. |
 | Correctness | ✅ | Strict models, state projections, interactions, theme behavior, deterministic evidence, and responsive ordering match the plan. |
 | Alignment | ✅ | Changes stay in UI, web composition, tests, governed UX docs, and evidence. No protected backend package or production execution ledger was touched. |
 | Gaps | ✅ | Loading, empty, degraded, restricted, error, retry, accessibility, first-paint, responsive, and synthetic-isolation paths are covered. |
@@ -70,7 +70,7 @@ None.
 | UIF-026 | Reconcile the asset registry without inventing one. | ✅ | `EXECUTION_LEDGER.md:147`, `EXECUTION_LEDGER.md:203` | `not applicable: registry not adopted`, supported by repository inventory. |
 | UIF-027 | Complete Security after implementation and clear every Critical and High finding. | ✅ | `library/requirements/backlog/prd-001-operation-automated-lo/reports/2026-07-21-ui-foundation-security-audit.md:1-131` | Security and the post-repair rerun report 0 Critical and 0 High. Four Moderate follow-ups are documented. |
 | UIF-028 | Independently verify traceability, automated and visual evidence, accessibility, responsiveness, and P0 integrity. | ✅ | `library/requirements/backlog/prd-001-operation-automated-lo/reports/2026-07-21-ui-foundation-quality-review.md:1` | This report and the clean final verification close the Quality criterion. |
-| UIF-029 | Rebase, rerun, push, open ready PR, confirm green CI and GitHub mergeability, and do not merge. | 🟦 | Post-QA shipping step | Deliberately not claimed in this pre-ship report. The ledger must record the PR and CI evidence after completion. |
+| UIF-029 | Rebase, rerun, push, open ready PR, confirm green CI and GitHub mergeability, and do not merge. | ✅ | Ready PR #10 and GitHub Actions run `29815891707` | `origin/main` is an ancestor, the post-rebase exact local gate passes, canonical verification and preview smoke pass, GitHub reports `MERGEABLE` and `CLEAN`, and the PR remains open and not draft. |
 
 ## Files Changed
 

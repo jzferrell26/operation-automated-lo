@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "edges": [
+    {
+      "from": "@oalo/domain",
+      "to": "@oalo/ghl",
+      "reason": "The domain package must not depend on a provider adapter."
+    }
+  ]
+}

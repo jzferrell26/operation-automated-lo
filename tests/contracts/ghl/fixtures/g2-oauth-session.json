@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": "ghl-app-test-evidence-v1",
+  "fixtureId": "g2_oauth_session_blocked",
+  "gateId": "G2",
+  "caseId": "signed_context_and_refresh",
+  "source": "synthetic-fixture",
+  "capturedAt": "2026-07-20T12:00:00.000Z",
+  "provider": {
+    "name": "highlevel",
+    "apiVersion": "2021-07-28",
+    "environment": "synthetic"
+  },
+  "request": {
+    "transport": "fixture-replay",
+    "method": "POST",
+    "actionClass": "SESSION_EXCHANGE",
+    "path": "/sessions/ghl/bootstrap",
+    "headers": {
+      "Accept": "application/json",
+      "Version": "2021-07-28",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "encryptedContextRef": "synthetic_context_001"
+    }
+  },
+  "response": {
+    "httpStatus": 424,
+    "body": {
+      "sessionCreated": false,
+      "reason": "app-test-required"
+    }
+  },
+  "evidence": {
+    "externalStatus": "BLOCKED",
+    "blockerReason": "Install, context decryption, refresh, uninstall, reconnect, and iframe fallback require HighLevel App Test evidence.",
+    "requiredExternalEvidence": ["HighLevel App Test signed-context and OAuth lifecycle results"],
+    "safeProviderIds": {
+      "contextRef": "synthetic_context_001"
+    },
+    "grantedScopes": ["locations.readonly", "users.readonly"],
+    "observedAccountState": "install-required",
+    "requestHash": "sha256:e306e300df4f47e2c73925955e1d2affa4270554f641e3980848826bfa2f4b01",
+    "responseHash": "sha256:7d5e3efe402f2eb333e2a0c73f47fe7daa312acbced4840017a95f42fc92b4d6"
+  }
+}

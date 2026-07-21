@@ -1,0 +1,25 @@
+{
+  "name": "@oalo/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev",
+    "typecheck": "pnpm --dir ../.. exec tsc --noEmit -p apps/web/tsconfig.json"
+  },
+  "dependencies": {
+    "@oalo/application": "workspace:*",
+    "@oalo/config": "workspace:*",
+    "@oalo/ui": "workspace:*",
+    "next": "16.2.10",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "typescript": "npm:typescript@6.0.3"
+  }
+}

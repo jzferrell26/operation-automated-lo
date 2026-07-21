@@ -1,0 +1,103 @@
+[
+  {
+    "vector": "location-without-active-location",
+    "fixture": {
+      "schemaVersion": 1,
+      "fixtureKind": "synthetic-signed-context-projection",
+      "verificationState": "fixture-only",
+      "providerCiphertextHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "context": {
+        "schemaVersion": 1,
+        "contextType": "location",
+        "userRef": "synthetic_user_001",
+        "companyRef": "synthetic_company_001",
+        "role": "admin",
+        "isAgencyOwner": false,
+        "appVersionRef": "synthetic_version_001",
+        "appStatus": "live"
+      }
+    }
+  },
+  {
+    "vector": "agency-claims-active-location",
+    "fixture": {
+      "schemaVersion": 1,
+      "fixtureKind": "synthetic-signed-context-projection",
+      "verificationState": "fixture-only",
+      "providerCiphertextHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "context": {
+        "schemaVersion": 1,
+        "contextType": "agency",
+        "userRef": "synthetic_user_001",
+        "companyRef": "synthetic_company_001",
+        "activeLocationRef": "synthetic_location_001",
+        "role": "admin",
+        "isAgencyOwner": true,
+        "appVersionRef": "synthetic_version_001",
+        "appStatus": "live"
+      }
+    }
+  },
+  {
+    "vector": "inactive-app",
+    "fixture": {
+      "schemaVersion": 1,
+      "fixtureKind": "synthetic-signed-context-projection",
+      "verificationState": "fixture-only",
+      "providerCiphertextHash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "context": {
+        "schemaVersion": 1,
+        "contextType": "location",
+        "userRef": "synthetic_user_001",
+        "companyRef": "synthetic_company_001",
+        "activeLocationRef": "synthetic_location_001",
+        "role": "admin",
+        "isAgencyOwner": false,
+        "appVersionRef": "synthetic_version_001",
+        "appStatus": "uninstalled"
+      }
+    }
+  },
+  {
+    "vector": "pii-field",
+    "fixture": {
+      "schemaVersion": 1,
+      "fixtureKind": "synthetic-signed-context-projection",
+      "verificationState": "fixture-only",
+      "providerCiphertextHash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "context": {
+        "schemaVersion": 1,
+        "contextType": "location",
+        "userRef": "synthetic_user_001",
+        "companyRef": "synthetic_company_001",
+        "activeLocationRef": "synthetic_location_001",
+        "role": "admin",
+        "isAgencyOwner": false,
+        "appVersionRef": "synthetic_version_001",
+        "appStatus": "live",
+        "email": "synthetic-at-example.invalid"
+      }
+    }
+  },
+  {
+    "vector": "credential-field",
+    "fixture": {
+      "schemaVersion": 1,
+      "fixtureKind": "synthetic-signed-context-projection",
+      "verificationState": "fixture-only",
+      "providerCiphertextHash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "context": {
+        "schemaVersion": 1,
+        "contextType": "location",
+        "userRef": "synthetic_user_001",
+        "companyRef": "synthetic_company_001",
+        "activeLocationRef": "synthetic_location_001",
+        "role": "admin",
+        "isAgencyOwner": false,
+        "appVersionRef": "synthetic_version_001",
+        "appStatus": "live",
+        "accessToken": "synthetic-forbidden"
+      }
+    }
+  }
+]

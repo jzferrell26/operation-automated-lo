@@ -1,0 +1,294 @@
+{
+  "schemaVersion": 1,
+  "phase": "phase-0-evidence-harness",
+  "productionTrafficEnabled": false,
+  "liveProviderPathEnabled": false,
+  "testCatalog": [
+    { "testId": "SEC-BOUNDARY-AUDIT", "path": "tooling/scripts/audit-boundaries.mjs" },
+    { "testId": "SEC-DEPENDENCY-AUDIT", "path": "package.json" },
+    { "testId": "SEC-GHL-FIXTURE-SAFETY", "path": "tests/contracts/ghl/safety.test.ts" },
+    { "testId": "SEC-GHL-GATE-REPLAY", "path": "tests/contracts/ghl/gates.test.ts" },
+    { "testId": "SEC-GHL-SIGNED-CONTEXT", "path": "tests/contracts/ghl/signed-context.test.ts" },
+    { "testId": "SEC-NO-LIVE-TRAFFIC", "path": "tests/security/phase0-boundary.test.ts" },
+    {
+      "testId": "SEC-RENDER-MALICIOUS-INPUTS",
+      "path": "tests/security/rendering-input-security.test.ts"
+    },
+    { "testId": "SEC-SECRET-AUDIT", "path": "tooling/scripts/audit-secrets.mjs" },
+    { "testId": "SEC-WEB-HEADERS", "path": "tests/security/web-security-headers.test.ts" }
+  ],
+  "providerContracts": [
+    {
+      "gateId": "G1",
+      "externalStatus": "BLOCKED",
+      "evidenceMode": "synthetic-fixture-only",
+      "liveProviderCallsAllowed": false
+    },
+    {
+      "gateId": "G2",
+      "externalStatus": "BLOCKED",
+      "evidenceMode": "synthetic-fixture-only",
+      "liveProviderCallsAllowed": false
+    },
+    {
+      "gateId": "G3",
+      "externalStatus": "BLOCKED",
+      "evidenceMode": "synthetic-fixture-only",
+      "liveProviderCallsAllowed": false
+    },
+    {
+      "gateId": "G4",
+      "externalStatus": "BLOCKED",
+      "evidenceMode": "synthetic-fixture-only",
+      "liveProviderCallsAllowed": false
+    },
+    {
+      "gateId": "G5",
+      "externalStatus": "BLOCKED",
+      "evidenceMode": "synthetic-fixture-only",
+      "liveProviderCallsAllowed": false
+    },
+    {
+      "gateId": "G6",
+      "externalStatus": "BLOCKED",
+      "evidenceMode": "synthetic-fixture-only",
+      "liveProviderCallsAllowed": false
+    },
+    {
+      "gateId": "G7",
+      "externalStatus": "BLOCKED",
+      "evidenceMode": "synthetic-fixture-only",
+      "liveProviderCallsAllowed": false
+    },
+    {
+      "gateId": "G8",
+      "externalStatus": "BLOCKED",
+      "evidenceMode": "synthetic-fixture-only",
+      "liveProviderCallsAllowed": false
+    }
+  ],
+  "threats": [
+    {
+      "threatId": "TENANT-LOCATION-SWAP",
+      "status": "CONTRACT_FIXTURE_ONLY",
+      "testIds": ["SEC-GHL-SIGNED-CONTEXT"],
+      "providerGateIds": ["G2"]
+    },
+    {
+      "threatId": "FORGED-SIGNED-CONTEXT",
+      "status": "CONTRACT_FIXTURE_ONLY",
+      "testIds": ["SEC-GHL-SIGNED-CONTEXT"],
+      "providerGateIds": ["G2"]
+    },
+    {
+      "threatId": "OAUTH-INSTALL-CSRF",
+      "status": "CONTRACT_FIXTURE_ONLY",
+      "testIds": ["SEC-GHL-GATE-REPLAY"],
+      "providerGateIds": ["G1", "G2"]
+    },
+    {
+      "threatId": "INSTALLER-ROLE-ELEVATION",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": ["G1", "G2"],
+      "plannedTestId": "SEC-FUTURE-INSTALLER-ROLE",
+      "plannedPhase": "PHASE-1"
+    },
+    {
+      "threatId": "BROWSER-READINESS-FORGERY",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": [],
+      "plannedTestId": "SEC-FUTURE-READINESS-AUTHORITY",
+      "plannedPhase": "PHASE-2"
+    },
+    {
+      "threatId": "SUPPORT-ATTESTATION-SUBSTITUTION",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": [],
+      "plannedTestId": "SEC-FUTURE-SUPPORT-ATTESTATION",
+      "plannedPhase": "PHASE-2"
+    },
+    {
+      "threatId": "TOKEN-THEFT",
+      "status": "TESTED",
+      "testIds": ["SEC-GHL-FIXTURE-SAFETY", "SEC-SECRET-AUDIT"],
+      "providerGateIds": []
+    },
+    {
+      "threatId": "TOKEN-REFRESH-RACE",
+      "status": "CONTRACT_FIXTURE_ONLY",
+      "testIds": ["SEC-GHL-GATE-REPLAY"],
+      "providerGateIds": ["G2"]
+    },
+    {
+      "threatId": "BROAD-AD-SCOPE-ABUSE",
+      "status": "CONTRACT_FIXTURE_ONLY",
+      "testIds": ["SEC-GHL-FIXTURE-SAFETY", "SEC-GHL-GATE-REPLAY"],
+      "providerGateIds": ["G3", "G4"]
+    },
+    {
+      "threatId": "POST-APPROVAL-EDIT",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": [],
+      "plannedTestId": "SEC-FUTURE-APPROVAL-INVALIDATION",
+      "plannedPhase": "PHASE-3"
+    },
+    {
+      "threatId": "PUBLISH-REPLAY",
+      "status": "CONTRACT_FIXTURE_ONLY",
+      "testIds": ["SEC-GHL-GATE-REPLAY"],
+      "providerGateIds": ["G3"]
+    },
+    {
+      "threatId": "WEBHOOK-FORGERY-REPLAY",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": ["G2"],
+      "plannedTestId": "SEC-FUTURE-WEBHOOK-ED25519",
+      "plannedPhase": "PHASE-1"
+    },
+    {
+      "threatId": "PUBLIC-PROJECTION-DATA-LEAK",
+      "status": "TESTED",
+      "testIds": ["SEC-NO-LIVE-TRAFFIC"],
+      "providerGateIds": []
+    },
+    {
+      "threatId": "STORED-REFLECTED-SCRIPT-INJECTION",
+      "status": "TESTED",
+      "testIds": ["SEC-RENDER-MALICIOUS-INPUTS", "SEC-WEB-HEADERS"],
+      "providerGateIds": []
+    },
+    {
+      "threatId": "MALICIOUS-FILE-UPLOAD",
+      "status": "TESTED",
+      "testIds": ["SEC-RENDER-MALICIOUS-INPUTS"],
+      "providerGateIds": []
+    },
+    {
+      "threatId": "LEAD-ENDPOINT-ABUSE",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": ["G5"],
+      "plannedTestId": "SEC-FUTURE-LEAD-RATE-LIMIT",
+      "plannedPhase": "PHASE-4"
+    },
+    {
+      "threatId": "CONSENT-EVIDENCE-TAMPERING",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": ["G5", "G7"],
+      "plannedTestId": "SEC-FUTURE-CONSENT-IMMUTABILITY",
+      "plannedPhase": "PHASE-4"
+    },
+    {
+      "threatId": "PII-OR-SECRET-LOGGING",
+      "status": "TESTED",
+      "testIds": ["SEC-GHL-FIXTURE-SAFETY", "SEC-SECRET-AUDIT"],
+      "providerGateIds": []
+    },
+    {
+      "threatId": "RENDERER-INTERNAL-NETWORK",
+      "status": "TESTED",
+      "testIds": ["SEC-RENDER-MALICIOUS-INPUTS", "SEC-NO-LIVE-TRAFFIC"],
+      "providerGateIds": []
+    },
+    {
+      "threatId": "MODEL-PROMPT-INJECTION",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": [],
+      "plannedTestId": "SEC-FUTURE-MODEL-PROMPT-INJECTION",
+      "plannedPhase": "PHASE-6"
+    },
+    {
+      "threatId": "MODEL-CROSS-TENANT-CACHE",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": [],
+      "plannedTestId": "SEC-FUTURE-MODEL-CACHE-TENANCY",
+      "plannedPhase": "PHASE-6"
+    },
+    {
+      "threatId": "MODEL-INVENTED-FACT",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": ["G7"],
+      "plannedTestId": "SEC-FUTURE-MODEL-FACT-GATE",
+      "plannedPhase": "PHASE-6"
+    },
+    {
+      "threatId": "MODEL-PUBLISH-AUTHORITY",
+      "status": "TESTED",
+      "testIds": ["SEC-NO-LIVE-TRAFFIC", "SEC-BOUNDARY-AUDIT"],
+      "providerGateIds": []
+    },
+    {
+      "threatId": "MODEL-RETRY-SPEND",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": [],
+      "plannedTestId": "SEC-FUTURE-MODEL-BUDGET",
+      "plannedPhase": "PHASE-6"
+    },
+    {
+      "threatId": "MODEL-DATA-LEAK",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": ["G7"],
+      "plannedTestId": "SEC-FUTURE-MODEL-DATA-MINIMIZATION",
+      "plannedPhase": "PHASE-6"
+    },
+    {
+      "threatId": "CLIENT-PROVIDER-OVERRIDE",
+      "status": "TESTED",
+      "testIds": ["SEC-GHL-FIXTURE-SAFETY", "SEC-NO-LIVE-TRAFFIC"],
+      "providerGateIds": []
+    },
+    {
+      "threatId": "OBJECT-STORAGE-BROKEN-ACCESS",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": [],
+      "plannedTestId": "SEC-FUTURE-STORAGE-TENANCY",
+      "plannedPhase": "PHASE-3"
+    },
+    {
+      "threatId": "THEME-CSS-INJECTION",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": [],
+      "providerGateIds": [],
+      "plannedTestId": "SEC-FUTURE-THEME-TOKENS",
+      "plannedPhase": "PHASE-2"
+    },
+    {
+      "threatId": "THEME-BOOTSTRAP-CSP",
+      "status": "DEFERRED_AUTHORIZED_PHASE",
+      "testIds": ["SEC-WEB-HEADERS"],
+      "providerGateIds": [],
+      "plannedTestId": "SEC-FUTURE-CSP-NONCE",
+      "plannedPhase": "PHASE-2"
+    },
+    {
+      "threatId": "DEPENDENCY-OR-CI-COMPROMISE",
+      "status": "TESTED",
+      "testIds": ["SEC-DEPENDENCY-AUDIT", "SEC-BOUNDARY-AUDIT", "SEC-SECRET-AUDIT"],
+      "providerGateIds": []
+    },
+    {
+      "threatId": "PRODUCTION-FEATURE-TRAFFIC",
+      "status": "TESTED",
+      "testIds": ["SEC-NO-LIVE-TRAFFIC"],
+      "providerGateIds": []
+    },
+    {
+      "threatId": "LIVE-PROVIDER-PATH",
+      "status": "TESTED",
+      "testIds": ["SEC-GHL-FIXTURE-SAFETY", "SEC-NO-LIVE-TRAFFIC"],
+      "providerGateIds": []
+    }
+  ]
+}

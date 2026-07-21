@@ -175,11 +175,12 @@ select pg_temp.assert_is(
     );
     insert into integration.outbox_events (
       location_id, command_id, event_name, schema_version, aggregate_type,
-      aggregate_id, idempotency_key, payload_ref, correlation_id
+      aggregate_id, aggregate_version, idempotency_key, payload_ref, correlation_id
     ) values (
       '00000000-0000-4000-8000-000000000102',
       '00000000-0000-4000-8000-000000000501',
-      'campaign.test.v1', 1, 'campaign', 'safe-ref', repeat('c', 64), 'opaque-ref', 'corr.fk-test'
+      'campaign.render-requested.v1', 1, 'campaign', 'safe-ref', 0,
+      repeat('c', 64), 'opaque-ref', 'corr.fk-test'
     )
   $sql$),
   '23503',

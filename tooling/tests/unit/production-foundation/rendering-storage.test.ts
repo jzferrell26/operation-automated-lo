@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { describe, expect, it, vi } from "vitest";
 
 import type { ArtifactRecord, PublishedCampaignProjection, RenderManifest } from "@oalo/contracts";
@@ -237,12 +239,15 @@ describe("private and published storage contracts", () => {
     );
     expect(
       publishedArtifactKey({
+        locationRef: manifest.locationRef,
         publicCampaignId: baseProjection.publicCampaignId,
         publishedVersion: 7,
         sha256: sha("b"),
         extension: "pdf",
       }),
-    ).toBe(`campaigns/${baseProjection.publicCampaignId}/7/${sha("b")}.pdf`);
+    ).toBe(
+      `locations/${createHash("sha256").update(manifest.locationRef).digest("hex")}/campaigns/${baseProjection.publicCampaignId}/7/${sha("b")}.pdf`,
+    );
     expect(() =>
       privateArtifactKey({
         locationRef: "../escape",
@@ -286,13 +291,20 @@ describe("private and published storage contracts", () => {
     );
     const port = publishedPort();
     const projection = await publishProjection(baseProjection, artifacts, 3, port);
+    const tenantNamespace = createHash("sha256").update(manifest.locationRef).digest("hex");
 
     expect(projection.artifactUrls).toEqual({
       "public-page-projection": expect.stringMatching(
-        /^https:\/\/cdn\.example\.test\/campaigns\/campaign_public_01\/3\//u,
+        new RegExp(
+          `^https://cdn\\.example\\.test/locations/${tenantNamespace}/campaigns/campaign_public_01/3/`,
+          "u",
+        ),
       ),
       pdf: expect.stringMatching(
-        /^https:\/\/cdn\.example\.test\/campaigns\/campaign_public_01\/3\//u,
+        new RegExp(
+          `^https://cdn\\.example\\.test/locations/${tenantNamespace}/campaigns/campaign_public_01/3/`,
+          "u",
+        ),
       ),
     });
     expect(port.copies.map((copy) => copy.publishedKey)).toEqual([

@@ -1,13 +1,9 @@
+import { OutboxEventSchema, type OutboxEvent } from "@oalo/contracts";
+
 import { defineSqlContract } from "./sql-contract.js";
 
-export interface LeasedOutboxEventRow {
-  readonly eventId: string;
-  readonly locationId: string;
-  readonly eventName: string;
-  readonly schemaVersion: number;
-  readonly aggregateType: string;
-  readonly aggregateId: string;
-  readonly correlationId: string;
+export interface LeasedOutboxEventRow extends OutboxEvent {
+  readonly leaseOwner: string;
 }
 
 export interface AuthorityActiveRow {
@@ -63,26 +59,78 @@ select integration.acquire_queue_lease(
 
 function decodeLeasedOutboxEvent(row: unknown): LeasedOutboxEventRow {
   const record = recordRow(row);
+  const expectedKeys = [
+    "aggregate_ref",
+    "aggregate_type",
+    "aggregate_version",
+    "available_at",
+    "command_ref",
+    "correlation_id",
+    "event_id",
+    "event_name",
+    "lease_owner",
+    "location_ref",
+    "schema_version",
+  ] as const;
+  const actualKeys = Object.keys(record).sort();
   if (
-    typeof record.event_id !== "string" ||
-    typeof record.location_id !== "string" ||
-    typeof record.event_name !== "string" ||
-    typeof record.schema_version !== "number" ||
-    typeof record.aggregate_type !== "string" ||
-    typeof record.aggregate_id !== "string" ||
-    typeof record.correlation_id !== "string"
+    actualKeys.length !== expectedKeys.length ||
+    actualKeys.some((key, index) => key !== expectedKeys[index])
   ) {
-    throw new Error("Leased outbox row does not match contract v1");
+    throw new Error("Leased outbox row columns do not match contract v1");
   }
+
+  const schemaVersion = OutboxEventSchema.shape.schemaVersion.parse(
+    requiredInteger(record.schema_version, "schema_version"),
+  );
+  const eventName = OutboxEventSchema.shape.eventName.parse(record.event_name);
+  const aggregateType = OutboxEventSchema.shape.aggregateType.parse(record.aggregate_type);
+  const eventVersion = /\.v([1-9][0-9]*)$/u.exec(eventName);
+  if (eventVersion === null || Number(eventVersion[1]) !== schemaVersion) {
+    throw new Error("Leased outbox event name and schema version do not match");
+  }
+
   return Object.freeze({
-    eventId: record.event_id,
-    locationId: record.location_id,
-    eventName: record.event_name,
-    schemaVersion: record.schema_version,
-    aggregateType: record.aggregate_type,
-    aggregateId: record.aggregate_id,
-    correlationId: record.correlation_id,
+    eventId: requiredString(record.event_id, "event_id"),
+    locationRef: requiredString(record.location_ref, "location_ref"),
+    eventName,
+    schemaVersion,
+    aggregateType,
+    aggregateRef: requiredString(record.aggregate_ref, "aggregate_ref"),
+    aggregateVersion: requiredInteger(record.aggregate_version, "aggregate_version"),
+    commandRef: requiredString(record.command_ref, "command_ref"),
+    correlationId: requiredString(record.correlation_id, "correlation_id"),
+    availableAt: isoDateTime(record.available_at),
+    leaseOwner: requiredString(record.lease_owner, "lease_owner"),
   });
+}
+
+function requiredString(value: unknown, field: string): string {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`Leased outbox ${field} must be non-empty text`);
+  }
+  return value;
+}
+
+function requiredInteger(value: unknown, field: string): number {
+  const parsed =
+    typeof value === "bigint"
+      ? Number(value)
+      : typeof value === "string" && /^[0-9]+$/u.test(value)
+        ? Number(value)
+        : value;
+  if (!Number.isSafeInteger(parsed) || (parsed as number) < 0) {
+    throw new Error(`Leased outbox ${field} must be a non-negative safe integer`);
+  }
+  return parsed as number;
+}
+
+function isoDateTime(value: unknown): string {
+  const parsed = value instanceof Date ? value : typeof value === "string" ? new Date(value) : null;
+  if (parsed === null || Number.isNaN(parsed.getTime())) {
+    throw new Error("Leased outbox available_at must be a valid timestamp");
+  }
+  return OutboxEventSchema.shape.availableAt.parse(parsed.toISOString());
 }
 
 function recordRow(row: unknown): Readonly<Record<string, unknown>> {

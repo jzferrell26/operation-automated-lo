@@ -17,7 +17,10 @@ const ActiveLocationMetaReadActions = [
 export type ActiveLocationMetaReadAction = (typeof ActiveLocationMetaReadActions)[number];
 
 export interface ProductionMetaReadTransport {
-  get(input: Readonly<{ locationRef: string; route: string }>): Promise<unknown>;
+  get(
+    input: Readonly<{ locationRef: string; route: string }>,
+    signal?: AbortSignal,
+  ): Promise<unknown>;
 }
 
 function assertActiveLocationReadAction(
@@ -75,14 +78,14 @@ export function createMetaPublishingProgressPollingPort(
     campaignId: string;
     transport: ProductionMetaReadTransport;
   }>,
-): Readonly<{ poll(): Promise<unknown> }> {
+): Readonly<{ poll(signal?: AbortSignal): Promise<unknown> }> {
   const route = exactGetRoute("get-publishing-progress", input.locationRef, {
     campaignId: input.campaignId,
   });
   return Object.freeze({
-    async poll() {
+    async poll(signal?: AbortSignal) {
       return MetaPublishingProgressResponseSchema.parse(
-        await input.transport.get({ locationRef: input.locationRef, route }),
+        await input.transport.get({ locationRef: input.locationRef, route }, signal),
       );
     },
   });

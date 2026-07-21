@@ -6,8 +6,24 @@ export const aiPackage = Object.freeze({
 });
 
 export {
+  AnthropicProviderConfigurationError,
+  AnthropicProviderResponseError,
+  createAnthropicMessagesProviderClient,
+  type AiAbortSignal,
+  type AiFetchTransport,
+  type AiHttpResponse,
+  type AnthropicMessagesProviderClient,
+  type AnthropicMessagesProviderConfig,
+  type AnthropicMessagesProviderDependencies,
+  type AnthropicModelPricing,
+  type AnthropicProviderProbeResult,
+} from "./anthropic-messages-provider.js";
+
+export {
   AiGenerationError,
+  AiGenerationInProgressError,
   AiSpendLimitError,
+  AiTelemetryReconciliationError,
   LocationAiSpendGuard,
   UnsafeAiInputError,
   compileCampaignPrompt,
@@ -26,6 +42,7 @@ export {
   type AiSpendGuardPort,
   type AiSpendReservation,
   type AiTracePort,
+  type AiTelemetryPort,
   type AiUsagePort,
   type BrandExtractionRequest,
   type CampaignGenerationOptions,

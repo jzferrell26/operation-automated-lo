@@ -193,3 +193,21 @@ export const StorageTransferRequestSchema = z
   .strict();
 
 export type StorageTransferRequest = z.infer<typeof StorageTransferRequestSchema>;
+
+export interface PublicationCleanupIntent {
+  readonly locationRef: string;
+  readonly publicBucket: string;
+  readonly publicCampaignId: string;
+  readonly campaignVersionRef: string;
+  readonly publishedVersion: number;
+  readonly attemptedKeys: readonly string[];
+  readonly idempotencyKey: string;
+  readonly maximumAttempts: number;
+  readonly problemCode: "PUBLICATION_PARTIAL_FAILURE";
+}
+
+export interface PublicationCleanupLease extends PublicationCleanupIntent {
+  readonly attemptCount: number;
+  readonly leaseOwner: string;
+  readonly leaseUntil: string;
+}

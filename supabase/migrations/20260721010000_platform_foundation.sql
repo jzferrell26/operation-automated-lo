@@ -303,12 +303,23 @@ create index command_executions_status_idx
 create table integration.outbox_events (
   id uuid primary key default pg_catalog.gen_random_uuid(),
   location_id uuid not null references platform.locations (id) on delete restrict,
-  command_id uuid,
-  event_name text not null check (event_name ~ '^[a-z][a-z0-9.-]+\.v[1-9][0-9]*$'),
+  command_id uuid not null,
+  event_name text not null check (event_name in (
+    'onboarding.verification-requested.v1',
+    'campaign.generation-requested.v1',
+    'campaign.render-requested.v1',
+    'campaign.publish-requested.v1',
+    'campaign.pause-requested.v1',
+    'campaign.resume-requested.v1',
+    'lead.routing-requested.v1',
+    'provider.reconciliation-requested.v1',
+    'location.export-requested.v1',
+    'location.deletion-requested.v1'
+  )),
   schema_version integer not null check (schema_version > 0),
   aggregate_type text not null check (pg_catalog.length(aggregate_type) between 1 and 100),
   aggregate_id text not null check (pg_catalog.length(aggregate_id) between 1 and 200),
-  aggregate_version bigint check (aggregate_version is null or aggregate_version >= 0),
+  aggregate_version bigint not null check (aggregate_version >= 0),
   idempotency_key text not null check (idempotency_key ~ '^[0-9a-f]{64}$'),
   payload_ref text not null check (pg_catalog.length(payload_ref) between 1 and 300),
   correlation_id text not null check (pg_catalog.length(correlation_id) between 1 and 200),
@@ -324,6 +335,9 @@ create table integration.outbox_events (
   constraint outbox_events_command_fk foreign key (location_id, command_id)
     references integration.command_executions (location_id, id) on delete restrict,
   constraint outbox_events_idempotency_uq unique (location_id, event_name, idempotency_key),
+  constraint outbox_events_event_version_ck check (
+    event_name ~ ('\.v' || schema_version::text || '$')
+  ),
   constraint outbox_events_lease_ck check (
     (lease_owner is null and lease_expires_at is null) or
     (lease_owner is not null and lease_expires_at is not null)
@@ -437,19 +451,157 @@ create index webhook_receipts_processing_idx
 create table integration.delivery_claims (
   id uuid primary key default pg_catalog.gen_random_uuid(),
   location_id uuid not null references platform.locations (id) on delete restrict,
-  delivery_kind text not null check (delivery_kind in ('event', 'task', 'webhook')),
+  delivery_kind text not null check (delivery_kind in ('command', 'event', 'task', 'webhook')),
   external_delivery_id text not null check (pg_catalog.length(external_delivery_id) between 1 and 300),
   business_outcome_key text not null check (pg_catalog.length(business_outcome_key) between 1 and 300),
-  status text not null default 'claimed' check (status in ('claimed', 'completed', 'released')),
+  status text not null default 'claimed'
+    check (status in ('claimed', 'completed', 'released', 'completion_uncertain')),
   claimed_at timestamptz not null default pg_catalog.now(),
   completed_at timestamptz,
   released_at timestamptz,
+  completion_uncertain_at timestamptz,
+  problem_code text,
   constraint delivery_claims_location_id_id_uq unique (location_id, id),
   constraint delivery_claims_external_uq unique (location_id, delivery_kind, external_delivery_id),
-  constraint delivery_claims_outcome_uq unique (location_id, delivery_kind, business_outcome_key)
+  constraint delivery_claims_outcome_uq unique (location_id, delivery_kind, business_outcome_key),
+  constraint delivery_claims_state_ck check (
+    (status = 'claimed' and completed_at is null and released_at is null
+      and completion_uncertain_at is null and problem_code is null)
+    or (status = 'completed' and completed_at is not null and released_at is null
+      and completion_uncertain_at is null and problem_code is null)
+    or (status = 'released' and completed_at is null and released_at is not null
+      and completion_uncertain_at is null and problem_code is null)
+    or (status = 'completion_uncertain' and completed_at is null and released_at is null
+      and completion_uncertain_at is not null and problem_code = 'DELIVERY_COMPLETION_UNCERTAIN')
+  )
 );
 
 create index delivery_claims_location_id_idx on integration.delivery_claims (location_id);
+
+create table integration.ai_usage_events (
+  id uuid primary key default pg_catalog.gen_random_uuid(),
+  location_id uuid not null references platform.locations (id) on delete restrict,
+  usage_event_ref text not null check (pg_catalog.length(usage_event_ref) between 1 and 300),
+  actor_ref text not null check (pg_catalog.length(actor_ref) between 1 and 300),
+  correlation_ref text not null check (pg_catalog.length(correlation_ref) between 1 and 300),
+  feature text not null check (feature in ('brand_extraction', 'campaign_pack', 'repair', 'regeneration')),
+  occurred_at timestamptz not null,
+  payload jsonb not null check (pg_catalog.jsonb_typeof(payload) = 'object'),
+  created_at timestamptz not null default pg_catalog.now(),
+  constraint ai_usage_events_ref_uq unique (usage_event_ref),
+  constraint ai_usage_events_location_id_id_uq unique (location_id, id)
+);
+
+create index ai_usage_events_location_occurred_idx
+  on integration.ai_usage_events (location_id, occurred_at desc);
+
+create table integration.ai_trace_records (
+  id uuid primary key default pg_catalog.gen_random_uuid(),
+  location_id uuid not null references platform.locations (id) on delete restrict,
+  trace_ref text not null check (pg_catalog.length(trace_ref) between 1 and 300),
+  actor_ref text not null check (pg_catalog.length(actor_ref) between 1 and 300),
+  correlation_ref text not null check (pg_catalog.length(correlation_ref) between 1 and 300),
+  feature text not null check (feature in ('brand_extraction', 'campaign_pack', 'repair', 'regeneration')),
+  occurred_at timestamptz not null,
+  payload jsonb not null check (pg_catalog.jsonb_typeof(payload) = 'object'),
+  created_at timestamptz not null default pg_catalog.now(),
+  constraint ai_trace_records_ref_uq unique (trace_ref),
+  constraint ai_trace_records_location_id_id_uq unique (location_id, id)
+);
+
+create index ai_trace_records_location_occurred_idx
+  on integration.ai_trace_records (location_id, occurred_at desc);
+
+create table integration.ai_telemetry_reconciliation_queue (
+  id uuid primary key default pg_catalog.gen_random_uuid(),
+  location_id uuid not null references platform.locations (id) on delete restrict,
+  usage_event_ref text not null check (pg_catalog.length(usage_event_ref) between 1 and 300),
+  trace_ref text not null check (pg_catalog.length(trace_ref) between 1 and 300),
+  usage_payload jsonb not null check (pg_catalog.jsonb_typeof(usage_payload) = 'object'),
+  trace_payload jsonb not null check (pg_catalog.jsonb_typeof(trace_payload) = 'object'),
+  problem_code text not null check (problem_code = 'AI_TELEMETRY_PERSISTENCE_FAILED'),
+  status text not null default 'pending' check (status in ('pending', 'reconciling', 'completed')),
+  attempt_count integer not null default 0 check (attempt_count >= 0),
+  available_at timestamptz not null default pg_catalog.now(),
+  lease_owner text,
+  lease_expires_at timestamptz,
+  last_attempt_at timestamptz,
+  last_error_at timestamptz,
+  last_error_code text,
+  completed_at timestamptz,
+  created_at timestamptz not null default pg_catalog.now(),
+  updated_at timestamptz not null default pg_catalog.now(),
+  constraint ai_telemetry_reconciliation_pair_uq unique (usage_event_ref, trace_ref),
+  constraint ai_telemetry_reconciliation_location_id_id_uq unique (location_id, id),
+  constraint ai_telemetry_reconciliation_lease_ck check (
+    (lease_owner is null and lease_expires_at is null)
+    or (lease_owner is not null and lease_expires_at is not null)
+  ),
+  constraint ai_telemetry_reconciliation_completed_ck check (
+    status <> 'completed' or completed_at is not null
+  )
+);
+
+create index ai_telemetry_reconciliation_pending_idx
+  on integration.ai_telemetry_reconciliation_queue (location_id, available_at, created_at)
+  where status = 'pending';
+
+create table integration.publication_cleanup_intents (
+  id uuid primary key default pg_catalog.gen_random_uuid(),
+  location_id uuid not null references platform.locations (id) on delete restrict,
+  location_ref text not null check (location_ref ~ '^[A-Za-z0-9_-]{8,128}$'),
+  public_bucket text not null check (
+    pg_catalog.length(public_bucket) between 3 and 63
+    and public_bucket ~ '^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$'
+  ),
+  public_campaign_id text not null check (public_campaign_id ~ '^[A-Za-z0-9_-]{8,128}$'),
+  campaign_version_ref text not null check (pg_catalog.length(campaign_version_ref) between 8 and 128),
+  published_version integer not null check (published_version > 0),
+  attempted_keys text[] not null check (
+    pg_catalog.cardinality(attempted_keys) between 1 and 100
+    and pg_catalog.array_position(attempted_keys, null) is null
+  ),
+  quarantined_keys text[],
+  idempotency_key text not null check (idempotency_key ~ '^[0-9a-f]{64}$'),
+  maximum_attempts integer not null check (maximum_attempts between 1 and 20),
+  problem_code text not null check (problem_code = 'PUBLICATION_PARTIAL_FAILURE'),
+  status text not null default 'pending'
+    check (status in ('pending', 'reconciling', 'completed', 'dead_lettered')),
+  attempt_count integer not null default 0 check (attempt_count >= 0),
+  available_at timestamptz not null default pg_catalog.now(),
+  lease_owner text,
+  lease_expires_at timestamptz,
+  last_attempt_at timestamptz,
+  last_error_at timestamptz,
+  last_error_code text,
+  completed_at timestamptz,
+  dead_lettered_at timestamptz,
+  created_at timestamptz not null default pg_catalog.now(),
+  updated_at timestamptz not null default pg_catalog.now(),
+  constraint publication_cleanup_idempotency_uq unique (idempotency_key),
+  constraint publication_cleanup_location_id_id_uq unique (location_id, id),
+  constraint publication_cleanup_lease_ck check (
+    (lease_owner is null and lease_expires_at is null)
+    or (lease_owner is not null and lease_expires_at is not null)
+  ),
+  constraint publication_cleanup_completed_ck check (
+    status <> 'completed'
+    or (completed_at is not null and quarantined_keys is not null
+      and pg_catalog.cardinality(quarantined_keys) >= 1)
+  ),
+  constraint publication_cleanup_dead_letter_ck check (
+    status <> 'dead_lettered'
+    or (dead_lettered_at is not null and lease_owner is null and lease_expires_at is null)
+  )
+);
+
+create index publication_cleanup_pending_idx
+  on integration.publication_cleanup_intents (location_id, available_at, created_at)
+  where status = 'pending';
+
+create index publication_cleanup_dead_letter_idx
+  on integration.publication_cleanup_intents (location_id, dead_lettered_at desc)
+  where status = 'dead_lettered';
 
 create table integration.job_runs (
   id uuid primary key default pg_catalog.gen_random_uuid(),
@@ -922,6 +1074,496 @@ as $function$
     )
 $function$;
 
+create function integration.mark_delivery_completion_uncertain_v1(
+  requested_delivery_kind text,
+  requested_external_delivery_id text,
+  requested_business_outcome_key text,
+  requested_problem_code text
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $function$
+declare
+  affected_count integer;
+begin
+  if requested_problem_code <> 'DELIVERY_COMPLETION_UNCERTAIN' then
+    raise exception using errcode = '22023', message = 'Invalid delivery completion problem code';
+  end if;
+
+  update integration.delivery_claims
+     set status = 'completion_uncertain',
+         completion_uncertain_at = pg_catalog.statement_timestamp(),
+         problem_code = requested_problem_code
+   where location_id = platform.current_location_id()
+     and delivery_kind = requested_delivery_kind
+     and external_delivery_id = requested_external_delivery_id
+     and business_outcome_key = requested_business_outcome_key
+     and status = 'claimed';
+
+  get diagnostics affected_count = row_count;
+  return affected_count = 1;
+end
+$function$;
+
+create function integration.assert_ai_telemetry_pair_v1(
+  requested_usage jsonb,
+  requested_trace jsonb
+)
+returns void
+language plpgsql
+immutable
+set search_path = ''
+as $function$
+declare
+  reference_pattern constant text := '^[a-z][a-z0-9]*(?:_[A-Za-z0-9]+)+$';
+begin
+  if requested_usage is null or pg_catalog.jsonb_typeof(requested_usage) <> 'object'
+    or requested_trace is null or pg_catalog.jsonb_typeof(requested_trace) <> 'object' then
+    raise exception using errcode = '22023', message = 'AI telemetry pair must contain JSON objects';
+  end if;
+  if not requested_usage ?& array[
+    'usageEventRef', 'locationRef', 'actorRef', 'feature', 'brandVersionRef',
+    'correlationRef', 'providerRef', 'modelRef', 'modelPolicyVersionRef',
+    'promptPolicyVersionRef', 'tokenUsage', 'estimatedCostUsd', 'latencyMs',
+    'retryCount', 'outcome', 'chargedPlanUnit', 'occurredAt'
+  ] or not requested_trace ?& array[
+    'traceRef', 'locationRef', 'actorRef', 'correlationRef', 'feature', 'routeRef',
+    'modelPolicyVersionRef', 'promptPolicyVersionRef', 'promptContextHash',
+    'latencyMs', 'outcome', 'occurredAt'
+  ] then
+    raise exception using errcode = '22023', message = 'AI telemetry pair is missing required fields';
+  end if;
+  if exists (
+    select 1 from pg_catalog.jsonb_object_keys(requested_usage) as field_name
+    where field_name not in (
+      'usageEventRef', 'locationRef', 'actorRef', 'feature', 'campaignRef',
+      'brandVersionRef', 'correlationRef', 'providerRef', 'modelRef',
+      'modelPolicyVersionRef', 'promptPolicyVersionRef', 'providerRequestRef',
+      'tokenUsage', 'estimatedCostUsd', 'latencyMs', 'retryCount', 'outcome',
+      'chargedPlanUnit', 'failureClassification', 'occurredAt'
+    )
+  ) or exists (
+    select 1 from pg_catalog.jsonb_object_keys(requested_trace) as field_name
+    where field_name not in (
+      'traceRef', 'locationRef', 'actorRef', 'correlationRef', 'feature', 'routeRef',
+      'modelPolicyVersionRef', 'promptPolicyVersionRef', 'promptContextHash',
+      'acceptedOutputHash', 'providerRequestRef', 'latencyMs', 'outcome',
+      'failureClassification', 'occurredAt'
+    )
+  ) then
+    raise exception using errcode = '22023', message = 'AI telemetry pair contains unknown fields';
+  end if;
+  if requested_usage->>'usageEventRef' !~ reference_pattern
+    or requested_trace->>'traceRef' !~ reference_pattern
+    or pg_catalog.length(requested_usage->>'usageEventRef') not between 8 and 160
+    or pg_catalog.length(requested_trace->>'traceRef') not between 8 and 160 then
+    raise exception using errcode = '22023', message = 'AI telemetry references are invalid';
+  end if;
+  if requested_usage->>'locationRef' <> requested_trace->>'locationRef'
+    or requested_usage->>'actorRef' <> requested_trace->>'actorRef'
+    or requested_usage->>'correlationRef' <> requested_trace->>'correlationRef'
+    or requested_usage->>'feature' <> requested_trace->>'feature'
+    or requested_usage->>'modelPolicyVersionRef' <> requested_trace->>'modelPolicyVersionRef'
+    or requested_usage->>'promptPolicyVersionRef' <> requested_trace->>'promptPolicyVersionRef'
+    or requested_usage->>'latencyMs' <> requested_trace->>'latencyMs'
+    or requested_usage->>'outcome' <> requested_trace->>'outcome'
+    or requested_usage->>'occurredAt' <> requested_trace->>'occurredAt'
+    or coalesce(requested_usage->>'providerRequestRef', '')
+      <> coalesce(requested_trace->>'providerRequestRef', '')
+    or coalesce(requested_usage->>'failureClassification', '')
+      <> coalesce(requested_trace->>'failureClassification', '') then
+    raise exception using errcode = '22023', message = 'AI usage and trace records do not describe one provider attempt';
+  end if;
+  if requested_usage->>'feature' not in ('brand_extraction', 'campaign_pack', 'repair', 'regeneration')
+    or requested_usage->>'outcome' not in ('accepted', 'rejected', 'failed', 'reconciled')
+    or requested_usage->>'chargedPlanUnit' not in ('none', 'campaign_pack', 'regeneration')
+    or pg_catalog.jsonb_typeof(requested_usage->'tokenUsage') <> 'object'
+    or requested_trace->>'promptContextHash' !~ '^[0-9a-f]{64}$'
+    or (requested_trace ? 'acceptedOutputHash'
+      and requested_trace->>'acceptedOutputHash' !~ '^[0-9a-f]{64}$') then
+    raise exception using errcode = '22023', message = 'AI telemetry field values are invalid';
+  end if;
+  perform (requested_usage->>'occurredAt')::timestamptz;
+  perform (requested_trace->>'occurredAt')::timestamptz;
+  if (requested_usage->>'latencyMs')::numeric < 0
+    or (requested_usage->>'retryCount')::numeric not between 0 and 3
+    or (requested_usage->>'estimatedCostUsd')::numeric not between 0 and 1000 then
+    raise exception using errcode = '22023', message = 'AI telemetry numeric values are invalid';
+  end if;
+end
+$function$;
+
+create function integration.record_ai_telemetry_pair_v1(
+  requested_usage jsonb,
+  requested_trace jsonb
+)
+returns table (usage_event_ref text, trace_ref text)
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $function$
+begin
+  perform integration.assert_ai_telemetry_pair_v1(requested_usage, requested_trace);
+  if requested_usage->>'correlationRef' <> platform.current_correlation_id() then
+    raise exception using errcode = '42501', message = 'AI telemetry correlation context mismatch';
+  end if;
+
+  insert into integration.ai_usage_events (
+    location_id, usage_event_ref, actor_ref, correlation_ref, feature, occurred_at, payload
+  ) values (
+    platform.current_location_id(), requested_usage->>'usageEventRef',
+    requested_usage->>'actorRef', requested_usage->>'correlationRef',
+    requested_usage->>'feature', (requested_usage->>'occurredAt')::timestamptz,
+    requested_usage
+  );
+
+  insert into integration.ai_trace_records (
+    location_id, trace_ref, actor_ref, correlation_ref, feature, occurred_at, payload
+  ) values (
+    platform.current_location_id(), requested_trace->>'traceRef',
+    requested_trace->>'actorRef', requested_trace->>'correlationRef',
+    requested_trace->>'feature', (requested_trace->>'occurredAt')::timestamptz,
+    requested_trace
+  );
+
+  return query select requested_usage->>'usageEventRef', requested_trace->>'traceRef';
+end
+$function$;
+
+create function integration.mark_ai_telemetry_reconciliation_required_v1(
+  requested_usage jsonb,
+  requested_trace jsonb,
+  requested_problem_code text
+)
+returns text
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $function$
+declare
+  marker_status text;
+begin
+  perform integration.assert_ai_telemetry_pair_v1(requested_usage, requested_trace);
+  if requested_usage->>'correlationRef' <> platform.current_correlation_id() then
+    raise exception using errcode = '42501', message = 'AI telemetry correlation context mismatch';
+  end if;
+  if requested_problem_code <> 'AI_TELEMETRY_PERSISTENCE_FAILED' then
+    raise exception using errcode = '22023', message = 'Invalid AI telemetry reconciliation problem code';
+  end if;
+
+  insert into integration.ai_telemetry_reconciliation_queue (
+    location_id, usage_event_ref, trace_ref, usage_payload, trace_payload, problem_code
+  ) values (
+    platform.current_location_id(), requested_usage->>'usageEventRef', requested_trace->>'traceRef',
+    requested_usage, requested_trace, requested_problem_code
+  )
+  on conflict (usage_event_ref, trace_ref) do update
+     set updated_at = integration.ai_telemetry_reconciliation_queue.updated_at
+   where integration.ai_telemetry_reconciliation_queue.location_id = platform.current_location_id()
+     and integration.ai_telemetry_reconciliation_queue.usage_payload = excluded.usage_payload
+     and integration.ai_telemetry_reconciliation_queue.trace_payload = excluded.trace_payload
+     and integration.ai_telemetry_reconciliation_queue.problem_code = excluded.problem_code
+  returning status into marker_status;
+
+  if marker_status is null then
+    raise exception using errcode = '23505', message = 'AI telemetry reconciliation identity conflicts with different evidence';
+  end if;
+  return marker_status;
+end
+$function$;
+
+create function integration.enqueue_publication_cleanup_v1(requested_intent jsonb)
+returns text
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $function$
+declare
+  inserted_status text;
+  existing_row integration.publication_cleanup_intents%rowtype;
+  attempted text[];
+begin
+  if requested_intent is null or pg_catalog.jsonb_typeof(requested_intent) <> 'object'
+    or not requested_intent ?& array[
+      'locationRef', 'publicBucket', 'publicCampaignId', 'campaignVersionRef', 'publishedVersion',
+      'attemptedKeys', 'idempotencyKey', 'maximumAttempts', 'problemCode'
+    ] or exists (
+      select 1 from pg_catalog.jsonb_object_keys(requested_intent) as field_name
+      where field_name not in (
+        'locationRef', 'publicBucket', 'publicCampaignId', 'campaignVersionRef', 'publishedVersion',
+        'attemptedKeys', 'idempotencyKey', 'maximumAttempts', 'problemCode'
+      )
+    ) then
+    raise exception using errcode = '22023', message = 'Publication cleanup intent is invalid';
+  end if;
+  if requested_intent->>'idempotencyKey' !~ '^[0-9a-f]{64}$'
+    or requested_intent->>'locationRef' !~ '^[A-Za-z0-9_-]{8,128}$'
+    or requested_intent->>'publicCampaignId' !~ '^[A-Za-z0-9_-]{8,128}$'
+    or requested_intent->>'problemCode' <> 'PUBLICATION_PARTIAL_FAILURE'
+    or pg_catalog.jsonb_typeof(requested_intent->'attemptedKeys') <> 'array'
+    or pg_catalog.jsonb_array_length(requested_intent->'attemptedKeys') not between 1 and 100
+    or (requested_intent->>'maximumAttempts')::integer not between 1 and 20
+    or (requested_intent->>'publishedVersion')::integer <= 0 then
+    raise exception using errcode = '22023', message = 'Publication cleanup intent fields are invalid';
+  end if;
+  if not exists (
+    select 1
+      from platform.locations as active_location
+     where active_location.id = platform.current_location_id()
+       and active_location.ghl_location_id = requested_intent->>'locationRef'
+       and active_location.status = 'active'
+  ) then
+    raise exception using errcode = '42501', message = 'Publication cleanup tenant identity is invalid';
+  end if;
+  select pg_catalog.array_agg(value order by ordinal)
+    into attempted
+    from pg_catalog.jsonb_array_elements_text(requested_intent->'attemptedKeys')
+      with ordinality as attempted_key(value, ordinal);
+  if exists (select 1 from pg_catalog.unnest(attempted) as attempted_key where pg_catalog.length(attempted_key) not between 1 and 1024) then
+    raise exception using errcode = '22023', message = 'Publication cleanup attempted key is invalid';
+  end if;
+
+  insert into integration.publication_cleanup_intents (
+    location_id, location_ref, public_bucket, public_campaign_id, campaign_version_ref,
+    published_version, attempted_keys, idempotency_key, maximum_attempts, problem_code
+  ) values (
+    platform.current_location_id(), requested_intent->>'locationRef', requested_intent->>'publicBucket',
+    requested_intent->>'publicCampaignId', requested_intent->>'campaignVersionRef',
+    (requested_intent->>'publishedVersion')::integer, attempted,
+    requested_intent->>'idempotencyKey', (requested_intent->>'maximumAttempts')::integer,
+    requested_intent->>'problemCode'
+  )
+  on conflict (idempotency_key) do nothing
+  returning status into inserted_status;
+  if inserted_status is not null then
+    return 'enqueued';
+  end if;
+
+  select * into existing_row
+    from integration.publication_cleanup_intents
+   where idempotency_key = requested_intent->>'idempotencyKey'
+   for update;
+  if existing_row.location_id <> platform.current_location_id()
+    or existing_row.location_ref <> requested_intent->>'locationRef'
+    or existing_row.public_bucket <> requested_intent->>'publicBucket'
+    or existing_row.public_campaign_id <> requested_intent->>'publicCampaignId'
+    or existing_row.campaign_version_ref <> requested_intent->>'campaignVersionRef'
+    or existing_row.published_version <> (requested_intent->>'publishedVersion')::integer
+    or existing_row.attempted_keys <> attempted
+    or existing_row.maximum_attempts <> (requested_intent->>'maximumAttempts')::integer
+    or existing_row.problem_code <> requested_intent->>'problemCode' then
+    raise exception using errcode = '23505', message = 'Publication cleanup identity conflicts with different evidence';
+  end if;
+  if existing_row.status = 'completed' then
+    return 'already_completed';
+  end if;
+  if existing_row.status = 'dead_lettered' then
+    return 'already_dead_lettered';
+  end if;
+  return 'already_pending';
+end
+$function$;
+
+create function integration.claim_publication_cleanup_batch_v1(
+  requested_lease_owner text,
+  requested_limit integer,
+  requested_lease_until timestamptz
+)
+returns table (
+  location_ref text,
+  public_bucket text,
+  public_campaign_id text,
+  campaign_version_ref text,
+  published_version integer,
+  attempted_keys text[],
+  idempotency_key text,
+  problem_code text,
+  attempt_count integer,
+  maximum_attempts integer,
+  lease_owner text,
+  lease_until timestamptz
+)
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $function$
+begin
+  if requested_lease_owner is null or pg_catalog.length(requested_lease_owner) not between 1 and 200
+    or requested_limit not between 1 and 100
+    or requested_lease_until <= pg_catalog.statement_timestamp()
+    or requested_lease_until > pg_catalog.statement_timestamp() + interval '15 minutes' then
+    raise exception using errcode = '22023', message = 'Publication cleanup lease request is invalid';
+  end if;
+
+  update integration.publication_cleanup_intents as cleanup
+     set status = 'dead_lettered',
+         dead_lettered_at = pg_catalog.statement_timestamp(),
+         lease_owner = null,
+         lease_expires_at = null,
+         last_error_code = case
+           when cleanup.status = 'reconciling' then 'PUBLICATION_CLEANUP_LEASE_EXHAUSTED'
+           else coalesce(cleanup.last_error_code, 'PUBLICATION_QUARANTINE_RETRY_FAILED')
+         end,
+         last_error_at = coalesce(cleanup.last_error_at, pg_catalog.statement_timestamp()),
+         updated_at = pg_catalog.statement_timestamp()
+   where cleanup.location_id = platform.current_location_id()
+     and cleanup.attempt_count >= cleanup.maximum_attempts
+     and (
+       (cleanup.status = 'pending'
+         and cleanup.available_at <= pg_catalog.statement_timestamp())
+       or (cleanup.status = 'reconciling'
+         and cleanup.lease_expires_at <= pg_catalog.statement_timestamp())
+     );
+
+  return query
+  with candidates as (
+    select source.id
+      from integration.publication_cleanup_intents as source
+     where source.location_id = platform.current_location_id()
+       and source.attempt_count < source.maximum_attempts
+       and (
+         (source.status = 'pending' and source.available_at <= pg_catalog.statement_timestamp())
+         or (source.status = 'reconciling'
+           and source.lease_expires_at <= pg_catalog.statement_timestamp())
+       )
+     order by source.available_at, source.created_at
+     for update skip locked
+     limit requested_limit
+  )
+  update integration.publication_cleanup_intents as target
+     set status = 'reconciling',
+         attempt_count = target.attempt_count + 1,
+         last_attempt_at = pg_catalog.statement_timestamp(),
+         lease_owner = requested_lease_owner,
+         lease_expires_at = requested_lease_until,
+         last_error_code = case
+           when target.status = 'reconciling' then 'PUBLICATION_CLEANUP_LEASE_EXPIRED'
+           else target.last_error_code
+         end,
+         last_error_at = case
+           when target.status = 'reconciling' then pg_catalog.statement_timestamp()
+           else target.last_error_at
+         end,
+         updated_at = pg_catalog.statement_timestamp()
+    from candidates
+   where target.id = candidates.id
+  returning target.location_ref, target.public_bucket, target.public_campaign_id, target.campaign_version_ref,
+            target.published_version, target.attempted_keys, target.idempotency_key,
+            target.problem_code, target.attempt_count, target.maximum_attempts,
+            target.lease_owner, target.lease_expires_at;
+end
+$function$;
+
+create function integration.complete_publication_cleanup_v1(
+  requested_idempotency_key text,
+  requested_lease_owner text,
+  requested_quarantined_keys jsonb
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $function$
+declare
+  affected_count integer;
+  quarantined text[];
+begin
+  if requested_idempotency_key !~ '^[0-9a-f]{64}$'
+    or requested_lease_owner is null
+    or pg_catalog.length(requested_lease_owner) not between 1 and 200
+    or pg_catalog.jsonb_typeof(requested_quarantined_keys) <> 'array'
+    or pg_catalog.jsonb_array_length(requested_quarantined_keys) not between 1 and 100 then
+    raise exception using errcode = '22023', message = 'Publication cleanup completion is invalid';
+  end if;
+  select pg_catalog.array_agg(value order by ordinal)
+    into quarantined
+    from pg_catalog.jsonb_array_elements_text(requested_quarantined_keys)
+      with ordinality as quarantined_key(value, ordinal);
+  if exists (
+    select 1 from pg_catalog.unnest(quarantined) as quarantined_key
+    where pg_catalog.length(quarantined_key) not between 1 and 1024
+  ) then
+    raise exception using errcode = '22023', message = 'Publication cleanup quarantined key is invalid';
+  end if;
+
+  update integration.publication_cleanup_intents
+     set status = 'completed',
+         quarantined_keys = quarantined,
+         completed_at = pg_catalog.statement_timestamp(),
+         lease_owner = null,
+         lease_expires_at = null,
+         updated_at = pg_catalog.statement_timestamp()
+   where location_id = platform.current_location_id()
+     and idempotency_key = requested_idempotency_key
+     and status = 'reconciling'
+     and lease_owner = requested_lease_owner
+     and pg_catalog.cardinality(attempted_keys) = pg_catalog.cardinality(quarantined)
+     and attempted_keys @> quarantined
+     and quarantined @> attempted_keys;
+  get diagnostics affected_count = row_count;
+  return affected_count = 1;
+end
+$function$;
+
+create function integration.release_publication_cleanup_after_failure_v1(
+  requested_idempotency_key text,
+  requested_lease_owner text,
+  requested_problem_code text,
+  requested_available_at timestamptz
+)
+returns text
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $function$
+declare
+  released_status text;
+begin
+  if requested_idempotency_key !~ '^[0-9a-f]{64}$'
+    or requested_lease_owner is null
+    or pg_catalog.length(requested_lease_owner) not between 1 and 200
+    or requested_problem_code <> 'PUBLICATION_QUARANTINE_RETRY_FAILED'
+    or requested_available_at <= pg_catalog.statement_timestamp()
+    or requested_available_at > pg_catalog.statement_timestamp() + interval '24 hours' then
+    raise exception using errcode = '22023', message = 'Publication cleanup release is invalid';
+  end if;
+
+  update integration.publication_cleanup_intents
+     set status = case
+           when attempt_count >= maximum_attempts then 'dead_lettered'
+           else 'pending'
+         end,
+         available_at = requested_available_at,
+         lease_owner = null,
+         lease_expires_at = null,
+         last_error_code = requested_problem_code,
+         last_error_at = pg_catalog.statement_timestamp(),
+         dead_lettered_at = case
+           when attempt_count >= maximum_attempts then pg_catalog.statement_timestamp()
+           else null
+         end,
+         updated_at = pg_catalog.statement_timestamp()
+   where location_id = platform.current_location_id()
+     and idempotency_key = requested_idempotency_key
+     and status = 'reconciling'
+     and lease_owner = requested_lease_owner
+  returning status into released_status;
+  if released_status is null then
+    raise exception using errcode = '55000', message = 'Publication cleanup intent is not actively leased';
+  end if;
+  return released_status;
+end
+$function$;
+
 create function integration.acquire_queue_lease(
   requested_location_id uuid,
   requested_queue_class text,
@@ -1022,12 +1664,16 @@ create function integration.lease_outbox_batch(
 )
 returns table (
   event_id uuid,
-  location_id uuid,
+  location_ref uuid,
   event_name text,
   schema_version integer,
   aggregate_type text,
-  aggregate_id text,
-  correlation_id text
+  aggregate_ref text,
+  aggregate_version bigint,
+  command_ref uuid,
+  correlation_id text,
+  available_at timestamptz,
+  lease_owner text
 )
 language plpgsql
 volatile
@@ -1063,7 +1709,8 @@ begin
     from candidates
    where target.id = candidates.id
   returning target.id, target.location_id, target.event_name, target.schema_version,
-            target.aggregate_type, target.aggregate_id, target.correlation_id;
+            target.aggregate_type, target.aggregate_id, target.aggregate_version,
+            target.command_id, target.correlation_id, target.available_at, target.lease_owner;
 end
 $function$;
 
@@ -1102,6 +1749,9 @@ grant select, insert, update on integration.outbox_events to app_runtime;
 grant select, insert, update on integration.provider_operations to app_runtime;
 grant select, insert, update on integration.webhook_receipts to app_runtime;
 grant select, insert, update on integration.delivery_claims to app_runtime;
+grant select on integration.ai_usage_events, integration.ai_trace_records,
+  integration.ai_telemetry_reconciliation_queue, integration.publication_cleanup_intents
+  to app_runtime;
 grant select, insert, update on integration.job_runs to app_runtime;
 grant select on integration.queue_limits to app_runtime;
 grant select on integration.location_queue_limits to app_runtime;
@@ -1133,6 +1783,17 @@ grant execute on function platform.set_scheduler_context(uuid, uuid, text) to sc
 grant execute on function platform.begin_support_access(uuid, uuid, text, text, text) to support_runtime;
 grant execute on function platform.reset_transaction_context() to app_runtime, scheduler_runtime, support_runtime;
 grant execute on function integration.authority_active(uuid, text) to app_runtime, scheduler_runtime;
+grant execute on function integration.mark_delivery_completion_uncertain_v1(text, text, text, text)
+  to app_runtime;
+grant execute on function integration.record_ai_telemetry_pair_v1(jsonb, jsonb) to app_runtime;
+grant execute on function integration.mark_ai_telemetry_reconciliation_required_v1(jsonb, jsonb, text)
+  to app_runtime;
+grant execute on function integration.enqueue_publication_cleanup_v1(jsonb) to app_runtime;
+grant execute on function integration.claim_publication_cleanup_batch_v1(text, integer, timestamptz)
+  to app_runtime;
+grant execute on function integration.complete_publication_cleanup_v1(text, text, jsonb) to app_runtime;
+grant execute on function integration.release_publication_cleanup_after_failure_v1(text, text, text, timestamptz)
+  to app_runtime;
 grant execute on function integration.acquire_queue_lease(uuid, text, text, text, text, timestamptz)
   to app_runtime, scheduler_runtime;
 grant execute on function integration.lease_outbox_batch(text, integer, integer) to scheduler_runtime;
@@ -1145,6 +1806,10 @@ comment on schema billing is 'Tenant entitlement and usage authority projections
 comment on schema audit is 'Append-only tenant security and consequential business events.';
 comment on table integration.provider_operations is
   'Stores safe hashes and normalized results only. Credentials and raw provider bodies are prohibited.';
+comment on table integration.ai_telemetry_reconciliation_queue is
+  'Durable recovery evidence for atomic usage and trace persistence failures. Raw prompts are prohibited.';
+comment on table integration.publication_cleanup_intents is
+  'Durable tenant-scoped cleanup work for partially published public artifacts.';
 comment on table audit.events is
   'Append-only. Token plaintext, raw lead data, full prompts, and provider secrets are prohibited.';
 

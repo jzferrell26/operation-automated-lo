@@ -1,10 +1,10 @@
 import { defineConfig } from "@trigger.dev/sdk";
-import { parsePhaseZeroEnvironment } from "@oalo/config";
+import { productionTriggerProjectReference } from "@oalo/config";
 
-const environment = parsePhaseZeroEnvironment(process.env);
+const triggerProjectRef = productionTriggerProjectReference(process.env);
 
 export default defineConfig({
-  project: environment.TRIGGER_PROJECT_REF,
+  project: triggerProjectRef,
   dirs: ["./src/tasks"],
   maxDuration: 60,
   runtime: "node-22",

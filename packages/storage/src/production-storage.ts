@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import {
   ArtifactRecordSchema,
   PublishedCampaignProjectionSchema,
@@ -35,18 +37,32 @@ export function privateArtifactKey(
 
 export function publishedArtifactKey(
   input: Readonly<{
+    locationRef: string;
     publicCampaignId: string;
     publishedVersion: number;
     sha256: string;
     extension: "html" | "pdf" | "png" | "jpg";
   }>,
 ): string {
+  const prefix = publishedArtifactPrefix(input);
+  if (!/^[a-f0-9]{64}$/u.test(input.sha256)) throw new Error("sha256 is invalid");
+  return `${prefix}${input.sha256}.${input.extension}`;
+}
+
+export function publishedArtifactPrefix(
+  input: Readonly<{
+    locationRef: string;
+    publicCampaignId: string;
+    publishedVersion: number;
+  }>,
+): string {
+  const location = assertPathSegment(input.locationRef, "locationRef");
   const publicId = assertPathSegment(input.publicCampaignId, "publicCampaignId");
   if (!Number.isInteger(input.publishedVersion) || input.publishedVersion < 1) {
     throw new Error("publishedVersion must be a positive integer");
   }
-  if (!/^[a-f0-9]{64}$/u.test(input.sha256)) throw new Error("sha256 is invalid");
-  return `campaigns/${publicId}/${input.publishedVersion}/${input.sha256}.${input.extension}`;
+  const tenantNamespace = createHash("sha256").update(location).digest("hex");
+  return `locations/${tenantNamespace}/campaigns/${publicId}/${input.publishedVersion}/`;
 }
 
 export function planPrivateTransfer(input: unknown, now: Date): StorageTransferRequest {
@@ -104,12 +120,20 @@ export async function publishProjection(
   ) {
     throw new Error("Published artifacts must belong to the approved campaign version");
   }
+  const locationRef = approvedArtifacts[0]?.locationRef;
+  if (
+    locationRef === undefined ||
+    approvedArtifacts.some((artifact) => artifact.locationRef !== locationRef)
+  ) {
+    throw new Error("Published artifacts must belong to one tenant location");
+  }
   const artifactUrls: Partial<Record<ArtifactType, string>> = {};
   for (const artifact of approvedArtifacts) {
     if (artifactUrls[artifact.artifactType] !== undefined) {
       throw new Error(`Artifact type ${artifact.artifactType} appears more than once`);
     }
     const publishedKey = publishedArtifactKey({
+      locationRef,
       publicCampaignId: projection.publicCampaignId,
       publishedVersion,
       sha256: artifact.sha256,

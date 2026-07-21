@@ -23,9 +23,29 @@ export {
 export {
   ProductionObjectStorePolicySchema,
   authorizePrivateObjectTransfer,
+  publicationCleanupBackoffMilliseconds,
   publishProjectionWithObjectStore,
+  reconcilePublicationCleanup,
+  PublicationCleanupReleaseError,
+  PublicationCleanupReconciliationRequiredError,
   withdrawProjectionWithObjectStoreAudit,
   type PrivateTransferAuthorization,
+  type PublicationCleanupReconciliationPort,
+  type PublicationCleanupRetryPolicy,
   type ProductionObjectStoreAdapter,
   type ProductionObjectStorePolicy,
 } from "./production-object-store.js";
+export type { PublicationCleanupIntent, PublicationCleanupLease } from "@oalo/contracts";
+
+export {
+  R2ObjectStoreConfigurationError,
+  R2ObjectStoreError,
+  createR2ObjectStoreClient,
+  type R2FailureClassification,
+  type R2FetchTransport,
+  type R2HttpResponse,
+  type R2ObjectStoreClient,
+  type R2ObjectStoreDependencies,
+  type R2ObjectStoreProbeResult,
+  type SignedPrivateTransfer,
+} from "./r2-object-store-client.js";

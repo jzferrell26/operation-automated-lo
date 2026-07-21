@@ -38,6 +38,8 @@ export {
   StorageTransferRequestSchema,
   type ArtifactRecord,
   type ArtifactType,
+  type PublicationCleanupIntent,
+  type PublicationCleanupLease,
   type PublishedCampaignProjection,
   type RenderManifest,
   type StorageTransferRequest,

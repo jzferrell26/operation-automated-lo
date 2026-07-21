@@ -61,6 +61,28 @@ export class AiSpendLimitError extends Error {
   }
 }
 
+export class AiGenerationInProgressError extends Error {
+  public readonly idempotencyRef: string;
+
+  public constructor(idempotencyRef: string) {
+    super("AI generation is owned by another execution and remains in progress.");
+    this.name = "AiGenerationInProgressError";
+    this.idempotencyRef = idempotencyRef;
+  }
+}
+
+export class AiTelemetryReconciliationError extends AggregateError {
+  public readonly problemCode = "AI_TELEMETRY_RECONCILIATION_UNAVAILABLE" as const;
+
+  public constructor(persistenceError: unknown, reconciliationError: unknown) {
+    super(
+      [persistenceError, reconciliationError],
+      "AI telemetry persistence failed and durable reconciliation could not be recorded.",
+    );
+    this.name = "AiTelemetryReconciliationError";
+  }
+}
+
 export interface ProviderAttemptSuccess {
   readonly kind: "success";
   readonly providerRequestRef: string;
@@ -135,6 +157,17 @@ export interface AiTracePort {
   record(trace: AiTraceRecord): Promise<void>;
 }
 
+export interface AiTelemetryPort {
+  recordAtomically(input: Readonly<{ usage: AiUsageEvent; trace: AiTraceRecord }>): Promise<void>;
+  markReconciliationRequired(
+    input: Readonly<{
+      usage: AiUsageEvent;
+      trace: AiTraceRecord;
+      problemCode: "AI_TELEMETRY_PERSISTENCE_FAILED";
+    }>,
+  ): Promise<void>;
+}
+
 export interface AiIdentityPort {
   next(prefix: "usage" | "trace"): string;
 }
@@ -154,6 +187,10 @@ export interface GenerationLedgerPort {
     readonly locationRef: string;
     readonly campaignVersionRef: string;
   }): Promise<"reserved" | "already_reserved">;
+  waitForAccepted(input: {
+    readonly idempotencyRef: string;
+    readonly timeoutMilliseconds: number;
+  }): Promise<AcceptedGeneration | undefined>;
   markFailed(input: {
     readonly idempotencyRef: string;
     readonly classification: ProviderFailureClassification;
@@ -200,8 +237,7 @@ export interface AiSpendGuardPort {
 
 export interface AiRuntimePorts {
   readonly provider: AiProviderPort;
-  readonly usage: AiUsagePort;
-  readonly trace: AiTracePort;
+  readonly telemetry: AiTelemetryPort;
   readonly identity: AiIdentityPort;
   readonly hash: AiHashPort;
   readonly clock: AiClockPort;
@@ -239,6 +275,7 @@ export interface CampaignGenerationOptions {
   readonly forecastMonthlyCostUsd: number;
   readonly estimatedRequestCostUsd: number;
   readonly hasPlatformBudgetException: boolean;
+  readonly reservationWaitTimeoutMilliseconds?: number;
 }
 
 interface RecordedCallContext {
@@ -259,6 +296,7 @@ interface InterpretedAttempt<T> {
   readonly attempt: ProviderAttempt;
   readonly value?: T;
   readonly classification?: ProviderFailureClassification;
+  readonly telemetryError?: AiTelemetryReconciliationError;
 }
 
 function escapePromptData(value: string): string {
@@ -417,7 +455,19 @@ async function recordAttempt(
     ...optionalFailure(classification),
     occurredAt,
   });
-  await Promise.all([ports.usage.record(usage), ports.trace.record(trace)]);
+  const telemetry = Object.freeze({ usage, trace });
+  try {
+    await ports.telemetry.recordAtomically(telemetry);
+  } catch (persistenceError: unknown) {
+    try {
+      await ports.telemetry.markReconciliationRequired({
+        ...telemetry,
+        problemCode: "AI_TELEMETRY_PERSISTENCE_FAILED",
+      });
+    } catch (reconciliationError: unknown) {
+      throw new AiTelemetryReconciliationError(persistenceError, reconciliationError);
+    }
+  }
 }
 
 async function resolveUncertainAttempt(
@@ -478,9 +528,15 @@ async function callStructured<T>(
     return { attempt, classification: attempt.classification };
   }
 
+  let value: T;
   try {
-    const value = parse(attempt.output);
-    const outputHash = ports.hash.sha256(JSON.stringify(value));
+    value = parse(attempt.output);
+  } catch {
+    await recordAttempt(ports, context, attempt, "rejected", "malformed_output", undefined, "none");
+    return { attempt, classification: "malformed_output" };
+  }
+  const outputHash = ports.hash.sha256(JSON.stringify(value));
+  try {
     await recordAttempt(
       ports,
       context,
@@ -491,9 +547,11 @@ async function callStructured<T>(
       chargedPlanUnit,
     );
     return { attempt, value };
-  } catch {
-    await recordAttempt(ports, context, attempt, "rejected", "malformed_output", undefined, "none");
-    return { attempt, classification: "malformed_output" };
+  } catch (error: unknown) {
+    if (error instanceof AiTelemetryReconciliationError) {
+      return { attempt, value, telemetryError: error };
+    }
+    throw error;
   }
 }
 
@@ -547,6 +605,7 @@ export async function extractBrandSuggestions(
   if (interpreted.value === undefined) {
     throw new AiGenerationError(interpreted.classification ?? "provider_unavailable");
   }
+  if (interpreted.telemetryError !== undefined) throw interpreted.telemetryError;
 
   const knownSources = new Set(samples.map((sample) => sample.sourceRef));
   for (const suggestion of interpreted.value.suggestions) {
@@ -596,6 +655,32 @@ export async function generateCampaignTextPack(
   const duplicate = await ports.ledger.findAccepted(request.idempotencyRef);
   if (duplicate !== undefined) return AcceptedGenerationSchema.parse(duplicate);
 
+  await ports.allowance.assertAvailable({
+    locationRef: request.locationRef,
+    planUnit: request.generationKind,
+  });
+  const ownership = await ports.ledger.reserve({
+    idempotencyRef: request.idempotencyRef,
+    locationRef: request.locationRef,
+    campaignVersionRef: request.frozenInputs.campaignVersionRef,
+  });
+  if (ownership === "already_reserved") {
+    const timeoutMilliseconds = options.reservationWaitTimeoutMilliseconds ?? 5_000;
+    if (
+      !Number.isInteger(timeoutMilliseconds) ||
+      timeoutMilliseconds < 1 ||
+      timeoutMilliseconds > 30_000
+    ) {
+      throw new Error("AI reservation wait timeout must be an integer from 1 through 30000 ms.");
+    }
+    const accepted = await ports.ledger.waitForAccepted({
+      idempotencyRef: request.idempotencyRef,
+      timeoutMilliseconds,
+    });
+    if (accepted !== undefined) return AcceptedGenerationSchema.parse(accepted);
+    throw new AiGenerationInProgressError(request.idempotencyRef);
+  }
+
   const reservation = ports.spend.reserve({
     locationRef: request.locationRef,
     forecastMonthlyCostUsd: options.forecastMonthlyCostUsd,
@@ -603,16 +688,6 @@ export async function generateCampaignTextPack(
     hasPlatformException: options.hasPlatformBudgetException,
   });
   try {
-    await ports.allowance.assertAvailable({
-      locationRef: request.locationRef,
-      planUnit: request.generationKind,
-    });
-    await ports.ledger.reserve({
-      idempotencyRef: request.idempotencyRef,
-      locationRef: request.locationRef,
-      campaignVersionRef: request.frozenInputs.campaignVersionRef,
-    });
-
     const prompt = compileCampaignPrompt(request, ports.hash);
     const routes: Array<{ route: ModelRoute; operation: ProviderCallInput["operation"] }> = [
       { route: request.modelPolicy.primary, operation: "campaign_generation" },
@@ -626,6 +701,7 @@ export async function generateCampaignTextPack(
     let finalClassification: ProviderFailureClassification = "provider_unavailable";
     let acceptedPack: GeneratedTextPack | undefined;
     let sourceProviderRequestRef: string | undefined;
+    let acceptedTelemetryError: AiTelemetryReconciliationError | undefined;
     let priorMalformedOutput = "";
 
     for (const routePlan of routes) {
@@ -664,6 +740,7 @@ export async function generateCampaignTextPack(
       if (result.value !== undefined && result.attempt.kind === "success") {
         acceptedPack = result.value;
         sourceProviderRequestRef = result.attempt.providerRequestRef;
+        acceptedTelemetryError = result.telemetryError;
         break;
       }
       finalClassification = result.classification ?? "provider_unavailable";
@@ -719,6 +796,7 @@ export async function generateCampaignTextPack(
       if (repaired.value !== undefined && repaired.attempt.kind === "success") {
         acceptedPack = repaired.value;
         sourceProviderRequestRef = repaired.attempt.providerRequestRef;
+        acceptedTelemetryError = repaired.telemetryError;
         break;
       }
       finalClassification = repaired.classification ?? "malformed_output";
@@ -752,11 +830,13 @@ export async function generateCampaignTextPack(
       approvalAvailable: preflight.blockingRuleCodes.length === 0,
       createdAt: ports.clock.now().toISOString(),
     });
-    return ports.commit.commitAccepted({
+    const committed = await ports.commit.commitAccepted({
       idempotencyRef: request.idempotencyRef,
       generation,
       planUnit: request.generationKind,
     });
+    if (acceptedTelemetryError !== undefined) throw acceptedTelemetryError;
+    return committed;
   } finally {
     reservation.release();
   }

@@ -28,12 +28,12 @@
     {
       "name": "@oalo/ghl",
       "path": "packages/ghl",
-      "allowedInternalDependencies": ["@oalo/application", "@oalo/contracts"]
+      "allowedInternalDependencies": ["@oalo/application", "@oalo/config", "@oalo/contracts"]
     },
     {
       "name": "@oalo/ai",
       "path": "packages/ai",
-      "allowedInternalDependencies": ["@oalo/application", "@oalo/contracts"]
+      "allowedInternalDependencies": ["@oalo/application", "@oalo/config", "@oalo/contracts"]
     },
     {
       "name": "@oalo/billing",
@@ -48,7 +48,7 @@
     {
       "name": "@oalo/storage",
       "path": "packages/storage",
-      "allowedInternalDependencies": ["@oalo/application", "@oalo/contracts"]
+      "allowedInternalDependencies": ["@oalo/application", "@oalo/config", "@oalo/contracts"]
     },
     {
       "name": "@oalo/observability",

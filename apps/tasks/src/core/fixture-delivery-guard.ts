@@ -1,7 +1,7 @@
 import type { DeliveryGuardPort } from "@oalo/application";
 import type { DeliveryReference } from "@oalo/contracts";
 
-type DeliveryState = "claimed" | "completed";
+type DeliveryState = "claimed" | "completed" | "completion_uncertain";
 
 function deliveryKey(delivery: DeliveryReference): string {
   return `${delivery.locationRef}:${delivery.deliveryKind}:${delivery.deliveryRef}:${delivery.businessOutcomeKey}`;
@@ -33,5 +33,13 @@ export class FixtureOnlyDeliveryGuard implements DeliveryGuardPort {
   async release(delivery: DeliveryReference): Promise<void> {
     const key = deliveryKey(delivery);
     if (this.#states.get(key) === "claimed") this.#states.delete(key);
+  }
+
+  async markCompletionUncertain(delivery: DeliveryReference): Promise<void> {
+    const key = deliveryKey(delivery);
+    if (this.#states.get(key) !== "claimed") {
+      throw new Error("Fixture delivery cannot become uncertain unless it is claimed.");
+    }
+    this.#states.set(key, "completion_uncertain");
   }
 }

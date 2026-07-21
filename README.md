@@ -49,16 +49,13 @@ If `corepack enable` cannot write beside a system-level Node installation, run t
 
 ## Start and test local Supabase
 
-These commands target only the unlinked `operation-automated-lo-phase-0` project and its reserved local Docker port block. `db reset --local` recreates only this local, data-less database.
+The canonical command targets only the unlinked `operation-automated-lo-phase-0` project and its reserved local Docker port block:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File supabase/scripts/validate-phase0.ps1
-npx --yes supabase@2.109.1 start
-npx --yes supabase@2.109.1 db reset --local
-npx --yes supabase@2.109.1 test db --local supabase/tests
+pnpm test:db
 ```
 
-Expected results include `Phase 0 Supabase scaffold validation passed.` and five passing pgTAP assertions. See [supabase/README.md](supabase/README.md) for ports and prohibited linked commands.
+The cross-platform runner pins Supabase CLI `2.109.1`, starts a real local PostgreSQL 17 stack, recreates the database, applies every migration, and invokes every `supabase/tests/*.pgtap.sql` file in sorted order. It always stops the local stack with `--no-backup`, including after a failure. GitHub Actions runs this exact command on a clean runner without production secrets. See [supabase/README.md](supabase/README.md) for ports and prohibited linked commands.
 
 ## Run the web app and synthetic demo
 
@@ -92,6 +89,12 @@ The JSON result must report `productionTrafficEnabled: false` and `networkAccess
 
 Do not use `pnpm --filter @oalo/tasks dev` for local fixture validation. That command starts the Trigger.dev CLI and may contact an external Trigger.dev service. It requires separate authorization and a designated non-production project configuration.
 
+### Server-only production task HighLevel authentication
+
+The deployed task composition is fail-closed. In addition to the other production service variables, it requires `OALO_GHL_LOCATION_PIT_JSON`, a server-only secret containing the location PIT as `{ "locationId": "...", "accessToken": "..." }`. `OALO_GHL_READINESS_LOCATION_REF` is the canonical location identifier for this internal single-location deployment. The PIT bundle's `locationId` must match it exactly, and signed task deliveries must use that same `locationRef`. Missing, malformed, or mismatched PIT configuration fails composition with `PRODUCTION_TASK_RUNTIME_CONFIGURATION_INVALID` before a render or Meta-poll worker runs.
+
+Never expose this secret through a `NEXT_PUBLIC_*` variable, client bundle, log, task payload, or error. Production provider calls remain unauthorized under the Phase 0 boundary above; deterministic tests inject a fake HTTP transport and never use a live credential or network request.
+
 ## Verify the monorepo
 
 Run the complete Phase 0 gate from the repository root:
@@ -101,6 +104,8 @@ pnpm verify
 ```
 
 The gate checks formatting, lint, type boundaries, unit and integration suites, database and provider contracts, visual and preview smoke tests, duplication, architecture boundaries, product-type and secret audits, dependency advisories, and all workspace builds. It does not enable live product providers.
+
+Unit coverage includes every production source file in the application, AI, GHL, database, tasks, storage, rendering, and observability projects. The application gate remains 100 percent for statements, branches, functions, and lines. The other project thresholds are enforced independently in `vitest.config.ts`: AI 85/80/85/85, database 80/70/75/80, GHL 80/75/80/80, tasks 70/70/75/70, storage 80/70/80/80, rendering 70/60/80/70, and observability 85/75/85/85 (statements/branches/functions/lines). Any listed project missing its threshold fails `pnpm test:unit`.
 
 ## Repository map
 

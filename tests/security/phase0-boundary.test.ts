@@ -1,12 +1,15 @@
 import { readFile, readdir } from "node:fs/promises";
 import { extname, join, relative, resolve } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { getFoundationSnapshot } from "@oalo/application";
 import { parsePhaseZeroEnvironment } from "@oalo/config";
 import { PhaseZeroSecurityCoverageRegisterSchema } from "@oalo/test-support";
+import { createAnthropicMessagesProviderClient } from "../../packages/ai/src/anthropic-messages-provider.js";
+import { createLeadConnectorV2HttpTransport } from "../../packages/ghl/src/leadconnector-v2-http-transport.js";
 import { createLiveCaptureAdapter } from "../../packages/ghl/src/live-capture.js";
+import { createR2ObjectStoreClient } from "../../packages/storage/src/r2-object-store-client.js";
 
 const requiredThreatIds = new Set([
   "TENANT-LOCATION-SWAP",
@@ -77,7 +80,7 @@ describe("Phase 0 security coverage and traffic boundary", () => {
     expect(() => parsePhaseZeroEnvironment({ OALO_SYNTHETIC_DATA_ONLY: "false" })).toThrow();
   });
 
-  it("has no outbound provider transport in product source", async () => {
+  it("limits outbound transport code to the required production adapters", async () => {
     const workspaceRoot = resolve(".");
     const files = [
       ...(await sourceFiles(resolve("apps"))),
@@ -88,13 +91,66 @@ describe("Phase 0 security coverage and traffic boundary", () => {
     const findings: string[] = [];
     for (const file of files) {
       if (forbidden.test(await readFile(file, "utf8")))
-        findings.push(relative(workspaceRoot, file));
+        findings.push(relative(workspaceRoot, file).replaceAll("\\", "/"));
+    }
+
+    expect(findings.sort()).toEqual(
+      [
+        "packages/ai/src/anthropic-messages-provider.ts",
+        "packages/ghl/src/leadconnector-v2-http-transport.ts",
+        "packages/storage/src/r2-object-store-client.ts",
+      ].sort(),
+    );
+  });
+
+  it("keeps local defaults and fixture paths disconnected from production adapters", async () => {
+    expect(parsePhaseZeroEnvironment({})).toMatchObject({
+      OALO_ENVIRONMENT: "local",
+      OALO_PROVIDER_MODE: "stub",
+      OALO_SYNTHETIC_DATA_ONLY: "true",
+    });
+
+    const workspaceRoot = resolve(".");
+    const fixtureEntryPoints = [
+      "apps/tasks/src/local/run-phase-zero.ts",
+      "apps/tasks/src/core/validate-render-fixtures.ts",
+      "apps/tasks/src/core/render-campaign-pdf.ts",
+      "apps/tasks/src/core/poll-meta-publish.ts",
+      "apps/tasks/src/core/fixture-delivery-guard.ts",
+      "packages/ghl/src/live-capture.ts",
+    ];
+    const productionSelection =
+      /production-runtime-composition|productionTaskBindings|anthropic-messages-provider|leadconnector-v2-http-transport|r2-object-store-client|OALO_ANTHROPIC_API_KEY|OALO_GHL_LOCATION_PIT_JSON|OALO_R2_SECRET_ACCESS_KEY/u;
+    const findings: string[] = [];
+
+    for (const path of fixtureEntryPoints) {
+      if (productionSelection.test(await readFile(resolve(path), "utf8"))) {
+        findings.push(relative(workspaceRoot, resolve(path)));
+      }
     }
 
     expect(findings).toEqual([]);
   });
 
-  it("keeps the only provider adapter disabled", async () => {
+  it("fails before network access when production adapters lack credentials", async () => {
+    const network = vi.fn(async (): Promise<never> => {
+      throw new Error("network must remain disabled");
+    });
+
+    expect(() => createAnthropicMessagesProviderClient({}, { fetch: network })).toThrow();
+    expect(() => createR2ObjectStoreClient({}, { fetch: network })).toThrow();
+
+    const leadConnector = createLeadConnectorV2HttpTransport({}, { fetch: network });
+    await expect(
+      leadConnector.get({
+        locationRef: "location_phase0_fixture",
+        route: "/ad-publishing/facebook/campaigns/campaign_fixture_01/publishing-progress",
+      }),
+    ).rejects.toMatchObject({ classification: "DEPENDENCY_BLOCKED" });
+    expect(network).not.toHaveBeenCalled();
+  });
+
+  it("keeps the Phase 0 capture adapter disabled", async () => {
     const adapter = createLiveCaptureAdapter();
     expect(adapter.mode).toBe("disabled");
     await expect(adapter.capture()).rejects.toThrow(/disabled in Phase 0/i);

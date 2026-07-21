@@ -16,6 +16,7 @@ export function getFoundationSnapshot(): FoundationSnapshot {
 }
 
 export {
+  DeliveryCompletionUncertainError,
   executeCommand,
   executeProviderOperation,
   processDelivery,

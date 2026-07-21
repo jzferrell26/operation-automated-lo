@@ -38,12 +38,13 @@ export type ProductionMetaPublishPollTaskResult = z.infer<
 >;
 
 export interface ProductionMetaPublishPollingPort {
-  poll(): Promise<unknown>;
+  poll(signal?: AbortSignal): Promise<unknown>;
 }
 
 export interface ProductionMetaPublishPollTaskPorts {
   readonly guard: DeliveryGuardPort;
   readonly progress: ProductionMetaPublishPollingPort;
+  readonly abortSignal?: AbortSignal;
 }
 
 function result(

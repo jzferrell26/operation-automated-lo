@@ -40,7 +40,7 @@ const command: CommandEnvelope = {
 const event: OutboxEvent = {
   schemaVersion: 1,
   eventId: "evt_01Render",
-  eventName: "campaign.render-requested",
+  eventName: "campaign.render-requested.v1",
   locationRef: command.locationRef,
   aggregateType: "campaign",
   aggregateRef: command.aggregateRef,
@@ -268,6 +268,7 @@ describe("outbox recovery and delivery deduplication", () => {
         released += 1;
         claimed = false;
       },
+      markCompletionUncertain: async () => undefined,
     };
     const handler = vi.fn(async () => "one-outcome");
     await expect(processDelivery(delivery, guard, handler)).resolves.toEqual({
@@ -288,6 +289,76 @@ describe("outbox recovery and delivery deduplication", () => {
       }),
     ).rejects.toThrow("handler failed");
     expect(released).toBe(1);
+  });
+
+  it("marks completion uncertain without releasing or repeating a successful side effect", async () => {
+    const delivery: DeliveryReference = {
+      schemaVersion: 1,
+      deliveryKind: "webhook",
+      deliveryRef: "webhook_02CompletionUncertain",
+      businessOutcomeKey: sha("f"),
+      locationRef: command.locationRef,
+      correlationId: command.correlationId,
+    };
+    let claimed = false;
+    const release = vi.fn(async () => {
+      claimed = false;
+    });
+    const markCompletionUncertain = vi.fn(async () => undefined);
+    const guard: DeliveryGuardPort = {
+      claim: async () => {
+        if (claimed) return false;
+        claimed = true;
+        return true;
+      },
+      complete: async () => {
+        throw new Error("completion persistence unavailable");
+      },
+      release,
+      markCompletionUncertain,
+    };
+    const handler = vi.fn(async () => "externally-delivered");
+
+    await expect(processDelivery(delivery, guard, handler)).rejects.toMatchObject({
+      name: "DeliveryCompletionUncertainError",
+      problemCode: "DELIVERY_COMPLETION_UNCERTAIN",
+    });
+    await expect(processDelivery(delivery, guard, handler)).resolves.toEqual({
+      kind: "duplicate",
+    });
+    expect(handler).toHaveBeenCalledOnce();
+    expect(markCompletionUncertain).toHaveBeenCalledWith(delivery, "DELIVERY_COMPLETION_UNCERTAIN");
+    expect(release).not.toHaveBeenCalled();
+  });
+
+  it("never releases when durable completion reconciliation persistence also fails", async () => {
+    const delivery: DeliveryReference = {
+      schemaVersion: 1,
+      deliveryKind: "webhook",
+      deliveryRef: "webhook_03CompletionReconciliationUnavailable",
+      businessOutcomeKey: sha("e"),
+      locationRef: command.locationRef,
+      correlationId: command.correlationId,
+    };
+    const release = vi.fn(async () => undefined);
+    const handler = vi.fn(async () => "externally-delivered");
+    const guard: DeliveryGuardPort = {
+      claim: async () => true,
+      complete: async () => {
+        throw new Error("completion persistence unavailable");
+      },
+      release,
+      markCompletionUncertain: async () => {
+        throw new Error("reconciliation persistence unavailable");
+      },
+    };
+
+    await expect(processDelivery(delivery, guard, handler)).rejects.toMatchObject({
+      name: "AggregateError",
+      message: "Delivery completion failed and durable reconciliation could not be recorded.",
+    });
+    expect(handler).toHaveBeenCalledOnce();
+    expect(release).not.toHaveBeenCalled();
   });
 });
 

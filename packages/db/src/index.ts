@@ -14,6 +14,40 @@ export {
   type QueueLeaseRow,
 } from "./foundation-contracts.js";
 export {
+  createResolverAwarePostgresDeliveryGuard,
+  DeliveryGuardContextError,
+  DeliveryGuardPersistenceError,
+  PostgresDeliveryGuard,
+  type DatabaseDeliveryGuardPort,
+  type DeliveryDatabaseContextResolver,
+  type ResolvedDeliveryDatabaseContext,
+} from "./delivery-guard.js";
+export {
+  AiTelemetryPersistenceError,
+  createPostgresAiTelemetryPort,
+  PostgresAiTelemetryPort,
+  type AiTelemetryDatabaseContextResolver,
+  type AiTelemetryPair,
+  type DatabaseAiTelemetryPort,
+  type ResolvedAiTelemetryDatabaseContext,
+} from "./ai-telemetry.js";
+export {
+  createPostgresPublicationCleanupReconciliationPort,
+  PostgresPublicationCleanupReconciliationPort,
+  PublicationCleanupPersistenceError,
+  type DatabasePublicationCleanupReconciliationPort,
+  type PublicationCleanupDatabaseContextResolver,
+  type ResolvedPublicationCleanupDatabaseContext,
+} from "./publication-cleanup.js";
+export type { PublicationCleanupIntent, PublicationCleanupLease } from "@oalo/contracts";
+export {
+  createPostgresPool,
+  PostgresAdapterError,
+  PostgresDatabasePool,
+  type DatabaseDeploymentEnvironment,
+  type PostgresPoolConfiguration,
+} from "./postgres-adapter.js";
+export {
   defineSqlContract,
   type DatabaseConnection,
   type DatabasePool,

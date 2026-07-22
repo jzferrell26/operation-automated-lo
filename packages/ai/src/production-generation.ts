@@ -1,5 +1,6 @@
 import {
   AcceptedGenerationSchema,
+  AiAssistedBrandProfileReviewSchema,
   AiTraceRecordSchema,
   AiUsageEventSchema,
   BrandSampleSchema,
@@ -8,9 +9,11 @@ import {
   GeneratedTextPackSchema,
   ModelEvaluationResultSchema,
   type AcceptedGeneration,
+  type AiAssistedBrandProfileReview,
   type AiTraceRecord,
   type AiUsageEvent,
   type BrandSample,
+  type BrandSuggestionField,
   type BrandSuggestionSet,
   type CampaignGenerationRequest,
   type GeneratedTextPack,
@@ -614,6 +617,59 @@ export async function extractBrandSuggestions(
     }
   }
   return interpreted.value;
+}
+
+const profileFieldForSuggestion: Readonly<
+  Record<BrandSuggestionSet["suggestions"][number]["field"], BrandSuggestionField>
+> = Object.freeze({
+  voice: "brand_voice",
+  tone: "brand_tone",
+  content_pattern: "brand_pattern",
+  framework: "brand_framework",
+  signature_language: "signature_language",
+  banned_language: "banned_language",
+});
+
+export async function prepareAiAssistedBrandProfileReview(
+  request: BrandExtractionRequest,
+  ports: AiRuntimePorts,
+): Promise<AiAssistedBrandProfileReview> {
+  const extracted = await extractBrandSuggestions(request, ports);
+  const createdAt = ports.clock.now().toISOString();
+  const suggestions = extracted.suggestions.map((suggestion, index) => {
+    const sourceRefs = suggestion.sourceRefs.toSorted();
+    const fingerprint = ports.hash.sha256(
+      JSON.stringify([
+        request.locationRef,
+        request.brandVersionRef,
+        suggestion.field,
+        suggestion.value,
+        sourceRefs,
+        index,
+      ]),
+    );
+    return {
+      suggestionRef: `suggestion_${fingerprint.slice(-24)}`,
+      locationRef: request.locationRef,
+      sourceProfileVersionRef: request.brandVersionRef,
+      field: profileFieldForSuggestion[suggestion.field],
+      suggestedValue: suggestion.value,
+      sourceRefs,
+      confidence: suggestion.confidence,
+      status: "proposed" as const,
+      modelPolicyRef: request.modelPolicyVersionRef,
+      createdAt,
+    };
+  });
+
+  return AiAssistedBrandProfileReviewSchema.parse({
+    locationRef: request.locationRef,
+    sourceProfileVersionRef: request.brandVersionRef,
+    modelPolicyVersionRef: request.modelPolicyVersionRef,
+    promptPolicyVersionRef: request.promptPolicyVersionRef,
+    status: "needs_user_confirmation",
+    suggestions,
+  });
 }
 
 function assertTextPackMatchesRequest(

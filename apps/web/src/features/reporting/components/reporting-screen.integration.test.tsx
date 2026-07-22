@@ -132,4 +132,161 @@ describe("synthetic reporting screens", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
+
+  it("renders complete campaign evidence and filters history across every required dimension", async () => {
+    const user = userEvent.setup();
+    render(<ReportsScreen reporting={loadSyntheticReporting()} />);
+
+    const history = screen.getByRole("region", { name: "Campaign history" });
+    const cedar = within(history)
+      .getByRole("heading", { name: "Cedar Street Open House Boost" })
+      .closest("article");
+    if (!cedar) throw new Error("Expected the Cedar Street campaign card.");
+    for (const label of [
+      "Current version",
+      "Realtor",
+      "Approvers",
+      "Publish time",
+      "Budget",
+      "Spend",
+      "Leads",
+      "Cost per lead",
+      "Appointments",
+      "Applications",
+      "Funded or closed",
+      "Page",
+      "PDF",
+      "QR destination",
+      "Creative",
+      "Email package",
+      "SMS package",
+      "Approval",
+      "Meta state",
+      "Lead count",
+      "GHL outcome summary",
+    ]) {
+      expect(within(cedar).getByText(label)).toBeInTheDocument();
+    }
+    expect(within(cedar).getByText("Unavailable")).toBeInTheDocument();
+    expect(within(cedar).getByText("Excluded test leads")).toBeInTheDocument();
+    expect(within(cedar).getAllByRole("link")).toHaveLength(4);
+
+    await user.type(screen.getByLabelText("Search campaigns"), "Lakeview");
+    expect(within(history).queryByText("Cedar Street Open House Boost")).not.toBeInTheDocument();
+    expect(within(history).getByText("Lakeview Buyer Seminar")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Clear filters" }));
+
+    for (const [label, value] of [
+      ["Realtor", "Morgan Diaz"],
+      ["Property", "88 Lakeview Avenue"],
+      ["Status", "completed"],
+      ["Event date", "2026-06-15"],
+      ["Generation date", "2026-06-08"],
+      ["Publish date", "2026-06-11"],
+    ] as const) {
+      const control = screen.getByLabelText(label);
+      if (control instanceof HTMLSelectElement) await user.selectOptions(control, value);
+      else {
+        await user.clear(control);
+        await user.type(control, value);
+      }
+      expect(within(history).queryByText("Cedar Street Open House Boost")).not.toBeInTheDocument();
+      expect(within(history).getByText("Lakeview Buyer Seminar")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Clear filters" }));
+    }
+  });
+
+  it("groups privacy-safe blueprint evidence and suppresses low-volume results", async () => {
+    const user = userEvent.setup();
+    render(<ReportsScreen reporting={loadSyntheticReporting()} />);
+
+    expect(document.querySelectorAll("[data-exception-kind]")).toHaveLength(8);
+    expect(
+      screen.getByText(
+        "Low-volume groups suppressed. Tenant identities omitted. Campaign mutation disabled.",
+      ),
+    ).toBeInTheDocument();
+
+    const table = screen.getByRole("table", { name: "Results grouped by Blueprint version" });
+    expect(
+      within(table).getByRole("row", { name: /Open House v3 Benchmark ready 25 2 14 5/u }),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByRole("row", { name: /Seminar v2 Suppressed 8 1 Unavailable/u }),
+    ).toBeInTheDocument();
+
+    await user.selectOptions(
+      screen.getByLabelText("Group blueprint results by"),
+      "creativeVersion",
+    );
+    expect(
+      screen.getByRole("table", { name: "Results grouped by Creative version" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Suppressed")).toHaveLength(3);
+  });
+
+  it("shows structured cohort evidence and stages Realtor audit records without writes", async () => {
+    const user = userEvent.setup();
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    render(<ReportsScreen reporting={loadSyntheticReporting()} />);
+
+    const cohort = screen.getByRole("table", {
+      name: "Structured synthetic cohort state and evidence",
+    });
+    expect(within(cohort).getByRole("row", { name: /Purchase completed/u })).toHaveTextContent(
+      "Synthetic founding-cohort event projection",
+    );
+    expect(within(cohort).getByRole("row", { name: /Support time observed/u })).toHaveTextContent(
+      "25 minutes staged locally, no saved record",
+    );
+    expect(
+      within(cohort).getByRole("row", { name: /Meta verification blocked/u }),
+    ).toHaveTextContent("Live controlled-account read-back required");
+
+    const realtor = document.querySelector("[data-realtor-identity='Jordan Lee']");
+    if (!(realtor instanceof HTMLElement)) throw new Error("Expected the assigned Realtor card.");
+    expect(within(realtor).getByText("Cedar Street Open House Boost")).toBeInTheDocument();
+    expect(within(realtor).getByText(/Disabled by default/u)).toBeInTheDocument();
+    expect(within(realtor).getByText(/GHL contacts, Borrower details/u)).toBeInTheDocument();
+
+    await user.click(within(realtor).getByRole("button", { name: "Stage approved link share" }));
+    expect(
+      within(realtor).getByText(/Share audit staged locally for Public page v3/u),
+    ).toHaveTextContent("No external mutation occurred");
+    const auditItems = within(realtor).getAllByRole("listitem");
+    expect(auditItems.at(-1)).toHaveTextContent(
+      /Share, staged locally, Synthetic Realtor sharing control/u,
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("preserves campaign filters when the surrounding theme rerenders", async () => {
+    const user = userEvent.setup();
+    const reporting = loadSyntheticReporting();
+    const { rerender } = render(
+      <div data-theme="light">
+        <ReportsScreen reporting={reporting} />
+      </div>,
+    );
+
+    await user.type(screen.getByLabelText("Search campaigns"), "Lakeview");
+    expect(screen.getByLabelText("Search campaigns")).toHaveValue("Lakeview");
+    const history = screen.getByRole("region", { name: "Campaign history" });
+    expect(within(history).queryByText("Cedar Street Open House Boost")).not.toBeInTheDocument();
+
+    rerender(
+      <div data-theme="dark">
+        <ReportsScreen reporting={reporting} />
+      </div>,
+    );
+
+    expect(screen.getByLabelText("Search campaigns")).toHaveValue("Lakeview");
+    const rerenderedHistory = screen.getByRole("region", { name: "Campaign history" });
+    expect(
+      within(rerenderedHistory).queryByText("Cedar Street Open House Boost"),
+    ).not.toBeInTheDocument();
+    expect(within(rerenderedHistory).getByText("Lakeview Buyer Seminar")).toBeInTheDocument();
+  });
 });

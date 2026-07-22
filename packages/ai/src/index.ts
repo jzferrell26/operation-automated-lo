@@ -6,6 +6,11 @@ export const aiPackage = Object.freeze({
 });
 
 export {
+  evaluateGoldenCampaignCorpus,
+  type GoldenEvaluationCandidate,
+} from "./golden-evaluation.js";
+
+export {
   AnthropicProviderConfigurationError,
   AnthropicProviderResponseError,
   createAnthropicMessagesProviderClient,
@@ -32,6 +37,7 @@ export {
   evaluateModelPromotion,
   extractBrandSuggestions,
   generateCampaignTextPack,
+  prepareAiAssistedBrandProfileReview,
   reconcileProviderCost,
   validateBrandSamples,
   type AiClockPort,

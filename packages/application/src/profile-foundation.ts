@@ -7,6 +7,7 @@ import {
   ProfileAssetSchema,
   ProfileReadinessContextSchema,
   ProfileReadinessResultSchema,
+  ProfileValueSchema,
   ProfileVersionInputSchema,
   ProfileVersionSchema,
   type BrandSuggestion,
@@ -329,16 +330,17 @@ export function confirmBrandSuggestion(
   untrustedSuggestion: unknown,
   actorRef: string,
   confirmedAt: Date,
+  userEditedValue?: ProfileValue["value"],
 ): Readonly<{ field: BrandSuggestion["field"]; value: ProfileValue }> {
   const suggestion = BrandSuggestionSchema.parse(untrustedSuggestion);
   return deepFreeze({
     field: suggestion.field,
-    value: {
-      value: suggestion.suggestedValue,
+    value: ProfileValueSchema.parse({
+      value: userEditedValue ?? suggestion.suggestedValue,
       confirmation: "user-confirmed",
       confirmedBy: actorRef,
       confirmedAt: confirmedAt.toISOString(),
-    },
+    }),
   });
 }
 

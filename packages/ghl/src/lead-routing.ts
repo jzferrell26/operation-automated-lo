@@ -8,6 +8,10 @@ import {
   type LeadRoutingResult,
   type PrivateLeadPayload,
 } from "@oalo/contracts";
+import { z } from "zod";
+
+export const GHL_SYNTHETIC_LEAD_TAG = "oalo:test-lead" as const;
+export const GHL_SYNTHETIC_LEAD_LABEL = "OALO SYNTHETIC TEST LEAD" as const;
 
 export const GHL_LEAD_ADAPTER_ALLOWLIST = Object.freeze([
   { operation: "search_contact", method: "GET", path: "/contacts/search" },
@@ -45,6 +49,7 @@ export interface LeadRoutingProgress {
   readonly contactProviderId?: string;
   readonly contactUpdated: boolean;
   readonly tagApplied: boolean;
+  readonly syntheticTagApplied?: boolean;
   readonly opportunityProviderId?: string;
   readonly ownerApplied: boolean;
   readonly workflowEnrollment?: LeadRoutingResult["workflowEnrollment"];
@@ -62,6 +67,7 @@ export interface GhlLeadProviderPort {
     readonly payload: PrivateLeadPayload;
     readonly idempotencyRef: string;
     readonly synthetic: boolean;
+    readonly syntheticLabel?: typeof GHL_SYNTHETIC_LEAD_LABEL;
   }): Promise<{ readonly providerId: string }>;
   updateContact(input: {
     readonly locationRef: string;
@@ -182,6 +188,8 @@ function mergeProgress(
       : { contactProviderId: stored?.contactProviderId ?? reconciled.contactProviderId }),
     contactUpdated: (stored?.contactUpdated ?? false) || reconciled.contactUpdated,
     tagApplied: (stored?.tagApplied ?? false) || reconciled.tagApplied,
+    syntheticTagApplied:
+      (stored?.syntheticTagApplied ?? false) || (reconciled.syntheticTagApplied ?? false),
     ...(stored?.opportunityProviderId === undefined &&
     reconciled.opportunityProviderId === undefined
       ? {}
@@ -266,6 +274,7 @@ export async function routeLeadToGhl(
             payload,
             idempotencyRef: idempotency(command, "contact-create"),
             synthetic: command.synthetic,
+            ...(command.synthetic ? { syntheticLabel: GHL_SYNTHETIC_LEAD_LABEL } : {}),
           })
         ).providerId;
       progress = { ...progress, contactProviderId };
@@ -291,6 +300,17 @@ export async function routeLeadToGhl(
         idempotencyRef: idempotency(command, "campaign-tag"),
       });
       progress = { ...progress, tagApplied: true };
+      await ports.state.save(command.commandRef, progress);
+    }
+    if (command.synthetic && !progress.syntheticTagApplied) {
+      await ports.provider.applyTag({
+        locationRef: command.locationRef,
+        contactProviderId,
+        tag: GHL_SYNTHETIC_LEAD_TAG,
+        attributionKey: command.attributionKey,
+        idempotencyRef: idempotency(command, "synthetic-test-tag"),
+      });
+      progress = { ...progress, syntheticTagApplied: true };
       await ports.state.save(command.commandRef, progress);
     }
 
@@ -455,6 +475,81 @@ export function verifySyntheticLeadPath(input: {
     throw new GhlLeadRoutingError("provider_failure", "synthetic lead path is incomplete");
   }
   return { passed: true };
+}
+
+const SyntheticLeadReferenceSchema = z
+  .string()
+  .min(8)
+  .max(160)
+  .regex(/^[a-z][a-z0-9]*(?:_[A-Za-z0-9]+)+$/u);
+
+const AuthorizedSyntheticLeadTestInputSchema = z
+  .object({
+    validatedActorRef: SyntheticLeadReferenceSchema,
+    validatedActorRole: z.enum(["location_admin", "campaign_publisher"]),
+    validatedActorLocationRef: SyntheticLeadReferenceSchema,
+    requestedCampaignRef: SyntheticLeadReferenceSchema,
+  })
+  .strict();
+
+const AuthoritativeSyntheticLeadCampaignSchema = z
+  .object({
+    campaignRef: SyntheticLeadReferenceSchema,
+    campaignLocationRef: SyntheticLeadReferenceSchema,
+    campaignTag: z.string().regex(/^oalo:campaign:[a-zA-Z0-9_-]{1,120}$/u),
+  })
+  .strict();
+
+export interface SyntheticLeadCampaignResolutionPort {
+  resolveSyntheticLeadCampaign(input: { readonly campaignRef: string }): Promise<unknown>;
+}
+
+export interface AuthorizedSyntheticLeadTestPlan {
+  readonly actorRef: string;
+  readonly actorRole: "location_admin" | "campaign_publisher";
+  readonly locationRef: string;
+  readonly campaignRef: string;
+  readonly label: typeof GHL_SYNTHETIC_LEAD_LABEL;
+  readonly tags: readonly [string, typeof GHL_SYNTHETIC_LEAD_TAG];
+  readonly safeRequestMetadata: { readonly synthetic: true };
+  readonly productionMetrics: "excluded";
+  readonly requiresLiveG5Evidence: true;
+}
+
+export async function createAuthorizedSyntheticLeadTestPlan(
+  input: z.input<typeof AuthorizedSyntheticLeadTestInputSchema>,
+  campaigns: SyntheticLeadCampaignResolutionPort,
+): Promise<AuthorizedSyntheticLeadTestPlan> {
+  const parsed = AuthorizedSyntheticLeadTestInputSchema.parse(input);
+  const campaignResult = AuthoritativeSyntheticLeadCampaignSchema.safeParse(
+    await campaigns.resolveSyntheticLeadCampaign({
+      campaignRef: parsed.requestedCampaignRef,
+    }),
+  );
+  if (!campaignResult.success || campaignResult.data.campaignRef !== parsed.requestedCampaignRef) {
+    throw new GhlLeadRoutingError(
+      "tenant_mismatch",
+      "synthetic campaign authority could not be resolved",
+    );
+  }
+  const campaign = campaignResult.data;
+  if (parsed.validatedActorLocationRef !== campaign.campaignLocationRef) {
+    throw new GhlLeadRoutingError(
+      "tenant_mismatch",
+      "synthetic lead actor authority must match the campaign location",
+    );
+  }
+  return Object.freeze({
+    actorRef: parsed.validatedActorRef,
+    actorRole: parsed.validatedActorRole,
+    locationRef: campaign.campaignLocationRef,
+    campaignRef: campaign.campaignRef,
+    label: GHL_SYNTHETIC_LEAD_LABEL,
+    tags: Object.freeze([campaign.campaignTag, GHL_SYNTHETIC_LEAD_TAG] as const),
+    safeRequestMetadata: Object.freeze({ synthetic: true as const }),
+    productionMetrics: "excluded" as const,
+    requiresLiveG5Evidence: true as const,
+  });
 }
 
 export function createEmptyLeadRoutingProgress(): LeadRoutingProgress {

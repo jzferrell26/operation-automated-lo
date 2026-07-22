@@ -22,14 +22,49 @@
       "Content-Type": "application/json"
     },
     "body": {
-      "classificationCase": "property-plus-mortgage",
+      "classificationCases": [
+        {
+          "campaignType": "property_only",
+          "configuredValues": ["CONFIGURED_PROPERTY"],
+          "providerAcceptedValues": null,
+          "evidenceStatus": "REQUIRES_HIGHLEVEL_APP_TEST"
+        },
+        {
+          "campaignType": "mortgage_only",
+          "configuredValues": ["CONFIGURED_MORTGAGE"],
+          "providerAcceptedValues": null,
+          "evidenceStatus": "REQUIRES_HIGHLEVEL_APP_TEST"
+        },
+        {
+          "campaignType": "property_and_mortgage",
+          "configuredValues": ["CONFIGURED_PROPERTY", "CONFIGURED_MORTGAGE"],
+          "providerAcceptedValues": null,
+          "evidenceStatus": "REQUIRES_HIGHLEVEL_APP_TEST"
+        }
+      ],
       "publish": false
     }
   },
   "response": {
     "httpStatus": 424,
     "body": {
-      "classificationObserved": false,
+      "caseObservations": [
+        {
+          "campaignType": "property_only",
+          "providerAcceptedValues": null,
+          "targetingFieldsObserved": false
+        },
+        {
+          "campaignType": "mortgage_only",
+          "providerAcceptedValues": null,
+          "targetingFieldsObserved": false
+        },
+        {
+          "campaignType": "property_and_mortgage",
+          "providerAcceptedValues": null,
+          "targetingFieldsObserved": false
+        }
+      ],
       "approvalRecorded": false
     }
   },
@@ -45,7 +80,7 @@
     },
     "grantedScopes": ["adPublishing.readOnly", "adPublishing.write"],
     "observedAccountState": "meta-test-assets-required",
-    "requestHash": "sha256:194fc8885f4784da6997ab1f124bad535fa58a961de2c1888877b006c7b33c07",
-    "responseHash": "sha256:78cfdc5cc5788205644057cbd2709ddb09dc863d09694e4ad90c8b8bee8dcfd2"
+    "requestHash": "sha256:fe3f3e2f99a4a278c33bdb872e72f48243c546ae190c70cd18df5038b8271e34",
+    "responseHash": "sha256:15333afaced00d040cedd23d565a266c30620f8ec234959718cb6ce6c72ff1b3"
   }
 }

@@ -22,6 +22,23 @@ describe("Onboarding screen", () => {
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   });
 
+  it.each([
+    ["embedded", "Embedded HighLevel session projection"],
+    ["first-party", "Authenticated first-party fallback projection"],
+  ] as const)("renders the same server-shaped setup under %s access", (accessMode, label) => {
+    const fixture = loadSyntheticUiFixture();
+    render(
+      <OnboardingScreen
+        onboarding={fixture.onboarding}
+        session={{ ...fixture.session, accessMode }}
+      />,
+    );
+
+    expect(screen.getByText(label)).toHaveAttribute("data-session-mode", accessMode);
+    expect(screen.getByRole("heading", { name: "Get Connected" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Launch Readiness" })).toBeInTheDocument();
+  });
+
   it("renders all five states with evidence, freshness, responsible parties, and exact routes", () => {
     const fixture = loadSyntheticUiFixture();
     render(<OnboardingScreen onboarding={fixture.onboarding} session={fixture.session} />);

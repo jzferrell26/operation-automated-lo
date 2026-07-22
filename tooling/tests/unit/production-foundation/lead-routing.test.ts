@@ -20,7 +20,10 @@ import type {
 } from "@oalo/contracts";
 import {
   GHL_LEAD_ADAPTER_ALLOWLIST,
+  GHL_SYNTHETIC_LEAD_LABEL,
+  GHL_SYNTHETIC_LEAD_TAG,
   GhlLeadRoutingError,
+  createAuthorizedSyntheticLeadTestPlan,
   createEmptyLeadRoutingProgress,
   processAttributionWebhook,
   planLeadRoutingRetry,
@@ -430,6 +433,116 @@ describe("fixture-only GHL lead routing", () => {
     expect(ghlProvider.enrollWorkflow).toHaveBeenCalledOnce();
     expect(state.deletions).toEqual(["payload_01Encrypted"]);
     expect(Object.keys(result)).not.toContain("payload");
+  });
+
+  it("derives a synthetic test destination and tag from authoritative campaign identity", async () => {
+    const resolveSyntheticLeadCampaign = vi.fn(async () => ({
+      campaignRef: "campaign_01OpenHouse",
+      campaignLocationRef: "location_01TenantAlpha",
+      campaignTag: "oalo:campaign:open-house-01",
+    }));
+    const plan = await createAuthorizedSyntheticLeadTestPlan(
+      {
+        validatedActorRef: "actor_01Admin",
+        validatedActorRole: "location_admin",
+        validatedActorLocationRef: "location_01TenantAlpha",
+        requestedCampaignRef: "campaign_01OpenHouse",
+      },
+      { resolveSyntheticLeadCampaign },
+    );
+
+    expect(plan).toEqual({
+      actorRef: "actor_01Admin",
+      actorRole: "location_admin",
+      locationRef: "location_01TenantAlpha",
+      campaignRef: "campaign_01OpenHouse",
+      label: GHL_SYNTHETIC_LEAD_LABEL,
+      tags: ["oalo:campaign:open-house-01", GHL_SYNTHETIC_LEAD_TAG],
+      safeRequestMetadata: { synthetic: true },
+      productionMetrics: "excluded",
+      requiresLiveG5Evidence: true,
+    });
+    expect(resolveSyntheticLeadCampaign).toHaveBeenCalledWith({
+      campaignRef: "campaign_01OpenHouse",
+    });
+
+    const callerOverride = {
+      validatedActorRef: "actor_01Admin",
+      validatedActorRole: "location_admin",
+      validatedActorLocationRef: "location_01TenantAlpha",
+      requestedCampaignRef: "campaign_01OpenHouse",
+      locationRef: "location_99AttackerOverride",
+      campaignTag: "oalo:campaign:attacker-override",
+    } as unknown as Parameters<typeof createAuthorizedSyntheticLeadTestPlan>[0];
+    await expect(
+      createAuthorizedSyntheticLeadTestPlan(callerOverride, { resolveSyntheticLeadCampaign }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects a tenant-A actor requesting a tenant-B synthetic campaign", async () => {
+    const resolveSyntheticLeadCampaign = vi.fn(async () => ({
+      campaignRef: "campaign_02TenantBravo",
+      campaignLocationRef: "location_02TenantBravo",
+      campaignTag: "oalo:campaign:tenant-bravo",
+    }));
+
+    await expect(
+      createAuthorizedSyntheticLeadTestPlan(
+        {
+          validatedActorRef: "actor_01Admin",
+          validatedActorRole: "location_admin",
+          validatedActorLocationRef: "location_01TenantAlpha",
+          requestedCampaignRef: "campaign_02TenantBravo",
+        },
+        { resolveSyntheticLeadCampaign },
+      ),
+    ).rejects.toThrow("must match the campaign location");
+    expect(resolveSyntheticLeadCampaign).toHaveBeenCalledWith({
+      campaignRef: "campaign_02TenantBravo",
+    });
+  });
+
+  it("applies a distinct idempotent test tag only for synthetic routing", async () => {
+    const ghlProvider = provider();
+    const state = routingState();
+
+    await routeLeadToGhl(
+      routingCommand({ synthetic: true }),
+      privatePayload,
+      routePorts(ghlProvider, state.port),
+      now,
+    );
+
+    expect(ghlProvider.createContact).toHaveBeenCalledWith(
+      expect.objectContaining({
+        synthetic: true,
+        syntheticLabel: GHL_SYNTHETIC_LEAD_LABEL,
+      }),
+    );
+    expect(ghlProvider.applyTag).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        tag: "oalo:campaign:open-house-01",
+        idempotencyRef: "idempotency_01RouteLead:campaign-tag",
+      }),
+    );
+    expect(ghlProvider.applyTag).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        tag: GHL_SYNTHETIC_LEAD_TAG,
+        idempotencyRef: "idempotency_01RouteLead:synthetic-test-tag",
+      }),
+    );
+    expect(state.saved.at(-1)?.syntheticTagApplied).toBe(true);
+
+    await routeLeadToGhl(
+      routingCommand({ synthetic: true }),
+      privatePayload,
+      routePorts(ghlProvider, state.port),
+      now,
+    );
+    expect(ghlProvider.createContact).toHaveBeenCalledOnce();
+    expect(ghlProvider.applyTag).toHaveBeenCalledTimes(2);
   });
 
   it("uses a unique exact normalized contact and respects DND before workflow enrollment", async () => {

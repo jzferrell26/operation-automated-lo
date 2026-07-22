@@ -1,8 +1,12 @@
 import { contractVersion } from "@oalo/contracts";
 
+export * from "./browser-session.js";
+export * from "./embedded-session.js";
+export * from "./oauth-state.js";
 export * from "./session-policy.js";
+export * from "./token-lifecycle.js";
 
 export const authPackage = Object.freeze({
   contractVersion,
-  implementation: "phase-0-shell",
+  implementation: "offline-verified-auth-policies-live-highlevel-disabled",
 });

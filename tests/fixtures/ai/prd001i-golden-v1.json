@@ -1,0 +1,165 @@
+{
+  "corpus": {
+    "corpusVersionRef": "corpus_001iGoldenV1",
+    "cases": [
+      {
+        "caseRef": "case_001BrandFidelity",
+        "expectedPieces": [{ "pieceRef": "piece_001Social", "channel": "social" }],
+        "requiredBrandPhrases": ["local guidance"],
+        "bannedClaimPhrases": ["guaranteed approval"],
+        "requiredFrameworkPhrases": ["learn more"],
+        "requiredFactPhrases": ["100 Market Street"],
+        "forbiddenInventedFactPhrases": ["3.5% rate"]
+      },
+      {
+        "caseRef": "case_002BannedClaim",
+        "expectedPieces": [{ "pieceRef": "piece_002MetaAd", "channel": "meta_ad" }],
+        "requiredBrandPhrases": ["plain-language"],
+        "bannedClaimPhrases": ["no closing costs"],
+        "requiredFrameworkPhrases": ["see the details"],
+        "requiredFactPhrases": ["Saturday at noon"],
+        "forbiddenInventedFactPhrases": ["Sunday at 2"]
+      },
+      {
+        "caseRef": "case_003Framework",
+        "expectedPieces": [{ "pieceRef": "piece_003Email", "channel": "email" }],
+        "requiredBrandPhrases": ["calm and direct"],
+        "bannedClaimPhrases": ["lowest rate"],
+        "requiredFrameworkPhrases": ["what to expect"],
+        "requiredFactPhrases": ["Alex Rivera"],
+        "forbiddenInventedFactPhrases": ["Taylor Morgan"]
+      },
+      {
+        "caseRef": "case_004NoInventedFacts",
+        "expectedPieces": [{ "pieceRef": "piece_004LandingPage", "channel": "landing_page" }],
+        "requiredBrandPhrases": ["educational"],
+        "bannedClaimPhrases": ["instant approval"],
+        "requiredFrameworkPhrases": ["view open house details"],
+        "requiredFactPhrases": ["Licensed in Illinois"],
+        "forbiddenInventedFactPhrases": ["Licensed nationwide"]
+      }
+    ]
+  },
+  "primary": {
+    "routeRef": "route_primaryQuality",
+    "candidates": [
+      {
+        "caseRef": "case_001BrandFidelity",
+        "output": {
+          "pieces": [
+            {
+              "pieceRef": "piece_001Social",
+              "channel": "social",
+              "headline": "Local guidance for your open-house visit",
+              "body": "Tour 100 Market Street and ask questions at your pace.",
+              "callToAction": "Learn more"
+            }
+          ]
+        }
+      },
+      {
+        "caseRef": "case_002BannedClaim",
+        "output": {
+          "pieces": [
+            {
+              "pieceRef": "piece_002MetaAd",
+              "channel": "meta_ad",
+              "headline": "Plain-language open-house information",
+              "body": "Visit Saturday at noon to explore the property.",
+              "callToAction": "See the details"
+            }
+          ]
+        }
+      },
+      {
+        "caseRef": "case_003Framework",
+        "output": {
+          "pieces": [
+            {
+              "pieceRef": "piece_003Email",
+              "channel": "email",
+              "headline": "What to expect at the open house",
+              "body": "A calm and direct note from Alex Rivera with the confirmed event information.",
+              "callToAction": "Review the confirmed details"
+            }
+          ]
+        }
+      },
+      {
+        "caseRef": "case_004NoInventedFacts",
+        "output": {
+          "pieces": [
+            {
+              "pieceRef": "piece_004LandingPage",
+              "channel": "landing_page",
+              "headline": "Educational home-financing guidance",
+              "body": "Licensed in Illinois. Product availability depends on confirmed eligibility and program terms.",
+              "callToAction": "View open house details"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "fallback": {
+    "routeRef": "route_fallbackEvaluated",
+    "candidates": [
+      {
+        "caseRef": "case_001BrandFidelity",
+        "output": {
+          "pieces": [
+            {
+              "pieceRef": "piece_001Social",
+              "channel": "social",
+              "headline": "Local guidance before you tour",
+              "body": "See 100 Market Street and get the confirmed event information.",
+              "callToAction": "Learn more"
+            }
+          ]
+        }
+      },
+      {
+        "caseRef": "case_002BannedClaim",
+        "output": {
+          "pieces": [
+            {
+              "pieceRef": "piece_002MetaAd",
+              "channel": "meta_ad",
+              "headline": "A plain-language invitation",
+              "body": "The open house begins Saturday at noon.",
+              "callToAction": "See the details"
+            }
+          ]
+        }
+      },
+      {
+        "caseRef": "case_003Framework",
+        "output": {
+          "pieces": [
+            {
+              "pieceRef": "piece_003Email",
+              "channel": "email",
+              "headline": "What to expect when you arrive",
+              "body": "Alex Rivera shares a calm and direct overview using confirmed information.",
+              "callToAction": "Read the event information"
+            }
+          ]
+        }
+      },
+      {
+        "caseRef": "case_004NoInventedFacts",
+        "output": {
+          "pieces": [
+            {
+              "pieceRef": "piece_004LandingPage",
+              "channel": "landing_page",
+              "headline": "Educational guidance for homebuyers",
+              "body": "Licensed in Illinois. Confirmed program terms determine availability.",
+              "callToAction": "View open house details"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

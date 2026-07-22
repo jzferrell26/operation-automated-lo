@@ -520,6 +520,8 @@ describe("profile readiness, assets, and brand compilation", () => {
       sourceProfileVersionRef: "profile_01Brand",
       field: "brand_voice",
       suggestedValue: "Warm and direct",
+      sourceRefs: ["sample_01Approved"],
+      confidence: 0.91,
       status: "proposed",
       modelPolicyRef: "policy_01BrandModel",
       createdAt: now.toISOString(),
@@ -527,6 +529,10 @@ describe("profile readiness, assets, and brand compilation", () => {
     expect(confirmBrandSuggestion(suggestion, actorRef, now)).toEqual({
       field: "brand_voice",
       value: confirmed("Warm and direct"),
+    });
+    expect(confirmBrandSuggestion(suggestion, actorRef, now, "Calm and direct")).toEqual({
+      field: "brand_voice",
+      value: confirmed("Calm and direct"),
     });
     expect(() => BrandSuggestionSchema.parse({ ...suggestion, field: "nmls_id" })).toThrow();
   });

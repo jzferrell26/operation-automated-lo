@@ -10,6 +10,7 @@ export const rawSyntheticUiFixture: unknown = {
       disclosure:
         "Synthetic workspace. Provider reads, provider writes, and customer data are disabled.",
     },
+    accessMode: "embedded",
     user: {
       id: "synthetic-user-alex-morgan",
       displayName: "Alex Morgan",

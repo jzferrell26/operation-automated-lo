@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { BrandSuggestionSchema } from "./profile-foundation.js";
+
 const ReferenceSchema = z
   .string()
   .min(8)
@@ -43,6 +45,37 @@ export const BrandSuggestionSetSchema = z
   })
   .strict();
 export type BrandSuggestionSet = z.infer<typeof BrandSuggestionSetSchema>;
+
+export const AiAssistedBrandProfileReviewSchema = z
+  .object({
+    locationRef: ReferenceSchema,
+    sourceProfileVersionRef: ReferenceSchema,
+    modelPolicyVersionRef: ReferenceSchema,
+    promptPolicyVersionRef: ReferenceSchema,
+    status: z.literal("needs_user_confirmation"),
+    suggestions: z.array(BrandSuggestionSchema).max(100),
+  })
+  .strict()
+  .superRefine((review, issue) => {
+    const suggestionRefs = new Set(review.suggestions.map(({ suggestionRef }) => suggestionRef));
+    if (suggestionRefs.size !== review.suggestions.length) {
+      issue.addIssue({ code: "custom", message: "Suggestion references must be unique" });
+    }
+    for (const suggestion of review.suggestions) {
+      if (
+        suggestion.locationRef !== review.locationRef ||
+        suggestion.sourceProfileVersionRef !== review.sourceProfileVersionRef ||
+        suggestion.modelPolicyRef !== review.modelPolicyVersionRef
+      ) {
+        issue.addIssue({
+          code: "custom",
+          message: "Suggestions must retain the review location and version lineage",
+        });
+        break;
+      }
+    }
+  });
+export type AiAssistedBrandProfileReview = z.infer<typeof AiAssistedBrandProfileReviewSchema>;
 
 export const ModelRouteSchema = z
   .object({
@@ -260,3 +293,41 @@ export const ModelEvaluationResultSchema = z
   })
   .strict();
 export type ModelEvaluationResult = z.infer<typeof ModelEvaluationResultSchema>;
+
+const GoldenPhraseSchema = z.string().trim().min(1).max(500);
+
+export const GoldenEvaluationCaseSchema = z
+  .object({
+    caseRef: ReferenceSchema,
+    expectedPieces: z
+      .array(TextPieceRequestSchema.pick({ pieceRef: true, channel: true }).strict())
+      .min(1)
+      .max(30),
+    requiredBrandPhrases: z.array(GoldenPhraseSchema).min(1).max(50),
+    bannedClaimPhrases: z.array(GoldenPhraseSchema).min(1).max(50),
+    requiredFrameworkPhrases: z.array(GoldenPhraseSchema).min(1).max(50),
+    requiredFactPhrases: z.array(GoldenPhraseSchema).min(1).max(50),
+    forbiddenInventedFactPhrases: z.array(GoldenPhraseSchema).min(1).max(50),
+  })
+  .strict()
+  .superRefine((evaluationCase, issue) => {
+    const pieceRefs = new Set(evaluationCase.expectedPieces.map(({ pieceRef }) => pieceRef));
+    if (pieceRefs.size !== evaluationCase.expectedPieces.length) {
+      issue.addIssue({ code: "custom", message: "Expected piece references must be unique" });
+    }
+  });
+export type GoldenEvaluationCase = z.infer<typeof GoldenEvaluationCaseSchema>;
+
+export const GoldenEvaluationCorpusSchema = z
+  .object({
+    corpusVersionRef: ReferenceSchema,
+    cases: z.array(GoldenEvaluationCaseSchema).min(1).max(10_000),
+  })
+  .strict()
+  .superRefine((corpus, issue) => {
+    const caseRefs = new Set(corpus.cases.map(({ caseRef }) => caseRef));
+    if (caseRefs.size !== corpus.cases.length) {
+      issue.addIssue({ code: "custom", message: "Golden case references must be unique" });
+    }
+  });
+export type GoldenEvaluationCorpus = z.infer<typeof GoldenEvaluationCorpusSchema>;

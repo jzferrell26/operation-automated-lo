@@ -39,6 +39,13 @@ export function OnboardingScreen({ onboarding, session }: OnboardingScreenProps)
         </span>
       </header>
 
+      <p className={styles.sessionMode} data-session-mode={session.accessMode}>
+        <Icon decorative name="lock" size="sm" tone="info" />
+        {session.accessMode === "embedded"
+          ? "Embedded HighLevel session projection"
+          : "Authenticated first-party fallback projection"}
+      </p>
+
       <Card className={styles.safetyNotice} padding="md">
         <Icon decorative name="lock" size="sm" tone="info" />
         <div>

@@ -1,8 +1,10 @@
 import { Card, Icon, Stack } from "@oalo/ui";
 
 import type { DeepReadonly } from "../../ui-foundation/model/synthetic-ui.js";
+import { loadReportingAcceptanceProjection } from "../model/reporting-acceptance.js";
 import type { SyntheticReporting } from "../model/synthetic-reporting.js";
 import styles from "./reporting.module.css";
+import { ReportingAcceptanceSurface } from "./reporting-acceptance-surface.js";
 import { SupportTimeEntry } from "./support-time-entry.js";
 
 type ReportsScreenProps = Readonly<{
@@ -10,6 +12,8 @@ type ReportsScreenProps = Readonly<{
 }>;
 
 export function ReportsScreen({ reporting }: ReportsScreenProps) {
+  const acceptanceProjection = loadReportingAcceptanceProjection();
+
   return (
     <div className={styles.page}>
       <header className={styles.pageHeader}>
@@ -30,6 +34,8 @@ export function ReportsScreen({ reporting }: ReportsScreenProps) {
           <p>{reporting.safety.disclosure}</p>
         </div>
       </Card>
+
+      <ReportingAcceptanceSurface projection={acceptanceProjection} />
 
       <section aria-labelledby="portfolio-totals-title" className={styles.portfolio}>
         <div className={styles.sectionHeading}>

@@ -166,6 +166,8 @@ export const BrandSuggestionSchema = z
     sourceProfileVersionRef: OpaqueReferenceSchema,
     field: BrandSuggestionFieldSchema,
     suggestedValue: z.string().trim().min(1).max(5_000),
+    sourceRefs: z.array(OpaqueReferenceSchema).min(1).max(20),
+    confidence: z.number().min(0).max(1),
     status: z.literal("proposed"),
     modelPolicyRef: OpaqueReferenceSchema,
     createdAt: z.iso.datetime({ offset: true }),

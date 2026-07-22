@@ -49,6 +49,20 @@
   font-weight: var(--weight-medium);
 }
 
+.sessionMode {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--st-info-bg);
+  color: var(--st-info-fg);
+  font-size: var(--text-caption-size);
+  font-weight: var(--weight-medium);
+}
+
 .safetyNotice {
   display: flex;
   align-items: flex-start;

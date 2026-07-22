@@ -104,6 +104,7 @@ export {
 
 export {
   AcceptedGenerationSchema,
+  AiAssistedBrandProfileReviewSchema,
   AiTraceRecordSchema,
   AiUsageEventSchema,
   BrandSampleSchema,
@@ -113,6 +114,8 @@ export {
   ExtractedBrandSuggestionFieldSchema,
   ExtractedBrandSuggestionSchema,
   FrozenGenerationInputsSchema,
+  GoldenEvaluationCaseSchema,
+  GoldenEvaluationCorpusSchema,
   GeneratedTextPackSchema,
   GeneratedTextPieceSchema,
   GenerationPreflightSchema,
@@ -124,6 +127,7 @@ export {
   ProviderTokenUsageSchema,
   TextPieceRequestSchema,
   type AcceptedGeneration,
+  type AiAssistedBrandProfileReview,
   type AiTraceRecord,
   type AiUsageEvent,
   type BrandSample,
@@ -133,6 +137,8 @@ export {
   type ExtractedBrandSuggestion,
   type ExtractedBrandSuggestionField,
   type FrozenGenerationInputs,
+  type GoldenEvaluationCase,
+  type GoldenEvaluationCorpus,
   type GeneratedTextPack,
   type GeneratedTextPiece,
   type GenerationPreflight,

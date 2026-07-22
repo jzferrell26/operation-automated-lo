@@ -22,6 +22,7 @@ export const capabilitySchema = z.enum([
 export const syntheticSessionSchema = z
   .object({
     safety: runtimeSafetySchema,
+    accessMode: z.enum(["embedded", "first-party"]),
     user: z
       .object({
         id: z.string().startsWith("synthetic-user-"),

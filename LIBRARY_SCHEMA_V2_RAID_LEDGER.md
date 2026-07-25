@@ -133,3 +133,5 @@ Absent after raid: `library/knowledge-base/`, `library/qa/`, `library/discovery/
 | 2026-07-25 | User authorized authoring a raid for all five decisions. Created `cursor/library-schema-v2-raid-cf67` and this ledger with LSV2-001 through LSV2-020 all `OPEN`. |
 | 2026-07-25 | User ordered full raid execution. Wave 1-3 completed: scaffold, discovery move, knowledge-base delete, qa/issues retirement, PRD-001 reports→qa and in-work move, README rewrite, link repair. Commit `fdff0f1`. |
 | 2026-07-25 | Security Guardian PASS on docs-only diff (LSV2-018). Quality Guardian SHIP (LSV2-019). Ledger marked VERIFIED through LSV2-020 and PR updated. |
+| 2026-07-25 | Reverse review found High PRD-001/002 relative-link breakers after lifecycle move; repaired cross-links and backend QA security-audit citations. |
+

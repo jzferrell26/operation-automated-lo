@@ -29,7 +29,7 @@ Do **not** invoke before `security-guardian`. If you route to `quality-guardian`
 
 ## Paired Weapon
 
-`.cursor/skills/quality-weapon/` — contains the audit checklist, the report template for `library/requirements/reports/ or owning PRD/IRD `qa/` folders `, and heuristics for classifying findings.
+`.cursor/skills/quality-weapon/` — contains the audit checklist, the report template for Schema v2 `qa/` and `library/requirements/reports/` paths, and heuristics for classifying findings.
 
 ## Expected input
 

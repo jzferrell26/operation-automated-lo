@@ -135,7 +135,7 @@ Do these in order. Full detail in `guides/01-enforcement-procedure.md`.
 
 Depending on invocation:
 
-- **UI review / audit:** markdown answer in the `templates/review-output.md` shape — quoted brief section, `path:startLine-endLine` citations, delta in token-named terms. Save under the `library/requirements/.../reports/` or `library/requirements/reports/ or owning PRD/IRD `qa/` folders ux-ui/` path described above.
+- **UI review / audit:** markdown answer in the `templates/review-output.md` shape — quoted brief section, `path:startLine-endLine` citations, delta in token-named terms. Save under the owning PRD/IRD `qa/` folder or `library/requirements/reports/` as described above.
 - **New spec:** a markdown file in `<design-system-folder>/03-components/` or `04-screens/`. Follow `templates/component-brief-with-wrap.md` if the component wraps a library.
 - **Wrapper code:** a `.tsx` file per `templates/component-wrapper.tsx` with a CVA `variants` factory, `forwardRef`, spread `...props`.
 - **Spec update:** in-place edits with commit prefix `ux-ui-guardian: <section>: <change>` (or whatever convention the deploying product's knowledge-base specifies).

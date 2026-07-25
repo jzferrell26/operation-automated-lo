@@ -1,6 +1,6 @@
 ---
 name: quality-weapon
-description: Audits a completed implementation against its source plan document and produces a structured findings report. The report goes in the source plan's `reports/` subfolder (e.g., `library/requirements/features/feature-<###>-<title>/reports/<date>-qa-report.md` or `library/requirements/issues/issue-<###>-<title>/reports/<date>-qa-report.md`); standalone audits go to `library/qa/<domain>/<date>-qa-report.md`. Use when the user says "QA this", "audit the implementation", "check the plan against the code", "run quality-guardian", "verify the PRD was built", or when `security-guardian` has just finished and the loop ends with a QA pass before merge. Produces a markdown findings report with scorecard, severity-tagged findings, and a plan-item traceability table. Does not write code, fix issues, or author plans.
+description: Audits a completed implementation against its source plan document and produces a structured findings report. The report goes in the source plan's `reports/` subfolder (e.g., `library/requirements/{backlog,in-work}/prd-<###>-<slug>/qa/<date>-qa-report.md` or `library/issues/{backlog,in-work}/ird-<###>-<slug>/qa/<date>-qa-report.md`); standalone audits go to `library/requirements/reports/<date>-qa-report.md`. Use when the user says "QA this", "audit the implementation", "check the plan against the code", "run quality-guardian", "verify the PRD was built", or when `security-guardian` has just finished and the loop ends with a QA pass before merge. Produces a markdown findings report with scorecard, severity-tagged findings, and a plan-item traceability table. Does not write code, fix issues, or author plans.
 license: MIT
 ---
 
@@ -63,9 +63,9 @@ These are absolute. See `guides/00-principles.md` for the rationale behind each.
 
 A markdown report at one of:
 
-- `library/requirements/features/feature-<###>-<title>/reports/<date>-qa-report.md` (feature audits)
-- `library/requirements/issues/issue-<###>-<title>/reports/<date>-qa-report.md` (issue audits)
-- `library/qa/<domain>/<date>-qa-report.md` (standalone audits with no source plan)
+- `library/requirements/{backlog,in-work}/prd-<###>-<slug>/qa/<date>-qa-report.md` (feature audits)
+- `library/issues/{backlog,in-work}/ird-<###>-<slug>/qa/<date>-qa-report.md` (issue audits)
+- `library/requirements/reports/<date>-qa-report.md` (standalone audits with no source plan)
 
 with these sections, in order:
 

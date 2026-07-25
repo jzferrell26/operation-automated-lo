@@ -6,7 +6,7 @@ license: MIT
 
 # Security Weapon
 
-You are auditing a React / Next.js / TypeScript / Node.js codebase as `security-guardian`. Your job: find every vulnerability that matters, fix the Critical and High findings in this same session, and produce a structured report at `library/qa/security/<date>-security-audit.md` (standalone) or `library/requirements/features/feature-<###>-<title>/reports/<date>-security-audit.md` (feature-tied).
+You are auditing a React / Next.js / TypeScript / Node.js codebase as `security-guardian`. Your job: find every vulnerability that matters, fix the Critical and High findings in this same session, and produce a structured report at `library/requirements/reports/<date>-security-audit.md` (standalone) or `library/requirements/{backlog,in-work}/prd-<###>-<slug>/qa/<date>-security-audit.md` (feature-tied).
 
 This skill gives you the catalog, the procedure, the playbooks, and the scripts. The supporting files are the detail; this SKILL.md is the navigation layer.
 
@@ -16,7 +16,7 @@ This skill gives you the catalog, the procedure, the playbooks, and the scripts.
 
 Read `guides/00-principles.md` **first** on every invocation. The rules below are the executive summary — the guide has the reasoning.
 
-1. **You run before `quality-guardian`, never after.** If a QA report for this branch already exists (check `library/qa/` for `*-qa-report.md` with a newer mtime than the last commit), stop and warn the developer: their QA report predates your fixes and must be re-run.
+1. **You run before `quality-guardian`, never after.** If a QA report for this branch already exists (check `library/requirements/reports/` and owning PRD/IRD `qa/` folders for `*-qa-report.md` with a newer mtime than the last commit), stop and warn the developer: their QA report predates your fixes and must be re-run.
 2. **Fix, don't just flag.** Critical and High findings are remediated in this session with minimal-blast-radius diffs. Medium and Low are documented only (unless a Medium takes <5 lines to resolve — fix it).
 3. **Evidence over opinion.** Every finding cites `path/to/file.ts:LINE` and the specific vulnerable code pattern. No coordinates = not an audit.
 4. **Financial and PII findings are always Critical or High.** Never downgrade to save time.
@@ -61,7 +61,7 @@ After all fixes, run `git diff`. Sanity-check that the diff contains only securi
 
 ### Phase 4 — Report
 
-Fill in `templates/security-audit-report.md` and write it to `library/qa/security/<date>-security-audit.md` (standalone), `library/requirements/features/feature-<###>-<title>/reports/<date>-security-audit.md` (feature-tied), or `library/requirements/issues/issue-<###>-<title>/reports/<date>-security-audit.md` (issue-tied). Leave nothing blank — if a section has no findings, write "None detected" so downstream readers know it was checked.
+Fill in `templates/security-audit-report.md` and write it to `library/requirements/reports/<date>-security-audit.md` (standalone), `library/requirements/{backlog,in-work}/prd-<###>-<slug>/qa/<date>-security-audit.md` (feature-tied), or `library/issues/{backlog,in-work}/ird-<###>-<slug>/qa/<date>-security-audit.md` (issue-tied). Leave nothing blank — if a section has no findings, write "None detected" so downstream readers know it was checked.
 
 ---
 
@@ -126,4 +126,4 @@ security-weapon/
 └── research/                             (audit trail — do not edit casually)
 ```
 
-Start with `guides/00-principles.md`. End with the filled-in report at `library/qa/security/<date>-security-audit.md` (standalone), `library/requirements/features/feature-<###>-<title>/reports/<date>-security-audit.md` (feature-tied), or `library/requirements/issues/issue-<###>-<title>/repor
+Start with `guides/00-principles.md`. End with the filled-in report at `library/requirements/reports/<date>-security-audit.md` (standalone), `library/requirements/{backlog,in-work}/prd-<###>-<slug>/qa/<date>-security-audit.md` (feature-tied), or `library/issues/ird-<###>-<slug>/repor

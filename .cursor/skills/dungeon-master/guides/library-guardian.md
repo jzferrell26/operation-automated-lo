@@ -24,7 +24,7 @@ Delegate to `library-guardian` when the user says:
 
 - "Initialize the library" / "set up docs" / "scaffold documentation"
 - "Ingest new issues" / "pull issues from GitHub into PRDs"
-- "Write a PRD for X" — produces feature PRDs at `library/requirements/features/feature-<###>-<title>/prd-feature-<###>-<title>.md` (or `prd-feature-<###>-<title>-ck-<clickupId>.md` if sourced from ClickUp)
+- "Write a PRD for X" — produces feature PRDs at `library/requirements/{backlog,in-work}/prd-<###>-<slug>/prd-<###>-<slug>-index.md` (or `prd-feature-<###>-<title>-ck-<clickupId>.md` if sourced from ClickUp)
 - "Backwards-PRD this module" / "document what this code already does"
 - "Document Z in the knowledge base"
 - "Run a docs sync audit" / "check for drift between docs and code"
@@ -45,7 +45,7 @@ Owns feature and issue PRDs with sequencing, master-index updates, and intellige
 
 ## Expected output
 
-- New or updated files under `library/` (never under `library/notes/`, which is human-only). Feature PRDs land at `library/requirements/features/feature-<###>-<title>/prd-feature-<###>-<title>.md` (with a `reports/` subfolder); completed features move to `library/requirements/features/completed/`. Issue IRDs land at `library/requirements/issues/issue-<###>-<title>/ird-issue-<###>-<title>.md` (with a `reports/` subfolder). Knowledge-base sources land under `library/knowledge-base/<domain>/`.
+- New or updated files under `library/` (never under `library/notes/`, which is human-only). Feature PRDs land at `library/requirements/{backlog,in-work}/prd-<###>-<slug>/prd-<###>-<slug>-index.md` (with a `reports/` subfolder); completed features move to `library/requirements/backlog/ (and in-work/)completed/`. Issue IRDs land at `library/issues/{backlog,in-work}/ird-<###>-<slug>/ird-<###>-<slug>-index.md` (with a `reports/` subfolder). Knowledge-base sources land under `library/knowledge/private/<domain>/`.
 - For audits: a markdown report listing doc-code drift with actionable fixes.
 - An updated master index when new documents are added.
 

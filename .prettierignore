@@ -15,3 +15,12 @@ test-results/
 EXECUTION_LEDGER.md
 README.md
 tests/visual/rendering/v1/*.canonical.json
+.cursor/
+.codex/
+AGENTS.md
+SKILLS.md
+RULES.md
+HOOKS.md
+LIBRARY_SCHEMA_V2_RAID_LEDGER.md
+PRODUCTION_EXECUTION_LEDGER.md
+BACKEND_PRODUCTION_RAID_LEDGER.md

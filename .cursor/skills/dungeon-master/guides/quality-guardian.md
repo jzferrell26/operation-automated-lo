@@ -13,7 +13,7 @@ The final checkpoint before any work is considered done. `quality-guardian` audi
 - **Alignment** — do the file paths, data structures, and interfaces match the plan?
 - **Regressions** — did the implementation break anything adjacent?
 
-The output is a structured findings report. When the audit is tied to a feature, it goes to `library/requirements/features/feature-<###>-<title>/reports/<date>-qa-report.md`. When tied to an issue, it goes to `library/requirements/issues/issue-<###>-<title>/reports/<date>-qa-report.md`. Standalone QA goes to `library/qa/<domain>/<date>-qa-report.md`.
+The output is a structured findings report. When the audit is tied to a feature, it goes to `library/requirements/{backlog,in-work}/prd-<###>-<slug>/qa/<date>-qa-report.md`. When tied to an issue, it goes to `library/issues/{backlog,in-work}/ird-<###>-<slug>/qa/<date>-qa-report.md`. Standalone QA goes to `library/requirements/reports/<date>-qa-report.md`.
 
 ## When to invoke
 
@@ -29,17 +29,17 @@ Do **not** invoke before `security-guardian`. If you route to `quality-guardian`
 
 ## Paired Weapon
 
-`.cursor/skills/quality-weapon/` — contains the audit checklist, the report template for `library/qa/`, and heuristics for classifying findings.
+`.cursor/skills/quality-weapon/` — contains the audit checklist, the report template for `library/requirements/reports/ or owning PRD/IRD `qa/` folders `, and heuristics for classifying findings.
 
 ## Expected input
 
-- A pointer to the plan document — typically a feature PRD at `library/requirements/features/feature-<###>-<title>/prd-feature-<###>-<title>.md` or an issue IRD at `library/requirements/issues/issue-<###>-<title>/ird-issue-<###>-<title>.md`.
+- A pointer to the plan document — typically a feature PRD at `library/requirements/{backlog,in-work}/prd-<###>-<slug>/prd-<###>-<slug>-index.md` or an issue IRD at `library/issues/{backlog,in-work}/ird-<###>-<slug>/ird-<###>-<slug>-index.md`.
 - The completed implementation, accessible via `git diff` and `git status` or a branch reference.
 - Any context the user wants to emphasize.
 
 ## Expected output
 
-- A findings report saved alongside the source plan (under its `reports/` subfolder) or to `library/qa/<domain>/` for standalone audits, following the template.
+- A findings report saved alongside the source plan (under its `reports/` subfolder) or to `library/requirements/reports/` for standalone audits, following the template.
 - Findings classified by severity and category (completeness, correctness, alignment, regression).
 - A clear final verdict: ship, conditionally ship, or do-over.
 

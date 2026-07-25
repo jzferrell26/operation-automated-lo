@@ -7,8 +7,8 @@ This document gives product designers and frontend engineers the approved refere
 **Related:**
 - [`../architecture/system-architecture.md`](../architecture/system-architecture.md)
 - [`../product/product-definition.md`](../product/product-definition.md)
-- [`../../../requirements/backlog/prd-001-operation-automated-lo/prd-001h-self-onboarding-and-launch-readiness.md`](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001h-self-onboarding-and-launch-readiness.md)
-- [`../../../requirements/backlog/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md`](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md)
+- [`../../../requirements/in-work/prd-001-operation-automated-lo/prd-001h-self-onboarding-and-launch-readiness.md`](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001h-self-onboarding-and-launch-readiness.md)
+- [`../../../requirements/in-work/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md`](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md)
 
 ---
 

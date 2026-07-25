@@ -1,0 +1,25 @@
+{
+  "_comment": "Content-package shape consumed by social-publishing-guardian. One file per publish run. Fill placeholders; the Guardian resolves accountIds/userId at run time and builds the provider payload (see guides/04-create-post-payload.md and guides/08-zernio-runbook.md). Every post is created as a DRAFT.",
+  "provider": "<ghl | zernio | ayrshare | blotato | postiz | mixpost>",
+  "locationId": "<GHL location id, or null for non-GHL providers>",
+  "defaults": {
+    "status": "draft",
+    "scheduleDateHint": "<ISO-8601, non-binding on a GHL draft; e.g. 2026-07-08T18:00:00Z>",
+    "timezone": "<IANA tz for Zernio, e.g. America/New_York>"
+  },
+  "posts": [
+    {
+      "postKey": "<stable id for this logical post; used for the manifest key>",
+      "summary": "<post body text. Must fit the MOST RESTRICTIVE target platform's char cap; Bluesky=300. See guides/07-media-attachment.md>",
+      "platforms": ["<facebook>", "<linkedin>", "<twitter>", "<bluesky>"],
+      "media": [
+        {
+          "url": "<PUBLIC https URL; the provider fetches it. Within per-platform size caps; Bluesky=1MB. [] for text-only>",
+          "type": "image"
+        }
+      ],
+      "perChannelCustom": false,
+      "_perChannelCustomNote": "Set true to send DIFFERENT copy per platform (forces one create call per platform). false = one identical post fanned out to all platforms in a single call."
+    }
+  ]
+}

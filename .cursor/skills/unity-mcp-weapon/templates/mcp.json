@@ -1,0 +1,50 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// DRIFT — annotated Unity MCP client config (TEMPLATE)
+//
+// Based on the repo's example `.cursor/mcp.json`. JSON does NOT allow comments —
+// strip every `//` line before use, or copy only the JSON block. This file is a
+// teaching template, NOT a drop-in config.
+//
+// SOURCE OF TRUTH: MCP.md. When this template and MCP.md diverge, MCP.md wins.
+//
+// HARD RULE #3 — DO NOT COMMIT A RELAY PATH:
+//   The `command` below is a per-machine, per-OS absolute path to the relay binary
+//   under your home dir. A checked-in path is wrong on every other machine and makes
+//   the client spawn a missing binary. So:
+//     • PREFERRED: let Unity write it for you — Project Settings → AI → Unity MCP
+//       Server → Integrations → Cursor → Configure. That writes the GLOBAL
+//       ~/.cursor/mcp.json, not a repo file.
+//     • MANUAL (only if auto-config fails): copy the exact JSON from
+//       Integrations → Example Configuration (it bakes in your real home path),
+//       and keep it per-machine (global ~/.cursor/mcp.json), NOT committed.
+//   unity-mcp-guardian writes only under agents/ and .claude/ — never under .cursor/.
+//
+// SERVER CHOICE: DRIFT uses the OFFICIAL com.unity.ai.assistant@2.12 package
+//   (committed in Packages/manifest.json), which ships the relay in-Editor with NO
+//   Python/uv dependency. CoplayDev's com.coplaydev.unity-mcp is the documented
+//   FALLBACK only. This template is for the official relay.
+// ─────────────────────────────────────────────────────────────────────────────
+{
+  "mcpServers": {
+    "unity-mcp": {
+      // Per-OS relay binary (use the ABSOLUTE path — `~` may not expand):
+      //   macOS (Apple Silicon): ~/.unity/relay/relay_mac_arm64.app/Contents/MacOS/relay_mac_arm64
+      //   macOS (Intel):         ~/.unity/relay/relay_mac_x64.app/Contents/MacOS/relay_mac_x64
+      //   Windows:               %USERPROFILE%\.unity\relay\relay_win.exe
+      //   Linux:                 ~/.unity/relay/relay_linux
+      "command": "<HOME_ABSOLUTE_PATH>/.unity/relay/<RELAY_BINARY>",
+
+      // `--mcp` is REQUIRED (tells the relay to act as an MCP server).
+      // Add `--project-path <ABSOLUTE_PATH_TO_THIS_REPO>` (or set UNITY_PROJECT_PATH)
+      // when multiple Unity projects are open, so the relay targets THIS Editor.
+      // The committed example uses just ["--mcp"] — fine for a single open project.
+      "args": ["--mcp", "--project-path", "<ABSOLUTE_PATH_TO_THIS_REPO>"],
+
+      "env": {}
+    }
+
+    // NOTE: the repo's example .cursor/mcp.json also lists an unrelated HTTP server
+    // ("n8n-voyze"). That is NOT the Unity bridge — leave it alone; it has nothing
+    // to do with driving the Editor.
+  }
+}

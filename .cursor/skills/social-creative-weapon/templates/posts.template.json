@@ -1,0 +1,34 @@
+{
+  "campaign": "______ (campaign name)",
+  "timezone": "America/Denver",
+  "_note": "Posts-to-preview map. make-preview.mjs reads this and renders one card per post. Tag each post with a beat and a register so the cadence (jab/jab/right-hook) and voice mix are explicit. Keep right-hook posts the MINORITY. No em dashes in any summary. See guides/02-asset-cadence.md and guides/06-preview-gate.md.",
+  "posts": [
+    {
+      "id": "post-01",
+      "beat": "value / teaching (jab)",
+      "register": "______ (e.g. strategist | hfbomb)",
+      "platforms": ["Facebook", "LinkedIn"],
+      "scheduleUtc": "2026-07-01T16:00:00Z",
+      "image": "cards/card-01.png",
+      "summary": "______ the exact body copy that will publish ______"
+    },
+    {
+      "id": "post-02",
+      "beat": "announcement / event detail",
+      "register": "______",
+      "platforms": ["Facebook", "LinkedIn"],
+      "scheduleUtc": "2026-07-03T16:00:00Z",
+      "image": "cards/card-event.png",
+      "summary": "______"
+    },
+    {
+      "id": "post-03",
+      "beat": "day-of / urgency (right hook)",
+      "register": "______",
+      "platforms": ["Facebook", "LinkedIn"],
+      "scheduleUtc": "2026-07-08T15:00:00Z",
+      "image": "overlays/overlay-01.png",
+      "summary": "______ the ask ______"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "_comment": "Idempotent push manifest. The Guardian writes this as it pushes, persisting EACH entry immediately after a successful create + read-back (per-post, not at the end). On re-run it is read first; any post whose key already has a postId is skipped (--resume). See guides/05-idempotency-manifest.md.",
+  "provider": "<ghl | zernio | ...>",
+  "locationId": "<GHL location id, or null>",
+  "run": {
+    "startedAt": "<ISO-8601>",
+    "dryRun": false,
+    "status": "<in-progress | complete | failed>"
+  },
+  "entries": [
+    {
+      "postKey": "<the postKey from posts.json>",
+      "key": "<deterministic hash(provider + locationId + accountIds + summary + media + scheduleDate)>",
+      "accountIds": ["<resolved account id>", "<...>"],
+      "postId": "<real id: GHL results.post._id | Zernio /posts id. null until created>",
+      "createdAt": "<ISO-8601>",
+      "readBack": {
+        "verified": false,
+        "status": "<draft (expected) | failed | ...>",
+        "accounts": 0,
+        "media": 0,
+        "failureReason": "<null, or the exact publish-time failure from the read-back GET>"
+      }
+    }
+  ]
+}

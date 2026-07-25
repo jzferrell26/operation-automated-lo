@@ -1,0 +1,24 @@
+# config.toml snippets for supabase-platform-guardian.
+# config.toml is the single local config surface (auth, db, storage, realtime, functions).
+# Under CLI v2 it is config-as-code: `supabase config push` promotes it to the linked remote.
+
+# Per-function JWT verification. See guides/02-edge-functions.md.
+[functions.my-user-fn]
+verify_jwt = true    # default: platform validates the caller's JWT before the handler runs
+
+[functions.stripe-webhook]
+verify_jwt = false   # webhook presents no Supabase JWT; validate the provider signature in-handler
+
+# Custom access-token hook (config-as-code path to ENABLE it). See guides/03-auth-hook.md.
+# Defining the Postgres function in a migration does NOT enable it; this block (pushed) does,
+# or use the Management API PATCH /v1/projects/{ref}/config/auth.
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"
+
+# Seed order (runs on `supabase start` and after `db reset`). See guides/06-local-stack-testing.md.
+[db.seed]
+sql_paths = ["./seed.sql"]
+
+# TODO: open question - pin the exact [auth.hook.custom_access_token] schema to your installed
+# CLI version; field names can drift across CLI releases.

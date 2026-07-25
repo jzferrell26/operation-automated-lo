@@ -9,7 +9,7 @@ This report records authenticated Broker Marketplace product behavior that infor
 - [`../product/product-definition.md`](../product/product-definition.md)
 - [`../product/source-asset-inventory.md`](../product/source-asset-inventory.md)
 - [`../frontend/ambient-motion-background.md`](../frontend/ambient-motion-background.md)
-- [`../../../requirements/backlog/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md`](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md)
+- [`../../../requirements/in-work/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md`](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md)
 
 ---
 
@@ -214,10 +214,10 @@ Operation Automated LO should send captured buyers into GHL and campaign-specifi
 
 | Teardown conclusion | Requirement destination |
 |---|---|
-| Canonical brand, license, disclosure, legal-link, partner-permission, and GHL-routing profile | [PRD-001b](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001b-brand-partner-and-compliance-profile.md) |
-| One campaign record for page, PDF, QR, ad, email, SMS, approval, artifacts, and outcomes | [PRD-001 index](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md), [PRD-001c](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001c-campaign-blueprint-and-preflight.md), and [PRD-001g](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001g-campaign-and-portfolio-reporting.md) |
-| Searchable campaign history, artifact preview, duplication, status, and lead counts | [PRD-001g](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001g-campaign-and-portfolio-reporting.md) |
-| Narrow Realtor collaborator access | Base restriction in [PRD-001g](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001g-campaign-and-portfolio-reporting.md), reusable workspace expansion in [PRD-002b](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002b-operation-automated-lo-add-ons-realtor-workspace.md) |
+| Canonical brand, license, disclosure, legal-link, partner-permission, and GHL-routing profile | [PRD-001b](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001b-brand-partner-and-compliance-profile.md) |
+| One campaign record for page, PDF, QR, ad, email, SMS, approval, artifacts, and outcomes | [PRD-001 index](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md), [PRD-001c](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001c-campaign-blueprint-and-preflight.md), and [PRD-001g](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001g-campaign-and-portfolio-reporting.md) |
+| Searchable campaign history, artifact preview, duplication, status, and lead counts | [PRD-001g](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001g-campaign-and-portfolio-reporting.md) |
+| Narrow Realtor collaborator access | Base restriction in [PRD-001g](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001g-campaign-and-portfolio-reporting.md), reusable workspace expansion in [PRD-002b](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002b-operation-automated-lo-add-ons-realtor-workspace.md) |
 | Custom campaign domains and advanced analytics | [PRD-002a](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002a-operation-automated-lo-add-ons-domains-analytics.md) |
 | Additional campaign blueprints | [PRD-002c](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002c-operation-automated-lo-add-ons-blueprint-packs.md) |
 | Financing-scenario presentation | [PRD-002d](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002d-operation-automated-lo-add-ons-financing-scenarios.md) |
@@ -225,7 +225,7 @@ Operation Automated LO should send captured buyers into GHL and campaign-specifi
 | Refinance opportunity signals | [PRD-002f](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002f-operation-automated-lo-add-ons-refinance-signals.md) |
 | Agency portfolio and white-label distribution | [PRD-002g](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002g-operation-automated-lo-add-ons-agency-portfolio.md) |
 | Constrained campaign media generation without a generic design suite | [PRD-002h](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002h-operation-automated-lo-add-ons-creative-media-packs.md) |
-| Generic builders, borrower database import, prospecting data, e-signature, and platform replacement | Explicit non-goals in [PRD-001](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md) and [PRD-002](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md) |
+| Generic builders, borrower database import, prospecting data, e-signature, and platform replacement | Explicit non-goals in [PRD-001](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md) and [PRD-002](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md) |
 
 ---
 

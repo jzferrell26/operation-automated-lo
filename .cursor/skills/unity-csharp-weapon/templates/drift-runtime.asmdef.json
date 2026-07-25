@@ -1,0 +1,22 @@
+{
+    "//": "Canonical PROJECT-DRIFT runtime assembly. This IS Assets/Scripts/Drift.Runtime.asmdef.",
+    "//_one_spine": "Everything under Assets/Scripts/Drift/ compiles here. Do NOT add a second runtime asmdef (ARCHITECTURE.md §2 — the two-spine duplication is resolved). A new *.asmdef under the spine is a must-fix unless ADR-backed, and it should not be in Tier 0.",
+    "//_namespaces": "rootNamespace is Drift; split files across Drift.Core / Drift.Data / Drift.Gameplay by folder (guide 03). Dependencies flow Gameplay -> Data -> Core.",
+    "//_references": "Add a package assembly here the moment code uses it. Omitting Unity.InputSystem once broke main with CS0234 (AGENTS.md). Tier 1 will add com.unity.ai.navigation for NavMesh.",
+    "//_tests": "Tests live in a SEPARATE Editor-only assembly (Assets/Tests/EditMode/Drift.Tests.EditMode.asmdef) that references THIS one. Runtime never references tests.",
+
+    "name": "Drift.Runtime",
+    "rootNamespace": "Drift",
+    "references": [
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

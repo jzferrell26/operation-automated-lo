@@ -1,0 +1,86 @@
+# DEPLOY.md - {{app_name}}
+
+The deploy runbook for {{app_name}}. Exact commands only. Host: Vercel. Backend: Supabase project `{{supabase_project_ref}}`. Keep this current after every deploy. No em dashes anywhere in this file.
+
+## 0. Prerequisites / tooling preamble
+
+- Vercel CLI authenticated: `vercel whoami` returns `{{vercel_user}}` (org `{{vercel_org}}`).
+- Supabase access token exported: `export SUPABASE_ACCESS_TOKEN=sbp_...` (never commit it).
+- MCP gotcha: a Supabase MCP server added mid-session is not callable until the session restarts. For immediate work use the CLI/token path below.
+- Monorepo Root Directory: `{{root_directory}}`  <!-- TODO: per-app, e.g. apps/web or apps/admin -->
+- Vercel plan: Pro (required for commercial/client deploys; Hobby prohibits commercial use).
+
+## 1. Env matrix
+
+See the full matrix in the env-matrix table below (or `env-matrix.template.md`). Default to the new Supabase key names; legacy names noted where the live project still uses them.
+
+| Variable | Scope | Environments | Notes |
+|---|---|---|---|
+| `NEXT_PUBLIC_SITE_URL` | client | prod, preview | set to the vercel.app URL first, swap to custom domain later |
+| `NEXT_PUBLIC_SUPABASE_URL` | client | prod, preview, dev | |
+| `NEXT_PUBLIC_SUPABASE_PUBLIC_KEY` | client | prod, preview, dev | `sb_publishable_...` (new) |
+| `SUPABASE_SECRET_KEY` | server-only | prod, preview | `sb_secret_...` (new); legacy: `SUPABASE_SERVICE_ROLE_KEY` |
+| `{{external_secret}}` | server-only | prod, preview | e.g. `STRIPE_SECRET_KEY`, `RESEND_API_KEY` |
+
+<!-- TODO: confirm which env-var NAMES this app reads (legacy anon/service_role vs new sb_ keys). Live projects may run legacy through end of 2026. -->
+
+## 2. Wire env (per environment, secrets via stdin)
+
+```bash
+vercel env add NEXT_PUBLIC_SITE_URL production           # https://{{project}}.vercel.app FIRST
+vercel env add NEXT_PUBLIC_SUPABASE_URL production
+vercel env add NEXT_PUBLIC_SUPABASE_PUBLIC_KEY production
+printf '%s' "$SUPABASE_SECRET_KEY" | vercel env add SUPABASE_SECRET_KEY production
+# repeat for preview; add development vars in a SEPARATE command (cannot combine dev with prod/preview)
+```
+
+Note: prod/preview vars are stored `sensitive` and cannot be read back via `vercel env ls`. Verify at runtime (smoke check, section 5), not by listing.
+
+## 3. Push Supabase to cloud
+
+```bash
+export SUPABASE_ACCESS_TOKEN=sbp_...
+npx -y supabase@latest link --project-ref {{supabase_project_ref}}
+supabase db pull          # drift check; review the generated remote-schema migration
+supabase db push          # apply migrations
+supabase migration list   # confirm Local == Remote
+supabase functions deploy # deploy Edge Functions
+supabase secrets set {{external_secret}}=...   # external secrets only (URL/keys auto-injected)
+```
+
+## 4. Trigger the deploy
+
+```bash
+vercel --prod --yes
+```
+
+Wait for Ready. Then run the smoke check (Ready is not working).
+
+## 5. Smoke check (go/no-go, 5 to 15 min)
+
+Run `templates/smoke-check.sh` or these four checks:
+
+1. Homepage 200: `curl -sD - https://{{domain}}/ | grep -iE 'HTTP/|location'`  (a 307 to /sign-in is OK only if /sign-in is built).
+2. Auth-gated route `{{auth_route}}` redirects to sign-in, and sign-in returns 200.
+3. DB-touching route `{{db_route}}` returns real data within the serverless timeout (10s Hobby / 15s Pro).
+4. Auth callback URL resolves.
+
+<!-- TODO: fill in {{auth_route}} and {{db_route}} for this app -->
+
+## 6. Cutover order (staged, reversible)
+
+1. Deploy on `https://{{project}}.vercel.app` (Site URL set to vercel.app).
+2. Rotate Supabase keys one client at a time (both keys work simultaneously); deactivate legacy last.
+3. Supabase Auth URL config: Site URL `https://{{domain}}`, Redirect URLs `https://{{domain}}/auth/callback**`, preview wildcard `https://*-{{project}}.vercel.app/auth/callback**`.
+4. Swap `NEXT_PUBLIC_SITE_URL` to `https://{{domain}}`, attach domain, redeploy, re-verify.
+
+Re-run the smoke check after EACH stage.
+
+## 7. Rollback
+
+| Stage | Rollback |
+|---|---|
+| Site URL | revert `NEXT_PUBLIC_SITE_URL`, redeploy |
+| Key rotation | point the client back to the old key (still active) |
+| Auth URLs | restore previous Site URL / Redirect URLs |
+| Custom domain | revert to vercel.app Site URL, redeploy |

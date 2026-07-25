@@ -1,0 +1,85 @@
+{
+    "//": "touch-input-weapon template: minimal Drift Tier 0 action asset.",
+    "//note": "Save as Assets/Scripts/Drift/Input/DriftControls.inputactions and open it in Unity's Input Actions editor to normalize GUIDs (expected, not a diff to fight — guide 02). Player map only for Tier 0; add a UI map when menus arrive. Keyboard/mouse bindings are the EDITOR-CONVENIENCE scheme; touch on-screen controls (OnScreenStick/OnScreenButton) feed the same actions on device.",
+    "name": "DriftControls",
+    "maps": [
+        {
+            "name": "Player",
+            "id": "00000000-0000-0000-0000-000000000001",
+            "actions": [
+                {
+                    "name": "Move",
+                    "type": "Value",
+                    "id": "00000000-0000-0000-0000-000000000010",
+                    "expectedControlType": "Vector2",
+                    "//": "Value/Vector2 — analog. Read with ReadValue<Vector2>() and pass to ResolveMove. OnScreenStick writes here on device."
+                },
+                {
+                    "name": "Sprint",
+                    "type": "Button",
+                    "id": "00000000-0000-0000-0000-000000000011",
+                    "expectedControlType": "Button",
+                    "//": "HELD boolean -> ResolveMove's sprintHeld, not an edge."
+                },
+                {
+                    "name": "Attack",
+                    "type": "Button",
+                    "id": "00000000-0000-0000-0000-000000000012",
+                    "expectedControlType": "Button",
+                    "//": "EDGE — subscribe to performed for one swing per tap (matches PlayerMeleeAttack.wasPressedThisFrame)."
+                },
+                {
+                    "name": "Interact",
+                    "type": "Button",
+                    "id": "00000000-0000-0000-0000-000000000013",
+                    "expectedControlType": "Button"
+                },
+                {
+                    "name": "Build",
+                    "type": "Button",
+                    "id": "00000000-0000-0000-0000-000000000014",
+                    "expectedControlType": "Button"
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "WASD",
+                    "id": "00000000-0000-0000-0000-000000000100",
+                    "path": "2DVector",
+                    "isComposite": true,
+                    "action": "Move",
+                    "//": "Editor composite — mirrors the hand-rolled WASD/arrow accumulation in TopDownPlayerController.Update."
+                },
+                { "name": "up", "id": "00000000-0000-0000-0000-000000000101", "path": "<Keyboard>/w", "isPartOfComposite": true, "action": "Move" },
+                { "name": "down", "id": "00000000-0000-0000-0000-000000000102", "path": "<Keyboard>/s", "isPartOfComposite": true, "action": "Move" },
+                { "name": "left", "id": "00000000-0000-0000-0000-000000000103", "path": "<Keyboard>/a", "isPartOfComposite": true, "action": "Move" },
+                { "name": "right", "id": "00000000-0000-0000-0000-000000000104", "path": "<Keyboard>/d", "isPartOfComposite": true, "action": "Move" },
+
+                { "name": "", "id": "00000000-0000-0000-0000-000000000110", "path": "<Keyboard>/leftShift", "action": "Sprint" },
+                { "name": "", "id": "00000000-0000-0000-0000-000000000111", "path": "<Keyboard>/space", "action": "Attack" },
+                { "name": "", "id": "00000000-0000-0000-0000-000000000112", "path": "<Mouse>/leftButton", "action": "Attack" },
+                { "name": "", "id": "00000000-0000-0000-0000-000000000113", "path": "<Keyboard>/e", "action": "Interact" },
+                { "name": "", "id": "00000000-0000-0000-0000-000000000114", "path": "<Keyboard>/tab", "action": "Build" }
+            ]
+        }
+    ],
+    "controlSchemes": [
+        {
+            "name": "Keyboard&Mouse",
+            "//": "Editor-convenience scheme.",
+            "bindingGroup": "Keyboard&Mouse",
+            "devices": [
+                { "devicePath": "<Keyboard>", "isOptional": false, "isOR": false },
+                { "devicePath": "<Mouse>", "isOptional": true, "isOR": false }
+            ]
+        },
+        {
+            "name": "Touch",
+            "//": "Shipping scheme. OnScreenStick/OnScreenButton drive the same actions (guides 03/05).",
+            "bindingGroup": "Touch",
+            "devices": [
+                { "devicePath": "<Touchscreen>", "isOptional": false, "isOR": false }
+            ]
+        }
+    ]
+}

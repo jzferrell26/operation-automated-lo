@@ -43,5 +43,5 @@ Validate a $497 to $997 agency-level range with location tiers. Proceed only whe
 ## Related
 
 - [PRD-002 index](./prd-002-operation-automated-lo-add-ons-index.md)
-- [Tenant installation and GHL OAuth](../prd-001-operation-automated-lo/prd-001a-tenant-installation-and-ghl-oauth.md)
+- [Tenant installation and GHL OAuth](../../in-work/prd-001-operation-automated-lo/prd-001a-tenant-installation-and-ghl-oauth.md)
 

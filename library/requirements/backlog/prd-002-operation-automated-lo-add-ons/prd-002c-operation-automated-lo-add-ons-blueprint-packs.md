@@ -42,5 +42,5 @@ Require at least five paid design partners for a candidate blueprint and lender 
 ## Related
 
 - [PRD-002 index](./prd-002-operation-automated-lo-add-ons-index.md)
-- [Campaign blueprint and preflight](../prd-001-operation-automated-lo/prd-001c-campaign-blueprint-and-preflight.md)
+- [Campaign blueprint and preflight](../../in-work/prd-001-operation-automated-lo/prd-001c-campaign-blueprint-and-preflight.md)
 

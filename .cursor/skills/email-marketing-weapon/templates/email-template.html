@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<!--
+  Deliverability-safe email skeleton. See ../guides/04-spam-filter-html.md and ../guides/05-gohighlevel-sending.md.
+  Rules baked in:
+    - Table-based layout, inline CSS (classic Outlook / Word engine safe).
+    - Alt text placeholder on every image.
+    - Merge-token placeholders marked with {{double_braces}}; validate every token resolves before send.
+    - Unsubscribe link + primary CTA kept high so they survive Gmail's ~102KB clip.
+    - MSO conditional slot for an Outlook-safe button.
+    - Always pair this with a maintained plain-text part (multipart/alternative); see the plain-text block at the bottom.
+    - No em dashes anywhere.
+-->
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="color-scheme" content="light dark">
+  <title>{{email_title}}</title>
+  <!--[if mso]>
+  <style type="text/css">
+    table, td, div, p, a { font-family: Arial, sans-serif !important; }
+  </style>
+  <![endif]-->
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f4;">
+
+  <!-- Preheader: ~75 chars, the second line of the headline. Hidden in body, shown in inbox preview. -->
+  <div style="display:none; max-height:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:#f4f4f4;">
+    {{preheader_text}}
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f4;">
+    <tr>
+      <td align="center" style="padding:16px;">
+
+        <!-- Unsubscribe kept high so it survives the ~102KB Gmail clip -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+          <tr>
+            <td align="right" style="padding:0 0 8px 0; font-family:Arial, sans-serif; font-size:11px; color:#888888;">
+              <a href="{{unsubscribe_url}}" style="color:#888888; text-decoration:underline;">Unsubscribe</a>
+            </td>
+          </tr>
+        </table>
+
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px; background-color:#ffffff;">
+
+          <!-- Logo / header image: alt text required -->
+          <tr>
+            <td align="center" style="padding:24px;">
+              <img src="{{header_image_url}}" width="160" alt="REPLACE WITH ALT TEXT: brand name" style="display:block; border:0; outline:none; text-decoration:none; height:auto;">
+            </td>
+          </tr>
+
+          <!-- Headline (live text, not an image) -->
+          <tr>
+            <td style="padding:0 32px 8px 32px; font-family:Arial, sans-serif; font-size:24px; line-height:30px; color:#1a1a1a; font-weight:bold;">
+              {{headline}}
+            </td>
+          </tr>
+
+          <!-- Body copy (live text; the email must make sense with images off) -->
+          <tr>
+            <td style="padding:8px 32px 8px 32px; font-family:Arial, sans-serif; font-size:16px; line-height:24px; color:#333333;">
+              <p style="margin:0 0 16px 0;">Hi {{first_name}},</p>
+              <p style="margin:0 0 16px 0;">{{body_paragraph_1}}</p>
+              <p style="margin:0 0 16px 0;">{{body_paragraph_2}}</p>
+            </td>
+          </tr>
+
+          <!-- One primary CTA. MSO-conditional button for Outlook; standard anchor elsewhere. -->
+          <tr>
+            <td align="center" style="padding:16px 32px 24px 32px;">
+              <!--[if mso]>
+              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{cta_url}}" style="height:48px; v-text-anchor:middle; width:260px;" arcsize="8%" stroke="f" fillcolor="#0b7a75">
+                <w:anchorlock/>
+                <center style="color:#ffffff; font-family:Arial, sans-serif; font-size:16px; font-weight:bold;">{{cta_label}}</center>
+              </v:roundrect>
+              <![endif]-->
+              <!--[if !mso]><!-- -->
+              <a href="{{cta_url}}" style="background-color:#0b7a75; color:#ffffff; display:inline-block; font-family:Arial, sans-serif; font-size:16px; font-weight:bold; line-height:48px; text-align:center; text-decoration:none; width:260px; border-radius:4px;">{{cta_label}}</a>
+              <!--<![endif]-->
+            </td>
+          </tr>
+
+          <!-- Optional content image: alt text required, never the only content -->
+          <tr>
+            <td align="center" style="padding:0 32px 24px 32px;">
+              <img src="{{content_image_url}}" width="536" alt="REPLACE WITH ALT TEXT: describe the image" style="display:block; border:0; outline:none; text-decoration:none; height:auto; max-width:100%;">
+            </td>
+          </tr>
+
+          <!-- Footer: physical address + unsubscribe (CAN-SPAM) -->
+          <tr>
+            <td style="padding:16px 32px 24px 32px; font-family:Arial, sans-serif; font-size:12px; line-height:18px; color:#888888; border-top:1px solid #eeeeee;">
+              <p style="margin:0 0 8px 0;">{{company_name}}, {{physical_mailing_address}}</p>
+              <p style="margin:0;">
+                You are receiving this because {{opt_in_reason}}.
+                <a href="{{unsubscribe_url}}" style="color:#888888; text-decoration:underline;">Unsubscribe</a>.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!--
+  PLAIN-TEXT PART (multipart/alternative). Keep this maintained, not auto-stripped.
+  The send must include a real text/plain alternative alongside this HTML.
+
+  Hi {{first_name}},
+
+  {{body_paragraph_1}}
+
+  {{body_paragraph_2}}
+
+  {{cta_label}}: {{cta_url}}
+
+  {{company_name}}, {{physical_mailing_address}}
+  Unsubscribe: {{unsubscribe_url}}
+  -->
+
+</body>
+</html>

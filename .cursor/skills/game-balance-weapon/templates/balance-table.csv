@@ -1,0 +1,37 @@
+# DRIFT balance tuning table — skeleton. Human edits this, agent reads it back into Tier0Balance / a BalanceProfile.
+# One row per tunable. "current" = value read from code; "proposed" = tuning candidate; "source" = where it lives.
+# Categories: faucet, sink, meter, combat, durability(Tier1), raid. See guides/ for the math behind each.
+category,key,current,proposed,unit,source_file,source_symbol,tier,notes
+faucet,scrap_node_amount,14,,units,Tier0Balance.cs,ScrapMetalNodeAmount,0,base scrap node yield
+faucet,polymer_node_amount,4,,units,Tier0Balance.cs,PolymerNodeAmount,0,constraining resource — the intended pinch (guides/04)
+faucet,raw_ore_node_amount,3,,units,Tier0Balance.cs,RawOreNodeAmount,0,scarcest base resource
+faucet,cutter_cache_scrap,3,,units,Tier0Balance.cs,CutterCacheScrapAmount,0,gated: needs Cutter first
+faucet,welder_cache_polymer,2,,units,Tier0Balance.cs,WelderCachePolymerAmount,0,gated: needs Welder first
+faucet,drill_cache_raw_ore,2,,units,Tier0Balance.cs,DrillCacheRawOreAmount,0,gated: needs Plasma Drill first
+sink,cutter_scrap_cost,4,,units,Tier0Balance.cs,CutterScrapCost,0,cheap entry tool — scrap only
+sink,welder_scrap_cost,3,,units,Tier0Balance.cs,WelderScrapCost,0,
+sink,welder_polymer_cost,2,,units,Tier0Balance.cs,WelderPolymerCost,0,adds polymer demand
+sink,drill_scrap_cost,5,,units,Tier0Balance.cs,DrillScrapCost,0,capstone tool
+sink,drill_raw_ore_cost,2,,units,Tier0Balance.cs,DrillRawOreCost,0,gates on scarcest resource
+sink,drill_polymer_cost,1,,units,Tier0Balance.cs,DrillPolymerCost,0,
+sink,deck_plate_scrap_cost,2,,units,Tier0Balance.cs,DeckPlateScrapCost,0,build sink
+sink,deck_plate_polymer_cost,1,,units,Tier0Balance.cs,DeckPlatePolymerCost,0,eats into polymer surplus
+meter,oxygen_max,100,,o2,OxygenSystem.cs,maxOxygen,0,signature meter (GDD §3)
+meter,oxygen_drain_per_second,1,1.25,o2/s,OxygenSystem.cs,drainPerSecond,0,PRIMARY tension knob; budget = max/drain (guides/03)
+meter,suffocation_damage_per_second,8,,hp/s,OxygenSystem.cs,suffocationDamagePerSecond,0,keep >0 for the recovery beat
+meter,suit_max_power,100,,sp,SuitPowerSystem.cs,maxPower,0,
+meter,suit_sprint_drain_per_second,18,,sp/s,SuitPowerSystem.cs,sprintDrainPerSecond,0,~5.5s sprint burst
+meter,suit_recharge_per_second,20,,sp/s,SuitPowerSystem.cs,rechargePerSecond,0,only recharges in powered zone
+combat,enemy_detect_radius,10,,m,MutatedCrewEnemy.cs,detectRadius,0,aggro range — also a pacing lever
+combat,enemy_leash_radius,16,,m,MutatedCrewEnemy.cs,leashRadius,0,
+combat,enemy_move_speed,3.5,,m/s,MutatedCrewEnemy.cs,moveSpeed,0,keep < player sprint or escape impossible
+combat,enemy_attack_range,1.4,,m,MutatedCrewEnemy.cs,attackRange,0,
+combat,enemy_attack_damage,12,,hp,MutatedCrewEnemy.cs,attackDamage,0,dps = damage/cooldown = 10
+combat,enemy_attack_cooldown,1.2,,s,MutatedCrewEnemy.cs,attackCooldown,0,
+durability,default_durability_per_use,,1,cond/use,ItemDefinition.cs,(Tier1),1,TIER 1 — tools AND weapons, guns included (Hard Rule #2)
+durability,repair_to_recraft_ratio,,0.4,fraction,(Tier1 SO),(Tier1),1,TIER 1 — cheaper than recraft, never free (guides/06)
+durability,ammo_basic_scarcity,,low,qual,(Tier1),(Tier1),1,TIER 1 — SECOND sink ON TOP of durability, not a replacement
+durability,ammo_specialized_scarcity,,high,qual,(Tier1),(Tier1),1,TIER 1 — drop-rate tuning is human-owned (CLAUDE.md §7)
+raid,raider_spawn_position,"(4,1,8)",,xyz,Tier0RaiderAssault.cs,raiderSpawnPosition,0,how fast threat reaches player mid-seal
+raid,assault_interval_seconds,,,s,(Tier1),(Tier1),1,TIER 1 — the 24h cadence (GDD §3); Tier 0 is a single trigger
+raid,wave_size_curve,,,units/cycle,(Tier1),(Tier1),1,TIER 1 — raiders per assault vs day/station-tier (guides/07)

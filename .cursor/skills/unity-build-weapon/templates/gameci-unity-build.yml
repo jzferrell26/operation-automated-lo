@@ -1,0 +1,80 @@
+# gameci-unity-build.yml — DRIFT Android build via game-ci/unity-builder.
+#
+# TIER NOTE: PROJECT-DRIFT is mid-Tier-0 and AGENTS.md says the Tier 0 deliverable has NO SCENE
+# to build. A unity-builder job with no scene FAILS — running it red in Tier 0 mis-signals a
+# broken pipeline. So this workflow is workflow_dispatch-ONLY until Tier 1 authors a buildable
+# scene. The TEST workflow (game-ci/unity-test-runner, owned by unity-test-ci-guardian) is the
+# Tier-0 CI gate. Device store builds are run by the HUMAN (CLAUDE.md §7); CI produces a
+# verification artifact, and the signed binary is handed to app-store-submission-guardian.
+#
+# CO-OWNERSHIP: this build workflow shares UNITY_LICENSE / UNITY_EMAIL / UNITY_PASSWORD secrets
+# and the Unity image with unity-test-ci-guardian's test workflow. Do NOT redefine the license
+# secrets — configure them once for the repo.
+#
+# Place at: .github/workflows/android-build.yml
+# VERIFY before relying on this: the game-ci/unity-builder version tag and Unity 6 image
+# availability on the GameCI releases page (authored in DEGRADED research mode).
+
+name: Android Build
+
+on:
+  workflow_dispatch: {}          # manual until Tier 1 has a buildable scene (AGENTS.md no-scene fact)
+  # ENABLE in Tier 1, scene-gated, e.g.:
+  # push:
+  #   branches: [ main ]
+  #   paths: [ "Assets/Scenes/**" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    name: Build Android (AAB)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          # Same Library/ that AGENTS.md redirects to tmpfs locally; caching skips the import pass.
+          path: Library
+          key: Library-Android-${{ hashFiles('Packages/manifest.json', 'Assets/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-Android-
+
+      - name: Decode upload keystore
+        # The keystore is base64 in a secret, NEVER committed (guides/03). Decoded to a temp path.
+        run: echo "${{ secrets.DRIFT_KEYSTORE_B64 }}" | base64 -d > "${{ runner.temp }}/drift-upload.keystore"
+
+      - name: Build
+        uses: game-ci/unity-builder@v4          # VERIFY the current tag + Unity 6 image
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}      # shared with the TEST workflow — do not redefine
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          DRIFT_KEYSTORE_PATH: ${{ runner.temp }}/drift-upload.keystore
+          DRIFT_KEYSTORE_PASS: ${{ secrets.DRIFT_KEYSTORE_PASS }}
+          DRIFT_KEY_ALIAS: ${{ secrets.DRIFT_KEY_ALIAS }}
+          DRIFT_KEY_ALIAS_PASS: ${{ secrets.DRIFT_KEY_ALIAS_PASS }}
+          DRIFT_VERSION: ${{ github.ref_name }}            # marketing version (guides/09)
+          DRIFT_BUILD_NUMBER: ${{ github.run_number }}     # monotonic versionCode (guides/09)
+        with:
+          targetPlatform: Android
+          # MUST match the editor that actually opens the project. ProjectVersion.txt currently
+          # resolves to 6000.0.77f1 (the 6000.0.23f1 figure in AGENTS.md is the original pin;
+          # patch upgrades within 6000.0 LTS are allowed per TIER0.md). Re-read ProjectVersion.txt
+          # before relying on this — a mismatched image fails to open the project.
+          unityVersion: 6000.0.77f1
+          # The SAME method the editor menu calls (guides/06) — CI and local never diverge.
+          buildMethod: Drift.Build.BuildScript.BuildAndroidRelease
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-android-aab
+          path: build/Android
+          if-no-files-found: error

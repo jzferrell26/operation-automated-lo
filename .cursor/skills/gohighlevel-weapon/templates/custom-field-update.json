@@ -1,0 +1,10 @@
+{
+  "_comment": "Body for PUT /opportunities/:id — write-back of dashboard edits. Only whitelisted fields. Prefer { id } (resolve from GET /locations/:id/customFields?model=opportunity); fall back to { key }. Serialize all field_value to strings. Set pipelineStageId only when the stage changed; status 'won' when canonical stage is Closed, else 'open'.",
+  "pipelineStageId": "<stageId — only when stage changed>",
+  "status": "open",
+  "customFields": [
+    { "id": "<resolvedFieldId>", "field_value": "31500" },
+    { "key": "opportunity.whetstone_sales_agent", "field_value": "Carolina Ceja" },
+    { "key": "opportunity.whetstone_emd_status", "field_value": "submitted" }
+  ]
+}

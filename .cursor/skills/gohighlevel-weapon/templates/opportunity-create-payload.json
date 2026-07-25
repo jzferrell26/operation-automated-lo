@@ -1,0 +1,15 @@
+{
+  "_comment": "POST /opportunities — create a GHL opportunity (e.g. log a property for the marketing publish flow). Send with Authorization: Bearer <token> and Version: 2021-07-28. Create/associate a contact first if there isn't one. After create, opportunity.id becomes the deal_id everything else keys on.",
+  "locationId": "<GHL_LOCATION_ID>",
+  "pipelineId": "<GHL_PIPELINE_ID>",
+  "pipelineStageId": "<stageId for the entry stage, e.g. New Lead>",
+  "name": "123 Main St, Dallas TX",
+  "status": "open",
+  "contactId": "<contactId — create via POST /contacts if needed>",
+  "monetaryValue": 0,
+  "customFields": [
+    { "key": "opportunity.whetstone_address", "field_value": "123 Main St, Dallas TX" },
+    { "key": "opportunity.whetstone_transaction_type", "field_value": "wholesale" },
+    { "key": "opportunity.whetstone_acquiring_agent", "field_value": "Jane A" }
+  ]
+}

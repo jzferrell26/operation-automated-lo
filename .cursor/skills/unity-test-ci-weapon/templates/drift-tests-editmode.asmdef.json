@@ -1,0 +1,28 @@
+{
+    "//": "DRIFT EditMode test assembly. Copy to Assets/Tests/EditMode/Drift.Tests.EditMode.asmdef.",
+    "//includePlatforms": "['Editor'] is what makes this an EditMode assembly — see guides/05-test-asmdefs.md.",
+    "//defineConstraints": "UNITY_INCLUDE_TESTS keeps the tests out of player builds.",
+    "//references": "Drift.Runtime is the system-under-test assembly; TestRunner + nunit provide [Test]/Assert.",
+    "name": "Drift.Tests.EditMode",
+    "rootNamespace": "Drift.Tests",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Drift.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

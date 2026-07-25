@@ -1,0 +1,65 @@
+# DRIFT EditMode CI via GameCI. Copy to .github/workflows/unity-editmode-tests.yml.
+# Rationale + license caveat: guides/08-ci-with-gameci.md and examples/04-gameci-workflow.md.
+#
+# PREREQUISITE: a Unity license in repo secrets. For a free Personal seat, the .ulf
+# is machine-bound (/etc/machine-id) and may be rejected on CI runners — a Pro/Plus
+# serial (UNITY_SERIAL/UNITY_EMAIL/UNITY_PASSWORD) is the robust path. Resolve this
+# before relying on the workflow.
+
+name: Unity EditMode Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: editmode-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  editmode:
+    name: EditMode (Tier 0 spine)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      - name: Run EditMode tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          # Pro/Plus seat alternative (recommended over a machine-bound Personal .ulf):
+          # UNITY_SERIAL:   ${{ secrets.UNITY_SERIAL }}
+          # UNITY_EMAIL:    ${{ secrets.UNITY_EMAIL }}
+          # UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: .
+          unityVersion: 6000.0.23f1   # match ProjectSettings/ProjectVersion.txt
+          testMode: editmode          # no PlayMode suite yet — do not add an empty job
+          artifactsPath: artifacts
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: editmode-results
+          path: artifacts
+
+# When a PlayMode suite lands (guides/09-playmode-tests.md), switch to a matrix:
+#   strategy:
+#     fail-fast: false
+#     matrix:
+#       testMode: [editmode, playmode]
+#   ...with: testMode: ${{ matrix.testMode }}

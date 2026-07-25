@@ -1,0 +1,26 @@
+---
+description: Recall relevant hivemind memory before non-trivial work and persist a short summary after
+alwaysApply: true
+---
+
+# Hivemind memory: recall before, persist after
+
+This repo is wired into hivemind (`@deeplake/hivemind`), a shared cross-session, cross-harness memory backed by Deeplake at `~/.deeplake/memory/`. Use it on every meaningful task. The `hivemind-guardian` owns the details; this rule is the standing behavior every agent follows.
+
+## Recall before non-trivial work
+
+Before starting a task that benefits from prior context (continuing a project, touching a file you have edited before, or anything the user references as "what we did"), check memory:
+
+- Time-based ("recent", "since X", "where did I leave off"): `cat ~/.deeplake/memory/index.md` and read the newest rows; trust the `Last Updated` column.
+- Keyword / topic: use the Bash tool with `grep -r "keyword" ~/.deeplake/memory/summaries/`, then `cat` the top match.
+- Always check BOTH the built-in harness memory and `~/.deeplake/memory/`. Do not report "nothing found" after checking only one.
+
+## Persist after meaningful work
+
+After a meaningful change or decision, state it plainly in the session (the decision, the file touched, the outcome) so it is captured cleanly into the session summary. When the user says "remember this" or "save to hivemind", confirm the key facts back in a sentence or two.
+
+## Constraints
+
+- Read `~/.deeplake/memory/` only with read-only shell tools (`cat`, `ls`, `grep`, `head`, `tail`). No `python`, `node`, or `curl` on that path. Do not spawn subagents to read memory. If a file is empty after two tries, skip it.
+- Treat recalled memory as background context that was true when written. If it names a file, flag, or command, verify it still exists before acting on it.
+- Privacy: hivemind uploads session content to the Deeplake cloud. Do not persist client PII, third-party secrets, or credentials. Flag anything that must not leave the machine before it is captured.

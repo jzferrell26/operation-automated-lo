@@ -1,0 +1,1 @@
+Templates for the Guardian's output reports; `deliverability-readiness-report.md` is the canonical deliverability + spam-audit + copy-notes report (severity-ranked) matching the Command Brief's EXPECTED OUTPUT.

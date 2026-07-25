@@ -1,0 +1,52 @@
+<!--
+  HYPERFRAMES SCENE SKELETON - fill in per client, then lint/validate/render.
+  An on-brand logo intro/outro scene for a social short. Read
+  guides/07-video-hyperframes.md before filling this in.
+
+  PREREQS: Node 22+ and FFmpeg installed.
+  GATE:    npx hyperframes lint && npx hyperframes validate   (both must pass)
+  RENDER:  npx hyperframes render --width 1080 --height 1920   (or 1080x1080)
+
+  DETERMINISM RULES (do not violate):
+  - Every animated element: class="clip" + data-start/data-duration/data-track-index.
+  - GSAP timeline paused:true, registered on window.__timelines.<id>.
+  - NO Date.now(), NO unseeded Math.random(), NO runtime network fetch.
+  - Bundle the logo/fonts LOCALLY in ./assets (no remote URLs).
+  - Pull palette + fonts from BRAND-GUIDE.md. No em dashes.
+  - Pin HyperFrames >= 2026-06-22 if using CSS-variable brand fonts.
+-->
+<div id="stage"
+     data-composition-id="______"
+     data-start="0"
+     data-width="1080"
+     data-height="1920">
+
+  <!-- Logo reveal (track 0) -->
+  <img class="clip"
+       data-start="0"
+       data-duration="3"
+       data-track-index="0"
+       src="./assets/logo.png"
+       alt="">
+
+  <!-- Brand wordmark / name (track 1) -->
+  <h1 id="title"
+      class="clip"
+      data-start="0.5"
+      data-duration="2.5"
+      data-track-index="1"
+      style="font-family: ______, serif; color: #______;">______</h1>
+
+  <!-- Optional audio sting (track 2) -->
+  <!-- <audio data-start="0" data-duration="3" data-track-index="2"
+            data-volume="0.5" src="./assets/sting.wav"></audio> -->
+</div>
+
+<script>
+  // Seekable, frame-accurate timeline. The framework drives the playhead.
+  const tl = gsap.timeline({ paused: true });
+  tl.from("#title", { opacity: 0, y: 40, duration: 0.8 }, 0.5);
+
+  window.__timelines = window.__timelines || {};
+  window.__timelines.______ = tl; // id must match data-composition-id
+</script>

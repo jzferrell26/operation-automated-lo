@@ -1,0 +1,37 @@
+{
+  "//": "eas.json template. See guides/01-eas-build-profiles.md. Pinned to Expo SDK 56.",
+  "//channel-parity": "Each profile's channel must match the channel you publish to with `eas update --channel`. See guides/06-ota-eas-update.md.",
+  "//autoincrement": "Confirm the exact autoIncrement key/value against docs.expo.dev/build-reference/ before relying on it. See the TODO re-fetch in guides/01.",
+  "cli": {
+    "version": ">= {{eas_cli_version}}",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "{{dev_api_url}}"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "{{preview_api_url}}"
+      }
+    },
+    "production": {
+      "channel": "production",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "{{production_api_url}}"
+      }
+    }
+  },
+  "submit": {
+    "//": "Submission config lives here, but listing/ASO/IAP/submission is app-store-submission-guardian's lane.",
+    "production": {}
+  }
+}

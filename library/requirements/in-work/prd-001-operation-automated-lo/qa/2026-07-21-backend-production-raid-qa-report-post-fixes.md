@@ -6,7 +6,7 @@
 
 **Prior QA report:** `library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-07-21-backend-production-raid-qa-report.md`
 
-**Security review:** `library/requirements/reports/2026-07-21-backend-production-raid-security-audit.md`
+**Security review:** `library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-07-21-backend-production-raid-security-audit.md`
 
 **Audit date:** 2026-07-21
 

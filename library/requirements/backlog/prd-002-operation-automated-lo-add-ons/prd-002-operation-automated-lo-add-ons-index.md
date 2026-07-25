@@ -120,7 +120,7 @@ These are validation ranges, not committed prices.
 
 ## Related
 
-- [PRD-001: Operation Automated LO](../prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md)
+- [PRD-001: Operation Automated LO](../../in-work/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md)
 - [2026 build-readiness and research gate](../../../knowledge/private/research/2026-build-readiness-and-research-gate.md)
 - [Authenticated Broker Marketplace teardown](../../../knowledge/private/competitive/broker-marketplace-authenticated-teardown.md)
 - [Product definition](../../../knowledge/private/product/product-definition.md)

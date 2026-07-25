@@ -54,5 +54,5 @@ Test whether multi-Realtor history, reusable access, and portfolio controls shou
 ## Related
 
 - [PRD-002 index](./prd-002-operation-automated-lo-add-ons-index.md)
-- [PRD-001b profiles](../prd-001-operation-automated-lo/prd-001b-brand-partner-and-compliance-profile.md)
+- [PRD-001b profiles](../../in-work/prd-001-operation-automated-lo/prd-001b-brand-partner-and-compliance-profile.md)
 

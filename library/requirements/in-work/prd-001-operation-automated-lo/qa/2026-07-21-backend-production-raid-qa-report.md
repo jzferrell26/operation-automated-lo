@@ -6,7 +6,7 @@
 
 **Delta source:** `library/knowledge/private/architecture/backend-readiness-assessment-2026-07-21.md`
 
-**Security review:** `library/requirements/reports/2026-07-21-backend-production-raid-security-audit.md`
+**Security review:** `library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-07-21-backend-production-raid-security-audit.md`
 
 **Audit date:** 2026-07-21
 
@@ -155,7 +155,7 @@ The inventory compares the complete working tree with baseline `c3b25336f9594e2e
 - `apps/web/src/app/api/version/route.ts` (M) - uses the full runtime environment parser
 - `apps/web/src/server/production-readiness-runtime.ts` (A) - composes database, GHL, Anthropic, and R2 readiness probes
 - `docs/publication-cleanup-schedule.md` (A) - documents the cleanup schedule and recovery behavior
-- `library/requirements/reports/2026-07-21-backend-production-raid-security-audit.md` (A) - records post-implementation security findings and remediation evidence
+- `library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-07-21-backend-production-raid-security-audit.md` (A) - records post-implementation security findings and remediation evidence
 - `package.json` (M) - makes real DB verification canonical and expands the offline gate
 - `packages/ai/package.json` (M) - adds runtime config dependency
 - `packages/ai/src/anthropic-messages-provider.ts` (A) - implements the bounded validated Anthropic client

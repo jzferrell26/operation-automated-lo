@@ -188,4 +188,4 @@ Failure to reach the post-start demand target triggers a stop, kill, or reshape 
 - [System delivery and operations](../../../knowledge/private/architecture/system-delivery-and-operations.md)
 - [Backend readiness assessment, July 21, 2026](../../../knowledge/private/architecture/backend-readiness-assessment-2026-07-21.md)
 - [Authenticated Broker Marketplace teardown](../../../knowledge/private/competitive/broker-marketplace-authenticated-teardown.md)
-- [PRD-002: Operation Automated LO add-on portfolio](../prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md)
+- [PRD-002: Operation Automated LO add-on portfolio](../../backlog/prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md)

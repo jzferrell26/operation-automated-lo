@@ -9,9 +9,9 @@ A point-in-time review of the merged backend foundation, its production readines
 - [System architecture](system-architecture.md)
 - [System runtime contracts](system-runtime-contracts.md)
 - [System delivery and operations](system-delivery-and-operations.md)
-- [PRD-001 index](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md)
-- [PRD-001i: AI-assisted brand and campaign generation](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001i-ai-assisted-brand-and-campaign-generation.md)
-- [PRD-001j: Platform foundation, runtime, and delivery](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001j-operation-automated-lo-platform-foundation-runtime-and-delivery.md)
+- [PRD-001 index](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md)
+- [PRD-001i: AI-assisted brand and campaign generation](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001i-ai-assisted-brand-and-campaign-generation.md)
+- [PRD-001j: Platform foundation, runtime, and delivery](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001j-operation-automated-lo-platform-foundation-runtime-and-delivery.md)
 - [Production execution ledger](../../../../PRODUCTION_EXECUTION_LEDGER.md)
 
 ## Executive assessment

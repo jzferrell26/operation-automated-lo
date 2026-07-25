@@ -129,7 +129,7 @@ Unit coverage includes every production source file in the application, AI, GHL,
 - [GHL Marketplace, OAuth, and scope plan](library/knowledge/private/integrations/ghl-marketplace-and-scopes.md)
 - [Mortgage marketing compliance boundaries](library/knowledge/private/compliance/compliance-and-risk.md)
 - [Security threat model](library/knowledge/private/security/threat-model.md)
-- [PRD 001 index](library/requirements/backlog/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md)
+- [PRD 001 index](library/requirements/in-work/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md)
 - [Research sources](library/knowledge/private/research/sources.md)
 
 Research snapshot: July 19, 2026. Public competitor findings use official sites and help centers. No authenticated competitor account was used. HighLevel endpoint and scope behavior must be proven in an authorized HighLevel App Test account before any promotion beyond the evidence harness.

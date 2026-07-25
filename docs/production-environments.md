@@ -4,6 +4,8 @@
 
 This document defines the application contract for local, preview, staging, and production. It does not prove that a cloud environment, provider account, credential, database, bucket, or task project exists. Production traffic remains disabled until independent deployment, security, quality, and external-exercise evidence is approved.
 
+To create and connect those cloud resources to this repository, follow [operations/cloud-environment-setup.md](operations/cloud-environment-setup.md) and fill [operations/environment-inventory.template.md](operations/environment-inventory.template.md).
+
 ## Environment matrix
 
 | Environment | Provider mode | Data                  | Stripe | Trigger | Supabase          | Production traffic |

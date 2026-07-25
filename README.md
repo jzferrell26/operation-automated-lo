@@ -25,6 +25,8 @@ This repository is an evidence-producing scaffold, not a production-ready campai
 | Staging | Not configured by Phase 0. Fixed contract-test accounts require separate authorization. |
 | Production | Not configured and not authorized while G1 through G7 are blocked. G8 is an accepted constraint and does not authorize production. |
 
+To connect Vercel, Trigger.dev, Supabase, R2, and KMS to this repository, follow the operator runbook [docs/operations/cloud-environment-setup.md](docs/operations/cloud-environment-setup.md) and record non-secret IDs in [docs/operations/environment-inventory.template.md](docs/operations/environment-inventory.template.md).
+
 See the [preview-environment contract](docs/phase0-preview-environments.md) and [Supabase environment contract](supabase/environment-contract.md) for the complete separation rules.
 
 ## Prerequisites and install
@@ -116,6 +118,7 @@ Unit coverage includes every production source file in the application, AI, GHL,
 | `packages` | Application, domain, contracts, provider harnesses, rendering, storage, configuration, and shared UI boundaries. |
 | `supabase` | Unlinked local database contract, data-less seed, validation script, and pgTAP test. |
 | `tests` and `tooling` | Verification projects, security evidence, and boundary audits. |
+| `docs/operations` | Fail-closed runbooks, including cloud environment setup for Vercel and related services. |
 | `library` | Product research, architecture knowledge, compliance boundaries, and PRDs. |
 
 ## Product and research context

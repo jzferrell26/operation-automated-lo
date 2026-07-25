@@ -3,6 +3,7 @@ import { access, readFile } from "node:fs/promises";
 import { fail } from "./common.mjs";
 
 const runbooks = [
+  "docs/operations/cloud-environment-setup.md",
   "docs/operations/deployment.md",
   "docs/operations/rollback.md",
   "docs/operations/restore-evidence.md",

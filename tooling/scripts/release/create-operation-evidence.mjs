@@ -5,6 +5,7 @@ import { assertAllowedArguments, fail, parseArguments, requireArgument } from ".
 
 const operations = new Set([
   "deployment",
+  "cloud-environment-setup",
   "rollback",
   "database-restore",
   "provider-reconciliation",

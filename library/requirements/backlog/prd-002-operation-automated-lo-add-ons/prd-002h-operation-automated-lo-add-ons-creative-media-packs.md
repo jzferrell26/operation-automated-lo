@@ -44,4 +44,4 @@ Validate $29 to $99 usage packs and require a target gross margin after retries,
 ## Related
 
 - [PRD-002 index](./prd-002-operation-automated-lo-add-ons-index.md)
-- [AI-assisted brand and campaign generation](../prd-001-operation-automated-lo/prd-001i-ai-assisted-brand-and-campaign-generation.md)
+- [AI-assisted brand and campaign generation](../../in-work/prd-001-operation-automated-lo/prd-001i-ai-assisted-brand-and-campaign-generation.md)

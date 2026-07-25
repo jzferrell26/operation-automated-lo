@@ -10,7 +10,7 @@ The construction specification for Operation Automated LO, including the deploya
 - [System data model](system-data-model.md)
 - [System runtime contracts](system-runtime-contracts.md)
 - [System delivery and operations](system-delivery-and-operations.md)
-- [PRD-001j: Platform foundation, runtime, and delivery](../../../requirements/backlog/prd-001-operation-automated-lo/prd-001j-operation-automated-lo-platform-foundation-runtime-and-delivery.md)
+- [PRD-001j: Platform foundation, runtime, and delivery](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001j-operation-automated-lo-platform-foundation-runtime-and-delivery.md)
 
 ---
 

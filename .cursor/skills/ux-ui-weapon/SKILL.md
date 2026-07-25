@@ -17,7 +17,7 @@ You know four reference libraries intimately — shadcn/ui, Mantine, Lucide-reac
 
 ## Where the design system lives
 
-By default, the deploying product's design system lives at `library/knowledge-base/<product>-ux-ui/`. Canonical artifacts:
+By default, the deploying product's design system lives at `library/knowledge/private/ux-ui/`. Canonical artifacts:
 
 - `00-design-brief.md` — comprehensive master brief.
 - `01-master-tokens.css` — the token layer.
@@ -48,7 +48,7 @@ Consumers receive a resolved copy at `<repo>/public/brand/` via `pnpm brand-sync
 
 **Forbidden paths (deleted):**
 
-- `library/knowledge-base/brand/` — removed in schema v1
+- `removed brand paths under library/knowledge/private/brand/` — removed in schema v1
 - `<repo>/brand/` — removed in schema v1
 
 If you encounter either of these paths in existing docs, they are stale references. Update them to the canonical paths above.
@@ -92,13 +92,13 @@ Do these in order. Full detail in `guides/01-enforcement-procedure.md`.
 - **Library primitives are wrapped, not consumed directly in feature code.**
 - **System-level changes escalate to `design-system-guardian`.**
 - **Tenant theming, dark mode, RTL** go through the overridable token layer and CSS logical properties — never hard-code brand colors.
-- **Product-specific overrides apply in addition.** If the deploying product's `library/knowledge-base/<product>-ux-ui/` folder declares non-negotiables, they layer on top of this procedure.
+- **Product-specific overrides apply in addition.** If the deploying product's `library/knowledge/private/ux-ui/` folder declares non-negotiables, they layer on top of this procedure.
 
 ## Where reports land
 
-- **UX review tied to a feature** → `library/requirements/features/feature-<###>-<title>/reports/<date>-ux-review.md`.
-- **UX review tied to an issue** → `library/requirements/issues/issue-<###>-<title>/reports/<date>-ux-review.md`.
-- **Standalone accessibility audit** → `library/qa/ux-ui/<date>-accessibility-audit.md`.
+- **UX review tied to a feature** → `library/requirements/{backlog,in-work}/prd-<###>-<slug>/qa/<date>-ux-review.md`.
+- **UX review tied to an issue** → `library/issues/{backlog,in-work}/ird-<###>-<slug>/qa/<date>-ux-review.md`.
+- **Standalone accessibility audit** → `library/requirements/reports/<date>-accessibility-audit.md`.
 
 ## Guides (read on demand)
 
@@ -135,7 +135,7 @@ Do these in order. Full detail in `guides/01-enforcement-procedure.md`.
 
 Depending on invocation:
 
-- **UI review / audit:** markdown answer in the `templates/review-output.md` shape — quoted brief section, `path:startLine-endLine` citations, delta in token-named terms. Save under the `library/requirements/.../reports/` or `library/qa/ux-ui/` path described above.
+- **UI review / audit:** markdown answer in the `templates/review-output.md` shape — quoted brief section, `path:startLine-endLine` citations, delta in token-named terms. Save under the owning PRD/IRD `qa/` folder or `library/requirements/reports/` as described above.
 - **New spec:** a markdown file in `<design-system-folder>/03-components/` or `04-screens/`. Follow `templates/component-brief-with-wrap.md` if the component wraps a library.
 - **Wrapper code:** a `.tsx` file per `templates/component-wrapper.tsx` with a CVA `variants` factory, `forwardRef`, spread `...props`.
 - **Spec update:** in-place edits with commit prefix `ux-ui-guardian: <section>: <change>` (or whatever convention the deploying product's knowledge-base specifies).

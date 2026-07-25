@@ -77,7 +77,7 @@
 
 ## PRD-001J (34 criteria)
 
-Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001j-operation-automated-lo-platform-foundation-runtime-and-delivery.md`
+Source: `library/requirements/in-work/prd-001-operation-automated-lo/prd-001j-operation-automated-lo-platform-foundation-runtime-and-delivery.md`
 
 | ID          | Section                    | Exact criterion                                                                                                                                                  | Dependencies     | Owning Guardian              | Model             | Status                        | Verification evidence                                                                                                                                                                                                    |
 | ----------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ---------------------------- | ----------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -118,7 +118,7 @@ Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001j-op
 
 ## PRD-001A (41 criteria)
 
-Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001a-tenant-installation-and-ghl-oauth.md`
+Source: `library/requirements/in-work/prd-001-operation-automated-lo/prd-001a-tenant-installation-and-ghl-oauth.md`
 
 | ID          | Section                       | Exact criterion                                                                                                                                                                   | Dependencies | Owning Guardian                        | Model             | Status                        | Verification evidence                                                                                        |
 | ----------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | -------------------------------------- | ----------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
@@ -166,7 +166,7 @@ Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001a-te
 
 ## PRD-001B (20 criteria)
 
-Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001b-brand-partner-and-compliance-profile.md`
+Source: `library/requirements/in-work/prd-001-operation-automated-lo/prd-001b-brand-partner-and-compliance-profile.md`
 
 | ID          | Section             | Exact criterion                                                                                                                                                                          | Dependencies               | Owning Guardian                          | Model             | Status   | Verification evidence                                                                                                   |
 | ----------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ---------------------------------------- | ----------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
@@ -193,7 +193,7 @@ Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001b-br
 
 ## PRD-001C (27 criteria)
 
-Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001c-campaign-blueprint-and-preflight.md`
+Source: `library/requirements/in-work/prd-001-operation-automated-lo/prd-001c-campaign-blueprint-and-preflight.md`
 
 | ID          | Section       | Exact criterion                                                                                                                                                                                                                                                                 | Dependencies                     | Owning Guardian            | Model             | Status   | Verification evidence                                                                                                        |
 | ----------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | -------------------------- | ----------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -227,7 +227,7 @@ Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001c-ca
 
 ## PRD-001D (33 criteria)
 
-Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001d-page-pdf-and-creative-rendering.md`
+Source: `library/requirements/in-work/prd-001-operation-automated-lo/prd-001d-page-pdf-and-creative-rendering.md`
 
 | ID          | Section                 | Exact criterion                                                                                                                                                                              | Dependencies                    | Owning Guardian            | Model             | Status   | Verification evidence                                                                                                           |
 | ----------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------- | ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -267,7 +267,7 @@ Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001d-pa
 
 ## PRD-001E (32 criteria)
 
-Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001e-meta-ad-launch.md`
+Source: `library/requirements/in-work/prd-001-operation-automated-lo/prd-001e-meta-ad-launch.md`
 
 | ID          | Section                       | Exact criterion                                                                                                                                                                 | Dependencies       | Owning Guardian                                     | Model             | Status                     | Verification evidence                                                                                                          |
 | ----------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | --------------------------------------------------- | ----------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -306,7 +306,7 @@ Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001e-me
 
 ## PRD-001F (29 criteria)
 
-Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001f-ghl-lead-routing-and-attribution.md`
+Source: `library/requirements/in-work/prd-001-operation-automated-lo/prd-001f-ghl-lead-routing-and-attribution.md`
 
 | ID          | Section           | Exact criterion                                                                                                                                                      | Dependencies                         | Owning Guardian                                     | Model             | Status      | Verification evidence                                                                                          |
 | ----------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | --------------------------------------------------- | ----------------- | ----------- | -------------------------------------------------------------------------------------------------------------- |
@@ -342,7 +342,7 @@ Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001f-gh
 
 ## PRD-001H (24 criteria)
 
-Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001h-self-onboarding-and-launch-readiness.md`
+Source: `library/requirements/in-work/prd-001-operation-automated-lo/prd-001h-self-onboarding-and-launch-readiness.md`
 
 | ID          | Section                                | Exact criterion                                                                                                                                                          | Dependencies                    | Owning Guardian                                        | Model             | Status                        | Verification evidence                                                                                           |
 | ----------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- | ------------------------------------------------------ | ----------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -373,7 +373,7 @@ Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001h-se
 
 ## PRD-001G (43 criteria)
 
-Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001g-campaign-and-portfolio-reporting.md`
+Source: `library/requirements/in-work/prd-001-operation-automated-lo/prd-001g-campaign-and-portfolio-reporting.md`
 
 | ID          | Section                   | Exact criterion                                                                                                                                                                       | Dependencies        | Owning Guardian                             | Model             | Status   | Verification evidence                                                                                                                  |
 | ----------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ------------------------------------------- | ----------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -423,7 +423,7 @@ Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001g-ca
 
 ## PRD-001I (14 criteria)
 
-Source: `library/requirements/backlog/prd-001-operation-automated-lo/prd-001i-ai-assisted-brand-and-campaign-generation.md`
+Source: `library/requirements/in-work/prd-001-operation-automated-lo/prd-001i-ai-assisted-brand-and-campaign-generation.md`
 
 | ID          | Section             | Exact criterion                                                                                                                                                     | Dependencies                     | Owning Guardian | Model             | Status                     | Verification evidence                                                                                                                            |
 | ----------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | --------------- | ----------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |

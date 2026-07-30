@@ -2,7 +2,9 @@
 
 This file is environment metadata, not deployment configuration. It contains no
 Supabase project reference, URL, access token, connection string, or credential.
-Deployment ownership remains with the delivery phase.
+Deployment ownership remains with the delivery phase. Operator steps to create
+cloud projects and connect them to this repository live in
+`docs/operations/cloud-environment-setup.md`.
 
 | Environment | Database target | Permitted data | Provider behavior | Phase 0 boundary |
 | --- | --- | --- | --- | --- |

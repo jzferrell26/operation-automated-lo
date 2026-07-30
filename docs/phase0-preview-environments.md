@@ -40,12 +40,14 @@ Startup must fail if a preview configuration enables a non-stub provider mode or
 
 ## Operator checklist
 
-- Configure Vercel Preview for pull requests, with no production promotion from Phase 0 CI.
+- Follow the full connection sequence in [operations/cloud-environment-setup.md](operations/cloud-environment-setup.md).
+- Configure Vercel Preview for pull requests against `jzferrell26/operation-automated-lo`, Root Directory `apps/web`, with no production promotion from Phase 0 CI.
 - Connect Trigger.dev preview branches to the same Git branch convention used by pull requests.
 - Configure Supabase ephemeral preview branches as data-less and apply only the synthetic seed.
 - Scope preview environment variables to the preview environment. Do not copy staging or production values.
 - Keep HighLevel, Meta, Stripe, and other adapters in stub mode until a separately authorized staging contract test.
 - Tear down preview branches according to provider retention settings. No preview artifact is a production backup.
+- Record non-secret resource IDs in [operations/environment-inventory.template.md](operations/environment-inventory.template.md).
 
 ## Explicit non-actions
 

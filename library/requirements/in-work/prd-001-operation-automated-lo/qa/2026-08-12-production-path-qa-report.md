@@ -8,7 +8,7 @@
 
 ## Summary
 
-PASS. The documentation now records the researched production path, makes Realtor co-branding collateral-only, defines paid ads as loan-officer or lender branded, and retains the older expansion portfolio as unauthorized potential future work. No contradictory core requirement was found in the changed source-of-truth documents.
+PASS. The documentation now records the researched production path, makes Realtor co-branding collateral-only, defines paid ads as loan-officer or lender branded, and retains the older expansion portfolio as unauthorized potential future work. The merge-blocking dependency advisories were remediated without changing product behavior, and the complete offline verification gate passed.
 
 ## Scorecard
 
@@ -44,6 +44,7 @@ None.
 | R6 | Separate collateral and paid-ad rendering and approvals | PASS | `prd-001c-campaign-blueprint-and-preflight.md:39` and `prd-001d-page-pdf-and-creative-rendering.md:5` | Separate projections, hashes, templates, and summaries are required. |
 | R7 | Fail closed if Realtor identity enters a paid ad | PASS | `prd-001c-campaign-blueprint-and-preflight.md:48` and `prd-001e-meta-ad-launch.md:77` | Preflight and provider-adapter requirements both enforce the rule. |
 | R8 | Keep client-specific implementation details out of the product blueprint | PASS | `prd-001-operation-automated-lo-index.md:62` | No client name, asset, offer, or account setting is committed. |
+| R9 | Preserve a green merge gate | PASS | `pnpm-workspace.yaml:42` and `pnpm-lock.yaml` | Patched transitive resolutions remove all known advisories; the full offline gate passes. |
 
 ## Files Changed
 
@@ -59,4 +60,5 @@ None.
 - `library/requirements/in-work/prd-001-operation-automated-lo/prd-001d-page-pdf-and-creative-rendering.md` (M): Separates collateral and paid-ad rendering.
 - `library/requirements/in-work/prd-001-operation-automated-lo/prd-001e-meta-ad-launch.md` (M): Restricts the Meta adapter to Realtor-free paid-ad data.
 - `library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-12-production-path-security-review.md` (A): Records the scoped security close-out.
-
+- `pnpm-lock.yaml` (M): Resolves audited transitive dependencies to patched versions.
+- `pnpm-workspace.yaml` (M): Adds narrow vulnerable-range overrides and release-age exceptions for the patched versions.

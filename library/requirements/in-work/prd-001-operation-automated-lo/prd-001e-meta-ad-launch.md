@@ -4,6 +4,8 @@
 
 Discover the location's connected Meta assets, create a campaign draft from an approved Open House Boost version, require an exact final confirmation, publish through HighLevel, and report live state.
 
+The paid campaign follows the established loan-officer or lender-branded lead-generation model used for approved client campaigns. Realtor and brokerage identity are prohibited from the paid ad, even when the related page, flyer, PDF, or QR collateral is co-branded.
+
 ## Scope
 
 - `adPublishing.readOnly` discovery and reporting
@@ -40,6 +42,8 @@ Before public release, validate whether Ads Publisher can be a separate Marketpl
 ### Draft
 
 - The adapter compiles the frozen campaign version into the current HighLevel Meta contract.
+- The adapter consumes only the Realtor-free paid-ad projection and cannot read Realtor or brokerage presentation fields while compiling provider payloads.
+- Ad copy, creative, lead-form presentation, advertiser identity, and calls to action use loan-officer or lender branding only.
 - A command idempotency key is reserved before the provider write.
 - Provider IDs are saved only after a confirmed response or successful read-back.
 - The app reads the draft back and compares it with the approved version.
@@ -68,6 +72,7 @@ Before public release, validate whether Ads Publisher can be a separate Marketpl
 
 ### Forbidden operations
 
+- No paid ad can contain Realtor or brokerage names, images, logos, contact information, or dual-brand treatment.
 - No delete endpoint can be invoked by product code.
 - No custom-audience member operation can be invoked.
 - No Meta integration or ad-account disconnect can be invoked.

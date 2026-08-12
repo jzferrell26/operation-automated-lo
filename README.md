@@ -2,7 +2,7 @@
 
 Operation Automated LO is a private HighLevel Marketplace product and research monorepo for a mortgage loan officer partner campaign engine. Phase 0 contains the platform scaffold, synthetic founding-offer demo, fixture-only task runner, isolated local Supabase contract, verification harnesses, and the research and requirements package.
 
-The first product wedge is **Open House Boost**: a loan officer and Realtor enter one property, prepare a co-branded campaign package, review compliance and targeting checks, require a named human approval, and attribute resulting leads and pipeline outcomes in HighLevel.
+The first product wedge is **Open House Boost**: a loan officer and Realtor enter one property, prepare co-branded flyers and property marketing materials, launch a separate loan-officer or lender-branded ad campaign, review compliance and targeting checks, require named human approval, and attribute resulting leads and pipeline outcomes in HighLevel. Paid ads never carry Realtor, brokerage, or dual-brand identity.
 
 **Phase 0 authority and ownership:** [EXECUTION_LEDGER.md](EXECUTION_LEDGER.md) records the assigned owner, evidence, dependencies, and current state for every Phase 0 row. Changes use repository pull-request review and must not mark a row or gate complete without its named evidence.
 

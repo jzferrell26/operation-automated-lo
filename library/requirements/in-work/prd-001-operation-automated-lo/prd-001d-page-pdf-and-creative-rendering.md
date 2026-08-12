@@ -2,7 +2,7 @@
 
 ## Goal
 
-Generate all Open House Boost assets from one frozen render manifest and publish only a safe public projection.
+Generate co-branded Open House Boost collateral and a separate loan-officer or lender-branded paid-ad projection from one frozen campaign version, then publish only safe approved outputs.
 
 ## Scope
 
@@ -50,6 +50,8 @@ Generate all Open House Boost assets from one frozen render manifest and publish
 ### Creative
 
 - Generate only the initial approved Meta sizes.
+- Meta creative uses loan-officer or lender identity only. It must not contain a Realtor name, image, logo, brokerage mark, contact information, or dual-brand treatment.
+- Collateral and paid-ad creative use separate render projections, templates, hashes, and approval previews.
 - Images are cover-cropped with configurable focal point and safe text zones.
 - Copy and disclosure remain readable at output resolution.
 - Each creative has a preview and downloadable original.

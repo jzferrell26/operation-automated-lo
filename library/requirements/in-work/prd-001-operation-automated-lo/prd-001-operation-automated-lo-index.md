@@ -2,11 +2,11 @@
 
 ## Status
 
-In Work. Repository implementation for the PRD-001 core is actively maintained under `library/requirements/in-work/`. Production traffic remains blocked by research, App Test, and compliance gates G1 through G7 in the [2026 build-readiness decision](../../../knowledge/private/research/2026-build-readiness-and-research-gate.md). G8 is `ACCEPTED CONSTRAINT`, never `PASS`: no 15-paid-founder evidence exists, commercial validation is unproven, and 15 paid founders is a post-start target rather than an implementation prerequisite.
+In Work. Repository implementation for the PRD-001 core is actively maintained under `library/requirements/in-work/`. The current repository is a strong synthetic preview and evidence scaffold, not a production Marketplace release. Production traffic remains blocked by App Test, live integration, deployment, security, and compliance evidence in gates G1 through G7 of the [2026 build-readiness decision](../../../knowledge/private/research/2026-build-readiness-and-research-gate.md). G8 is `ACCEPTED CONSTRAINT`, never `PASS`: no 15-paid-founder evidence exists, commercial validation is unproven, and 15 paid founders is a post-start target rather than an implementation prerequisite.
 
 ## Objective
 
-Deliver an approval-gated HighLevel Marketplace application that lets a mortgage loan officer turn one property into a co-branded Open House Boost campaign, publish it through the location's connected Meta account, route leads into HighLevel, and report outcomes through the mortgage pipeline.
+Deliver an approval-gated HighLevel Marketplace application that lets a mortgage loan officer turn one property into co-branded Realtor collateral plus a separate loan-officer or lender-branded paid campaign, publish the ad through the location's connected Meta account, route leads into HighLevel, and report outcomes through the mortgage pipeline.
 
 ## Primary user story
 
@@ -26,6 +26,56 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 10. A prepared customer can complete permissions, configuration, verification, and launch readiness without required operator onboarding.
 11. Product-owned LLM APIs assist brand and campaign drafting, while deterministic rules and humans retain compliance, approval, and publish authority.
 12. The page, PDF, QR destination, Meta launch, email and SMS package, approval, artifact history, and GHL outcomes belong to one campaign record.
+13. Realtor co-branding is collateral-only. Paid ads, ad copy, ad creative, lead forms, and paid-ad calls to action use loan-officer or lender identity only.
+
+## August 2026 production decision
+
+The production research review confirms that the existing modular-monolith direction is correct. The project must not be rebuilt around direct Meta credentials, per-customer deployments, or additional microservices. The shortest credible path to market is one narrow Open House Boost release proved against real HighLevel App Test behavior.
+
+### System ownership
+
+| System | Authoritative responsibility |
+| --- | --- |
+| HighLevel | Marketplace installation, signed user context, location authority, CRM contacts and opportunities, connected Meta assets, existing workflows, appointments, and provider reporting |
+| Operation Automated LO | Tenant configuration, immutable campaign versions, deterministic preflight, named approvals, provider-operation records, durable orchestration, generated artifacts, audit history, and attribution links |
+| Meta through HighLevel | Client-owned ad account, campaign delivery, review status, spend, and ad-platform policy enforcement |
+| Stripe | Hosted founding-cohort checkout, subscription lifecycle, and customer self-service billing |
+
+Operation Automated LO must use HighLevel's documented Meta advertising surface instead of storing direct Meta OAuth credentials. Because `adPublishing.write` also grants destructive and unrelated advertising operations, every provider call must pass through a server-side method and route allowlist. OAuth scope is necessary technical permission, not product authorization.
+
+### Founding production slice
+
+The first production release is limited to this complete vertical slice:
+
+1. Install the application for one HighLevel location and establish a server-verified session from signed user context.
+2. Configure one loan officer profile, one Realtor profile, one lender-approved compliance profile, and one existing HighLevel lead-routing workflow.
+3. Create one Open House Boost campaign from user-supplied property facts and authorized media.
+4. Generate one frozen co-branded page, PDF, and QR destination plus a separate loan-officer or lender-branded Meta creative set. The paid-ad projection must exclude all Realtor and brokerage identity.
+5. Run deterministic preflight and obtain a named human approval for the exact campaign version.
+6. Create a HighLevel Meta draft, read it back, compare all material fields with the approved version, and require a separate explicit publish confirmation.
+7. Observe publish progress and support explicit pause and resume without exposing delete, audience upload, integration mutation, reselling, Google, or LinkedIn operations.
+8. Prove one no-spend test lead reaches the configured HighLevel contact, tag, opportunity, owner, workflow, notification, and attribution path.
+9. Show basic campaign status, spend, leads, appointments, and normalized pipeline outcomes.
+
+The founding slice excludes rate, APR, payment, down-payment, and financing-scenario claims. It also excludes MLS scraping, customer-list audiences, lookalike audiences, Realtor reimbursement, shared ad spend, autonomous publishing, autonomous budget changes, and a product-owned messaging engine.
+
+Paid-ad behavior follows the reusable model already used for approved client campaigns: the loan officer or lender is the sole advertiser identity, while Realtor participation remains confined to separately rendered marketing collateral. Client-specific names, assets, offers, and account configuration are not copied into the product blueprint.
+
+### Evidence-first delivery rule
+
+Synthetic completeness does not authorize production. New feature expansion pauses until the following evidence exists:
+
+| Evidence stream | Required proof |
+| --- | --- |
+| Marketplace installation | Direct location install, agency bulk install, signed context, refresh rotation, uninstall, reinstall, reconnect, and iframe fallback |
+| Meta execution | Asset discovery, draft creation, read-back match, explicit publish, progress, pause, resume, provider rejection, uncertain-write reconciliation, and reporting |
+| Lead routing | One test lead proves contact, tag, opportunity, assignment, workflow, notification, and attribution behavior |
+| Billing | Stripe success, cancellation, duplicate and delayed webhook handling, subscription cancellation, and HighLevel billing authorization per location |
+| Cloud environment | Isolated preview, staging, and dark production resources with production traffic disabled until release approval |
+| Compliance | Mortgage counsel and lender approval of the Open House Boost operating model, disclosures, consent evidence, targeting, retention, deletion, and Realtor relationship rules |
+| Release safety | Dependency alerts resolved or formally accepted, required CI checks enforced, browser suite stable, security review complete, and quality verification complete |
+
+The compliance-aware campaign compiler, immutable evidence chain, and HighLevel-native execution path are the differentiated product. Generic AI generation and broad marketing-tool scope are not the initial moat.
 
 ## Sub-PRDs
 
@@ -65,6 +115,9 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 ### Assets
 
 - One generation command produces a responsive public page, print-ready PDF, QR link, and Meta creative from the same frozen inputs.
+- The public page, PDF, flyer, QR materials, and other collateral may include approved Realtor and brokerage identity.
+- Meta ad copy, creative, lead forms, advertiser identity, and paid-ad calls to action contain no Realtor name, image, logo, brokerage mark, contact information, or dual-brand treatment.
+- The system renders collateral and paid ads as separate projections with separate hashes and approval summaries, even when they share one campaign and attribution record.
 - Every artifact records content hash, template version, source versions, and renderer version.
 - Public pages expose only the approved public projection.
 
@@ -73,6 +126,7 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 - A named authorized user approves the exact campaign version.
 - Any material edit invalidates that approval.
 - Meta publishing is impossible without a current successful preflight and approval.
+- Paid-ad preflight fails closed if any Realtor or brokerage identity appears in copy, creative, lead-form presentation, advertiser identity, or call-to-action content.
 - The user sees and confirms page, ad account, budget, dates, category, geography, copy, creative, form, and destination before publish.
 - The product can publish, observe progress, pause, and resume through HighLevel.
 - Delete, custom-audience upload, Google, LinkedIn, reselling, and autonomous budget-change operations are unreachable.
@@ -135,23 +189,40 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 - Custom audience uploads
 - Automatic optimization of live budgets or targeting
 
+## Potential future items
+
+Previously documented expansion ideas remain part of the product record, but they are not authorized for the founding production slice. They are maintained in [PRD-002: Operation Automated LO Add-On Portfolio](../../backlog/prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md) and require independent demand, compliance, provider, margin, and security evidence.
+
+Potential future items include:
+
+- Custom domains and advanced analytics
+- A reusable Realtor workspace beyond campaign-specific approval access
+- Additional campaign blueprint packs
+- Lender-approved financing scenarios
+- Licensed homeowner value and equity intelligence
+- Licensed refinance opportunity signals
+- Agency portfolio, delegated administration, and white-label controls
+- Constrained creative image and video packs
+- Google and LinkedIn advertising
+- Autonomous optimization only if a later approved policy and control model makes it acceptable
+
+Keeping these items in PRD-002 preserves the earlier roadmap without allowing it to compete with the App Test and production evidence work required for PRD-001.
+
 ## Delivery sequence
 
-1. Run the $500 founding offer against a working demo.
-2. Proceed under the July 20, 2026 G8 `ACCEPTED CONSTRAINT` decision. Treat 15 paid founders as a post-start commercial validation target, not an implementation prerequisite.
-3. Implement the Phase 0 portion of 001j: monorepo scaffold, verification, preview environments, App Test harness, golden render fixtures, threat-model harness, and paid-founder demo.
-4. Record `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE` for every core research gate.
-5. Complete the tenant, identity, session, token, command, inbox, outbox, durable-task, rendering, observability, and recovery foundation in 001j.
-6. Implement 001a through 001d and operate Meta launch manually for an internal proof.
-7. Implement 001e against the verified sandbox contract.
-8. Implement 001f and pass the verified synthetic lead test.
-9. Implement 001h and prove a prepared administrator can reach Launch Ready without operator configuration.
-10. Implement 001g for the founding cohort.
-11. Implement 001i and prove tenant-isolated model routing, prompt caching, usage reconciliation, and budget enforcement.
-12. Complete security review.
-13. Complete quality verification against every acceptance criterion.
-14. Run the founding beta in no more than the permitted private-app agency count.
-15. Submit for public Marketplace review or private-app security review.
+1. Proceed under the July 20, 2026 G8 `ACCEPTED CONSTRAINT` decision. Treat 15 paid founders as a post-start commercial validation target, not an implementation prerequisite.
+2. Stabilize the repository gate by resolving dependency alerts, enforcing required CI checks, and removing browser-suite flakiness.
+3. Create isolated preview, staging, and dark production resource shells. Keep production traffic disabled.
+4. Configure the HighLevel Marketplace App Test application and prove installation, identity, OAuth, refresh, uninstall, reconnect, scopes, webhooks, and iframe fallback.
+5. Prove the Meta draft, read-back, approval comparison, explicit publish, progress, pause, resume, rejection, reconciliation, and reporting contracts with approved test assets.
+6. Prove the no-spend lead path through HighLevel contacts, tags, opportunities, assignment, the selected workflow, notification, and attribution.
+7. Prove Stripe and HighLevel external-billing lifecycle behavior for one location and bulk-installed locations.
+8. Obtain mortgage-counsel and lender-compliance approval for the founding blueprint and operating model.
+9. Complete only the production gaps in 001a through 001f and the minimum launch-readiness path in 001h. Reuse the existing synthetic implementation where it matches observed contracts.
+10. Add only the basic founding-cohort reporting required from 001g and the constrained copy-assistance required from 001i.
+11. Complete security review, then quality verification against the frozen founding-slice acceptance criteria.
+12. Run a small private beta within HighLevel's permitted private-app agency count and measure activation, support time, campaign publication, lead-path success, model cost, and recurring intent.
+13. Submit for public Marketplace review before broad distribution. Preserve PRD-002 as potential future work until the founding product gates pass.
 
 ## Pre-implementation research gates
 

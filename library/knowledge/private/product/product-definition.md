@@ -14,7 +14,7 @@
 
 ## The job to be done
 
-A loan officer wants to become useful to Realtor partners without managing another disconnected marketing stack. Given one property, event, or approved offer, the loan officer needs a complete, co-branded campaign that can be reviewed, launched, followed up, and measured inside the HighLevel account the team already uses.
+A loan officer wants to become useful to Realtor partners without managing another disconnected marketing stack. Given one property, event, or approved offer, the loan officer needs co-branded collateral for the Realtor relationship plus a separate loan-officer or lender-branded lead-generation campaign that can be reviewed, launched, followed up, and measured inside the HighLevel account the team already uses.
 
 The product must reduce seven disconnected jobs to one guided flow:
 
@@ -22,7 +22,7 @@ The product must reduce seven disconnected jobs to one guided flow:
 2. Generate the campaign page and supporting assets.
 3. Validate brand and mortgage-marketing constraints.
 4. Let the loan officer and required compliance reviewer approve a frozen version.
-5. Create or publish the Meta campaign through HighLevel's connected ad account.
+5. Create or publish a loan-officer or lender-branded Meta campaign through HighLevel's connected ad account. Realtor and brokerage identity are prohibited from the paid ad surface.
 6. Route leads into HighLevel contacts, opportunities, tags, calendars, and existing workflows.
 7. Report the campaign from spend through funded or closed outcome.
 
@@ -32,7 +32,7 @@ Operation Automated LO is not a generic AI employee platform, a replacement CRM,
 
 The short promise is:
 
-> Turn one property into a complete co-branded campaign inside HighLevel.
+> Turn one property into co-branded marketing materials and a connected loan-officer campaign inside HighLevel.
 
 ## Primary user and buyer
 
@@ -45,7 +45,7 @@ The Realtor is a collaborator, not the first paid seat. Realtor access should be
 ### Inputs
 
 - Loan officer brand and required disclosure profile
-- Realtor identity, brand, contact details, and approval status
+- Realtor identity, brand, contact details, collateral permission, and approval status
 - Property address, facts, photos, description, open-house schedule, and listing permission attestation
 - Campaign goal, geography, daily budget, duration, and approved call to action
 - GHL location, calendar, pipeline, stage, tags, and optional workflow mapping
@@ -56,7 +56,7 @@ The Realtor is a collaborator, not the first paid seat. Realtor access should be
 - Responsive co-branded single-property campaign page
 - Print-ready PDF flyer or property packet
 - QR code and trackable short link
-- Meta ad copy and correctly sized creative
+- Loan-officer or lender-branded Meta ad copy and correctly sized creative with no Realtor, brokerage, or dual-brand identity
 - GHL or Meta lead form mapping
 - Email and SMS follow-up package routed into an existing approved workflow
 - Campaign record with approver, version, budget, launch state, and audit history
@@ -70,8 +70,8 @@ The job is complete when the campaign is live in the client-owned Meta ad accoun
 
 | Order | Blueprint | User outcome |
 | --- | --- | --- |
-| 1 | Open House Boost | Realtor gets a page, PDF, QR code, ad, and captured leads for one open house. |
-| 2 | New Listing Spotlight | Realtor and loan officer promote a new listing with co-branded buyer financing calls to action. |
+| 1 | Open House Boost | Realtor gets co-branded page, PDF, and QR materials while the loan officer runs a separately branded lead-generation ad and captures attributed leads. |
+| 2 | New Listing Spotlight | Realtor and loan officer receive co-branded listing collateral while paid promotion remains loan-officer or lender branded. |
 | 3 | Realtor Partner Campaign | Loan officer creates a reusable partner-facing campaign without a specific listing. |
 | 4 | Homebuyer Education Event | Loan officer fills a workshop or webinar and routes registrations into HighLevel. |
 | 5 | Buyer Preapproval Campaign | Loan officer launches a lender-approved buyer lead campaign with attribution. |
@@ -81,7 +81,7 @@ The job is complete when the campaign is live in the client-owned Meta ad accoun
 ### Build in the first release
 
 - One GHL location per tenant installation
-- Loan officer and Realtor co-brand profile
+- Loan officer brand profile plus Realtor co-brand profile for collateral only
 - AI-assisted brand-profile drafting from approved marketing samples, with field-level human confirmation
 - Open House Boost blueprint
 - External single-property page and PDF generation

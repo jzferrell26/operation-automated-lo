@@ -13,7 +13,7 @@ Use the AutomatedLO community to validate the product and generate the requested
 | Included period | 90 days |
 | Continuation | $197 per month after 90 days |
 | Onboarding | Self-service setup wizard, recording, checklist, and optional office-hours thread |
-| Included product | GHL connection, AI-assisted brand/compliance profile, one Open House Boost blueprint, page/PDF/creative and campaign-text generation, Meta launch flow, GHL routing, reporting |
+| Included product | GHL connection, AI-assisted brand/compliance profile, one Open House Boost blueprint, co-branded page/PDF collateral, loan-officer or lender-branded ad creative and campaign text, Meta launch flow, GHL routing, reporting |
 | Not included | Individual funnel builds, custom automation, ad management service, custom compliance drafting, database cleanup, voice agent, database reactivation |
 
 Twenty buyers at $500 produce $10,000. That is about 5.8 percent of a 343-member community.
@@ -24,7 +24,7 @@ The launch needs a working demonstration, not a full SaaS:
 
 1. One real or representative property input
 2. One co-branded public page
-3. One generated PDF and ad creative set
+3. One generated co-branded PDF plus a separate Realtor-free, loan-officer or lender-branded ad creative set
 4. One campaign approval screen
 5. One Meta draft or sandbox launch walkthrough
 6. One GHL lead-routing demonstration
@@ -39,7 +39,7 @@ The customer-facing setup cannot depend on concierge work. Any temporary manual 
 
 The launch should be framed around the business outcome:
 
-> Give a Realtor one property campaign that actually connects the page, flyer, ad, follow-up, and pipeline inside the HighLevel account you already use.
+> Give a Realtor polished co-branded property materials while the loan officer runs a connected, separately branded ad, follow-up, and pipeline inside the HighLevel account already in use.
 
 Avoid leading with AI agents, 21 tools, or Marketplace architecture. Those are implementation details, not the buying reason.
 

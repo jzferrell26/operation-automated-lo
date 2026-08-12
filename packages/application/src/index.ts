@@ -61,19 +61,27 @@ export {
 
 export {
   appendCampaignTransition,
+  authorizePaidAdProjectionForRendering,
+  campaignProjectionHash,
   completeRegeneration,
   createApprovalDecision,
   createCampaignVersion,
+  createCampaignProjections,
+  createProjectionApprovalDecision,
   duplicateCampaign,
   recordGeneration,
   redeemApprovalLink,
   retryCampaignOperation,
   runCampaignPreflight,
+  type PaidAdBrandAttestationAuthority,
+  runPaidAdBrandPreflight,
   type ApprovalAuthorityPort,
   type ApprovalLinkPort,
   type CampaignEventPort,
   type CampaignVersionRepository,
   type CampaignVersionTransaction,
+  type CampaignProjectionPair,
+  type PaidAdBrandPreflightResult,
 } from "./campaign-foundation.js";
 
 export {

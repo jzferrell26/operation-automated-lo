@@ -11,6 +11,7 @@ import {
   advanceMetaPublishProgress,
   assertMetaDraftReadBackMatches,
   assertMetaPublishAuthorized,
+  calculatePaidAdProjectionHash,
   compareMetaDraftReadBack,
   compileFrozenMetaDraft,
   configureMetaSpecialCategoryFixture,
@@ -68,6 +69,62 @@ function category(campaignType: "property_only" | "mortgage_only" | "property_an
 }
 
 function draft(overrides: Readonly<Record<string, unknown>> = {}) {
+  const paidAdInput = {
+    schemaVersion: 1 as const,
+    projectionRef: "paid_projection_Meta001",
+    locationRef: "loc_MetaFixture",
+    campaignRef: "campaign_MetaFixture",
+    campaignVersionRef: "ver_Meta001",
+    template: {
+      id: "open-house-boost-paid-ad" as const,
+      version: "1.0.0",
+    },
+    advertiserIdentity: {
+      kind: "loan_officer" as const,
+      displayName: "Morgan Lee Home Lending",
+      logoAssetRef: "asset_LenderLogo001",
+      imageAssetRef: "asset_LoanOfficer001",
+      contactInformation: {
+        phone: "+1 512 555 0147",
+        email: "morgan@lender.example",
+        websiteUrl: "https://lender.example",
+      },
+    },
+    copy: {
+      primaryText: "Review available property financing paths.",
+      headline: "Explore financing options",
+      description: "Fixture-only campaign creative.",
+    },
+    creative: {
+      headline: "Explore financing options",
+      body: "Review available property financing paths.",
+      callToActionLabel: "Learn about financing",
+      propertyImageAssetRefs: ["asset_PropertyHero001"],
+      identityAssetRefs: ["asset_LenderLogo001", "asset_LoanOfficer001"],
+      disclosureBlocks: ["Equal Housing Opportunity."],
+    },
+    leadForm: {
+      headline: "Request home financing information",
+      description: "Morgan Lee Home Lending will follow up about financing options.",
+      callToActionLabel: "Request information",
+      privacyPolicyUrl: "https://lender.example/privacy",
+    },
+    approvalSummary: {
+      approvalSummaryRef: "approval_summary_Meta001",
+      scope: "paid_ad" as const,
+      previewRef: "preview_Meta001",
+      requiredApproverRoles: ["lender_approver" as const],
+    },
+  };
+  const projectionHash = calculatePaidAdProjectionHash(paidAdInput);
+  const paidAdProjection = {
+    ...paidAdInput,
+    projectionHash,
+    approvalSummary: {
+      ...paidAdInput.approvalSummary,
+      projectionHash,
+    },
+  };
   return {
     locationRef: "loc_MetaFixture",
     campaignVersionRef: "ver_Meta001",
@@ -86,14 +143,37 @@ function draft(overrides: Readonly<Record<string, unknown>> = {}) {
     targeting,
     budget,
     bounds,
-    creative: {
-      creativeRef: "crt_Meta001",
-      headline: "Explore financing options",
-      primaryText: "Review available property financing paths.",
-      description: "Fixture-only campaign creative.",
+    paidAdProjection,
+    brandPreflightEvidence: {
+      schemaVersion: 1 as const,
+      campaignVersionRef: "ver_Meta001",
+      collateralProjectionHash: "a".repeat(64),
+      paidAdProjectionHash: projectionHash,
+      rulesetVersionRef: "ruleset_MetaBrand001",
+      brandBoundaryRulesHash: "b".repeat(64),
+      blocking: false as const,
+      resultHash: "c".repeat(64),
     },
     ...overrides,
   };
+}
+
+function compileDraft(input = draft()) {
+  const evidence = input.brandPreflightEvidence;
+  return compileFrozenMetaDraft(input, {
+    assertAuthorized(actual) {
+      if (
+        actual.campaignVersionRef !== evidence.campaignVersionRef ||
+        actual.paidAdProjectionHash !== evidence.paidAdProjectionHash ||
+        actual.collateralProjectionHash !== evidence.collateralProjectionHash ||
+        actual.rulesetVersionRef !== evidence.rulesetVersionRef ||
+        actual.brandBoundaryRulesHash !== evidence.brandBoundaryRulesHash ||
+        actual.preflightResultHash !== evidence.resultHash
+      ) {
+        throw new Error("Stored paid-ad brand authority evidence does not match.");
+      }
+    },
+  });
 }
 
 describe("PRD-001e fixture-only Meta adapter", () => {
@@ -294,9 +374,9 @@ describe("PRD-001e fixture-only Meta adapter", () => {
     ).toThrow("tenant cap");
   });
 
-  it("compiles a deterministic frozen draft, complete summary, and three draft operations", () => {
-    const first = compileFrozenMetaDraft(draft());
-    const second = compileFrozenMetaDraft(draft());
+  it("compiles a deterministic frozen draft, complete summary, and three draft operations", async () => {
+    const first = await compileDraft();
+    const second = await compileDraft();
     expect(first.compiledHash).toBe(second.compiledHash);
     expect(first.fixtureOnly).toBe(true);
     expect(first.providerContractEvidence).toBe("REQUIRES_HIGHLEVEL_APP_TEST");
@@ -315,8 +395,8 @@ describe("PRD-001e fixture-only Meta adapter", () => {
     expect(Object.isFrozen(first.summary.budget)).toBe(true);
   });
 
-  it("diffs strict normalized read-back and surfaces the mismatched fields", () => {
-    const compiled = compileFrozenMetaDraft(draft());
+  it("diffs strict normalized read-back and surfaces the mismatched fields", async () => {
+    const compiled = await compileDraft();
     expect(compareMetaDraftReadBack(compiled, compiled.expectedReadBack)).toMatchObject({
       matches: true,
       differingFields: [],
@@ -340,13 +420,41 @@ describe("PRD-001e fixture-only Meta adapter", () => {
     expect(() => assertMetaDraftReadBackMatches(compiled, compiled.expectedReadBack)).not.toThrow();
   });
 
-  it("requires a new immutable version and approval for every material change", () => {
-    const original = compileFrozenMetaDraft(draft());
-    const changed = compileFrozenMetaDraft(
+  it("requires a new immutable version and approval for every material change", async () => {
+    const original = await compileDraft();
+    const changedProjection = draft().paidAdProjection;
+    const {
+      projectionHash: _projectionHash,
+      approvalSummary: changedApprovalSummary,
+      ...changedProjectionBody
+    } = changedProjection;
+    const { projectionHash: _summaryHash, ...changedApprovalBody } = changedApprovalSummary;
+    const changedProjectionInput = {
+      ...changedProjectionBody,
+      campaignVersionRef: "ver_Meta002",
+      approvalSummary: changedApprovalBody,
+    };
+    const changedProjectionHash = calculatePaidAdProjectionHash(changedProjectionInput);
+    const changedPaidAdProjection = {
+      ...changedProjectionInput,
+      projectionHash: changedProjectionHash,
+      approvalSummary: {
+        ...changedProjectionInput.approvalSummary,
+        projectionHash: changedProjectionHash,
+      },
+    };
+    const changed = await compileDraft(
       draft({
         campaignVersionRef: "ver_Meta002",
         revision: 2,
         campaignName: "Austin Property Campaign Revision Two",
+        paidAdProjection: changedPaidAdProjection,
+        brandPreflightEvidence: {
+          ...draft().brandPreflightEvidence,
+          campaignVersionRef: "ver_Meta002",
+          paidAdProjectionHash: changedProjectionHash,
+          resultHash: "f".repeat(64),
+        },
       }),
     );
     expect(

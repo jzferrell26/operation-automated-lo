@@ -38,6 +38,52 @@ const SafeZoneInsetsSchema = z
     }
   });
 
+const PaidAdRenderAssetSchema = z
+  .object({
+    assetRef: OpaqueReferenceSchema,
+    sha256: Sha256Schema,
+    mimeType: z.enum(["image/jpeg", "image/png"]),
+    width: z.number().int().min(32).max(10_000),
+    height: z.number().int().min(32).max(10_000),
+    focalPoint: FocalPointSchema,
+    approvalStatus: z.literal("approved"),
+  })
+  .strict();
+
+export const PaidAdRenderAssetManifestInputSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    assetManifestRef: OpaqueReferenceSchema,
+    campaignVersionRef: OpaqueReferenceSchema,
+    paidAdProjectionHash: Sha256Schema,
+    identityAssets: z.array(PaidAdRenderAssetSchema).max(4),
+    propertyAssets: z.array(PaidAdRenderAssetSchema).min(1).max(20),
+    creativeSafeZones: z
+      .object({
+        metaSquare: SafeZoneInsetsSchema,
+        metaStory: SafeZoneInsetsSchema,
+      })
+      .strict(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    const refs = [...value.identityAssets, ...value.propertyAssets].map((asset) => asset.assetRef);
+    if (new Set(refs).size !== refs.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Paid-ad render assets must be unique and assigned to exactly one role",
+      });
+    }
+  });
+
+export const PaidAdRenderAssetManifestSchema = PaidAdRenderAssetManifestInputSchema.extend({
+  manifestHash: Sha256Schema,
+}).strict();
+
+export type PaidAdRenderAsset = z.infer<typeof PaidAdRenderAssetSchema>;
+export type PaidAdRenderAssetManifestInput = z.infer<typeof PaidAdRenderAssetManifestInputSchema>;
+export type PaidAdRenderAssetManifest = z.infer<typeof PaidAdRenderAssetManifestSchema>;
+
 export const ArtifactTypeSchema = z.enum([
   "public-page-projection",
   "pdf",

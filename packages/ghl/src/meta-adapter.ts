@@ -1,5 +1,11 @@
 import { createHash } from "node:crypto";
 
+import {
+  PaidAdBrandPreflightEvidenceSchema,
+  PaidAdProjectionInputSchema,
+  PaidAdProjectionSchema,
+  type PaidAdProjection,
+} from "@oalo/contracts";
 import { z } from "zod";
 
 import { canonicalizeJson } from "./canonical-json.js";
@@ -361,14 +367,95 @@ export function validateMetaBudget(
   return Object.freeze({ budget, durationDays, projectedTotalMinor });
 }
 
-const MetaCreativeSchema = z
-  .object({
-    creativeRef: SafeReferenceSchema,
-    headline: z.string().trim().min(1).max(255),
-    primaryText: z.string().trim().min(1).max(2_000),
-    description: z.string().trim().max(500),
-  })
-  .strict();
+export class MetaPaidAdBoundaryError extends Error {
+  public readonly fieldPath: string;
+
+  public constructor(fieldPath: string) {
+    super(
+      `Meta paid-ad projection contains prohibited Realtor or brokerage identity at ${fieldPath}.`,
+    );
+    this.name = "MetaPaidAdBoundaryError";
+    this.fieldPath = fieldPath;
+  }
+}
+
+export function calculatePaidAdProjectionHash(input: unknown): string {
+  const projection = PaidAdProjectionInputSchema.parse(input);
+  return hashCanonicalMetaValue(projection);
+}
+
+function hashCanonicalMetaValue(value: unknown): string {
+  return createHash("sha256")
+    .update(JSON.stringify(canonicalizeJson(value)))
+    .digest("hex");
+}
+
+function assertProjectionHash(projection: PaidAdProjection): void {
+  const { projectionHash: _projectionHash, approvalSummary, ...projectionBody } = projection;
+  const { projectionHash: _summaryHash, ...approvalSummaryBody } = approvalSummary;
+  if (
+    projection.approvalSummary.projectionHash !== projection.projectionHash ||
+    calculatePaidAdProjectionHash({
+      ...projectionBody,
+      approvalSummary: approvalSummaryBody,
+    }) !== projection.projectionHash
+  ) {
+    throw new MetaPaidAdBoundaryError("$paidAdProjection.projectionHash");
+  }
+}
+
+export interface MetaPaidAdBrandAuthority {
+  assertAuthorized(
+    input: Readonly<{
+      campaignVersionRef: string;
+      paidAdProjectionHash: string;
+      collateralProjectionHash: string;
+      rulesetVersionRef: string;
+      brandBoundaryRulesHash: string;
+      preflightResultHash: string;
+    }>,
+  ): void | Promise<void>;
+}
+
+function compilePaidAdProviderPresentation(projection: PaidAdProjection) {
+  const advertiserIdentity = {
+    kind: projection.advertiserIdentity.kind,
+    displayName: projection.advertiserIdentity.displayName,
+    ...(projection.advertiserIdentity.logoAssetRef === undefined
+      ? {}
+      : { logoAssetRef: projection.advertiserIdentity.logoAssetRef }),
+    ...(projection.advertiserIdentity.imageAssetRef === undefined
+      ? {}
+      : { imageAssetRef: projection.advertiserIdentity.imageAssetRef }),
+    ...(projection.advertiserIdentity.contactInformation === undefined
+      ? {}
+      : { contactInformation: projection.advertiserIdentity.contactInformation }),
+  };
+  return {
+    projectionRef: projection.projectionRef,
+    projectionHash: projection.projectionHash,
+    advertiserIdentity,
+    copy: {
+      primaryText: projection.copy.primaryText,
+      headline: projection.copy.headline,
+      description: projection.copy.description,
+    },
+    creative: {
+      headline: projection.creative.headline,
+      body: projection.creative.body,
+      callToActionLabel: projection.creative.callToActionLabel,
+      propertyImageAssetRefs: [...projection.creative.propertyImageAssetRefs],
+      identityAssetRefs: [...projection.creative.identityAssetRefs],
+      disclosureBlocks: [...projection.creative.disclosureBlocks],
+    },
+    leadForm: {
+      headline: projection.leadForm.headline,
+      description: projection.leadForm.description,
+      callToActionLabel: projection.leadForm.callToActionLabel,
+      privacyPolicyUrl: projection.leadForm.privacyPolicyUrl,
+    },
+  };
+}
 
 export const MetaDraftInputSchema = z
   .object({
@@ -383,7 +470,8 @@ export const MetaDraftInputSchema = z
     targeting: MetaApprovedTargetingSchema,
     budget: MetaCampaignBudgetSchema,
     bounds: MetaBudgetBoundsSchema,
-    creative: MetaCreativeSchema,
+    paidAdProjection: PaidAdProjectionSchema,
+    brandPreflightEvidence: PaidAdBrandPreflightEvidenceSchema,
   })
   .strict();
 
@@ -422,8 +510,37 @@ function deepFreeze<T>(value: T): Readonly<T> {
   return value;
 }
 
-export function compileFrozenMetaDraft(input: z.input<typeof MetaDraftInputSchema>) {
+export async function compileFrozenMetaDraft(
+  input: z.input<typeof MetaDraftInputSchema>,
+  brandAuthority: MetaPaidAdBrandAuthority,
+) {
+  if (brandAuthority === undefined) {
+    throw new MetaPaidAdBoundaryError("$metaPaidAdBrandAuthority");
+  }
   const draft = MetaDraftInputSchema.parse(input);
+  const paidAdProjection = draft.paidAdProjection;
+  const evidence = draft.brandPreflightEvidence;
+  assertProjectionHash(paidAdProjection);
+  if (
+    evidence.campaignVersionRef !== paidAdProjection.campaignVersionRef ||
+    evidence.paidAdProjectionHash !== paidAdProjection.projectionHash
+  ) {
+    throw new MetaPaidAdBoundaryError("$paidAdBrandPreflightEvidence.binding");
+  }
+  await brandAuthority.assertAuthorized({
+    campaignVersionRef: evidence.campaignVersionRef,
+    paidAdProjectionHash: evidence.paidAdProjectionHash,
+    collateralProjectionHash: evidence.collateralProjectionHash,
+    rulesetVersionRef: evidence.rulesetVersionRef,
+    brandBoundaryRulesHash: evidence.brandBoundaryRulesHash,
+    preflightResultHash: evidence.resultHash,
+  });
+  if (
+    paidAdProjection.locationRef !== draft.locationRef ||
+    paidAdProjection.campaignVersionRef !== draft.campaignVersionRef
+  ) {
+    throw new Error("Meta paid-ad projection does not match the draft location and version.");
+  }
   const validatedBudget = validateMetaBudget(draft.budget, draft.bounds);
   const expectedReadBack = MetaNormalizedReadBackSchema.parse({
     campaignVersionRef: draft.campaignVersionRef,
@@ -442,7 +559,7 @@ export function compileFrozenMetaDraft(input: z.input<typeof MetaDraftInputSchem
     dailyBudgetMinor: draft.budget.dailyBudgetMinor,
     startsAt: draft.budget.startsAt,
     endsAt: draft.budget.endsAt,
-    creativeRef: draft.creative.creativeRef,
+    creativeRef: paidAdProjection.projectionRef,
   });
   const summary = {
     campaignName: draft.campaignName,
@@ -471,6 +588,7 @@ export function compileFrozenMetaDraft(input: z.input<typeof MetaDraftInputSchem
     manifestHash: draft.manifestHash,
     expectedReadBack,
   };
+  const providerPresentation = compilePaidAdProviderPresentation(paidAdProjection);
   const operations = [
     {
       ...planMetaFixtureOperation({
@@ -497,7 +615,7 @@ export function compileFrozenMetaDraft(input: z.input<typeof MetaDraftInputSchem
     },
     {
       ...planMetaFixtureOperation({ action: "upsert-ad-draft", locationRef: draft.locationRef }),
-      fixturePayload: { ...commonFixturePayload, creative: draft.creative },
+      fixturePayload: { ...commonFixturePayload, paidAd: providerPresentation },
     },
   ];
   const compiled = {
@@ -542,7 +660,7 @@ function collectDifferences(expected: unknown, actual: unknown, path: string): s
 }
 
 export function compareMetaDraftReadBack(
-  compiled: ReturnType<typeof compileFrozenMetaDraft>,
+  compiled: Awaited<ReturnType<typeof compileFrozenMetaDraft>>,
   readBackInput: unknown,
 ): Readonly<{ matches: boolean; differingFields: readonly string[]; readBackHash: string }> {
   const readBack = MetaNormalizedReadBackSchema.parse(readBackInput);
@@ -565,7 +683,7 @@ export class MetaReadBackMismatchError extends Error {
 }
 
 export function assertMetaDraftReadBackMatches(
-  compiled: ReturnType<typeof compileFrozenMetaDraft>,
+  compiled: Awaited<ReturnType<typeof compileFrozenMetaDraft>>,
   readBackInput: unknown,
 ): void {
   const comparison = compareMetaDraftReadBack(compiled, readBackInput);

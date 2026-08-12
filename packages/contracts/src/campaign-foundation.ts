@@ -6,6 +6,203 @@ const OpaqueReferenceSchema = z
   .max(128)
   .regex(/^[a-z][a-z0-9]*(?:_[A-Za-z0-9]+)+$/u);
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/u);
+const VersionSchema = z.string().regex(/^[0-9]+\.[0-9]+\.[0-9]+$/u);
+const HttpsUrlSchema = z.url({ protocol: /^https$/u });
+
+const ApprovalRoleSchema = z.enum([
+  "location_admin",
+  "approver",
+  "realtor_approver",
+  "lender_approver",
+]);
+
+const ContactInformationSchema = z
+  .object({
+    phone: z.string().trim().min(1).max(80).optional(),
+    email: z.email().max(320).optional(),
+    websiteUrl: HttpsUrlSchema.optional(),
+  })
+  .strict()
+  .refine(
+    (value) =>
+      value.phone !== undefined || value.email !== undefined || value.websiteUrl !== undefined,
+    { message: "Contact information must contain at least one approved channel" },
+  );
+
+const BrandIdentitySchema = z
+  .object({
+    displayName: z.string().trim().min(1).max(300),
+    logoAssetRef: OpaqueReferenceSchema.optional(),
+    imageAssetRef: OpaqueReferenceSchema.optional(),
+    contactInformation: ContactInformationSchema.optional(),
+  })
+  .strict();
+
+const ProjectionTemplateSchema = z.object({ version: VersionSchema }).strict();
+
+const CollateralProjectionContentSchema = z
+  .object({
+    headline: z.string().trim().min(1).max(500),
+    propertyAddress: z.string().trim().min(1).max(1_000),
+    propertyDescription: z.string().trim().min(1).max(10_000),
+    openHouseLabel: z.string().trim().min(1).max(500),
+    loanOfficerIdentity: BrandIdentitySchema,
+    realtorIdentity: BrandIdentitySchema,
+    disclosureBlocks: z.array(z.string().trim().min(1).max(20_000)).min(1).max(12),
+    callToActionLabel: z.string().trim().min(1).max(160),
+    destinationPath: z.string().regex(/^\/c\/[A-Za-z0-9_-]+$/u),
+  })
+  .strict();
+
+export const CollateralProjectionInputSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    projectionRef: OpaqueReferenceSchema,
+    locationRef: OpaqueReferenceSchema,
+    campaignRef: OpaqueReferenceSchema,
+    campaignVersionRef: OpaqueReferenceSchema,
+    template: ProjectionTemplateSchema.extend({
+      id: z.literal("open-house-boost-collateral"),
+    }).strict(),
+    content: CollateralProjectionContentSchema,
+    approvalSummary: z
+      .object({
+        approvalSummaryRef: OpaqueReferenceSchema,
+        scope: z.literal("collateral"),
+        previewRef: OpaqueReferenceSchema,
+        requiredApproverRoles: z.array(ApprovalRoleSchema).min(1).max(4),
+      })
+      .strict(),
+  })
+  .strict();
+export type CollateralProjectionInput = z.infer<typeof CollateralProjectionInputSchema>;
+
+export const CollateralProjectionSchema = CollateralProjectionInputSchema.extend({
+  projectionHash: Sha256Schema,
+  approvalSummary: CollateralProjectionInputSchema.shape.approvalSummary
+    .extend({ projectionHash: Sha256Schema })
+    .strict(),
+}).strict();
+export type CollateralProjection = z.infer<typeof CollateralProjectionSchema>;
+
+const PaidAdAdvertiserIdentitySchema = BrandIdentitySchema.extend({
+  kind: z.enum(["loan_officer", "lender"]),
+}).strict();
+
+const PaidAdApprovalRoleSchema = z.enum(["location_admin", "approver", "lender_approver"]);
+
+export const PaidAdProjectionInputSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    projectionRef: OpaqueReferenceSchema,
+    locationRef: OpaqueReferenceSchema,
+    campaignRef: OpaqueReferenceSchema,
+    campaignVersionRef: OpaqueReferenceSchema,
+    template: ProjectionTemplateSchema.extend({
+      id: z.literal("open-house-boost-paid-ad"),
+    }).strict(),
+    advertiserIdentity: PaidAdAdvertiserIdentitySchema,
+    copy: z
+      .object({
+        primaryText: z.string().trim().min(1).max(5_000),
+        headline: z.string().trim().min(1).max(500),
+        description: z.string().trim().min(1).max(1_000),
+      })
+      .strict(),
+    creative: z
+      .object({
+        headline: z.string().trim().min(1).max(500),
+        body: z.string().trim().min(1).max(5_000),
+        callToActionLabel: z.string().trim().min(1).max(160),
+        propertyImageAssetRefs: z.array(OpaqueReferenceSchema).min(1).max(20),
+        identityAssetRefs: z.array(OpaqueReferenceSchema).max(4),
+        disclosureBlocks: z.array(z.string().trim().min(1).max(20_000)).min(1).max(12),
+      })
+      .strict(),
+    leadForm: z
+      .object({
+        headline: z.string().trim().min(1).max(500),
+        description: z.string().trim().min(1).max(5_000),
+        callToActionLabel: z.string().trim().min(1).max(160),
+        privacyPolicyUrl: HttpsUrlSchema,
+      })
+      .strict(),
+    approvalSummary: z
+      .object({
+        approvalSummaryRef: OpaqueReferenceSchema,
+        scope: z.literal("paid_ad"),
+        previewRef: OpaqueReferenceSchema,
+        requiredApproverRoles: z.array(PaidAdApprovalRoleSchema).min(1).max(3),
+      })
+      .strict(),
+  })
+  .strict();
+export type PaidAdProjectionInput = z.infer<typeof PaidAdProjectionInputSchema>;
+
+export const PaidAdProjectionSchema = PaidAdProjectionInputSchema.extend({
+  projectionHash: Sha256Schema,
+  approvalSummary: PaidAdProjectionInputSchema.shape.approvalSummary
+    .extend({ projectionHash: Sha256Schema })
+    .strict(),
+}).strict();
+export type PaidAdProjection = z.infer<typeof PaidAdProjectionSchema>;
+
+export const PaidAdBrandBoundaryRulesSchema = z
+  .object({
+    rulesetVersionRef: OpaqueReferenceSchema,
+    realtorIdentityValues: z.array(z.string().trim().min(1).max(500)).min(1).max(100),
+    brokerageMarks: z.array(z.string().trim().min(1).max(300)).max(50),
+    coBrandPhrases: z.array(z.string().trim().min(1).max(300)).max(50),
+    prohibitedContactValues: z.array(z.string().trim().min(1).max(500)).max(50),
+    realtorAssetRefs: z.array(OpaqueReferenceSchema).max(50),
+    allowedPaidAdIdentityAssetRefs: z.array(OpaqueReferenceSchema).max(50),
+    allowedPropertyImageAssetRefs: z.array(OpaqueReferenceSchema).min(1).max(100),
+  })
+  .strict();
+export type PaidAdBrandBoundaryRules = z.infer<typeof PaidAdBrandBoundaryRulesSchema>;
+
+export const PaidAdBrandPreflightEvidenceSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    campaignVersionRef: OpaqueReferenceSchema,
+    collateralProjectionHash: Sha256Schema,
+    paidAdProjectionHash: Sha256Schema,
+    rulesetVersionRef: OpaqueReferenceSchema,
+    brandBoundaryRulesHash: Sha256Schema,
+    blocking: z.literal(false),
+    resultHash: Sha256Schema,
+  })
+  .strict();
+export type PaidAdBrandPreflightEvidence = z.infer<typeof PaidAdBrandPreflightEvidenceSchema>;
+
+export const ProjectionApprovalDecisionSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    approvalRef: OpaqueReferenceSchema,
+    locationRef: OpaqueReferenceSchema,
+    campaignRef: OpaqueReferenceSchema,
+    campaignVersionRef: OpaqueReferenceSchema,
+    scope: z.enum(["collateral", "paid_ad"]),
+    projectionHash: Sha256Schema,
+    previewRef: OpaqueReferenceSchema,
+    actorRef: OpaqueReferenceSchema,
+    actorKind: z.literal("human"),
+    actorRole: ApprovalRoleSchema,
+    decidedAt: z.iso.datetime({ offset: true }),
+    ipAuditHash: Sha256Schema,
+    decision: z.enum(["approved", "rejected"]),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.scope === "paid_ad" && value.actorRole === "realtor_approver") {
+      context.addIssue({
+        code: "custom",
+        path: ["actorRole"],
+        message: "Realtor approval is limited to co-branded collateral",
+      });
+    }
+  });
+export type ProjectionApprovalDecision = z.infer<typeof ProjectionApprovalDecisionSchema>;
 
 export const CampaignStateSchema = z.enum([
   "draft",

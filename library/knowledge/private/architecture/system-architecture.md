@@ -51,7 +51,7 @@ flowchart LR
 | Encrypted token vault | Per-installation GHL access and refresh tokens with rotation metadata |
 | Object storage and CDN | Original approved property photos, generated PDFs, creative, and public-page assets |
 | Durable job system | Rendering, provider writes, reporting sync, retries, and reconciliation |
-| Asset compiler | Blueprint plus brand plus partner plus property becomes deterministic page/PDF/ad/email/SMS inputs |
+| Asset compiler | Blueprint plus brand plus partner plus property becomes deterministic co-branded collateral inputs and a separate Realtor-free paid-ad projection |
 | Preflight engine | Brand, mortgage disclosure, consent, ad policy, and asset-permission checks |
 | GHL adapter | OAuth, rate limiting, contacts, opportunities, calendars, forms, tags, workflows, ads, and reporting |
 | Public campaign renderer | Fast server-rendered page using a deliberately limited published projection |
@@ -70,7 +70,7 @@ The approved decorative animation pattern for authentication and onboarding is d
 Theme behavior is an application-interface preference, not tenant campaign content:
 
 - The preference affects the embedded dashboard and standalone authenticated workspace.
-- Public property pages, PDFs, QR destinations, Meta creative, and approval artifacts keep their frozen campaign and brand styling.
+- Public property pages, PDFs, QR destinations, Meta creative, and approval artifacts keep their frozen campaign styling. Realtor co-branding may appear on approved collateral, while Meta creative remains loan-officer or lender branded only.
 - Changing dashboard theme does not create a campaign version, invalidate approval, or change an artifact hash.
 - One tenant's brand tokens cannot leak into another location or support session.
 
@@ -141,7 +141,7 @@ Every command carries the authenticated location from the server session. The cl
 | Appointment | HighLevel | Store GHL appointment ID and milestone timestamp. |
 | Meta account, page, form, pixel, campaign, ad set, and ad | HighLevel or Meta through HighLevel | Store selected IDs, safe display labels, normalized state, and last reconciliation time. |
 | Loan officer brand and disclosures | Operation Automated LO | Append-only versions with one current version. |
-| Realtor partner profile and approvals | Operation Automated LO | Store only fields needed to produce and approve co-branded assets. |
+| Realtor partner profile and approvals | Operation Automated LO | Store only fields needed to produce and approve co-branded collateral. Realtor fields never enter the paid-ad projection. |
 | Property campaign input | Operation Automated LO | Store the approved marketing projection, source attribution, and permission attestation. Do not store borrower or application data. |
 | Campaign blueprint | Operation Automated LO | Versioned platform-owned definition. |
 | Generated artifact | Operation Automated LO | Immutable object plus checksum and input-version references. |
@@ -300,7 +300,8 @@ Each event includes tenant, campaign, version, timestamp, source, external objec
 
 - Campaign blueprint model
 - Multi-tenant brand and compliance profile
-- Co-branded page, PDF, and creative compiler
+- Co-branded page, PDF, QR, and collateral compiler
+- Separate loan-officer or lender-branded paid-ad compiler that rejects Realtor and brokerage identity
 - Approval, audit, and campaign state machine
 - HighLevel-native routing and attribution
 - Mortgage-specific campaign dashboard

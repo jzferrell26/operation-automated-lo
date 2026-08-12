@@ -16,6 +16,7 @@ The product must be sold as **compliance-aware and approval-gated**, never as au
 6. Destructive ad operations and audience uploads are not exposed in the first release.
 7. Public property and consumer data are minimized and retained under a documented schedule.
 8. The product never infers legal permission from the presence of data in GHL.
+9. Paid advertising is never co-branded with a Realtor or brokerage. Realtor identity is permitted only on approved collateral such as property pages, flyers, PDFs, QR materials, and non-paid marketing assets.
 
 ## RESPA Section 8 and Realtor partnerships
 
@@ -27,6 +28,8 @@ The CFPB states that RESPA Section 8 prohibits giving or accepting a fee, kickba
 - Do not create a free-service entitlement that is conditional on sending mortgage referrals.
 - Do not calculate partner value from referred settlement-service revenue.
 - Do not split ad spend or charge a Realtor through the MVP.
+- Do not place a Realtor name, image, logo, brokerage mark, contact information, or dual-brand treatment in paid ad copy, creative, lead forms, or ad calls to action.
+- Keep collateral approval and paid-ad approval as separate decisions even when they share a campaign and attribution record.
 - Keep the Meta ad account and billing relationship client-owned.
 - Require the loan officer to confirm that any co-marketing arrangement has lender approval.
 - Preserve the actual assets, delivery, dates, parties, and costs if a paid marketing-services arrangement is introduced later.
@@ -41,6 +44,7 @@ Regulation Z covers commercial messages that promote consumer credit, including 
 ### Product rules
 
 - Separate general brand or property advertising from loan-term advertising.
+- Treat paid ads as loan-officer or lender communications. Co-branded collateral cannot be reused as paid ad creative without producing a separate Realtor-free ad projection.
 - Treat rates, APR, payment amounts, down payments, loan terms, and teaser statements as controlled fields, not generated prose.
 - Require source, effective date and time, expiration, assumptions, loan program, geography, and approver for any rate or payment claim.
 - Use lender-maintained disclosure blocks selected by a deterministic rule, not language invented by a model.

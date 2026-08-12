@@ -1,6 +1,6 @@
 # PRD-002: Operation Automated LO Add-On Portfolio
 
-> **Status:** Backlog, not authorized for implementation
+> **Status:** Potential future items, not authorized for implementation
 > **Priority:** P1
 > **Effort:** XL (> 3d)
 > **Schema changes:** Additive
@@ -9,7 +9,7 @@
 
 ## Overview
 
-Define the expansion portfolio that can increase revenue and retention after Open House Boost proves demand, activation, and recurring value. This PRD converts the authenticated Broker Marketplace findings and the existing Operation Automated LO campaign roadmap into independently gated add-ons. It is a roadmap contract, not authorization to build every item.
+Preserve the potential future items that can increase revenue and retention after Open House Boost proves demand, activation, and recurring value. This PRD converts the authenticated Broker Marketplace findings and the existing Operation Automated LO campaign roadmap into independently gated add-ons. It is a future-options register, not a committed roadmap and not authorization to build any item.
 
 ---
 
@@ -51,7 +51,7 @@ Define the expansion portfolio that can increase revenue and retention after Ope
 
 No add-on enters implementation until all applicable gates pass:
 
-1. PRD-001 has passed its paid-founder demand gate.
+1. PRD-001 has passed its live App Test, compliance, security, quality, and paid-founder demand gates.
 2. The founding cohort meets or has an approved corrective plan for activation, support-time, and recurring-retention targets.
 3. At least five qualified customers commit to pay for the add-on or an equivalent evidence threshold is documented.
 4. The add-on has a named product owner, compliance owner, data owner, and support owner.

@@ -36,6 +36,7 @@ Create an immutable Open House Boost campaign version from tenant profiles and p
 - A material edit creates a new version and invalidates approvals for prior content.
 - Prior versions and decisions remain readable.
 - Page, PDF, QR destination, Meta inputs, email and SMS package, approval, lead attribution, and artifact history share the same campaign and campaign-version identifiers.
+- Co-branded collateral and the loan-officer or lender-branded paid-ad projection are separate immutable outputs with separate hashes and approval summaries.
 - Duplicating a completed or approved campaign creates a new draft that references its source campaign and revalidates current profiles, permissions, mappings, provider assets, and policies.
 
 ### Preflight
@@ -44,6 +45,7 @@ Create an immutable Open House Boost campaign version from tenant profiles and p
 - Blocking findings include a stable rule code, human description, affected field or artifact, and remediation.
 - Warnings do not block but must appear in the approval summary.
 - Rule sets cover required fields, image quality, dates, brand rules, banned phrases, merge tokens, disclosures, claim policy, consent text, partner permission, property permission, Meta Special Ad Category, targeting allowlist, budget bounds, and GHL routing completeness.
+- Paid-ad preflight rejects Realtor names, images, logos, brokerage marks, contact information, co-brand language, and dual-brand layouts in ad copy, creative, lead forms, advertiser identity, and paid-ad calls to action.
 - Rate, APR, payment, or program terms are blocked in the first blueprint unless an explicitly approved tenant rule enables them.
 - Custom audiences, ZIP targeting, protected targeting dimensions, Google, and LinkedIn are blocked.
 - A preflight result records all input version IDs and the ruleset version.
@@ -55,6 +57,7 @@ Create an immutable Open House Boost campaign version from tenant profiles and p
 - Approval displays exact page, PDF, creative, copy, disclosure, targeting, budget, dates, form, and destination versions.
 - Approval records actor, role, timestamp, IP-derived audit metadata, campaign version, and decision.
 - Required Realtor and lender approvals are policy-driven.
+- Realtor approval applies to collateral bearing Realtor or brokerage identity. It does not approve or participate in the separately branded paid ad.
 - Approval links are short-lived, single-purpose, and cannot expose other tenant data.
 - Publish checks approval freshness again instead of trusting UI state.
 - Model output cannot create an approval or publish decision.

@@ -2,6 +2,12 @@ import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  campaignProjectionHash,
+  runPaidAdBrandPreflight,
+} from "../../../../packages/application/src/index.js";
+import { PaidAdProjectionInputSchema } from "../../../../packages/contracts/src/index.js";
+
+import {
   normalizeUploadedImages,
   NodeQrEncoderAdapter,
   PdfBinaryInspectionSchema,
@@ -9,6 +15,8 @@ import {
   encodeApprovedCampaignQr,
   inspectPdfBinary,
   publicCampaignPerformanceBudget,
+  paidAdRenderAssetManifestHash,
+  renderPaidAdCreativeSource,
   renderArtifactBatch,
   renderSourceForManifest,
   resolveApprovedCampaignLink,
@@ -39,7 +47,386 @@ const projection = {
   activeUntil: "2026-07-28T12:00:00.000Z",
 };
 
+const sha = (character: string): string => character.repeat(64);
+
+const paidAdProjectionInput = {
+  schemaVersion: 1 as const,
+  projectionRef: "projection_01PaidAd",
+  locationRef: commonRenderManifest.locationRef,
+  campaignRef: commonRenderManifest.campaignRef,
+  campaignVersionRef: commonRenderManifest.campaignVersionRef,
+  template: { id: "open-house-boost-paid-ad" as const, version: "2.0.0" },
+  advertiserIdentity: {
+    kind: "lender" as const,
+    displayName: "Acme Home Lending",
+    logoAssetRef: "asset_01LenderLogo",
+    contactInformation: { websiteUrl: "https://lender.example/open-house" },
+  },
+  copy: {
+    primaryText: "Explore a home and connect with a licensed lender.",
+    headline: "Tour 123 Main Street",
+    description: "Open house details and financing guidance.",
+  },
+  creative: {
+    headline: "Tour 123 Main Street",
+    body: "Open Saturday from 1 PM to 3 PM.",
+    callToActionLabel: "Learn more",
+    propertyImageAssetRefs: ["asset_01Exterior"],
+    identityAssetRefs: ["asset_01LenderLogo"],
+    disclosureBlocks: ["Equal Housing Opportunity."],
+  },
+  leadForm: {
+    headline: "Request open house details",
+    description: "A licensed lender will follow up.",
+    callToActionLabel: "Request details",
+    privacyPolicyUrl: "https://lender.example/privacy",
+  },
+  approvalSummary: {
+    approvalSummaryRef: "summary_01PaidAd",
+    scope: "paid_ad" as const,
+    previewRef: "preview_01PaidAd",
+    requiredApproverRoles: ["lender_approver" as const],
+  },
+};
+
+const collateralProjectionInput = {
+  schemaVersion: 1 as const,
+  projectionRef: "projection_01Collateral",
+  locationRef: commonRenderManifest.locationRef,
+  campaignRef: commonRenderManifest.campaignRef,
+  campaignVersionRef: commonRenderManifest.campaignVersionRef,
+  template: { id: "open-house-boost-collateral" as const, version: "1.0.0" },
+  content: {
+    headline: commonRenderManifest.publicContent.headline,
+    propertyAddress: commonRenderManifest.publicContent.propertyAddress,
+    propertyDescription: commonRenderManifest.publicContent.propertyDescription,
+    openHouseLabel: commonRenderManifest.publicContent.openHouseLabel,
+    loanOfficerIdentity: { displayName: commonRenderManifest.publicContent.loanOfficerDisplayName },
+    realtorIdentity: {
+      displayName: commonRenderManifest.publicContent.realtorDisplayName,
+      logoAssetRef: "asset_01RealtorLogo",
+      imageAssetRef: "asset_01RealtorPhoto",
+      contactInformation: { email: "taylor@brokerage.example" },
+    },
+    disclosureBlocks: commonRenderManifest.publicContent.disclosureBlocks,
+    callToActionLabel: commonRenderManifest.publicContent.callToActionLabel,
+    destinationPath: commonRenderManifest.publicContent.destinationPath,
+  },
+  approvalSummary: {
+    approvalSummaryRef: "summary_01Collateral",
+    scope: "collateral" as const,
+    previewRef: "preview_01Collateral",
+    requiredApproverRoles: ["realtor_approver" as const, "lender_approver" as const],
+  },
+};
+
+const paidAdRules = {
+  rulesetVersionRef: "ruleset_01PaidAdBrand",
+  realtorIdentityValues: [commonRenderManifest.publicContent.realtorDisplayName],
+  brokerageMarks: ["Reed Realty", "Summit Realty"],
+  coBrandPhrases: ["in partnership with", "Acme Home Lending and Summit Realty"],
+  prohibitedContactValues: ["taylor@brokerage.example"],
+  realtorAssetRefs: ["asset_01RealtorLogo", "asset_01RealtorPhoto"],
+  allowedPaidAdIdentityAssetRefs: ["asset_01LenderLogo"],
+  allowedPropertyImageAssetRefs: ["asset_01Exterior"],
+};
+
+function projectionWithHash<T extends Readonly<{ approvalSummary: object }>>(input: T) {
+  const projectionHash = campaignProjectionHash(input);
+  return {
+    ...input,
+    projectionHash,
+    approvalSummary: { ...input.approvalSummary, projectionHash },
+  };
+}
+
+function paidAdAuthorization(
+  untrustedPaidAdInput: unknown = paidAdProjectionInput,
+  callerRules: typeof paidAdRules = paidAdRules,
+) {
+  const paidAdInput = PaidAdProjectionInputSchema.parse(untrustedPaidAdInput);
+  const projections = {
+    collateral: projectionWithHash(collateralProjectionInput),
+    paidAd: projectionWithHash(paidAdInput),
+  };
+  const result = runPaidAdBrandPreflight(projections, callerRules);
+  const trustedResult = runPaidAdBrandPreflight(projections, paidAdRules);
+  const evidence = {
+    schemaVersion: 1 as const,
+    campaignVersionRef: result.campaignVersionRef,
+    collateralProjectionHash: result.collateralProjectionHash,
+    paidAdProjectionHash: result.paidAdProjectionHash,
+    rulesetVersionRef: result.rulesetVersionRef,
+    brandBoundaryRulesHash: result.brandBoundaryRulesHash,
+    blocking: false as const,
+    resultHash: result.resultHash,
+  };
+  const assetManifestInput = {
+    schemaVersion: 1 as const,
+    assetManifestRef: "assetmanifest_01PaidAd",
+    campaignVersionRef: projections.paidAd.campaignVersionRef,
+    paidAdProjectionHash: projections.paidAd.projectionHash,
+    identityAssets: [
+      {
+        assetRef: "asset_01LenderLogo",
+        sha256: sha("c"),
+        mimeType: "image/png" as const,
+        width: 320,
+        height: 120,
+        focalPoint: { x: 0.5, y: 0.5 },
+        approvalStatus: "approved" as const,
+      },
+    ],
+    propertyAssets: [
+      {
+        assetRef: "asset_01Exterior",
+        sha256: sha("b"),
+        mimeType: "image/jpeg" as const,
+        width: 1600,
+        height: 900,
+        focalPoint: { x: 0.27, y: 0.68 },
+        approvalStatus: "approved" as const,
+      },
+    ],
+    creativeSafeZones: {
+      metaSquare: { top: 0.04, right: 0.07, bottom: 0.08, left: 0.09 },
+      metaStory: { top: 0.06, right: 0.1, bottom: 0.14, left: 0.11 },
+    },
+  };
+  const assetManifest = {
+    ...assetManifestInput,
+    manifestHash: paidAdRenderAssetManifestHash(assetManifestInput),
+  };
+  return {
+    paidAdProjection: projections.paidAd,
+    evidence,
+    brandAuthority: {
+      assertAuthorized(actual: unknown) {
+        const expected = {
+          campaignVersionRef: trustedResult.campaignVersionRef,
+          collateralProjectionHash: trustedResult.collateralProjectionHash,
+          paidAdProjectionHash: trustedResult.paidAdProjectionHash,
+          rulesetVersionRef: trustedResult.rulesetVersionRef,
+          brandBoundaryRulesHash: trustedResult.brandBoundaryRulesHash,
+          preflightResultHash: trustedResult.resultHash,
+        };
+        if (trustedResult.blocking || JSON.stringify(actual) !== JSON.stringify(expected)) {
+          throw new Error("Stored paid-ad brand attestation does not authorize rendering");
+        }
+      },
+    },
+    assetAuthority: {
+      resolveAuthorizedManifest: vi.fn(async () => assetManifest),
+    },
+    assetManifestForTest: assetManifest,
+  };
+}
+
 describe("PRD-001d safe campaign rendering", () => {
+  it("renders Meta creative only from a lender-branded paid-ad projection", async () => {
+    const authorization = paidAdAuthorization();
+    const square = await renderPaidAdCreativeSource(authorization, "meta-square");
+    const story = await renderPaidAdCreativeSource(authorization, "meta-story");
+    expect(square.viewport).toEqual({ width: 1080, height: 1080 });
+    expect(story.viewport).toEqual({ width: 1080, height: 1920 });
+    expect(square).toMatchObject({
+      projectionHash: authorization.paidAdProjection.projectionHash,
+      templateId: "open-house-boost-paid-ad",
+      templateVersion: "2.0.0",
+      approvalPreviewRef: "preview_01PaidAd",
+      networkPolicy: "deny-all",
+    });
+    expect(square.html).toContain("Acme Home Lending");
+    expect(square.html).toContain('data-projection-scope="paid_ad"');
+    expect(square.html).toContain('<img class="property-image"');
+    expect(square.html).toContain('<img class="identity-image"');
+    expect(square.html).toContain("object-fit:cover");
+    expect(square.html).toContain("object-position:27% 68%");
+    expect(square.html).toContain('data-safe-zone="4%,7%,8%,9%"');
+    expect(story.html).toContain('data-safe-zone="6%,10%,14%,11%"');
+    expect(square.responseHeaders["content-security-policy"]).toContain("img-src 'self'");
+    expect(square.responseHeaders["content-security-policy"]).toContain("script-src 'none'");
+    expect(square.responseHeaders["content-security-policy"]).toContain("frame-ancestors 'none'");
+    expect(square.responseHeaders["content-security-policy"]).not.toContain("unsafe-eval");
+    expect(authorization.assetAuthority.resolveAuthorizedManifest).toHaveBeenCalledWith({
+      campaignVersionRef: authorization.paidAdProjection.campaignVersionRef,
+      paidAdProjectionHash: authorization.paidAdProjection.projectionHash,
+      collateralProjectionHash: authorization.evidence.collateralProjectionHash,
+      brandBoundaryRulesHash: authorization.evidence.brandBoundaryRulesHash,
+      preflightResultHash: authorization.evidence.resultHash,
+      identityAssetRefs: ["asset_01LenderLogo"],
+      propertyImageAssetRefs: ["asset_01Exterior"],
+    });
+    expect(square.html).not.toContain(commonRenderManifest.publicContent.realtorDisplayName);
+    expect(square.html).not.toContain("brokerage");
+    expect(square.sourceHash).toMatch(/^[a-f0-9]{64}$/u);
+    await expect(renderPaidAdCreativeSource(paidAdAuthorization(), "meta-square")).resolves.toEqual(
+      square,
+    );
+  });
+
+  it("fails closed when collateral or Realtor identity is supplied to paid-ad rendering", async () => {
+    await expect(
+      renderPaidAdCreativeSource(
+        {
+          paidAdProjection: commonRenderManifest,
+          evidence: {},
+          brandAuthority: { assertAuthorized: vi.fn() },
+          assetAuthority: { resolveAuthorizedManifest: vi.fn() },
+        },
+        "meta-square",
+      ),
+    ).rejects.toThrow();
+    for (const contaminated of [
+      {
+        ...paidAdProjectionInput,
+        advertiserIdentity: {
+          ...paidAdProjectionInput.advertiserIdentity,
+          displayName: "Taylor Reed",
+        },
+      },
+      {
+        ...paidAdProjectionInput,
+        advertiserIdentity: {
+          ...paidAdProjectionInput.advertiserIdentity,
+          logoAssetRef: "asset_01RealtorLogo",
+          contactInformation: { email: "taylor@brokerage.example" },
+        },
+      },
+      {
+        ...paidAdProjectionInput,
+        copy: { ...paidAdProjectionInput.copy, primaryText: "Meet Taylor-Reed" },
+        creative: {
+          ...paidAdProjectionInput.creative,
+          identityAssetRefs: ["asset_01RealtorPhoto"],
+        },
+        leadForm: {
+          ...paidAdProjectionInput.leadForm,
+          description: "Contact Taylor Reed at the open house",
+        },
+      },
+    ]) {
+      const authorization = paidAdAuthorization(contaminated);
+      await expect(renderPaidAdCreativeSource(authorization, "meta-square")).rejects.toThrow(
+        "brand attestation",
+      );
+    }
+  });
+
+  it("rejects fully rebound weak-rule brokerage and dual-brand render evidence", async () => {
+    const contaminated = {
+      ...paidAdProjectionInput,
+      copy: {
+        ...paidAdProjectionInput.copy,
+        primaryText: "Summit Realty presents this home",
+      },
+      creative: {
+        ...paidAdProjectionInput.creative,
+        body: "An Acme Home Lending and Summit Realty experience",
+      },
+    };
+    const weakenedRules = {
+      ...paidAdRules,
+      brokerageMarks: [],
+      coBrandPhrases: [],
+    };
+    const reboundAuthorization = paidAdAuthorization(contaminated, weakenedRules);
+    await expect(renderPaidAdCreativeSource(reboundAuthorization, "meta-square")).rejects.toThrow(
+      "Stored paid-ad brand attestation",
+    );
+    const browser = { render: vi.fn() };
+    const storage = { store: vi.fn() };
+    await expect(
+      renderArtifactBatch(
+        {
+          manifest: commonRenderManifest,
+          artifactTypes: ["meta-square"],
+          paidAdAuthorization: reboundAuthorization,
+          createdAt: new Date("2026-07-21T12:00:00.000Z"),
+        },
+        { browser, storage },
+      ),
+    ).rejects.toThrow("Stored paid-ad brand attestation");
+    expect(browser.render).not.toHaveBeenCalled();
+    expect(storage.store).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for missing, extra, unknown, or tampered paid-only assets", async () => {
+    const clean = paidAdAuthorization();
+    const manifest = clean.assetManifestForTest;
+    const withCurrentHash = (changed: Omit<typeof manifest, "manifestHash">): typeof manifest => ({
+      ...changed,
+      manifestHash: paidAdRenderAssetManifestHash(changed),
+    });
+    const { manifestHash: _manifestHash, ...manifestInput } = manifest;
+    for (const rejectedManifest of [
+      withCurrentHash({ ...manifestInput, identityAssets: [] }),
+      withCurrentHash({
+        ...manifestInput,
+        identityAssets: [
+          ...manifest.identityAssets,
+          {
+            assetRef: "asset_01UnknownLogo",
+            sha256: sha("d"),
+            mimeType: "image/png",
+            width: 200,
+            height: 80,
+            focalPoint: { x: 0.5, y: 0.5 },
+            approvalStatus: "approved",
+          },
+        ],
+      }),
+      { ...manifest, propertyAssets: [] },
+      { ...manifest, manifestHash: sha("f") },
+    ]) {
+      await expect(
+        renderPaidAdCreativeSource(
+          {
+            ...clean,
+            assetAuthority: { resolveAuthorizedManifest: async () => rejectedManifest },
+          },
+          "meta-square",
+        ),
+      ).rejects.toThrow();
+    }
+  });
+
+  it("awaits both paid-ad authorities and fails closed on asynchronous rejection", async () => {
+    const brandRejected = paidAdAuthorization();
+    const brandAssetAuthority = brandRejected.assetAuthority.resolveAuthorizedManifest;
+    await expect(
+      renderPaidAdCreativeSource(
+        {
+          ...brandRejected,
+          brandAuthority: {
+            async assertAuthorized() {
+              await Promise.resolve();
+              throw new Error("stored brand authority rejected");
+            },
+          },
+        },
+        "meta-square",
+      ),
+    ).rejects.toThrow("stored brand authority rejected");
+    expect(brandAssetAuthority).not.toHaveBeenCalled();
+
+    const assetRejected = paidAdAuthorization();
+    await expect(
+      renderPaidAdCreativeSource(
+        {
+          ...assetRejected,
+          assetAuthority: {
+            async resolveAuthorizedManifest() {
+              await Promise.resolve();
+              throw new Error("stored asset authority rejected");
+            },
+          },
+        },
+        "meta-square",
+      ),
+    ).rejects.toThrow("stored asset authority rejected");
+  });
+
   it("builds a responsive server document from approved content with strict CSP and metadata", () => {
     const source = renderSourceForManifest(commonRenderManifest, "public-page-projection");
 
@@ -246,7 +633,7 @@ describe("PRD-001d safe campaign rendering", () => {
 
   it("enforces the approved image dimensions at the renderer boundary", async () => {
     const browser = {
-      render: vi.fn(async () => ({
+      render: vi.fn(async (_input: unknown) => ({
         bytes: new Uint8Array([1, 2, 3]),
         mimeType: "image/png" as const,
         width: 1080,
@@ -260,6 +647,7 @@ describe("PRD-001d safe campaign rendering", () => {
       {
         manifest: commonRenderManifest,
         artifactTypes: ["meta-square"],
+        paidAdAuthorization: paidAdAuthorization(),
         createdAt: new Date("2026-07-21T12:00:00.000Z"),
       },
       { browser, storage },
@@ -270,6 +658,49 @@ describe("PRD-001d safe campaign rendering", () => {
       width: 1080,
       height: 1080,
     });
+    const productionBrowserInput = browser.render.mock.calls[0]?.[0] as
+      | Readonly<{
+          kind: string;
+          source: Readonly<{ html: string }> & Record<string, unknown>;
+        }>
+      | undefined;
+    const productionSource = (
+      productionBrowserInput as
+        Readonly<{ source: Readonly<{ html: string }> & Record<string, unknown> }> | undefined
+    )?.source;
+    expect(productionBrowserInput?.kind).toBe("paid_ad");
+    expect(productionBrowserInput).not.toHaveProperty("manifest");
+    const fullBrowserInput = JSON.stringify(productionBrowserInput);
+    expect(fullBrowserInput).not.toContain(commonRenderManifest.manifestRef);
+    expect(fullBrowserInput).not.toContain(commonRenderManifest.profileVersions.partner);
+    expect(fullBrowserInput).not.toContain(commonRenderManifest.publicContent.realtorDisplayName);
+    expect(fullBrowserInput).not.toContain(commonRenderManifest.assets[0]!.sha256);
+    expect(fullBrowserInput).not.toContain("asset_01RealtorLogo");
+    expect(fullBrowserInput).not.toContain("asset_01RealtorPhoto");
+    expect(fullBrowserInput).toContain("asset_01LenderLogo");
+    expect(fullBrowserInput).toContain("asset_01Exterior");
+    expect(productionSource).toBeDefined();
+    if (productionSource === undefined) throw new Error("Production renderer was not called");
+    expect(productionSource.html).toContain("Acme Home Lending");
+    expect(productionSource.html).not.toContain(
+      commonRenderManifest.publicContent.realtorDisplayName,
+    );
+    expect(productionSource).toMatchObject({
+      artifactType: "meta-square",
+      templateId: "open-house-boost-paid-ad",
+      approvalPreviewRef: "preview_01PaidAd",
+    });
+
+    await expect(
+      renderArtifactBatch(
+        {
+          manifest: commonRenderManifest,
+          artifactTypes: ["meta-square"],
+          createdAt: new Date("2026-07-21T12:00:00.000Z"),
+        },
+        { browser, storage },
+      ),
+    ).rejects.toThrow("separate authorized paid-ad projection");
 
     browser.render.mockResolvedValueOnce({
       bytes: new Uint8Array([1]),
@@ -282,6 +713,7 @@ describe("PRD-001d safe campaign rendering", () => {
         {
           manifest: commonRenderManifest,
           artifactTypes: ["meta-square"],
+          paidAdAuthorization: paidAdAuthorization(),
           createdAt: new Date("2026-07-21T12:00:00.000Z"),
         },
         { browser, storage },

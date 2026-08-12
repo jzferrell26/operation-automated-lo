@@ -2,14 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   appendCampaignTransition,
+  authorizePaidAdProjectionForRendering,
   completeRegeneration,
   createApprovalDecision,
   createCampaignVersion,
+  createCampaignProjections,
+  createProjectionApprovalDecision,
   duplicateCampaign,
   recordGeneration,
   redeemApprovalLink,
   retryCampaignOperation,
   runCampaignPreflight,
+  runPaidAdBrandPreflight,
   type CampaignVersionRepository,
   type CampaignVersionTransaction,
 } from "@oalo/application";
@@ -729,5 +733,470 @@ describe("append-only campaign state and generation accounting", () => {
     );
     expect(rejected.kind).toBe("rejected");
     expect(harness.versions).toHaveLength(1);
+  });
+});
+
+describe("collateral and paid-ad brand boundary", () => {
+  async function projectionFixture() {
+    const version = await approvedVersion();
+    const collateral = {
+      schemaVersion: 1,
+      projectionRef: "projection_01Collateral",
+      locationRef,
+      campaignRef,
+      campaignVersionRef: version.campaignVersionRef,
+      template: { id: "open-house-boost-collateral", version: "1.0.0" },
+      content: {
+        headline: "Tour 123 Main Street",
+        propertyAddress: "123 Main Street",
+        propertyDescription: "A fixture-backed property.",
+        openHouseLabel: "Saturday, 1 PM to 3 PM",
+        loanOfficerIdentity: {
+          displayName: "Alex Morgan",
+          logoAssetRef: "asset_01LenderLogo",
+          contactInformation: { email: "alex@lender.example" },
+        },
+        realtorIdentity: {
+          displayName: "Taylor Reed",
+          logoAssetRef: "asset_01RealtorLogo",
+          imageAssetRef: "asset_01RealtorPhoto",
+          contactInformation: {
+            phone: "+1 407 555 0100",
+            email: "taylor@brokerage.example",
+            websiteUrl: "https://brokerage.example/taylor",
+          },
+        },
+        disclosureBlocks: ["Equal Housing Opportunity."],
+        callToActionLabel: "View the open house",
+        destinationPath: "/c/campaign-public-01",
+      },
+      approvalSummary: {
+        approvalSummaryRef: "summary_01Collateral",
+        scope: "collateral",
+        previewRef: "preview_01Collateral",
+        requiredApproverRoles: ["realtor_approver", "lender_approver"],
+      },
+    } as const;
+    const paidAd = {
+      schemaVersion: 1,
+      projectionRef: "projection_01PaidAd",
+      locationRef,
+      campaignRef,
+      campaignVersionRef: version.campaignVersionRef,
+      template: { id: "open-house-boost-paid-ad", version: "2.0.0" },
+      advertiserIdentity: {
+        kind: "lender",
+        displayName: "Acme Home Lending",
+        logoAssetRef: "asset_01LenderLogo",
+        contactInformation: { websiteUrl: "https://lender.example/open-house" },
+      },
+      copy: {
+        primaryText: "Explore a home and connect with a licensed lender.",
+        headline: "Tour 123 Main Street",
+        description: "Open house details and financing guidance.",
+      },
+      creative: {
+        headline: "Tour 123 Main Street",
+        body: "Open Saturday from 1 PM to 3 PM.",
+        callToActionLabel: "Learn more",
+        propertyImageAssetRefs: ["asset_01Exterior"],
+        identityAssetRefs: ["asset_01LenderLogo"],
+        disclosureBlocks: ["Equal Housing Opportunity."],
+      },
+      leadForm: {
+        headline: "Request open house details",
+        description: "A licensed lender will follow up with property and financing information.",
+        callToActionLabel: "Request details",
+        privacyPolicyUrl: "https://lender.example/privacy",
+      },
+      approvalSummary: {
+        approvalSummaryRef: "summary_01PaidAd",
+        scope: "paid_ad",
+        previewRef: "preview_01PaidAd",
+        requiredApproverRoles: ["lender_approver"],
+      },
+    } as const;
+    return {
+      version,
+      collateral,
+      paidAd,
+      projections: createCampaignProjections({ campaignVersion: version, collateral, paidAd }),
+    };
+  }
+
+  const boundaryRules = {
+    rulesetVersionRef: "ruleset_01PaidAdBrand",
+    realtorIdentityValues: ["Taylor Reed"],
+    brokerageMarks: ["Reed Realty"],
+    coBrandPhrases: ["in partnership with"],
+    prohibitedContactValues: ["brokerage.example"],
+    realtorAssetRefs: ["asset_01RealtorLogo", "asset_01RealtorPhoto"],
+    allowedPaidAdIdentityAssetRefs: ["asset_01LenderLogo"],
+    allowedPropertyImageAssetRefs: ["asset_01Exterior"],
+  } as const;
+
+  it("creates separate immutable projections, hashes, templates, summaries, and previews", async () => {
+    const { projections } = await projectionFixture();
+    expect(projections.collateral.projectionHash).not.toBe(projections.paidAd.projectionHash);
+    expect(projections.collateral.template).toEqual({
+      id: "open-house-boost-collateral",
+      version: "1.0.0",
+    });
+    expect(projections.paidAd.template).toEqual({
+      id: "open-house-boost-paid-ad",
+      version: "2.0.0",
+    });
+    expect(projections.collateral.approvalSummary).toMatchObject({
+      scope: "collateral",
+      previewRef: "preview_01Collateral",
+      projectionHash: projections.collateral.projectionHash,
+    });
+    expect(projections.paidAd.approvalSummary).toMatchObject({
+      scope: "paid_ad",
+      previewRef: "preview_01PaidAd",
+      projectionHash: projections.paidAd.projectionHash,
+    });
+    expect(Object.isFrozen(projections)).toBe(true);
+    expect(Object.isFrozen(projections.collateral.content.realtorIdentity)).toBe(true);
+    expect(Object.isFrozen(projections.paidAd.advertiserIdentity)).toBe(true);
+    expect(projections.paidAd).not.toHaveProperty("content.realtorIdentity");
+    expect(projections.paidAd).not.toHaveProperty("realtorDisplayName");
+  });
+
+  it("rejects projection pairs outside one version or sharing identity and preview references", async () => {
+    const { collateral, paidAd, version } = await projectionFixture();
+    expect(() =>
+      createCampaignProjections({
+        campaignVersion: version,
+        collateral,
+        paidAd: { ...paidAd, campaignVersionRef: "version_02Outside" },
+      }),
+    ).toThrow("outside its immutable campaign version");
+    expect(() =>
+      createCampaignProjections({
+        campaignVersion: version,
+        collateral,
+        paidAd: { ...paidAd, projectionRef: collateral.projectionRef },
+      }),
+    ).toThrow("separate references");
+    expect(() =>
+      createCampaignProjections({
+        campaignVersion: version,
+        collateral,
+        paidAd: {
+          ...paidAd,
+          approvalSummary: {
+            ...paidAd.approvalSummary,
+            previewRef: collateral.approvalSummary.previewRef,
+          },
+        },
+      }),
+    ).toThrow("separate approval previews");
+  });
+
+  it("runs deterministic paid-ad preflight and rejects every Realtor identity surface", async () => {
+    const { collateral, paidAd, projections, version } = await projectionFixture();
+    const passing = runPaidAdBrandPreflight(projections, boundaryRules);
+    expect(passing.blocking).toBe(false);
+    expect(runPaidAdBrandPreflight(structuredClone(projections), boundaryRules)).toEqual(passing);
+
+    const cases = [
+      ["copy", { ...projections.paidAd.copy, primaryText: "Meet Taylor Reed at the open house" }],
+      ["copy", { ...projections.paidAd.copy, primaryText: "Meet Taylor-Reed at the open house" }],
+      ["copy", { ...projections.paidAd.copy, headline: "Taylor Reed presents 123 Main" }],
+      ["copy", { ...projections.paidAd.copy, description: "In partnership with a lender" }],
+      ["creative", { ...projections.paidAd.creative, headline: "Taylor Reed open house" }],
+      ["creative", { ...projections.paidAd.creative, body: "Presented by Reed Realty" }],
+      ["creative", { ...projections.paidAd.creative, callToActionLabel: "Call Taylor Reed" }],
+      ["leadForm", { ...projections.paidAd.leadForm, headline: "Contact Taylor Reed" }],
+      ["leadForm", { ...projections.paidAd.leadForm, description: "Visit brokerage.example" }],
+      ["leadForm", { ...projections.paidAd.leadForm, callToActionLabel: "Message Taylor Reed" }],
+      [
+        "leadForm",
+        {
+          ...projections.paidAd.leadForm,
+          privacyPolicyUrl: "https://brokerage.example/privacy",
+        },
+      ],
+      [
+        "advertiserIdentity",
+        {
+          ...projections.paidAd.advertiserIdentity,
+          contactInformation: { websiteUrl: "https://brokerage.example/paid-ad" },
+        },
+      ],
+    ] as const;
+    for (const [surface, value] of cases) {
+      const changed = createCampaignProjections({
+        campaignVersion: version,
+        collateral,
+        paidAd: { ...paidAd, [surface]: value },
+      });
+      const result = runPaidAdBrandPreflight(changed, boundaryRules);
+      expect(result.blocking, surface).toBe(true);
+    }
+  });
+
+  it("fails closed on tampering, Realtor assets, contact information, and dual-brand fields", async () => {
+    const { collateral, paidAd, projections, version } = await projectionFixture();
+    expect(() =>
+      runPaidAdBrandPreflight(
+        {
+          ...projections,
+          paidAd: { ...projections.paidAd, projectionHash: sha("f") },
+        },
+        boundaryRules,
+      ),
+    ).toThrow("projection hash");
+    expect(() =>
+      runPaidAdBrandPreflight(
+        {
+          ...projections,
+          collateral: { ...projections.collateral, projectionHash: sha("e") },
+        },
+        boundaryRules,
+      ),
+    ).toThrow("Collateral projection hash");
+
+    const otherCampaignVersionRef = "version_02OtherCampaign";
+    const otherVersion = { ...version, campaignVersionRef: otherCampaignVersionRef };
+    const otherProjections = createCampaignProjections({
+      campaignVersion: otherVersion,
+      collateral: { ...collateral, campaignVersionRef: otherCampaignVersionRef },
+      paidAd: { ...paidAd, campaignVersionRef: otherCampaignVersionRef },
+    });
+    expect(() =>
+      runPaidAdBrandPreflight(
+        { collateral: projections.collateral, paidAd: otherProjections.paidAd },
+        boundaryRules,
+      ),
+    ).toThrow("do not share one campaign version");
+
+    for (const changedPaidAd of [
+      {
+        ...paidAd,
+        advertiserIdentity: {
+          ...paidAd.advertiserIdentity,
+          logoAssetRef: "asset_01RealtorLogo",
+        },
+      },
+      {
+        ...paidAd,
+        advertiserIdentity: {
+          ...paidAd.advertiserIdentity,
+          contactInformation: { email: "taylor@brokerage.example" },
+        },
+      },
+      {
+        ...paidAd,
+        creative: {
+          ...paidAd.creative,
+          identityAssetRefs: ["asset_01LenderLogo", "asset_01RealtorPhoto"],
+        },
+      },
+      {
+        ...paidAd,
+        creative: {
+          ...paidAd.creative,
+          identityAssetRefs: ["asset_01UnknownBrokerageLogo"],
+        },
+      },
+      {
+        ...paidAd,
+        creative: {
+          ...paidAd.creative,
+          propertyImageAssetRefs: ["asset_01UnknownDualBrandComposite"],
+        },
+      },
+    ]) {
+      const regenerated = createCampaignProjections({
+        campaignVersion: version,
+        collateral,
+        paidAd: changedPaidAd,
+      });
+      expect(runPaidAdBrandPreflight(regenerated, boundaryRules).blocking).toBe(true);
+    }
+    expect(() =>
+      createCampaignProjections({
+        campaignVersion: version,
+        collateral,
+        paidAd: { ...paidAd, realtorDisplayName: "Taylor Reed" },
+      }),
+    ).toThrow();
+  });
+
+  it("limits Realtor approval to collateral and binds decisions to one projection preview", async () => {
+    const { projections } = await projectionFixture();
+    const authority = { assertMayApprove: vi.fn(async () => undefined) };
+    const realtorApproval = await createProjectionApprovalDecision(
+      {
+        approvalRef: "approval_03Collateral",
+        projection: projections.collateral,
+        actorRef: "user_01Realtor",
+        actorKind: "human",
+        actorRole: "realtor_approver",
+        decidedAt: now,
+        ipAuditHash: sha("a"),
+        decision: "approved",
+      },
+      authority,
+    );
+    expect(realtorApproval).toMatchObject({
+      scope: "collateral",
+      projectionHash: projections.collateral.projectionHash,
+      previewRef: projections.collateral.approvalSummary.previewRef,
+    });
+    await expect(
+      createProjectionApprovalDecision(
+        {
+          approvalRef: "approval_04PaidAd",
+          projection: projections.paidAd,
+          actorRef: "user_01Realtor",
+          actorKind: "human",
+          actorRole: "realtor_approver",
+          decidedAt: now,
+          ipAuditHash: sha("b"),
+          decision: "approved",
+        },
+        authority,
+      ),
+    ).rejects.toThrow("limited to co-branded collateral");
+    expect(authority.assertMayApprove).toHaveBeenCalledOnce();
+  });
+
+  it("rejects paid-ad approval when copy changes under stale hash and preview evidence", async () => {
+    const { projections } = await projectionFixture();
+    const authority = { assertMayApprove: vi.fn(async () => undefined) };
+    await expect(
+      createProjectionApprovalDecision(
+        {
+          approvalRef: "approval_07TamperedPaidAd",
+          projection: {
+            ...projections.paidAd,
+            copy: { ...projections.paidAd.copy, headline: "Tampered after preview" },
+          },
+          actorRef: "user_01Lender",
+          actorKind: "human",
+          actorRole: "lender_approver",
+          decidedAt: now,
+          ipAuditHash: sha("e"),
+          decision: "approved",
+        },
+        authority,
+      ),
+    ).rejects.toThrow("current immutable content and preview binding");
+    expect(authority.assertMayApprove).not.toHaveBeenCalled();
+  });
+
+  it("authorizes rendering only with exact non-blocking projection-bound evidence", async () => {
+    const { projections } = await projectionFixture();
+    const result = runPaidAdBrandPreflight(projections, boundaryRules);
+    const evidence = {
+      schemaVersion: 1,
+      campaignVersionRef: result.campaignVersionRef,
+      collateralProjectionHash: result.collateralProjectionHash,
+      paidAdProjectionHash: result.paidAdProjectionHash,
+      rulesetVersionRef: result.rulesetVersionRef,
+      brandBoundaryRulesHash: result.brandBoundaryRulesHash,
+      blocking: false,
+      resultHash: result.resultHash,
+    } as const;
+    const expectedAttestation = {
+      campaignVersionRef: evidence.campaignVersionRef,
+      collateralProjectionHash: evidence.collateralProjectionHash,
+      paidAdProjectionHash: evidence.paidAdProjectionHash,
+      rulesetVersionRef: evidence.rulesetVersionRef,
+      brandBoundaryRulesHash: evidence.brandBoundaryRulesHash,
+      preflightResultHash: evidence.resultHash,
+    };
+    const authority = {
+      assertAuthorized: vi.fn((actual: unknown) => {
+        if (JSON.stringify(actual) !== JSON.stringify(expectedAttestation)) {
+          throw new Error("Stored paid-ad brand attestation does not match");
+        }
+      }),
+    };
+    await expect(
+      authorizePaidAdProjectionForRendering(projections.paidAd, evidence, authority),
+    ).resolves.toEqual(projections.paidAd);
+    for (const staleEvidence of [
+      { ...evidence, resultHash: sha("f") },
+      { ...evidence, collateralProjectionHash: sha("f") },
+      { ...evidence, paidAdProjectionHash: sha("f") },
+      { ...evidence, campaignVersionRef: "version_02Stale" },
+      { ...evidence, rulesetVersionRef: "ruleset_02Stale" },
+      { ...evidence, brandBoundaryRulesHash: sha("f") },
+    ]) {
+      await expect(
+        authorizePaidAdProjectionForRendering(projections.paidAd, staleEvidence, authority),
+      ).rejects.toThrow();
+    }
+    await expect(
+      authorizePaidAdProjectionForRendering(
+        { ...projections.paidAd, copy: { ...projections.paidAd.copy, headline: "Tampered" } },
+        evidence,
+        authority,
+      ),
+    ).rejects.toThrow("current non-blocking brand preflight evidence");
+  });
+
+  it("fails closed when an asynchronous stored brand authority rejects", async () => {
+    const { projections } = await projectionFixture();
+    const result = runPaidAdBrandPreflight(projections, boundaryRules);
+    const evidence = {
+      schemaVersion: 1,
+      campaignVersionRef: result.campaignVersionRef,
+      collateralProjectionHash: result.collateralProjectionHash,
+      paidAdProjectionHash: result.paidAdProjectionHash,
+      rulesetVersionRef: result.rulesetVersionRef,
+      brandBoundaryRulesHash: result.brandBoundaryRulesHash,
+      blocking: false,
+      resultHash: result.resultHash,
+    } as const;
+
+    await expect(
+      authorizePaidAdProjectionForRendering(projections.paidAd, evidence, {
+        async assertAuthorized() {
+          await Promise.resolve();
+          throw new Error("Stored paid-ad brand attestation is not authorized");
+        },
+      }),
+    ).rejects.toThrow("not authorized");
+  });
+
+  it("rejects non-human and out-of-summary projection approvals before authorization", async () => {
+    const { projections } = await projectionFixture();
+    const authority = { assertMayApprove: vi.fn(async () => undefined) };
+    await expect(
+      createProjectionApprovalDecision(
+        {
+          approvalRef: "approval_05Model",
+          projection: projections.collateral,
+          actorRef: "model_01Generator",
+          actorKind: "model",
+          actorRole: "realtor_approver",
+          decidedAt: now,
+          ipAuditHash: sha("c"),
+          decision: "approved",
+        },
+        authority,
+      ),
+    ).rejects.toThrow("Only a human principal");
+    await expect(
+      createProjectionApprovalDecision(
+        {
+          approvalRef: "approval_06WrongRole",
+          projection: projections.collateral,
+          actorRef: "user_01Approver",
+          actorKind: "human",
+          actorRole: "approver",
+          decidedAt: now,
+          ipAuditHash: sha("d"),
+          decision: "approved",
+        },
+        authority,
+      ),
+    ).rejects.toThrow("outside the projection approval summary");
+    expect(authority.assertMayApprove).not.toHaveBeenCalled();
   });
 });

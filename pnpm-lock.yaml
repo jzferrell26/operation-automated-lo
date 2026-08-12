@@ -281,6 +281,9 @@ importers:
 
   packages/rendering:
     dependencies:
+      '@oalo/application':
+        specifier: workspace:*
+        version: link:../application
       '@oalo/contracts':
         specifier: workspace:*
         version: link:../contracts

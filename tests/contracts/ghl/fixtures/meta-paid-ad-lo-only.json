@@ -1,0 +1,102 @@
+{
+  "locationRef": "loc_MetaFixture",
+  "campaignVersionRef": "ver_MetaBrand001",
+  "revision": 1,
+  "manifestHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "frozen": true,
+  "campaignName": "Austin Home Financing Campaign",
+  "category": {
+    "campaignType": "property_and_mortgage",
+    "configuredValues": ["CONFIGURED_PROPERTY", "CONFIGURED_MORTGAGE"],
+    "providerAcceptedValues": null,
+    "evidenceStatus": "REQUIRES_HIGHLEVEL_APP_TEST"
+  },
+  "assetSelection": {
+    "adAccountId": "act_001",
+    "facebookPageId": "page_001",
+    "instagramAccountId": "ig_001",
+    "leadFormId": "form_001",
+    "pixelId": "pixel_001"
+  },
+  "targeting": {
+    "includedGeographies": [
+      { "providerId": "geo_Austin", "safeDisplayName": "Austin, Texas", "kind": "city" }
+    ],
+    "excludedGeographies": [],
+    "placements": ["facebook_feed", "instagram_feed"]
+  },
+  "budget": {
+    "currency": "USD",
+    "dailyBudgetMinor": 5000,
+    "startsAt": "2026-08-20T00:00:00.000Z",
+    "endsAt": "2026-08-27T00:00:00.000Z"
+  },
+  "bounds": {
+    "tenantDailyMinimumMinor": 2000,
+    "tenantDailyMaximumMinor": 10000,
+    "platformDailyMinimumMinor": 1000,
+    "platformDailyMaximumMinor": 20000,
+    "tenantTotalMaximumMinor": 70000,
+    "minimumDurationDays": 3,
+    "maximumDurationDays": 14
+  },
+  "paidAdProjection": {
+    "schemaVersion": 1,
+    "projectionRef": "paid_projection_Meta001",
+    "locationRef": "loc_MetaFixture",
+    "campaignRef": "campaign_MetaBrand001",
+    "campaignVersionRef": "ver_MetaBrand001",
+    "template": {
+      "id": "open-house-boost-paid-ad",
+      "version": "1.0.0"
+    },
+    "advertiserIdentity": {
+      "kind": "loan_officer",
+      "displayName": "Morgan Lee Home Lending",
+      "logoAssetRef": "asset_LenderLogo001",
+      "imageAssetRef": "asset_LoanOfficer001",
+      "contactInformation": {
+        "phone": "+1 512 555 0147",
+        "email": "morgan@lender.example",
+        "websiteUrl": "https://lender.example"
+      }
+    },
+    "copy": {
+      "primaryText": "Explore home financing options for this Austin open house.",
+      "headline": "A clear path toward your next home",
+      "description": "Talk with a licensed lending professional."
+    },
+    "creative": {
+      "headline": "Explore financing for this Austin home",
+      "body": "Plan your next step with Morgan Lee Home Lending.",
+      "callToActionLabel": "Learn about financing",
+      "propertyImageAssetRefs": ["asset_PropertyHero001"],
+      "identityAssetRefs": ["asset_LenderLogo001", "asset_LoanOfficer001"],
+      "disclosureBlocks": ["Equal Housing Opportunity."]
+    },
+    "leadForm": {
+      "headline": "Request home financing information",
+      "description": "Morgan Lee Home Lending will follow up about financing options.",
+      "callToActionLabel": "Request information",
+      "privacyPolicyUrl": "https://lender.example/privacy"
+    },
+    "projectionHash": "1c6f6d8ad8766ec202a176f00d0b31071e2edb414bb8e1c69dd7b1d6b4cfe2d0",
+    "approvalSummary": {
+      "approvalSummaryRef": "approval_summary_Meta001",
+      "scope": "paid_ad",
+      "projectionHash": "1c6f6d8ad8766ec202a176f00d0b31071e2edb414bb8e1c69dd7b1d6b4cfe2d0",
+      "previewRef": "preview_Meta001",
+      "requiredApproverRoles": ["lender_approver"]
+    }
+  },
+  "brandPreflightEvidence": {
+    "schemaVersion": 1,
+    "campaignVersionRef": "ver_MetaBrand001",
+    "collateralProjectionHash": "181d15ddd8ddd1acf3ac3552596423be8a2430d9bb663259f4a65d70fa000c00",
+    "paidAdProjectionHash": "1c6f6d8ad8766ec202a176f00d0b31071e2edb414bb8e1c69dd7b1d6b4cfe2d0",
+    "rulesetVersionRef": "ruleset_MetaBrand001",
+    "brandBoundaryRulesHash": "2365e9b4484e6ebf0c6a0674915f0e799d87390e611a46eff22059dc734325e2",
+    "blocking": false,
+    "resultHash": "994a004e9900c707972c4c85c4d4ed5406ca36c968fddbd984c3f03c0529c49f"
+  }
+}

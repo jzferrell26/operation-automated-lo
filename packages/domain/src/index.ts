@@ -34,6 +34,7 @@ export {
   assertCampaignVersionTenant,
   assertPublishFreshness,
   evaluateCampaignPreflight,
+  evaluatePaidAdBrandBoundary,
   preflightHasOnlyDeterministicInputs,
   validateApprovalLink,
 } from "./campaign-foundation.js";

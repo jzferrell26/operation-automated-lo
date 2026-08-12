@@ -98,6 +98,67 @@ interface ApprovalLinkClaims {
   readonly redeemedAt?: string | undefined;
 }
 
+interface PaidAdBrandBoundaryInput {
+  readonly collateral: {
+    readonly content: {
+      readonly realtorIdentity: {
+        readonly displayName: string;
+        readonly logoAssetRef?: string | undefined;
+        readonly imageAssetRef?: string | undefined;
+        readonly contactInformation?:
+          | Readonly<{
+              phone?: string | undefined;
+              email?: string | undefined;
+              websiteUrl?: string | undefined;
+            }>
+          | undefined;
+      };
+    };
+  };
+  readonly paidAd: {
+    readonly advertiserIdentity: {
+      readonly displayName: string;
+      readonly logoAssetRef?: string | undefined;
+      readonly imageAssetRef?: string | undefined;
+      readonly contactInformation?:
+        | Readonly<{
+            phone?: string | undefined;
+            email?: string | undefined;
+            websiteUrl?: string | undefined;
+          }>
+        | undefined;
+    };
+    readonly copy: {
+      readonly primaryText: string;
+      readonly headline: string;
+      readonly description: string;
+    };
+    readonly creative: {
+      readonly headline: string;
+      readonly body: string;
+      readonly callToActionLabel: string;
+      readonly propertyImageAssetRefs: readonly string[];
+      readonly identityAssetRefs: readonly string[];
+      readonly disclosureBlocks: readonly string[];
+    };
+    readonly leadForm: {
+      readonly headline: string;
+      readonly description: string;
+      readonly callToActionLabel: string;
+      readonly privacyPolicyUrl: string;
+    };
+  };
+  readonly rules: {
+    readonly realtorIdentityValues: readonly string[];
+    readonly brokerageMarks: readonly string[];
+    readonly coBrandPhrases: readonly string[];
+    readonly prohibitedContactValues: readonly string[];
+    readonly realtorAssetRefs: readonly string[];
+    readonly allowedPaidAdIdentityAssetRefs: readonly string[];
+    readonly allowedPropertyImageAssetRefs: readonly string[];
+  };
+}
+
 const transitions: Readonly<Record<CampaignState, ReadonlySet<CampaignState>>> = {
   draft: new Set(["generated", "archived"]),
   generated: new Set(["preflight_failed", "awaiting_approval", "archived"]),
@@ -311,6 +372,154 @@ export function evaluateCampaignPreflight(
     );
   }
   findings.push(...rules.warnings.map((warning) => ({ ...warning, severity: "warning" as const })));
+  return Object.freeze(findings);
+}
+
+function normalizedText(value: string): string {
+  return value
+    .normalize("NFKD")
+    .toLocaleLowerCase("en")
+    .replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+function contactValues(
+  contact:
+    | Readonly<{
+        phone?: string | undefined;
+        email?: string | undefined;
+        websiteUrl?: string | undefined;
+      }>
+    | undefined,
+): readonly string[] {
+  if (contact === undefined) return [];
+  return [contact.phone, contact.email, contact.websiteUrl].filter(
+    (value): value is string => value !== undefined,
+  );
+}
+
+export function evaluatePaidAdBrandBoundary(
+  input: PaidAdBrandBoundaryInput,
+): readonly PreflightFinding[] {
+  const realtor = input.collateral.content.realtorIdentity;
+  const prohibitedText = [
+    realtor.displayName,
+    ...contactValues(realtor.contactInformation),
+    ...input.rules.realtorIdentityValues,
+    ...input.rules.brokerageMarks,
+    ...input.rules.coBrandPhrases,
+    ...input.rules.prohibitedContactValues,
+  ]
+    .map(normalizedText)
+    .filter((value) => value.length > 0);
+  const textSurfaces = [
+    ["paidAd.advertiserIdentity.displayName", input.paidAd.advertiserIdentity.displayName],
+    [
+      "paidAd.advertiserIdentity.contactInformation",
+      contactValues(input.paidAd.advertiserIdentity.contactInformation).join(" "),
+    ],
+    ["paidAd.copy.primaryText", input.paidAd.copy.primaryText],
+    ["paidAd.copy.headline", input.paidAd.copy.headline],
+    ["paidAd.copy.description", input.paidAd.copy.description],
+    ["paidAd.creative.headline", input.paidAd.creative.headline],
+    ["paidAd.creative.body", input.paidAd.creative.body],
+    ["paidAd.creative.callToActionLabel", input.paidAd.creative.callToActionLabel],
+    ["paidAd.creative.disclosureBlocks", input.paidAd.creative.disclosureBlocks.join(" ")],
+    ["paidAd.leadForm.headline", input.paidAd.leadForm.headline],
+    ["paidAd.leadForm.description", input.paidAd.leadForm.description],
+    ["paidAd.leadForm.callToActionLabel", input.paidAd.leadForm.callToActionLabel],
+    ["paidAd.leadForm.privacyPolicyUrl", input.paidAd.leadForm.privacyPolicyUrl],
+  ] as const;
+  const findings: PreflightFinding[] = [];
+  for (const [affected, value] of textSurfaces) {
+    const normalizedValue = normalizedText(value);
+    if (prohibitedText.some((prohibited) => normalizedValue.includes(prohibited))) {
+      findings.push(
+        finding(
+          "PAID_AD_REALTOR_IDENTITY",
+          "Paid-ad presentation contains Realtor, brokerage, contact, or co-brand language.",
+          affected,
+          "Remove Realtor and brokerage identity from the lender-branded paid-ad projection.",
+        ),
+      );
+    }
+  }
+
+  const prohibitedAssets = new Set(
+    [realtor.logoAssetRef, realtor.imageAssetRef, ...input.rules.realtorAssetRefs].filter(
+      (value): value is string => value !== undefined,
+    ),
+  );
+  const assetSurfaces = [
+    ["paidAd.advertiserIdentity.logoAssetRef", input.paidAd.advertiserIdentity.logoAssetRef],
+    ["paidAd.advertiserIdentity.imageAssetRef", input.paidAd.advertiserIdentity.imageAssetRef],
+    ...input.paidAd.creative.identityAssetRefs.map(
+      (assetRef) => ["paidAd.creative.identityAssetRefs", assetRef] as const,
+    ),
+    ...input.paidAd.creative.propertyImageAssetRefs.map(
+      (assetRef) => ["paidAd.creative.propertyImageAssetRefs", assetRef] as const,
+    ),
+  ] as const;
+  for (const [affected, assetRef] of assetSurfaces) {
+    if (assetRef !== undefined && prohibitedAssets.has(assetRef)) {
+      findings.push(
+        finding(
+          "PAID_AD_REALTOR_ASSET",
+          "Paid-ad creative contains a Realtor image, logo, brokerage mark, or dual-brand asset.",
+          affected,
+          "Use only approved loan-officer or lender identity assets in paid advertising.",
+        ),
+      );
+    }
+  }
+
+  const allowedIdentityAssets = new Set(input.rules.allowedPaidAdIdentityAssetRefs);
+  for (const [affected, assetRef] of [
+    ["paidAd.advertiserIdentity.logoAssetRef", input.paidAd.advertiserIdentity.logoAssetRef],
+    ["paidAd.advertiserIdentity.imageAssetRef", input.paidAd.advertiserIdentity.imageAssetRef],
+    ...input.paidAd.creative.identityAssetRefs.map(
+      (assetRef) => ["paidAd.creative.identityAssetRefs", assetRef] as const,
+    ),
+  ] as const) {
+    if (assetRef !== undefined && !allowedIdentityAssets.has(assetRef)) {
+      findings.push(
+        finding(
+          "PAID_AD_IDENTITY_ASSET_NOT_APPROVED",
+          "Paid-ad creative contains an identity asset that is not approved for the lender-branded ad.",
+          affected,
+          "Use only identity assets approved for the loan officer or lender paid-ad projection.",
+        ),
+      );
+    }
+  }
+
+  const allowedPropertyAssets = new Set(input.rules.allowedPropertyImageAssetRefs);
+  if (input.paidAd.creative.propertyImageAssetRefs.some((ref) => !allowedPropertyAssets.has(ref))) {
+    findings.push(
+      finding(
+        "PAID_AD_PROPERTY_ASSET_NOT_APPROVED",
+        "Paid-ad creative contains a property image that is not approved for this campaign.",
+        "paidAd.creative.propertyImageAssetRefs",
+        "Use only approved property images from the immutable campaign version.",
+      ),
+    );
+  }
+
+  const paidContact = contactValues(input.paidAd.advertiserIdentity.contactInformation);
+  const realtorContact = new Set(
+    [...contactValues(realtor.contactInformation), ...input.rules.prohibitedContactValues].map(
+      normalizedText,
+    ),
+  );
+  if (paidContact.some((value) => realtorContact.has(normalizedText(value)))) {
+    findings.push(
+      finding(
+        "PAID_AD_REALTOR_CONTACT",
+        "Paid-ad advertiser identity contains Realtor or brokerage contact information.",
+        "paidAd.advertiserIdentity.contactInformation",
+        "Use only the loan officer or lender contact channels approved for paid advertising.",
+      ),
+    );
+  }
   return Object.freeze(findings);
 }
 

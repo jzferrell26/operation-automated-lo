@@ -1,0 +1,47 @@
+[
+  {
+    "caseId": "copy-primary-text",
+    "path": ["paidAdProjection", "copy", "primaryText"],
+    "value": "Meet the Realtor hosting this open house."
+  },
+  {
+    "caseId": "creative-body",
+    "path": ["paidAdProjection", "creative", "body"],
+    "value": "Presented by Summit Brokerage and Morgan Lee Home Lending."
+  },
+  {
+    "caseId": "creative-identity-image",
+    "path": ["paidAdProjection", "creative", "identityAssetRefs", 0],
+    "value": "asset_RealtorPortrait001"
+  },
+  {
+    "caseId": "lead-form-presentation",
+    "path": ["paidAdProjection", "leadForm", "description"],
+    "value": "Summit Realty will follow up with you."
+  },
+  {
+    "caseId": "advertiser-identity",
+    "path": ["paidAdProjection", "advertiserIdentity", "displayName"],
+    "value": "Summit Brokerage"
+  },
+  {
+    "caseId": "advertiser-contact-information",
+    "path": ["paidAdProjection", "advertiserIdentity", "contactInformation", "email"],
+    "value": "taylor@partner.example"
+  },
+  {
+    "caseId": "paid-call-to-action",
+    "path": ["paidAdProjection", "creative", "callToActionLabel"],
+    "value": "Contact our co-branded team"
+  },
+  {
+    "caseId": "forbidden-realtor-field",
+    "path": ["paidAdProjection", "realtorDisplayName"],
+    "value": "Riley Morgan"
+  },
+  {
+    "caseId": "forbidden-brokerage-field",
+    "path": ["paidAdProjection", "brokerageLogoAssetRef"],
+    "value": "asset_PartnerLogo001"
+  }
+]

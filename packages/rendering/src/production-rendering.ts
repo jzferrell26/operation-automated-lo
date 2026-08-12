@@ -11,6 +11,11 @@ import {
 import { z } from "zod";
 
 import { renderSourceForManifest, type RenderSourceDocument } from "./campaign-render-sources.js";
+import {
+  renderPaidAdCreativeSource,
+  type PaidAdRenderAuthorization,
+  type PaidAdRenderSourceDocument,
+} from "./paid-ad-render-sources.js";
 
 type CanonicalJson = z.infer<ReturnType<typeof z.json>>;
 
@@ -56,15 +61,32 @@ export interface BrowserOutput {
   readonly pageCount?: number;
 }
 
+export interface CollateralBrowserRenderInput {
+  readonly kind: "collateral";
+  readonly manifest: RenderManifest;
+  readonly artifactType: ArtifactType;
+  readonly source: RenderSourceDocument;
+  readonly networkPolicy: "deny-all";
+}
+
+export interface PaidAdBrowserRenderInput {
+  readonly kind: "paid_ad";
+  readonly paidAdContext: Readonly<{
+    locationRef: string;
+    campaignRef: string;
+    campaignVersionRef: string;
+    projectionHash: string;
+  }>;
+  readonly artifactType: "meta-square" | "meta-story";
+  readonly source: PaidAdRenderSourceDocument;
+  readonly networkPolicy: "deny-all";
+}
+
+export type DeterministicBrowserRenderInput =
+  CollateralBrowserRenderInput | PaidAdBrowserRenderInput;
+
 export interface DeterministicBrowserPort {
-  render(
-    input: Readonly<{
-      manifest: RenderManifest;
-      artifactType: ArtifactType;
-      source: RenderSourceDocument;
-      networkPolicy: "deny-all";
-    }>,
-  ): Promise<BrowserOutput>;
+  render(input: Readonly<DeterministicBrowserRenderInput>): Promise<BrowserOutput>;
 }
 
 export interface PrivateArtifactPort {
@@ -85,11 +107,24 @@ export interface PrivateArtifactPort {
 export interface RenderBatchInput {
   readonly manifest: unknown;
   readonly artifactTypes: readonly ArtifactType[];
+  readonly paidAdAuthorization?: PaidAdRenderAuthorization;
   readonly createdAt: Date;
 }
 
-function artifactReference(manifest: RenderManifest, artifactType: ArtifactType): string {
-  return `artifact_${renderContentHash({ manifest, artifactType }).slice(0, 32)}`;
+function artifactReference(
+  manifest: RenderManifest,
+  artifactType: ArtifactType,
+  paidAdContext?: PaidAdBrowserRenderInput["paidAdContext"],
+): string {
+  const identity =
+    paidAdContext === undefined ? { manifest, artifactType } : { paidAdContext, artifactType };
+  return `artifact_${renderContentHash(identity).slice(0, 32)}`;
+}
+
+function isPaidAdArtifact(
+  artifactType: ArtifactType,
+): artifactType is "meta-square" | "meta-story" {
+  return artifactType === "meta-square" || artifactType === "meta-story";
 }
 
 function assertOutputMatchesSource(
@@ -127,13 +162,51 @@ export async function renderArtifactBatch(
   const records: ArtifactRecord[] = [];
 
   for (const artifactType of artifactTypes) {
-    const source = renderSourceForManifest(manifest, artifactType);
-    const output = BrowserOutputSchema.parse(
-      await ports.browser.render({ manifest, artifactType, source, networkPolicy: "deny-all" }),
-    );
+    let source: RenderSourceDocument;
+    let browserInput: DeterministicBrowserRenderInput;
+    if (isPaidAdArtifact(artifactType)) {
+      if (input.paidAdAuthorization === undefined) {
+        throw new Error("Meta rendering requires a separate authorized paid-ad projection");
+      }
+      const paidSource = await renderPaidAdCreativeSource(input.paidAdAuthorization, artifactType);
+      if (
+        paidSource.locationRef !== manifest.locationRef ||
+        paidSource.campaignRef !== manifest.campaignRef ||
+        paidSource.campaignVersionRef !== manifest.campaignVersionRef
+      ) {
+        throw new Error("Paid-ad projection does not match the render batch campaign version");
+      }
+      source = paidSource;
+      browserInput = {
+        kind: "paid_ad",
+        paidAdContext: {
+          locationRef: paidSource.locationRef,
+          campaignRef: paidSource.campaignRef,
+          campaignVersionRef: paidSource.campaignVersionRef,
+          projectionHash: paidSource.projectionHash,
+        },
+        artifactType,
+        source: paidSource,
+        networkPolicy: "deny-all",
+      };
+    } else {
+      source = renderSourceForManifest(manifest, artifactType);
+      browserInput = {
+        kind: "collateral",
+        manifest,
+        artifactType,
+        source,
+        networkPolicy: "deny-all",
+      };
+    }
+    const output = BrowserOutputSchema.parse(await ports.browser.render(browserInput));
     assertOutputMatchesSource(source, output);
     const sha256 = createHash("sha256").update(output.bytes).digest("hex");
-    const artifactRef = artifactReference(manifest, artifactType);
+    const artifactRef = artifactReference(
+      manifest,
+      artifactType,
+      browserInput.kind === "paid_ad" ? browserInput.paidAdContext : undefined,
+    );
     const storageKey = await ports.storage.store({
       artifactRef,
       artifactType,
@@ -157,7 +230,8 @@ export async function renderArtifactBatch(
         profileVersions: manifest.profileVersions,
         rendererVersion: manifest.renderer.version,
         browserVersion: manifest.browser.version,
-        templateVersion: manifest.template.version,
+        templateVersion:
+          "templateVersion" in source ? source.templateVersion : manifest.template.version,
         fontHashes: manifest.fonts.map((font) => font.sha256),
         sha256,
         mimeType: output.mimeType,

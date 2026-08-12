@@ -1,5 +1,9 @@
 # Product Definition
 
+**Related:**
+
+- [Canonical project map](project-map.md)
+
 ## Product
 
 **Name:** Operation Automated LO

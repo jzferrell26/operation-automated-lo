@@ -252,6 +252,7 @@ Failure to reach the post-start demand target triggers a stop, kill, or reshape 
 
 ## Related
 
+- [Canonical project map](../../../knowledge/private/product/project-map.md)
 - [2026 build-readiness and research gate](../../../knowledge/private/research/2026-build-readiness-and-research-gate.md)
 - [System build blueprint](../../../knowledge/private/architecture/system-build-blueprint.md)
 - [System data model](../../../knowledge/private/architecture/system-data-model.md)

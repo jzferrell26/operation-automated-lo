@@ -24,7 +24,7 @@ Status date: August 12, 2026.
 
 | Area | Current state |
 | --- | --- |
-| Delivery | PR #20 merged into `main` on August 12, 2026, after all required checks passed. This project-map update is a documentation-only follow-up. |
+| Delivery | Core RAID PR #20 and canonical project-map PR #21 merged into `main` on August 12, 2026, after all required checks passed. |
 | PRD-001 lifecycle | `IN WORK`. The repository implementation is complete for every criterion that can be proved locally, but production acceptance is not complete. |
 | Acceptance criteria | 305 total: 267 `VERIFIED`, 28 `DEFERRED: LIVE HIGHLEVEL AUTH`, 8 `BLOCKED: EXTERNAL EVIDENCE`, 1 `BLOCKED: G3 / G4`, and 1 `BLOCKED: G5`. |
 | Final quality result | `SHIP` for the audited repository implementation. The verdict does not authorize production traffic or convert external gates to pass. |
@@ -148,16 +148,15 @@ The detailed capture requirements and unblock procedures remain authoritative in
 
 ## Prioritized next steps
 
-1. Merge this documentation follow-up only after it remains mergeable and all required checks stay green. Preserve the 267 verified and 38 external or deferred classifications established by PR #20.
-2. Provision and inventory isolated preview, staging, and dark production resources. Prove environment isolation and KMS rotation and recovery for `001J-AC-026` and `001J-AC-029`. Keep production traffic disabled.
-3. Run the full G1 and G2 HighLevel App Test matrix for direct install, agency install, signed context, OAuth, token refresh, uninstall, reconnect, role resolution, iframe behavior, and first-party fallback. Capture sanitized evidence against all 28 deferred criteria.
-4. Run controlled G3 and G4 Meta tests for property-only, mortgage-only, and combined campaigns. Prove draft and read-back parity, explicit publish behavior, pause and resume, reconciliation, reporting, category values, and targeting limits. Obtain written lender or counsel approval.
-5. Run the G5 isolated no-spend synthetic lead test and retain proof of the complete HighLevel routing and attribution path.
-6. Exercise the G6 billing lifecycle and complete G7 counsel, lender, provider-data, retention, and AI prompt-boundary approvals.
-7. Complete the remaining operating evidence: the timed 30-minute onboarding test, real primary and fallback model evaluation, 30, 60, and 90-day model-cost checkpoints, and production smoke, rollback, restore, and reconciliation exercises.
-8. Implement and browser-test the application-wide nonce-based Content Security Policy before production traffic. Any code change must be followed by security review and then quality verification.
-9. Run the private beta inside HighLevel's permitted distribution boundary. Measure activation, campaign publication, lead-path success, support time, model cost, retention intent, and the post-start 15-paid-founder target.
-10. Move PRD-001 to `completed/` only after the core-completion definition below is satisfied. Keep PRD-002 in backlog until its independent entry gates pass.
+1. Provision and inventory isolated preview, staging, and dark production resources. Prove environment isolation and KMS rotation and recovery for `001J-AC-026` and `001J-AC-029`. Keep production traffic disabled.
+2. Run the full G1 and G2 HighLevel App Test matrix for direct install, agency install, signed context, OAuth, token refresh, uninstall, reconnect, role resolution, iframe behavior, and first-party fallback. Capture sanitized evidence against all 28 deferred criteria.
+3. Run controlled G3 and G4 Meta tests for property-only, mortgage-only, and combined campaigns. Prove draft and read-back parity, explicit publish behavior, pause and resume, reconciliation, reporting, category values, and targeting limits. Obtain written lender or counsel approval.
+4. Run the G5 isolated no-spend synthetic lead test and retain proof of the complete HighLevel routing and attribution path.
+5. Exercise the G6 billing lifecycle and complete G7 counsel, lender, provider-data, retention, and AI prompt-boundary approvals.
+6. Complete the remaining operating evidence: the timed 30-minute onboarding test, real primary and fallback model evaluation, 30, 60, and 90-day model-cost checkpoints, and production smoke, rollback, restore, and reconciliation exercises.
+7. Implement and browser-test the application-wide nonce-based Content Security Policy before production traffic. Any code change must be followed by security review and then quality verification.
+8. Run the private beta inside HighLevel's permitted distribution boundary. Measure activation, campaign publication, lead-path success, support time, model cost, retention intent, and the post-start 15-paid-founder target.
+9. Move PRD-001 to `completed/` only after the core-completion definition below is satisfied. Keep PRD-002 in backlog until its independent entry gates pass.
 
 ## Definition of core completion
 

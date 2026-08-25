@@ -140,9 +140,7 @@ function captureAuthorized(observationInput: unknown): GhlEvidenceRecord {
   return createEvidenceRecord(draft);
 }
 
-export function createLiveCaptureAdapter(
-  env: LiveCaptureEnv = process.env,
-): LiveCaptureAdapter {
+export function createLiveCaptureAdapter(env: LiveCaptureEnv = process.env): LiveCaptureAdapter {
   if (!isLiveCaptureAuthorized(env)) {
     return Object.freeze({
       mode: "disabled" as const,

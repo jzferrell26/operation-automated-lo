@@ -80,6 +80,27 @@ describe("G2 live capture authorization seam", () => {
     ).rejects.toBeInstanceOf(UnsafeFixtureError);
   });
 
+  it.each([
+    { responseBody: { id_token: "must-not-persist" } },
+    { responseBody: { code: "must-not-persist" } },
+  ])("rejects OAuth token and code fields even without a Bearer prefix", async (partial) => {
+    const adapter = createLiveCaptureAdapter({
+      [OALO_GHL_LIVE_CAPTURE_ENV]: OALO_GHL_LIVE_CAPTURE_AUTHORIZED,
+    });
+    if (adapter.mode !== "authorized") {
+      throw new Error("expected authorized adapter");
+    }
+
+    await expect(
+      adapter.capture({
+        caseId: "oauth_callback_success",
+        httpStatus: 200,
+        captureNotes: "must fail sanitization",
+        ...partial,
+      }),
+    ).rejects.toBeInstanceOf(UnsafeFixtureError);
+  });
+
   it("covers the full G2 matrix case catalog", () => {
     const cases = listG2MatrixCases();
     expect(cases).toHaveLength(9);

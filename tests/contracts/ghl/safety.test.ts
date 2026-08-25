@@ -13,6 +13,11 @@ describe("HighLevel Phase 0 fixture safety", () => {
     { customerEmail: "synthetic-at-example.invalid" },
     { campaignBudget: 1 },
     { headers: { Authorization: "synthetic-forbidden" } },
+    { id_token: "synthetic-forbidden" },
+    { ssoToken: "synthetic-forbidden" },
+    { token: "synthetic-forbidden" },
+    { code: "synthetic-forbidden" },
+    { authorizationCode: "synthetic-forbidden" },
   ])("rejects forbidden fixture fields", (value) => {
     expect(() => assertFixtureIsSanitized(value)).toThrow(UnsafeFixtureError);
   });

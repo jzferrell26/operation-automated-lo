@@ -13,6 +13,11 @@ describe("HighLevel Phase 0 fixture safety", () => {
     { customerEmail: "synthetic-at-example.invalid" },
     { campaignBudget: 1 },
     { headers: { Authorization: "synthetic-forbidden" } },
+    { id_token: "synthetic-forbidden" },
+    { ssoToken: "synthetic-forbidden" },
+    { token: "synthetic-forbidden" },
+    { code: "synthetic-forbidden" },
+    { authorizationCode: "synthetic-forbidden" },
   ])("rejects forbidden fixture fields", (value) => {
     expect(() => assertFixtureIsSanitized(value)).toThrow(UnsafeFixtureError);
   });
@@ -25,10 +30,10 @@ describe("HighLevel Phase 0 fixture safety", () => {
     expect(() => assertFixtureOnlyRequest(request)).toThrow(UnsafeFixtureError);
   });
 
-  it("keeps the live capture adapter inert", async () => {
-    const adapter = createLiveCaptureAdapter();
+  it("keeps the live capture adapter inert without authorization", async () => {
+    const adapter = createLiveCaptureAdapter({});
 
     expect(adapter.mode).toBe("disabled");
-    await expect(adapter.capture()).rejects.toThrow(/disabled in Phase 0/i);
+    await expect(adapter.capture()).rejects.toThrow(/OALO_GHL_LIVE_CAPTURE=authorized/i);
   });
 });

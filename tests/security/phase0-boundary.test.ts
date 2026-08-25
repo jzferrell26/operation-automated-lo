@@ -153,6 +153,6 @@ describe("Phase 0 security coverage and traffic boundary", () => {
   it("keeps the Phase 0 capture adapter disabled", async () => {
     const adapter = createLiveCaptureAdapter();
     expect(adapter.mode).toBe("disabled");
-    await expect(adapter.capture()).rejects.toThrow(/disabled in Phase 0/i);
+    await expect(adapter.capture()).rejects.toThrow(/OALO_GHL_LIVE_CAPTURE=authorized/i);
   });
 });

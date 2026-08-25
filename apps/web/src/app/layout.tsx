@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers.js";
 import type { CSSProperties, ReactNode } from "react";
 
+import { CSP_NONCE_HEADER } from "../security/content-security-policy.js";
 import {
   DEFAULT_TENANT_ACCENT_KEY,
   ThemeRuntimeProvider,
@@ -16,7 +18,8 @@ export const metadata: Metadata = {
   description: "Phase 0 evidence harness and platform scaffold",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const nonce = (await headers()).get(CSP_NONCE_HEADER) ?? undefined;
   const tenantAccent = resolveServerTenantAccentKey(DEFAULT_TENANT_ACCENT_KEY);
   const tenantAccentVariables = getTenantAccentCssVariables(tenantAccent) as CSSProperties;
 
@@ -29,7 +32,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     >
       <head>
         <meta name="color-scheme" content="light dark" />
-        <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
       </head>
       <body>
         <ThemeRuntimeProvider>{children}</ThemeRuntimeProvider>

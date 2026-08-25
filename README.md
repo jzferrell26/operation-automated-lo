@@ -14,7 +14,7 @@ This repository is an evidence-producing scaffold, not a production-ready campai
 - No production campaign traffic, customer data, live provider writes, advertising spend, or production credentials are authorized.
 - The local Supabase project stays unlinked. Do not run `supabase link`, a linked database command, or `supabase config push` from this scaffold.
 - The synthetic [`/demo`](http://localhost:3000/demo) illustrates the intended product shape. It cannot approve, publish, spend, or prove a provider contract.
-- Research gates G1 through G7 remain **BLOCKED**, and production stays unauthorized until each is `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE`. G8 is `ACCEPTED CONSTRAINT`, never `PASS`: no evidence of 15 paid founders exists, commercial validation is unproven, and 15 paid founders is now a post-start target. See the [build-readiness gate](library/knowledge/private/research/2026-build-readiness-and-research-gate.md).
+- Research gates G1 and G4 are `ACCEPTED CONSTRAINT` (external distribution removed; Housing Special Ad Category requirements known). G2, G3, G5, G6, and G7 remain **BLOCKED**, and production stays unauthorized until each remaining blocked gate is `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE`. G8 is `ACCEPTED CONSTRAINT`, never `PASS`: no evidence of 15 paid founders exists, commercial validation is unproven, and 15 paid founders is now a post-start target. See the [build-readiness gate](library/knowledge/private/research/2026-build-readiness-and-research-gate.md).
 
 ## Where it runs
 
@@ -23,7 +23,7 @@ This repository is an evidence-producing scaffold, not a production-ready campai
 | Local | Next.js web app, fixture-only task runner, and unlinked Supabase on reserved ports `55420` through `55429`. No credentials are required. |
 | Pull request | GitHub Actions runs the canonical verification gate. Preview services, when configured by an authorized operator, must remain stub-only and synthetic-only. |
 | Staging | Not configured by Phase 0. Fixed contract-test accounts require separate authorization. |
-| Production | Not configured and not authorized while G1 through G7 are blocked. G8 is an accepted constraint and does not authorize production. |
+| Production | Not configured and not authorized while G2, G3, G5, G6, or G7 remain blocked. G1, G4, and G8 are accepted constraints and do not authorize production. |
 
 To connect Vercel, Trigger.dev, Supabase, R2, and KMS to this repository, follow the operator runbook [docs/operations/cloud-environment-setup.md](docs/operations/cloud-environment-setup.md) and record non-secret IDs in [docs/operations/environment-inventory.template.md](docs/operations/environment-inventory.template.md).
 

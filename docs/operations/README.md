@@ -13,6 +13,7 @@ If the cloud stack is not connected to this repository yet, start with:
 3. [../production-environments.md](../production-environments.md) — environment variable contract
 4. [../phase0-preview-environments.md](../phase0-preview-environments.md) — preview stub-only boundary
 5. [deployment.md](deployment.md) — later release cutover after environments exist
+6. [evidence-packs/](evidence-packs/README.md) — External Evidence Sprint fill-in packs (G2 through Launch Ready)
 
 Local inventory validation:
 

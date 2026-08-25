@@ -24,7 +24,7 @@ Status date: August 25, 2026.
 
 | Area | Current state |
 | --- | --- |
-| Delivery | Core RAID and project-map docs remain on `main`. G1 and G4 accepted-constraint decision recorded 2026-08-25. |
+| Delivery | Gauntlet closeout squash-merged to `main` on 2026-08-25 (PR #25, `25c0bdc`): G1/G4 constraints, Raid A CSP, library scaffold, Trigger.dev 4.5.12. Next work is the [External Evidence Sprint](../../../../NEXT_BATCH_LEDGER.md). |
 | PRD-001 lifecycle | `IN WORK`. The repository implementation is complete for every criterion that can be proved locally, but production acceptance is not complete. |
 | Acceptance criteria | 305 total: 267 `VERIFIED`, 28 `DEFERRED: LIVE HIGHLEVEL AUTH`, 7 `BLOCKED: EXTERNAL EVIDENCE`, 1 `BLOCKED: G5`, and 2 `ACCEPTED CONSTRAINT` (G4 housing Special Ad Category criteria). |
 | Final quality result | `SHIP` for the audited repository implementation. The verdict does not authorize production traffic or convert remaining external gates to pass. |
@@ -141,13 +141,15 @@ The detailed capture requirements and unblock procedures remain authoritative in
 
 ## Prioritized next steps
 
-1. Provision and inventory isolated preview, staging, and dark production resources. Prove environment isolation and KMS rotation and recovery for `001J-AC-026` and `001J-AC-029`. Keep production traffic disabled.
-2. Run the G2 HighLevel App Test matrix for signed context, OAuth, token refresh, uninstall, reconnect, role resolution, iframe behavior, and first-party fallback. Capture sanitized evidence against the deferred auth criteria. Marketplace distribution proof is not required under the G1 accepted constraint.
+Follow the [External Evidence Sprint](../../../../NEXT_BATCH_LEDGER.md) and fill-in packs under [`docs/operations/evidence-packs/`](../../../../docs/operations/evidence-packs/README.md).
+
+1. **Wave 1 (primary):** Run the G2 HighLevel App Test matrix. Capture sanitized evidence against the 28 deferred auth criteria. Marketplace distribution proof is not required under the G1 accepted constraint.
+2. Provision and inventory isolated preview, staging, and dark production resources. Prove environment isolation and KMS rotation and recovery for `001J-AC-026` and `001J-AC-029`. Keep production traffic disabled.
 3. Run controlled G3 Meta tests for draft and read-back parity, explicit publish behavior, pause and resume, reconciliation, and reporting. Paid ads continue to use Housing Special Ad Category under the G4 accepted constraint.
 4. Run the G5 isolated no-spend synthetic lead test and retain proof of the complete HighLevel routing and attribution path.
 5. Exercise the G6 billing lifecycle and complete G7 counsel, lender, provider-data, retention, and AI prompt-boundary approvals.
 6. Complete the remaining operating evidence: the timed 30-minute onboarding test, real primary and fallback model evaluation, 30, 60, and 90-day model-cost checkpoints, and production smoke, rollback, restore, and reconciliation exercises.
-7. Keep dependency and CI gates green. Re-run security then quality on any release tree that changes request, auth, or browser security surfaces. The application-wide nonce CSP Medium is closed as of Raid A (2026-08-25).
+7. Keep dependency and CI gates green. Re-run security then quality on any release tree that changes request, auth, or browser security surfaces. The application-wide nonce CSP Medium is closed as of Raid A (2026-08-25). Trigger.dev 4.5.12 closed the prior audit High follow-up.
 8. Run the private beta inside the permitted distribution boundary. Measure activation, campaign publication, lead-path success, support time, model cost, retention intent, and the post-start 15-paid-founder target.
 9. Move PRD-001 to `completed/` only after the core-completion definition below is satisfied. Keep PRD-002 in backlog until its independent entry gates pass.
 
@@ -183,5 +185,6 @@ PRD-001 core is complete only when all of the following are true:
 
 ## Changelog
 
+- v1.2 (2026-08-25): Recorded Gauntlet squash-merge to `main` (PR #25). Pointed next steps at the External Evidence Sprint and evidence packs. G2 App Test is the primary unblock.
 - v1.1 (2026-08-25): Recorded product-owner accepted constraints for G1 (external distribution removed) and G4 (Housing Special Ad Category requirements known). Updated criterion counts and next steps.
 - v1.0 (2026-08-12): Established the first canonical project map from the final PRD-001 RAID ledger, security close-out, and post-security QA report.

@@ -154,7 +154,7 @@ The detailed capture requirements and unblock procedures remain authoritative in
 4. Run the G5 isolated no-spend synthetic lead test and retain proof of the complete HighLevel routing and attribution path.
 5. Exercise the G6 billing lifecycle and complete G7 counsel, lender, provider-data, retention, and AI prompt-boundary approvals.
 6. Complete the remaining operating evidence: the timed 30-minute onboarding test, real primary and fallback model evaluation, 30, 60, and 90-day model-cost checkpoints, and production smoke, rollback, restore, and reconciliation exercises.
-7. Implement and browser-test the application-wide nonce-based Content Security Policy before production traffic. Any code change must be followed by security review and then quality verification.
+7. Keep dependency and CI gates green. Re-run security then quality on any release tree that changes request, auth, or browser security surfaces. The application-wide nonce CSP Medium is closed as of Raid A (2026-08-25).
 8. Run the private beta inside HighLevel's permitted distribution boundary. Measure activation, campaign publication, lead-path success, support time, model cost, retention intent, and the post-start 15-paid-founder target.
 9. Move PRD-001 to `completed/` only after the core-completion definition below is satisfied. Keep PRD-002 in backlog until its independent entry gates pass.
 
@@ -168,7 +168,7 @@ PRD-001 core is complete only when all of the following are true:
 - The exact approved campaign version produces the co-branded collateral and separate lender or loan-officer paid-ad projection, with read-back parity, explicit publication, audit history, and outcome attribution.
 - Preview, staging, and production resources are isolated; KMS recovery, smoke, rollback, database restore, and provider reconciliation exercises pass.
 - Counsel and lender compliance approve the founding blueprint, disclosures, consent, targeting, retention, privacy, Realtor relationship rules, and provider data boundaries.
-- The application-wide CSP follow-up is resolved, dependency and CI gates are green, and security review runs before final quality verification on the release tree.
+- The application-wide CSP Medium from 2026-08-12 is closed (Raid A, 2026-08-25); dependency and CI gates are green, and security review runs before final quality verification on the release tree.
 - The folder moves from `library/requirements/in-work/` to `library/requirements/completed/` only after the implementation and external acceptance evidence are complete. G8's post-start commercial target can remain an accepted constraint, but it must not be mislabeled as validated demand.
 
 ## Sources of truth

@@ -243,3 +243,14 @@ This addendum preserves the original audit above and supersedes its current-stat
 ### Post-Remediation Gate
 
 Security close-out is complete for the 001D-AC-021 remediation. No Realtor or collateral browser data path, SSRF, path traversal, content-type confusion, unchecked decompression, checksum bypass, or asynchronous authority fail-open remains in the audited surface. Quality may rerun against this post-security tree. No commit or push was performed.
+
+
+---
+
+## Post-Remediation Addendum: 2026-08-25 (Raid A nonce CSP)
+
+**Medium finding status:** The open Medium item **Missing global Content Security Policy** (`apps/web/next.config.ts:5`) is **remediated** by Raid A on branch `cursor/raid-a-nonce-csp-ac42`.
+
+**Evidence:** Per-request enforced CSP via `apps/web/src/middleware.ts` (response and forwarded request headers); nonce generation and policy assembly in `apps/web/src/security/content-security-policy.ts`; theme bootstrap nonce in `apps/web/src/app/layout.tsx`; unit and browser tests in `apps/web/src/security/content-security-policy.unit.test.ts`, `tests/security/web-security-headers.test.ts`, and `tests/browser/content-security-policy.spec.ts`.
+
+**Current CSP Medium status:** CLOSED. See `2026-08-25-raid-a-csp-security-audit.md` for the Raid A security close-out (0 Critical, 0 High, 0 Medium remaining in scope).

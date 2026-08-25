@@ -39,15 +39,7 @@ Status date: August 25, 2026.
 
 The July Schema v2 migration decisions are implemented: PRD-001 is in `requirements/in-work/`, PRD-002 remains in `requirements/backlog/`, discovery lives under private knowledge, QA reports remain in their authorized locations, and `notes/` contains only its human-owned README. The [Library Schema v2 raid ledger](../../../../LIBRARY_SCHEMA_V2_RAID_LEDGER.md) retains the migration evidence.
 
-The August 12 read-only drift check found no legacy v1 directory, invalid PRD or IRD folder name, duplicate PRD number, missing PRD index, missing PRD `qa/` directory, or unauthorized notes content. It did find these remaining scaffold gaps:
-
-- `library/knowledge/private/standards/` is missing.
-- `library/knowledge/private/README.md` is missing.
-- `library/knowledge/private/architecture/README.md` is missing.
-- `library/knowledge/private/standards/README.md` is missing with its parent directory.
-- `library/requirements/backlog/README.md` is missing.
-
-No migration or scaffold move was performed during this documentation pass. The repository does not expose the standardize-library or guild-sync commands named in the maintenance guide, so the audit used read-only structural checks.
+The August 12 read-only drift check found no legacy v1 directory, invalid PRD or IRD folder name, duplicate PRD number, missing PRD index, missing PRD `qa/` directory, or unauthorized notes content. Five scaffold gaps identified in that audit were closed on 2026-08-25 by Gauntlet Raid B: `library/knowledge/private/README.md`, `library/knowledge/private/architecture/README.md`, `library/knowledge/private/standards/` (with README and `documentation-framework.md`), and `library/requirements/backlog/README.md`. No further Schema v2 scaffold gaps remain open as of that date.
 
 ## Founding product and system flow
 

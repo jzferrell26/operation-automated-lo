@@ -67,9 +67,9 @@ Counts parsed from [`PRODUCTION_EXECUTION_LEDGER.md`](./PRODUCTION_EXECUTION_LED
 ```mermaid
 flowchart TD
     W0["Wave 0 DONE<br/>G1/G4 accepted constraints<br/>Raid A CSP merge"]
-    W1["Wave 1<br/>Library scaffold Raid B<br/>library-guardian"]
-    W2["Wave 2<br/>Park non-raidable ACs<br/>This ledger"]
-    W3["Wave 3<br/>security-guardian<br/>then quality-guardian"]
+    W1["Wave 1 DONE<br/>Library scaffold Raid B<br/>library-guardian"]
+    W2["Wave 2 DONE<br/>Park non-raidable ACs<br/>This ledger"]
+    W3["Wave 3 DONE<br/>security-guardian PASS<br/>then quality-guardian PASS"]
     W4["Wave 4<br/>Ship PR + CI"]
 
     W0 --> W1
@@ -86,24 +86,24 @@ flowchart TD
 | G4 Special Ad Category accepted constraint | Product owner decision | N/A | DONE | Recorded 2026-08-25; Housing SAC enforced; App Test discovery not required |
 | Raid A nonce CSP Medium | `security-guardian` | `composer-2.5` | DONE | 0 Critical / 0 High / 0 Medium in scope per 2026-08-25 security audit |
 
-### Wave 1: Library scaffold Raid B
+### Wave 1: Library scaffold Raid B (DONE)
 
-| Guardian | Model | Rationale | Ownership | Exit criteria |
-| --- | --- | --- | --- | --- |
-| `library-guardian` | `composer-2.5-fast` | Mechanical scaffold and README gaps; bounded file creation with clear structural spec | `library/knowledge/private/standards/`, missing README files under `library/knowledge/private/` and `library/requirements/backlog/` per project-map drift check | All five scaffold gaps closed; read-only structural audit passes |
+| Guardian | Model | Rationale | Ownership | Exit criteria | Status |
+| --- | --- | --- | --- | --- | --- |
+| `library-guardian` | `composer-2.5-fast` | Mechanical scaffold and README gaps; bounded file creation with clear structural spec | `library/knowledge/private/standards/`, missing README files under `library/knowledge/private/` and `library/requirements/backlog/` per project-map drift check | All five scaffold gaps closed; read-only structural audit passes | DONE — verified by `quality-guardian` 2026-08-25, see [`2026-08-25-gauntlet-closeout-qa-report.md`](./library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-25-gauntlet-closeout-qa-report.md) rows W1-1 through W1-5 |
 
-### Wave 2: Park and document non-raidable ACs (this ledger)
+### Wave 2: Park and document non-raidable ACs (this ledger) (DONE)
 
-| Guardian | Model | Rationale | Ownership | Exit criteria |
-| --- | --- | --- | --- | --- |
-| Gauntlet orchestrator | `composer-2.5` | Documentation and honest status accounting; no invented VERIFIED claims | `GAUNTLET_EXECUTION_LEDGER.md`, external park list | Every non-verified AC has status, exact ask, and responsible owner; counts reconcile to production ledger |
+| Guardian | Model | Rationale | Ownership | Exit criteria | Status |
+| --- | --- | --- | --- | --- | --- |
+| Gauntlet orchestrator | `composer-2.5` | Documentation and honest status accounting; no invented VERIFIED claims | `GAUNTLET_EXECUTION_LEDGER.md`, external park list | Every non-verified AC has status, exact ask, and responsible owner; counts reconcile to production ledger | DONE — verified by `quality-guardian` 2026-08-25 (counts independently recomputed and exact: 267/28/7/1/2 = 305, zero duplicate AC IDs), see rows W2-1 through W2-3 |
 
-### Wave 3: Guardian close-out
+### Wave 3: Guardian close-out (DONE)
 
-| Guardian | Model | Rationale | Ownership | Exit criteria |
-| --- | --- | --- | --- | --- |
-| `security-guardian` | `claude-4.6-sonnet-medium-thinking` | Security-sensitive release tree review; matrix choice for balanced audit depth | Release branch diff touching auth, CSP, or request boundaries | 0 Critical / 0 High / 0 Medium findings at or above policy threshold |
-| `quality-guardian` | `claude-4.6-sonnet-medium-thinking` | Independent verification against plan and ledger | Full release gate and ledger alignment | QA report passes with no medium-or-higher open items |
+| Guardian | Model | Rationale | Ownership | Exit criteria | Status |
+| --- | --- | --- | --- | --- | --- |
+| `security-guardian` | `claude-4.6-sonnet-medium-thinking` | Security-sensitive release tree review; matrix choice for balanced audit depth | Release branch diff touching auth, CSP, or request boundaries | 0 Critical / 0 High / 0 Medium findings at or above policy threshold | DONE — PASS, see [`2026-08-25-gauntlet-closeout-security-audit.md`](./library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-25-gauntlet-closeout-security-audit.md) |
+| `quality-guardian` | `claude-4.6-sonnet-medium-thinking` | Independent verification against plan and ledger | Full release gate and ledger alignment | QA report passes with no medium-or-higher open items | DONE — PASS (0 Critical, 0 Warning, 2 Suggestions), see [`2026-08-25-gauntlet-closeout-qa-report.md`](./library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-25-gauntlet-closeout-qa-report.md) |
 
 ### Wave 4: Ship
 
@@ -163,7 +163,7 @@ No stalls recorded at ledger creation.
 | Guardian | Run date | Status | Report link | Findings summary |
 | --- | --- | --- | --- | --- |
 | `security-guardian` (Wave 3 close-out) | 2026-08-25 | PASS | [`2026-08-25-gauntlet-closeout-security-audit.md`](./library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-25-gauntlet-closeout-security-audit.md) | 0 Critical, 0 High, 0 Medium in scope. Raid A CSP re-verified live (unit/contract/browser tests re-run, all pass); no other request/auth-boundary code touched by this branch; docs-only diff clean of secrets/PII. 1 pre-existing High dependency finding (`@trigger.dev/core` prototype pollution) documented as out-of-branch-scope, not introduced here, follow-up recommended. |
-| `quality-guardian` (Wave 3 close-out) | Pending | Pending | | |
+| `quality-guardian` (Wave 3 close-out) | 2026-08-25 | PASS | [`2026-08-25-gauntlet-closeout-qa-report.md`](./library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-25-gauntlet-closeout-qa-report.md) | 0 Critical, 0 Warning, 2 Suggestions. Waves 0-2 exit criteria independently re-verified (status-count arithmetic recomputed from raw AC table, exact; scaffold gaps confirmed closed; CSP unit/contract/browser tests re-run live plus a scoped `apps/web` typecheck, all pass). Suggestions: decision-record naming/location nit and a tracking reminder for the pre-existing dependency follow-up already flagged by security-guardian. |
 | `security-guardian` (Raid A CSP, pre-merge) | 2026-08-25 | CLOSED | [`2026-08-25-raid-a-csp-security-audit.md`](./library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-25-raid-a-csp-security-audit.md) | 0 Critical, 0 High, 0 Medium in scope |
 
 ---
@@ -173,3 +173,4 @@ No stalls recorded at ledger creation.
 | Date | Event |
 | --- | --- |
 | 2026-08-25 | Gauntlet Phase 0 master ledger created on `cursor/gauntlet-prd001-closeout-ac42`. Status counts derived from production ledger; G1/G4 accepted constraints and Raid A CSP close-out recorded. Waves 1 through 4 pending. |
+| 2026-08-25 | `security-guardian` Wave 3 close-out: PASS, 0 Critical/High/Medium in scope. `quality-guardian` Wave 3 close-out: PASS, 0 Critical, 0 Warning, 2 Suggestions. Waves 1, 2, and 3 marked DONE after independent re-verification; see [`2026-08-25-gauntlet-closeout-qa-report.md`](./library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-25-gauntlet-closeout-qa-report.md). Wave 4 (ship: commit/push/PR/CI) remains pending; this run did not push or open a PR per its operating instructions. |

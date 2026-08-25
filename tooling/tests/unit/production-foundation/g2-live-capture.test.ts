@@ -108,9 +108,7 @@ describe("G2 live capture authorization seam (unit)", () => {
     }
 
     await expect(adapter.capture()).rejects.toBeInstanceOf(LiveCaptureAuthorizationError);
-    expect(new LiveCaptureAuthorizationError("revoked").name).toBe(
-      "LiveCaptureAuthorizationError",
-    );
+    expect(new LiveCaptureAuthorizationError("revoked").name).toBe("LiveCaptureAuthorizationError");
   });
 
   it("rejects when authorization is revoked on the env object mid-session", async () => {

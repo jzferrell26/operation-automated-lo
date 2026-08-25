@@ -59,7 +59,7 @@ export interface DisabledLiveCaptureAdapter {
 
 export interface AuthorizedLiveCaptureAdapter {
   readonly mode: "authorized";
-  capture(observation: unknown): Promise<GhlEvidenceRecord>;
+  capture(observation?: unknown): Promise<GhlEvidenceRecord>;
 }
 
 export type LiveCaptureAdapter = DisabledLiveCaptureAdapter | AuthorizedLiveCaptureAdapter;
@@ -152,10 +152,15 @@ export function createLiveCaptureAdapter(env: LiveCaptureEnv = process.env): Liv
 
   return Object.freeze({
     mode: "authorized" as const,
-    capture: async (observation: unknown) => {
+    capture: async (observation?: unknown) => {
       if (!isLiveCaptureAuthorized(env)) {
         throw new LiveCaptureAuthorizationError(
           "Live capture authorization was revoked during the session.",
+        );
+      }
+      if (observation === undefined) {
+        throw new LiveCaptureAuthorizationError(
+          "Authorized live capture requires a sanitized observation payload.",
         );
       }
       return captureAuthorized(observation);

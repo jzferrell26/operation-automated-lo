@@ -162,9 +162,9 @@ No stalls recorded at ledger creation.
 
 | Guardian | Run date | Status | Report link | Findings summary |
 | --- | --- | --- | --- | --- |
-| `security-guardian` (Wave 3 close-out) | Pending | Pending | | |
+| `security-guardian` (Wave 3 close-out) | 2026-08-25 | PASS | [`2026-08-25-gauntlet-closeout-security-audit.md`](./library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-25-gauntlet-closeout-security-audit.md) | 0 Critical, 0 High, 0 Medium in scope. Raid A CSP re-verified live (unit/contract/browser tests re-run, all pass); no other request/auth-boundary code touched by this branch; docs-only diff clean of secrets/PII. 1 pre-existing High dependency finding (`@trigger.dev/core` prototype pollution) documented as out-of-branch-scope, not introduced here, follow-up recommended. |
 | `quality-guardian` (Wave 3 close-out) | Pending | Pending | | |
-| `security-guardian` (Raid A CSP) | 2026-08-25 | CLOSED | [`2026-08-25-raid-a-csp-security-audit.md`](./library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-25-raid-a-csp-security-audit.md) | 0 Critical, 0 High, 0 Medium in scope |
+| `security-guardian` (Raid A CSP, pre-merge) | 2026-08-25 | CLOSED | [`2026-08-25-raid-a-csp-security-audit.md`](./library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-25-raid-a-csp-security-audit.md) | 0 Critical, 0 High, 0 Medium in scope |
 
 ---
 

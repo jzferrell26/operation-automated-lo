@@ -22,6 +22,8 @@ export function middleware(request: NextRequest): NextResponse {
   requestHeaders.delete("content-security-policy");
   requestHeaders.delete("content-security-policy-report-only");
   requestHeaders.set(CSP_NONCE_HEADER, nonce);
+  // Next.js reads the script nonce from the request CSP header during render.
+  requestHeaders.set(cspHeaderName, contentSecurityPolicy);
 
   const response = NextResponse.next({
     request: {

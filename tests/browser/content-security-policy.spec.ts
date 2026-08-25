@@ -27,4 +27,10 @@ test("enforces a nonce-based Content-Security-Policy without blocking theme boot
 
   expect(bootstrapNonce?.nonce).toMatch(/^[A-Za-z0-9+/=]+$/);
   expect(csp).toContain(`'nonce-${bootstrapNonce?.nonce}'`);
+
+  const nextChunkNonces = await page.locator('script[src*="_next"]').evaluateAll((scripts) =>
+    scripts.map((script) => script.nonce || script.getAttribute("nonce")),
+  );
+  expect(nextChunkNonces.length).toBeGreaterThan(0);
+  expect(nextChunkNonces.every((value) => value === bootstrapNonce?.nonce)).toBe(true);
 });

@@ -28,7 +28,7 @@ Status date: August 12, 2026.
 | PRD-001 lifecycle | `IN WORK`. The repository implementation is complete for every criterion that can be proved locally, but production acceptance is not complete. |
 | Acceptance criteria | 305 total: 267 `VERIFIED`, 28 `DEFERRED: LIVE HIGHLEVEL AUTH`, 8 `BLOCKED: EXTERNAL EVIDENCE`, 1 `BLOCKED: G3 / G4`, and 1 `BLOCKED: G5`. |
 | Final quality result | `SHIP` for the audited repository implementation. The verdict does not authorize production traffic or convert external gates to pass. |
-| Final security result | No unresolved Critical or High finding. One Medium follow-up remains for an application-wide nonce-based Content Security Policy. |
+| Final security result | No unresolved Critical or High finding. The application-wide nonce CSP Medium from 2026-08-12 is closed by Raid A (`2026-08-25-raid-a-csp-security-audit.md`). |
 | Production traffic | Disabled until the required HighLevel App Test, Meta, lead-path, billing, environment, operations, and compliance evidence is recorded. |
 | Demand gate | G8 is `ACCEPTED CONSTRAINT`, never `PASS`. Commercial validation is unproven, and 15 paid founders is a post-start target. |
 | PRD-002 | Backlog only. It is a future-options register and is not authorized for implementation. |

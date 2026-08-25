@@ -40,6 +40,41 @@ export const GhlFixtureResponseSchema = z
   })
   .strict();
 
+const ObservedAccountStateSchema = z.enum([
+  "synthetic",
+  "install-required",
+  "meta-test-assets-required",
+  "stripe-test-required",
+  "marketplace-review-required",
+  "app-test-captured",
+]);
+
+const BlockedEvidenceSchema = z
+  .object({
+    externalStatus: z.literal("BLOCKED"),
+    blockerReason: z.string().min(1).max(500),
+    requiredExternalEvidence: z.array(z.string().min(1).max(300)).min(1),
+    safeProviderIds: z.record(z.string(), SafeIdentifierSchema),
+    grantedScopes: z.array(z.string().regex(/^[A-Za-z0-9./_-]+$/)),
+    observedAccountState: ObservedAccountStateSchema,
+    requestHash: SafeHashSchema,
+    responseHash: SafeHashSchema,
+  })
+  .strict();
+
+const CapturedEvidenceSchema = z
+  .object({
+    externalStatus: z.literal("CAPTURED_SANITIZED"),
+    captureNotes: z.string().min(1).max(500),
+    requiredExternalEvidence: z.array(z.string().min(1).max(300)).max(0),
+    safeProviderIds: z.record(z.string(), SafeIdentifierSchema),
+    grantedScopes: z.array(z.string().regex(/^[A-Za-z0-9./_-]+$/)),
+    observedAccountState: z.literal("app-test-captured"),
+    requestHash: SafeHashSchema,
+    responseHash: SafeHashSchema,
+  })
+  .strict();
+
 export const GhlEvidenceRecordSchema = z
   .object({
     schemaVersion: z.literal(GHL_EVIDENCE_SCHEMA_VERSION),
@@ -47,37 +82,59 @@ export const GhlEvidenceRecordSchema = z
     fixtureId: SafeIdentifierSchema,
     gateId: z.enum(["G1", "G2", "G3", "G4", "G5", "G6"]),
     caseId: SafeIdentifierSchema,
-    source: z.literal("synthetic-fixture"),
+    source: z.enum(["synthetic-fixture", "sanitized-live-capture"]),
     capturedAt: z.string().datetime({ offset: true }),
     provider: z
       .object({
         name: z.literal("highlevel"),
         apiVersion: z.literal("2021-07-28"),
-        environment: z.literal("synthetic"),
+        environment: z.enum(["synthetic", "app-test"]),
       })
       .strict(),
     request: GhlFixtureRequestSchema,
     response: GhlFixtureResponseSchema,
-    evidence: z
-      .object({
-        externalStatus: z.literal("BLOCKED"),
-        blockerReason: z.string().min(1).max(500),
-        requiredExternalEvidence: z.array(z.string().min(1).max(300)).min(1),
-        safeProviderIds: z.record(z.string(), SafeIdentifierSchema),
-        grantedScopes: z.array(z.string().regex(/^[A-Za-z0-9./_-]+$/)),
-        observedAccountState: z.enum([
-          "synthetic",
-          "install-required",
-          "meta-test-assets-required",
-          "stripe-test-required",
-          "marketplace-review-required",
-        ]),
-        requestHash: SafeHashSchema,
-        responseHash: SafeHashSchema,
-      })
-      .strict(),
+    evidence: z.discriminatedUnion("externalStatus", [
+      BlockedEvidenceSchema,
+      CapturedEvidenceSchema,
+    ]),
   })
-  .strict();
+  .strict()
+  .superRefine((record, ctx) => {
+    if (record.source === "synthetic-fixture") {
+      if (record.provider.environment !== "synthetic") {
+        ctx.addIssue({
+          code: "custom",
+          message: "synthetic-fixture source requires provider.environment synthetic.",
+          path: ["provider", "environment"],
+        });
+      }
+      if (record.evidence.externalStatus !== "BLOCKED") {
+        ctx.addIssue({
+          code: "custom",
+          message: "synthetic-fixture source requires evidence.externalStatus BLOCKED.",
+          path: ["evidence", "externalStatus"],
+        });
+      }
+    }
+
+    if (record.source === "sanitized-live-capture") {
+      if (record.provider.environment !== "app-test") {
+        ctx.addIssue({
+          code: "custom",
+          message: "sanitized-live-capture source requires provider.environment app-test.",
+          path: ["provider", "environment"],
+        });
+      }
+      if (record.evidence.externalStatus !== "CAPTURED_SANITIZED") {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "sanitized-live-capture source requires evidence.externalStatus CAPTURED_SANITIZED.",
+          path: ["evidence", "externalStatus"],
+        });
+      }
+    }
+  });
 
 export type GhlEvidenceRecord = z.infer<typeof GhlEvidenceRecordSchema>;
 export type GhlFixtureRequest = z.infer<typeof GhlFixtureRequestSchema>;

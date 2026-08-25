@@ -2,6 +2,7 @@ import { contractVersion } from "@oalo/contracts";
 
 export * from "./evidence.js";
 export * from "./fixture-resilience.js";
+export * from "./g2-matrix.js";
 export * from "./lead-routing.js";
 export * from "./leadconnector-v2-http-transport.js";
 export * from "./live-capture.js";

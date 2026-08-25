@@ -25,10 +25,10 @@ describe("HighLevel Phase 0 fixture safety", () => {
     expect(() => assertFixtureOnlyRequest(request)).toThrow(UnsafeFixtureError);
   });
 
-  it("keeps the live capture adapter inert", async () => {
-    const adapter = createLiveCaptureAdapter();
+  it("keeps the live capture adapter inert without authorization", async () => {
+    const adapter = createLiveCaptureAdapter({});
 
     expect(adapter.mode).toBe("disabled");
-    await expect(adapter.capture()).rejects.toThrow(/disabled in Phase 0/i);
+    await expect(adapter.capture()).rejects.toThrow(/OALO_GHL_LIVE_CAPTURE=authorized/i);
   });
 });

@@ -28,7 +28,7 @@
 | P0-013 | Delivery plan, Phase 0 exit | "TypeScript 7 and any TypeScript 6 compatibility sidecar pass lint, build, tests, editor, and package-tooling checks." | P0-003, P0-010 | `typescript-node-guardian` | VERIFIED | Exact Node 24 verification passes 16 of 16 TypeScript 7 typechecks and builds, with the TypeScript 6 alias confined to compatibility tooling. |
 | P0-014 | Delivery plan, Phase 0 build | "HighLevel App Test harness, signed-context fixture, provider schema capture, and golden render fixtures." | P0-004, P0-005 | `gohighlevel-guardian` | VERIFIED | `packages/ghl/src/**` and `tests/contracts/ghl/**` implement fixture replay, signed-context projections, inert live capture, and deterministic provider evidence. |
 | P0-015 | Research gate, Core App Test contract suite | "The harness records sanitized request and response fixtures, HTTP status, safe provider IDs, granted scopes, and observed account state. Secrets, tokens, customer data, and live spend are prohibited from fixtures." | P0-014 | `gohighlevel-guardian` | VERIFIED | Strict Zod evidence schemas plus recursive sanitization, tamper hashes, method/path denylist, and secret/PII/spend negative tests pass. |
-| P0-016 | Delivery plan, Phase 0 exit | "HighLevel research gates have executable test cases." | P0-014, P0-015 | `gohighlevel-guardian` | VERIFIED | `pnpm test:contracts` passes 4 files and 21 tests. G1 through G6 remain BLOCKED pending named external evidence. |
+| P0-016 | Delivery plan, Phase 0 exit | "HighLevel research gates have executable test cases." | P0-014, P0-015 | `gohighlevel-guardian` | VERIFIED | `pnpm test:contracts` passes 4 files and 21 tests. Synthetic G1 through G6 fixtures remain harness evidence. Product-owner gate dispositions for G1 and G4 are `ACCEPTED CONSTRAINT` as of 2026-08-25; G2, G3, G5, and G6 remain blocked pending named external evidence. |
 | P0-017 | PRD-001j, Test fixtures | Golden render fixtures cover common and adversarial content, and unchanged versioned inputs produce stable hashes without shipping a production renderer. | P0-004, P0-005 | `typescript-node-guardian` | VERIFIED | Versioned common, long, and adversarial fixtures produce canonical bytes and stable SHA-256 hashes with zero network access. Two visual harness tests pass. |
 | P0-018 | PRD-001j, Rendering and storage | Malicious image, SVG, HTML, URL, oversized, mislabeled, corrupt, and high-decompression fixtures are rejected or isolated by the Phase 0 harness. | P0-017 | `security-guardian` | VERIFIED | Eight hostile rendering vectors are rejected by executable tests with zero network calls. |
 | P0-019 | Delivery plan, Phase 0 build | "Threat model and provider contract register." | P0-014 through P0-018 | `security-guardian` | VERIFIED | Strict register covers all 32 Phase 0/threat-model entries and all eight external gates with executable completeness and reference checks. |
@@ -38,14 +38,14 @@
 
 ## External gate register
 
-These gates are not acceptance criteria for this implementation raid. G1 through G7 remain external blockers and must not be silently converted to `PASS`. G8 is recorded as `ACCEPTED CONSTRAINT`, never `PASS`, under the product-owner decision in the raid log.
+These gates are not acceptance criteria for the Phase 0 implementation raid. G2, G3, G5, G6, and G7 remain external blockers and must not be silently converted to `PASS`. G1, G4, and G8 are recorded as `ACCEPTED CONSTRAINT`, never `PASS`, under product-owner decisions in the raid log and research gate.
 
 | Gate | Current state | Required external evidence |
 | --- | --- | --- |
-| G1 Distribution contract | BLOCKED | HighLevel App Test plus Marketplace decision |
+| G1 Distribution contract | ACCEPTED CONSTRAINT | External Marketplace distribution proof removed as a launch prerequisite on 2026-08-25 |
 | G2 OAuth and session contract | BLOCKED | HighLevel App Test |
 | G3 Meta publish contract | BLOCKED | HighLevel App Test with controlled test assets |
-| G4 Special Ad Category contract | BLOCKED | HighLevel and Meta test evidence plus counsel and lender approval |
+| G4 Special Ad Category contract | ACCEPTED CONSTRAINT | Housing Special Ad Category requirements known and enforced; App Test discovery removed on 2026-08-25 |
 | G5 Lead routing contract | BLOCKED | No-spend Meta test lead evidence |
 | G6 Billing lifecycle | BLOCKED | Stripe test mode plus HighLevel billing evidence |
 | G7 Legal operating model | BLOCKED | Counsel and lender approval |
@@ -103,6 +103,7 @@ Fetch `origin/main`, resolve conflicts, rerun `pnpm verify`, confirm mergeabilit
 | 2026-07-20 | `quality-guardian` completed independent close-out: 22 of 22 criteria passed with zero Criticals, Warnings, or Suggestions. Every P0 row is VERIFIED; G1 through G8 remain BLOCKED. |
 | 2026-07-20 | Watchdog found that the initial documentation worker made no filesystem progress. The worker was terminated and the task was decomposed. |
 | 2026-07-20 | Product owner explicitly directed: "Proceed, we are moving without the 15 paid founders." G8 is `ACCEPTED CONSTRAINT`, never `PASS`. No 15-paid-founder evidence exists, and commercial validation remains unproven. G1 through G7 remain `BLOCKED`, and production stays unauthorized until each is `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE`. |
+| 2026-08-25 | Product owner directed removal of the external distribution gate and the mortgage Special Ad Category discovery gate. G1 and G4 are `ACCEPTED CONSTRAINT`, never `PASS`. Housing Special Ad Category remains enforced in product. G2, G3, G5, G6, and G7 remain blocked, and production stays unauthorized. |
 
 ## UI Foundation Raid
 

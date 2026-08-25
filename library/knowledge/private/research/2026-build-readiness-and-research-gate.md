@@ -6,9 +6,11 @@ Research decision date: July 20, 2026.
 
 The public-source research pass is complete for the PRD-001 product and construction architecture. It confirms that HighLevel exposes the installation, embedded UI, CRM, ad draft, explicit ad publish, and reporting surfaces required by Operation Automated LO. It also defines the deployable units, repository topology, tenant database, runtime contracts, durable work, rendering, delivery, testing, observability, and recovery model needed to construct the system.
 
-Production feature implementation is not yet authorized because G1 through G7 remain blocked. Public documentation cannot prove several account-state and policy behaviors. The authorized next technical phase is Phase 0: the platform scaffold, golden rendering fixtures, security harness, and time-boxed HighLevel App Test integration harness defined in the construction documents. Production feature implementation begins only after each of G1 through G7 is marked `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE` by its named owner.
+Production feature traffic is not yet authorized while any remaining blocked gate is unresolved. Public documentation cannot prove several account-state and provider behaviors. The authorized technical phase remains the evidence-producing scaffold, App Test harness, and controlled integration work defined in the construction documents. Production traffic begins only after each of G1 through G7 is marked `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE` by its named owner.
 
-On July 20, 2026, the product owner explicitly directed: "Proceed, we are moving without the 15 paid founders." G8 is therefore `ACCEPTED CONSTRAINT`, never `PASS`. No evidence of 15 paid founders exists, and commercial validation remains unproven. The 15-paid-founder threshold is a post-start commercial validation target, not an implementation prerequisite. This decision does not resolve G1 through G7 or authorize production traffic.
+On July 20, 2026, the product owner explicitly directed: "Proceed, we are moving without the 15 paid founders." G8 is therefore `ACCEPTED CONSTRAINT`, never `PASS`. No evidence of 15 paid founders exists, and commercial validation remains unproven. The 15-paid-founder threshold is a post-start commercial validation target, not an implementation prerequisite.
+
+On August 25, 2026, the product owner directed removal of the external distribution gate and the mortgage Special Ad Category discovery gate: G1 and G4 are therefore `ACCEPTED CONSTRAINT`, never `PASS`. Marketplace distribution proof and App Test discovery of Special Ad Category values are no longer launch prerequisites. The founding product continues to require Meta Housing Special Ad Category for paid housing and mortgage promotion, as already enforced in campaign preflight. These decisions do not resolve G2, G3, G5, G6, or G7, and do not authorize production traffic.
 
 PRD-002 add-ons are not research-complete for implementation as a group. Add-ons that depend on licensed property, valuation, mortgage, or consumer data remain blocked until a provider contract proves permitted use, resale rights, retention, deletion, refresh cadence, and unit economics.
 
@@ -78,7 +80,7 @@ Primary evidence: [OAuth FAQ](https://marketplace.gohighlevel.com/docs/oauth/Faq
 | --- | --- | --- |
 | Ads related to housing or financial products and services require the applicable Special Ad Category. | `CONFIRMED` | The campaign blueprint cannot offer an uncategorized path. |
 | Special-category advertising restricts audience selection, and detailed targeting exclusions were removed from active campaigns beginning March 31, 2025. | `CONFIRMED` | Do not build the product around detailed exclusions, protected-class proxies, ZIP targeting, or unsupported custom/lookalike audience behavior. |
-| A loan-officer or lender-branded paid campaign can touch both housing and financial-services policy even when the associated property collateral is co-branded. Public HighLevel documentation does not establish the correct category array for every campaign variant. | `APP TEST` and `COUNSEL / LENDER` | Keep Realtor identity out of every paid-ad projection. Validate property-only, mortgage-only, and combined campaigns against the actual HighLevel request contract and Meta test response. Lender compliance approves the supported template. |
+| Founding Open House Boost paid ads use Meta Housing Special Ad Category. The product owner accepted this known mortgage and housing requirement on August 25, 2026, so App Test discovery of category combinations is no longer a launch gate. | `ACCEPTED CONSTRAINT` | Keep Realtor identity out of every paid-ad projection. Enforce `HOUSING` Special Ad Category in preflight. Live Meta draft, publish, and read-back remain under G3. |
 
 Primary evidence: [Meta campaign creation and Special Ad Categories](https://www.facebook.com/help/messenger-app/621956575422138/), [Meta audience guidance](https://www.facebook.com/help/messenger-app/717368264947302/), [Meta discriminatory-practices policy](https://transparency.meta.com/policies/ad-standards/unacceptable-content/discriminatory-practices/), and [HighLevel campaign upsert](https://marketplace.gohighlevel.com/docs/ghl/ad-publishing/fb-upsert-campaign/).
 
@@ -121,7 +123,7 @@ The harness records sanitized request and response fixtures, HTTP status, safe p
 - Prove that publish is a separate explicit action and test progress to terminal success and failure.
 - Pause, resume, duplicate-as-new-draft, provider rejection, timeout after write, reconciliation, and idempotent retry.
 - Verify that product code cannot call deletes, audience-member operations, integration changes, Google, LinkedIn, reselling, or autonomous budget changes.
-- Test property-only, mortgage-only, and combined property-plus-mortgage Special Ad Category payloads. Record which category values and combinations HighLevel accepts and how Meta classifies them.
+- Paid housing and mortgage drafts continue to send Meta Housing Special Ad Category. G4 App Test discovery of alternate category combinations is no longer required for launch.
 - Verify lead-form mapping and the exact path by which a Meta test lead appears in HighLevel before adding any product-side contact write.
 
 ### Billing and Marketplace lifecycle
@@ -140,16 +142,16 @@ The harness records sanitized request and response fixtures, HTTP status, safe p
 
 | Gate | Evidence required | Owner | Current status |
 | --- | --- | --- | --- |
-| G1: Distribution contract | Direct and agency App Test pass, plus a written decision on paired apps and the post-five-agency path | Product and HighLevel Marketplace | `BLOCKED: APP TEST / MARKETPLACE REVIEW` |
+| G1: Distribution contract | Marketplace listing, paired-app decision, and post-five-agency path | Product owner | `ACCEPTED CONSTRAINT: EXTERNAL DISTRIBUTION GATE REMOVED` |
 | G2: OAuth and session contract | Install, signed context, token exchange, refresh, uninstall, reconnect, and iframe fallback tests pass | Engineering and security | `BLOCKED: APP TEST` |
 | G3: Meta publish contract | Draft, read-back, approval match, explicit publish, progress, pause, resume, rejection, uncertain write, and reporting tests pass | Engineering | `BLOCKED: APP TEST` |
-| G4: Special Ad Category contract | Supported campaign classification and targeting matrix approved from real test responses | Lender compliance, counsel, and engineering | `BLOCKED: APP TEST / COUNSEL / LENDER` |
+| G4: Special Ad Category contract | Supported campaign classification and targeting matrix from App Test plus counsel or lender approval | Product owner | `ACCEPTED CONSTRAINT: HOUSING SAC REQUIREMENTS KNOWN` |
 | G5: Lead routing contract | One no-spend Meta test lead proves form mapping, GHL contact, opportunity, assignment, workflow, notification, and attribution behavior | Engineering and operations | `BLOCKED: APP TEST` |
 | G6: Billing lifecycle | Hosted Stripe flow and HighLevel billing authorization pass every listed state transition | Product, finance, and engineering | `BLOCKED: APP TEST` |
 | G7: Legal operating model | Terms, privacy, DPA, retention, consent, RESPA, Regulation Z, fair-lending, email, SMS, and lender blueprint approvals are documented | Counsel and lender compliance | `BLOCKED: COUNSEL / LENDER` |
 | G8: Demand | At least 15 paid founders accept the defined core offer | Product | `ACCEPTED CONSTRAINT: COMMERCIAL VALIDATION UNPROVEN` |
 
-No feature team should build the production campaign system while any of G1 through G7 remains `BLOCKED`. Production stays unauthorized until each is `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE`. The App Test harness, golden render fixtures, security threat modeling, and paid-founder demo are permitted because they produce missing evidence rather than depending on it. G8 remains an accepted commercial risk and must not be reported as validated demand.
+No feature team should enable production campaign traffic while any of G2, G3, G5, G6, or G7 remains `BLOCKED`. Production stays unauthorized until each of G1 through G7 is `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE`. The App Test harness, golden render fixtures, security threat modeling, and paid-founder demo remain permitted because they produce missing evidence rather than depending on it. G1, G4, and G8 remain accepted constraints and must not be reported as validated Marketplace distribution, validated Special Ad Category App Test proof, or validated demand.
 
 ## PRD-002 add-on readiness
 
@@ -174,4 +176,4 @@ No feature team should build the production campaign system while any of G1 thro
 
 ## Final research conclusion
 
-Operation Automated LO is technically viable as a scalable HighLevel Marketplace application. The correct 2026 build is a shared modular monolith with a web deployable, a durable task deployable, one RLS-enforced product database, immutable object storage, and HighLevel as the CRM and connected-ad authority. It is not a collection of per-customer Lovable deployments and not a direct-Meta credential store. Product and construction research are complete enough to begin the Phase 0 evidence harness and platform scaffold. G8 is an accepted constraint with unproven commercial validation. Production feature traffic remains a no-go until G1 through G7 are resolved.
+Operation Automated LO is technically viable as a HighLevel-connected campaign application. The correct 2026 build is a shared modular monolith with a web deployable, a durable task deployable, one RLS-enforced product database, immutable object storage, and HighLevel as the CRM and connected-ad authority. It is not a collection of per-customer Lovable deployments and not a direct-Meta credential store. G1 and G4 are accepted constraints: external Marketplace distribution proof and Special Ad Category App Test discovery are no longer launch prerequisites, while Housing Special Ad Category remains enforced in product. G8 is an accepted constraint with unproven commercial validation. Production feature traffic remains a no-go until G2, G3, G5, G6, and G7 are resolved.

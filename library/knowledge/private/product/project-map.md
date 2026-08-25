@@ -1,6 +1,6 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.0 | Date: August 2026 | Status: Active
+> Category: Product Operations | Version: 1.1 | Date: August 2026 | Status: Active
 
 The canonical internal map of the product boundary, system flow, implementation status, external gates, and next work for Operation Automated LO.
 
@@ -20,16 +20,18 @@ Before this document, no canonical single project map existed. The information w
 
 ## Status snapshot
 
-Status date: August 12, 2026.
+Status date: August 25, 2026.
 
 | Area | Current state |
 | --- | --- |
-| Delivery | Core RAID PR #20 and canonical project-map PR #21 merged into `main` on August 12, 2026, after all required checks passed. |
+| Delivery | Core RAID and project-map docs remain on `main`. G1 and G4 accepted-constraint decision recorded 2026-08-25. |
 | PRD-001 lifecycle | `IN WORK`. The repository implementation is complete for every criterion that can be proved locally, but production acceptance is not complete. |
-| Acceptance criteria | 305 total: 267 `VERIFIED`, 28 `DEFERRED: LIVE HIGHLEVEL AUTH`, 8 `BLOCKED: EXTERNAL EVIDENCE`, 1 `BLOCKED: G3 / G4`, and 1 `BLOCKED: G5`. |
-| Final quality result | `SHIP` for the audited repository implementation. The verdict does not authorize production traffic or convert external gates to pass. |
+| Acceptance criteria | 305 total: 267 `VERIFIED`, 28 `DEFERRED: LIVE HIGHLEVEL AUTH`, 7 `BLOCKED: EXTERNAL EVIDENCE`, 1 `BLOCKED: G5`, and 2 `ACCEPTED CONSTRAINT` (G4 housing Special Ad Category criteria). |
+| Final quality result | `SHIP` for the audited repository implementation. The verdict does not authorize production traffic or convert remaining external gates to pass. |
 | Final security result | No unresolved Critical or High finding. One Medium follow-up remains for an application-wide nonce-based Content Security Policy. |
-| Production traffic | Disabled until the required HighLevel App Test, Meta, lead-path, billing, environment, operations, and compliance evidence is recorded. |
+| Production traffic | Disabled until the required HighLevel App Test (G2/G3/G5), billing (G6), environment, operations, and compliance (G7) evidence is recorded. |
+| Distribution gate | G1 is `ACCEPTED CONSTRAINT`. External Marketplace distribution proof is not a launch prerequisite. |
+| Special Ad Category gate | G4 is `ACCEPTED CONSTRAINT`. Housing Special Ad Category requirements are known and enforced in product; App Test discovery is not a launch prerequisite. |
 | Demand gate | G8 is `ACCEPTED CONSTRAINT`, never `PASS`. Commercial validation is unproven, and 15 paid founders is a post-start target. |
 | PRD-002 | Backlog only. It is a future-options register and is not authorized for implementation. |
 
@@ -83,22 +85,22 @@ HighLevel remains the authority for installation, location context, CRM records,
 
 ## PRD and module status
 
-| PRD or module | Scope | Total | Verified | Deferred live auth | Blocked external | Blocked G3/G4 | Blocked G5 | Lifecycle |
+| PRD or module | Scope | Total | Verified | Deferred live auth | Blocked external | Accepted constraint | Blocked G5 | Lifecycle |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | 001J | Platform foundation, runtime, delivery, tenancy, durable work, rendering, and operations | 34 | 27 | 4 | 3 | 0 | 0 | In Work |
 | 001A | Tenant installation, HighLevel identity, OAuth, token lifecycle, and roles | 41 | 20 | 21 | 0 | 0 | 0 | In Work |
 | 001B | Brand, Realtor partner, compliance, and routing profiles | 20 | 20 | 0 | 0 | 0 | 0 | In Work |
 | 001C | Open House Boost blueprint, versions, preflight, and approval | 30 | 30 | 0 | 0 | 0 | 0 | In Work |
 | 001D | Public page, PDF, QR, collateral, and paid-ad creative rendering | 35 | 35 | 0 | 0 | 0 | 0 | In Work |
-| 001E | HighLevel Meta discovery, draft, publish, control, and reporting | 35 | 33 | 0 | 1 | 1 | 0 | In Work |
+| 001E | HighLevel Meta discovery, draft, publish, control, and reporting | 35 | 33 | 0 | 0 | 2 | 0 | In Work |
 | 001F | Lead capture, HighLevel routing, workflow handoff, and attribution | 29 | 28 | 0 | 0 | 0 | 1 | In Work |
 | 001G | Campaign, outcome, exception, and portfolio reporting | 43 | 43 | 0 | 0 | 0 | 0 | In Work |
 | 001H | Self-onboarding, verification, synthetic test, and Launch Ready state | 24 | 20 | 3 | 1 | 0 | 0 | In Work |
 | 001I | AI-assisted brand and campaign generation, metering, and economics | 14 | 11 | 0 | 3 | 0 | 0 | In Work |
-| **PRD-001 total** | **Founding core** | **305** | **267** | **28** | **8** | **1** | **1** | **In Work** |
+| **PRD-001 total** | **Founding core** | **305** | **267** | **28** | **7** | **2** | **1** | **In Work** |
 | [PRD-002](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md) | Future add-on portfolio | Not in the PRD-001 ledger | Not started | Not applicable | Independently gated | Not applicable | Not applicable | Backlog, not authorized |
 
-Repository verification is complete for the 267 locally provable criteria. The remaining 38 criteria require authorized external systems, real environment evidence, named approvals, or measured operating data.
+Repository verification is complete for the 267 locally provable criteria. Two Special Ad Category criteria are product-owner accepted constraints. The remaining 36 criteria require authorized external systems, real environment evidence, named approvals, or measured operating data.
 
 ## Hard boundaries
 
@@ -118,10 +120,10 @@ Repository verification is complete for the 267 locally provable criteria. The r
 
 | Gate | Current status | Responsible owner | Required proof |
 | --- | --- | --- | --- |
-| G1 Distribution | `BLOCKED` | Product and HighLevel Marketplace | Direct and agency installation, location authority, paired-app decision, requested scopes, and the post-five-agency distribution path. |
+| G1 Distribution | `ACCEPTED CONSTRAINT` | Product owner | External Marketplace distribution proof removed as a launch prerequisite on 2026-08-25. Do not claim a public Marketplace listing or post-five-agency path unless separately authorized. |
 | G2 OAuth and session | `DEFERRED FOR NOW` | Engineering, security, product owner, and an authorized HighLevel App Test operator | Signed context, callback, token exchange, refresh, uninstall, reconnect, replay, embedded operation, and first-party fallback in controlled locations. |
 | G3 Meta publish | `BLOCKED` | Engineering and an authorized HighLevel and Meta App Test operator | Draft, read-back, explicit publish, progress, pause, resume, rejection, uncertain-write reconciliation, and reporting with no uncontrolled spend. |
-| G4 Special Ad Category | `BLOCKED` | Lender compliance, counsel, engineering, and the App Test operator | Recorded property-only, mortgage-only, and combined campaign responses plus written approval of the accepted category and targeting matrix. |
+| G4 Special Ad Category | `ACCEPTED CONSTRAINT` | Product owner | Housing Special Ad Category requirements are known and enforced in product. App Test discovery of category combinations is not a launch prerequisite. |
 | G5 Lead routing | `BLOCKED` | Engineering, operations, an authorized location administrator or publisher, and compliance | One isolated no-spend test lead proving contact, tag, opportunity, owner, workflow, notification, attribution, replay safety, and reporting exclusion. |
 | G6 Billing lifecycle | `BLOCKED` | Product, finance, billing, and engineering | Authorized checkout, charge, entitlement, signed webhook, failure, cancellation, refund, bulk-install, uninstall, and reinstall evidence. |
 | G7 Legal operating model | `BLOCKED` | Counsel, lender compliance, security, and legal owners | Approved terms, privacy, DPA, retention, consent, RESPA, Regulation Z, fair-lending, communications, provider terms, subprocessors, and prompt boundaries. |
@@ -135,27 +137,26 @@ Repository verification is complete for the 267 locally provable criteria. The r
 | `BLOCKED: EXTERNAL EVIDENCE` | `001J-AC-026` | 1 | Platform security and cloud owner |
 | `BLOCKED: EXTERNAL EVIDENCE` | `001J-AC-029` | 1 | Cloud and deployment owner |
 | `BLOCKED: EXTERNAL EVIDENCE` | `001J-AC-033` | 1 | Production operations owner |
-| `BLOCKED: EXTERNAL EVIDENCE` | `001E-AC-005` | 1 | HighLevel and Meta App Test operator plus compliance or lender counsel |
 | `BLOCKED: EXTERNAL EVIDENCE` | `001H-AC-001` | 1 | Product and UX owner |
 | `BLOCKED: EXTERNAL EVIDENCE` | `001I-AC-007` | 1 | AI platform owner |
 | `BLOCKED: EXTERNAL EVIDENCE` | `001I-AC-013` | 1 | Security and legal owners |
 | `BLOCKED: EXTERNAL EVIDENCE` | `001I-AC-014` | 1 | Finance and product owners |
-| `BLOCKED: G3 / G4` | `001E-AC-006` | 1 | HighLevel and Meta App Test operator plus compliance or lender counsel |
+| `ACCEPTED CONSTRAINT` | `001E-AC-005`, `001E-AC-006` | 2 | Product owner: Housing Special Ad Category known and enforced; G4 App Test discovery removed |
 | `BLOCKED: G5` | `001F-AC-026` | 1 | Authorized location administrator or publisher plus compliance owner |
-| **Total** | **All non-verified criteria** | **38** | **Named external and operating owners above** |
+| **Total** | **All non-verified criteria** | **36** | **Named external and operating owners above** |
 
 The detailed capture requirements and unblock procedures remain authoritative in the [production execution ledger](../../../../PRODUCTION_EXECUTION_LEDGER.md#exact-external-evidence-asks).
 
 ## Prioritized next steps
 
 1. Provision and inventory isolated preview, staging, and dark production resources. Prove environment isolation and KMS rotation and recovery for `001J-AC-026` and `001J-AC-029`. Keep production traffic disabled.
-2. Run the full G1 and G2 HighLevel App Test matrix for direct install, agency install, signed context, OAuth, token refresh, uninstall, reconnect, role resolution, iframe behavior, and first-party fallback. Capture sanitized evidence against all 28 deferred criteria.
-3. Run controlled G3 and G4 Meta tests for property-only, mortgage-only, and combined campaigns. Prove draft and read-back parity, explicit publish behavior, pause and resume, reconciliation, reporting, category values, and targeting limits. Obtain written lender or counsel approval.
+2. Run the G2 HighLevel App Test matrix for signed context, OAuth, token refresh, uninstall, reconnect, role resolution, iframe behavior, and first-party fallback. Capture sanitized evidence against the deferred auth criteria. Marketplace distribution proof is not required under the G1 accepted constraint.
+3. Run controlled G3 Meta tests for draft and read-back parity, explicit publish behavior, pause and resume, reconciliation, and reporting. Paid ads continue to use Housing Special Ad Category under the G4 accepted constraint.
 4. Run the G5 isolated no-spend synthetic lead test and retain proof of the complete HighLevel routing and attribution path.
 5. Exercise the G6 billing lifecycle and complete G7 counsel, lender, provider-data, retention, and AI prompt-boundary approvals.
 6. Complete the remaining operating evidence: the timed 30-minute onboarding test, real primary and fallback model evaluation, 30, 60, and 90-day model-cost checkpoints, and production smoke, rollback, restore, and reconciliation exercises.
 7. Implement and browser-test the application-wide nonce-based Content Security Policy before production traffic. Any code change must be followed by security review and then quality verification.
-8. Run the private beta inside HighLevel's permitted distribution boundary. Measure activation, campaign publication, lead-path success, support time, model cost, retention intent, and the post-start 15-paid-founder target.
+8. Run the private beta inside the permitted distribution boundary. Measure activation, campaign publication, lead-path success, support time, model cost, retention intent, and the post-start 15-paid-founder target.
 9. Move PRD-001 to `completed/` only after the core-completion definition below is satisfied. Keep PRD-002 in backlog until its independent entry gates pass.
 
 ## Definition of core completion
@@ -163,7 +164,7 @@ The detailed capture requirements and unblock procedures remain authoritative in
 PRD-001 core is complete only when all of the following are true:
 
 - All 305 criteria are `VERIFIED`, or an external criterion has an explicitly approved final disposition allowed by the PRD and readiness gate. No criterion is open, silently waived, or represented as live evidence when only synthetic evidence exists.
-- G1 through G7 are each `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE` with named-owner evidence. G8 remains accurately labeled as an accepted constraint until paid-customer evidence exists.
+- G1 through G7 are each `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE` with named-owner evidence. G1 and G4 are already accepted constraints as of 2026-08-25. G8 remains accurately labeled as an accepted constraint until paid-customer evidence exists.
 - One authorized HighLevel location completes installation, launch readiness, the Open House Boost campaign flow, lender-only paid-ad publication, and the isolated lead-routing path under the approved operating model.
 - The exact approved campaign version produces the co-branded collateral and separate lender or loan-officer paid-ad projection, with read-back parity, explicit publication, audit history, and outcome attribution.
 - Preview, staging, and production resources are isolated; KMS recovery, smoke, rollback, database restore, and provider reconciliation exercises pass.
@@ -190,4 +191,5 @@ PRD-001 core is complete only when all of the following are true:
 
 ## Changelog
 
+- v1.1 (2026-08-25): Recorded product-owner accepted constraints for G1 (external distribution removed) and G4 (Housing Special Ad Category requirements known). Updated criterion counts and next steps.
 - v1.0 (2026-08-12): Established the first canonical project map from the final PRD-001 RAID ledger, security close-out, and post-security QA report.

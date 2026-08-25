@@ -14,3 +14,5 @@ reports/scan-output/
 .DS_Store
 Thumbs.db
 *.tsbuildinfo
+/tmp/g2-observations/
+/tmp/g2-sanitized-fixtures/

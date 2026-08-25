@@ -71,6 +71,8 @@ flowchart TD
 
 **Exit:** All 28 G2-deferred criteria move to `VERIFIED` with sanitized evidence, or remain deferred with a precise residual ask.
 
+**Status (2026-08-25):** Harness READY (env-gated capture, matrix CLI, contract tests). Operator run BLOCKED: no App Test credentials in session. All nine matrix cases carry residual asks in [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](./docs/operations/evidence-packs/g2-highlevel-app-test.md). Criteria remain `DEFERRED: LIVE HIGHLEVEL AUTH`.
+
 ### Wave 2: Environment isolation and KMS
 
 **Unblocks:** `001J-AC-026`, `001J-AC-029` (and supports later `001J-AC-033`).
@@ -164,9 +166,11 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 
 ## Watchdog
 
-| Timestamp (UTC) | Event                                                    | Action                               |
-| --------------- | -------------------------------------------------------- | ------------------------------------ |
-| 2026-08-25      | Batch ledger created after PR #25 squash-merge to `main` | Awaiting user credentials for Wave 1 |
+| Timestamp (UTC) | Event                                                    | Action                                           |
+| --------------- | -------------------------------------------------------- | ------------------------------------------------ |
+| 2026-08-25      | Batch ledger created after PR #25 squash-merge to `main` | Awaiting user credentials for Wave 1             |
+| 2026-08-25      | G2 harness shipped on `cursor/g2-app-test-harness-ac42`  | Wave 1 operator run parked: need App Test access |
+| 2026-08-25      | Prep PR #26 squash-merged to `main` (`6965bf7`)          | Evidence packs on trunk                          |
 
 ---
 
@@ -175,3 +179,4 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 | Date       | Event                                                                                     |
 | ---------- | ----------------------------------------------------------------------------------------- |
 | 2026-08-25 | Next batch defined: External Evidence Sprint, Waves 1-7, agent prep + operator-led gates. |
+| 2026-08-25 | Prep PR #26 merged. G2 live-capture harness ready; Wave 1 parked on App Test credentials. |

@@ -34,6 +34,24 @@ pnpm test:contracts
 
 Sanitized outputs must pass `packages/ghl` evidence schemas (`source: sanitized-live-capture`, `externalStatus: CAPTURED_SANITIZED`). Only then copy approved fixtures into `tests/contracts/ghl/fixtures/` under review.
 
+## Wave 1 residual asks (2026-08-25)
+
+Harness readiness is complete on branch `cursor/g2-app-test-harness-ac42` (`OALO_GHL_LIVE_CAPTURE=authorized` seam, matrix CLI, sanitization tests). **No live App Test credentials were available in this run**, so every matrix row remains open with the same exact ask:
+
+| caseId | Residual ask |
+| --- | --- |
+| `signed_custom_page_context` | Provide App Test operator access + controlled location; capture sanitized signed-context observation |
+| `oauth_callback_success` | Same access; capture sanitized OAuth callback observation |
+| `location_token_exchange` | Same access; capture sanitized per-location token exchange observation |
+| `refresh_rotation` | Same access; capture sanitized refresh observation |
+| `uninstall_blocks_work` | Same access; capture sanitized uninstall observation |
+| `reinstall_restores_authority` | Same access; capture sanitized reinstall observation |
+| `role_resolution` | Same access; capture sanitized role observation |
+| `embedded_iframe_access` | Same access; capture sanitized iframe/embed observation |
+| `first_party_fallback` | Same access; capture sanitized first-party fallback observation |
+
+Do not flip any of the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` criteria to `VERIFIED` until sanitized fixtures for the relevant cases land and pass `pnpm test:contracts`.
+
 ## Matrix checklist
 
 | Case | caseId | Done | Sanitized artifact retained |

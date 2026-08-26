@@ -1,0 +1,54 @@
+---
+description: Project terrain for agents (Codex, Claude, Cursor). Read before non-trivial product work.
+alwaysApply: true
+---
+
+# The Map (agent terrain)
+
+Canonical **product** status lives in [`library/knowledge/private/product/project-map.md`](../../../library/knowledge/private/product/project-map.md). This rule is the short agent handoff so Codex, Claude Code, or Cursor can resume without inventing progress.
+
+## Current tip
+
+- `main` tip (as of 2026-08-26): `a530947` (PR #27 G2 harness), after `6965bf7` (PR #26 evidence packs) and `25c0bdc` (PR #25 Gauntlet closeout).
+- Batch ledger: [`NEXT_BATCH_LEDGER.md`](../../../NEXT_BATCH_LEDGER.md)
+- AC ledger: [`PRODUCTION_EXECUTION_LEDGER.md`](../../../PRODUCTION_EXECUTION_LEDGER.md)
+
+## Done (do not redo)
+
+- Locally provable PRD-001 work: **267 VERIFIED** / 305 total.
+- G1, G4, G8: `ACCEPTED CONSTRAINT` (do not reopen without product owner).
+- Raid A nonce CSP Medium closed (2026-08-25).
+- Library Schema v2 scaffold gaps closed.
+- External Evidence Sprint prep on `main` (evidence packs under `docs/operations/evidence-packs/`).
+- G2 App Test **harness** on `main`: env-gated live capture (`OALO_GHL_LIVE_CAPTURE=authorized` only), 9-case matrix, CLI `pnpm ghl:g2-matrix`, sanitization + unit/contract tests. Fail-closed by default.
+
+## Pending / blocked (honest)
+
+| Blocker | Status | What it unlocks |
+| --- | --- | --- |
+| HighLevel **app approval** (Marketplace / App Test eligibility) | Waiting on HighLevel | Operator can run Wave 1 G2 matrix |
+| App Test operator access + controlled location | Not yet provided | Sanitized fixtures for 28 `DEFERRED: LIVE HIGHLEVEL AUTH` ACs |
+| Env isolation + KMS (Wave 2) | Parked | `001J-AC-026`, `001J-AC-029` |
+| G3 / G5 / G6 / G7 live evidence | Parked (later waves) | Meta, lead, billing, counsel |
+
+**Do not** flip any of the 28 deferred auth ACs to `VERIFIED` without sanitized App Test fixtures that pass `pnpm test:contracts`. **Do not** claim production traffic authorized.
+
+## Next steps (librarian)
+
+1. **Human / HighLevel:** Wait for HighLevel to approve the app. Then grant App Test operator access for one controlled location and name the operator.
+2. **Wave 1:** Run [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](../../../docs/operations/evidence-packs/g2-highlevel-app-test.md); ingest sanitized fixtures; update production ledger with evidence pointers. Owner: operator + `gohighlevel-guardian`.
+3. **Optional parallel:** Wave 2 prep (cloud inventory + KMS custody) if a cloud owner is available; otherwise leave parked.
+4. **After any harness/code change:** `security-guardian` then `quality-guardian` (never reverse). Squash-merge only.
+5. **Do not** move PRD-001 to `completed/` until project-map core-completion is satisfied.
+
+## Route work
+
+1. Read this map + [`project-map.md`](../../../library/knowledge/private/product/project-map.md).
+2. Route via [`.cursor/skills/dungeon-master/SKILL.md`](../../skills/dungeon-master/SKILL.md).
+3. For Wave 1 after approval: `gohighlevel-guardian` + `auth-guardian`. For docs/map edits: `library-guardian`.
+
+## Forbidden claims
+
+- Inventing live HighLevel / Meta / Stripe / KMS / counsel evidence
+- Reopening G1 / G4 / G8 without product-owner authorization
+- Committing tokens, PII, spend, or `OALO_GHL_LIVE_CAPTURE=authorized` as a repo default

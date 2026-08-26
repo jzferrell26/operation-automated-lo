@@ -71,6 +71,8 @@ Do not flip any of the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` criteria to `VERIFIED`
 
 Tokens, client secrets, raw signed-context JWTs with live keys, customer contact payloads, Marketplace listing claims, or the literal shell export of `OALO_GHL_LIVE_CAPTURE=authorized` in committed docs/scripts defaults.
 
+Do **not** commit or paste `OALO_GHL_LOCATION_PIT_JSON` (server-only production task PIT: `{ "locationId", "accessToken" }` matching `OALO_GHL_READINESS_LOCATION_REF`). That seam is required for later deployed task composition after auth is live; Wave 1 proves OAuth/session with sanitized fixtures, not by checking the PIT secret into the repo.
+
 ## After capture
 
 1. Feed sanitized fixtures through existing GHL contract harness (`pnpm test:contracts`).

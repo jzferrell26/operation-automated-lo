@@ -247,13 +247,14 @@ export async function routeLeadToGhl(
 ): Promise<LeadRoutingResult> {
   const command = LeadRoutingCommandSchema.parse(unsafeCommand);
   const payload = PrivateLeadPayloadSchema.parse(unsafePayload);
-  let progress = mergeProgress(
-    await ports.state.load(command.commandRef),
-    await ports.provider.reconcile(command),
-  );
-  await ports.state.save(command.commandRef, progress);
 
   try {
+    let progress = mergeProgress(
+      await ports.state.load(command.commandRef),
+      await ports.provider.reconcile(command),
+    );
+    await ports.state.save(command.commandRef, progress);
+
     let contactProviderId = progress.contactProviderId;
     if (contactProviderId === undefined) {
       const candidates = await ports.provider.findContacts({

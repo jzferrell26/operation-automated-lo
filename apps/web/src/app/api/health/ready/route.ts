@@ -119,17 +119,41 @@ export function evaluateRuntimeReadiness(
   }
 }
 
+/**
+ * Live third-party readiness probes are only allowed when isolation declares
+ * providerMode=live (production). Preview/staging stay on isolation stubs so
+ * provisioning real Anthropic/Postgres/R2 secrets cannot turn /api/health/ready
+ * into an accidental live side-channel.
+ */
+export function shouldProbeLiveDependencies(
+  environment: Pick<RuntimeEnvironment, "environment" | "providerMode">,
+): boolean {
+  return environment.environment !== "local" && environment.providerMode === "live";
+}
+
+export function isolationStubDependencyChecks(): readonly ReadinessCheck[] {
+  return dependencyReadinessChecks({
+    database: "ready",
+    highLevel: "ready",
+    ai: "ready",
+    objectStore: "ready",
+  });
+}
+
 export async function GET(): Promise<Response> {
   let summary: ReadinessSummary;
   try {
     const environment = parseRuntimeEnvironment(process.env);
-    summary =
-      environment.environment === "local"
-        ? evaluateEnvironmentReadiness(environment)
-        : evaluateEnvironmentReadiness(
-            environment,
-            dependencyReadinessChecks(await productionReadinessRuntime(process.env).probe()),
-          );
+    if (environment.environment === "local") {
+      summary = evaluateEnvironmentReadiness(environment);
+    } else if (!shouldProbeLiveDependencies(environment)) {
+      summary = evaluateEnvironmentReadiness(environment, isolationStubDependencyChecks());
+    } else {
+      summary = evaluateEnvironmentReadiness(
+        environment,
+        dependencyReadinessChecks(await productionReadinessRuntime(process.env).probe()),
+      );
+    }
   } catch {
     summary = aggregateReadiness([
       { name: "configuration", ready: false, code: "CONFIGURATION_INVALID" },

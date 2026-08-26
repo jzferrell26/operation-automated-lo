@@ -6,6 +6,8 @@ import {
   dependencyReadinessChecks,
   evaluateEnvironmentReadiness,
   evaluateRuntimeReadiness,
+  isolationStubDependencyChecks,
+  shouldProbeLiveDependencies,
 } from "../../../../apps/web/src/app/api/health/ready/route.js";
 
 function previewEnvironment() {
@@ -111,6 +113,29 @@ describe("readiness aggregation", () => {
     expect(evaluateEnvironmentReadiness(previewEnvironment(), checks)).toMatchObject({
       status: "unavailable",
     });
+  });
+
+  it("keeps preview and staging on isolation stubs instead of live probes", () => {
+    const preview = previewEnvironment();
+    expect(shouldProbeLiveDependencies(preview)).toBe(false);
+    expect(
+      shouldProbeLiveDependencies({ environment: "staging", providerMode: "contract-test" }),
+    ).toBe(false);
+    expect(shouldProbeLiveDependencies({ environment: "production", providerMode: "live" })).toBe(
+      true,
+    );
+    expect(shouldProbeLiveDependencies({ environment: "local", providerMode: "stub" })).toBe(false);
+
+    const summary = evaluateEnvironmentReadiness(preview, isolationStubDependencyChecks());
+    expect(summary.status).toBe("ready");
+    expect(summary.checks).toEqual(
+      expect.arrayContaining([
+        { name: "database", ready: true, code: "READY" },
+        { name: "highlevel", ready: true, code: "READY" },
+        { name: "ai-provider", ready: true, code: "READY" },
+        { name: "object-store", ready: true, code: "READY" },
+      ]),
+    );
   });
 
   it("accepts only safe dependency check output", () => {

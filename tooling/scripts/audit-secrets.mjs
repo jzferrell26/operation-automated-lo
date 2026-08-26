@@ -21,6 +21,9 @@ const forbiddenPatterns = [
   /-----BEGIN (?:EC |OPENSSH |RSA )?PRIVATE KEY-----/u,
   /\bAKIA[0-9A-Z]{16}\b/u,
   /\bsk_live_[A-Za-z0-9]{16,}\b/u,
+  /\bsk_test_[A-Za-z0-9]{16,}\b/u,
+  /\bwhsec_[A-Za-z0-9]{16,}\b/u,
+  /\brk_(?:live|test)_[A-Za-z0-9]{16,}\b/u,
   /\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\b/u,
 ];
 

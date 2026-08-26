@@ -9,9 +9,10 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
-- `main` tip (as of 2026-08-26): `a530947` (PR #27 G2 harness), after `6965bf7` (PR #26 evidence packs) and `25c0bdc` (PR #25 Gauntlet closeout).
+- `main` tip (as of 2026-08-26): `dc69de5` (PR #28 maps), after `a530947` (PR #27 G2 harness), `6965bf7` (PR #26 evidence packs), `25c0bdc` (PR #25 Gauntlet closeout).
 - Batch ledger: [`NEXT_BATCH_LEDGER.md`](../../../NEXT_BATCH_LEDGER.md)
 - AC ledger: [`PRODUCTION_EXECUTION_LEDGER.md`](../../../PRODUCTION_EXECUTION_LEDGER.md)
+- Latest full reverse review (document-only): [`library/requirements/reports/2026-08-26-full-reverse-review-report.md`](../../../library/requirements/reports/2026-08-26-full-reverse-review-report.md)
 
 ## Done (do not redo)
 

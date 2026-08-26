@@ -39,6 +39,7 @@ New PRD folders contain an index, independently implementable sub-PRDs, and a `q
 - [Phase 0 execution ledger](../EXECUTION_LEDGER.md)
 - [Production execution ledger](../PRODUCTION_EXECUTION_LEDGER.md)
 - [Backend production raid ledger](../BACKEND_PRODUCTION_RAID_LEDGER.md)
+- [2026-08-26 full reverse review](requirements/reports/2026-08-26-full-reverse-review-report.md): document-only codebase reverse review (SHIP for repo-proved code; production still not authorized)
 
 ## Construction specifications
 

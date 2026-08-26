@@ -8,6 +8,7 @@ Wave 1 of [`NEXT_BATCH_LEDGER.md`](../../../NEXT_BATCH_LEDGER.md).
 
 ## Need from user before start
 
+- [ ] HighLevel **app approval** (current wait as of 2026-08-26)
 - [ ] Authorized HighLevel App Test operator account or invite
 - [ ] One controlled location for the install matrix
 - [ ] Product owner confirms private App Test / founding beta boundary (G1 stays `ACCEPTED CONSTRAINT`)
@@ -34,13 +35,13 @@ pnpm test:contracts
 
 Sanitized outputs must pass `packages/ghl` evidence schemas (`source: sanitized-live-capture`, `externalStatus: CAPTURED_SANITIZED`). Only then copy approved fixtures into `tests/contracts/ghl/fixtures/` under review.
 
-## Wave 1 residual asks (2026-08-25)
+## Wave 1 residual asks (2026-08-26)
 
-Harness readiness is complete on branch `cursor/g2-app-test-harness-ac42` (`OALO_GHL_LIVE_CAPTURE=authorized` seam, matrix CLI, sanitization tests). **No live App Test credentials were available in this run**, so every matrix row remains open with the same exact ask:
+Harness readiness is complete on `main` (PR #27, `a530947`: `OALO_GHL_LIVE_CAPTURE=authorized` seam, matrix CLI, sanitization + unit tests). **Live capture remains parked** pending HighLevel **app approval**, then App Test operator access for one controlled location. Every matrix row stays open with the same exact ask:
 
 | caseId | Residual ask |
 | --- | --- |
-| `signed_custom_page_context` | Provide App Test operator access + controlled location; capture sanitized signed-context observation |
+| `signed_custom_page_context` | After HighLevel app approval: App Test operator access + controlled location; capture sanitized signed-context observation |
 | `oauth_callback_success` | Same access; capture sanitized OAuth callback observation |
 | `location_token_exchange` | Same access; capture sanitized per-location token exchange observation |
 | `refresh_rotation` | Same access; capture sanitized refresh observation |

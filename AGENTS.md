@@ -6,6 +6,7 @@
 
 If you are Codex (or any agent that does not auto-load skills by description), follow this routing procedure before doing domain work. Cursor and Claude Code do this automatically through their skill systems; Codex does it by reading files.
 
+0. **Read the terrain.** Open [`.cursor/rules/core/the-map.mdc`](./.cursor/rules/core/the-map.mdc) and the [canonical project map](./library/knowledge/private/product/project-map.md). Do not invent live HighLevel / Meta / Stripe evidence or reopen G1/G4/G8.
 1. **Open the roster.** Read [`.cursor/skills/dungeon-master/SKILL.md`](./.cursor/skills/dungeon-master/SKILL.md). It is the Dungeon Master router: a table of every Guardian, its domain, its trigger keywords, and a link to its guide.
 2. **Match the request to one Guardian.** Use the trigger keywords and the "Do NOT route when" notes in each guide under `.cursor/skills/dungeon-master/guides/`. Prefer the narrowest-scoped Guardian. If two compete, read both guides before choosing.
 3. **Load the Guardian persona.** Read [`.cursor/agents/<guardian-name>.md`](./.cursor/agents/) for its identity, guardrails, and escalation rules.

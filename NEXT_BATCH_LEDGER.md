@@ -4,11 +4,12 @@
 
 | Field        | Value                                                                                                                                                                   |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Branch       | `cursor/next-batch-external-evidence-ac42`                                                                                                                              |
-| Date         | 2026-08-25                                                                                                                                                              |
-| Prerequisite | Gauntlet closeout merged to `main` (PR #25, squash `25c0bdc`)                                                                                                           |
+| Branch       | Prep and G2 harness landed on `main` (PRs #26, #27). Live Wave 1 awaits HighLevel app approval.                                                                         |
+| Date         | 2026-08-26                                                                                                                                                              |
+| Prerequisite | Gauntlet closeout (`25c0bdc`), evidence packs (`6965bf7`), G2 harness (`a530947`) on `main`                                                                             |
 | Scope        | Unblock production-path evidence for G2, environment/KMS, G3, G5, G6, G7, and remaining timed/AI cost criteria                                                          |
 | Honest bound | Agents cannot invent live HighLevel, Meta, Stripe, KMS, or counsel evidence. This batch is operator-led with agent-supported harnesses, checklists, and ledger updates. |
+| Current park | Waiting on HighLevel to approve the app, then App Test operator access for Wave 1.                                                                                      |
 
 Upstream closeout: [`GAUNTLET_EXECUTION_LEDGER.md`](./GAUNTLET_EXECUTION_LEDGER.md) (267 `VERIFIED`, 38 non-verified parked). Authoritative AC source remains [`PRODUCTION_EXECUTION_LEDGER.md`](./PRODUCTION_EXECUTION_LEDGER.md).
 
@@ -53,7 +54,7 @@ flowchart TD
 | Owner                             | Model               | Deliverable                                                                                 | Exit criteria                                                                                                                 |
 | --------------------------------- | ------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `library-guardian` / orchestrator | `composer-2.5-fast` | Evidence pack stubs under `docs/operations/evidence-packs/` for G2, env/KMS, G3, G5, G6, G7 | Each pack lists exact criteria IDs, required sanitized artifacts, prohibited data (secrets/PII/spend), and pass/fail checkbox |
-| orchestrator                      | `composer-2.5-fast` | Update `project-map.md` and this ledger after merge                                         | `main` tip and next-batch pointer recorded                                                                                    |
+| orchestrator                      | `composer-2.5-fast` | Update `project-map.md`, agent `the-map.mdc`, and this ledger after harness merge | DONE 2026-08-26: HighLevel app-approval park recorded                                                                 |
 
 ### Wave 1: G2 HighLevel App Test (operator + `gohighlevel-guardian`)
 
@@ -71,7 +72,7 @@ flowchart TD
 
 **Exit:** All 28 G2-deferred criteria move to `VERIFIED` with sanitized evidence, or remain deferred with a precise residual ask.
 
-**Status (2026-08-25):** Harness READY (env-gated capture, matrix CLI, contract tests). Operator run BLOCKED: no App Test credentials in session. All nine matrix cases carry residual asks in [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](./docs/operations/evidence-packs/g2-highlevel-app-test.md). Criteria remain `DEFERRED: LIVE HIGHLEVEL AUTH`.
+**Status (2026-08-26):** Harness READY on `main` (PR #27, `a530947`: env-gated capture, matrix CLI, contract + unit tests). Operator run BLOCKED: waiting on **HighLevel app approval**, then App Test operator access for one controlled location. All nine matrix cases carry residual asks in [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](./docs/operations/evidence-packs/g2-highlevel-app-test.md). Criteria remain `DEFERRED: LIVE HIGHLEVEL AUTH`.
 
 ### Wave 2: Environment isolation and KMS
 
@@ -154,11 +155,13 @@ flowchart TD
 
 ## Immediate asks (user)
 
-To start Wave 1 this week, provide:
+**Current wait:** HighLevel app approval (Marketplace / App Test eligibility). Do not invent live evidence while parked.
+
+Once HighLevel approves the app, provide:
 
 1. **HighLevel App Test access** (operator account or invite) for one controlled location.
 2. **Named App Test operator** (person who will run the OAuth/session matrix).
-3. Confirmation that **founding distribution remains private App Test / one-agency beta** (G1 accepted constraint unchanged).
+3. Confirmation that **founding distribution remains private App Test / one-agency beta** (G1 accepted constraint unchanged: listing proof is still not a launch gate).
 
 Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inventory and KMS key custody.
 
@@ -171,6 +174,8 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 | 2026-08-25      | Batch ledger created after PR #25 squash-merge to `main` | Awaiting user credentials for Wave 1             |
 | 2026-08-25      | G2 harness shipped on `cursor/g2-app-test-harness-ac42`  | Wave 1 operator run parked: need App Test access |
 | 2026-08-25      | Prep PR #26 squash-merged to `main` (`6965bf7`)          | Evidence packs on trunk                          |
+| 2026-08-25      | G2 harness PR #27 squash-merged to `main` (`a530947`)    | Harness on trunk; live matrix still parked       |
+| 2026-08-26      | Product owner: waiting on HighLevel app approval         | Wave 1 stays parked; maps updated for agent handoff |
 
 ---
 
@@ -180,3 +185,5 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 | ---------- | ----------------------------------------------------------------------------------------- |
 | 2026-08-25 | Next batch defined: External Evidence Sprint, Waves 1-7, agent prep + operator-led gates. |
 | 2026-08-25 | Prep PR #26 merged. G2 live-capture harness ready; Wave 1 parked on App Test credentials. |
+| 2026-08-25 | G2 harness PR #27 merged to `main` (`a530947`).                                           |
+| 2026-08-26 | Critical path restated: park on HighLevel app approval; project-map + agent the-map updated. |

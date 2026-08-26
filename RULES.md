@@ -20,10 +20,11 @@ Cursor's `.mdc` rules and Claude Code's `CLAUDE.md` are different formats, so ru
 
 ## The rules in this repo
 
-All five are always-on (`alwaysApply: true`).
+Always-on Cursor rules (`alwaysApply: true`), including the agent terrain map under `core/`:
 
 | Rule | File | What it enforces |
 |---|---|---|
+| **The map (agent terrain)** | [`.cursor/rules/core/the-map.mdc`](./.cursor/rules/core/the-map.mdc) | Current tip, done vs pending, HighLevel park, and next steps so Codex / Claude / Cursor resume without inventing progress. Full product detail stays in the [project map](./library/knowledge/private/product/project-map.md). |
 | **No em dashes** | [`.cursor/rules/no-em-dashes.mdc`](./.cursor/rules/no-em-dashes.mdc) | No em dashes or en dashes in any prose written for the user. Use commas, colons, parentheses, periods, or semicolons instead. Applies to chat, docs, commits, and comments. |
 | **Plan construction protocol** | [`.cursor/rules/plan-construction-protocol.mdc`](./.cursor/rules/plan-construction-protocol.mdc) | Mandatory structure for every multi-step plan: branch off `main` first, route each step to the best-fit model, and pass a ship gate before declaring done. |
 | **PR conflict check** | [`.cursor/rules/pr-conflict-check.mdc`](./.cursor/rules/pr-conflict-check.mdc) | Always check for and resolve merge conflicts before declaring a PR shippable. |

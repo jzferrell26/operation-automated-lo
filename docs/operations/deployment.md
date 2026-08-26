@@ -30,3 +30,7 @@ node tooling/scripts/release/validate-release-manifest.mjs --manifest artifacts/
 ```
 
 Required evidence includes the immutable artifact digest, commit, build ID, environment identity, approval, canonical verification, security review, quality review, deployment observation, readiness response, and rollback checkpoint. No provider deployment command is included because no provider target or authorization is configured here. These commands do not mutate cloud state or prove a deployment passed.
+
+## Database runtime role
+
+Application transactions activate `app_runtime` / `support_runtime` via `SET LOCAL ROLE` before setting tenant context. See [`database-runtime-role.md`](./database-runtime-role.md). Confirm the pooled login grant path before any production cutover that depends on RLS.

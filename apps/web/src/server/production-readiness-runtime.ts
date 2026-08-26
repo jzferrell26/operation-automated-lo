@@ -107,8 +107,37 @@ export function createProductionReadinessRuntime(
 }
 
 let runtime: ProductionReadinessRuntime | undefined;
+let runtimeFingerprint: string | undefined;
+
+function productionReadinessFingerprint(input: unknown): string {
+  if (typeof input !== "object" || input === null) {
+    return String(input);
+  }
+  const record = input as Readonly<Record<string, unknown>>;
+  const keys = [
+    "OALO_ENVIRONMENT",
+    "OALO_PROVIDER_MODE",
+    "DATABASE_URL",
+    "OALO_DATABASE_URL",
+    "OALO_ANTHROPIC_API_KEY",
+    "OALO_R2_ACCOUNT_ID",
+    "OALO_R2_ACCESS_KEY_ID",
+    "OALO_R2_SECRET_ACCESS_KEY",
+    "OALO_GHL_READINESS_LOCATION_REF",
+  ] as const;
+  return keys.map((key) => `${key}=${String(record[key] ?? "")}`).join("\n");
+}
+
+export function resetProductionReadinessRuntimeForTests(): void {
+  runtime = undefined;
+  runtimeFingerprint = undefined;
+}
 
 export function productionReadinessRuntime(input: unknown): ProductionReadinessRuntime {
-  runtime ??= createProductionReadinessRuntime(input);
+  const fingerprint = productionReadinessFingerprint(input);
+  if (runtime === undefined || runtimeFingerprint !== fingerprint) {
+    runtime = createProductionReadinessRuntime(input);
+    runtimeFingerprint = fingerprint;
+  }
   return runtime;
 }

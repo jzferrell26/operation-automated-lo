@@ -74,6 +74,8 @@ flowchart TD
 
 **Status (2026-08-26):** Harness READY on `main` (PR #27, `a530947`: env-gated capture, matrix CLI, contract + unit tests). Operator run BLOCKED: waiting on **HighLevel app approval**, then App Test operator access for one controlled location. All nine matrix cases carry residual asks in [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](./docs/operations/evidence-packs/g2-highlevel-app-test.md). Criteria remain `DEFERRED: LIVE HIGHLEVEL AUTH`.
 
+**Server-only PIT seam (cross-ref M6):** production task composition requires `OALO_GHL_LOCATION_PIT_JSON` (`{ "locationId", "accessToken" }`) matching `OALO_GHL_READINESS_LOCATION_REF`. That secret is for deployed task workers after auth is live; it is **not** a substitute for Wave 1 App Test evidence and must never be committed or pasted into ledgers. See README production task composition notes and [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](./docs/operations/evidence-packs/g2-highlevel-app-test.md).
+
 ### Wave 2: Environment isolation and KMS
 
 **Unblocks:** `001J-AC-026`, `001J-AC-029` (and supports later `001J-AC-033`).
@@ -97,6 +99,8 @@ flowchart TD
 | Meta App Test operator | Controlled draft, read-back, explicit publish, pause/resume, reconciliation, reporting; Housing SAC only |
 
 **Exit:** G3 `PASS` with sanitized request/response evidence. No paid spend.
+
+**Server-only PIT seam (cross-ref M6):** Meta publish workers in production composition resolve location tokens from `OALO_GHL_LOCATION_PIT_JSON` (must match `OALO_GHL_READINESS_LOCATION_REF`). Wave 3 evidence remains sanitized Meta request/response capture; the PIT JSON itself is never retained in evidence packs. See [`docs/operations/evidence-packs/g3-meta-no-spend.md`](./docs/operations/evidence-packs/g3-meta-no-spend.md).
 
 ### Wave 4: G5 synthetic lead
 

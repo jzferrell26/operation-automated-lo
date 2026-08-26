@@ -59,6 +59,7 @@ export {
 export {
   DatabaseContextError,
   isSqlDriverResult,
+  shouldAssumeRuntimeRole,
   withSupportTransaction,
   withTenantTransaction,
   type SupportContextAuthority,

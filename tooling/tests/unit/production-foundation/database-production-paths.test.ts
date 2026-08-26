@@ -260,7 +260,26 @@ describe("scoped database transactions", () => {
     );
 
     expect(result).toBe("committed");
-    expect(connection.statementNames()).toContain("transaction.commit");
+    expect(connection.statementNames()).toEqual(
+      expect.arrayContaining([
+        "transaction.begin",
+        "transaction.assume-app-runtime-role",
+        "transaction.set-context",
+        "transaction.read-context",
+        "test.read-value.v1",
+        "test.write-value.v1",
+        "transaction.commit",
+      ]),
+    );
+    const assumeIndex = connection.statementNames().indexOf("transaction.assume-app-runtime-role");
+    const contextIndex = connection.statementNames().indexOf("transaction.set-context");
+    expect(assumeIndex).toBeGreaterThanOrEqual(0);
+    expect(contextIndex).toBeGreaterThan(assumeIndex);
+    expect(
+      connection.requests.find(
+        (entry) => entry.statementName === "transaction.assume-app-runtime-role",
+      )?.text,
+    ).toBe("set local role app_runtime");
     await expect(escapedRead?.()).rejects.toMatchObject({ code: "DB_TRANSACTION_CLOSED" });
   });
 
@@ -277,6 +296,7 @@ describe("scoped database transactions", () => {
       },
       async () => undefined,
     );
+    expect(supportConnection.statementNames()).toContain("transaction.assume-support-runtime-role");
     expect(
       supportConnection.requests.find((entry) => entry.statementName === "transaction.set-context")
         ?.text,
@@ -292,6 +312,27 @@ describe("scoped database transactions", () => {
         },
       ),
     ).rejects.toBeInstanceOf(AggregateError);
+  });
+
+  it("skips SET LOCAL ROLE when OALO_DB_ASSUME_RUNTIME_ROLE is false", async () => {
+    const previous = process.env.OALO_DB_ASSUME_RUNTIME_ROLE;
+    process.env.OALO_DB_ASSUME_RUNTIME_ROLE = "false";
+    try {
+      const connection = new FakeConnection();
+      await withTenantTransaction(
+        new FakePool(connection),
+        { resolveTenantDatabaseContext: async () => context },
+        async () => undefined,
+      );
+      expect(connection.statementNames()).not.toContain("transaction.assume-app-runtime-role");
+      expect(connection.statementNames()).toContain("transaction.set-context");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.OALO_DB_ASSUME_RUNTIME_ROLE;
+      } else {
+        process.env.OALO_DB_ASSUME_RUNTIME_ROLE = previous;
+      }
+    }
   });
 
   it("rejects invalid authority context before acquiring a connection", async () => {

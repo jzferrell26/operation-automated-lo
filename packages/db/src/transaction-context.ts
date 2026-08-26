@@ -51,6 +51,31 @@ const SAFE_REFERENCE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,299}$/u;
 const BEGIN_REQUEST = request("transaction.begin", "begin");
 const COMMIT_REQUEST = request("transaction.commit", "commit");
 const ROLLBACK_REQUEST = request("transaction.rollback", "rollback");
+const ASSUME_APP_RUNTIME_ROLE_REQUEST = request(
+  "transaction.assume-app-runtime-role",
+  "set local role app_runtime",
+);
+const ASSUME_SUPPORT_RUNTIME_ROLE_REQUEST = request(
+  "transaction.assume-support-runtime-role",
+  "set local role support_runtime",
+);
+
+/**
+ * Runtime login roles are granted `app_runtime` / `support_runtime` with
+ * INHERIT false. Every tenant/support transaction must activate the matching
+ * NOLOGIN role so RLS policies that target those roles actually apply.
+ * Set OALO_DB_ASSUME_RUNTIME_ROLE=false only for migration/admin tooling that
+ * deliberately connects as a privileged owner outside the app path.
+ */
+export function shouldAssumeRuntimeRole(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): boolean {
+  const raw = env.OALO_DB_ASSUME_RUNTIME_ROLE;
+  if (raw === undefined || raw === "") {
+    return true;
+  }
+  return raw !== "0" && raw.toLowerCase() !== "false" && raw.toLowerCase() !== "off";
+}
 
 const SET_TENANT_CONTEXT_TEXT = `
 select platform.set_app_context($1::uuid, $2::uuid, $3::text)
@@ -136,6 +161,7 @@ export async function withTenantTransaction<Result>(
   return withContextTransaction(
     pool,
     context,
+    ASSUME_APP_RUNTIME_ROLE_REQUEST,
     SET_TENANT_CONTEXT_TEXT,
     [context.locationId, context.actorId, context.correlationId],
     work,
@@ -151,6 +177,7 @@ export async function withSupportTransaction<Result>(
   return withContextTransaction(
     pool,
     supportContext,
+    ASSUME_SUPPORT_RUNTIME_ROLE_REQUEST,
     SET_SUPPORT_CONTEXT_TEXT,
     [
       supportContext.locationId,
@@ -166,6 +193,12 @@ export async function withSupportTransaction<Result>(
 async function withContextTransaction<Result>(
   pool: DatabasePool,
   context: TenantDatabaseContext,
+  assumeRoleRequest: Readonly<{
+    statementName: string;
+    text: string;
+    values: readonly SqlScalar[];
+    preparedStatementMode: "unnamed";
+  }>,
   contextSql: string,
   contextValues: readonly SqlScalar[],
   work: (transaction: TenantTransaction) => Promise<Result>,
@@ -177,6 +210,9 @@ async function withContextTransaction<Result>(
   try {
     await connection.execute(BEGIN_REQUEST);
     began = true;
+    if (shouldAssumeRuntimeRole()) {
+      await connection.execute(assumeRoleRequest);
+    }
     await connection.execute({
       statementName: "transaction.set-context",
       text: contextSql,

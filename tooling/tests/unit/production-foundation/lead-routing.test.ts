@@ -644,6 +644,37 @@ describe("fixture-only GHL lead routing", () => {
     });
   });
 
+  it("classifies early state and reconcile failures inside the retry boundary", async () => {
+    const loadFailureState = routingState();
+    loadFailureState.port.load = vi.fn(async () => {
+      throw new Error("state store unavailable");
+    });
+    const loadFailurePorts = routePorts(provider(), loadFailureState.port);
+    await expect(
+      routeLeadToGhl(routingCommand(), privatePayload, loadFailurePorts, now),
+    ).rejects.toEqual(
+      new GhlLeadRoutingError("provider_failure", "provider step did not complete"),
+    );
+    expect(loadFailureState.exceptions).toEqual(["provider_failure"]);
+    expect(loadFailurePorts.retry.schedule).toHaveBeenCalled();
+
+    const reconcileFailureState = routingState();
+    const reconcileFailurePorts = routePorts(
+      provider({
+        reconcile: vi.fn(async () => {
+          throw new Error("reconcile failed");
+        }),
+      }),
+      reconcileFailureState.port,
+    );
+    await expect(
+      routeLeadToGhl(routingCommand(), privatePayload, reconcileFailurePorts, now),
+    ).rejects.toEqual(
+      new GhlLeadRoutingError("provider_failure", "provider step did not complete"),
+    );
+    expect(reconcileFailureState.exceptions).toEqual(["provider_failure"]);
+  });
+
   it("uses bounded retry scheduling and stops after the final provider attempt", async () => {
     expect(planLeadRoutingRetry(4, now)).toEqual({
       attempt: 5,

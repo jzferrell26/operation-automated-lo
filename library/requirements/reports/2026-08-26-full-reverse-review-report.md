@@ -152,10 +152,11 @@ None.
 - [x] Parallel specialist reverse reviews completed (document-only)
 - [x] Offline verification evidence captured
 - [x] Consolidated findings authored under `library/requirements/reports/`
-- [ ] Remediation raids (separate PRs; out of scope for this document-only pass)
+- [x] Remediation raid for H1/H2/H3 + process M1/M6/M7 (separate PR; see changelog)
 
 ---
 
 ## Changelog
 
 - 2026-08-26: Initial full reverse review on `dc69de5`.
+- 2026-08-26: Remediation on `cursor/reverse-review-remediation-ac42`: H1 ready-probe gated on `providerMode === "live"`; H2 lead-routing early I/O moved inside classification `try`; H3 `SET LOCAL ROLE` in `withTenantTransaction` / `withSupportTransaction` plus ops doc; M1 CVE watchlist refresh; M6 PIT ledger/evidence cross-refs; M7 secret scanner patterns for `whsec_*` / `sk_test_*` / `rk_*`.

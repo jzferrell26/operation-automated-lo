@@ -1,0 +1,53 @@
+name: Feature or evidence ask
+description: Product change, ops ask, or external-evidence unblock
+title: "[request] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Prefer linking a ledger row (`NEXT_BATCH_LEDGER.md`, `PRODUCTION_EXECUTION_LEDGER.md`) when this unlocks a gate.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / opportunity
+      description: What is blocked or missing today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should change, and who owns it (agent vs operator)?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+  - type: dropdown
+    id: gate
+    attributes:
+      label: Related gate / wave (if any)
+      options:
+        - None / not sure
+        - Wave 1 G2 HighLevel App Test
+        - Wave 2 Env isolation / KMS
+        - Wave 3 G3 Meta
+        - Wave 4 G5 synthetic lead
+        - Wave 5 G6 billing
+        - Wave 6 G7 legal / AI data
+        - Repo hygiene / tooling
+    validations:
+      required: true
+  - type: checkboxes
+    id: honesty
+    attributes:
+      label: Honesty bounds
+      options:
+        - label: I will not invent live HighLevel / Meta / Stripe / KMS / counsel evidence
+          required: true
+        - label: I will not reopen G1 / G4 / G8 without product-owner authorization
+          required: true

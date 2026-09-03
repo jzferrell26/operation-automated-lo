@@ -9,10 +9,11 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
-- `main` tip (as of 2026-08-26): `dc69de5` (PR #28 maps), after `a530947` (PR #27 G2 harness), `6965bf7` (PR #26 evidence packs), `25c0bdc` (PR #25 Gauntlet closeout).
+- `main` tip (as of 2026-09-03): `56d90f6` (PR #30 reverse-review H1-H3 remediation), after `7ea7f6c` (PR #29 reverse review), `dc69de5` (PR #28 maps), `a530947` (PR #27 G2 harness).
 - Batch ledger: [`NEXT_BATCH_LEDGER.md`](../../../NEXT_BATCH_LEDGER.md)
 - AC ledger: [`PRODUCTION_EXECUTION_LEDGER.md`](../../../PRODUCTION_EXECUTION_LEDGER.md)
 - Latest full reverse review (document-only): [`library/requirements/reports/2026-08-26-full-reverse-review-report.md`](../../../library/requirements/reports/2026-08-26-full-reverse-review-report.md)
+- Reverse-review Highs H1-H3 closed on `main` via PR #30. Remaining Mediums tracked in that report (hygiene raid addresses M3/M4/M5/M20 in-repo items).
 
 ## Done (do not redo)
 

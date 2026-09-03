@@ -160,3 +160,4 @@ None.
 
 - 2026-08-26: Initial full reverse review on `dc69de5`.
 - 2026-08-26: Remediation on `cursor/reverse-review-remediation-ac42`: H1 ready-probe gated on `providerMode === "live"`; H2 lead-routing early I/O moved inside classification `try`; H3 `SET LOCAL ROLE` in `withTenantTransaction` / `withSupportTransaction` plus ops doc; M1 CVE watchlist refresh; M6 PIT ledger/evidence cross-refs; M7 secret scanner patterns for `whsec_*` / `sk_test_*` / `rk_*`.
+- 2026-09-03: Repo hygiene raid closes in-repo M3 (ledger path), M4 (`middleware` -> `proxy`), M5 (watchdog rows), M20 (PR/issue templates + Dependabot). Human still needed for rebase-merge disable / ruleset squash-only (API 403 for agent).

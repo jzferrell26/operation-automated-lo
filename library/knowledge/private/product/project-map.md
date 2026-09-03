@@ -1,6 +1,6 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.3 | Date: August 2026 | Status: Active
+> Category: Product Operations | Version: 1.4 | Date: September 2026 | Status: Active
 
 The canonical internal map of the product boundary, system flow, implementation status, external gates, and next work for Operation Automated LO.
 
@@ -24,11 +24,11 @@ Before this document, no canonical single project map existed. The information w
 
 ## Status snapshot
 
-Status date: August 26, 2026.
+Status date: September 3, 2026.
 
 | Area | Current state |
 | --- | --- |
-| Delivery | Gauntlet closeout on `main` (PR #25, `25c0bdc`). External Evidence Sprint prep on `main` (PR #26, `6965bf7`). G2 App Test **harness** on `main` (PR #27, `a530947`). Live Wave 1 is parked. |
+| Delivery | Gauntlet closeout on `main` (PR #25). External Evidence Sprint prep (PR #26). G2 harness (PR #27). Reverse-review + H1-H3 remediation (PRs #29/#30, tip `56d90f6`). Live Wave 1 parked. |
 | Critical path park | Waiting on **HighLevel to approve the app** so App Test operator access can start. In-repo G2 capture seam is ready and fail-closed. |
 | PRD-001 lifecycle | `IN WORK`. The repository implementation is complete for every criterion that can be proved locally, but production acceptance is not complete. |
 | Acceptance criteria | 305 total: 267 `VERIFIED`, 28 `DEFERRED: LIVE HIGHLEVEL AUTH`, 7 `BLOCKED: EXTERNAL EVIDENCE`, 1 `BLOCKED: G5`, and 2 `ACCEPTED CONSTRAINT` (G4 housing Special Ad Category criteria). |

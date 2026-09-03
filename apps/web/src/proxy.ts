@@ -9,9 +9,9 @@ import {
 
 /**
  * Issues a fresh CSP nonce per request and attaches the enforced policy.
- * Middleware is not an authorization boundary; it only hardens browser responses.
+ * Proxy is not an authorization boundary; it only hardens browser responses.
  */
-export function middleware(request: NextRequest): NextResponse {
+export function proxy(request: NextRequest): NextResponse {
   const nonce = createRequestNonce();
   const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
   const cspHeaderName = contentSecurityPolicyHeaderName("enforce");

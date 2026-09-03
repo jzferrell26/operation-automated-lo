@@ -46,17 +46,17 @@ Pins (resolved 2026-09-03 from latest GitHub releases, peeled tag → commit):
 
 | ID | Criterion | Status |
 | --- | --- | --- |
-| AM-001 | Every `actions/checkout` use in `.github/workflows/ci.yml` is SHA-pinned to v7.0.1 `3d3c42e5aac5ba805825da76410c181273ba90b1` with a version comment | DONE |
-| AM-002 | Every checkout step keeps `persist-credentials: false` | DONE |
-| AM-003 | Every `actions/setup-node` use is SHA-pinned to v7.0.0 `820762786026740c76f36085b0efc47a31fe5020` with a version comment | DONE |
-| AM-004 | Every setup-node step keeps `node-version: 24.18.0` and `package-manager-cache: false` | DONE |
-| AM-005 | Every `actions/cache` use is SHA-pinned to v6.1.0 `55cc8345863c7cc4c66a329aec7e433d2d1c52a9` with a version comment | DONE |
-| AM-006 | Cache `path`, `key`, and `restore-keys` are unchanged | DONE |
-| AM-007 | Workflow `on:` stays `pull_request` / `push` / `workflow_dispatch`. No `pull_request_target` or `workflow_run` | DONE |
-| AM-008 | Workflow-level and job-level `permissions: contents: read` stay | DONE |
-| AM-009 | Diff does not bump npm majors (`@types/node`, jsdom, `@testing-library/jest-dom`) or application code | DONE |
-| AM-010 | `security-guardian` report exists for this branch and has no open Medium or higher | OPEN |
-| AM-011 | `quality-guardian` report exists for this branch, run after security, and has no open Medium or higher | OPEN |
+| AM-001 | Every `actions/checkout` use in `.github/workflows/ci.yml` is SHA-pinned to v7.0.1 `3d3c42e5aac5ba805825da76410c181273ba90b1` with a version comment | VERIFIED |
+| AM-002 | Every checkout step keeps `persist-credentials: false` | VERIFIED |
+| AM-003 | Every `actions/setup-node` use is SHA-pinned to v7.0.0 `820762786026740c76f36085b0efc47a31fe5020` with a version comment | VERIFIED |
+| AM-004 | Every setup-node step keeps `node-version: 24.18.0` and `package-manager-cache: false` | VERIFIED |
+| AM-005 | Every `actions/cache` use is SHA-pinned to v6.1.0 `55cc8345863c7cc4c66a329aec7e433d2d1c52a9` with a version comment | VERIFIED |
+| AM-006 | Cache `path`, `key`, and `restore-keys` are unchanged | VERIFIED |
+| AM-007 | Workflow `on:` stays `pull_request` / `push` / `workflow_dispatch`. No `pull_request_target` or `workflow_run` | VERIFIED |
+| AM-008 | Workflow-level and job-level `permissions: contents: read` stay | VERIFIED |
+| AM-009 | Diff does not bump npm majors (`@types/node`, jsdom, `@testing-library/jest-dom`) or application code | VERIFIED |
+| AM-010 | `security-guardian` report exists for this branch and has no open Medium or higher | VERIFIED |
+| AM-011 | `quality-guardian` report exists for this branch, run after security, and has no open Medium or higher | VERIFIED |
 
 ## Non-goals
 

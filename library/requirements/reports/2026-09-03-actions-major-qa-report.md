@@ -34,7 +34,7 @@ None.
 
 ## Suggestions (consider improving)
 
-- [ ] **Flip raid-ledger AM-010 and AM-011 from OPEN to DONE** - `library/requirements/reports/2026-09-03-actions-major-raid.md:58-59`
+- [x] **Flip raid-ledger AM-010 and AM-011 from OPEN to DONE** - `library/requirements/reports/2026-09-03-actions-major-raid.md:58-59`
 
   Both closeout artifacts now exist and pass the stated bar (security: zero Medium or higher; this report: zero Critical and zero Warning). The plan still marks those two rows OPEN because the ledger was authored before Wave 2 and Wave 3 ran. That OPEN text is not an implementation gap. Suggested: `library-guardian` updates those two Status cells to DONE so the raid ledger matches the artifacts.
 

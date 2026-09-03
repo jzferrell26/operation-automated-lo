@@ -180,6 +180,8 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 | 2026-08-25      | Prep PR #26 squash-merged to `main` (`6965bf7`)          | Evidence packs on trunk                             |
 | 2026-08-25      | G2 harness PR #27 squash-merged to `main` (`a530947`)    | Harness on trunk; live matrix still parked          |
 | 2026-08-26      | Product owner: waiting on HighLevel app approval         | Wave 1 stays parked; maps updated for agent handoff |
+| 2026-08-26      | Reverse-review PR #29 + remediation PR #30 on `main`     | H1-H3 closed; Wave 1 still parked on HL approval    |
+| 2026-09-03      | Repo hygiene raid (M3/M4/M5/M20 in-repo)                 | Templates, Dependabot, ledger path, proxy rename    |
 
 ---
 
@@ -191,3 +193,16 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 | 2026-08-25 | Prep PR #26 merged. G2 live-capture harness ready; Wave 1 parked on App Test credentials.    |
 | 2026-08-25 | G2 harness PR #27 merged to `main` (`a530947`).                                              |
 | 2026-08-26 | Critical path restated: park on HighLevel app approval; project-map + agent the-map updated. |
+| 2026-08-26 | Reverse-review Highs remediations merged (`56d90f6`).                                        |
+| 2026-09-03 | Repo hygiene: PR/issue templates, Dependabot, ledger generator path, middleware->proxy.      |
+
+## Process follow-ups (from reverse review / security audits)
+
+| ID    | Item                                            | Status                                                                               |
+| ----- | ----------------------------------------------- | ------------------------------------------------------------------------------------ |
+| M3    | `generate-production-execution-ledger.mjs` path | Fixed to `in-work`; default write is `tmp/` (needs `--write-canonical` to overwrite) |
+| M4    | Next.js `middleware` -> `proxy`                 | Migrated `apps/web/src/proxy.ts`                                                     |
+| M5    | Security follow-ups in watchdog                 | This table + watchdog rows                                                           |
+| M20   | Templates + Dependabot                          | Added under `.github/`                                                               |
+| Human | Disable rebase merge; ruleset squash-only       | Settings API denied to agent; owner action                                           |
+| Human | HighLevel app approval                          | Unchanged critical path                                                              |

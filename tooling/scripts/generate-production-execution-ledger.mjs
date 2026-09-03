@@ -7,7 +7,7 @@ const prdRoot = join(
   repositoryRoot,
   "library",
   "requirements",
-  "backlog",
+  "in-work",
   "prd-001-operation-automated-lo",
 );
 
@@ -934,5 +934,16 @@ ${sections.join("\n\n")}
 | 2026-07-21 | Merged clean UI Foundation PR #10 at \`00ad29a\`, rebased production core without conflict, and reconciled exact UI acceptance evidence. |
 `;
 
-await writeFile(join(repositoryRoot, "PRODUCTION_EXECUTION_LEDGER.md"), output, "utf8");
-console.log(`Wrote ${total} acceptance criteria to PRODUCTION_EXECUTION_LEDGER.md`);
+const writeCanonical = process.argv.includes("--write-canonical");
+const outputPath = writeCanonical
+  ? join(repositoryRoot, "PRODUCTION_EXECUTION_LEDGER.md")
+  : join(repositoryRoot, "tmp", "generated-production-execution-ledger.md");
+
+if (writeCanonical) {
+  console.warn(
+    "WARNING: overwriting PRODUCTION_EXECUTION_LEDGER.md. The canonical ledger carries verified statuses that this regenerator does not preserve. Prefer reviewing tmp output first.",
+  );
+}
+
+await writeFile(outputPath, output, "utf8");
+console.log(`Wrote ${total} acceptance criteria to ${relative(repositoryRoot, outputPath)}`);

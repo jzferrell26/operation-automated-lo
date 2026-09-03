@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Project map / agent handoff
+    url: https://github.com/jzferrell26/operation-automated-lo/blob/main/.cursor/rules/core/the-map.mdc
+    about: Current tip, blockers, and forbidden claims for agents and operators.
+  - name: Next batch ledger (External Evidence Sprint)
+    url: https://github.com/jzferrell26/operation-automated-lo/blob/main/NEXT_BATCH_LEDGER.md
+    about: Wave plan and HighLevel app-approval park status.

@@ -28,7 +28,7 @@ Status date: September 3, 2026.
 
 | Area | Current state |
 | --- | --- |
-| Delivery | Gauntlet closeout on `main` (PR #25). External Evidence Sprint prep (PR #26). G2 harness (PR #27). Reverse-review + H1-H3 remediation (PRs #29/#30, tip `56d90f6`). Live Wave 1 parked. |
+| Delivery | Gauntlet closeout on `main` (PR #25). External Evidence Sprint prep (PR #26). G2 harness (PR #27). Reverse-review + H1-H3 (PRs #29/#30). Hygiene (PR #31). Dependabot noise control (PR #39, tip `0eff5f5`). Planned Actions major raid (checkout 7 / cache 6 / setup-node 7) is SHA-pinned follow-up. Live Wave 1 parked. |
 | Critical path park | Waiting on **HighLevel to approve the app** so App Test operator access can start. In-repo G2 capture seam is ready and fail-closed. |
 | PRD-001 lifecycle | `IN WORK`. The repository implementation is complete for every criterion that can be proved locally, but production acceptance is not complete. |
 | Acceptance criteria | 305 total: 267 `VERIFIED`, 28 `DEFERRED: LIVE HIGHLEVEL AUTH`, 7 `BLOCKED: EXTERNAL EVIDENCE`, 1 `BLOCKED: G5`, and 2 `ACCEPTED CONSTRAINT` (G4 housing Special Ad Category criteria). |

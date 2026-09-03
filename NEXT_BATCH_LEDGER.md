@@ -183,6 +183,7 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 | 2026-08-26      | Reverse-review PR #29 + remediation PR #30 on `main`     | H1-H3 closed; Wave 1 still parked on HL approval    |
 | 2026-09-03      | Repo hygiene raid (M3/M4/M5/M20 in-repo)                 | Templates, Dependabot, ledger path, proxy rename    |
 | 2026-09-03      | Dependabot first-run flood (7 PRs, mostly majors)        | Ignore majors; group weekly minor/patch only        |
+| 2026-09-03      | Actions major raid (checkout 7 / cache 6 / setup-node 7) | SHA-pinned planned bump; npm majors stay deferred   |
 
 ---
 
@@ -196,6 +197,7 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 | 2026-08-26 | Critical path restated: park on HighLevel app approval; project-map + agent the-map updated. |
 | 2026-08-26 | Reverse-review Highs remediations merged (`56d90f6`).                                        |
 | 2026-09-03 | Repo hygiene: PR/issue templates, Dependabot, ledger generator path, middleware->proxy.      |
+| 2026-09-03 | Dependabot majors ignored (PR #39). Planned Actions major raid authored.                     |
 
 ## Process follow-ups (from reverse review / security audits)
 
@@ -207,3 +209,4 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 | M20   | Templates + Dependabot                          | Added under `.github/`                                                               |
 | Human | Disable rebase merge; ruleset squash-only       | Settings API denied to agent; owner action                                           |
 | Human | HighLevel app approval                          | Unchanged critical path                                                              |
+| AM    | Actions majors (checkout 7 / cache 6 / setup-node 7) | This raid: SHA-pinned in `.github/workflows/ci.yml`                             |

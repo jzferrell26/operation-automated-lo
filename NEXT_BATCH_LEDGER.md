@@ -201,12 +201,12 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 
 ## Process follow-ups (from reverse review / security audits)
 
-| ID    | Item                                            | Status                                                                               |
-| ----- | ----------------------------------------------- | ------------------------------------------------------------------------------------ |
-| M3    | `generate-production-execution-ledger.mjs` path | Fixed to `in-work`; default write is `tmp/` (needs `--write-canonical` to overwrite) |
-| M4    | Next.js `middleware` -> `proxy`                 | Migrated `apps/web/src/proxy.ts`                                                     |
-| M5    | Security follow-ups in watchdog                 | This table + watchdog rows                                                           |
-| M20   | Templates + Dependabot                          | Added under `.github/`                                                               |
-| Human | Disable rebase merge; ruleset squash-only       | Settings API denied to agent; owner action                                           |
-| Human | HighLevel app approval                          | Unchanged critical path                                                              |
-| AM    | Actions majors (checkout 7 / cache 6 / setup-node 7) | This raid: SHA-pinned in `.github/workflows/ci.yml`                             |
+| ID    | Item                                                 | Status                                                                               |
+| ----- | ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| M3    | `generate-production-execution-ledger.mjs` path      | Fixed to `in-work`; default write is `tmp/` (needs `--write-canonical` to overwrite) |
+| M4    | Next.js `middleware` -> `proxy`                      | Migrated `apps/web/src/proxy.ts`                                                     |
+| M5    | Security follow-ups in watchdog                      | This table + watchdog rows                                                           |
+| M20   | Templates + Dependabot                               | Added under `.github/`                                                               |
+| Human | Disable rebase merge; ruleset squash-only            | Settings API denied to agent; owner action                                           |
+| Human | HighLevel app approval                               | Unchanged critical path                                                              |
+| AM    | Actions majors (checkout 7 / cache 6 / setup-node 7) | This raid: SHA-pinned in `.github/workflows/ci.yml`                                  |

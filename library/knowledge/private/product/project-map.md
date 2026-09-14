@@ -10,6 +10,7 @@ The canonical internal map of the product boundary, system flow, implementation 
 - [PRD-001: Operation Automated LO](../../../requirements/in-work/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md)
 - [Production execution ledger](../../../../PRODUCTION_EXECUTION_LEDGER.md)
 - [External Evidence Sprint (next batch)](../../../../NEXT_BATCH_LEDGER.md)
+- [PRD-003: Authenticated Product Activation](../../../requirements/backlog/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md)
 - [Agent terrain map](../../../../.cursor/rules/core/the-map.mdc) (Codex / Claude / Cursor handoff)
 
 ---
@@ -181,6 +182,12 @@ Authoritative batch plan: [External Evidence Sprint](../../../../NEXT_BATCH_LEDG
 ### Parallel when a cloud owner is available (Wave 2)
 
 6. Inventory preview, staging, and dark production resources. Prove environment isolation and KMS rotation/recovery for `001J-AC-026` and `001J-AC-029`. Production traffic stays disabled.
+
+### Parallel in-repo product activation while external gates are parked
+
+PRD-003 is the implementation bridge from the repository-proved PRD-001 contracts to a real authenticated tenant-backed product surface. It replaces the new local filesystem/synthetic campaign path with Postgres persistence, verified server session authority, persisted human approval, and tenant-backed authenticated workspace reads. It does not reopen PRD-001, change G1/G4/G8 dispositions, enable provider traffic, or satisfy any external evidence criterion by itself.
+
+This work may proceed while HighLevel App Test access is blocked because it is locally verifiable and fail-closed for provider side effects. Keep PRD-003 in backlog until implementation starts; then move the whole folder to `requirements/in-work/`.
 
 ### Later waves (do not start without the named external unlock)
 

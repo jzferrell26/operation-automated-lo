@@ -19,6 +19,8 @@ Upstream closeout: [`GAUNTLET_EXECUTION_LEDGER.md`](./GAUNTLET_EXECUTION_LEDGER.
 
 In-repo PRD-001 work that can be proved locally is done. The project-map next steps and the Gauntlet external park list now dominate critical path. The next batch optimizes for **shortest path to production authorization**: clear the largest deferred block (G2 live HighLevel auth), then environment isolation, then Meta/lead/billing/legal.
 
+Separately, [PRD-003: Authenticated Product Activation](./library/requirements/backlog/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is an authorized planning artifact for parallel in-repo productization while the external evidence path is parked. PRD-003 does not convert any blocked/deferred criterion to verified status and does not enable production provider traffic.
+
 ```mermaid
 flowchart TD
   M[main: Gauntlet merged] --> B0[Batch prep: evidence packs]
@@ -55,6 +57,16 @@ flowchart TD
 | --------------------------------- | ------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `library-guardian` / orchestrator | `composer-2.5-fast` | Evidence pack stubs under `docs/operations/evidence-packs/` for G2, env/KMS, G3, G5, G6, G7 | Each pack lists exact criteria IDs, required sanitized artifacts, prohibited data (secrets/PII/spend), and pass/fail checkbox |
 | orchestrator                      | `composer-2.5-fast` | Update `project-map.md`, agent `the-map.mdc`, and this ledger after harness merge           | DONE 2026-08-26: HighLevel app-approval park recorded                                                                         |
+
+### Parallel product activation (in-repo, no provider traffic)
+
+| Owner                                       | Deliverable                                         | Exit criteria                                                                                             |
+| ------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `library-guardian`                          | PRD-003 Authenticated Product Activation            | Authored in Schema v2 with tenant persistence, session authority, approval, and workspace-read sub-PRDs   |
+| implementation Guardians                    | Execute PRD-003 after lifecycle moves to `in-work/` | Postgres-backed authenticated campaign flow; no synthetic/filesystem fallback outside explicit local mode |
+| `security-guardian` then `quality-guardian` | Closeout reports                                    | No unresolved Critical/High finding; all PRD-003 ACs traceable before merge                               |
+
+**Boundary:** this parallel batch is locally verifiable product activation only. G2/G3/G5/G6/G7 evidence and production authorization remain governed by Waves 1-7 below.
 
 ### Wave 1: G2 HighLevel App Test (operator + `gohighlevel-guardian`)
 

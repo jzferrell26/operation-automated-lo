@@ -39,9 +39,10 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 1. **Human / HighLevel:** Wait for HighLevel to approve the app. Then grant App Test operator access for one controlled location and name the operator.
 2. **Wave 1:** Run [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](../../../docs/operations/evidence-packs/g2-highlevel-app-test.md); ingest sanitized fixtures; update production ledger with evidence pointers. Owner: operator + `gohighlevel-guardian`.
-3. **Optional parallel:** Wave 2 prep (cloud inventory + KMS custody) if a cloud owner is available; otherwise leave parked.
-4. **After any harness/code change:** `security-guardian` then `quality-guardian` (never reverse). Squash-merge only.
-5. **Do not** move PRD-001 to `completed/` until project-map core-completion is satisfied.
+3. **Parallel in-repo product activation:** [`PRD-003`](../../../library/requirements/backlog/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is the planned bridge from synthetic/local authenticated campaign surfaces to tenant-backed Postgres persistence, verified session authority, human approval, and real workspace reads. It enables no provider traffic and satisfies no external evidence gate by itself.
+4. **Optional parallel:** Wave 2 prep (cloud inventory + KMS custody) if a cloud owner is available; otherwise leave parked.
+5. **After any harness/code change:** `security-guardian` then `quality-guardian` (never reverse). Squash-merge only.
+6. **Do not** move PRD-001 to `completed/` until project-map core-completion is satisfied.
 
 ## Route work
 

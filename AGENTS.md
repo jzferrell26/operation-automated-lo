@@ -6,11 +6,17 @@
 
 If you are Codex (or any agent that does not auto-load skills by description), follow this routing procedure before doing domain work. Cursor and Claude Code do this automatically through their skill systems; Codex does it by reading files.
 
+### Canonical Neeson skill overlay
+
+Jonathan's canonical personal skill library lives in the sibling `the-neeson` repository when it is available locally. Before loading any Weapon, check for `../the-neeson/skills/<weapon-name>/SKILL.md` relative to this repository. If it exists, prefer that copy because it is the current canonical Neeson skill. If the sibling repository is absent, fall back to this repository's `.cursor/skills/<weapon-name>/SKILL.md` snapshot. Never copy or rewrite the Neeson skill in-place as part of product work.
+
+For implementation batches in this TypeScript / Next.js / Postgres / Supabase codebase, use this default closeout sequence unless the task clearly requires a narrower route: implementation Guardian/Weapon -> `security-weapon` -> `quality-weapon` -> `code-review-pr-weapon`. Add `dependency-audit-weapon` when dependencies change, `db-weapon` plus `supabase-platform-weapon` for database/platform work, and `devops-weapon` / `release-deploy-weapon` for CI or deployment work.
+
 0. **Read the terrain.** Open [`.cursor/rules/core/the-map.mdc`](./.cursor/rules/core/the-map.mdc) and the [canonical project map](./library/knowledge/private/product/project-map.md). Do not invent live HighLevel / Meta / Stripe evidence or reopen G1/G4/G8.
 1. **Open the roster.** Read [`.cursor/skills/dungeon-master/SKILL.md`](./.cursor/skills/dungeon-master/SKILL.md). It is the Dungeon Master router: a table of every Guardian, its domain, its trigger keywords, and a link to its guide.
 2. **Match the request to one Guardian.** Use the trigger keywords and the "Do NOT route when" notes in each guide under `.cursor/skills/dungeon-master/guides/`. Prefer the narrowest-scoped Guardian. If two compete, read both guides before choosing.
 3. **Load the Guardian persona.** Read [`.cursor/agents/<guardian-name>.md`](./.cursor/agents/) for its identity, guardrails, and escalation rules.
-4. **Load the paired Weapon.** Read `.cursor/skills/<weapon-name>/SKILL.md`, then open only the specific `guides/`, `templates/`, or `examples/` files that the task needs (progressive disclosure: do not read the whole folder up front).
+4. **Load the paired Weapon.** Prefer `../the-neeson/skills/<weapon-name>/SKILL.md` when that sibling path exists; otherwise read `.cursor/skills/<weapon-name>/SKILL.md`. Then open only the specific `guides/`, `templates/`, or `examples/` files that the task needs (progressive disclosure: do not read the whole folder up front).
 5. **Execute as that Guardian,** honoring its critical directives and the always-on rules in [RULES.md](./RULES.md).
 6. **Close out** per the multi-Guardian sequences in the router (for implementation work, that ends with `security-guardian` then `quality-guardian`).
 

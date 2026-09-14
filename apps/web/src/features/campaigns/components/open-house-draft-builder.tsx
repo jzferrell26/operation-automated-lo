@@ -3,6 +3,7 @@
 import { Button, Card, Icon } from "@oalo/ui";
 import { useState, type FormEvent } from "react";
 
+import { postInternalJson } from "../../http/internal-api.js";
 import styles from "./open-house-draft-builder.module.css";
 
 type PreflightResponse = Readonly<{
@@ -43,27 +44,23 @@ export function OpenHouseDraftBuilder() {
     const form = new FormData(event.currentTarget);
 
     try {
-      const response = await fetch("/api/campaigns/preflight", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          address: form.get("address"),
-          stateCode: form.get("stateCode"),
-          propertyDescription: form.get("propertyDescription"),
-          openHouseStartsAt: new Date(String(form.get("openHouseStartsAt"))).toISOString(),
-          openHouseEndsAt: new Date(String(form.get("openHouseEndsAt"))).toISOString(),
-          realtorDisplayName: form.get("realtorDisplayName"),
-          headline: form.get("headline"),
-          body: form.get("body"),
-          callToAction: form.get("callToAction"),
-          disclosureText: form.get("disclosureText"),
-          consentText: form.get("consentText"),
-          region: form.get("region"),
-          dailyBudgetDollars: Number(form.get("dailyBudgetDollars")),
-          totalBudgetDollars: Number(form.get("totalBudgetDollars")),
-          propertyPermissionConfirmed: form.get("propertyPermissionConfirmed") === "on",
-          realtorPermissionConfirmed: form.get("realtorPermissionConfirmed") === "on",
-        }),
+      const response = await postInternalJson("/api/campaigns/preflight", {
+        address: form.get("address"),
+        stateCode: form.get("stateCode"),
+        propertyDescription: form.get("propertyDescription"),
+        openHouseStartsAt: new Date(String(form.get("openHouseStartsAt"))).toISOString(),
+        openHouseEndsAt: new Date(String(form.get("openHouseEndsAt"))).toISOString(),
+        realtorDisplayName: form.get("realtorDisplayName"),
+        headline: form.get("headline"),
+        body: form.get("body"),
+        callToAction: form.get("callToAction"),
+        disclosureText: form.get("disclosureText"),
+        consentText: form.get("consentText"),
+        region: form.get("region"),
+        dailyBudgetDollars: Number(form.get("dailyBudgetDollars")),
+        totalBudgetDollars: Number(form.get("totalBudgetDollars")),
+        propertyPermissionConfirmed: form.get("propertyPermissionConfirmed") === "on",
+        realtorPermissionConfirmed: form.get("realtorPermissionConfirmed") === "on",
       });
       const payload: unknown = await response.json();
       if (!response.ok) {

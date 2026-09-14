@@ -1,7 +1,7 @@
 import { PermissionScreen } from "../../../../features/onboarding/components/permission-screen.js";
-import { loadSyntheticUiFixture } from "../../../../features/ui-foundation/data/load-synthetic-ui.js";
+import { loadAuthenticatedWorkspace } from "../../../../server/authenticated-workspace-data.js";
 
 export default function ConnectionsPage() {
-  const fixture = loadSyntheticUiFixture();
+  const fixture = loadAuthenticatedWorkspace().ui;
   return <PermissionScreen onboarding={fixture.onboarding} />;
 }

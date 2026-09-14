@@ -142,6 +142,9 @@ importers:
       '@oalo/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@oalo/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@oalo/db':
         specifier: workspace:*
         version: link:../../packages/db

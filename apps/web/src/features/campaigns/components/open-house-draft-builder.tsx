@@ -6,6 +6,8 @@ import { useState, type FormEvent } from "react";
 import styles from "./open-house-draft-builder.module.css";
 
 type PreflightResponse = Readonly<{
+  state: string;
+  detailHref: string;
   version: {
     campaignRef: string;
     campaignVersionRef: string;
@@ -171,6 +173,7 @@ function PreflightReview({ result }: Readonly<{ result: PreflightResponse }>) {
           ))}
         </div>
       )}
+      <a className="oalo-action-link" href={result.detailHref}>Open persisted campaign</a>
       <details>
         <summary>Immutable evidence</summary>
         <code>{result.version.campaignVersionRef}</code>
@@ -180,4 +183,3 @@ function PreflightReview({ result }: Readonly<{ result: PreflightResponse }>) {
     </section>
   );
 }
-

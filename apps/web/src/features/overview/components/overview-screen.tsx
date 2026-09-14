@@ -77,7 +77,9 @@ export function OverviewScreen({ overview, session }: OverviewScreenProps) {
           </div>
         </div>
         <div className={styles.quickActions}>
-          <ProjectedSafeAction label="Create marketing campaign" />
+          <a className="oalo-action-link" href="/marketing/campaigns/new">
+            Create marketing campaign
+          </a>
           <a className="oalo-action-link" href="/settings/routing">
             Resolve highest-priority connection issue
           </a>

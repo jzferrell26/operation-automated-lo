@@ -1,6 +1,6 @@
 import { BrandProfileScreen } from "../../../features/brand/components/brand-profile-screen.js";
-import { loadSyntheticBrandProfile } from "../../../features/brand/model/synthetic-brand-profile.js";
+import { loadAuthenticatedWorkspace } from "../../../server/authenticated-workspace-data.js";
 
 export default function BrandProfilePage() {
-  return <BrandProfileScreen profile={loadSyntheticBrandProfile()} />;
+  return <BrandProfileScreen profile={loadAuthenticatedWorkspace().brand} />;
 }

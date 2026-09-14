@@ -11,4 +11,3 @@ export default async function CampaignPage({
   if (campaign === undefined) notFound();
   return <PersistedCampaignScreen campaign={campaign} />;
 }
-

@@ -48,4 +48,3 @@ describe("open house draft compiler", () => {
     );
   });
 });
-

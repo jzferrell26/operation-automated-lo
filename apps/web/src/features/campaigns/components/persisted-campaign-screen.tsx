@@ -30,10 +30,22 @@ export function PersistedCampaignScreen({ campaign }: Readonly<{ campaign: Local
       </Card>
 
       <div className={styles.summaryGrid}>
-        <Card padding="sm"><strong>Realtor</strong><p>{manifest.partner.realtorDisplayName}</p></Card>
-        <Card padding="sm"><strong>State</strong><p>{stateLabel(campaign.state)}</p></Card>
-        <Card padding="sm"><strong>Daily budget</strong><p>{dollars(manifest.meta.dailyBudgetMinor)}</p></Card>
-        <Card padding="sm"><strong>Total budget</strong><p>{dollars(manifest.meta.totalBudgetMinor)}</p></Card>
+        <Card padding="sm">
+          <strong>Realtor</strong>
+          <p>{manifest.partner.realtorDisplayName}</p>
+        </Card>
+        <Card padding="sm">
+          <strong>State</strong>
+          <p>{stateLabel(campaign.state)}</p>
+        </Card>
+        <Card padding="sm">
+          <strong>Daily budget</strong>
+          <p>{dollars(manifest.meta.dailyBudgetMinor)}</p>
+        </Card>
+        <Card padding="sm">
+          <strong>Total budget</strong>
+          <p>{dollars(manifest.meta.totalBudgetMinor)}</p>
+        </Card>
       </div>
 
       <section className={styles.review} aria-labelledby="campaign-preflight-title">
@@ -46,7 +58,10 @@ export function PersistedCampaignScreen({ campaign }: Readonly<{ campaign: Local
           </div>
         </div>
         {campaign.preflight.findings.length === 0 ? (
-          <Card padding="md"><strong>Ready for an authorized approver.</strong><p>No blocking findings remain on this immutable version.</p></Card>
+          <Card padding="md">
+            <strong>Ready for an authorized approver.</strong>
+            <p>No blocking findings remain on this immutable version.</p>
+          </Card>
         ) : (
           <div className={styles.findings}>
             {campaign.preflight.findings.map((finding: PreflightFinding) => (
@@ -70,7 +85,9 @@ export function PersistedCampaignScreen({ campaign }: Readonly<{ campaign: Local
         <div className={styles.findings}>
           {campaign.events.map((event) => (
             <Card key={event.eventRef} padding="sm">
-              <strong>{event.fromState} → {event.toState}</strong>
+              <strong>
+                {event.fromState} → {event.toState}
+              </strong>
               <p>{new Date(event.occurredAt).toLocaleString("en-US")}</p>
               <small>{event.correlationRef}</small>
             </Card>

@@ -83,7 +83,9 @@ export async function persistLocalCampaign(
     preflight.campaignVersionRef !== version.campaignVersionRef ||
     preflight.manifestHash !== version.manifestHash
   ) {
-    throw new Error("Campaign persistence requires preflight evidence for the exact frozen version");
+    throw new Error(
+      "Campaign persistence requires preflight evidence for the exact frozen version",
+    );
   }
 
   let persisted!: LocalCampaignRecord;
@@ -165,4 +167,3 @@ export async function loadLocalCampaign(
   const record = store.campaigns[campaignRef];
   return record === undefined ? undefined : Object.freeze(record);
 }
-

@@ -8,7 +8,11 @@ import { authenticatedWorkspaceMode } from "./authenticated-workspace-data.js";
 const OpenHouseDraftInputSchema = z
   .object({
     address: z.string().trim().min(3).max(1_000),
-    stateCode: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/u),
+    stateCode: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]{2}$/u),
     propertyDescription: z.string().trim().min(10).max(10_000),
     openHouseStartsAt: z.iso.datetime({ offset: true }),
     openHouseEndsAt: z.iso.datetime({ offset: true }),
@@ -45,10 +49,12 @@ export async function compileOpenHouseDraft(
   const campaignVersionRef = ref("campaignversion", id);
 
   const repository = {
-    async run<T>(work: (transaction: {
-      getLatestVersionNo(locationRef: string, campaignRef: string): Promise<number>;
-      append(version: unknown): Promise<void>;
-    }) => Promise<T>): Promise<T> {
+    async run<T>(
+      work: (transaction: {
+        getLatestVersionNo(locationRef: string, campaignRef: string): Promise<number>;
+        append(version: unknown): Promise<void>;
+      }) => Promise<T>,
+    ): Promise<T> {
       return work({
         async getLatestVersionNo() {
           return 0;

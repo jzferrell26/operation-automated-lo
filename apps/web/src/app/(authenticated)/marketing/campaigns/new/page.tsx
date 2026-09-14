@@ -3,4 +3,3 @@ import { OpenHouseDraftBuilder } from "../../../../../features/campaigns/compone
 export default function NewCampaignPage() {
   return <OpenHouseDraftBuilder />;
 }
-

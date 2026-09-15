@@ -248,6 +248,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@oalo/application':
+        specifier: workspace:*
+        version: link:../application
       '@oalo/contracts':
         specifier: workspace:*
         version: link:../contracts

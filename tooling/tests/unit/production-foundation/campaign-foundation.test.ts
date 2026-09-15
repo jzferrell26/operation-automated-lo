@@ -145,6 +145,13 @@ function repositoryHarness() {
       const length = versions.length;
       try {
         return await work({
+          async getByCampaignVersionRef(location, campaignVersionRef) {
+            return versions.find(
+              (version) =>
+                version.locationRef === location &&
+                version.campaignVersionRef === campaignVersionRef,
+            );
+          },
           async getLatestVersionNo(location, campaign) {
             return Math.max(
               0,
@@ -218,6 +225,39 @@ describe("immutable campaign versions", () => {
     expect(() => {
       (first.manifest.content as { headline: string }).headline = "mutated";
     }).toThrow();
+  });
+
+  it("retries the same campaign version reference without creating a duplicate", async () => {
+    const harness = repositoryHarness();
+    const first = await createCampaignVersion(
+      { version: versionInput(), createdAt: now },
+      harness.repository,
+    );
+    const retried = await createCampaignVersion(
+      {
+        version: versionInput(),
+        createdAt: new Date("2026-07-21T16:05:00.000Z"),
+      },
+      harness.repository,
+    );
+    expect(retried).toEqual(first);
+    expect(harness.versions).toHaveLength(1);
+    await expect(
+      createCampaignVersion(
+        {
+          version: versionInput(
+            "version_01Campaign",
+            CampaignManifestSchema.parse({
+              ...manifest,
+              content: { ...manifest.content, headline: "A conflicting retry" },
+            }),
+          ),
+          createdAt: now,
+        },
+        harness.repository,
+      ),
+    ).rejects.toThrow("different immutable content");
+    expect(harness.versions).toHaveLength(1);
   });
 
   it("duplicates an approved campaign as a new draft only after current dependencies revalidate", async () => {

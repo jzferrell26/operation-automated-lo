@@ -1,6 +1,6 @@
 # PRD-003: Authenticated Product Activation
 
-> **Status:** Backlog
+> **Status:** In Work
 > **Priority:** P0
 > **Effort:** XL (> 3d)
 > **Schema changes:** Additive
@@ -41,7 +41,7 @@ The result of this batch is a tenant-backed Open House Boost workflow that can c
 
 | Sub-PRD | Scope | Status |
 |---|---|---|
-| [`prd-003a-authenticated-product-activation-campaign-persistence`](./prd-003a-authenticated-product-activation-campaign-persistence.md) | Tenant-scoped Postgres schema and repositories for immutable campaigns, versions, and preflight evidence | Draft |
+| [`prd-003a-authenticated-product-activation-campaign-persistence`](./prd-003a-authenticated-product-activation-campaign-persistence.md) | Tenant-scoped Postgres schema and repositories for immutable campaigns, versions, and preflight evidence | In Work |
 | [`prd-003b-authenticated-product-activation-session-command-context`](./prd-003b-authenticated-product-activation-session-command-context.md) | Verified server principal and transaction context for authenticated campaign commands | Draft |
 | [`prd-003c-authenticated-product-activation-human-approval`](./prd-003c-authenticated-product-activation-human-approval.md) | Persisted human approval decision, audit evidence, and legal campaign transition | Draft |
 | [`prd-003d-authenticated-product-activation-workspace-reads`](./prd-003d-authenticated-product-activation-workspace-reads.md) | Authenticated campaign creation/detail/list/overview backed by persisted tenant data | Draft |
@@ -103,9 +103,9 @@ Browser requests must never accept `location_id`, installation authority, publis
 
 ## Open questions
 
-- [ ] Should the browser mutation transport be a route handler or a Next.js Server Action? The application command and authorization boundary must be transport-independent either way.
-- [ ] Should rejected approval decisions leave the aggregate in `awaiting_approval` or transition through a dedicated rejected state? PRD-001 currently defines `awaiting_approval -> approved/generated/archived`; this batch must not invent a new state without a domain decision.
-- [ ] Should local filesystem persistence remain as a maintained development adapter after Postgres activation, or be reduced to test-only fixtures once local Supabase is the default developer path?
+- [x] Should the browser mutation transport be a route handler or a Next.js Server Action? Keep `/api/campaigns/preflight` as the mutation transport. The application command and authorization boundary stay transport-independent.
+- [x] Should rejected approval decisions leave the aggregate in `awaiting_approval` or transition through a dedicated rejected state? Denied stays `awaiting_approval`. This batch must not invent a new state.
+- [x] Should local filesystem persistence remain as a maintained development adapter after Postgres activation, or be reduced to test-only fixtures once local Supabase is the default developer path? Keep the filesystem store as an explicit local/synthetic adapter only.
 
 ---
 

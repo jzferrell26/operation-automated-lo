@@ -51,11 +51,18 @@ export async function compileOpenHouseDraft(
   const repository = {
     async run<T>(
       work: (transaction: {
+        getByCampaignVersionRef(
+          locationRef: string,
+          campaignVersionRef: string,
+        ): Promise<undefined>;
         getLatestVersionNo(locationRef: string, campaignRef: string): Promise<number>;
         append(version: unknown): Promise<void>;
       }) => Promise<T>,
     ): Promise<T> {
       return work({
+        async getByCampaignVersionRef() {
+          return undefined;
+        },
         async getLatestVersionNo() {
           return 0;
         },

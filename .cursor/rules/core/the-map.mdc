@@ -9,7 +9,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
-- `main` tip (as of 2026-09-15): `70531fb` (PR #54 PRD-003a campaign persistence), after `6f64201` (PR #53 labeled review dashboard), `0eff5f5` (PR #39 Dependabot majors ignored).
+- `main` tip (as of 2026-09-15): `2ee2634` (PR #55 PRD-003b session command context), after `70531fb` (PR #54 PRD-003a), `6f64201` (PR #53 labeled review dashboard).
 - Batch ledger: [`NEXT_BATCH_LEDGER.md`](../../../NEXT_BATCH_LEDGER.md)
 - AC ledger: [`PRODUCTION_EXECUTION_LEDGER.md`](../../../PRODUCTION_EXECUTION_LEDGER.md)
 - Marketplace packet: [`highlevel-marketplace-submission.md`](../../../library/knowledge/private/product/highlevel-marketplace-submission.md)
@@ -33,7 +33,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 | --- | --- | --- |
 | HighLevel App Test operator run | **Try sandbox + Test Link now** (do not wait for prior Marketplace approval per official docs) | Sanitized fixtures for 28 `DEFERRED: LIVE HIGHLEVEL AUTH` ACs |
 | G2 live evidence | Harness ready; **no sanitized fixtures**; do not invent G2 evidence | Flip deferred auth ACs only after `pnpm test:contracts` |
-| PRD-003b session command context | **In review** (PR #55) | Verified server principal for campaign mutations |
+| PRD-003b session command context | **Done** (`2ee2634`, PR #55) | Verified server principal for campaign mutations |
 | PRD-003c / 003d | Not started | Human approval + tenant-backed workspace reads |
 | App Test operator access + controlled location | Operator-led | Live OAuth/session matrix capture |
 | Env isolation + KMS (Wave 2) | Parked | `001J-AC-026`, `001J-AC-029` |
@@ -45,7 +45,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 1. **Human / HighLevel:** Try sandbox + Create App Test Account + Test Link now ([Marketplace packet](../../../library/knowledge/private/product/highlevel-marketplace-submission.md)). Do not invent G2 evidence.
 2. **Wave 1:** After operator capture, run [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](../../../docs/operations/evidence-packs/g2-highlevel-app-test.md); ingest sanitized fixtures; update production ledger with evidence pointers. Owner: operator + `gohighlevel-guardian`.
-3. **Parallel in-repo product activation:** [`PRD-003`](../../../library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is in `in-work/`. 003a **done**; 003b **in review** (PR #55); 003c/003d not started. Enables no provider traffic and satisfies no external evidence gate by itself.
+3. **Parallel in-repo product activation:** [`PRD-003`](../../../library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is in `in-work/`. 003a **done** (`70531fb`); 003b **done** (`2ee2634`); 003c/003d not started. Enables no provider traffic and satisfies no external evidence gate by itself.
 4. **Optional parallel:** Wave 2 prep (cloud inventory + KMS custody) if a cloud owner is available; otherwise leave parked.
 5. **After any harness/code change:** `security-guardian` then `quality-guardian` (never reverse). Squash-merge only.
 6. **Do not** move PRD-001 to `completed/` until project-map core-completion is satisfied.

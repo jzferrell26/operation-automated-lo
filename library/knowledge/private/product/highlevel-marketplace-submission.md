@@ -83,7 +83,7 @@ If White-label is chosen, run a customer-facing terminology audit first (current
 | Area | Honest status (September 2026) |
 | --- | --- |
 | PRD-003a campaign persistence | **Done** on `main` (`70531fb`, PR #54) |
-| PRD-003b session command context | **In review** (PR #55) |
+| PRD-003b session command context | **Done** (`2ee2634`, PR #55) |
 | PRD-003c human approval | Not started |
 | PRD-003d workspace reads | Not started |
 | Labeled review dashboard | **Merged** (`6f64201`, PR #53) |
@@ -115,4 +115,4 @@ If White-label is chosen, run a customer-facing terminology audit first (current
 
 ## Changelog
 
-- v1.0 (2026-09-15): Initial packet recreated on `main`. App Test is "try sandbox + Test Link now"; prior approval is not documented as required. PRD-003 in-work with 003a merged, 003b in review.
+- v1.0 (2026-09-15): Initial packet recreated on `main`. App Test is "try sandbox + Test Link now"; prior approval is not documented as required. PRD-003 in-work with 003a merged (`70531fb`), 003b merged (`2ee2634`).

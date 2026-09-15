@@ -185,7 +185,7 @@ Authoritative batch plan: [External Evidence Sprint](../../../../NEXT_BATCH_LEDG
 
 PRD-003 is the implementation bridge from the repository-proved PRD-001 contracts to a real authenticated tenant-backed product surface. It replaces the new local filesystem/synthetic campaign path with Postgres persistence, verified server session authority, persisted human approval, and tenant-backed authenticated workspace reads. It does not reopen PRD-001, change G1/G4/G8 dispositions, enable provider traffic, or satisfy any external evidence criterion by itself.
 
-This work proceeds in parallel with Wave 1 App Test because it is locally verifiable and fail-closed for provider side effects. **Status (September 2026):** PRD-003 is in `requirements/in-work/`. **003a** campaign persistence is **done** on `main` (`70531fb`, PR #54). **003b** session command context is **in review** (PR #55). **003c** and **003d** are not started. Labeled review dashboard merged as `6f64201` (PR #53). Do not start 003c or 003d until 003b lands.
+This work proceeds in parallel with Wave 1 App Test because it is locally verifiable and fail-closed for provider side effects. **Status (September 2026):** PRD-003 is in `requirements/in-work/`. **003a** campaign persistence is **done** on `main` (`70531fb`, PR #54). **003b** session command context is **done** on `main` (`2ee2634`, PR #55). **003c** and **003d** are not started. Labeled review dashboard merged as `6f64201` (PR #53).
 
 ### Later waves (do not start without the named external unlock)
 
@@ -231,7 +231,7 @@ PRD-001 core is complete only when all of the following are true:
 
 ## Changelog
 
-- v1.5 (2026-09-15): Recreated Marketplace submission packet. App Test is "try sandbox + Test Link now"; do not invent G2 evidence. PRD-003 in-work: 003a done (`70531fb`), 003b in review (PR #55), review dashboard merged (`6f64201`).
+- v1.5 (2026-09-15): Recreated Marketplace submission packet. App Test is "try sandbox + Test Link now"; do not invent G2 evidence. PRD-003 in-work: 003a done (`70531fb`), 003b done (`2ee2634`), review dashboard merged (`6f64201`).
 - v1.3 (2026-08-26): Recorded External Evidence Sprint prep (PR #26) and G2 harness (PR #27) on `main`. Critical path parked on HighLevel app approval. Added done/pending summary and librarian next steps. Linked agent terrain map.
 - v1.2 (2026-08-25): Recorded Gauntlet squash-merge to `main` (PR #25). Pointed next steps at the External Evidence Sprint and evidence packs. G2 App Test is the primary unblock.
 - v1.1 (2026-08-25): Recorded product-owner accepted constraints for G1 (external distribution removed) and G4 (Housing Special Ad Category requirements known). Updated criterion counts and next steps.

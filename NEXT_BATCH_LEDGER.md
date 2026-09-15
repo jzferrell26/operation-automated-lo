@@ -19,7 +19,7 @@ Upstream closeout: [`GAUNTLET_EXECUTION_LEDGER.md`](./GAUNTLET_EXECUTION_LEDGER.
 
 In-repo PRD-001 work that can be proved locally is done. The project-map next steps and the Gauntlet external park list now dominate critical path. The next batch optimizes for **shortest path to production authorization**: clear the largest deferred block (G2 live HighLevel auth), then environment isolation, then Meta/lead/billing/legal.
 
-Separately, [PRD-003: Authenticated Product Activation](./library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is in `in-work/` for parallel in-repo productization. **003a** done (`70531fb`, PR #54). **003b** in review (PR #55). **003c/003d** not started. PRD-003 does not convert any blocked/deferred criterion to verified status and does not enable production provider traffic.
+Separately, [PRD-003: Authenticated Product Activation](./library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is in `in-work/` for parallel in-repo productization. **003a** done (`70531fb`, PR #54). **003b** done (`2ee2634`, PR #55). **003c/003d** not started. PRD-003 does not convert any blocked/deferred criterion to verified status and does not enable production provider traffic.
 
 ```mermaid
 flowchart TD
@@ -62,7 +62,7 @@ flowchart TD
 
 | Owner                                       | Deliverable                                         | Exit criteria                                                                                             |
 | ------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `library-guardian`                          | PRD-003 Authenticated Product Activation            | In `in-work/`; 003a done, 003b in review (PR #55), 003c/003d pending                                    |
+| `library-guardian`                          | PRD-003 Authenticated Product Activation            | In `in-work/`; 003a done (`70531fb`), 003b done (`2ee2634`), 003c/003d pending                         |
 | implementation Guardians                    | Execute PRD-003 sub-PRDs in order                   | Postgres-backed authenticated campaign flow; no synthetic/filesystem fallback outside explicit local mode |
 | `security-guardian` then `quality-guardian` | Closeout reports                                    | No unresolved Critical/High finding; all PRD-003 ACs traceable before merge                               |
 

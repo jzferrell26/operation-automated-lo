@@ -1,7 +1,7 @@
 # PRD-003b: Authenticated Product Activation - Session Command Context
 
 > **Parent:** [PRD-003](./prd-003-authenticated-product-activation-index.md)
-> **Status:** Draft
+> **Status:** In Work
 > **Priority:** P0
 > **Schema changes:** None expected
 

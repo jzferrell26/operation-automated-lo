@@ -1,3 +1,9 @@
+import {
+  assertPrincipalOwnsTransaction,
+  createCampaignTenantContext,
+  type AuthenticatedPrincipal,
+} from "@oalo/application";
+
 import type {
   DatabaseConnection,
   DatabasePool,
@@ -19,6 +25,19 @@ export interface SupportDatabaseContext extends TenantDatabaseContext {
 
 export interface TenantContextAuthority {
   resolveTenantDatabaseContext(): Promise<TenantDatabaseContext>;
+}
+
+export function createPrincipalBoundTenantContextAuthority(
+  principal: Readonly<AuthenticatedPrincipal>,
+  correlationId: string,
+): TenantContextAuthority {
+  return {
+    async resolveTenantDatabaseContext() {
+      const context = createCampaignTenantContext(principal, correlationId);
+      assertPrincipalOwnsTransaction(principal, context);
+      return context;
+    },
+  };
 }
 
 export interface SupportContextAuthority {

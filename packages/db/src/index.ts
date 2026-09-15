@@ -64,6 +64,7 @@ export {
 } from "./sql-contract.js";
 export {
   DatabaseContextError,
+  createPrincipalBoundTenantContextAuthority,
   isSqlDriverResult,
   shouldAssumeRuntimeRole,
   withSupportTransaction,

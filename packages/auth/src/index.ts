@@ -2,6 +2,7 @@ import { contractVersion } from "@oalo/contracts";
 
 export * from "./browser-session.js";
 export * from "./embedded-session.js";
+export * from "./inbound-session.js";
 export * from "./oauth-state.js";
 export * from "./session-policy.js";
 export * from "./token-lifecycle.js";

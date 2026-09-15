@@ -6,6 +6,7 @@ const workspaceResolve = {
   alias: {
     "@oalo/ai": resolve("packages/ai/src/index.ts"),
     "@oalo/application": resolve("packages/application/src/index.ts"),
+    "@oalo/auth": resolve("packages/auth/src/index.ts"),
     "@oalo/config": resolve("packages/config/src/index.ts"),
     "@oalo/contracts": resolve("packages/contracts/src/index.ts"),
     "@oalo/db": resolve("packages/db/src/index.ts"),

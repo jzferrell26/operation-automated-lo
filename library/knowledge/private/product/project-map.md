@@ -187,7 +187,7 @@ Authoritative batch plan: [External Evidence Sprint](../../../../NEXT_BATCH_LEDG
 
 PRD-003 is the implementation bridge from the repository-proved PRD-001 contracts to a real authenticated tenant-backed product surface. It replaces the new local filesystem/synthetic campaign path with Postgres persistence, verified server session authority, persisted human approval, and tenant-backed authenticated workspace reads. It does not reopen PRD-001, change G1/G4/G8 dispositions, enable provider traffic, or satisfy any external evidence criterion by itself.
 
-This work may proceed while HighLevel App Test access is blocked because it is locally verifiable and fail-closed for provider side effects. PRD-003 is in `requirements/in-work/` while 003a campaign persistence is being implemented. Do not start 003b, 003c, or 003d until 003a lands.
+This work may proceed while HighLevel App Test access is blocked because it is locally verifiable and fail-closed for provider side effects. PRD-003 is in `requirements/in-work/`. 003a campaign persistence is on `main`. 003b session and command context is in progress. Do not start 003c or 003d until 003b lands.
 
 ### Later waves (do not start without the named external unlock)
 

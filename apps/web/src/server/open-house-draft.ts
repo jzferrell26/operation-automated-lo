@@ -1,8 +1,14 @@
 import { randomUUID } from "node:crypto";
 
-import { createCampaignVersion, runCampaignPreflight } from "@oalo/application";
+import {
+  assertMayExecuteCampaignMutation,
+  createCampaignVersion,
+  runCampaignPreflight,
+  type AuthenticatedPrincipal,
+} from "@oalo/application";
 import { z } from "zod";
 
+import { UnauthenticatedPrincipalError } from "./authenticated-principal.js";
 import { authenticatedWorkspaceMode } from "./authenticated-workspace-data.js";
 
 const OpenHouseDraftInputSchema = z
@@ -38,9 +44,14 @@ function ref(prefix: string, id: string): string {
 
 export async function compileOpenHouseDraft(
   untrustedInput: unknown,
+  principal: AuthenticatedPrincipal,
   environment: unknown = process.env,
 ) {
-  authenticatedWorkspaceMode(environment);
+  const mode = authenticatedWorkspaceMode(environment);
+  if (principal.authenticationMode === "local_synthetic" && mode !== "synthetic") {
+    throw new UnauthenticatedPrincipalError();
+  }
+  assertMayExecuteCampaignMutation(principal);
   const input = OpenHouseDraftInputSchema.parse(untrustedInput);
   const id = randomUUID().replaceAll("-", "");
   const createdAt = new Date();
@@ -78,7 +89,7 @@ export async function compileOpenHouseDraft(
       createdAt,
       version: {
         schemaVersion: 1,
-        locationRef: "location_localWorkspace001",
+        locationRef: principal.locationRef,
         campaignRef,
         campaignVersionRef,
         inputVersions: {
@@ -154,7 +165,7 @@ export async function compileOpenHouseDraft(
             validationStatus: "valid",
           },
         },
-        createdBy: "principal_localUser001",
+        createdBy: principal.actorRef,
       },
     },
     repository,

@@ -2,6 +2,8 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 
 import { SafeTenantReferenceSchema } from "@oalo/contracts";
 
+import { type SessionApplicationRole } from "./session-policy.js";
+
 export class BrowserSessionPolicyError extends Error {
   public constructor() {
     super("The browser session request is not authorized.");
@@ -11,6 +13,7 @@ export class BrowserSessionPolicyError extends Error {
 
 export const FIRST_PARTY_SESSION_COOKIE = "__Host-oalo_session" as const;
 export const PARTITIONED_SESSION_COOKIE = "__Host-oalo_partitioned" as const;
+export const CSRF_REQUEST_HEADER = "x-csrf-token" as const;
 
 export interface FirstPartyHandoffRecord {
   readonly codeHash: string;
@@ -25,6 +28,23 @@ export interface FirstPartyHandoffRecord {
 export interface FirstPartyHandoffStore {
   create(record: FirstPartyHandoffRecord): Promise<void>;
   consume(codeHash: string, nowEpochSeconds: number): Promise<FirstPartyHandoffRecord | undefined>;
+}
+
+export interface EstablishedFirstPartySession {
+  readonly sessionId: string;
+  readonly userId: string;
+  readonly locationId: string;
+  readonly installationId: string;
+  readonly role: SessionApplicationRole;
+  readonly roleVersion: number;
+  readonly expiresAtEpochSeconds: number;
+}
+
+export interface FirstPartySessionLookup {
+  getActive(
+    sessionSecret: string,
+    nowEpochSeconds: number,
+  ): Promise<EstablishedFirstPartySession | undefined>;
 }
 
 function reject(): never {

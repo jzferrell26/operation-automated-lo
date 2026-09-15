@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { createLocalSyntheticPrincipal } from "./authenticated-principal.js";
 import { compileOpenHouseDraft } from "./open-house-draft.js";
 
 const originalCwd = process.cwd();
@@ -45,7 +46,7 @@ describe("local campaign persistence", () => {
     process.chdir(directory);
     vi.resetModules();
     const { persistLocalCampaign, loadLocalCampaign } = await import("./local-campaign-store.js");
-    const compiled = await compileOpenHouseDraft(validInput(), {});
+    const compiled = await compileOpenHouseDraft(validInput(), createLocalSyntheticPrincipal(), {});
     const saved = await persistLocalCampaign(compiled.version, compiled.preflight, {});
     expect(saved.state).toBe("awaiting_approval");
     expect(saved.events.map((event) => event.toState)).toEqual(["generated", "awaiting_approval"]);
@@ -62,6 +63,7 @@ describe("local campaign persistence", () => {
     const { persistLocalCampaign } = await import("./local-campaign-store.js");
     const compiled = await compileOpenHouseDraft(
       { ...validInput(), realtorPermissionConfirmed: false },
+      createLocalSyntheticPrincipal(),
       {},
     );
     const saved = await persistLocalCampaign(compiled.version, compiled.preflight, {});

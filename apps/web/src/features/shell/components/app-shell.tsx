@@ -18,6 +18,7 @@ type AppShellProps = Readonly<{
   children: ReactNode;
   navigation: DeepReadonly<Navigation>;
   session: DeepReadonly<SyntheticSession>;
+  workspaceMode?: "synthetic" | "review";
 }>;
 
 const focusableSelector = [
@@ -26,7 +27,12 @@ const focusableSelector = [
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
-export function AppShell({ children, navigation, session }: AppShellProps) {
+export function AppShell({
+  children,
+  navigation,
+  session,
+  workspaceMode = "synthetic",
+}: AppShellProps) {
   const pathname = usePathname();
   const [isRailCollapsed, setRailCollapsed] = useState(false);
   const [isMarketingExpanded, setMarketingExpanded] = useState(pathname.startsWith("/marketing"));
@@ -92,7 +98,11 @@ export function AppShell({ children, navigation, session }: AppShellProps) {
   }
 
   return (
-    <div className={styles.shell} data-data-mode={session.safety.dataMode}>
+    <div
+      className={styles.shell}
+      data-data-mode={session.safety.dataMode}
+      data-workspace-mode={workspaceMode}
+    >
       <aside
         className={styles.desktopSidebar}
         data-collapsed={isRailCollapsed || undefined}
@@ -140,10 +150,25 @@ export function AppShell({ children, navigation, session }: AppShellProps) {
           </div>
         </header>
 
-        <aside className={styles.syntheticDisclosure} aria-label="Synthetic workspace safety">
-          <Icon decorative name="info" size="sm" tone="info" />
+        <aside
+          className={styles.syntheticDisclosure}
+          data-review-surface={workspaceMode === "review" || undefined}
+          aria-label={
+            workspaceMode === "review"
+              ? "Review surface. Demo, not connected"
+              : "Synthetic workspace safety"
+          }
+        >
+          <Icon
+            decorative
+            name="info"
+            size="sm"
+            tone={workspaceMode === "review" ? "warning" : "info"}
+          />
           <span>{session.safety.disclosure}</span>
-          <strong>Writes disabled</strong>
+          <strong>
+            {workspaceMode === "review" ? "REVIEW / DEMO / NOT CONNECTED" : "Writes disabled"}
+          </strong>
         </aside>
 
         <main className={styles.content} id="main-content">

@@ -40,6 +40,10 @@ Set these values independently in each environment:
 - `OALO_PROVIDER_APP_ID`
 - `OALO_RELEASE_MANIFEST_JSON`, required outside local
 
+Optional review-surface flag (server-only, never `NEXT_PUBLIC_`):
+
+- `OALO_REVIEW_SURFACE`, unset by default (fail-closed). Set the exact value `authorized` to render the labeled REVIEW / DEMO / NOT CONNECTED dashboard on production or preview. Still requires `OALO_PROVIDER_MODE=stub` and `OALO_SYNTHETIC_DATA_ONLY=true`. Does not enable HighLevel, Meta, or Stripe traffic.
+
 Database, task project, secret scope, private storage, published storage, and provider app identifiers must be unique across all four environments. The isolation fixture in CI is synthetic contract evidence, not proof about live resources.
 
 ## Public variable allowlist

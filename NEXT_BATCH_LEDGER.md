@@ -2,14 +2,14 @@
 
 ## Contract
 
-| Field        | Value                                                                                                                                                                   |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Branch       | Prep and G2 harness landed on `main` (PRs #26, #27). PRD-003a-d on `main` (`70531fb`, `2ee2634`, `71c371d`, `26051b3`). Live Wave 1: try sandbox + Test Link now; do not invent G2 evidence. Preview/review smoke blocked on existing Vercel env + Postgres.               |
-| Date         | 2026-08-26                                                                                                                                                              |
-| Prerequisite | Gauntlet closeout (`25c0bdc`), evidence packs (`6965bf7`), G2 harness (`a530947`) on `main`                                                                             |
-| Scope        | Unblock production-path evidence for G2, environment/KMS, G3, G5, G6, G7, and remaining timed/AI cost criteria                                                          |
-| Honest bound | Agents cannot invent live HighLevel, Meta, Stripe, KMS, or counsel evidence. This batch is operator-led with agent-supported harnesses, checklists, and ledger updates. |
-| Current park | Operator-led App Test: try sandbox + Test Link now (prior Marketplace approval not documented as required). G2 harness ready; no sanitized fixtures yet.                |
+| Field        | Value                                                                                                                                                                                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Branch       | Prep and G2 harness landed on `main` (PRs #26, #27). PRD-003a-d on `main` (`70531fb`, `2ee2634`, `71c371d`, `26051b3`). Live Wave 1: try sandbox + Test Link now; do not invent G2 evidence. Preview/review smoke blocked on existing Vercel env + Postgres. |
+| Date         | 2026-08-26                                                                                                                                                                                                                                                   |
+| Prerequisite | Gauntlet closeout (`25c0bdc`), evidence packs (`6965bf7`), G2 harness (`a530947`) on `main`                                                                                                                                                                  |
+| Scope        | Unblock production-path evidence for G2, environment/KMS, G3, G5, G6, G7, and remaining timed/AI cost criteria                                                                                                                                               |
+| Honest bound | Agents cannot invent live HighLevel, Meta, Stripe, KMS, or counsel evidence. This batch is operator-led with agent-supported harnesses, checklists, and ledger updates.                                                                                      |
+| Current park | Operator-led App Test: try sandbox + Test Link now (prior Marketplace approval not documented as required). G2 harness ready; no sanitized fixtures yet.                                                                                                     |
 
 Upstream closeout: [`GAUNTLET_EXECUTION_LEDGER.md`](./GAUNTLET_EXECUTION_LEDGER.md) (267 `VERIFIED`, 38 non-verified parked). Authoritative AC source remains [`PRODUCTION_EXECUTION_LEDGER.md`](./PRODUCTION_EXECUTION_LEDGER.md).
 
@@ -60,11 +60,11 @@ flowchart TD
 
 ### Parallel product activation (in-repo, no provider traffic)
 
-| Owner                                       | Deliverable                              | Exit criteria                                                                                             |
-| ------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Owner                                       | Deliverable                              | Exit criteria                                                                                                |
+| ------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `library-guardian`                          | PRD-003 Authenticated Product Activation | In `in-work/`; 003a-d done (`70531fb`, `2ee2634`, `71c371d`, `26051b3`); Step 8 preview smoke blocked on env |
-| implementation Guardians                    | Execute PRD-003 sub-PRDs in order        | Postgres-backed authenticated campaign flow; no synthetic/filesystem fallback outside explicit local mode |
-| `security-guardian` then `quality-guardian` | Closeout reports                         | No unresolved Critical/High finding; all PRD-003 ACs traceable before merge                               |
+| implementation Guardians                    | Execute PRD-003 sub-PRDs in order        | Postgres-backed authenticated campaign flow; no synthetic/filesystem fallback outside explicit local mode    |
+| `security-guardian` then `quality-guardian` | Closeout reports                         | No unresolved Critical/High finding; all PRD-003 ACs traceable before merge                                  |
 
 **Boundary:** this parallel batch is locally verifiable product activation only. G2/G3/G5/G6/G7 evidence and production authorization remain governed by Waves 1-7 below.
 

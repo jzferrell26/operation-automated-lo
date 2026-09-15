@@ -91,6 +91,7 @@ export {
   CampaignCommandForbiddenError,
   CampaignPrincipalInvalidError,
   CampaignResourceNotAccessibleError,
+  approvalActorRoleForPrincipal,
   assertCampaignAccessible,
   assertMayExecuteCampaignMutation,
   assertPrincipalOwnsTransaction,
@@ -100,6 +101,19 @@ export {
   type AuthenticatedPrincipal,
   type AuthenticationMode,
 } from "./campaign-command-context.js";
+
+export {
+  CampaignApprovalNotReadyError,
+  CampaignApprovalStaleError,
+  executeHumanCampaignApproval,
+  type CampaignApprovalCommitInput,
+  type CampaignApprovalCommitResult,
+  type CampaignApprovalEvidence,
+  type CampaignApprovalRepository,
+  type CampaignApprovalTransaction,
+  type HumanCampaignApprovalInput,
+  type HumanCampaignApprovalResult,
+} from "./campaign-approval-command.js";
 
 export {
   LeadSubmissionRejectedError,

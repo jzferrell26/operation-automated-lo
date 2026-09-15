@@ -68,4 +68,38 @@ describe("campaign persistence SQL contracts", () => {
       "c".repeat(64),
     );
   });
+
+  it("decodes approval aggregate, command lookup, and optimistic status rows", () => {
+    assert.deepEqual(
+      campaignVersionContracts.selectAggregateContract.decode({
+        status: "awaiting_approval",
+        row_version: 4,
+      }),
+      { status: "awaiting_approval", rowVersion: 4 },
+    );
+    assert.deepEqual(
+      campaignVersionContracts.selectCommandByKeyContract.decode({
+        result_summary: {
+          approvalRef: "approval_01Decision",
+          state: "approved",
+          rowVersion: 5,
+        },
+      }),
+      { approvalRef: "approval_01Decision", state: "approved", rowVersion: 5 },
+    );
+    assert.deepEqual(
+      campaignVersionContracts.selectCommandByKeyContract.decode({
+        result_summary: JSON.stringify({
+          approvalRef: "approval_02Decision",
+          state: "awaiting_approval",
+          rowVersion: 3,
+        }),
+      }),
+      { approvalRef: "approval_02Decision", state: "awaiting_approval", rowVersion: 3 },
+    );
+    assert.throws(
+      () => campaignVersionContracts.selectCommandByKeyContract.decode({ result_summary: null }),
+      (error) => error instanceof CampaignPersistenceError && error.code === "CAMPAIGN_ROW_INVALID",
+    );
+  });
 });

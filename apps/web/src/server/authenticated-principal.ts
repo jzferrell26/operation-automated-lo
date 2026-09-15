@@ -237,6 +237,7 @@ async function resolveEmbeddedPrincipal(
   request: Request,
   token: string,
   ports: CampaignCommandPorts,
+  mutationRequired: boolean,
 ): Promise<Readonly<AuthenticatedPrincipal>> {
   if (ports.embedded === undefined) {
     throw new UnauthenticatedPrincipalError();
@@ -263,7 +264,9 @@ async function resolveEmbeddedPrincipal(
       },
     },
   });
-  assertMutationGate(request, claims.sessionId, "embedded-bearer", ports.mutation);
+  if (mutationRequired) {
+    assertMutationGate(request, claims.sessionId, "embedded-bearer", ports.mutation);
+  }
   return bindPrincipal({
     actorRef: claims.sub,
     locationRef: claims.locationId,
@@ -280,6 +283,7 @@ async function resolveFirstPartyPrincipal(
   request: Request,
   sessionSecret: string,
   ports: CampaignCommandPorts,
+  mutationRequired: boolean,
 ): Promise<Readonly<AuthenticatedPrincipal>> {
   if (ports.firstPartySessions === undefined) {
     throw new UnauthenticatedPrincipalError();
@@ -300,7 +304,9 @@ async function resolveFirstPartyPrincipal(
       return version;
     },
   });
-  assertMutationGate(request, session.sessionId, "cookie", ports.mutation);
+  if (mutationRequired) {
+    assertMutationGate(request, session.sessionId, "cookie", ports.mutation);
+  }
   return bindPrincipal({
     actorRef: session.userId,
     locationRef: session.locationId,
@@ -318,16 +324,33 @@ export async function resolveAuthenticatedPrincipal(
   environment: unknown,
   ports: CampaignCommandPorts,
 ): Promise<Readonly<AuthenticatedPrincipal>> {
+  return resolveAuthenticatedSession(request, environment, ports, true);
+}
+
+export async function resolveAuthenticatedReadPrincipal(
+  request: Request,
+  environment: unknown,
+  ports: CampaignCommandPorts,
+): Promise<Readonly<AuthenticatedPrincipal>> {
+  return resolveAuthenticatedSession(request, environment, ports, false);
+}
+
+async function resolveAuthenticatedSession(
+  request: Request,
+  environment: unknown,
+  ports: CampaignCommandPorts,
+  mutationRequired: boolean,
+): Promise<Readonly<AuthenticatedPrincipal>> {
   const bearer = readBearerToken(request.headers.get("authorization"));
   const cookie = readCookieValue(request.headers.get("cookie"), FIRST_PARTY_SESSION_COOKIE);
   if (bearer !== undefined && cookie !== undefined) {
     throw new UnauthenticatedPrincipalError();
   }
   if (cookie !== undefined) {
-    return resolveFirstPartyPrincipal(request, cookie, ports);
+    return resolveFirstPartyPrincipal(request, cookie, ports, mutationRequired);
   }
   if (bearer !== undefined) {
-    return resolveEmbeddedPrincipal(request, bearer, ports);
+    return resolveEmbeddedPrincipal(request, bearer, ports, mutationRequired);
   }
 
   const mode = authenticatedWorkspaceMode(environment);

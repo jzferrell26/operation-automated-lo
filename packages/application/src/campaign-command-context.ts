@@ -1,4 +1,8 @@
-import { ApplicationRoleSchema, type ApplicationRole } from "@oalo/contracts";
+import {
+  ApplicationRoleSchema,
+  type ApplicationRole,
+  type ApprovalDecision,
+} from "@oalo/contracts";
 
 import type { ApprovalAuthorityPort } from "./campaign-foundation.js";
 
@@ -124,6 +128,15 @@ export function createCampaignTenantContext(
   });
 }
 
+export function approvalActorRoleForPrincipal(
+  principal: Readonly<AuthenticatedPrincipal>,
+): ApprovalDecision["actorRole"] {
+  const frozen = freezeAuthenticatedPrincipal(principal);
+  if (frozen.role === "location_admin") return "location_admin";
+  if (frozen.role === "campaign_approver") return "approver";
+  throw new CampaignCommandForbiddenError();
+}
+
 export function createSessionApprovalAuthority(
   principal: Readonly<AuthenticatedPrincipal>,
 ): ApprovalAuthorityPort {
@@ -133,10 +146,10 @@ export function createSessionApprovalAuthority(
       if (input.locationRef !== frozen.locationRef) {
         throw new CampaignResourceNotAccessibleError();
       }
-      if (
-        input.actorRef !== frozen.actorRef ||
-        !hasAllowedRole(frozen.role, CAMPAIGN_APPROVAL_ROLES)
-      ) {
+      if (input.actorRef !== frozen.actorRef) {
+        throw new CampaignCommandForbiddenError();
+      }
+      if (input.actorRole !== approvalActorRoleForPrincipal(frozen)) {
         throw new CampaignCommandForbiddenError();
       }
     },

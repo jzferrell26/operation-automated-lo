@@ -1,0 +1,103 @@
+# Security Audit Report: PRD-003c Human Approval
+
+**Audit date:** 2026-09-15
+**Auditor:** security-guardian
+**Scope:** `packages/application/src/campaign-approval-command.ts`, `packages/application/src/campaign-command-context.ts`, `packages/db/src/campaign-repository.ts`, `apps/web/src/server/campaign-approval-handler.ts`, `apps/web/src/server/campaign-command-http.ts`, `apps/web/src/server/local-campaign-store.ts`, `apps/web/src/app/api/campaigns/approve/route.ts`, `apps/web/src/app/(authenticated)/marketing/campaigns/[campaignRef]/page.tsx`, `apps/web/src/features/campaigns/components/campaign-approval-controls.tsx`, related tests
+**Next.js version audited:** 16.3.3
+**React version audited:** 19.2.7
+**CVE watchlist last refreshed:** 2026-08-26 (within 120 days)
+
+---
+
+## Executive Summary
+
+PRD-003c records a human approval from a verified session principal. No Critical or High findings. The HTTP body cannot supply actor, role, tenant, or actor kind. The command reloads persisted evidence, maps `campaign_approver` / `location_admin` to the approval `actorRole` enum, hard-codes `actorKind` to `human`, and writes denied attempts as audit only. The durable Postgres path commits decision, aggregate status, command execution, and audit in one tenant transaction. The web transport still uses the explicit local/synthetic filesystem adapter and fails closed outside that mode.
+
+---
+
+## Scorecard
+
+| Category | Status | Findings |
+|---|---|---|
+| Financial / Payment Security | OK | 0 |
+| PII Exposure | OK | 0 |
+| Authentication & Authorization | OK | 0 |
+| Injection Vulnerabilities | OK | 0 |
+| Dependency Security | OK | 0 |
+| Configuration & Headers | OK | 0 |
+| Data Handling | OK | 0 |
+
+Legend: **OK** = zero findings · **ATTN** = Medium/Low findings documented · **FAIL** = Critical/High findings (fixed in this session).
+
+---
+
+## Critical Findings (fixed in this session)
+
+None detected.
+
+---
+
+## High Findings (fixed in this session)
+
+None detected.
+
+---
+
+## Medium Findings (follow-up required)
+
+None detected.
+
+---
+
+## Low Findings (documentation only)
+
+None detected.
+
+---
+
+## Dependency Audit
+
+No new third-party packages. `pnpm audit --prod --audit-level=high` reported 0 high and 0 critical.
+
+Next.js 16.3.3 and React 19.2.7 remain outside the CVE-2025-29927 / CVE-2025-55182 affected ranges in the 2026-08-26 watchlist.
+
+---
+
+## Next.js Version Check
+
+| CVE | Patched threshold | Current project | Status |
+|---|---|---|---|
+| **CVE-2025-29927** (middleware bypass) | 14.2.25 / 15.2.3 | 16.3.3 | patched |
+| **CVE-2025-55182** (React2Shell RCE) | React 19.0.1 / 19.1.2 / 19.2.1 | 19.2.7 | patched |
+| **CVE-2025-66478** (Next.js companion) | latest 14.x / 15.x / 16.x | 16.3.3 | patched |
+| **CVE-2026-27978** (null-origin CSRF) | latest | 16.3.3 | patched; cookie mutations still require Origin/Host plus session-bound CSRF via `resolveAuthenticatedPrincipal` |
+
+---
+
+## Category notes (checked)
+
+- **AuthZ / two-layer:** `handleCampaignApproval` calls `resolveAuthenticatedPrincipal` (mutation gate), then `executeHumanCampaignApproval` reloads evidence and checks `frozen.locationRef` against `evidence.version.locationRef`. `createSessionApprovalAuthority` re-checks location, actor, and mapped `actorRole`. The page `canApprove` flag also requires `principal.locationRef === campaign.version.locationRef`.
+- **Client override:** `CampaignApprovalRequestSchema` is `.strict()` and omits actor, role, tenant, and `actorKind`. Extra fields return 400.
+- **Actor kind:** `executeHumanCampaignApproval` always passes `actorKind: "human"` into `createApprovalDecision`. SQL insert hard-codes `'human'`.
+- **Denied path:** unauthorized roles call `recordDeniedAttempt` and return `{ kind: "denied" }` with no `commitApproval`. The HTTP mapping is 403 `FORBIDDEN`.
+- **Injection:** Postgres contracts use parameterized `$n` values and `defineSqlContract`. No string-concatenated SQL.
+- **PII:** `ipAuditHash` is SHA-256 of `${sessionId}:approval`, not a raw client IP. Handler errors use stable codes, not exception text.
+- **Fail-closed store:** `createLocalCampaignApprovalRepository` requires synthetic workspace mode. Staging/production cannot persist approval through the filesystem adapter.
+- **No provider traffic:** UI copy and `SafeAction` confirmation state that approval does not publish.
+
+---
+
+## Files Changed (remediation)
+
+None. Audit found no Critical or High issues requiring a code change.
+
+---
+
+## Recommended Follow-Up (architectural)
+
+- Wire the web approval handler to `createPostgresCampaignApprovalRepository` plus `createPrincipalBoundTenantContextAuthority` in 003d. Motivated by APA-001 / the 003c command-transaction list, which the Postgres repository already implements.
+- First-party cookie approval from the browser still needs the session-bound CSRF header on `postInternalJson`. Cookie mutations already fail closed without it; local synthetic and embedded-bearer paths do not require that header.
+
+---
+
+*Generated by `security-guardian` using `security-weapon`. See `.cursor/skills/security-weapon/` for methodology.*

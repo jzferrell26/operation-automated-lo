@@ -11,6 +11,7 @@ import {
 import {
   CampaignPersistenceError,
   campaignVersionContracts,
+  createPostgresCampaignApprovalRepository,
   createPostgresCampaignVersionRepository,
   type DatabaseConnection,
   type DatabasePool,
@@ -293,6 +294,193 @@ describe("campaign persistence contracts", () => {
     await expect(repository.persistPreflight(preflight)).rejects.toMatchObject({
       code: "CAMPAIGN_PREFLIGHT_MISMATCH",
     });
+  });
+
+  it("loads current approval evidence and commits an idempotent human decision", async () => {
+    const version = await createFrozenVersion();
+    const preflight = runCampaignPreflight(version, rules);
+    const decision = {
+      schemaVersion: 1 as const,
+      approvalRef: "approval_01Decision",
+      locationRef,
+      campaignRef,
+      campaignVersionRef,
+      manifestHash: version.manifestHash,
+      preflightResultHash: preflight.resultHash,
+      actorRef: "principal_approver001",
+      actorKind: "human" as const,
+      actorRole: "approver" as const,
+      decidedAt: now.toISOString(),
+      ipAuditHash: sha("a"),
+      decision: "approved" as const,
+      snapshot: {
+        pageVersionRef: manifest.artifacts.pageVersionRef,
+        pdfVersionRef: manifest.artifacts.pdfVersionRef,
+        creativeVersionRef: manifest.artifacts.creativeVersionRef,
+        copyVersionRef: manifest.artifacts.copyVersionRef,
+        emailPackageVersionRef: manifest.artifacts.emailPackageVersionRef,
+        smsPackageVersionRef: manifest.artifacts.smsPackageVersionRef,
+        disclosureVersionRef: manifest.artifacts.disclosureVersionRef,
+        targetingHash: sha("1"),
+        budgetHash: sha("2"),
+        datesHash: sha("3"),
+        formVersionRef: manifest.artifacts.formVersionRef,
+        destinationVersionRef: manifest.artifacts.destinationVersionRef,
+      },
+    };
+    const approvalRow = {
+      approval_ref: decision.approvalRef,
+      location_ref: decision.locationRef,
+      campaign_ref: decision.campaignRef,
+      campaign_version_ref: decision.campaignVersionRef,
+      manifest_hash: decision.manifestHash,
+      preflight_result_hash: decision.preflightResultHash,
+      actor_ref: decision.actorRef,
+      actor_kind: decision.actorKind,
+      actor_role: decision.actorRole,
+      decided_at: now,
+      ip_audit_hash: decision.ipAuditHash,
+      decision: decision.decision,
+      snapshot: decision.snapshot,
+    };
+    const loadConnection = new FakeConnection({
+      rowsByStatement: {
+        "campaign.lock-approval-aggregate.v1": [{ status: "awaiting_approval", row_version: 2 }],
+        "campaign.select-latest-version.v1": [versionRow(version)],
+        "campaign.select-latest-preflight.v1": [
+          {
+            campaign_ref: campaignRef,
+            campaign_version_ref: campaignVersionRef,
+            manifest_hash: version.manifestHash,
+            input_versions: inputVersions,
+            ruleset_version_ref: inputVersions.rulesetVersionRef,
+            findings: [],
+            blocking: false,
+            result_hash: preflight.resultHash,
+            evaluated_at: now,
+          },
+        ],
+      },
+    });
+    const loadRepository = createPostgresCampaignApprovalRepository(new FakePool(loadConnection), {
+      resolveTenantDatabaseContext: async () => context,
+    });
+    await expect(
+      loadRepository.run(async (transaction) => transaction.loadCurrentEvidence(campaignRef)),
+    ).resolves.toMatchObject({
+      state: "awaiting_approval",
+      rowVersion: 2,
+      version: { campaignVersionRef },
+      preflight: { resultHash: preflight.resultHash },
+    });
+
+    const commitConnection = new FakeConnection({
+      rowsByStatement: {
+        "campaign.insert-approval.v1": [{ affected: true }],
+        "campaign.update-status-optimistic.v1": [{ affected: true }],
+        "campaign.insert-approval-command.v1": [{ affected: true }],
+        "campaign.insert-approval-audit.v1": [{ affected: true }],
+      },
+    });
+    const commitRepository = createPostgresCampaignApprovalRepository(
+      new FakePool(commitConnection),
+      { resolveTenantDatabaseContext: async () => context },
+    );
+    await expect(
+      commitRepository.run(async (transaction) =>
+        transaction.commitApproval({
+          decision,
+          event: undefined,
+          expectedRowVersion: 2,
+          fromState: "awaiting_approval",
+          toState: "approved",
+          commandKey: sha("k"),
+          inputHash: sha("i"),
+          correlationId: context.correlationId,
+        }),
+      ),
+    ).resolves.toMatchObject({ duplicate: false, state: "approved", rowVersion: 3 });
+
+    const retryConnection = new FakeConnection({
+      rowsByStatement: {
+        "campaign.select-approval-command.v1": [
+          {
+            result_summary: {
+              approvalRef: decision.approvalRef,
+              state: "approved",
+              rowVersion: 3,
+            },
+          },
+        ],
+        "campaign.select-approval.v1": [approvalRow],
+      },
+    });
+    const retryRepository = createPostgresCampaignApprovalRepository(
+      new FakePool(retryConnection),
+      {
+        resolveTenantDatabaseContext: async () => context,
+      },
+    );
+    await expect(
+      retryRepository.run(async (transaction) =>
+        transaction.commitApproval({
+          decision,
+          event: undefined,
+          expectedRowVersion: 2,
+          fromState: "awaiting_approval",
+          toState: "approved",
+          commandKey: sha("k"),
+          inputHash: sha("i"),
+          correlationId: context.correlationId,
+        }),
+      ),
+    ).resolves.toMatchObject({ duplicate: true, rowVersion: 3 });
+
+    const staleConnection = new FakeConnection({
+      rowsByStatement: {
+        "campaign.insert-approval.v1": [{ affected: true }],
+        "campaign.update-status-optimistic.v1": [],
+      },
+    });
+    const staleRepository = createPostgresCampaignApprovalRepository(
+      new FakePool(staleConnection),
+      {
+        resolveTenantDatabaseContext: async () => context,
+      },
+    );
+    await expect(
+      staleRepository.run(async (transaction) =>
+        transaction.commitApproval({
+          decision,
+          event: undefined,
+          expectedRowVersion: 2,
+          fromState: "awaiting_approval",
+          toState: "approved",
+          commandKey: sha("k"),
+          inputHash: sha("i"),
+          correlationId: context.correlationId,
+        }),
+      ),
+    ).rejects.toMatchObject({ code: "CAMPAIGN_APPROVAL_CONFLICT" });
+
+    const deniedConnection = new FakeConnection({
+      rowsByStatement: {
+        "campaign.insert-approval-audit.v1": [{ affected: true }],
+      },
+    });
+    const deniedRepository = createPostgresCampaignApprovalRepository(
+      new FakePool(deniedConnection),
+      { resolveTenantDatabaseContext: async () => context },
+    );
+    await deniedRepository.run(async (transaction) =>
+      transaction.recordDeniedAttempt({
+        campaignRef,
+        correlationId: `${context.correlationId}-denied`,
+        inputHash: sha("i"),
+        beforeHash: sha("b"),
+      }),
+    );
+    expect(deniedConnection.statementNames()).toContain("campaign.insert-approval-audit.v1");
   });
 });
 

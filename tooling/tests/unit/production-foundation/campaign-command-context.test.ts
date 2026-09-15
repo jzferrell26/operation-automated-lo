@@ -10,6 +10,7 @@ import {
   assertMayExecuteCampaignMutation,
   assertPrincipalOwnsTransaction,
   createCampaignTenantContext,
+  approvalActorRoleForPrincipal,
   createSessionApprovalAuthority,
   freezeAuthenticatedPrincipal,
   type AuthenticatedPrincipal,
@@ -134,6 +135,35 @@ describe("campaign command context", () => {
       expect(error).toBeInstanceOf(CampaignResourceNotAccessibleError);
       expect((error as Error).message).toBe("The requested campaign resource is not accessible.");
     }
+  });
+
+  it("maps session roles onto approval decision roles and rejects forged actor roles", async () => {
+    expect(approvalActorRoleForPrincipal(principal({ role: "location_admin" }))).toBe(
+      "location_admin",
+    );
+    expect(
+      approvalActorRoleForPrincipal(
+        principal({ role: "campaign_approver", actorRef: "principal_approver001" }),
+      ),
+    ).toBe("approver");
+    expect(() => approvalActorRoleForPrincipal(principal({ role: "campaign_creator" }))).toThrow(
+      CampaignCommandForbiddenError,
+    );
+    expect(() => approvalActorRoleForPrincipal(principal({ role: "viewer" }))).toThrow(
+      CampaignCommandForbiddenError,
+    );
+
+    const approver = createSessionApprovalAuthority(
+      principal({ role: "campaign_approver", actorRef: "principal_approver001" }),
+    );
+    await expect(
+      approver.assertMayApprove({
+        locationRef: basePrincipal.locationRef,
+        campaignRef: "campaign_alpha001",
+        actorRef: "principal_approver001",
+        actorRole: "location_admin",
+      }),
+    ).rejects.toBeInstanceOf(CampaignCommandForbiddenError);
   });
 
   it("lets approvers and location admins reach approval and forbids creators even when they created the campaign", async () => {

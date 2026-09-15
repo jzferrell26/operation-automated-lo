@@ -1,24 +1,13 @@
-import {
-  CampaignCommandForbiddenError,
-  CampaignPrincipalInvalidError,
-  CampaignResourceNotAccessibleError,
-} from "@oalo/application";
-import { BrowserSessionPolicyError, SessionPolicyError } from "@oalo/auth";
 import { ZodError } from "zod";
 
 import {
-  UnauthenticatedPrincipalError,
   createDefaultCampaignCommandPorts,
   resolveAuthenticatedPrincipal,
   type CampaignCommandPorts,
 } from "./authenticated-principal.js";
-import { AuthenticatedWorkspaceUnavailableError } from "./authenticated-workspace-data.js";
+import { campaignCommandAuthErrorResponse, jsonCommandError } from "./campaign-command-http.js";
 import { persistLocalCampaign } from "./local-campaign-store.js";
 import { compileOpenHouseDraft } from "./open-house-draft.js";
-
-function jsonError(status: number, error: string): Response {
-  return Response.json({ error }, { status });
-}
 
 function campaignCommandErrorResponse(error: unknown): Response {
   if (error instanceof ZodError) {
@@ -27,24 +16,9 @@ function campaignCommandErrorResponse(error: unknown): Response {
       { status: 400 },
     );
   }
-  if (
-    error instanceof UnauthenticatedPrincipalError ||
-    error instanceof SessionPolicyError ||
-    error instanceof BrowserSessionPolicyError ||
-    error instanceof CampaignPrincipalInvalidError
-  ) {
-    return jsonError(401, "UNAUTHENTICATED");
-  }
-  if (error instanceof CampaignCommandForbiddenError) {
-    return jsonError(403, "FORBIDDEN");
-  }
-  if (error instanceof CampaignResourceNotAccessibleError) {
-    return jsonError(404, "NOT_FOUND");
-  }
-  if (error instanceof AuthenticatedWorkspaceUnavailableError) {
-    return jsonError(403, "WORKSPACE_UNAVAILABLE");
-  }
-  return jsonError(400, "CAMPAIGN_PREFLIGHT_FAILED");
+  return (
+    campaignCommandAuthErrorResponse(error) ?? jsonCommandError(400, "CAMPAIGN_PREFLIGHT_FAILED")
+  );
 }
 
 export async function handleCampaignPreflight(

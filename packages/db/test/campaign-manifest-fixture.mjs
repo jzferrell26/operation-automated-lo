@@ -1,0 +1,61 @@
+import { CampaignManifestSchema } from "@oalo/contracts";
+
+export const campaignManifestFixture = CampaignManifestSchema.parse({
+  schemaVersion: 1,
+  blueprintId: "open-house-boost",
+  property: {
+    address: "123 Main Street",
+    description: "A fixture-backed property.",
+    openHouseStartsAt: "2026-07-25T18:00:00.000Z",
+    openHouseEndsAt: "2026-07-25T20:00:00.000Z",
+    stateCode: "TX",
+    permissionConfirmed: true,
+  },
+  content: {
+    headline: "Tour 123 Main Street",
+    callToAction: "View the open house",
+    disclosureText: "Equal Housing Opportunity.",
+    consentText: "By submitting, you consent to contact.",
+    body: "Join the open house.",
+    claims: ["Open house information is subject to change."],
+    mergeTokens: [],
+    financingTerms: [],
+  },
+  images: [
+    {
+      assetRef: "asset_01Exterior",
+      approvalStatus: "approved",
+      width: 1_600,
+      height: 900,
+      altText: "Exterior of 123 Main Street",
+    },
+  ],
+  partner: { realtorDisplayName: "Taylor Reed", permissionConfirmed: true },
+  artifacts: {
+    pageVersionRef: "page_01Approved",
+    pdfVersionRef: "pdf_01Approved",
+    creativeVersionRef: "creative_01Approved",
+    copyVersionRef: "copy_01Approved",
+    emailPackageVersionRef: "email_01Approved",
+    smsPackageVersionRef: "sms_01Approved",
+    disclosureVersionRef: "disclosure_01Approved",
+    formVersionRef: "form_01Approved",
+    destinationVersionRef: "destination_01Approved",
+    qrDestinationVersionRef: "destination_01Approved",
+  },
+  meta: {
+    enabled: true,
+    specialAdCategory: "HOUSING",
+    platform: "meta",
+    targeting: {
+      country: "US",
+      regions: ["Texas"],
+      zipCodes: [],
+      customAudienceRefs: [],
+      protectedDimensions: [],
+    },
+    dailyBudgetMinor: 2_000,
+    totalBudgetMinor: 10_000,
+  },
+  routing: { mappingVersionRef: "mapping_01Routing", validationStatus: "valid" },
+});

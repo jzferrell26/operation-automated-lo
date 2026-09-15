@@ -381,6 +381,7 @@ select pg_temp.assert_is(
   'approval decisions are append-only on delete'
 );
 
+reset role;
 select * from finish();
 
 rollback;

@@ -63,6 +63,7 @@ export {
   appendCampaignTransition,
   authorizePaidAdProjectionForRendering,
   campaignProjectionHash,
+  canonicalCampaignHash,
   completeRegeneration,
   createApprovalDecision,
   createCampaignVersion,

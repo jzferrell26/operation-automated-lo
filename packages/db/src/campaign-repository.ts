@@ -1,5 +1,8 @@
-import { createHash } from "node:crypto";
-
+import {
+  canonicalCampaignHash,
+  type CampaignVersionRepository,
+  type CampaignVersionTransaction,
+} from "@oalo/application";
 import {
   ApprovalDecisionSchema,
   CampaignVersionSchema,
@@ -8,7 +11,6 @@ import {
   type CampaignVersion,
   type PreflightResult,
 } from "@oalo/contracts";
-import type { CampaignVersionRepository, CampaignVersionTransaction } from "@oalo/application";
 
 import {
   defineSqlContract,
@@ -466,7 +468,7 @@ function createCampaignVersionTransaction(
     },
     async append(version) {
       const parsed = CampaignVersionSchema.parse(version);
-      const expectedHash = canonicalHash(parsed.manifest);
+      const expectedHash = canonicalCampaignHash(parsed.manifest);
       if (expectedHash !== parsed.manifestHash) {
         throw new CampaignPersistenceError(
           "CAMPAIGN_MANIFEST_HASH_MISMATCH",
@@ -605,19 +607,6 @@ function decodeApprovalRow(row: unknown): ApprovalDecision {
     decision: record.decision,
     snapshot: record.snapshot,
   });
-}
-
-function canonicalHash(value: unknown): string {
-  return createHash("sha256").update(stableJson(value)).digest("hex");
-}
-
-function stableJson(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
-  return `{${Object.entries(value)
-    .sort(([left], [right]) => left.localeCompare(right, "en"))
-    .map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`)
-    .join(",")}}`;
 }
 
 function jsonText(value: unknown): string {

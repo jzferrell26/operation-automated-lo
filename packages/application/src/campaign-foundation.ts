@@ -49,6 +49,10 @@ function hash(value: unknown): string {
   return createHash("sha256").update(stableJson(value)).digest("hex");
 }
 
+export function canonicalCampaignHash(value: unknown): string {
+  return hash(value);
+}
+
 function deepFreeze<T>(value: T): Readonly<T> {
   if (value !== null && typeof value === "object") {
     Object.freeze(value);

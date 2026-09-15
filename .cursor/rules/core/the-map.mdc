@@ -25,6 +25,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 - External Evidence Sprint prep on `main` (evidence packs under `docs/operations/evidence-packs/`).
 - G2 App Test **harness** on `main`: env-gated live capture (`OALO_GHL_LIVE_CAPTURE=authorized` only), 9-case matrix, CLI `pnpm ghl:g2-matrix`, sanitization + unit/contract tests. Fail-closed by default.
 - PRD-003a campaign persistence on `main` (`70531fb`, PR #54).
+- PRD-003b session command context on `main` (`2ee2634`, PR #55).
 - Labeled review dashboard on `main` (`6f64201`, PR #53).
 
 ## Pending / blocked (honest)

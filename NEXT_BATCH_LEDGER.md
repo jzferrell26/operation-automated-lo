@@ -4,12 +4,12 @@
 
 | Field        | Value                                                                                                                                                                   |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Branch       | Prep and G2 harness landed on `main` (PRs #26, #27). PRD-003a on `main` (`70531fb`). Live Wave 1: try sandbox + Test Link now; do not invent G2 evidence.                  |
+| Branch       | Prep and G2 harness landed on `main` (PRs #26, #27). PRD-003a on `main` (`70531fb`). Live Wave 1: try sandbox + Test Link now; do not invent G2 evidence.               |
 | Date         | 2026-08-26                                                                                                                                                              |
 | Prerequisite | Gauntlet closeout (`25c0bdc`), evidence packs (`6965bf7`), G2 harness (`a530947`) on `main`                                                                             |
 | Scope        | Unblock production-path evidence for G2, environment/KMS, G3, G5, G6, G7, and remaining timed/AI cost criteria                                                          |
 | Honest bound | Agents cannot invent live HighLevel, Meta, Stripe, KMS, or counsel evidence. This batch is operator-led with agent-supported harnesses, checklists, and ledger updates. |
-| Current park | Operator-led App Test: try sandbox + Test Link now (prior Marketplace approval not documented as required). G2 harness ready; no sanitized fixtures yet.                  |
+| Current park | Operator-led App Test: try sandbox + Test Link now (prior Marketplace approval not documented as required). G2 harness ready; no sanitized fixtures yet.                |
 
 Upstream closeout: [`GAUNTLET_EXECUTION_LEDGER.md`](./GAUNTLET_EXECUTION_LEDGER.md) (267 `VERIFIED`, 38 non-verified parked). Authoritative AC source remains [`PRODUCTION_EXECUTION_LEDGER.md`](./PRODUCTION_EXECUTION_LEDGER.md).
 
@@ -60,11 +60,11 @@ flowchart TD
 
 ### Parallel product activation (in-repo, no provider traffic)
 
-| Owner                                       | Deliverable                                         | Exit criteria                                                                                             |
-| ------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `library-guardian`                          | PRD-003 Authenticated Product Activation            | In `in-work/`; 003a done (`70531fb`), 003b done (`2ee2634`), 003c/003d pending                         |
-| implementation Guardians                    | Execute PRD-003 sub-PRDs in order                   | Postgres-backed authenticated campaign flow; no synthetic/filesystem fallback outside explicit local mode |
-| `security-guardian` then `quality-guardian` | Closeout reports                                    | No unresolved Critical/High finding; all PRD-003 ACs traceable before merge                               |
+| Owner                                       | Deliverable                              | Exit criteria                                                                                             |
+| ------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `library-guardian`                          | PRD-003 Authenticated Product Activation | In `in-work/`; 003a done (`70531fb`), 003b done (`2ee2634`), 003c/003d pending                            |
+| implementation Guardians                    | Execute PRD-003 sub-PRDs in order        | Postgres-backed authenticated campaign flow; no synthetic/filesystem fallback outside explicit local mode |
+| `security-guardian` then `quality-guardian` | Closeout reports                         | No unresolved Critical/High finding; all PRD-003 ACs traceable before merge                               |
 
 **Boundary:** this parallel batch is locally verifiable product activation only. G2/G3/G5/G6/G7 evidence and production authorization remain governed by Waves 1-7 below.
 
@@ -185,18 +185,18 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 
 ## Watchdog
 
-| Timestamp (UTC) | Event                                                    | Action                                              |
-| --------------- | -------------------------------------------------------- | --------------------------------------------------- |
-| 2026-08-25      | Batch ledger created after PR #25 squash-merge to `main` | Awaiting user credentials for Wave 1                |
-| 2026-08-25      | G2 harness shipped on `cursor/g2-app-test-harness-ac42`  | Wave 1 operator run parked: need App Test access    |
-| 2026-08-25      | Prep PR #26 squash-merged to `main` (`6965bf7`)          | Evidence packs on trunk                             |
-| 2026-08-25      | G2 harness PR #27 squash-merged to `main` (`a530947`)    | Harness on trunk; live matrix still parked          |
-| 2026-08-26      | Product owner: waiting on HighLevel app approval         | Superseded 2026-09-15: try sandbox + Test Link now  |
+| Timestamp (UTC) | Event                                                    | Action                                                       |
+| --------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
+| 2026-08-25      | Batch ledger created after PR #25 squash-merge to `main` | Awaiting user credentials for Wave 1                         |
+| 2026-08-25      | G2 harness shipped on `cursor/g2-app-test-harness-ac42`  | Wave 1 operator run parked: need App Test access             |
+| 2026-08-25      | Prep PR #26 squash-merged to `main` (`6965bf7`)          | Evidence packs on trunk                                      |
+| 2026-08-25      | G2 harness PR #27 squash-merged to `main` (`a530947`)    | Harness on trunk; live matrix still parked                   |
+| 2026-08-26      | Product owner: waiting on HighLevel app approval         | Superseded 2026-09-15: try sandbox + Test Link now           |
 | 2026-09-15      | Map correction: App Test without prior approval          | Marketplace packet recreated; PRD-003 in-work status updated |
-| 2026-08-26      | Reverse-review PR #29 + remediation PR #30 on `main`     | H1-H3 closed; Wave 1 still parked on HL approval    |
-| 2026-09-03      | Repo hygiene raid (M3/M4/M5/M20 in-repo)                 | Templates, Dependabot, ledger path, proxy rename    |
-| 2026-09-03      | Dependabot first-run flood (7 PRs, mostly majors)        | Ignore majors; group weekly minor/patch only        |
-| 2026-09-03      | Actions major raid (checkout 7 / cache 6 / setup-node 7) | SHA-pinned planned bump; npm majors stay deferred   |
+| 2026-08-26      | Reverse-review PR #29 + remediation PR #30 on `main`     | H1-H3 closed; Wave 1 still parked on HL approval             |
+| 2026-09-03      | Repo hygiene raid (M3/M4/M5/M20 in-repo)                 | Templates, Dependabot, ledger path, proxy rename             |
+| 2026-09-03      | Dependabot first-run flood (7 PRs, mostly majors)        | Ignore majors; group weekly minor/patch only                 |
+| 2026-09-03      | Actions major raid (checkout 7 / cache 6 / setup-node 7) | SHA-pinned planned bump; npm majors stay deferred            |
 
 ---
 

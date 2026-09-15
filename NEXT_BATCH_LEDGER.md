@@ -60,13 +60,14 @@ flowchart TD
 
 ### Parallel product activation (in-repo, no provider traffic)
 
-| Owner                                       | Deliverable                              | Exit criteria                                                                                                |
-| ------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `library-guardian`                          | PRD-003 Authenticated Product Activation | In `in-work/`; 003a-d done (`70531fb`, `2ee2634`, `71c371d`, `26051b3`); Step 8 preview smoke blocked on env |
-| implementation Guardians                    | Execute PRD-003 sub-PRDs in order        | Postgres-backed authenticated campaign flow; no synthetic/filesystem fallback outside explicit local mode    |
-| `security-guardian` then `quality-guardian` | Closeout reports                         | No unresolved Critical/High finding; all PRD-003 ACs traceable before merge                                  |
+| Owner                                       | Deliverable                              | Exit criteria                                                                                               |
+| ------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `library-guardian`                          | PRD-003 Authenticated Product Activation | 003a-d **done** on `main`; parent exits when PRD-004a preview smoke passes                                  |
+| `library-guardian`                          | PRD-004 Reviewable Go-Live               | In `in-work/`; 004a preview smoke blocked on `OALO_DATABASE_URL`; 004b portal unsigned-in; 004c after smoke |
+| implementation Guardians                    | Execute PRD-004 sub-PRDs in order        | Preview deploy, Test Link, Marketplace packet; no second Vercel project                                     |
+| `security-guardian` then `quality-guardian` | Closeout reports                         | No unresolved Critical/High finding; PRD-004 ACs traceable before merge                                     |
 
-**Boundary:** this parallel batch is locally verifiable product activation only. G2/G3/G5/G6/G7 evidence and production authorization remain governed by Waves 1-7 below.
+**Boundary:** PRD-003/004 are reviewable go-live only. G2/G3/G5/G6/G7 evidence and production authorization remain governed by Waves 1-7 below. Do not flip deferred G2 ACs without sanitized fixtures.
 
 ### Wave 1: G2 HighLevel App Test (operator + `gohighlevel-guardian`)
 

@@ -9,6 +9,8 @@ Internal operator packet for Automated LO Marketplace listing, sandbox App Test,
 - [Project map](project-map.md)
 - [G2 App Test evidence pack](../../../../docs/operations/evidence-packs/g2-highlevel-app-test.md)
 - [PRD-003: Authenticated Product Activation](../../../requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md)
+- [PRD-004: Reviewable Go-Live](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md)
+- [Reviewable preview smoke evidence pack](../../../../docs/operations/evidence-packs/reviewable-preview-smoke.md)
 - [Agent terrain map](../../../../.cursor/rules/core/the-map.mdc)
 
 ---
@@ -63,7 +65,7 @@ Human + `gohighlevel-guardian`. Do not submit for review in the inspection-only 
 
 ## Submission packet (when demo is ready)
 
-Complete only after PRD-003 reviewable path is wired and preview/Test Link smoke passes.
+Complete only after [PRD-004a](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004a-reviewable-go-live-preview-deploy-smoke.md) preview smoke and [PRD-004b](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004b-reviewable-go-live-portal-and-test-link.md) Test Link pass.
 
 | Artifact | Requirement |
 | --- | --- |
@@ -87,7 +89,9 @@ If White-label is chosen, run a customer-facing terminology audit first (current
 | PRD-003c human approval | **Done** (`71c371d`, PR #57) |
 | PRD-003d workspace reads | **Done** (`26051b3`, PR #58) |
 | Labeled review dashboard | **Merged** (`6f64201`, PR #53) |
-| Preview/review smoke (existing Vercel project) | **Blocked:** operator must set review env + `OALO_DATABASE_URL` on `operation-automated-lo-web`. Do not create a second project. Do not submit Marketplace until that smoke passes. |
+| PRD-004 reviewable go-live | **In work:** 004a preview smoke blocked on env; 004b portal unsigned-in; 004c after smoke |
+| Preview/review smoke (004a) | **Blocked:** operator must set review env + `OALO_DATABASE_URL` on `operation-automated-lo-web`. `/overview` may still be unlabeled synthetic until deploy. |
+| Marketplace portal inspect | **Unsigned-in** in automation browser; human sign-in required for 004b |
 | G2 live App Test matrix | Harness ready; **no sanitized fixtures**; do not flip deferred ACs |
 | G1 Marketplace listing as launch gate | `ACCEPTED CONSTRAINT` (listing proof not required for founding launch) |
 | Production provider traffic | Disabled |
@@ -116,5 +120,6 @@ If White-label is chosen, run a customer-facing terminology audit first (current
 
 ## Changelog
 
+- v1.2 (2026-09-15): Added PRD-004 go-live track (004a preview smoke, 004b portal/Test Link, 004c submission). Reviewable preview smoke evidence pack. Portal unsigned-in; `/overview` may be unlabeled synthetic until 004a.
 - v1.1 (2026-09-15): 003c (`71c371d`, PR #57) and 003d (`26051b3`, PR #58) done on `main`. Preview/review smoke blocked on existing-project env + Postgres. Do not create a second Vercel project. Do not submit Marketplace until that smoke passes.
 - v1.0 (2026-09-15): Initial packet recreated on `main`. App Test is "try sandbox + Test Link now"; prior approval is not documented as required. PRD-003 in-work with 003a merged (`70531fb`), 003b merged (`2ee2634`).

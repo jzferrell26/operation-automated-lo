@@ -11,6 +11,7 @@ The canonical internal map of the product boundary, system flow, implementation 
 - [Production execution ledger](../../../../PRODUCTION_EXECUTION_LEDGER.md)
 - [External Evidence Sprint (next batch)](../../../../NEXT_BATCH_LEDGER.md)
 - [PRD-003: Authenticated Product Activation](../../../requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md)
+- [PRD-004: Reviewable Go-Live](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md)
 - [HighLevel Marketplace submission packet](highlevel-marketplace-submission.md)
 - [Agent terrain map](../../../../.cursor/rules/core/the-map.mdc) (Codex / Claude / Cursor handoff)
 
@@ -185,7 +186,7 @@ Authoritative batch plan: [External Evidence Sprint](../../../../NEXT_BATCH_LEDG
 
 PRD-003 is the implementation bridge from the repository-proved PRD-001 contracts to a real authenticated tenant-backed product surface. It replaces the new local filesystem/synthetic campaign path with Postgres persistence, verified server session authority, persisted human approval, and tenant-backed authenticated workspace reads. It does not reopen PRD-001, change G1/G4/G8 dispositions, enable provider traffic, or satisfy any external evidence criterion by itself.
 
-This work proceeds in parallel with Wave 1 App Test because it is locally verifiable and fail-closed for provider side effects. **Status (September 2026):** PRD-003 stays in `requirements/in-work/`. **003a** campaign persistence is **done** on `main` (`70531fb`, PR #54). **003b** session command context is **done** on `main` (`2ee2634`, PR #55). **003c** human approval is **done** (`71c371d`, PR #57). **003d** workspace reads are **done** (`26051b3`, PR #58). Labeled review dashboard merged as `6f64201` (PR #53). Preview/review smoke against Postgres on the existing Vercel project (`operation-automated-lo-web`) is **blocked** until the operator sets Production+Preview env, including `OALO_DATABASE_URL`. Do not create a second Vercel project. Do not submit Marketplace until that smoke passes.
+This work proceeds in parallel with Wave 1 App Test because it is locally verifiable and fail-closed for provider side effects. **Status (September 2026):** PRD-003 stays in `requirements/in-work/`. **003a** through **003d** are **done** on `main` (`70531fb`, `2ee2634`, `71c371d`, `26051b3`). Labeled review dashboard merged as `6f64201` (PR #53). Parent PRD-003 exits when [PRD-004a](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004a-reviewable-go-live-preview-deploy-smoke.md) preview smoke passes on the existing Vercel project (`operation-automated-lo-web`); blocked on operator env including `OALO_DATABASE_URL`. [PRD-004](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md) covers preview deploy, Developer Portal Test Link, and Marketplace submission. Do not create a second Vercel project. `/overview` on the review URL may still show unlabeled synthetic data until 004a deploy. Marketplace portal inspect is unsigned-in. Do not submit Marketplace until 004a smoke and 004b Test Link pass. Do not flip deferred G2 ACs without sanitized fixtures.
 
 ### Later waves (do not start without the named external unlock)
 
@@ -231,6 +232,7 @@ PRD-001 core is complete only when all of the following are true:
 
 ## Changelog
 
+- v1.7 (2026-09-15): Added PRD-004 Reviewable Go-Live (004a preview smoke, 004b portal/Test Link, 004c Marketplace submission). PRD-003a-d done; parent exits on 004a. Reviewable preview smoke evidence pack added.
 - v1.6 (2026-09-15): Recorded PRD-003c (`71c371d`, PR #57) and PRD-003d (`26051b3`, PR #58) as done on `main`. Parent PRD-003 stays in `in-work/`. Preview/review smoke is blocked on existing-project env + Postgres. No second Vercel project. No Marketplace submit.
 - v1.5 (2026-09-15): Recreated Marketplace submission packet. App Test is "try sandbox + Test Link now"; do not invent G2 evidence. PRD-003 in-work: 003a done (`70531fb`), 003b done (`2ee2634`), review dashboard merged (`6f64201`).
 - v1.3 (2026-08-26): Recorded External Evidence Sprint prep (PR #26) and G2 harness (PR #27) on `main`. Critical path parked on HighLevel app approval. Added done/pending summary and librarian next steps. Linked agent terrain map.

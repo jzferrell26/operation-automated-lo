@@ -41,6 +41,12 @@ export {
 } from "./publication-cleanup.js";
 export type { PublicationCleanupIntent, PublicationCleanupLease } from "@oalo/contracts";
 export {
+  CampaignPersistenceError,
+  PostgresCampaignVersionRepository,
+  campaignVersionContracts,
+  createPostgresCampaignVersionRepository,
+} from "./campaign-repository.js";
+export {
   createPostgresPool,
   PostgresAdapterError,
   PostgresDatabasePool,

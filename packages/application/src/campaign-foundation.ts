@@ -226,6 +226,10 @@ export async function authorizePaidAdProjectionForRendering(
 }
 
 export interface CampaignVersionTransaction {
+  getByCampaignVersionRef(
+    locationRef: string,
+    campaignVersionRef: string,
+  ): Promise<CampaignVersion | undefined>;
   getLatestVersionNo(locationRef: string, campaignRef: string): Promise<number>;
   append(version: CampaignVersion): Promise<void>;
 }
@@ -240,12 +244,29 @@ export async function createCampaignVersion(
 ): Promise<Readonly<CampaignVersion>> {
   const versionInput = CampaignVersionInputSchema.parse(input.version);
   return repository.run(async (transaction) => {
+    const manifestHash = hash(versionInput.manifest);
+    const existing = await transaction.getByCampaignVersionRef(
+      versionInput.locationRef,
+      versionInput.campaignVersionRef,
+    );
+    if (existing) {
+      if (
+        existing.manifestHash !== manifestHash ||
+        existing.campaignRef !== versionInput.campaignRef ||
+        existing.locationRef !== versionInput.locationRef
+      ) {
+        throw new Error(
+          "Campaign version reference already exists with different immutable content",
+        );
+      }
+      return deepFreeze(existing);
+    }
     const version = CampaignVersionSchema.parse({
       ...versionInput,
       versionNo:
         (await transaction.getLatestVersionNo(versionInput.locationRef, versionInput.campaignRef)) +
         1,
-      manifestHash: hash(versionInput.manifest),
+      manifestHash,
       createdAt: input.createdAt.toISOString(),
     });
     await transaction.append(version);

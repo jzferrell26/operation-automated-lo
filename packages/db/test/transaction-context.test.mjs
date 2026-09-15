@@ -80,6 +80,7 @@ describe("tenant transaction boundary", () => {
       pool.connection.requests.map((entry) => entry.statementName),
       [
         "transaction.begin",
+        "transaction.assume-app-runtime-role",
         "transaction.set-context",
         "transaction.read-context",
         rowContract.name,

@@ -19,7 +19,7 @@ Upstream closeout: [`GAUNTLET_EXECUTION_LEDGER.md`](./GAUNTLET_EXECUTION_LEDGER.
 
 In-repo PRD-001 work that can be proved locally is done. The project-map next steps and the Gauntlet external park list now dominate critical path. The next batch optimizes for **shortest path to production authorization**: clear the largest deferred block (G2 live HighLevel auth), then environment isolation, then Meta/lead/billing/legal.
 
-Separately, [PRD-003: Authenticated Product Activation](./library/requirements/backlog/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is an authorized planning artifact for parallel in-repo productization while the external evidence path is parked. PRD-003 does not convert any blocked/deferred criterion to verified status and does not enable production provider traffic.
+Separately, [PRD-003: Authenticated Product Activation](./library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is an authorized in-work productization batch while the external evidence path is parked. PRD-003 does not convert any blocked/deferred criterion to verified status and does not enable production provider traffic.
 
 ```mermaid
 flowchart TD

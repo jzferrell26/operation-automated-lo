@@ -12,10 +12,11 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "tsc -p tsconfig.json && node --test test/*.test.mjs",
-    "test:postgres": "tsc -p tsconfig.json && node --test test/postgres-adapter.integration.test.mjs",
+    "test:postgres": "tsc -p tsconfig.json && node --test test/*.integration.test.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@oalo/application": "workspace:*",
     "@oalo/contracts": "workspace:*",
     "postgres": "3.4.9"
   },

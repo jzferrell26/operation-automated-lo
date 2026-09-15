@@ -2,14 +2,14 @@
 
 ## Contract
 
-| Field        | Value                                                                                                                                                                   |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Branch       | Prep and G2 harness landed on `main` (PRs #26, #27). PRD-003a on `main` (`70531fb`). Live Wave 1: try sandbox + Test Link now; do not invent G2 evidence.               |
-| Date         | 2026-08-26                                                                                                                                                              |
-| Prerequisite | Gauntlet closeout (`25c0bdc`), evidence packs (`6965bf7`), G2 harness (`a530947`) on `main`                                                                             |
-| Scope        | Unblock production-path evidence for G2, environment/KMS, G3, G5, G6, G7, and remaining timed/AI cost criteria                                                          |
-| Honest bound | Agents cannot invent live HighLevel, Meta, Stripe, KMS, or counsel evidence. This batch is operator-led with agent-supported harnesses, checklists, and ledger updates. |
-| Current park | Operator-led App Test: try sandbox + Test Link now (prior Marketplace approval not documented as required). G2 harness ready; no sanitized fixtures yet.                |
+| Field        | Value                                                                                                                                                                                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Branch       | Prep and G2 harness landed on `main` (PRs #26, #27). PRD-003a-d on `main` (`70531fb`, `2ee2634`, `71c371d`, `26051b3`). Live Wave 1: try sandbox + Test Link now; do not invent G2 evidence. Preview/review smoke blocked on existing Vercel env + Postgres. |
+| Date         | 2026-08-26                                                                                                                                                                                                                                                   |
+| Prerequisite | Gauntlet closeout (`25c0bdc`), evidence packs (`6965bf7`), G2 harness (`a530947`) on `main`                                                                                                                                                                  |
+| Scope        | Unblock production-path evidence for G2, environment/KMS, G3, G5, G6, G7, and remaining timed/AI cost criteria                                                                                                                                               |
+| Honest bound | Agents cannot invent live HighLevel, Meta, Stripe, KMS, or counsel evidence. This batch is operator-led with agent-supported harnesses, checklists, and ledger updates.                                                                                      |
+| Current park | Operator-led App Test: try sandbox + Test Link now (prior Marketplace approval not documented as required). G2 harness ready; no sanitized fixtures yet.                                                                                                     |
 
 Upstream closeout: [`GAUNTLET_EXECUTION_LEDGER.md`](./GAUNTLET_EXECUTION_LEDGER.md) (267 `VERIFIED`, 38 non-verified parked). Authoritative AC source remains [`PRODUCTION_EXECUTION_LEDGER.md`](./PRODUCTION_EXECUTION_LEDGER.md).
 
@@ -19,7 +19,7 @@ Upstream closeout: [`GAUNTLET_EXECUTION_LEDGER.md`](./GAUNTLET_EXECUTION_LEDGER.
 
 In-repo PRD-001 work that can be proved locally is done. The project-map next steps and the Gauntlet external park list now dominate critical path. The next batch optimizes for **shortest path to production authorization**: clear the largest deferred block (G2 live HighLevel auth), then environment isolation, then Meta/lead/billing/legal.
 
-Separately, [PRD-003: Authenticated Product Activation](./library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is in `in-work/` for parallel in-repo productization. **003a** done (`70531fb`, PR #54). **003b** done (`2ee2634`, PR #55). **003c/003d** not started. PRD-003 does not convert any blocked/deferred criterion to verified status and does not enable production provider traffic.
+Separately, [PRD-003: Authenticated Product Activation](./library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) stays in `in-work/` for parallel in-repo productization. **003a** done (`70531fb`, PR #54). **003b** done (`2ee2634`, PR #55). **003c** done (`71c371d`, PR #57). **003d** done (`26051b3`, PR #58). Preview/review smoke on the existing Vercel project is blocked until the operator sets review env + `OALO_DATABASE_URL`. Do not create a second Vercel project. Do not submit Marketplace. PRD-003 does not convert any blocked/deferred criterion to verified status and does not enable production provider traffic.
 
 ```mermaid
 flowchart TD
@@ -60,11 +60,11 @@ flowchart TD
 
 ### Parallel product activation (in-repo, no provider traffic)
 
-| Owner                                       | Deliverable                              | Exit criteria                                                                                             |
-| ------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `library-guardian`                          | PRD-003 Authenticated Product Activation | In `in-work/`; 003a done (`70531fb`), 003b done (`2ee2634`), 003c/003d pending                            |
-| implementation Guardians                    | Execute PRD-003 sub-PRDs in order        | Postgres-backed authenticated campaign flow; no synthetic/filesystem fallback outside explicit local mode |
-| `security-guardian` then `quality-guardian` | Closeout reports                         | No unresolved Critical/High finding; all PRD-003 ACs traceable before merge                               |
+| Owner                                       | Deliverable                              | Exit criteria                                                                                                |
+| ------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `library-guardian`                          | PRD-003 Authenticated Product Activation | In `in-work/`; 003a-d done (`70531fb`, `2ee2634`, `71c371d`, `26051b3`); Step 8 preview smoke blocked on env |
+| implementation Guardians                    | Execute PRD-003 sub-PRDs in order        | Postgres-backed authenticated campaign flow; no synthetic/filesystem fallback outside explicit local mode    |
+| `security-guardian` then `quality-guardian` | Closeout reports                         | No unresolved Critical/High finding; all PRD-003 ACs traceable before merge                                  |
 
 **Boundary:** this parallel batch is locally verifiable product activation only. G2/G3/G5/G6/G7 evidence and production authorization remain governed by Waves 1-7 below.
 

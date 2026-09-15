@@ -1,6 +1,6 @@
 # HighLevel Marketplace Submission Packet
 
-> Category: Product Operations | Version: 1.0 | Date: September 2026 | Status: Active
+> Category: Product Operations | Version: 1.1 | Date: September 2026 | Status: Active
 
 Internal operator packet for Automated LO Marketplace listing, sandbox App Test, and Test Link install. This document does **not** authorize production provider traffic, live leads, Stripe billing, or flipping deferred G2 acceptance criteria without sanitized fixtures.
 
@@ -84,9 +84,10 @@ If White-label is chosen, run a customer-facing terminology audit first (current
 | --- | --- |
 | PRD-003a campaign persistence | **Done** on `main` (`70531fb`, PR #54) |
 | PRD-003b session command context | **Done** (`2ee2634`, PR #55) |
-| PRD-003c human approval | Not started |
-| PRD-003d workspace reads | Not started |
+| PRD-003c human approval | **Done** (`71c371d`, PR #57) |
+| PRD-003d workspace reads | **Done** (`26051b3`, PR #58) |
 | Labeled review dashboard | **Merged** (`6f64201`, PR #53) |
+| Preview/review smoke (existing Vercel project) | **Blocked:** operator must set review env + `OALO_DATABASE_URL` on `operation-automated-lo-web`. Do not create a second project. Do not submit Marketplace until that smoke passes. |
 | G2 live App Test matrix | Harness ready; **no sanitized fixtures**; do not flip deferred ACs |
 | G1 Marketplace listing as launch gate | `ACCEPTED CONSTRAINT` (listing proof not required for founding launch) |
 | Production provider traffic | Disabled |
@@ -115,4 +116,5 @@ If White-label is chosen, run a customer-facing terminology audit first (current
 
 ## Changelog
 
+- v1.1 (2026-09-15): 003c (`71c371d`, PR #57) and 003d (`26051b3`, PR #58) done on `main`. Preview/review smoke blocked on existing-project env + Postgres. Do not create a second Vercel project. Do not submit Marketplace until that smoke passes.
 - v1.0 (2026-09-15): Initial packet recreated on `main`. App Test is "try sandbox + Test Link now"; prior approval is not documented as required. PRD-003 in-work with 003a merged (`70531fb`), 003b merged (`2ee2634`).

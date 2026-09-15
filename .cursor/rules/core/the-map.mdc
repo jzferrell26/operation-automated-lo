@@ -9,7 +9,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
-- `main` tip (as of 2026-09-15): `65dd527` (PR #56 App Test maps + Marketplace packet), after `2ee2634` (PR #55 PRD-003b), `70531fb` (PR #54 PRD-003a), `6f64201` (PR #53 labeled review dashboard).
+- `main` tip (as of 2026-09-15): `26051b3` (PR #58 PRD-003d workspace reads), after `71c371d` (PR #57 PRD-003c), `65dd527` (PR #56 App Test maps), `2ee2634` (PR #55 PRD-003b), `70531fb` (PR #54 PRD-003a), `6f64201` (PR #53 labeled review dashboard).
 - Batch ledger: [`NEXT_BATCH_LEDGER.md`](../../../NEXT_BATCH_LEDGER.md)
 - AC ledger: [`PRODUCTION_EXECUTION_LEDGER.md`](../../../PRODUCTION_EXECUTION_LEDGER.md)
 - Marketplace packet: [`highlevel-marketplace-submission.md`](../../../library/knowledge/private/product/highlevel-marketplace-submission.md)
@@ -26,6 +26,8 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 - G2 App Test **harness** on `main`: env-gated live capture (`OALO_GHL_LIVE_CAPTURE=authorized` only), 9-case matrix, CLI `pnpm ghl:g2-matrix`, sanitization + unit/contract tests. Fail-closed by default.
 - PRD-003a campaign persistence on `main` (`70531fb`, PR #54).
 - PRD-003b session command context on `main` (`2ee2634`, PR #55).
+- PRD-003c human approval on `main` (`71c371d`, PR #57).
+- PRD-003d workspace reads on `main` (`26051b3`, PR #58).
 - Labeled review dashboard on `main` (`6f64201`, PR #53).
 
 ## Pending / blocked (honest)
@@ -35,8 +37,9 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 | HighLevel App Test operator run | **Try sandbox + Test Link now** (do not wait for prior Marketplace approval per official docs) | Sanitized fixtures for 28 `DEFERRED: LIVE HIGHLEVEL AUTH` ACs |
 | G2 live evidence | Harness ready; **no sanitized fixtures**; do not invent G2 evidence | Flip deferred auth ACs only after `pnpm test:contracts` |
 | PRD-003b session command context | **Done** (`2ee2634`, PR #55) | Verified server principal for campaign mutations |
-| PRD-003c human approval | In progress on this branch | Named human approval of exact persisted version |
-| PRD-003d workspace reads | Not started | Tenant-backed campaign list/detail/overview |
+| PRD-003c human approval | **Done** (`71c371d`, PR #57) | Named human approval of exact persisted version |
+| PRD-003d workspace reads | **Done** (`26051b3`, PR #58) | Tenant-backed campaign list/detail/overview |
+| Preview/review smoke (go-live Step 8) | **Blocked:** existing Vercel project lacks review env + `OALO_DATABASE_URL` | `/overview` + create-reload-approve against Postgres on `operation-automated-lo-web` only |
 | App Test operator access + controlled location | Operator-led | Live OAuth/session matrix capture |
 | Env isolation + KMS (Wave 2) | Parked | `001J-AC-026`, `001J-AC-029` |
 | G3 / G5 / G6 / G7 live evidence | Parked (later waves) | Meta, lead, billing, counsel |
@@ -47,7 +50,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 1. **Human / HighLevel:** Try sandbox + Create App Test Account + Test Link now ([Marketplace packet](../../../library/knowledge/private/product/highlevel-marketplace-submission.md)). Do not invent G2 evidence.
 2. **Wave 1:** After operator capture, run [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](../../../docs/operations/evidence-packs/g2-highlevel-app-test.md); ingest sanitized fixtures; update production ledger with evidence pointers. Owner: operator + `gohighlevel-guardian`.
-3. **Parallel in-repo product activation:** [`PRD-003`](../../../library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is in `in-work/`. 003a **done** (`70531fb`); 003b **done** (`2ee2634`); 003c human approval is the current implementation; 003d not started. Enables no provider traffic and satisfies no external evidence gate by itself.
+3. **Parallel in-repo product activation:** [`PRD-003`](../../../library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) stays in `in-work/`. 003a-d are **done** on `main` (`70531fb`, `2ee2634`, `71c371d`, `26051b3`). Next is operator env on the existing Vercel project (`operation-automated-lo-web`), then Step 8 smoke. Do not create a second Vercel project. Do not submit Marketplace. Enables no provider traffic and satisfies no external evidence gate by itself.
 4. **Optional parallel:** Wave 2 prep (cloud inventory + KMS custody) if a cloud owner is available; otherwise leave parked.
 5. **After any harness/code change:** `security-guardian` then `quality-guardian` (never reverse). Squash-merge only.
 6. **Do not** move PRD-001 to `completed/` until project-map core-completion is satisfied.

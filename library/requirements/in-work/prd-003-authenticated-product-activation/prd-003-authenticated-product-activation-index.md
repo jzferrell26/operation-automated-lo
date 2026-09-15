@@ -44,7 +44,9 @@ The result of this batch is a tenant-backed Open House Boost workflow that can c
 | [`prd-003a-authenticated-product-activation-campaign-persistence`](./prd-003a-authenticated-product-activation-campaign-persistence.md) | Tenant-scoped Postgres schema and repositories for immutable campaigns, versions, and preflight evidence | **Done** (`70531fb`, PR #54) |
 | [`prd-003b-authenticated-product-activation-session-command-context`](./prd-003b-authenticated-product-activation-session-command-context.md) | Verified server principal and transaction context for authenticated campaign commands | **Done** (`2ee2634`, PR #55) |
 | [`prd-003c-authenticated-product-activation-human-approval`](./prd-003c-authenticated-product-activation-human-approval.md) | Persisted human approval decision, audit evidence, and legal campaign transition | **Done** (`71c371d`, PR #57) |
-| [`prd-003d-authenticated-product-activation-workspace-reads`](./prd-003d-authenticated-product-activation-workspace-reads.md) | Authenticated campaign creation/detail/list/overview backed by persisted tenant data | In Work |
+| [`prd-003d-authenticated-product-activation-workspace-reads`](./prd-003d-authenticated-product-activation-workspace-reads.md) | Authenticated campaign creation/detail/list/overview backed by persisted tenant data | **Done** (`26051b3`, PR #58) |
+
+All four sub-PRDs are merged on `main`. The parent stays **In Work** until preview/review smoke against Postgres on the existing Vercel project (`operation-automated-lo-web`) passes. That smoke is blocked on operator env, including `OALO_DATABASE_URL`. Do not create a second Vercel project. Do not submit Marketplace. Do not move this folder to `completed/` on this map update.
 
 ---
 

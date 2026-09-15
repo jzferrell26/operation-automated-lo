@@ -1,6 +1,6 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.5 | Date: September 2026 | Status: Active
+> Category: Product Operations | Version: 1.6 | Date: September 2026 | Status: Active
 
 The canonical internal map of the product boundary, system flow, implementation status, external gates, and next work for Operation Automated LO.
 
@@ -26,11 +26,11 @@ Before this document, no canonical single project map existed. The information w
 
 ## Status snapshot
 
-Status date: September 3, 2026.
+Status date: September 15, 2026.
 
 | Area | Current state |
 | --- | --- |
-| Delivery | Gauntlet closeout on `main` (PR #25). External Evidence Sprint prep (PR #26). G2 harness (PR #27). Reverse-review + H1-H3 (PRs #29/#30). Hygiene (PR #31). Dependabot noise control (PR #39, tip `0eff5f5`). Planned Actions major raid (checkout 7 / cache 6 / setup-node 7) is SHA-pinned follow-up. Live Wave 1 parked. |
+| Delivery | Gauntlet closeout on `main` (PR #25). External Evidence Sprint prep (PR #26). G2 harness (PR #27). Reverse-review + H1-H3 (PRs #29/#30). Hygiene (PR #31). Dependabot noise control (PR #39). Labeled review dashboard (PR #53). PRD-003a-d on `main` (PRs #54/#55/#57/#58, tip `26051b3`). Planned Actions major raid (checkout 7 / cache 6 / setup-node 7) is SHA-pinned follow-up. Live Wave 1 parked. Preview/review smoke blocked on env. |
 | Critical path (Wave 1 G2) | **Try sandbox + Test Link now** per official docs; do not wait for prior Marketplace approval before App Test. G2 harness is ready and fail-closed; **do not invent live G2 evidence** until sanitized fixtures pass `pnpm test:contracts`. |
 | PRD-001 lifecycle | `IN WORK`. The repository implementation is complete for every criterion that can be proved locally, but production acceptance is not complete. |
 | Acceptance criteria | 305 total: 267 `VERIFIED`, 28 `DEFERRED: LIVE HIGHLEVEL AUTH`, 7 `BLOCKED: EXTERNAL EVIDENCE`, 1 `BLOCKED: G5`, and 2 `ACCEPTED CONSTRAINT` (G4 housing Special Ad Category criteria). |
@@ -185,7 +185,7 @@ Authoritative batch plan: [External Evidence Sprint](../../../../NEXT_BATCH_LEDG
 
 PRD-003 is the implementation bridge from the repository-proved PRD-001 contracts to a real authenticated tenant-backed product surface. It replaces the new local filesystem/synthetic campaign path with Postgres persistence, verified server session authority, persisted human approval, and tenant-backed authenticated workspace reads. It does not reopen PRD-001, change G1/G4/G8 dispositions, enable provider traffic, or satisfy any external evidence criterion by itself.
 
-This work proceeds in parallel with Wave 1 App Test because it is locally verifiable and fail-closed for provider side effects. **Status (September 2026):** PRD-003 is in `requirements/in-work/`. **003a** campaign persistence is **done** on `main` (`70531fb`, PR #54). **003b** session command context is **done** on `main` (`2ee2634`, PR #55). **003c** human approval is in progress. **003d** is not started. Labeled review dashboard merged as `6f64201` (PR #53).
+This work proceeds in parallel with Wave 1 App Test because it is locally verifiable and fail-closed for provider side effects. **Status (September 2026):** PRD-003 stays in `requirements/in-work/`. **003a** campaign persistence is **done** on `main` (`70531fb`, PR #54). **003b** session command context is **done** on `main` (`2ee2634`, PR #55). **003c** human approval is **done** (`71c371d`, PR #57). **003d** workspace reads are **done** (`26051b3`, PR #58). Labeled review dashboard merged as `6f64201` (PR #53). Preview/review smoke against Postgres on the existing Vercel project (`operation-automated-lo-web`) is **blocked** until the operator sets Production+Preview env, including `OALO_DATABASE_URL`. Do not create a second Vercel project. Do not submit Marketplace until that smoke passes.
 
 ### Later waves (do not start without the named external unlock)
 
@@ -231,6 +231,7 @@ PRD-001 core is complete only when all of the following are true:
 
 ## Changelog
 
+- v1.6 (2026-09-15): Recorded PRD-003c (`71c371d`, PR #57) and PRD-003d (`26051b3`, PR #58) as done on `main`. Parent PRD-003 stays in `in-work/`. Preview/review smoke is blocked on existing-project env + Postgres. No second Vercel project. No Marketplace submit.
 - v1.5 (2026-09-15): Recreated Marketplace submission packet. App Test is "try sandbox + Test Link now"; do not invent G2 evidence. PRD-003 in-work: 003a done (`70531fb`), 003b done (`2ee2634`), review dashboard merged (`6f64201`).
 - v1.3 (2026-08-26): Recorded External Evidence Sprint prep (PR #26) and G2 harness (PR #27) on `main`. Critical path parked on HighLevel app approval. Added done/pending summary and librarian next steps. Linked agent terrain map.
 - v1.2 (2026-08-25): Recorded Gauntlet squash-merge to `main` (PR #25). Pointed next steps at the External Evidence Sprint and evidence packs. G2 App Test is the primary unblock.

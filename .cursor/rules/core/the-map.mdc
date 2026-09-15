@@ -9,7 +9,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
-- `main` tip (as of 2026-09-15): `26051b3` (PR #58 PRD-003d workspace reads), after `71c371d` (PR #57 PRD-003c), `65dd527` (PR #56 App Test maps), `2ee2634` (PR #55 PRD-003b), `70531fb` (PR #54 PRD-003a), `6f64201` (PR #53 labeled review dashboard).
+- `main` tip (as of 2026-09-15): `6d5982f` (PR #59 map/ledger sync), after `26051b3` (PR #58 PRD-003d), `71c371d` (PR #57 PRD-003c), `65dd527` (PR #56 App Test maps), `2ee2634` (PR #55 PRD-003b), `70531fb` (PR #54 PRD-003a), `6f64201` (PR #53 labeled review dashboard).
 - Batch ledger: [`NEXT_BATCH_LEDGER.md`](../../../NEXT_BATCH_LEDGER.md)
 - AC ledger: [`PRODUCTION_EXECUTION_LEDGER.md`](../../../PRODUCTION_EXECUTION_LEDGER.md)
 - Marketplace packet: [`highlevel-marketplace-submission.md`](../../../library/knowledge/private/product/highlevel-marketplace-submission.md)
@@ -39,7 +39,9 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 | PRD-003b session command context | **Done** (`2ee2634`, PR #55) | Verified server principal for campaign mutations |
 | PRD-003c human approval | **Done** (`71c371d`, PR #57) | Named human approval of exact persisted version |
 | PRD-003d workspace reads | **Done** (`26051b3`, PR #58) | Tenant-backed campaign list/detail/overview |
-| Preview/review smoke (go-live Step 8) | **Blocked:** existing Vercel project lacks review env + `OALO_DATABASE_URL` | `/overview` + create-reload-approve against Postgres on `operation-automated-lo-web` only |
+| PRD-004 reviewable go-live | **In work:** [PRD-004](../../../library/requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md); 004a blocked on env | Preview smoke, Test Link, Marketplace submission |
+| Preview/review smoke (004a) | **Blocked:** existing Vercel project lacks review env + `OALO_DATABASE_URL` | `/overview` + create-reload-approve against Postgres on `operation-automated-lo-web` only |
+| Marketplace portal inspect | **Unsigned-in** in automation browser | Developer Portal + Test Link (004b) |
 | App Test operator access + controlled location | Operator-led | Live OAuth/session matrix capture |
 | Env isolation + KMS (Wave 2) | Parked | `001J-AC-026`, `001J-AC-029` |
 | G3 / G5 / G6 / G7 live evidence | Parked (later waves) | Meta, lead, billing, counsel |
@@ -50,7 +52,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 1. **Human / HighLevel:** Try sandbox + Create App Test Account + Test Link now ([Marketplace packet](../../../library/knowledge/private/product/highlevel-marketplace-submission.md)). Do not invent G2 evidence.
 2. **Wave 1:** After operator capture, run [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](../../../docs/operations/evidence-packs/g2-highlevel-app-test.md); ingest sanitized fixtures; update production ledger with evidence pointers. Owner: operator + `gohighlevel-guardian`.
-3. **Parallel in-repo product activation:** [`PRD-003`](../../../library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) stays in `in-work/`. 003a-d are **done** on `main` (`70531fb`, `2ee2634`, `71c371d`, `26051b3`). Next is operator env on the existing Vercel project (`operation-automated-lo-web`), then Step 8 smoke. Do not create a second Vercel project. Do not submit Marketplace. Enables no provider traffic and satisfies no external evidence gate by itself.
+3. **Go-live (PRD-004):** [`PRD-004`](../../../library/requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md) — 004a preview smoke (blocked on `OALO_DATABASE_URL`), 004b portal/Test Link (unsigned-in), 004c Marketplace submit after smoke. [`PRD-003`](../../../library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) 003a-d **done**; parent exits on 004a. Evidence: [`reviewable-preview-smoke.md`](../../../docs/operations/evidence-packs/reviewable-preview-smoke.md). Do not create a second Vercel project. Do not flip deferred G2 ACs.
 4. **Optional parallel:** Wave 2 prep (cloud inventory + KMS custody) if a cloud owner is available; otherwise leave parked.
 5. **After any harness/code change:** `security-guardian` then `quality-guardian` (never reverse). Squash-merge only.
 6. **Do not** move PRD-001 to `completed/` until project-map core-completion is satisfied.

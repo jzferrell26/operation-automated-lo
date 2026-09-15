@@ -46,7 +46,7 @@ The result of this batch is a tenant-backed Open House Boost workflow that can c
 | [`prd-003c-authenticated-product-activation-human-approval`](./prd-003c-authenticated-product-activation-human-approval.md) | Persisted human approval decision, audit evidence, and legal campaign transition | **Done** (`71c371d`, PR #57) |
 | [`prd-003d-authenticated-product-activation-workspace-reads`](./prd-003d-authenticated-product-activation-workspace-reads.md) | Authenticated campaign creation/detail/list/overview backed by persisted tenant data | **Done** (`26051b3`, PR #58) |
 
-All four sub-PRDs are merged on `main`. The parent stays **In Work** until preview/review smoke against Postgres on the existing Vercel project (`operation-automated-lo-web`) passes. That smoke is blocked on operator env, including `OALO_DATABASE_URL`. Do not create a second Vercel project. Do not submit Marketplace. Do not move this folder to `completed/` on this map update.
+All four sub-PRDs are merged on `main`. The parent stays **In Work** until [PRD-004a preview smoke](../prd-004-reviewable-go-live/prd-004a-reviewable-go-live-preview-deploy-smoke.md) passes on the existing Vercel project (`operation-automated-lo-web`). That smoke is blocked on operator env, including `OALO_DATABASE_URL`. Do not create a second Vercel project. Do not submit Marketplace until [PRD-004c](../prd-004-reviewable-go-live/prd-004c-reviewable-go-live-marketplace-submission.md). Move to `completed/` only after 004a smoke and security/quality closeout.
 
 ---
 
@@ -118,4 +118,6 @@ Browser requests must never accept `location_id`, installation authority, publis
 - [`System Build Blueprint`](../../../knowledge/private/architecture/system-build-blueprint.md)
 - [`Project Map`](../../../knowledge/private/product/project-map.md)
 - [`Next Batch Ledger: External Evidence Sprint`](../../../../NEXT_BATCH_LEDGER.md)
+- [`PRD-004: Reviewable Go-Live`](../prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md)
+- [`Reviewable preview smoke evidence pack`](../../../../docs/operations/evidence-packs/reviewable-preview-smoke.md)
 

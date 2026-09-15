@@ -112,6 +112,30 @@ describe("authenticated application shell", () => {
     expect(screen.queryByRole("combobox", { name: /location/i })).not.toBeInTheDocument();
     expect(screen.getByText("Writes disabled")).toBeInTheDocument();
   });
+
+  it("labels the review surface as demo and not connected", () => {
+    const fixture = loadSyntheticUiFixture();
+    const navigation = projectNavigationForSession(fixture.navigation, fixture.session);
+    const reviewSession = {
+      ...fixture.session,
+      safety: {
+        ...fixture.session.safety,
+        disclosure:
+          "REVIEW SURFACE. Demo fixtures only. Not connected to HighLevel, Meta, or Stripe. These numbers are not live customer data.",
+      },
+    };
+
+    render(
+      <AppShell navigation={navigation} session={reviewSession} workspaceMode="review">
+        <h1>Authenticated content</h1>
+      </AppShell>,
+    );
+
+    expect(screen.getByLabelText("Review surface. Demo, not connected")).toBeInTheDocument();
+    expect(screen.getByText(/REVIEW SURFACE/u)).toBeInTheDocument();
+    expect(screen.getByText("REVIEW / DEMO / NOT CONNECTED")).toBeInTheDocument();
+    expect(document.querySelector("[data-workspace-mode='review']")).toBeTruthy();
+  });
 });
 
 function renderShell() {

@@ -137,6 +137,7 @@ Server-only (Preview):
 | `OALO_RELEASE_MANIFEST_JSON` | prepared preview release manifest JSON |
 | `TRIGGER_PROJECT_REF` | Trigger.dev project ref (`proj_...`) once Phase 2 exists |
 | `OALO_SYNTHETIC_DATA_ONLY` | `true` |
+| `OALO_REVIEW_SURFACE` | leave unset unless a labeled HighLevel review dashboard is required; then exact value `authorized` |
 
 Notes:
 
@@ -258,6 +259,7 @@ Create the production Vercel project or Production environment only as a dark sh
 | `OALO_TRIGGER_ENVIRONMENT` | `prod` |
 | `OALO_SUPABASE_MODE` | `production` |
 | `OALO_PRODUCTION_TRAFFIC` | `disabled` |
+| `OALO_REVIEW_SURFACE` | leave unset (fail-closed). For a HighLevel-showable labeled dashboard only: exact value `authorized`, with `OALO_PROVIDER_MODE=stub` and `OALO_SYNTHETIC_DATA_ONLY=true`. Do not enable live providers. |
 
 Do not enable a production alias for customer traffic in this runbook. Deployment and smoke remain governed by [deployment.md](deployment.md) after a prepared release manifest and approver.
 

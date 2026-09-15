@@ -200,8 +200,9 @@
   font-size: var(--text-secondary-size);
 }
 
-.syntheticDisclosure strong {
-  margin-inline-start: auto;
+.syntheticDisclosure[data-review-surface="true"] {
+  background: var(--st-warning-bg);
+  color: var(--st-warning-fg);
 }
 
 .content {

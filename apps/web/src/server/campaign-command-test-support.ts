@@ -66,21 +66,23 @@ export function persistedDraftFromPreflightBody(payload: unknown): PersistedDraf
     throw new Error("Preflight response body must be an object");
   }
   const record = payload as {
-    version?: { campaignRef?: unknown; campaignVersionRef?: unknown; manifestHash?: unknown };
-    preflight?: { resultHash?: unknown };
+    campaignRef?: unknown;
+    campaignVersionRef?: unknown;
+    manifestHash?: unknown;
+    preflightResultHash?: unknown;
   };
   if (
-    typeof record.version?.campaignRef !== "string" ||
-    typeof record.version.campaignVersionRef !== "string" ||
-    typeof record.version.manifestHash !== "string" ||
-    typeof record.preflight?.resultHash !== "string"
+    typeof record.campaignRef !== "string" ||
+    typeof record.campaignVersionRef !== "string" ||
+    typeof record.manifestHash !== "string" ||
+    typeof record.preflightResultHash !== "string"
   ) {
     throw new Error("Preflight response is missing persisted draft fields");
   }
   return {
-    campaignRef: record.version.campaignRef,
-    campaignVersionRef: record.version.campaignVersionRef,
-    manifestHash: record.version.manifestHash,
-    resultHash: record.preflight.resultHash,
+    campaignRef: record.campaignRef,
+    campaignVersionRef: record.campaignVersionRef,
+    manifestHash: record.manifestHash,
+    resultHash: record.preflightResultHash,
   };
 }

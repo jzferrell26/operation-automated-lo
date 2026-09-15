@@ -4,6 +4,8 @@ import {
   type CampaignApprovalTransaction,
   type CampaignVersionRepository,
   type CampaignVersionTransaction,
+  type CampaignWorkspaceReadRecord,
+  type CampaignWorkspaceReadRepository,
 } from "@oalo/application";
 import {
   ApprovalDecisionSchema,
@@ -515,6 +517,39 @@ returning true as affected
   decode: decodeAffected,
 });
 
+interface CampaignReadAggregateRow {
+  readonly campaignRef: string;
+  readonly status: CampaignState;
+  readonly rowVersion: number;
+  readonly updatedAt: string;
+}
+
+const campaignReadAggregateSelect = `
+select
+  campaign_row.campaign_ref,
+  campaign_row.status,
+  campaign_row.row_version,
+  campaign_row.updated_at
+  from campaign.campaigns as campaign_row
+ where campaign_row.location_id = platform.current_location_id()
+`.trim();
+
+const selectReadAggregateContract = defineSqlContract<CampaignReadAggregateRow>({
+  name: "campaign.select-read-aggregate.v1",
+  access: "read",
+  text: `${campaignReadAggregateSelect}
+   and campaign_row.campaign_ref = $1::text`,
+  decode: decodeReadAggregateRow,
+});
+
+const selectLocationCampaignListContract = defineSqlContract<CampaignReadAggregateRow>({
+  name: "campaign.select-location-list.v1",
+  access: "read",
+  text: `${campaignReadAggregateSelect}
+ order by campaign_row.updated_at desc, campaign_row.campaign_ref asc`,
+  decode: decodeReadAggregateRow,
+});
+
 export class PostgresCampaignVersionRepository implements CampaignVersionRepository {
   readonly #pool: DatabasePool;
   readonly #authority: TenantContextAuthority;
@@ -622,6 +657,68 @@ export function createPostgresCampaignApprovalRepository(
   authority: TenantContextAuthority,
 ): PostgresCampaignApprovalRepository {
   return new PostgresCampaignApprovalRepository(pool, authority);
+}
+
+export class PostgresCampaignReadRepository implements CampaignWorkspaceReadRepository {
+  readonly #pool: DatabasePool;
+  readonly #authority: TenantContextAuthority;
+
+  constructor(pool: DatabasePool, authority: TenantContextAuthority) {
+    this.#pool = pool;
+    this.#authority = authority;
+  }
+
+  async listForLocation(): Promise<readonly CampaignWorkspaceReadRecord[]> {
+    return withTenantTransaction(this.#pool, this.#authority, async (transaction) => {
+      const rows = await transaction.read(selectLocationCampaignListContract, []);
+      const records: CampaignWorkspaceReadRecord[] = [];
+      for (const row of rows) {
+        const record = await loadWorkspaceReadRecord(transaction, row);
+        if (record !== undefined) records.push(record);
+      }
+      return Object.freeze(records);
+    });
+  }
+
+  async getByCampaignRef(campaignRef: string): Promise<CampaignWorkspaceReadRecord | undefined> {
+    return withTenantTransaction(this.#pool, this.#authority, async (transaction) => {
+      const aggregate = await readOptional(transaction, selectReadAggregateContract, [campaignRef]);
+      if (aggregate === undefined) return undefined;
+      return loadWorkspaceReadRecord(transaction, aggregate);
+    });
+  }
+}
+
+export function createPostgresCampaignReadRepository(
+  pool: DatabasePool,
+  authority: TenantContextAuthority,
+): PostgresCampaignReadRepository {
+  return new PostgresCampaignReadRepository(pool, authority);
+}
+
+async function loadWorkspaceReadRecord(
+  transaction: TenantTransaction,
+  aggregate: CampaignReadAggregateRow,
+): Promise<CampaignWorkspaceReadRecord | undefined> {
+  const version = await readOptional(transaction, selectLatestVersionContract, [
+    aggregate.campaignRef,
+  ]);
+  if (version === undefined) return undefined;
+  const preflight = await readOptional(transaction, selectLatestPreflightContract, [
+    version.campaignVersionRef,
+  ]);
+  if (preflight === undefined) return undefined;
+  const approval = await readOptional(transaction, selectLatestApprovalContract, [
+    version.campaignVersionRef,
+  ]);
+  return Object.freeze({
+    version,
+    preflight,
+    state: aggregate.status,
+    rowVersion: aggregate.rowVersion,
+    updatedAt: aggregate.updatedAt,
+    ...(approval === undefined ? {} : { approval }),
+  });
 }
 
 function createCampaignVersionTransaction(
@@ -898,6 +995,16 @@ function decodeAggregateRow(row: unknown): CampaignAggregateRow {
   });
 }
 
+function decodeReadAggregateRow(row: unknown): CampaignReadAggregateRow {
+  const record = recordRow(row);
+  return Object.freeze({
+    campaignRef: requiredString(record.campaign_ref, "campaign_ref"),
+    status: CampaignStateSchema.parse(record.status),
+    rowVersion: requiredInteger(record.row_version, "row_version", 1),
+    updatedAt: isoDateTime(record.updated_at),
+  });
+}
+
 function decodeCommandLookupRow(row: unknown): CommandLookupRow {
   const record = recordRow(row);
   const summary =
@@ -1027,4 +1134,6 @@ export const campaignVersionContracts = Object.freeze({
   insertCommandExecutionContract,
   insertAuditEventContract,
   updateCampaignOptimisticContract,
+  selectReadAggregateContract,
+  selectLocationCampaignListContract,
 });

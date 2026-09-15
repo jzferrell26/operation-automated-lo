@@ -13,7 +13,7 @@ import {
   type CampaignCommandPorts,
 } from "./authenticated-principal.js";
 import { campaignCommandAuthErrorResponse, jsonCommandError } from "./campaign-command-http.js";
-import { createLocalCampaignApprovalRepository } from "./local-campaign-store.js";
+import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
 
 const OpaqueReferenceSchema = z
   .string()
@@ -57,6 +57,7 @@ export async function handleCampaignApproval(
   try {
     const principal = await resolveAuthenticatedPrincipal(request, environment, ports);
     const parsed = CampaignApprovalRequestSchema.parse(await request.json());
+    const adapter = createCampaignPersistenceAdapter(principal, environment);
     const result = await executeHumanCampaignApproval(
       {
         campaignRef: parsed.campaignRef,
@@ -78,7 +79,7 @@ export async function handleCampaignApproval(
           : { expectedRowVersion: parsed.expectedRowVersion }),
       },
       principal,
-      createLocalCampaignApprovalRepository(environment),
+      adapter.approvalRepository,
     );
     if (result.kind === "denied") {
       return jsonCommandError(403, "FORBIDDEN");

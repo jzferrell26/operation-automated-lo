@@ -10,6 +10,7 @@ import { ZodError } from "zod";
 
 import { UnauthenticatedPrincipalError } from "./authenticated-principal.js";
 import { AuthenticatedWorkspaceUnavailableError } from "./authenticated-workspace-data.js";
+import { CampaignWorkspaceStoreUnavailableError } from "./campaign-persistence-runtime.js";
 
 export function jsonCommandError(status: number, error: string): Response {
   return Response.json({ error }, { status });
@@ -32,6 +33,9 @@ export function campaignCommandAuthErrorResponse(error: unknown): Response | und
   }
   if (error instanceof AuthenticatedWorkspaceUnavailableError) {
     return jsonCommandError(403, "WORKSPACE_UNAVAILABLE");
+  }
+  if (error instanceof CampaignWorkspaceStoreUnavailableError) {
+    return jsonCommandError(503, "CAMPAIGN_STORE_UNAVAILABLE");
   }
   if (error instanceof CampaignApprovalStaleError) {
     return jsonCommandError(409, "CAMPAIGN_APPROVAL_CONFLICT");

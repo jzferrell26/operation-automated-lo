@@ -16,6 +16,19 @@ describe("Platform Overview", () => {
     vi.unstubAllGlobals();
   });
 
+  it("renders tenant campaigns instead of the synthetic campaign fixture", () => {
+    const fixture = loadSyntheticUiFixture();
+    render(
+      <OverviewScreen
+        overview={fixture.overview}
+        session={fixture.session}
+        workspaceCampaigns={[]}
+      />,
+    );
+    expect(screen.getByText("No campaigns in this location yet")).toBeInTheDocument();
+    expect(screen.queryByText("Summer buyer education")).not.toBeInTheDocument();
+  });
+
   it("renders every required region and source-bearing metric truth state", () => {
     const fixture = loadSyntheticUiFixture();
     render(<OverviewScreen overview={fixture.overview} session={fixture.session} />);

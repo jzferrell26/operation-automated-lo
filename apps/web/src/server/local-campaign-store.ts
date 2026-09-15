@@ -8,6 +8,8 @@ import {
   type CampaignApprovalRepository,
   type CampaignApprovalTransaction,
   type CampaignEventPort,
+  type CampaignWorkspaceReadRecord,
+  type CampaignWorkspaceReadRepository,
 } from "@oalo/application";
 import {
   ApprovalDecisionSchema,
@@ -207,6 +209,43 @@ export async function loadLocalCampaign(
   const store = await readStore(resolveStorePath(environment));
   const record = store.campaigns[campaignRef];
   return record === undefined ? undefined : freezeLocalCampaign(record);
+}
+
+export async function listLocalCampaigns(
+  environment: unknown = process.env,
+): Promise<readonly LocalCampaignRecord[]> {
+  authenticatedWorkspaceMode(environment);
+  const store = await readStore(resolveStorePath(environment));
+  return Object.freeze(Object.values(store.campaigns).map((record) => freezeLocalCampaign(record)));
+}
+
+export function localCampaignToReadRecord(
+  record: LocalCampaignRecord,
+): CampaignWorkspaceReadRecord {
+  return Object.freeze({
+    version: record.version,
+    preflight: record.preflight,
+    state: record.state,
+    rowVersion: record.rowVersion,
+    updatedAt: record.updatedAt,
+    ...(record.approval === undefined ? {} : { approval: record.approval }),
+  });
+}
+
+export function createFilesystemCampaignReadRepository(
+  environment: unknown = process.env,
+): CampaignWorkspaceReadRepository {
+  authenticatedWorkspaceMode(environment);
+  return {
+    async listForLocation() {
+      const records = await listLocalCampaigns(environment);
+      return Object.freeze(records.map((record) => localCampaignToReadRecord(record)));
+    },
+    async getByCampaignRef(campaignRef) {
+      const record = await loadLocalCampaign(campaignRef, environment);
+      return record === undefined ? undefined : localCampaignToReadRecord(record);
+    },
+  };
 }
 
 export function createLocalCampaignApprovalRepository(

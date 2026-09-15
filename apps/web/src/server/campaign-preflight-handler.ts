@@ -1,3 +1,4 @@
+import { projectCampaignWorkspace } from "@oalo/application";
 import { ZodError } from "zod";
 
 import {
@@ -6,7 +7,7 @@ import {
   type CampaignCommandPorts,
 } from "./authenticated-principal.js";
 import { campaignCommandAuthErrorResponse, jsonCommandError } from "./campaign-command-http.js";
-import { persistLocalCampaign } from "./local-campaign-store.js";
+import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
 import { compileOpenHouseDraft } from "./open-house-draft.js";
 
 function campaignCommandErrorResponse(error: unknown): Response {
@@ -29,13 +30,33 @@ export async function handleCampaignPreflight(
   try {
     const principal = await resolveAuthenticatedPrincipal(request, environment, ports);
     const input: unknown = await request.json();
-    const result = await compileOpenHouseDraft(input, principal, environment);
-    const campaign = await persistLocalCampaign(result.version, result.preflight, environment);
+    const adapter = createCampaignPersistenceAdapter(principal, environment);
+    const result = await compileOpenHouseDraft(
+      input,
+      principal,
+      environment,
+      adapter.versionRepository,
+    );
+    const campaign = await adapter.persistDraft(result.version, result.preflight);
+    const projection = projectCampaignWorkspace(campaign, principal, adapter.kind);
     return Response.json(
       {
-        ...result,
-        state: campaign.state,
-        detailHref: `/marketing/campaigns/${result.version.campaignRef}`,
+        state: projection.state,
+        detailHref: projection.detailHref,
+        campaignRef: projection.campaignRef,
+        campaignVersionRef: projection.campaignVersionRef,
+        manifestHash: projection.manifestHash,
+        preflightResultHash: projection.preflight.resultHash,
+        blocking: projection.preflight.blocking,
+        findings: projection.preflight.findings,
+        headline: projection.headline,
+        propertyAddress: projection.propertyAddress,
+        realtorDisplayName: projection.realtorDisplayName,
+        dailyBudgetMinor: projection.dailyBudgetMinor,
+        totalBudgetMinor: projection.totalBudgetMinor,
+        specialAdCategory: projection.specialAdCategory,
+        persistenceKind: projection.persistenceKind,
+        providerPublicationAuthorized: false,
       },
       { status: 200 },
     );

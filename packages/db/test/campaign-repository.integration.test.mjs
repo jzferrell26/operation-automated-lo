@@ -5,6 +5,7 @@ import { describe, it } from "node:test";
 import {
   CampaignPersistenceError,
   createPostgresCampaignApprovalRepository,
+  createPostgresCampaignReadRepository,
   createPostgresCampaignVersionRepository,
   createPostgresPool,
 } from "../dist/index.js";
@@ -193,6 +194,47 @@ describe(
         });
       } finally {
         await cleanupTenants(pool, [tenantA]);
+        await pool.close();
+      }
+    });
+
+    it("lists and loads campaigns without locking and isolates tenants", async () => {
+      const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
+      const tenantA = tenantFixture("delta", suffix);
+      const tenantB = tenantFixture("echo", suffix);
+      const pool = testPool(databaseUrl);
+      await seedTenant(pool, tenantA, "Read A");
+      await seedTenant(pool, tenantB, "Read B");
+      const versionRepo = createPostgresCampaignVersionRepository(pool, {
+        async resolveTenantDatabaseContext() {
+          return tenantA;
+        },
+      });
+      const readA = createPostgresCampaignReadRepository(pool, {
+        async resolveTenantDatabaseContext() {
+          return tenantA;
+        },
+      });
+      const readB = createPostgresCampaignReadRepository(pool, {
+        async resolveTenantDatabaseContext() {
+          return tenantB;
+        },
+      });
+      const campaignRef = `campaign_${suffix}`;
+      const versionRef = `version_${suffix}d`;
+      try {
+        const version = await appendVersion(versionRepo, tenantA, campaignRef, versionRef);
+        await versionRepo.persistPreflight(preflightFor(version, false));
+        const listed = await readA.listForLocation();
+        assert.equal(listed.length, 1);
+        assert.equal(listed[0]?.version.campaignRef, campaignRef);
+        assert.equal(listed[0]?.state, "awaiting_approval");
+        const detail = await readA.getByCampaignRef(campaignRef);
+        assert.equal(detail?.version.campaignVersionRef, version.campaignVersionRef);
+        assert.equal(await readB.getByCampaignRef(campaignRef), undefined);
+        assert.deepEqual(await readB.listForLocation(), []);
+      } finally {
+        await cleanupTenants(pool, [tenantA, tenantB]);
         await pool.close();
       }
     });

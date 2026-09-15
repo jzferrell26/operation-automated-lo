@@ -9,26 +9,25 @@ import styles from "./open-house-draft-builder.module.css";
 type PreflightResponse = Readonly<{
   state: string;
   detailHref: string;
-  version: {
-    campaignRef: string;
-    campaignVersionRef: string;
-    manifestHash: string;
-    manifest: {
-      property: { address: string; openHouseStartsAt: string; openHouseEndsAt: string };
-      partner: { realtorDisplayName: string };
-      meta: { dailyBudgetMinor: number; totalBudgetMinor: number; specialAdCategory: string };
-    };
-  };
-  preflight: {
-    blocking: boolean;
-    resultHash: string;
-    findings: readonly {
-      severity: "blocking" | "warning";
-      ruleCode: string;
-      description: string;
-      remediation: string;
-    }[];
-  };
+  campaignRef: string;
+  campaignVersionRef: string;
+  manifestHash: string;
+  preflightResultHash: string;
+  blocking: boolean;
+  findings: readonly {
+    severity: "blocking" | "warning";
+    ruleCode: string;
+    description: string;
+    remediation: string;
+  }[];
+  headline: string;
+  propertyAddress: string;
+  realtorDisplayName: string;
+  dailyBudgetMinor: number;
+  totalBudgetMinor: number;
+  specialAdCategory: string;
+  persistenceKind: "filesystem" | "postgres";
+  providerPublicationAuthorized: false;
 }>;
 
 export function OpenHouseDraftBuilder() {
@@ -91,10 +90,10 @@ export function OpenHouseDraftBuilder() {
       <Card className={styles.notice} padding="md">
         <Icon decorative name="lock" size="sm" tone="info" />
         <div>
-          <strong>Safe local completion path</strong>
+          <strong>Persisted campaign draft</strong>
           <p>
-            This flow validates the real campaign contract but does not persist, publish, spend, or
-            call HighLevel or Meta yet.
+            This flow freezes an immutable campaign version and stores it for this location. It does
+            not publish, spend, or call HighLevel or Meta.
           </p>
         </div>
       </Card>
@@ -231,43 +230,40 @@ function PreflightReview({ result }: Readonly<{ result: PreflightResponse }>) {
       <div className={styles.reviewHeading}>
         <div>
           <p className={styles.eyebrow}>Frozen version</p>
-          <h2 id="preflight-review-title">
-            Preflight {result.preflight.blocking ? "blocked" : "passed"}
-          </h2>
+          <h2 id="preflight-review-title">Preflight {result.blocking ? "blocked" : "passed"}</h2>
         </div>
-        <span data-blocking={result.preflight.blocking}>
-          {result.preflight.blocking ? "Blocked" : "Ready for approval"}
+        <span data-blocking={result.blocking}>
+          {result.blocking ? "Blocked" : "Ready for approval"}
         </span>
       </div>
       <div className={styles.summaryGrid}>
         <Card padding="sm">
           <strong>Property</strong>
-          <p>{result.version.manifest.property.address}</p>
+          <p>{result.propertyAddress}</p>
         </Card>
         <Card padding="sm">
           <strong>Realtor</strong>
-          <p>{result.version.manifest.partner.realtorDisplayName}</p>
+          <p>{result.realtorDisplayName}</p>
         </Card>
         <Card padding="sm">
           <strong>Budget</strong>
           <p>
-            {dollars(result.version.manifest.meta.dailyBudgetMinor)} / day ·{" "}
-            {dollars(result.version.manifest.meta.totalBudgetMinor)} total
+            {dollars(result.dailyBudgetMinor)} / day · {dollars(result.totalBudgetMinor)} total
           </p>
         </Card>
         <Card padding="sm">
           <strong>Ad category</strong>
-          <p>{result.version.manifest.meta.specialAdCategory}</p>
+          <p>{result.specialAdCategory}</p>
         </Card>
       </div>
-      {result.preflight.findings.length === 0 ? (
+      {result.findings.length === 0 ? (
         <Card padding="md">
           <strong>No blocking findings.</strong>
           <p>The frozen draft passed the deterministic founding ruleset.</p>
         </Card>
       ) : (
         <div className={styles.findings}>
-          {result.preflight.findings.map((finding) => (
+          {result.findings.map((finding) => (
             <Card key={finding.ruleCode} padding="md">
               <strong>{finding.ruleCode}</strong>
               <p>{finding.description}</p>
@@ -281,9 +277,9 @@ function PreflightReview({ result }: Readonly<{ result: PreflightResponse }>) {
       </a>
       <details>
         <summary>Immutable evidence</summary>
-        <code>{result.version.campaignVersionRef}</code>
-        <code>{result.version.manifestHash}</code>
-        <code>{result.preflight.resultHash}</code>
+        <code>{result.campaignVersionRef}</code>
+        <code>{result.manifestHash}</code>
+        <code>{result.preflightResultHash}</code>
       </details>
     </section>
   );

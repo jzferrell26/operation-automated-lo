@@ -1,9 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  createDefaultCampaignCommandPorts,
-  createLocalSyntheticPrincipal,
-} from "./authenticated-principal.js";
+import { createDefaultCampaignCommandPorts } from "./authenticated-principal.js";
 import {
   LOCAL_SYNTHETIC_ENV,
   OPEN_HOUSE_DRAFT_INPUT,
@@ -35,13 +32,15 @@ describe("campaign preflight handler", () => {
     );
     expect(response.status).toBe(200);
     const payload = (await response.json()) as {
-      version: { locationRef: string; createdBy: string };
+      campaignRef: string;
       state: string;
+      persistenceKind: string;
+      propertyAddress: string;
     };
-    const principal = createLocalSyntheticPrincipal();
-    expect(payload.version.locationRef).toBe(principal.locationRef);
-    expect(payload.version.createdBy).toBe(principal.actorRef);
     expect(payload.state).toBe("awaiting_approval");
+    expect(payload.persistenceKind).toBe("filesystem");
+    expect(payload.propertyAddress).toContain("Dallas");
+    expect(payload.campaignRef.startsWith("campaign_")).toBe(true);
   });
 
   it("returns 400 when the body tries to supply a tenant field", async () => {

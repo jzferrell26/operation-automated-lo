@@ -4,12 +4,12 @@
 
 | Field        | Value                                                                                                                                                                   |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Branch       | Prep and G2 harness landed on `main` (PRs #26, #27). Live Wave 1 awaits HighLevel app approval.                                                                         |
+| Branch       | Prep and G2 harness landed on `main` (PRs #26, #27). PRD-003a on `main` (`70531fb`). Live Wave 1: try sandbox + Test Link now; do not invent G2 evidence.                  |
 | Date         | 2026-08-26                                                                                                                                                              |
 | Prerequisite | Gauntlet closeout (`25c0bdc`), evidence packs (`6965bf7`), G2 harness (`a530947`) on `main`                                                                             |
 | Scope        | Unblock production-path evidence for G2, environment/KMS, G3, G5, G6, G7, and remaining timed/AI cost criteria                                                          |
 | Honest bound | Agents cannot invent live HighLevel, Meta, Stripe, KMS, or counsel evidence. This batch is operator-led with agent-supported harnesses, checklists, and ledger updates. |
-| Current park | Waiting on HighLevel to approve the app, then App Test operator access for Wave 1.                                                                                      |
+| Current park | Operator-led App Test: try sandbox + Test Link now (prior Marketplace approval not documented as required). G2 harness ready; no sanitized fixtures yet.                  |
 
 Upstream closeout: [`GAUNTLET_EXECUTION_LEDGER.md`](./GAUNTLET_EXECUTION_LEDGER.md) (267 `VERIFIED`, 38 non-verified parked). Authoritative AC source remains [`PRODUCTION_EXECUTION_LEDGER.md`](./PRODUCTION_EXECUTION_LEDGER.md).
 
@@ -19,7 +19,7 @@ Upstream closeout: [`GAUNTLET_EXECUTION_LEDGER.md`](./GAUNTLET_EXECUTION_LEDGER.
 
 In-repo PRD-001 work that can be proved locally is done. The project-map next steps and the Gauntlet external park list now dominate critical path. The next batch optimizes for **shortest path to production authorization**: clear the largest deferred block (G2 live HighLevel auth), then environment isolation, then Meta/lead/billing/legal.
 
-Separately, [PRD-003: Authenticated Product Activation](./library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is an authorized in-work productization batch while the external evidence path is parked. PRD-003 does not convert any blocked/deferred criterion to verified status and does not enable production provider traffic.
+Separately, [PRD-003: Authenticated Product Activation](./library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is in `in-work/` for parallel in-repo productization. **003a** done (`70531fb`, PR #54). **003b** in review (PR #55). **003c/003d** not started. PRD-003 does not convert any blocked/deferred criterion to verified status and does not enable production provider traffic.
 
 ```mermaid
 flowchart TD
@@ -62,8 +62,8 @@ flowchart TD
 
 | Owner                                       | Deliverable                                         | Exit criteria                                                                                             |
 | ------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `library-guardian`                          | PRD-003 Authenticated Product Activation            | Authored in Schema v2 with tenant persistence, session authority, approval, and workspace-read sub-PRDs   |
-| implementation Guardians                    | Execute PRD-003 after lifecycle moves to `in-work/` | Postgres-backed authenticated campaign flow; no synthetic/filesystem fallback outside explicit local mode |
+| `library-guardian`                          | PRD-003 Authenticated Product Activation            | In `in-work/`; 003a done, 003b in review (PR #55), 003c/003d pending                                    |
+| implementation Guardians                    | Execute PRD-003 sub-PRDs in order                   | Postgres-backed authenticated campaign flow; no synthetic/filesystem fallback outside explicit local mode |
 | `security-guardian` then `quality-guardian` | Closeout reports                                    | No unresolved Critical/High finding; all PRD-003 ACs traceable before merge                               |
 
 **Boundary:** this parallel batch is locally verifiable product activation only. G2/G3/G5/G6/G7 evidence and production authorization remain governed by Waves 1-7 below.
@@ -84,7 +84,7 @@ flowchart TD
 
 **Exit:** All 28 G2-deferred criteria move to `VERIFIED` with sanitized evidence, or remain deferred with a precise residual ask.
 
-**Status (2026-08-26):** Harness READY on `main` (PR #27, `a530947`: env-gated capture, matrix CLI, contract + unit tests). Operator run BLOCKED: waiting on **HighLevel app approval**, then App Test operator access for one controlled location. All nine matrix cases carry residual asks in [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](./docs/operations/evidence-packs/g2-highlevel-app-test.md). Criteria remain `DEFERRED: LIVE HIGHLEVEL AUTH`.
+**Status (2026-09-15):** Harness READY on `main` (PR #27, `a530947`: env-gated capture, matrix CLI, contract + unit tests). **Try sandbox + Test Link now** per official docs; prior Marketplace approval is not documented as required ([`highlevel-marketplace-submission.md`](./library/knowledge/private/product/highlevel-marketplace-submission.md)). **Do not invent G2 evidence.** Operator must capture sanitized observations for one controlled location. All nine matrix cases carry residual asks in [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](./docs/operations/evidence-packs/g2-highlevel-app-test.md). Criteria remain `DEFERRED: LIVE HIGHLEVEL AUTH`.
 
 **Server-only PIT seam (cross-ref M6):** production task composition requires `OALO_GHL_LOCATION_PIT_JSON` (`{ "locationId", "accessToken" }`) matching `OALO_GHL_READINESS_LOCATION_REF`. That secret is for deployed task workers after auth is live; it is **not** a substitute for Wave 1 App Test evidence and must never be committed or pasted into ledgers. See README production task composition notes and [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](./docs/operations/evidence-packs/g2-highlevel-app-test.md).
 
@@ -171,9 +171,9 @@ flowchart TD
 
 ## Immediate asks (user)
 
-**Current wait:** HighLevel app approval (Marketplace / App Test eligibility). Do not invent live evidence while parked.
+**Current action:** Try HighLevel sandbox + Test Link now. Do not invent live G2 evidence.
 
-Once HighLevel approves the app, provide:
+Provide when running the live matrix:
 
 1. **HighLevel App Test access** (operator account or invite) for one controlled location.
 2. **Named App Test operator** (person who will run the OAuth/session matrix).
@@ -191,7 +191,8 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 | 2026-08-25      | G2 harness shipped on `cursor/g2-app-test-harness-ac42`  | Wave 1 operator run parked: need App Test access    |
 | 2026-08-25      | Prep PR #26 squash-merged to `main` (`6965bf7`)          | Evidence packs on trunk                             |
 | 2026-08-25      | G2 harness PR #27 squash-merged to `main` (`a530947`)    | Harness on trunk; live matrix still parked          |
-| 2026-08-26      | Product owner: waiting on HighLevel app approval         | Wave 1 stays parked; maps updated for agent handoff |
+| 2026-08-26      | Product owner: waiting on HighLevel app approval         | Superseded 2026-09-15: try sandbox + Test Link now  |
+| 2026-09-15      | Map correction: App Test without prior approval          | Marketplace packet recreated; PRD-003 in-work status updated |
 | 2026-08-26      | Reverse-review PR #29 + remediation PR #30 on `main`     | H1-H3 closed; Wave 1 still parked on HL approval    |
 | 2026-09-03      | Repo hygiene raid (M3/M4/M5/M20 in-repo)                 | Templates, Dependabot, ledger path, proxy rename    |
 | 2026-09-03      | Dependabot first-run flood (7 PRs, mostly majors)        | Ignore majors; group weekly minor/patch only        |
@@ -210,6 +211,7 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 | 2026-08-26 | Reverse-review Highs remediations merged (`56d90f6`).                                        |
 | 2026-09-03 | Repo hygiene: PR/issue templates, Dependabot, ledger generator path, middleware->proxy.      |
 | 2026-09-03 | Dependabot majors ignored (PR #39). Planned Actions major raid authored.                     |
+| 2026-09-15 | PRD-003a merged (`70531fb`). App Test: try sandbox + Test Link; do not invent G2 evidence.   |
 
 ## Process follow-ups (from reverse review / security audits)
 
@@ -220,5 +222,5 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 | M5    | Security follow-ups in watchdog                      | This table + watchdog rows                                                           |
 | M20   | Templates + Dependabot                               | Added under `.github/`                                                               |
 | Human | Disable rebase merge; ruleset squash-only            | Settings API denied to agent; owner action                                           |
-| Human | HighLevel app approval                               | Unchanged critical path                                                              |
+| Human | HighLevel App Test (sandbox + Test Link)             | Try now; do not invent G2 evidence                                                   |
 | AM    | Actions majors (checkout 7 / cache 6 / setup-node 7) | This raid: SHA-pinned in `.github/workflows/ci.yml`                                  |

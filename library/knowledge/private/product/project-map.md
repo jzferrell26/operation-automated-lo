@@ -1,6 +1,6 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.4 | Date: September 2026 | Status: Active
+> Category: Product Operations | Version: 1.5 | Date: September 2026 | Status: Active
 
 The canonical internal map of the product boundary, system flow, implementation status, external gates, and next work for Operation Automated LO.
 
@@ -11,6 +11,7 @@ The canonical internal map of the product boundary, system flow, implementation 
 - [Production execution ledger](../../../../PRODUCTION_EXECUTION_LEDGER.md)
 - [External Evidence Sprint (next batch)](../../../../NEXT_BATCH_LEDGER.md)
 - [PRD-003: Authenticated Product Activation](../../../requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md)
+- [HighLevel Marketplace submission packet](highlevel-marketplace-submission.md)
 - [Agent terrain map](../../../../.cursor/rules/core/the-map.mdc) (Codex / Claude / Cursor handoff)
 
 ---
@@ -30,13 +31,13 @@ Status date: September 3, 2026.
 | Area | Current state |
 | --- | --- |
 | Delivery | Gauntlet closeout on `main` (PR #25). External Evidence Sprint prep (PR #26). G2 harness (PR #27). Reverse-review + H1-H3 (PRs #29/#30). Hygiene (PR #31). Dependabot noise control (PR #39, tip `0eff5f5`). Planned Actions major raid (checkout 7 / cache 6 / setup-node 7) is SHA-pinned follow-up. Live Wave 1 parked. |
-| Critical path park | Waiting on **HighLevel to approve the app** so App Test operator access can start. In-repo G2 capture seam is ready and fail-closed. |
+| Critical path (Wave 1 G2) | **Try sandbox + Test Link now** per official docs; do not wait for prior Marketplace approval before App Test. G2 harness is ready and fail-closed; **do not invent live G2 evidence** until sanitized fixtures pass `pnpm test:contracts`. |
 | PRD-001 lifecycle | `IN WORK`. The repository implementation is complete for every criterion that can be proved locally, but production acceptance is not complete. |
 | Acceptance criteria | 305 total: 267 `VERIFIED`, 28 `DEFERRED: LIVE HIGHLEVEL AUTH`, 7 `BLOCKED: EXTERNAL EVIDENCE`, 1 `BLOCKED: G5`, and 2 `ACCEPTED CONSTRAINT` (G4 housing Special Ad Category criteria). |
 | Final quality result | `SHIP` for the audited repository implementation. The verdict does not authorize production traffic or convert remaining external gates to pass. |
 | Final security result | No unresolved Critical or High finding. The application-wide nonce CSP Medium from 2026-08-12 is closed by Raid A. G2 harness security audit PASS (2026-08-25). |
 | Production traffic | Disabled until the required HighLevel App Test (G2/G3/G5), billing (G6), environment, operations, and compliance (G7) evidence is recorded. |
-| Distribution gate | G1 is `ACCEPTED CONSTRAINT`. External Marketplace **listing** proof is not a launch prerequisite. Waiting on HighLevel **app approval** is still required for App Test eligibility; that is not a reopen of G1. |
+| Distribution gate | G1 is `ACCEPTED CONSTRAINT`. External Marketplace **listing** proof is not a launch prerequisite. App Test via sandbox and Test Link should be attempted now; prior Marketplace approval is not documented as required ([submission packet](highlevel-marketplace-submission.md)). |
 | Special Ad Category gate | G4 is `ACCEPTED CONSTRAINT`. Housing Special Ad Category requirements are known and enforced in product; App Test discovery is not a launch prerequisite. |
 | Demand gate | G8 is `ACCEPTED CONSTRAINT`, never `PASS`. Commercial validation is unproven, and 15 paid founders is a post-start target. |
 | PRD-002 | Backlog only. It is a future-options register and is not authorized for implementation. |
@@ -54,8 +55,8 @@ Status date: September 3, 2026.
 
 ### Pending (external / operator)
 
-1. **HighLevel app approval** (current wait). Blocks starting the live App Test matrix.
-2. Named App Test operator + controlled location credentials/invite.
+1. **HighLevel App Test** (operator-led): try sandbox + Test Link now; do not invent G2 evidence.
+2. Named App Test operator + controlled location credentials/invite for the live OAuth/session matrix.
 3. Wave 1 live capture of sanitized fixtures; then flip or residual-ask the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` rows (none flipped yet).
 4. Waves 2-7: env/KMS, G3 Meta no-spend, G5 synthetic lead, G6 billing, G7 counsel, timed Launch Ready / AI cost (see next-batch ledger).
 5. Production traffic remains disabled. PRD-001 stays in `in-work/` until core completion.
@@ -138,7 +139,7 @@ Repository verification is complete for the 267 locally provable criteria. Two S
 | Gate | Current status | Responsible owner | Required proof |
 | --- | --- | --- | --- |
 | G1 Distribution | `ACCEPTED CONSTRAINT` | Product owner | External Marketplace distribution proof removed as a launch prerequisite on 2026-08-25. Do not claim a public Marketplace listing or post-five-agency path unless separately authorized. |
-| G2 OAuth and session | `DEFERRED FOR NOW` (harness READY; live run PARKED on HighLevel app approval + App Test access) | Engineering, security, product owner, and an authorized HighLevel App Test operator | Signed context, callback, token exchange, refresh, uninstall, reconnect, replay, embedded operation, and first-party fallback in controlled locations. Capture via [`g2-highlevel-app-test.md`](../../../../docs/operations/evidence-packs/g2-highlevel-app-test.md). |
+| G2 OAuth and session | `DEFERRED FOR NOW` (harness READY; live run awaits operator sandbox/Test Link + sanitized capture) | Engineering, security, product owner, and an authorized HighLevel App Test operator | Signed context, callback, token exchange, refresh, uninstall, reconnect, replay, embedded operation, and first-party fallback in controlled locations. Try App Test now; capture via [`g2-highlevel-app-test.md`](../../../../docs/operations/evidence-packs/g2-highlevel-app-test.md). Do not invent evidence. |
 | G3 Meta publish | `BLOCKED` | Engineering and an authorized HighLevel and Meta App Test operator | Draft, read-back, explicit publish, progress, pause, resume, rejection, uncertain-write reconciliation, and reporting with no uncontrolled spend. |
 | G4 Special Ad Category | `ACCEPTED CONSTRAINT` | Product owner | Housing Special Ad Category requirements are known and enforced in product. App Test discovery of category combinations is not a launch prerequisite. |
 | G5 Lead routing | `BLOCKED` | Engineering, operations, an authorized location administrator or publisher, and compliance | One isolated no-spend test lead proving contact, tag, opportunity, owner, workflow, notification, attribution, replay safety, and reporting exclusion. |
@@ -168,16 +169,13 @@ The detailed capture requirements and unblock procedures remain authoritative in
 
 Authoritative batch plan: [External Evidence Sprint](../../../../NEXT_BATCH_LEDGER.md). Packs: [`docs/operations/evidence-packs/`](../../../../docs/operations/evidence-packs/README.md). Agent brief: [the-map.mdc](../../../../.cursor/rules/core/the-map.mdc).
 
-### Now (parked on HighLevel)
+### Now (Wave 1 G2 + PRD-003)
 
-1. **Wait for HighLevel app approval.** Do not invent App Test evidence. Keep the G2 harness fail-closed. When approval lands, obtain App Test operator access for one controlled location and name the operator.
+1. **Try HighLevel sandbox + Test Link now.** Official docs do not require prior Marketplace approval for App Test ([`highlevel-marketplace-submission.md`](highlevel-marketplace-submission.md)). Do not invent G2 evidence. Keep the harness fail-closed until sanitized fixtures pass `pnpm test:contracts`.
 2. Confirm founding distribution stays private App Test / one-agency beta (G1 unchanged: Marketplace **listing** is still not a launch prerequisite).
-
-### Immediately after approval (Wave 1)
-
-3. Run the G2 matrix in [`g2-highlevel-app-test.md`](../../../../docs/operations/evidence-packs/g2-highlevel-app-test.md) (`pnpm --filter @oalo/ghl build`, then `OALO_GHL_LIVE_CAPTURE=authorized` only in the operator shell).
+3. Run the G2 matrix in [`g2-highlevel-app-test.md`](../../../../docs/operations/evidence-packs/g2-highlevel-app-test.md) after operator access (`pnpm --filter @oalo/ghl build`, then `OALO_GHL_LIVE_CAPTURE=authorized` only in the operator shell).
 4. Ingest sanitized fixtures only. Flip each of the 28 deferred auth ACs to `VERIFIED` only with evidence pointers, or leave deferred with a precise residual ask. Update this map, the next-batch watchdog, and the production ledger.
-5. Close the Wave 1 PR (if any) with `security-guardian` then `quality-guardian`, CI green, squash-merge.
+5. Close any Wave 1 code PR with `security-guardian` then `quality-guardian`, CI green, squash-merge.
 
 ### Parallel when a cloud owner is available (Wave 2)
 
@@ -187,7 +185,7 @@ Authoritative batch plan: [External Evidence Sprint](../../../../NEXT_BATCH_LEDG
 
 PRD-003 is the implementation bridge from the repository-proved PRD-001 contracts to a real authenticated tenant-backed product surface. It replaces the new local filesystem/synthetic campaign path with Postgres persistence, verified server session authority, persisted human approval, and tenant-backed authenticated workspace reads. It does not reopen PRD-001, change G1/G4/G8 dispositions, enable provider traffic, or satisfy any external evidence criterion by itself.
 
-This work may proceed while HighLevel App Test access is blocked because it is locally verifiable and fail-closed for provider side effects. PRD-003 is in `requirements/in-work/`. 003a campaign persistence is on `main`. 003b session and command context is in progress. Do not start 003c or 003d until 003b lands.
+This work proceeds in parallel with Wave 1 App Test because it is locally verifiable and fail-closed for provider side effects. **Status (September 2026):** PRD-003 is in `requirements/in-work/`. **003a** campaign persistence is **done** on `main` (`70531fb`, PR #54). **003b** session command context is **in review** (PR #55). **003c** and **003d** are not started. Labeled review dashboard merged as `6f64201` (PR #53). Do not start 003c or 003d until 003b lands.
 
 ### Later waves (do not start without the named external unlock)
 
@@ -233,6 +231,7 @@ PRD-001 core is complete only when all of the following are true:
 
 ## Changelog
 
+- v1.5 (2026-09-15): Recreated Marketplace submission packet. App Test is "try sandbox + Test Link now"; do not invent G2 evidence. PRD-003 in-work: 003a done (`70531fb`), 003b in review (PR #55), review dashboard merged (`6f64201`).
 - v1.3 (2026-08-26): Recorded External Evidence Sprint prep (PR #26) and G2 harness (PR #27) on `main`. Critical path parked on HighLevel app approval. Added done/pending summary and librarian next steps. Linked agent terrain map.
 - v1.2 (2026-08-25): Recorded Gauntlet squash-merge to `main` (PR #25). Pointed next steps at the External Evidence Sprint and evidence packs. G2 App Test is the primary unblock.
 - v1.1 (2026-08-25): Recorded product-owner accepted constraints for G1 (external distribution removed) and G4 (Housing Special Ad Category requirements known). Updated criterion counts and next steps.

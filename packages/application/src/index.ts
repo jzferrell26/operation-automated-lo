@@ -86,6 +86,22 @@ export {
 } from "./campaign-foundation.js";
 
 export {
+  CAMPAIGN_APPROVAL_ROLES,
+  CAMPAIGN_MUTATION_ROLES,
+  CampaignCommandForbiddenError,
+  CampaignPrincipalInvalidError,
+  CampaignResourceNotAccessibleError,
+  assertCampaignAccessible,
+  assertMayExecuteCampaignMutation,
+  assertPrincipalOwnsTransaction,
+  createCampaignTenantContext,
+  createSessionApprovalAuthority,
+  freezeAuthenticatedPrincipal,
+  type AuthenticatedPrincipal,
+  type AuthenticationMode,
+} from "./campaign-command-context.js";
+
+export {
   LeadSubmissionRejectedError,
   acceptPublicLeadSubmission,
   evaluateLeadPathLaunchGate,

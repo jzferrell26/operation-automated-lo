@@ -7,17 +7,14 @@ import {
 
 import { SafeTenantReferenceSchema } from "@oalo/contracts";
 
-import { EMBEDDED_SESSION_ALGORITHM, SessionPolicyError } from "./session-policy.js";
+import {
+  EMBEDDED_SESSION_ALGORITHM,
+  SESSION_APPLICATION_ROLE_SET,
+  SessionPolicyError,
+  type SessionApplicationRole,
+} from "./session-policy.js";
 
 const SAFE_REFERENCE = /^[a-z][a-z0-9_-]{2,95}$/u;
-const SESSION_ROLES = new Set([
-  "location_admin",
-  "campaign_creator",
-  "campaign_approver",
-  "campaign_publisher",
-  "viewer",
-  "platform_support",
-]);
 const HEADER_KEYS = new Set(["alg", "kid", "typ"]);
 const CLAIM_KEYS = new Set([
   "aud",
@@ -51,13 +48,7 @@ export interface EmbeddedSessionTokenClaims {
   readonly nonce: string;
   readonly locationId: string;
   readonly installationId: string;
-  readonly role:
-    | "location_admin"
-    | "campaign_creator"
-    | "campaign_approver"
-    | "campaign_publisher"
-    | "viewer"
-    | "platform_support";
+  readonly role: SessionApplicationRole;
   readonly roleVersion: number;
 }
 
@@ -125,7 +116,7 @@ function parseHeader(value: unknown): EmbeddedSessionHeader {
 function parseClaims(value: unknown): EmbeddedSessionTokenClaims {
   if (!isRecord(value) || !hasOnlyKeys(value, CLAIM_KEYS)) return reject();
   const role = value["role"];
-  if (typeof role !== "string" || !SESSION_ROLES.has(role)) return reject();
+  if (typeof role !== "string" || !SESSION_APPLICATION_ROLE_SET.has(role)) return reject();
   if (typeof value["iss"] !== "string" || typeof value["aud"] !== "string") return reject();
 
   const locationId = requiredString(value["locationId"]);
@@ -148,7 +139,7 @@ function parseClaims(value: unknown): EmbeddedSessionTokenClaims {
     nonce: requiredString(value["nonce"]),
     locationId,
     installationId,
-    role: role as EmbeddedSessionTokenClaims["role"],
+    role: role as SessionApplicationRole,
     roleVersion: requiredInteger(value["roleVersion"]),
   };
 }
@@ -182,7 +173,7 @@ function assertIssueInput(input: IssueEmbeddedSessionTokenInput): void {
     !SAFE_REFERENCE.test(input.subject) ||
     !SAFE_REFERENCE.test(input.sessionId) ||
     !SAFE_REFERENCE.test(input.nonce) ||
-    !SESSION_ROLES.has(input.role) ||
+    !SESSION_APPLICATION_ROLE_SET.has(input.role) ||
     !Number.isSafeInteger(input.roleVersion) ||
     input.roleVersion < 1 ||
     !Number.isSafeInteger(input.nowEpochSeconds)
@@ -243,9 +234,9 @@ export function issueEmbeddedSessionToken(input: IssueEmbeddedSessionTokenInput)
   return `${signingInput}.${signature.toString("base64url")}`;
 }
 
-export function verifyEmbeddedSessionToken(input: {
+export function readSignedEmbeddedSessionToken(input: {
   readonly token: string;
-  readonly policy: EmbeddedSessionVerificationPolicy;
+  readonly publicKeysById: Readonly<Record<string, string>>;
 }): Readonly<EmbeddedSessionTokenClaims> {
   const segments = input.token.split(".");
   if (segments.length !== 3) return reject();
@@ -259,7 +250,7 @@ export function verifyEmbeddedSessionToken(input: {
     return reject();
   }
   const header = parseHeader(decodeJsonSegment(encodedHeader));
-  const publicKeyPem = input.policy.publicKeysById[header.kid];
+  const publicKeyPem = input.publicKeysById[header.kid];
   if (publicKeyPem === undefined) return reject();
 
   let signatureValid = false;
@@ -274,20 +265,45 @@ export function verifyEmbeddedSessionToken(input: {
     return reject();
   }
   if (!signatureValid) return reject();
+  return parseClaims(decodeJsonSegment(encodedClaims));
+}
 
-  const claims = parseClaims(decodeJsonSegment(encodedClaims));
-  const skew = input.policy.clockSkewSeconds ?? 0;
-  assertIssuerAndAudience(input.policy.issuer, input.policy.audience);
+export function assertEmbeddedSessionLifetime(
+  claims: EmbeddedSessionTokenClaims,
+  policy: Readonly<{
+    issuer: string;
+    audience: string;
+    nowEpochSeconds: number;
+    clockSkewSeconds?: number;
+  }>,
+): void {
+  const skew = policy.clockSkewSeconds ?? 0;
+  assertIssuerAndAudience(policy.issuer, policy.audience);
   if (
     !Number.isSafeInteger(skew) ||
     skew < 0 ||
     skew > 60 ||
-    claims.iss !== input.policy.issuer ||
-    claims.aud !== input.policy.audience ||
-    claims.iat > input.policy.nowEpochSeconds + skew ||
-    claims.nbf > input.policy.nowEpochSeconds + skew ||
-    claims.exp <= input.policy.nowEpochSeconds - skew ||
-    claims.exp - claims.iat !== 300 ||
+    claims.iss !== policy.issuer ||
+    claims.aud !== policy.audience ||
+    claims.iat > policy.nowEpochSeconds + skew ||
+    claims.nbf > policy.nowEpochSeconds + skew ||
+    claims.exp <= policy.nowEpochSeconds - skew ||
+    claims.exp - claims.iat !== 300
+  ) {
+    reject();
+  }
+}
+
+export function verifyEmbeddedSessionToken(input: {
+  readonly token: string;
+  readonly policy: EmbeddedSessionVerificationPolicy;
+}): Readonly<EmbeddedSessionTokenClaims> {
+  const claims = readSignedEmbeddedSessionToken({
+    token: input.token,
+    publicKeysById: input.policy.publicKeysById,
+  });
+  assertEmbeddedSessionLifetime(claims, input.policy);
+  if (
     claims.sub !== input.policy.expectedSubject ||
     claims.sessionId !== input.policy.expectedSessionId ||
     claims.nonce !== input.policy.expectedNonce ||

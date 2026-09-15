@@ -11,6 +11,8 @@ import {
   TokenLifecyclePolicyError,
   assertBrowserMutationRequest,
   authSurfaceSecurityHeaders,
+  authenticateInboundEmbeddedSession,
+  authenticateInboundFirstPartySession,
   consumeFirstPartyHandoff,
   consumeOAuthState,
   createSessionBoundCsrfToken,
@@ -25,8 +27,10 @@ import {
   serializePartitionedSessionCookie,
   shouldRefreshToken,
   verifyEmbeddedSessionToken,
+  type EstablishedFirstPartySession,
   type FirstPartyHandoffRecord,
   type FirstPartyHandoffStore,
+  type FirstPartySessionLookup,
   type OAuthStateRecord,
   type OAuthStateStore,
 } from "../../../../packages/auth/src/index.js";
@@ -478,5 +482,143 @@ describe("production auth policies", () => {
         revokedAtEpochSeconds: 1_000,
       }),
     ).rejects.toThrow(TokenLifecyclePolicyError);
+  });
+});
+
+describe("inbound session authentication", () => {
+  it("authenticates embedded tokens without an expected subject and fails closed on stale role versions", async () => {
+    const { privateKey, publicKey } = generateKeyPairSync("ed25519");
+    const privateKeyPem = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+    const publicKeyPem = publicKey.export({ type: "spki", format: "pem" }).toString();
+    const token = issueEmbeddedSessionToken({
+      privateKeyPem,
+      keyId: "key_primary",
+      issuer: "https://auth.operation-automated-lo.test",
+      audience: "oalo-web",
+      subject: "user_alpha",
+      sessionId: "session_alpha",
+      nonce: "nonce_alpha",
+      locationId: "location_alpha",
+      installationId: "installation_alpha",
+      role: "campaign_creator",
+      roleVersion: 3,
+      nowEpochSeconds: 1_000,
+    });
+    const policy = {
+      issuer: "https://auth.operation-automated-lo.test",
+      audience: "oalo-web",
+      publicKeysById: { key_primary: publicKeyPem },
+      nowEpochSeconds: 1_001,
+      isSessionActive: () => true,
+      currentRoleVersion: () => 3,
+    };
+    await expect(authenticateInboundEmbeddedSession({ token, policy })).resolves.toMatchObject({
+      sub: "user_alpha",
+      locationId: "location_alpha",
+      role: "campaign_creator",
+      roleVersion: 3,
+    });
+    await expect(
+      authenticateInboundEmbeddedSession({
+        token,
+        policy: { ...policy, currentRoleVersion: () => 4 },
+      }),
+    ).rejects.toThrow(SessionPolicyError);
+    await expect(
+      authenticateInboundEmbeddedSession({
+        token,
+        policy: { ...policy, isSessionActive: () => false },
+      }),
+    ).rejects.toThrow(SessionPolicyError);
+    await expect(
+      authenticateInboundEmbeddedSession({
+        token,
+        policy: { ...policy, nowEpochSeconds: 1_300 },
+      }),
+    ).rejects.toThrow(SessionPolicyError);
+    await expect(
+      authenticateInboundEmbeddedSession({
+        token,
+        policy: { ...policy, currentRoleVersion: () => 3.5 },
+      }),
+    ).rejects.toThrow(SessionPolicyError);
+  });
+
+  it("authenticates established first-party sessions and rejects expired or stale bindings", async () => {
+    const sessionSecret = "a".repeat(43);
+    const record: EstablishedFirstPartySession = {
+      sessionId: "session_alpha",
+      userId: "user_alpha",
+      locationId: "location_alpha",
+      installationId: "installation_alpha",
+      role: "location_admin",
+      roleVersion: 3,
+      expiresAtEpochSeconds: 2_000,
+    };
+    const lookup: FirstPartySessionLookup = {
+      async getActive(secret, nowEpochSeconds) {
+        if (secret !== sessionSecret || record.expiresAtEpochSeconds <= nowEpochSeconds) {
+          return undefined;
+        }
+        return record;
+      },
+    };
+    await expect(
+      authenticateInboundFirstPartySession({
+        sessionSecret,
+        lookup,
+        nowEpochSeconds: 1_001,
+        currentRoleVersion: () => 3,
+      }),
+    ).resolves.toMatchObject({
+      userId: "user_alpha",
+      locationId: "location_alpha",
+      role: "location_admin",
+    });
+    await expect(
+      authenticateInboundFirstPartySession({
+        sessionSecret,
+        lookup,
+        nowEpochSeconds: 2_000,
+        currentRoleVersion: () => 3,
+      }),
+    ).rejects.toThrow(BrowserSessionPolicyError);
+    await expect(
+      authenticateInboundFirstPartySession({
+        sessionSecret,
+        lookup,
+        nowEpochSeconds: 1_001,
+        currentRoleVersion: () => 4,
+      }),
+    ).rejects.toThrow(BrowserSessionPolicyError);
+    await expect(
+      authenticateInboundFirstPartySession({
+        sessionSecret: "b".repeat(43),
+        lookup,
+        nowEpochSeconds: 1_001,
+        currentRoleVersion: () => 3,
+      }),
+    ).rejects.toThrow(BrowserSessionPolicyError);
+    await expect(
+      authenticateInboundFirstPartySession({
+        sessionSecret: "short",
+        lookup,
+        nowEpochSeconds: 1_001,
+        currentRoleVersion: () => 3,
+      }),
+    ).rejects.toThrow(BrowserSessionPolicyError);
+    const invalidLookup: FirstPartySessionLookup = {
+      async getActive() {
+        return { ...record, role: "owner" as EstablishedFirstPartySession["role"] };
+      },
+    };
+    await expect(
+      authenticateInboundFirstPartySession({
+        sessionSecret,
+        lookup: invalidLookup,
+        nowEpochSeconds: 1_001,
+        currentRoleVersion: () => 3,
+      }),
+    ).rejects.toThrow(BrowserSessionPolicyError);
   });
 });

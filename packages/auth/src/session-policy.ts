@@ -2,6 +2,19 @@ import { SafeTenantReferenceSchema } from "@oalo/contracts";
 
 export const EMBEDDED_SESSION_ALGORITHM = "EdDSA" as const;
 
+export const SESSION_APPLICATION_ROLES = [
+  "location_admin",
+  "campaign_creator",
+  "campaign_approver",
+  "campaign_publisher",
+  "viewer",
+  "platform_support",
+] as const;
+
+export type SessionApplicationRole = (typeof SESSION_APPLICATION_ROLES)[number];
+
+export const SESSION_APPLICATION_ROLE_SET: ReadonlySet<string> = new Set(SESSION_APPLICATION_ROLES);
+
 export interface FixtureSessionHeader {
   readonly alg: string;
   readonly kid: string;

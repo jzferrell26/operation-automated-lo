@@ -141,6 +141,9 @@ importers:
       '@oalo/application':
         specifier: workspace:*
         version: link:../../packages/application
+      '@oalo/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@oalo/config':
         specifier: workspace:*
         version: link:../../packages/config

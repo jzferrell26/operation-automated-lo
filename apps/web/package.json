@@ -11,6 +11,7 @@
   "dependencies": {
     "@oalo/ai": "workspace:*",
     "@oalo/application": "workspace:*",
+    "@oalo/auth": "workspace:*",
     "@oalo/config": "workspace:*",
     "@oalo/contracts": "workspace:*",
     "@oalo/db": "workspace:*",

@@ -43,8 +43,8 @@ The result of this batch is a tenant-backed Open House Boost workflow that can c
 |---|---|---|
 | [`prd-003a-authenticated-product-activation-campaign-persistence`](./prd-003a-authenticated-product-activation-campaign-persistence.md) | Tenant-scoped Postgres schema and repositories for immutable campaigns, versions, and preflight evidence | **Done** (`70531fb`, PR #54) |
 | [`prd-003b-authenticated-product-activation-session-command-context`](./prd-003b-authenticated-product-activation-session-command-context.md) | Verified server principal and transaction context for authenticated campaign commands | **Done** (`2ee2634`, PR #55) |
-| [`prd-003c-authenticated-product-activation-human-approval`](./prd-003c-authenticated-product-activation-human-approval.md) | Persisted human approval decision, audit evidence, and legal campaign transition | In Work |
-| [`prd-003d-authenticated-product-activation-workspace-reads`](./prd-003d-authenticated-product-activation-workspace-reads.md) | Authenticated campaign creation/detail/list/overview backed by persisted tenant data | Draft |
+| [`prd-003c-authenticated-product-activation-human-approval`](./prd-003c-authenticated-product-activation-human-approval.md) | Persisted human approval decision, audit evidence, and legal campaign transition | **Done** (`71c371d`, PR #57) |
+| [`prd-003d-authenticated-product-activation-workspace-reads`](./prd-003d-authenticated-product-activation-workspace-reads.md) | Authenticated campaign creation/detail/list/overview backed by persisted tenant data | In Work |
 
 ---
 

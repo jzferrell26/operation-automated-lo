@@ -6,6 +6,7 @@ import {
   OALO_REVIEW_SURFACE_ENV,
   REVIEW_SURFACE_DISCLOSURE,
   authenticatedWorkspaceMode,
+  campaignPersistenceKind,
   canRenderReviewSurface,
   isReviewSurfaceAuthorized,
   loadAuthenticatedWorkspace,
@@ -33,6 +34,28 @@ describe("authenticated workspace data boundary", () => {
     expect(workspace.ui.session.safety.dataMode).toBe("synthetic");
     expect(workspace.brand.safety.dataMode).toBe("synthetic");
     expect(workspace.reporting.safety.dataMode).toBe("synthetic");
+  });
+
+  it("selects filesystem persistence only for synthetic local and preview", () => {
+    expect(
+      campaignPersistenceKind({
+        OALO_ENVIRONMENT: "local",
+        ...stubSynthetic,
+      }),
+    ).toBe("filesystem");
+    expect(
+      campaignPersistenceKind({
+        OALO_ENVIRONMENT: "preview",
+        ...stubSynthetic,
+      }),
+    ).toBe("filesystem");
+    expect(
+      campaignPersistenceKind({
+        OALO_ENVIRONMENT: "production",
+        ...stubSynthetic,
+        [OALO_REVIEW_SURFACE_ENV]: OALO_REVIEW_SURFACE_AUTHORIZED,
+      }),
+    ).toBe("postgres");
   });
 
   it("allows the explicit review surface in production without enabling providers", () => {

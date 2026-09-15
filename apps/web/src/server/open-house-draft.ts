@@ -5,6 +5,7 @@ import {
   createCampaignVersion,
   runCampaignPreflight,
   type AuthenticatedPrincipal,
+  type CampaignVersionRepository,
 } from "@oalo/application";
 import { z } from "zod";
 
@@ -38,38 +39,9 @@ const OpenHouseDraftInputSchema = z
 
 export type OpenHouseDraftInput = z.infer<typeof OpenHouseDraftInputSchema>;
 
-function ref(prefix: string, id: string): string {
-  return `${prefix}_${id}`;
-}
-
-export async function compileOpenHouseDraft(
-  untrustedInput: unknown,
-  principal: AuthenticatedPrincipal,
-  environment: unknown = process.env,
-) {
-  const mode = authenticatedWorkspaceMode(environment);
-  if (principal.authenticationMode === "local_synthetic" && mode !== "synthetic") {
-    throw new UnauthenticatedPrincipalError();
-  }
-  assertMayExecuteCampaignMutation(principal);
-  const input = OpenHouseDraftInputSchema.parse(untrustedInput);
-  const id = randomUUID().replaceAll("-", "");
-  const createdAt = new Date();
-  const rulesetVersionRef = "ruleset_openHouseFounding001";
-  const campaignRef = ref("campaign", id);
-  const campaignVersionRef = ref("campaignversion", id);
-
-  const repository = {
-    async run<T>(
-      work: (transaction: {
-        getByCampaignVersionRef(
-          locationRef: string,
-          campaignVersionRef: string,
-        ): Promise<undefined>;
-        getLatestVersionNo(locationRef: string, campaignRef: string): Promise<number>;
-        append(version: unknown): Promise<void>;
-      }) => Promise<T>,
-    ): Promise<T> {
+export function createMemoryCampaignVersionRepository(): CampaignVersionRepository {
+  return {
+    async run(work) {
       return work({
         async getByCampaignVersionRef() {
           return undefined;
@@ -83,6 +55,29 @@ export async function compileOpenHouseDraft(
       });
     },
   };
+}
+
+function ref(prefix: string, id: string): string {
+  return `${prefix}_${id}`;
+}
+
+export async function compileOpenHouseDraft(
+  untrustedInput: unknown,
+  principal: AuthenticatedPrincipal,
+  environment: unknown = process.env,
+  versionRepository: CampaignVersionRepository = createMemoryCampaignVersionRepository(),
+) {
+  const mode = authenticatedWorkspaceMode(environment);
+  if (principal.authenticationMode === "local_synthetic" && mode !== "synthetic") {
+    throw new UnauthenticatedPrincipalError();
+  }
+  assertMayExecuteCampaignMutation(principal);
+  const input = OpenHouseDraftInputSchema.parse(untrustedInput);
+  const id = randomUUID().replaceAll("-", "");
+  const createdAt = new Date();
+  const rulesetVersionRef = "ruleset_openHouseFounding001";
+  const campaignRef = ref("campaign", id);
+  const campaignVersionRef = ref("campaignversion", id);
 
   const version = await createCampaignVersion(
     {
@@ -168,7 +163,7 @@ export async function compileOpenHouseDraft(
         createdBy: principal.actorRef,
       },
     },
-    repository,
+    versionRepository,
   );
 
   const preflight = runCampaignPreflight(version, {

@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { projectCampaignWorkspace } from "@oalo/application";
+
 import { createLocalSyntheticPrincipal } from "../../../server/authenticated-principal.js";
 import {
   LOCAL_SYNTHETIC_ENV,
@@ -16,16 +18,20 @@ describe("persisted campaign approval screen", () => {
       createLocalSyntheticPrincipal(),
       LOCAL_SYNTHETIC_ENV,
     );
-    const campaign = {
+    const record = {
       version: compiled.version,
       preflight: compiled.preflight,
       state: "awaiting_approval" as const,
-      events: [],
-      updatedAt: compiled.version.createdAt,
       rowVersion: 1,
+      updatedAt: compiled.version.createdAt,
     };
+    const creatorView = projectCampaignWorkspace(
+      record,
+      createLocalSyntheticPrincipal(),
+      "filesystem",
+    );
 
-    const { unmount } = render(<PersistedCampaignScreen campaign={campaign} canApprove={false} />);
+    const { unmount } = render(<PersistedCampaignScreen campaign={creatorView} />);
     expect(
       screen.getByText(
         "Only a verified human with campaign_approver or location_admin may approve.",
@@ -35,9 +41,20 @@ describe("persisted campaign approval screen", () => {
     expect(screen.getByText(compiled.version.campaignVersionRef)).toBeInTheDocument();
     unmount();
 
-    render(<PersistedCampaignScreen campaign={campaign} canApprove={true} />);
+    const approverView = projectCampaignWorkspace(
+      record,
+      {
+        ...createLocalSyntheticPrincipal(),
+        role: "campaign_approver",
+        actorRef: "principal_localApprover001",
+        actorId: "00000000-0000-4000-8000-000000000812",
+      },
+      "postgres",
+    );
+    render(<PersistedCampaignScreen campaign={approverView} />);
     expect(screen.getByRole("button", { name: "Approve this version" })).toBeEnabled();
     expect(screen.getByText(/Exact version/)).toBeInTheDocument();
     expect(screen.getByText(/Dallas-Fort Worth/)).toBeInTheDocument();
+    expect(screen.getByText("Persisted tenant campaign record")).toBeInTheDocument();
   });
 });

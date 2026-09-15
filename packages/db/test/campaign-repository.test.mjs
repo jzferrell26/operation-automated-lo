@@ -102,4 +102,39 @@ describe("campaign persistence SQL contracts", () => {
       (error) => error instanceof CampaignPersistenceError && error.code === "CAMPAIGN_ROW_INVALID",
     );
   });
+
+  it("decodes unlocked campaign list and detail aggregates", () => {
+    const updatedAt = now;
+    assert.deepEqual(
+      campaignVersionContracts.selectReadAggregateContract.decode({
+        campaign_ref: "campaign_01OpenHouse",
+        status: "awaiting_approval",
+        row_version: 2,
+        updated_at: updatedAt,
+      }),
+      {
+        campaignRef: "campaign_01OpenHouse",
+        status: "awaiting_approval",
+        rowVersion: 2,
+        updatedAt: updatedAt.toISOString(),
+      },
+    );
+    assert.equal(
+      campaignVersionContracts.selectReadAggregateContract.text.includes("for update"),
+      false,
+    );
+    assert.equal(
+      campaignVersionContracts.selectLocationCampaignListContract.text.includes("for update"),
+      false,
+    );
+    assert.throws(
+      () =>
+        campaignVersionContracts.selectLocationCampaignListContract.decode({
+          status: "awaiting_approval",
+          row_version: 2,
+          updated_at: updatedAt,
+        }),
+      (error) => error instanceof CampaignPersistenceError && error.code === "CAMPAIGN_ROW_INVALID",
+    );
+  });
 });

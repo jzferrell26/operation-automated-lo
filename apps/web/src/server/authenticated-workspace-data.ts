@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { CampaignPersistenceKind } from "@oalo/application";
+
 import { loadSyntheticBrandProfile } from "../features/brand/model/synthetic-brand-profile.js";
 import { loadSyntheticReporting } from "../features/reporting/model/synthetic-reporting.js";
 import { loadSyntheticUiFixture } from "../features/ui-foundation/data/load-synthetic-ui.js";
@@ -11,6 +13,7 @@ export const REVIEW_SURFACE_DISCLOSURE =
   "REVIEW SURFACE. Demo fixtures only. Not connected to HighLevel, Meta, or Stripe. These numbers are not live customer data.";
 
 export type AuthenticatedWorkspaceMode = "synthetic" | "review";
+export type { CampaignPersistenceKind };
 
 const AuthenticatedWorkspaceRuntimeSchema = z
   .object({
@@ -65,6 +68,10 @@ export function authenticatedWorkspaceMode(
     runtime.OALO_ENVIRONMENT,
     runtime.OALO_PROVIDER_MODE,
   );
+}
+
+export function campaignPersistenceKind(input: unknown = process.env): CampaignPersistenceKind {
+  return authenticatedWorkspaceMode(input) === "synthetic" ? "filesystem" : "postgres";
 }
 
 export function canRenderReviewSurface(input: unknown = process.env): boolean {

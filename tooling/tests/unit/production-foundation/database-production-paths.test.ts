@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { campaignManifestFixture } from "../../../../packages/db/test/campaign-manifest-fixture.mjs";
 import {
   acquireQueueLeaseContract,
   AiTelemetryPersistenceError,
   authorityActiveContract,
   createPostgresAiTelemetryPort,
+  createPostgresCampaignReadRepository,
   createPostgresPool,
   createPostgresPublicationCleanupReconciliationPort,
   createResolverAwarePostgresDeliveryGuard,
@@ -899,6 +901,125 @@ describe("PostgreSQL publication cleanup adapter", () => {
         ),
       ).rejects.toBeInstanceOf(PublicationCleanupPersistenceError);
     }
+  });
+});
+
+describe("postgres campaign workspace reads", () => {
+  const versionRow = Object.freeze({
+    location_ref: "location_01TenantA",
+    campaign_ref: "campaign_01OpenHouse",
+    campaign_version_ref: "version_01Campaign",
+    version_no: 1,
+    source_campaign_ref: null,
+    input_versions: Object.freeze({
+      blueprintVersionRef: "blueprint_01OpenHouse",
+      brandProfileVersionRef: "profile_01Brand",
+      complianceProfileVersionRef: "profile_01Compliance",
+      partnerProfileVersionRef: "profile_01Partner",
+      routingProfileVersionRef: "profile_01Routing",
+      rulesetVersionRef: "ruleset_01Policy",
+    }),
+    manifest: campaignManifestFixture,
+    manifest_hash: "a".repeat(64),
+    created_by_actor_ref: "user_01Creator",
+    created_at: new Date("2026-07-21T16:00:00.000Z"),
+  });
+  const preflightRow = Object.freeze({
+    campaign_ref: "campaign_01OpenHouse",
+    campaign_version_ref: "version_01Campaign",
+    manifest_hash: "a".repeat(64),
+    input_versions: versionRow.input_versions,
+    ruleset_version_ref: "ruleset_01Policy",
+    findings: [],
+    blocking: false,
+    result_hash: "c".repeat(64),
+    evaluated_at: new Date("2026-07-21T16:00:00.000Z"),
+  });
+  const aggregateRow = Object.freeze({
+    campaign_ref: "campaign_01OpenHouse",
+    status: "awaiting_approval",
+    row_version: 2,
+    updated_at: new Date("2026-07-21T16:01:00.000Z"),
+  });
+
+  it("lists and loads tenant campaigns without a write lock", async () => {
+    const connection = new FakeConnection({
+      rowsByStatement: {
+        "campaign.select-location-list.v1": [aggregateRow],
+        "campaign.select-read-aggregate.v1": [aggregateRow],
+        "campaign.select-latest-version.v1": [versionRow],
+        "campaign.select-latest-preflight.v1": [preflightRow],
+        "campaign.select-latest-approval.v1": [
+          {
+            approval_ref: "approval_01Decision",
+            location_ref: "location_01TenantA",
+            campaign_ref: "campaign_01OpenHouse",
+            campaign_version_ref: "version_01Campaign",
+            manifest_hash: "a".repeat(64),
+            preflight_result_hash: "c".repeat(64),
+            actor_ref: "user_01Creator",
+            actor_kind: "human",
+            actor_role: "location_admin",
+            decided_at: new Date("2026-07-21T16:05:00.000Z"),
+            ip_audit_hash: "e".repeat(64),
+            decision: "approved",
+            snapshot: {
+              pageVersionRef: "page_01Approved",
+              pdfVersionRef: "pdf_01Approved",
+              creativeVersionRef: "creative_01Approved",
+              copyVersionRef: "copy_01Approved",
+              emailPackageVersionRef: "email_01Approved",
+              smsPackageVersionRef: "sms_01Approved",
+              disclosureVersionRef: "disclosure_01Approved",
+              targetingHash: "1".repeat(64),
+              budgetHash: "2".repeat(64),
+              datesHash: "3".repeat(64),
+              formVersionRef: "form_01Approved",
+              destinationVersionRef: "destination_01Approved",
+            },
+          },
+        ],
+      },
+    });
+    const repository = createPostgresCampaignReadRepository(new FakePool(connection), {
+      resolveTenantDatabaseContext: async () => context,
+    });
+    const listed = await repository.listForLocation();
+    expect(listed).toHaveLength(1);
+    expect(listed[0]?.version.campaignRef).toBe("campaign_01OpenHouse");
+    expect(listed[0]?.approval?.decision).toBe("approved");
+    expect(connection.statementNames()).not.toContain("campaign.lock-approval-aggregate.v1");
+    await expect(repository.getByCampaignRef("campaign_01OpenHouse")).resolves.toMatchObject({
+      state: "awaiting_approval",
+      rowVersion: 2,
+    });
+  });
+
+  it("skips incomplete aggregates and returns undefined for unknown refs", async () => {
+    const missingVersion = new FakeConnection({
+      rowsByStatement: {
+        "campaign.select-location-list.v1": [aggregateRow],
+        "campaign.select-latest-version.v1": [],
+        "campaign.select-read-aggregate.v1": [],
+      },
+    });
+    const repository = createPostgresCampaignReadRepository(new FakePool(missingVersion), {
+      resolveTenantDatabaseContext: async () => context,
+    });
+    await expect(repository.listForLocation()).resolves.toEqual([]);
+    await expect(repository.getByCampaignRef("campaign_missing001")).resolves.toBeUndefined();
+
+    const missingPreflight = new FakeConnection({
+      rowsByStatement: {
+        "campaign.select-location-list.v1": [aggregateRow],
+        "campaign.select-latest-version.v1": [versionRow],
+        "campaign.select-latest-preflight.v1": [],
+      },
+    });
+    const incomplete = createPostgresCampaignReadRepository(new FakePool(missingPreflight), {
+      resolveTenantDatabaseContext: async () => context,
+    });
+    await expect(incomplete.listForLocation()).resolves.toEqual([]);
   });
 });
 

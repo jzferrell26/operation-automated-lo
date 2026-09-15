@@ -5,6 +5,7 @@ import type {
   Overview,
   SyntheticSession,
 } from "../../ui-foundation/model/synthetic-ui.js";
+import type { CampaignWorkspaceProjection } from "@oalo/application";
 import { ActivityFeed } from "./activity-feed.js";
 import { OverviewEdgeStateMatrix } from "./overview-edge-state-matrix.js";
 import styles from "./overview.module.css";
@@ -13,9 +14,10 @@ import { ProjectedSafeAction } from "./projected-safe-action.js";
 type OverviewScreenProps = Readonly<{
   overview: DeepReadonly<Overview>;
   session: DeepReadonly<SyntheticSession>;
+  workspaceCampaigns?: readonly CampaignWorkspaceProjection[];
 }>;
 
-export function OverviewScreen({ overview, session }: OverviewScreenProps) {
+export function OverviewScreen({ overview, session, workspaceCampaigns }: OverviewScreenProps) {
   const priorityMetrics = overview.metrics.slice(0, 4);
   const secondaryMetrics = overview.metrics.slice(4);
 
@@ -133,7 +135,38 @@ export function OverviewScreen({ overview, session }: OverviewScreenProps) {
           </div>
         </div>
         <div className={styles.listGrid}>
-          {overview.activeWork.map((item) => (
+          {workspaceCampaigns !== undefined ? (
+            workspaceCampaigns.length === 0 ? (
+              <Card padding="md">
+                <p className={styles.itemMeta}>Campaign</p>
+                <h3>No campaigns in this location yet</h3>
+                <p>Create an Open House Boost to persist a tenant-backed campaign.</p>
+                <p>
+                  <strong>Next safe action:</strong> Create marketing campaign
+                </p>
+              </Card>
+            ) : (
+              workspaceCampaigns.map((campaign) => (
+                <Card key={campaign.campaignRef} padding="md">
+                  <p className={styles.itemMeta}>Campaign</p>
+                  <h3>{campaign.headline}</h3>
+                  <p>{stateLabel(campaign.state)}</p>
+                  <p>
+                    <strong>Next safe action:</strong>{" "}
+                    {campaign.nextActions.find((action) => action.available)?.label ??
+                      "Review persisted version evidence."}
+                  </p>
+                  <a className="oalo-action-link" href={campaign.detailHref}>
+                    Open persisted campaign
+                  </a>
+                </Card>
+              ))
+            )
+          ) : null}
+          {(workspaceCampaigns === undefined
+            ? overview.activeWork
+            : overview.activeWork.filter((item) => item.type !== "campaign")
+          ).map((item) => (
             <Card key={item.id} padding="md">
               <p className={styles.itemMeta}>{workTypeLabel(item.type)}</p>
               <h3>{item.title}</h3>
@@ -338,6 +371,10 @@ function workTypeLabel(type: Overview["activeWork"][number]["type"]): string {
     case "system":
       return "System";
   }
+}
+
+function stateLabel(state: CampaignWorkspaceProjection["state"]): string {
+  return state.replaceAll("_", " ").replace(/^./u, (value: string) => value.toUpperCase());
 }
 
 function formatTimestamp(timestamp: string): string {

@@ -116,6 +116,21 @@ export {
 } from "./campaign-approval-command.js";
 
 export {
+  campaignMayBeApprovedBy,
+  deriveCampaignNextActions,
+  principalHasCampaignApprovalRole,
+  projectCampaignWorkspace,
+  type CampaignNextActionId,
+  type CampaignPersistenceKind,
+  type CampaignWorkspaceApprovalProjection,
+  type CampaignWorkspaceNextAction,
+  type CampaignWorkspacePreflightProjection,
+  type CampaignWorkspaceProjection,
+  type CampaignWorkspaceReadRecord,
+  type CampaignWorkspaceReadRepository,
+} from "./campaign-workspace-read.js";
+
+export {
   LeadSubmissionRejectedError,
   acceptPublicLeadSubmission,
   evaluateLeadPathLaunchGate,

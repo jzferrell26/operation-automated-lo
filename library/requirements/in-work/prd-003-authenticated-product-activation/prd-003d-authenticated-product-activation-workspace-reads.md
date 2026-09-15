@@ -1,7 +1,7 @@
 # PRD-003d: Authenticated Product Activation - Workspace Reads
 
 > **Parent:** [PRD-003](./prd-003-authenticated-product-activation-index.md)
-> **Status:** In Work
+> **Status:** Done (`26051b3`, PR #58)
 > **Priority:** P0
 > **Schema changes:** None beyond PRD-003a
 

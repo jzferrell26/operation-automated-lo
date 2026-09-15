@@ -3,9 +3,13 @@ import { Card, Icon } from "@oalo/ui";
 import type { PreflightFinding } from "@oalo/contracts";
 
 import type { LocalCampaignRecord } from "../../../server/local-campaign-store.js";
+import { CampaignApprovalControls } from "./campaign-approval-controls.js";
 import styles from "./open-house-draft-builder.module.css";
 
-export function PersistedCampaignScreen({ campaign }: Readonly<{ campaign: LocalCampaignRecord }>) {
+export function PersistedCampaignScreen({
+  campaign,
+  canApprove,
+}: Readonly<{ campaign: LocalCampaignRecord; canApprove: boolean }>) {
   const manifest = campaign.version.manifest;
   return (
     <div className={styles.page}>
@@ -45,6 +49,33 @@ export function PersistedCampaignScreen({ campaign }: Readonly<{ campaign: Local
         <Card padding="sm">
           <strong>Total budget</strong>
           <p>{dollars(manifest.meta.totalBudgetMinor)}</p>
+        </Card>
+        <Card padding="sm">
+          <strong>Targeting</strong>
+          <p>
+            {manifest.meta.targeting.country}
+            {manifest.meta.targeting.regions.length > 0
+              ? ` / ${manifest.meta.targeting.regions.join(", ")}`
+              : ""}
+          </p>
+        </Card>
+        <Card padding="sm">
+          <strong>Open house</strong>
+          <p>
+            {new Date(manifest.property.openHouseStartsAt).toLocaleString("en-US")} to{" "}
+            {new Date(manifest.property.openHouseEndsAt).toLocaleString("en-US")}
+          </p>
+        </Card>
+        <Card padding="sm">
+          <strong>Disclosure</strong>
+          <p>{manifest.content.disclosureText}</p>
+        </Card>
+        <Card padding="sm">
+          <strong>Approval scope</strong>
+          <p>
+            Exact version {campaign.version.campaignVersionRef}. New material edits cannot inherit
+            this decision.
+          </p>
         </Card>
       </div>
 
@@ -95,14 +126,17 @@ export function PersistedCampaignScreen({ campaign }: Readonly<{ campaign: Local
         </div>
       </section>
 
-      <Card padding="md">
-        <strong>Approval authority required</strong>
-        <p>
-          This campaign is intentionally not self-approvable from the current loan-officer session.
-          The next production slice must bind approval to a verified HighLevel principal with an
-          allowed approver role.
-        </p>
-      </Card>
+      <CampaignApprovalControls
+        campaignRef={campaign.version.campaignRef}
+        campaignVersionRef={campaign.version.campaignVersionRef}
+        manifestHash={campaign.version.manifestHash}
+        preflightResultHash={campaign.preflight.resultHash}
+        rowVersion={campaign.rowVersion}
+        canApprove={canApprove}
+        alreadyDecided={campaign.approval?.decision}
+        blocking={campaign.preflight.blocking}
+        state={campaign.state}
+      />
 
       <details>
         <summary>Immutable evidence</summary>

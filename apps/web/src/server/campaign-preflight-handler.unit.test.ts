@@ -1,31 +1,21 @@
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
   createDefaultCampaignCommandPorts,
   createLocalSyntheticPrincipal,
 } from "./authenticated-principal.js";
-import { LOCAL_SYNTHETIC_ENV, OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
+import {
+  LOCAL_SYNTHETIC_ENV,
+  OPEN_HOUSE_DRAFT_INPUT,
+  createTemporaryCampaignStore,
+} from "./campaign-command-test-support.js";
 import { handleCampaignPreflight } from "./campaign-preflight-handler.js";
 
-const originalCwd = process.cwd();
-const temporaryDirectories: string[] = [];
+const store = createTemporaryCampaignStore("oalo-preflight-");
 
 afterEach(async () => {
-  process.chdir(originalCwd);
-  for (const directory of temporaryDirectories.splice(0)) {
-    await rm(directory, { recursive: true, force: true });
-  }
+  await store.restore();
 });
-
-async function withStore(): Promise<void> {
-  const directory = await mkdtemp(join(tmpdir(), "oalo-preflight-"));
-  temporaryDirectories.push(directory);
-  process.chdir(directory);
-}
 
 function post(body: unknown, headers: HeadersInit = {}): Request {
   return new Request("https://app.operation-automated-lo.test/api/campaigns/preflight", {
@@ -37,10 +27,10 @@ function post(body: unknown, headers: HeadersInit = {}): Request {
 
 describe("campaign preflight handler", () => {
   it("freezes a local synthetic draft from the verified principal", async () => {
-    await withStore();
+    await store.enter();
     const response = await handleCampaignPreflight(
       post(OPEN_HOUSE_DRAFT_INPUT),
-      LOCAL_SYNTHETIC_ENV,
+      store.env(),
       createDefaultCampaignCommandPorts(),
     );
     expect(response.status).toBe(200);
@@ -55,10 +45,10 @@ describe("campaign preflight handler", () => {
   });
 
   it("returns 400 when the body tries to supply a tenant field", async () => {
-    await withStore();
+    await store.enter();
     const response = await handleCampaignPreflight(
       post({ ...OPEN_HOUSE_DRAFT_INPUT, locationRef: "location_otherTenant001" }),
-      LOCAL_SYNTHETIC_ENV,
+      store.env(),
       createDefaultCampaignCommandPorts(),
     );
     expect(response.status).toBe(400);

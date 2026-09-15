@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 
 import {
   CampaignPersistenceError,
+  createPostgresCampaignApprovalRepository,
   createPostgresCampaignVersionRepository,
   createPostgresPool,
 } from "../dist/index.js";
@@ -95,6 +96,103 @@ describe(
         );
       } finally {
         await cleanupTenants(pool, [tenantA, tenantB]);
+        await pool.close();
+      }
+    });
+
+    it("commits approval, status, command, and audit atomically and retries idempotently", async () => {
+      const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
+      const tenantA = tenantFixture("charlie", suffix);
+      const pool = testPool(databaseUrl);
+      await seedTenant(pool, tenantA, "Approval A");
+      const versionRepo = createPostgresCampaignVersionRepository(pool, {
+        async resolveTenantDatabaseContext() {
+          return tenantA;
+        },
+      });
+      const approvalRepo = createPostgresCampaignApprovalRepository(pool, {
+        async resolveTenantDatabaseContext() {
+          return tenantA;
+        },
+      });
+      const campaignRef = `campaign_${suffix}`;
+      const versionRef = `version_${suffix}c`;
+      try {
+        const version = await appendVersion(versionRepo, tenantA, campaignRef, versionRef);
+        const passing = preflightFor(version, false);
+        await versionRepo.persistPreflight(passing);
+        const decision = {
+          schemaVersion: 1,
+          approvalRef: `approval_${suffix}`,
+          locationRef: tenantA.locationRef,
+          campaignRef,
+          campaignVersionRef: version.campaignVersionRef,
+          manifestHash: version.manifestHash,
+          preflightResultHash: passing.resultHash,
+          actorRef: `user_${tenantA.label}`,
+          actorKind: "human",
+          actorRole: "location_admin",
+          decidedAt: "2026-07-21T16:05:00.000Z",
+          ipAuditHash: "a".repeat(64),
+          decision: "approved",
+          snapshot: {
+            pageVersionRef: "page_01Approved",
+            pdfVersionRef: "pdf_01Approved",
+            creativeVersionRef: "creative_01Approved",
+            copyVersionRef: "copy_01Approved",
+            emailPackageVersionRef: "email_01Approved",
+            smsPackageVersionRef: "sms_01Approved",
+            disclosureVersionRef: "disclosure_01Approved",
+            targetingHash: "b".repeat(64),
+            budgetHash: "c".repeat(64),
+            datesHash: "d".repeat(64),
+            formVersionRef: "form_01Approved",
+            destinationVersionRef: "destination_01Approved",
+          },
+        };
+        const commandKey = "e".repeat(64);
+        const first = await approvalRepo.run(async (transaction) => {
+          const evidence = await transaction.loadCurrentEvidence(campaignRef);
+          assert.ok(evidence);
+          assert.equal(evidence.state, "awaiting_approval");
+          return transaction.commitApproval({
+            decision,
+            event: undefined,
+            expectedRowVersion: evidence.rowVersion,
+            fromState: "awaiting_approval",
+            toState: "approved",
+            commandKey,
+            inputHash: "f".repeat(64),
+            correlationId: tenantA.correlationId,
+          });
+        });
+        assert.equal(first.duplicate, false);
+        assert.equal(first.state, "approved");
+        assert.equal(await readStatus(pool, tenantA.locationId, campaignRef), "approved");
+        const retry = await approvalRepo.run(async (transaction) =>
+          transaction.commitApproval({
+            decision,
+            event: undefined,
+            expectedRowVersion: first.rowVersion,
+            fromState: "awaiting_approval",
+            toState: "approved",
+            commandKey,
+            inputHash: "f".repeat(64),
+            correlationId: tenantA.correlationId,
+          }),
+        );
+        assert.equal(retry.duplicate, true);
+        assert.equal(retry.decision.approvalRef, decision.approvalRef);
+        await approvalRepo.run(async (transaction) => {
+          await transaction.recordDeniedAttempt({
+            campaignRef,
+            correlationId: `${tenantA.correlationId}-denied`,
+            inputHash: "f".repeat(64),
+            beforeHash: "a".repeat(64),
+          });
+        });
+      } finally {
+        await cleanupTenants(pool, [tenantA]);
         await pool.close();
       }
     });
@@ -247,6 +345,11 @@ async function cleanupTenants(pool, tenants) {
     );
     for (const tenant of tenants) {
       for (const [statementName, text] of [
+        ["test.cleanup-audit", "delete from audit.events where location_id = $1::uuid"],
+        [
+          "test.cleanup-commands",
+          "delete from integration.command_executions where location_id = $1::uuid",
+        ],
         [
           "test.cleanup-approvals",
           "delete from campaign.approval_decisions where location_id = $1::uuid",

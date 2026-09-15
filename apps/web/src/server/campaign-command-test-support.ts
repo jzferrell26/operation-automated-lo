@@ -1,3 +1,7 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 export const LOCAL_SYNTHETIC_ENV = Object.freeze({
   OALO_ENVIRONMENT: "local",
   OALO_PROVIDER_MODE: "stub",
@@ -22,3 +26,61 @@ export const OPEN_HOUSE_DRAFT_INPUT = Object.freeze({
   propertyPermissionConfirmed: true,
   realtorPermissionConfirmed: true,
 });
+
+export type PersistedDraftSummary = Readonly<{
+  campaignRef: string;
+  campaignVersionRef: string;
+  manifestHash: string;
+  resultHash: string;
+}>;
+
+export function createTemporaryCampaignStore(prefix: string) {
+  let directory: string | undefined;
+  let storePath: string | undefined;
+  return {
+    async enter() {
+      directory = await mkdtemp(join(tmpdir(), prefix));
+      storePath = join(directory, "local-campaign-store.json");
+      return storePath;
+    },
+    env() {
+      if (storePath === undefined) {
+        throw new Error("Temporary campaign store was not entered");
+      }
+      return Object.freeze({
+        ...LOCAL_SYNTHETIC_ENV,
+        OALO_LOCAL_CAMPAIGN_STORE: storePath,
+      });
+    },
+    async restore() {
+      if (directory === undefined) return;
+      await rm(directory, { recursive: true, force: true });
+      directory = undefined;
+      storePath = undefined;
+    },
+  };
+}
+
+export function persistedDraftFromPreflightBody(payload: unknown): PersistedDraftSummary {
+  if (typeof payload !== "object" || payload === null) {
+    throw new Error("Preflight response body must be an object");
+  }
+  const record = payload as {
+    version?: { campaignRef?: unknown; campaignVersionRef?: unknown; manifestHash?: unknown };
+    preflight?: { resultHash?: unknown };
+  };
+  if (
+    typeof record.version?.campaignRef !== "string" ||
+    typeof record.version.campaignVersionRef !== "string" ||
+    typeof record.version.manifestHash !== "string" ||
+    typeof record.preflight?.resultHash !== "string"
+  ) {
+    throw new Error("Preflight response is missing persisted draft fields");
+  }
+  return {
+    campaignRef: record.version.campaignRef,
+    campaignVersionRef: record.version.campaignVersionRef,
+    manifestHash: record.version.manifestHash,
+    resultHash: record.preflight.resultHash,
+  };
+}

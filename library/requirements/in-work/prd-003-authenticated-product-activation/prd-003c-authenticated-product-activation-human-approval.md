@@ -1,7 +1,7 @@
 # PRD-003c: Authenticated Product Activation - Human Approval
 
 > **Parent:** [PRD-003](./prd-003-authenticated-product-activation-index.md)
-> **Status:** Draft
+> **Status:** In Work
 > **Priority:** P0
 > **Schema changes:** Uses PRD-003a additive tables
 

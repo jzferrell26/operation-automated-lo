@@ -19,6 +19,7 @@ import {
   createStaticIdentityDirectory,
   createStaticRoleBindingPort,
   resolveAuthenticatedPrincipal,
+  resolveAuthenticatedReadPrincipal,
   type CampaignCommandPorts,
 } from "./authenticated-principal.js";
 import { LOCAL_SYNTHETIC_ENV, OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
@@ -189,6 +190,47 @@ describe("authenticated principal adapter", () => {
       ...embedded,
       authenticationMode: "first_party",
     });
+  });
+
+  it("reads a first-party session without a CSRF token and still requires CSRF for mutations", async () => {
+    const sessionSecret = "a".repeat(43);
+    const established: EstablishedFirstPartySession = {
+      sessionId: "session_alpha",
+      userId: "user_alpha",
+      locationId: "location_alpha",
+      installationId: "installation_alpha",
+      role: "campaign_approver",
+      roleVersion: 3,
+      expiresAtEpochSeconds: Math.floor(Date.now() / 1000) + 3_600,
+    };
+    const ports: CampaignCommandPorts = {
+      identityDirectory: identityDirectory(),
+      roleBindings: createStaticRoleBindingPort([
+        {
+          actorRef: "user_alpha",
+          locationRef: "location_alpha",
+          role: "campaign_approver",
+          roleVersion: 3,
+        },
+      ]),
+      mutation: mutationGate(),
+      firstPartySessions: {
+        async getActive(secret) {
+          return secret === sessionSecret ? established : undefined;
+        },
+      },
+    };
+    const cookie = {
+      cookie: `${FIRST_PARTY_SESSION_COOKIE}=${sessionSecret}`,
+      origin: "https://app.operation-automated-lo.test",
+      host: "app.operation-automated-lo.test",
+    };
+    await expect(
+      resolveAuthenticatedReadPrincipal(request(cookie), reviewEnv, ports),
+    ).resolves.toMatchObject({ role: "campaign_approver", authenticationMode: "first_party" });
+    await expect(
+      resolveAuthenticatedPrincipal(request(cookie), reviewEnv, ports),
+    ).rejects.toThrow();
   });
 
   it("fails closed for cookie plus bearer, missing lookup, and stale role versions", async () => {

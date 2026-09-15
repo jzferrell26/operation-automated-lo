@@ -1,13 +1,17 @@
 import {
   canonicalCampaignHash,
+  type CampaignApprovalRepository,
+  type CampaignApprovalTransaction,
   type CampaignVersionRepository,
   type CampaignVersionTransaction,
 } from "@oalo/application";
 import {
   ApprovalDecisionSchema,
+  CampaignStateSchema,
   CampaignVersionSchema,
   PreflightResultSchema,
   type ApprovalDecision,
+  type CampaignState,
   type CampaignVersion,
   type PreflightResult,
 } from "@oalo/contracts";
@@ -29,6 +33,7 @@ export class CampaignPersistenceError extends Error {
     | "CAMPAIGN_MANIFEST_HASH_MISMATCH"
     | "CAMPAIGN_VERSION_CONFLICT"
     | "CAMPAIGN_PREFLIGHT_MISMATCH"
+    | "CAMPAIGN_APPROVAL_CONFLICT"
     | "CAMPAIGN_ROW_INVALID";
 
   constructor(code: CampaignPersistenceError["code"], message: string) {
@@ -48,6 +53,17 @@ interface VersionNoRow {
 
 interface AffectedRow {
   readonly affected: boolean;
+}
+
+interface CampaignAggregateRow {
+  readonly status: CampaignState;
+  readonly rowVersion: number;
+}
+
+interface CommandLookupRow {
+  readonly approvalRef: string;
+  readonly state: CampaignState;
+  readonly rowVersion: number;
 }
 
 interface CampaignVersionRow {
@@ -125,10 +141,7 @@ where version.location_id = platform.current_location_id()
   decode: decodeVersionNo,
 });
 
-const selectVersionContract = defineSqlContract<CampaignVersion>({
-  name: "campaign.select-version.v1",
-  access: "read",
-  text: `
+const campaignVersionSelect = `
 select
   version.location_ref,
   version.campaign_ref,
@@ -142,8 +155,13 @@ select
   version.created_at
 from campaign.campaign_versions as version
 where version.location_id = platform.current_location_id()
-  and version.campaign_version_ref = $1::text
-  `.trim(),
+`.trim();
+
+const selectVersionContract = defineSqlContract<CampaignVersion>({
+  name: "campaign.select-version.v1",
+  access: "read",
+  text: `${campaignVersionSelect}
+  and version.campaign_version_ref = $1::text`,
   decode: decodeCampaignVersionRow,
 });
 
@@ -246,10 +264,7 @@ returning true as affected
   decode: decodeAffected,
 });
 
-const selectPreflightContract = defineSqlContract<PreflightResult>({
-  name: "campaign.select-preflight.v1",
-  access: "read",
-  text: `
+const preflightSelect = `
 select
   result.campaign_ref,
   result.campaign_version_ref,
@@ -262,9 +277,14 @@ select
   result.evaluated_at
 from campaign.preflight_results as result
 where result.location_id = platform.current_location_id()
+`.trim();
+
+const selectPreflightContract = defineSqlContract<PreflightResult>({
+  name: "campaign.select-preflight.v1",
+  access: "read",
+  text: `${preflightSelect}
   and result.campaign_version_ref = $1::text
-  and result.result_hash = $2::text
-  `.trim(),
+  and result.result_hash = $2::text`,
   decode: decodePreflightRow,
 });
 
@@ -320,10 +340,7 @@ returning true as affected
   decode: decodeAffected,
 });
 
-const selectApprovalContract = defineSqlContract<ApprovalDecision>({
-  name: "campaign.select-approval.v1",
-  access: "read",
-  text: `
+const approvalDecisionSelect = `
 select
   decision.approval_ref,
   decision.location_ref,
@@ -340,9 +357,162 @@ select
   decision.snapshot
 from campaign.approval_decisions as decision
 where decision.location_id = platform.current_location_id()
-  and decision.approval_ref = $1::text
-  `.trim(),
+`.trim();
+
+const selectApprovalContract = defineSqlContract<ApprovalDecision>({
+  name: "campaign.select-approval.v1",
+  access: "read",
+  text: `${approvalDecisionSelect}
+  and decision.approval_ref = $1::text`,
   decode: decodeApprovalRow,
+});
+
+const selectAggregateContract = defineSqlContract<CampaignAggregateRow>({
+  name: "campaign.lock-approval-aggregate.v1",
+  access: "write",
+  text: `
+select campaign_row.status, campaign_row.row_version
+  from campaign.campaigns as campaign_row
+ where campaign_row.location_id = platform.current_location_id()
+   and campaign_row.campaign_ref = $1::text
+   for update
+  `.trim(),
+  decode: decodeAggregateRow,
+});
+
+const selectLatestVersionContract = defineSqlContract<CampaignVersion>({
+  name: "campaign.select-latest-version.v1",
+  access: "read",
+  text: `${campaignVersionSelect}
+  and version.campaign_ref = $1::text
+order by version.version_no desc
+limit 1`,
+  decode: decodeCampaignVersionRow,
+});
+
+const selectLatestPreflightContract = defineSqlContract<PreflightResult>({
+  name: "campaign.select-latest-preflight.v1",
+  access: "read",
+  text: `${preflightSelect}
+  and result.campaign_version_ref = $1::text
+order by result.evaluated_at desc, result.id desc
+limit 1`,
+  decode: decodePreflightRow,
+});
+
+const selectLatestApprovalContract = defineSqlContract<ApprovalDecision>({
+  name: "campaign.select-latest-approval.v1",
+  access: "read",
+  text: `${approvalDecisionSelect}
+  and decision.campaign_version_ref = $1::text
+order by decision.decided_at desc, decision.id desc
+limit 1`,
+  decode: decodeApprovalRow,
+});
+
+const selectCommandByKeyContract = defineSqlContract<CommandLookupRow>({
+  name: "campaign.select-approval-command.v1",
+  access: "read",
+  text: `
+select command_row.result_summary
+  from integration.command_executions as command_row
+ where command_row.location_id = platform.current_location_id()
+   and command_row.command_name = 'campaign.record-human-approval.v1'
+   and command_row.idempotency_key = $1::text
+  `.trim(),
+  decode: decodeCommandLookupRow,
+});
+
+const insertCommandExecutionContract = defineSqlContract<AffectedRow>({
+  name: "campaign.insert-approval-command.v1",
+  access: "write",
+  text: `
+insert into integration.command_executions (
+  location_id,
+  command_name,
+  schema_version,
+  actor_id,
+  actor_type,
+  resource_type,
+  resource_id,
+  expected_version,
+  input_hash,
+  idempotency_key,
+  status,
+  result_summary,
+  correlation_id,
+  committed_at,
+  completed_at
+) values (
+  platform.current_location_id(),
+  'campaign.record-human-approval.v1',
+  1,
+  platform.current_actor_id(),
+  'user',
+  'campaign',
+  $1::text,
+  $2::bigint,
+  $3::text,
+  $4::text,
+  'completed',
+  $5::text::jsonb,
+  $6::text,
+  pg_catalog.statement_timestamp(),
+  pg_catalog.statement_timestamp()
+)
+on conflict (location_id, command_name, idempotency_key) do nothing
+returning true as affected
+  `.trim(),
+  decode: decodeAffected,
+});
+
+const insertAuditEventContract = defineSqlContract<AffectedRow>({
+  name: "campaign.insert-approval-audit.v1",
+  access: "write",
+  text: `
+insert into audit.events (
+  location_id,
+  actor_type,
+  actor_id,
+  subject_type,
+  subject_id,
+  action,
+  result,
+  safe_before_hash,
+  safe_after_hash,
+  correlation_id
+) values (
+  platform.current_location_id(),
+  'user',
+  platform.current_actor_id(),
+  'campaign',
+  $1::text,
+  'campaign.approval.record',
+  $2::text,
+  $3::text,
+  $4::text,
+  $5::text
+)
+returning true as affected
+  `.trim(),
+  decode: decodeAffected,
+});
+
+const updateCampaignOptimisticContract = defineSqlContract<AffectedRow>({
+  name: "campaign.update-status-optimistic.v1",
+  access: "write",
+  text: `
+update campaign.campaigns as campaign_row
+   set status = $2::text,
+       row_version = campaign_row.row_version + 1,
+       updated_at = pg_catalog.statement_timestamp()
+ where campaign_row.location_id = platform.current_location_id()
+   and campaign_row.campaign_ref = $1::text
+   and campaign_row.row_version = $3::bigint
+   and campaign_row.status = $4::text
+returning true as affected
+  `.trim(),
+  decode: decodeAffected,
 });
 
 export class PostgresCampaignVersionRepository implements CampaignVersionRepository {
@@ -403,31 +573,8 @@ export class PostgresCampaignVersionRepository implements CampaignVersionReposit
   async persistApprovalDecision(decision: ApprovalDecision): Promise<ApprovalDecision> {
     const parsed = ApprovalDecisionSchema.parse(decision);
     return withTenantTransaction(this.#pool, this.#authority, async (transaction) => {
-      const inserted = await writeOne(transaction, insertApprovalContract, [
-        parsed.approvalRef,
-        parsed.locationRef,
-        parsed.preflightResultHash,
-        parsed.actorRef,
-        parsed.actorRole,
-        parsed.decidedAt,
-        parsed.ipAuditHash,
-        parsed.decision,
-        jsonText(parsed.snapshot),
-        parsed.campaignRef,
-        parsed.campaignVersionRef,
-        parsed.manifestHash,
-      ]);
-      if (!inserted) {
-        const existing = await readOptional(transaction, selectApprovalContract, [
-          parsed.approvalRef,
-        ]);
-        if (existing) return existing;
-        throw new CampaignPersistenceError(
-          "CAMPAIGN_PREFLIGHT_MISMATCH",
-          "Approval persistence requires a matching campaign version and manifest hash",
-        );
-      }
-      return parsed;
+      const existing = await insertOrLoadApproval(transaction, parsed);
+      return existing ?? parsed;
     });
   }
 
@@ -452,6 +599,29 @@ export function createPostgresCampaignVersionRepository(
   authority: TenantContextAuthority,
 ): PostgresCampaignVersionRepository {
   return new PostgresCampaignVersionRepository(pool, authority);
+}
+
+export class PostgresCampaignApprovalRepository implements CampaignApprovalRepository {
+  readonly #pool: DatabasePool;
+  readonly #authority: TenantContextAuthority;
+
+  constructor(pool: DatabasePool, authority: TenantContextAuthority) {
+    this.#pool = pool;
+    this.#authority = authority;
+  }
+
+  async run<T>(work: (transaction: CampaignApprovalTransaction) => Promise<T>): Promise<T> {
+    return withTenantTransaction(this.#pool, this.#authority, async (transaction) =>
+      work(createCampaignApprovalTransaction(transaction)),
+    );
+  }
+}
+
+export function createPostgresCampaignApprovalRepository(
+  pool: DatabasePool,
+  authority: TenantContextAuthority,
+): PostgresCampaignApprovalRepository {
+  return new PostgresCampaignApprovalRepository(pool, authority);
 }
 
 function createCampaignVersionTransaction(
@@ -499,6 +669,172 @@ function createCampaignVersionTransaction(
       );
     },
   };
+}
+
+function createCampaignApprovalTransaction(
+  transaction: TenantTransaction,
+): CampaignApprovalTransaction {
+  return {
+    async loadCurrentEvidence(campaignRef) {
+      const aggregateRows = await transaction.write(selectAggregateContract, [campaignRef]);
+      const aggregate = aggregateRows[0];
+      if (aggregate === undefined) return undefined;
+      const version = await readOptional(transaction, selectLatestVersionContract, [campaignRef]);
+      if (version === undefined) return undefined;
+      const preflight = await readOptional(transaction, selectLatestPreflightContract, [
+        version.campaignVersionRef,
+      ]);
+      if (preflight === undefined) return undefined;
+      const existingApproval = await readOptional(transaction, selectLatestApprovalContract, [
+        version.campaignVersionRef,
+      ]);
+      return Object.freeze({
+        version,
+        preflight,
+        state: aggregate.status,
+        rowVersion: aggregate.rowVersion,
+        ...(existingApproval === undefined ? {} : { existingApproval }),
+      });
+    },
+    async commitApproval(input) {
+      const existingCommand = await readOptional(transaction, selectCommandByKeyContract, [
+        input.commandKey,
+      ]);
+      if (existingCommand) {
+        const existing = await readOptional(transaction, selectApprovalContract, [
+          existingCommand.approvalRef,
+        ]);
+        if (existing === undefined) {
+          throw new CampaignPersistenceError(
+            "CAMPAIGN_APPROVAL_CONFLICT",
+            "Approval command exists without a matching decision",
+          );
+        }
+        return Object.freeze({
+          decision: existing,
+          state: existingCommand.state,
+          rowVersion: existingCommand.rowVersion,
+          duplicate: true,
+        });
+      }
+      const existingDecision = await insertOrLoadApproval(transaction, input.decision);
+      if (existingDecision) {
+        return Object.freeze({
+          decision: existingDecision,
+          state: input.toState,
+          rowVersion: input.expectedRowVersion,
+          duplicate: true,
+        });
+      }
+      const updated = await writeOne(transaction, updateCampaignOptimisticContract, [
+        input.decision.campaignRef,
+        input.toState,
+        input.expectedRowVersion,
+        input.fromState,
+      ]);
+      if (!updated) {
+        throw new CampaignPersistenceError(
+          "CAMPAIGN_APPROVAL_CONFLICT",
+          "Campaign row version changed before approval commit",
+        );
+      }
+      const rowVersion = input.expectedRowVersion + 1;
+      const resultSummary = jsonText({
+        approvalRef: input.decision.approvalRef,
+        decision: input.decision.decision,
+        campaignVersionRef: input.decision.campaignVersionRef,
+        state: input.toState,
+        rowVersion,
+      });
+      const commandInserted = await writeOne(transaction, insertCommandExecutionContract, [
+        input.decision.campaignRef,
+        input.expectedRowVersion,
+        input.inputHash,
+        input.commandKey,
+        resultSummary,
+        input.correlationId,
+      ]);
+      if (!commandInserted) {
+        const raced = await readOptional(transaction, selectCommandByKeyContract, [
+          input.commandKey,
+        ]);
+        const existing = raced
+          ? await readOptional(transaction, selectApprovalContract, [raced.approvalRef])
+          : undefined;
+        if (existing) {
+          return Object.freeze({
+            decision: existing,
+            state: raced?.state ?? input.toState,
+            rowVersion: raced?.rowVersion ?? rowVersion,
+            duplicate: true,
+          });
+        }
+        throw new CampaignPersistenceError(
+          "CAMPAIGN_APPROVAL_CONFLICT",
+          "Approval command idempotency key collided without a stored decision",
+        );
+      }
+      const afterHash = canonicalCampaignHash({
+        state: input.toState,
+        rowVersion,
+        campaignVersionRef: input.decision.campaignVersionRef,
+      });
+      const beforeHash = canonicalCampaignHash({
+        state: input.fromState,
+        rowVersion: input.expectedRowVersion,
+        campaignVersionRef: input.decision.campaignVersionRef,
+      });
+      await writeExpected(transaction, insertAuditEventContract, [
+        input.decision.campaignRef,
+        "success",
+        beforeHash,
+        afterHash,
+        input.correlationId,
+      ]);
+      return Object.freeze({
+        decision: input.decision,
+        state: input.toState,
+        rowVersion,
+        duplicate: false,
+      });
+    },
+    async recordDeniedAttempt(input) {
+      await writeExpected(transaction, insertAuditEventContract, [
+        input.campaignRef,
+        "denied",
+        input.beforeHash,
+        input.beforeHash,
+        input.correlationId,
+      ]);
+    },
+  };
+}
+
+async function insertOrLoadApproval(
+  transaction: TenantTransaction,
+  decision: ApprovalDecision,
+): Promise<ApprovalDecision | undefined> {
+  const inserted = await writeOne(transaction, insertApprovalContract, [
+    decision.approvalRef,
+    decision.locationRef,
+    decision.preflightResultHash,
+    decision.actorRef,
+    decision.actorRole,
+    decision.decidedAt,
+    decision.ipAuditHash,
+    decision.decision,
+    jsonText(decision.snapshot),
+    decision.campaignRef,
+    decision.campaignVersionRef,
+    decision.manifestHash,
+  ]);
+  if (inserted) return undefined;
+  const existing = await readOptional(transaction, selectApprovalContract, [decision.approvalRef]);
+  if (existing) return existing;
+  throw new CampaignPersistenceError(
+    "CAMPAIGN_PREFLIGHT_MISMATCH",
+    "Approval persistence requires a matching campaign version and manifest hash",
+  );
 }
 
 async function writeExpected<Row>(
@@ -552,6 +888,31 @@ function decodeAffected(row: unknown): AffectedRow {
     throw new CampaignPersistenceError("CAMPAIGN_ROW_INVALID", "Write result must be true");
   }
   return Object.freeze({ affected: true });
+}
+
+function decodeAggregateRow(row: unknown): CampaignAggregateRow {
+  const record = recordRow(row);
+  return Object.freeze({
+    status: CampaignStateSchema.parse(record.status),
+    rowVersion: requiredInteger(record.row_version, "row_version", 1),
+  });
+}
+
+function decodeCommandLookupRow(row: unknown): CommandLookupRow {
+  const record = recordRow(row);
+  const summary =
+    typeof record.result_summary === "string"
+      ? JSON.parse(record.result_summary)
+      : record.result_summary;
+  if (typeof summary !== "object" || summary === null) {
+    throw new CampaignPersistenceError("CAMPAIGN_ROW_INVALID", "Command result summary is invalid");
+  }
+  const parsed = summary as Readonly<Record<string, unknown>>;
+  return Object.freeze({
+    approvalRef: requiredString(parsed.approvalRef, "approvalRef"),
+    state: CampaignStateSchema.parse(parsed.state),
+    rowVersion: requiredInteger(parsed.rowVersion, "rowVersion", 1),
+  });
 }
 
 function decodeCampaignVersionRow(row: unknown): CampaignVersion {
@@ -658,4 +1019,12 @@ export const campaignVersionContracts = Object.freeze({
   selectPreflightContract,
   insertApprovalContract,
   selectApprovalContract,
+  selectAggregateContract,
+  selectLatestVersionContract,
+  selectLatestPreflightContract,
+  selectLatestApprovalContract,
+  selectCommandByKeyContract,
+  insertCommandExecutionContract,
+  insertAuditEventContract,
+  updateCampaignOptimisticContract,
 });

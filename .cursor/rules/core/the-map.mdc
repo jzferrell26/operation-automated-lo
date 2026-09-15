@@ -9,9 +9,10 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
-- `main` tip (as of 2026-09-03): `0eff5f5` (PR #39 Dependabot majors ignored), after `718b7c1` (PR #31 hygiene), `56d90f6` (PR #30 H1-H3), `7ea7f6c` (PR #29 reverse review).
+- `main` tip (as of 2026-09-15): `2ee2634` (PR #55 PRD-003b session command context), after `70531fb` (PR #54 PRD-003a), `6f64201` (PR #53 labeled review dashboard).
 - Batch ledger: [`NEXT_BATCH_LEDGER.md`](../../../NEXT_BATCH_LEDGER.md)
 - AC ledger: [`PRODUCTION_EXECUTION_LEDGER.md`](../../../PRODUCTION_EXECUTION_LEDGER.md)
+- Marketplace packet: [`highlevel-marketplace-submission.md`](../../../library/knowledge/private/product/highlevel-marketplace-submission.md)
 - Latest full reverse review (document-only): [`library/requirements/reports/2026-08-26-full-reverse-review-report.md`](../../../library/requirements/reports/2026-08-26-full-reverse-review-report.md)
 - Reverse-review Highs H1-H3 closed on `main` via PR #30. Hygiene M3/M4/M5/M20 closed via PR #31. Dependabot majors ignored via PR #39. Actions major raid (checkout 7 / cache 6 / setup-node 7) is the planned SHA-pinned follow-up.
 
@@ -23,13 +24,19 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 - Library Schema v2 scaffold gaps closed.
 - External Evidence Sprint prep on `main` (evidence packs under `docs/operations/evidence-packs/`).
 - G2 App Test **harness** on `main`: env-gated live capture (`OALO_GHL_LIVE_CAPTURE=authorized` only), 9-case matrix, CLI `pnpm ghl:g2-matrix`, sanitization + unit/contract tests. Fail-closed by default.
+- PRD-003a campaign persistence on `main` (`70531fb`, PR #54).
+- PRD-003b session command context on `main` (`2ee2634`, PR #55).
+- Labeled review dashboard on `main` (`6f64201`, PR #53).
 
 ## Pending / blocked (honest)
 
 | Blocker | Status | What it unlocks |
 | --- | --- | --- |
-| HighLevel **app approval** (Marketplace / App Test eligibility) | Waiting on HighLevel | Operator can run Wave 1 G2 matrix |
-| App Test operator access + controlled location | Not yet provided | Sanitized fixtures for 28 `DEFERRED: LIVE HIGHLEVEL AUTH` ACs |
+| HighLevel App Test operator run | **Try sandbox + Test Link now** (do not wait for prior Marketplace approval per official docs) | Sanitized fixtures for 28 `DEFERRED: LIVE HIGHLEVEL AUTH` ACs |
+| G2 live evidence | Harness ready; **no sanitized fixtures**; do not invent G2 evidence | Flip deferred auth ACs only after `pnpm test:contracts` |
+| PRD-003b session command context | **Done** (`2ee2634`, PR #55) | Verified server principal for campaign mutations |
+| PRD-003c / 003d | Not started | Human approval + tenant-backed workspace reads |
+| App Test operator access + controlled location | Operator-led | Live OAuth/session matrix capture |
 | Env isolation + KMS (Wave 2) | Parked | `001J-AC-026`, `001J-AC-029` |
 | G3 / G5 / G6 / G7 live evidence | Parked (later waves) | Meta, lead, billing, counsel |
 
@@ -37,9 +44,9 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Next steps (librarian)
 
-1. **Human / HighLevel:** Wait for HighLevel to approve the app. Then grant App Test operator access for one controlled location and name the operator.
-2. **Wave 1:** Run [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](../../../docs/operations/evidence-packs/g2-highlevel-app-test.md); ingest sanitized fixtures; update production ledger with evidence pointers. Owner: operator + `gohighlevel-guardian`.
-3. **Parallel in-repo product activation:** [`PRD-003`](../../../library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is the in-work bridge from synthetic/local authenticated campaign surfaces to tenant-backed Postgres persistence, verified session authority, human approval, and real workspace reads. Wave 003a is the current implementation. It enables no provider traffic and satisfies no external evidence gate by itself.
+1. **Human / HighLevel:** Try sandbox + Create App Test Account + Test Link now ([Marketplace packet](../../../library/knowledge/private/product/highlevel-marketplace-submission.md)). Do not invent G2 evidence.
+2. **Wave 1:** After operator capture, run [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](../../../docs/operations/evidence-packs/g2-highlevel-app-test.md); ingest sanitized fixtures; update production ledger with evidence pointers. Owner: operator + `gohighlevel-guardian`.
+3. **Parallel in-repo product activation:** [`PRD-003`](../../../library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) is in `in-work/`. 003a **done** (`70531fb`); 003b **done** (`2ee2634`); 003c/003d not started. Enables no provider traffic and satisfies no external evidence gate by itself.
 4. **Optional parallel:** Wave 2 prep (cloud inventory + KMS custody) if a cloud owner is available; otherwise leave parked.
 5. **After any harness/code change:** `security-guardian` then `quality-guardian` (never reverse). Squash-merge only.
 6. **Do not** move PRD-001 to `completed/` until project-map core-completion is satisfied.
@@ -48,7 +55,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 1. Read this map + [`project-map.md`](../../../library/knowledge/private/product/project-map.md).
 2. Route via [`.cursor/skills/dungeon-master/SKILL.md`](../../skills/dungeon-master/SKILL.md).
-3. For Wave 1 after approval: `gohighlevel-guardian` + `auth-guardian`. For docs/map edits: `library-guardian`.
+3. For Wave 1 App Test: `gohighlevel-guardian` + `auth-guardian`. For docs/map edits: `library-guardian`.
 
 ## Forbidden claims
 

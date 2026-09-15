@@ -6,9 +6,15 @@ Wave 1 of [`NEXT_BATCH_LEDGER.md`](../../../NEXT_BATCH_LEDGER.md).
 
 `001J-AC-022` through `024`, `001J-AC-028`, `001A-AC-005` through `016`, `018` through `023`, `026`, `028`, `038`, `001H-AC-002`, `003`, `005` (28 criteria currently `DEFERRED: LIVE HIGHLEVEL AUTH`).
 
-## Need from user before start
+## App Test: try sandbox + Test Link now
 
-- [ ] HighLevel **app approval** (current wait as of 2026-08-26)
+**Do not wait for prior Marketplace approval before App Test.** Official HighLevel docs do not list prior approval as a prerequisite for Testing → Create App Test Account or My Apps → Manage → Versions → Test Link. See [`highlevel-marketplace-submission.md`](../../../library/knowledge/private/product/highlevel-marketplace-submission.md).
+
+**Do not invent G2 evidence.** The harness on `main` is ready and fail-closed. Live capture requires operator-run sanitized observations that pass `pnpm test:contracts` before any deferred AC flips.
+
+## Need from user before live matrix capture
+
+- [ ] Sign in to Developer Portal and try Create App Test Account + Test Link (sandbox)
 - [ ] Authorized HighLevel App Test operator account or invite
 - [ ] One controlled location for the install matrix
 - [ ] Product owner confirms private App Test / founding beta boundary (G1 stays `ACCEPTED CONSTRAINT`)
@@ -35,13 +41,13 @@ pnpm test:contracts
 
 Sanitized outputs must pass `packages/ghl` evidence schemas (`source: sanitized-live-capture`, `externalStatus: CAPTURED_SANITIZED`). Only then copy approved fixtures into `tests/contracts/ghl/fixtures/` under review.
 
-## Wave 1 residual asks (2026-08-26)
+## Wave 1 residual asks (2026-09-15)
 
-Harness readiness is complete on `main` (PR #27, `a530947`: `OALO_GHL_LIVE_CAPTURE=authorized` seam, matrix CLI, sanitization + unit tests). **Live capture remains parked** pending HighLevel **app approval**, then App Test operator access for one controlled location. Every matrix row stays open with the same exact ask:
+Harness readiness is complete on `main` (PR #27, `a530947`: `OALO_GHL_LIVE_CAPTURE=authorized` seam, matrix CLI, sanitization + unit tests). **Try sandbox + Test Link now.** Live capture awaits operator sanitized observations for one controlled location. Every matrix row stays open until evidence lands:
 
 | caseId | Residual ask |
 | --- | --- |
-| `signed_custom_page_context` | After HighLevel app approval: App Test operator access + controlled location; capture sanitized signed-context observation |
+| `signed_custom_page_context` | App Test operator access + controlled location; capture sanitized signed-context observation |
 | `oauth_callback_success` | Same access; capture sanitized OAuth callback observation |
 | `location_token_exchange` | Same access; capture sanitized per-location token exchange observation |
 | `refresh_rotation` | Same access; capture sanitized refresh observation |

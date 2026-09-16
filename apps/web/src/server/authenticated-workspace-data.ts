@@ -160,12 +160,26 @@ export function campaignPersistenceKind(input: unknown = process.env): CampaignP
   return authenticatedWorkspaceMode(input) === "synthetic" ? "filesystem" : "postgres";
 }
 
-export function canRenderReviewSurface(input: unknown = process.env): boolean {
+/** The mode, or `undefined` where `authenticatedWorkspaceMode` refuses to serve anything at all. */
+function servableWorkspaceMode(input: unknown): AuthenticatedWorkspaceMode | undefined {
   try {
-    return authenticatedWorkspaceMode(input) === "review";
+    return authenticatedWorkspaceMode(input);
   } catch {
-    return false;
+    return undefined;
   }
+}
+
+export function canRenderReviewSurface(input: unknown = process.env): boolean {
+  return servableWorkspaceMode(input) === "review";
+}
+
+/**
+ * Whether this deployment is an intentional synthetic demo. Unauthenticated routes gate on this
+ * rather than on the absence of review mode, so an environment the mode function refuses to
+ * classify serves nothing instead of falling through to the fixture.
+ */
+export function canRenderSyntheticDemo(input: unknown = process.env): boolean {
+  return servableWorkspaceMode(input) === "synthetic";
 }
 
 type ReviewSafety = DeepReadonly<Onboarding>["safety"];

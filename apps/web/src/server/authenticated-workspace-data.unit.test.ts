@@ -13,6 +13,7 @@ import {
   authenticatedWorkspaceMode,
   campaignPersistenceKind,
   canRenderReviewSurface,
+  canRenderSyntheticDemo,
   isReviewSurfaceAuthorized,
   loadAuthenticatedWorkspace,
 } from "./authenticated-workspace-data.js";
@@ -241,6 +242,29 @@ describe("authenticated workspace data boundary", () => {
     expect(canRenderReviewSurface({ OALO_ENVIRONMENT: "production", ...stubSynthetic })).toBe(
       false,
     );
+  });
+
+  it("serves the public synthetic artifact only in an explicit synthetic demo deployment", () => {
+    expect(canRenderSyntheticDemo({ OALO_ENVIRONMENT: "local", ...stubSynthetic })).toBe(true);
+    expect(canRenderSyntheticDemo({ OALO_ENVIRONMENT: "preview", ...stubSynthetic })).toBe(true);
+
+    // Review mode publishes nothing, so the artifact route must not serve a property.
+    expect(
+      canRenderSyntheticDemo({
+        OALO_ENVIRONMENT: "preview",
+        ...stubSynthetic,
+        [OALO_REVIEW_SURFACE_ENV]: OALO_REVIEW_SURFACE_AUTHORIZED,
+      }),
+    ).toBe(false);
+
+    // An environment the mode function refuses to classify must serve nothing, not the fixture.
+    expect(
+      canRenderSyntheticDemo({
+        OALO_ENVIRONMENT: "production",
+        OALO_PROVIDER_MODE: "contract-test",
+        OALO_SYNTHETIC_DATA_ONLY: "false",
+      }),
+    ).toBe(false);
   });
 
   it("fails closed instead of projecting synthetic customer state in staging", () => {

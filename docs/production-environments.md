@@ -44,6 +44,8 @@ Review-surface flag (server-only, never `NEXT_PUBLIC_`):
 
 - `OALO_REVIEW_SURFACE`, unset by default (fail-closed). **Required** on any review or Marketplace preview URL so `/overview` and `/reports` satisfy PRD-004 `RGL-002` and PRD-004a `004A-AC-003`: set the exact value `authorized` to render honest not-connected states instead of labeled synthetic spend and leads. Without it, default preview still serves synthetic demo metrics (for example `USD 74.25` on `/reports`) and does not satisfy those review URL criteria. Still requires `OALO_PROVIDER_MODE=stub` and `OALO_SYNTHETIC_DATA_ONLY=true`. Does not enable HighLevel, Meta, or Stripe traffic.
 
+  The flag governs more than the two criterion-named routes. When it is set, the authenticated shell, `/overview`, `/reports`, `/onboarding`, `/settings/connections`, `/brand`, and the marketing campaign detail route all render not-connected projections instead of fixture content, and the public synthetic artifact route returns 404 rather than publishing a property. Those extra surfaces are not named by an acceptance criterion; they are covered because the same fixture content would otherwise read as observed tenant state.
+
 Database, task project, secret scope, private storage, published storage, and provider app identifiers must be unique across all four environments. The isolation fixture in CI is synthetic contract evidence, not proof about live resources.
 
 ## Public variable allowlist

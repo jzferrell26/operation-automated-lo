@@ -18,12 +18,12 @@
     "@oalo/ghl": "workspace:*",
     "@oalo/rendering": "workspace:*",
     "@oalo/storage": "workspace:*",
-    "@trigger.dev/sdk": "4.5.12",
+    "@trigger.dev/sdk": "4.5.16",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
-    "trigger.dev": "4.5.12",
+    "trigger.dev": "4.5.16",
     "typescript": "catalog:"
   }
 }

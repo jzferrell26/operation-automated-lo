@@ -85,10 +85,22 @@ export function localDatabaseUrl(databasePort, databaseName, { withPassword = fa
   return `postgresql://${credentials}@${LOCAL_DATABASE_HOST}:${String(databasePort)}/${databaseName}`;
 }
 
+/**
+ * The name reaches `psql --command` inside unquoted `drop database` / `create database` DDL, so a
+ * prefix check alone would let any suffix through. Constraining the whole value to a lowercase
+ * identifier keeps the guard a guard: it cannot carry a quote, a semicolon, or a comment.
+ */
+const DISPOSABLE_TEST_DATABASE_NAME_PATTERN = /^oalo_test_[a-z0-9_]{1,40}$/u;
+
 export function assertDisposableTestDatabaseName(databaseName) {
   if (!databaseName.startsWith(TEST_DATABASE_NAME_PREFIX)) {
     throw new Error(
       `Refusing to run destructive integration tests against ${databaseName}: the database name must start with ${TEST_DATABASE_NAME_PREFIX}.`,
+    );
+  }
+  if (!DISPOSABLE_TEST_DATABASE_NAME_PATTERN.test(databaseName)) {
+    throw new Error(
+      `Refusing to run destructive integration tests against ${databaseName}: the database name must match ${DISPOSABLE_TEST_DATABASE_NAME_PATTERN.source}.`,
     );
   }
   return databaseName;

@@ -166,6 +166,20 @@ describe("real PostgreSQL integration phase", () => {
     );
   });
 
+  it("refuses a prefixed name that could carry extra SQL into the psql DDL", () => {
+    for (const hostileName of [
+      'oalo_test_x"; drop database postgres; --',
+      "oalo_test_x; drop database postgres",
+      "oalo_test_x postgres",
+      "oalo_test_X",
+      TEST_DATABASE_NAME_PREFIX,
+    ]) {
+      expect(() => assertDisposableTestDatabaseName(hostileName)).toThrow(
+        "Refusing to run destructive integration tests against",
+      );
+    }
+  });
+
   it("discovers migrations and integration test files in deterministic order", async () => {
     const repositoryRoot = await fixtureRepository({
       integrationTestFiles: ["b.integration.test.mjs", "a.integration.test.mjs", "unit.test.mjs"],

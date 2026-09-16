@@ -102,26 +102,61 @@ function appendOnlyTriggerRequests(action) {
   );
 }
 
+const resetRoleRequest = request("test.harness-reset-role", "reset role");
+const roleRestoredRequest = request(
+  "test.harness-role-restored",
+  // `current_user` and `session_user` are SQL keywords, so no search_path qualification applies.
+  "select current_user = session_user as restored",
+);
+
+/**
+ * `SET LOCAL` reverts at transaction end, but `release()` in postgres 3.4.9 only clears the
+ * reserved flag: it issues no `DISCARD ALL` and no session reset. Ending the transaction is
+ * therefore the *only* thing that drops the elevation, so this asserts on the connection that the
+ * role really did revert before it goes back to the pool instead of trusting the reasoning.
+ */
+async function assertElevationReverted(connection) {
+  await connection.execute(resetRoleRequest);
+  const result = await connection.execute(roleRestoredRequest);
+  if (result.rows[0]?.restored !== true) {
+    throw new Error(
+      "Refusing to return a connection to the pool while it still holds an assumed role",
+    );
+  }
+}
+
 /**
  * Runs `work` inside a transaction that has assumed `migration_owner`. `SET LOCAL` keeps the role
- * change scoped to the transaction so a pooled connection is never handed back elevated.
+ * change scoped to the transaction so a pooled connection is never handed back elevated. Cleanup
+ * failures are aggregated rather than swallowed, because a failed ROLLBACK is exactly the event
+ * that would leave an elevated connection in the pool.
  */
 export async function withMigrationOwnerTransaction(pool, work) {
   const connection = await pool.connect();
-  let open = false;
+  // Set before `begin` so a client-side rejection that still reached the server issues the
+  // ROLLBACK that drops the elevation. ROLLBACK with no transaction open is a suppressed notice.
+  let open = true;
   try {
     await connection.execute(request("test.harness-begin", "begin"));
-    open = true;
     await connection.execute(assumeMigrationOwnerRequest);
     const result = await work(connection);
     await connection.execute(request("test.harness-commit", "commit"));
     open = false;
+    await assertElevationReverted(connection);
     return result;
   } catch (error) {
+    const failures = [error];
     if (open) {
-      await connection.execute(request("test.harness-rollback", "rollback")).catch(() => undefined);
+      try {
+        await connection.execute(request("test.harness-rollback", "rollback"));
+        open = false;
+        await assertElevationReverted(connection);
+      } catch (cleanupError) {
+        failures.push(cleanupError);
+      }
     }
-    throw error;
+    if (failures.length === 1) throw error;
+    throw new AggregateError(failures, "Migration owner transaction cleanup failed");
   } finally {
     await connection.release();
   }

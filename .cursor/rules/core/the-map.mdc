@@ -9,11 +9,13 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
-- `main` tip (as of 2026-09-16): `f4b79f7` (PR #61 locally provable go-live code), after `011c53c` (PR #60 PRD-004 docs), `6d5982f` (PR #59 map/ledger sync), `26051b3` (PR #58 PRD-003d), `71c371d` (PR #57 PRD-003c).
+- `main` tip (as of 2026-09-16): `deeb3e2` (PR #62 production-tonight docs), after `f4b79f7` (PR #61 locally provable go-live code), `011c53c` (PR #60 PRD-004 docs), `6d5982f` (PR #59 map/ledger sync), `26051b3` (PR #58 PRD-003d).
 - Go-live raid ledger: [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md) rows `GGL-001` through `GGL-010` (VERIFIED) and `GGL-B01` through `GGL-B16` (blocked operator asks).
 - Batch ledger: [`NEXT_BATCH_LEDGER.md`](../../../NEXT_BATCH_LEDGER.md)
 - AC ledger: [`PRODUCTION_EXECUTION_LEDGER.md`](../../../PRODUCTION_EXECUTION_LEDGER.md)
 - Marketplace packet: [`highlevel-marketplace-submission.md`](../../../library/knowledge/private/product/highlevel-marketplace-submission.md)
+- Operator runbook (step order, return artifacts, abort conditions): [`production-tonight-operator-runbook.md`](../../../library/knowledge/private/operations/production-tonight-operator-runbook.md)
+- Listing copy, shot list, Loom script, claim audit: [`marketplace-listing-copy-pack.md`](../../../library/knowledge/private/product/marketplace-listing-copy-pack.md)
 - Latest full reverse review (document-only): [`library/requirements/reports/2026-08-26-full-reverse-review-report.md`](../../../library/requirements/reports/2026-08-26-full-reverse-review-report.md)
 - Reverse-review Highs H1-H3 closed on `main` via PR #30. Hygiene M3/M4/M5/M20 closed via PR #31. Dependabot majors ignored via PR #39. Actions major raid (checkout 7 / cache 6 / setup-node 7) is the planned SHA-pinned follow-up.
 
@@ -31,6 +33,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 - PRD-003d workspace reads on `main` (`26051b3`, PR #58).
 - Labeled review dashboard on `main` (`6f64201`, PR #53).
 - PRD-004a in-repo code on `main` (`f4b79f7`, PR #61): honest review surfaces (`OALO_REVIEW_SURFACE=authorized`), public-env secret guard, provider default-off proof. `GGL-001`/`GGL-002` VERIFIED in review mode only. `GGL-008`/`GGL-009` DONE (code), BLOCKED (automated gate) as `GGL-B16`.
+- Production-tonight requirements authoring (2026-09-16): **PRD-004d** owns `GGL-B16`; **PRD-004e** holds authored listing content (customer-facing scope statement, FAQ, paste-ready fields, six-frame shot list, Loom script, claim audit); operator runbook + coverage report added. Every parked `GGL-B*` row now has an owning requirement document. Documentation only: no AC status changed.
 
 ## Pending / blocked (honest)
 
@@ -45,7 +48,8 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 | Preview/review smoke (004a) | **Code VERIFIED**; **operator BLOCKED** (`GGL-B01`–`B03`) | Set `OALO_DATABASE_URL` + `OALO_REVIEW_SURFACE=authorized` on `operation-automated-lo-web`; run smoke pack |
 | Honest `/overview` on review URL | **Requires** server-only `OALO_REVIEW_SURFACE=authorized` | Without it, default preview still shows labeled synthetic demo metrics (`GGL-001`/`GGL-002` not met) |
 | Marketplace portal inspect | **Unsigned-in** (`GGL-B04`–`B06`) | Developer Portal + Test Link (004b) |
-| Real-Postgres CI gate (`GGL-B16`) | **Parked** | `pnpm --filter @oalo/db test:postgres` with `OALO_TEST_DATABASE_URL`; not in canonical `pnpm test:db` yet |
+| Marketplace listing (`GGL-B09`) | **Content authored** (PRD-004e); capture + submit blocked | Screenshots and Loom need the review URL in review mode; 3 operator values still missing (support email, publisher name, pricing) |
+| Real-Postgres CI gate (`GGL-B16`) | **Parked**, owned by [PRD-004d](../../../library/requirements/in-work/prd-004-reviewable-go-live/prd-004d-reviewable-go-live-postgres-command-gate.md) | Last locally provable row. `pnpm --filter @oalo/db test:postgres` with `OALO_TEST_DATABASE_URL`, or pick route R1/R2 |
 | App Test operator access + controlled location | Operator-led | Live OAuth/session matrix capture |
 | Env isolation + KMS (Wave 2) | Parked | `001J-AC-026`, `001J-AC-029` |
 | G3 / G5 / G6 / G7 live evidence | Parked (later waves) | Meta, lead, billing, counsel |
@@ -56,7 +60,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 1. **Human / HighLevel:** Try sandbox + Create App Test Account + Test Link now ([Marketplace packet](../../../library/knowledge/private/product/highlevel-marketplace-submission.md)). Do not invent G2 evidence.
 2. **Wave 1:** After operator capture, run [`docs/operations/evidence-packs/g2-highlevel-app-test.md`](../../../docs/operations/evidence-packs/g2-highlevel-app-test.md); ingest sanitized fixtures; update production ledger with evidence pointers. Owner: operator + `gohighlevel-guardian`.
-3. **Production tonight (operator):** [`reviewable-preview-smoke.md`](../../../docs/operations/evidence-packs/reviewable-preview-smoke.md) — wire `OALO_DATABASE_URL` + `OALO_REVIEW_SURFACE=authorized` on `operation-automated-lo-web`, run smoke (`GGL-B01`–`B03`), then portal sign-in + Test Link (`GGL-B04`–`B07`). Code for honest review surfaces is on `main` (`f4b79f7`). [`PRD-003`](../../../library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) parent exits when operator smoke passes. [`PRD-004c`](../../../library/requirements/in-work/prd-004-reviewable-go-live/prd-004c-reviewable-go-live-marketplace-submission.md) after smoke + Test Link (`GGL-B09`). Do not flip deferred G2 ACs (`GGL-B10`).
+3. **Production tonight (operator):** follow [`production-tonight-operator-runbook.md`](../../../library/knowledge/private/operations/production-tonight-operator-runbook.md), which sequences [`reviewable-preview-smoke.md`](../../../docs/operations/evidence-packs/reviewable-preview-smoke.md). Wire `OALO_DATABASE_URL` + `OALO_REVIEW_SURFACE=authorized` on `operation-automated-lo-web`, run smoke (`GGL-B01`–`B03`), then portal sign-in + Test Link (`GGL-B04`–`B07`), then capture and submit the authored listing (`GGL-B09`). Code for honest review surfaces is on `main` (`f4b79f7`). [`PRD-003`](../../../library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) parent exits when operator smoke passes. [`PRD-004c`](../../../library/requirements/in-work/prd-004-reviewable-go-live/prd-004c-reviewable-go-live-marketplace-submission.md) after smoke + Test Link (`GGL-B09`). Do not flip deferred G2 ACs (`GGL-B10`).
 4. **Optional parallel:** Wave 2 prep (cloud inventory + KMS custody) if a cloud owner is available; otherwise leave parked.
 5. **After any harness/code change:** `security-guardian` then `quality-guardian` (never reverse). Squash-merge only.
 6. **Do not** move PRD-001 to `completed/` until project-map core-completion is satisfied.

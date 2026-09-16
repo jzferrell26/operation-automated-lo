@@ -2,14 +2,14 @@
 
 ## Contract
 
-| Field        | Value                                                                                                                                                                                                                                      |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Branch       | `main` at `f4b79f7` (PR #61 go-live code, PR #60 PRD-004 docs). PRD-004a in-repo code VERIFIED (`GGL-001`–`GGL-007`, `GGL-010`). Operator path blocked (`GGL-B01`–`B09`). Live Wave 1: try sandbox + Test Link; do not invent G2 evidence. |
-| Date         | 2026-08-26                                                                                                                                                                                                                                 |
-| Prerequisite | Gauntlet closeout (`25c0bdc`), evidence packs (`6965bf7`), G2 harness (`a530947`) on `main`                                                                                                                                                |
-| Scope        | Unblock production-path evidence for G2, environment/KMS, G3, G5, G6, G7, and remaining timed/AI cost criteria                                                                                                                             |
-| Honest bound | Agents cannot invent live HighLevel, Meta, Stripe, KMS, or counsel evidence. This batch is operator-led with agent-supported harnesses, checklists, and ledger updates.                                                                    |
-| Current park | **Production tonight:** operator preview smoke (`GGL-B01`–`B03`) then portal/Test Link (`GGL-B04`–`B07`). Parallel Wave 1 G2: no sanitized fixtures; do not flip deferred ACs (`GGL-B10`).                                                 |
+| Field        | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Branch       | `main` at `f4b79f7` (PR #61 go-live code, PR #60 PRD-004 docs). PRD-004a in-repo code VERIFIED (`GGL-001`–`GGL-007`, `GGL-010`). Operator path blocked (`GGL-B01`–`B09`). Live Wave 1: try sandbox + Test Link; do not invent G2 evidence.                                                                                                                                                                                                                                                                                                                     |
+| Date         | 2026-08-26                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Prerequisite | Gauntlet closeout (`25c0bdc`), evidence packs (`6965bf7`), G2 harness (`a530947`) on `main`                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Scope        | Unblock production-path evidence for G2, environment/KMS, G3, G5, G6, G7, and remaining timed/AI cost criteria                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Honest bound | Agents cannot invent live HighLevel, Meta, Stripe, KMS, or counsel evidence. This batch is operator-led with agent-supported harnesses, checklists, and ledger updates.                                                                                                                                                                                                                                                                                                                                                                                        |
+| Current park | Requirements authoring for the production-tonight path is **complete** as of 2026-09-16: PRD-004d owns `GGL-B16`, PRD-004e holds the authored listing content, and the [operator runbook](./library/knowledge/private/operations/production-tonight-operator-runbook.md) holds step order, return artifacts, and abort conditions. Remaining work is operator-only. **Production tonight:** operator preview smoke (`GGL-B01`–`B03`) then portal/Test Link (`GGL-B04`–`B07`). Parallel Wave 1 G2: no sanitized fixtures; do not flip deferred ACs (`GGL-B10`). |
 
 Upstream closeout: [`GAUNTLET_EXECUTION_LEDGER.md`](./GAUNTLET_EXECUTION_LEDGER.md) (267 `VERIFIED`, 38 non-verified parked). Authoritative AC source remains [`PRODUCTION_EXECUTION_LEDGER.md`](./PRODUCTION_EXECUTION_LEDGER.md).
 
@@ -60,12 +60,14 @@ flowchart TD
 
 ### Parallel product activation (in-repo, no provider traffic)
 
-| Owner                                       | Deliverable                              | Exit criteria                                                                                                                      |
-| ------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `library-guardian`                          | PRD-003 Authenticated Product Activation | 003a-d **done** on `main`; parent exits when PRD-004a preview smoke passes                                                         |
-| `library-guardian`                          | PRD-004 Reviewable Go-Live               | 004a code **done** (`f4b79f7`); operator `GGL-B01`–`B03` blocked; 004b `GGL-B04`–`B07`; 004c `GGL-B09`                             |
-| `release-deploy-guardian` + operator        | Production tonight operator path         | Wire `operation-automated-lo-web`; run [reviewable-preview-smoke.md](./docs/operations/evidence-packs/reviewable-preview-smoke.md) |
-| `security-guardian` then `quality-guardian` | Go-live code closeout (PR #61)           | `GGL-001`–`GGL-007`, `GGL-010` VERIFIED on `main`; no deferred G2 flips (`GGL-B10`)                                                |
+| Owner                                       | Deliverable                              | Exit criteria                                                                                                                                                                                                          |
+| ------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `library-guardian`                          | PRD-003 Authenticated Product Activation | 003a-d **done** on `main`; parent exits when PRD-004a preview smoke passes                                                                                                                                             |
+| `library-guardian`                          | PRD-004 Reviewable Go-Live               | 004a code **done** (`f4b79f7`); operator `GGL-B01`–`B03` blocked; 004b `GGL-B04`–`B07`; 004c `GGL-B09`                                                                                                                 |
+| `library-guardian`                          | PRD-004d real-Postgres command gate      | Owns `GGL-B16`, the last locally provable row. Needs one observed run or a route decision (R1/R2)                                                                                                                      |
+| `library-guardian`                          | PRD-004e listing content + demo script   | Listing copy, FAQ, shot list, Loom script, claim audit **authored in-repo**; capture and submit remain `GGL-B09`                                                                                                       |
+| `release-deploy-guardian` + operator        | Production tonight operator path         | Follow the [operator runbook](./library/knowledge/private/operations/production-tonight-operator-runbook.md); it sequences [reviewable-preview-smoke.md](./docs/operations/evidence-packs/reviewable-preview-smoke.md) |
+| `security-guardian` then `quality-guardian` | Go-live code closeout (PR #61)           | `GGL-001`–`GGL-007`, `GGL-010` VERIFIED on `main`; no deferred G2 flips (`GGL-B10`)                                                                                                                                    |
 
 **Boundary:** PRD-003/004 are reviewable go-live only. G2/G3/G5/G6/G7 evidence and production authorization remain governed by Waves 1-7 below. Do not flip deferred G2 ACs without sanitized fixtures.
 
@@ -198,21 +200,23 @@ Optional parallel (Wave 2 prep): cloud owner for preview/staging/production inve
 | 2026-09-03      | Repo hygiene raid (M3/M4/M5/M20 in-repo)                 | Templates, Dependabot, ledger path, proxy rename             |
 | 2026-09-03      | Dependabot first-run flood (7 PRs, mostly majors)        | Ignore majors; group weekly minor/patch only                 |
 | 2026-09-03      | Actions major raid (checkout 7 / cache 6 / setup-node 7) | SHA-pinned planned bump; npm majors stay deferred            |
+| 2026-09-16      | Coverage audit: 2 parked rows had no owning requirement  | `GGL-B16` to PRD-004d; `GGL-B09` content to PRD-004e         |
 
 ---
 
 ## Changelog
 
-| Date       | Event                                                                                        |
-| ---------- | -------------------------------------------------------------------------------------------- |
-| 2026-08-25 | Next batch defined: External Evidence Sprint, Waves 1-7, agent prep + operator-led gates.    |
-| 2026-08-25 | Prep PR #26 merged. G2 live-capture harness ready; Wave 1 parked on App Test credentials.    |
-| 2026-08-25 | G2 harness PR #27 merged to `main` (`a530947`).                                              |
-| 2026-08-26 | Critical path restated: park on HighLevel app approval; project-map + agent the-map updated. |
-| 2026-08-26 | Reverse-review Highs remediations merged (`56d90f6`).                                        |
-| 2026-09-03 | Repo hygiene: PR/issue templates, Dependabot, ledger generator path, middleware->proxy.      |
-| 2026-09-03 | Dependabot majors ignored (PR #39). Planned Actions major raid authored.                     |
-| 2026-09-15 | PRD-003a merged (`70531fb`). App Test: try sandbox + Test Link; do not invent G2 evidence.   |
+| Date       | Event                                                                                                                                                                                                 |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-25 | Next batch defined: External Evidence Sprint, Waves 1-7, agent prep + operator-led gates.                                                                                                             |
+| 2026-08-25 | Prep PR #26 merged. G2 live-capture harness ready; Wave 1 parked on App Test credentials.                                                                                                             |
+| 2026-08-25 | G2 harness PR #27 merged to `main` (`a530947`).                                                                                                                                                       |
+| 2026-08-26 | Critical path restated: park on HighLevel app approval; project-map + agent the-map updated.                                                                                                          |
+| 2026-08-26 | Reverse-review Highs remediations merged (`56d90f6`).                                                                                                                                                 |
+| 2026-09-03 | Repo hygiene: PR/issue templates, Dependabot, ledger generator path, middleware->proxy.                                                                                                               |
+| 2026-09-03 | Dependabot majors ignored (PR #39). Planned Actions major raid authored.                                                                                                                              |
+| 2026-09-15 | PRD-003a merged (`70531fb`). App Test: try sandbox + Test Link; do not invent G2 evidence.                                                                                                            |
+| 2026-09-16 | Production-tonight requirements authored: PRD-004d (`GGL-B16`), PRD-004e (listing content), operator runbook, listing copy pack, first customer-facing drafts, coverage report. No AC status changed. |
 
 ## Process follow-ups (from reverse review / security audits)
 

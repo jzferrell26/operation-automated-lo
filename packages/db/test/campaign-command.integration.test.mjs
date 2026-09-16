@@ -57,7 +57,7 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
 
       const reloaded = await createPostgresCampaignReadRepository(
         pool,
-        createPrincipalBoundTenantContextAuthority(creator, `${tenantA.correlationId}-reload`),
+        createPrincipalBoundTenantContextAuthority(creator, `${tenantA.correlationId}_reload`),
       ).getByCampaignRef(campaignRef);
       assert.ok(reloaded);
       assert.equal(reloaded.state, "awaiting_approval");
@@ -73,7 +73,7 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
       assert.equal(
         await createPostgresCampaignReadRepository(
           pool,
-          createPrincipalBoundTenantContextAuthority(readerB, `${tenantB.correlationId}-detail`),
+          createPrincipalBoundTenantContextAuthority(readerB, `${tenantB.correlationId}_detail`),
         ).getByCampaignRef(campaignRef),
         undefined,
       );
@@ -115,21 +115,21 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
       };
 
       const denied = await executeHumanCampaignApproval(
-        { ...approvalInput, correlationRef: `${tenant.correlationId}-denied` },
+        { ...approvalInput, correlationRef: `${tenant.correlationId}_denied` },
         creator,
         createPostgresCampaignApprovalRepository(
           pool,
-          createPrincipalBoundTenantContextAuthority(creator, `${tenant.correlationId}-denied`),
+          createPrincipalBoundTenantContextAuthority(creator, `${tenant.correlationId}_denied`),
         ),
       );
       assert.deepEqual(denied, { kind: "denied" });
 
       const committed = await executeHumanCampaignApproval(
-        { ...approvalInput, correlationRef: `${tenant.correlationId}-approved` },
+        { ...approvalInput, correlationRef: `${tenant.correlationId}_approved` },
         approver,
         createPostgresCampaignApprovalRepository(
           pool,
-          createPrincipalBoundTenantContextAuthority(approver, `${tenant.correlationId}-approved`),
+          createPrincipalBoundTenantContextAuthority(approver, `${tenant.correlationId}_approved`),
         ),
       );
       assert.equal(committed.kind, "committed");
@@ -144,7 +144,7 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
 
       const reloaded = await createPostgresCampaignReadRepository(
         pool,
-        createPrincipalBoundTenantContextAuthority(approver, `${tenant.correlationId}-reload`),
+        createPrincipalBoundTenantContextAuthority(approver, `${tenant.correlationId}_reload`),
       ).getByCampaignRef(campaignRef);
       assert.ok(reloaded);
       assert.equal(reloaded.state, "approved");

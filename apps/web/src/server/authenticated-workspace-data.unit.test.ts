@@ -22,6 +22,10 @@ const stubSynthetic = {
   OALO_SYNTHETIC_DATA_ONLY: "true",
 } as const;
 
+/** Asserted as a literal so a reworded next safe action has to be reviewed, not silently adopted. */
+const REVIEW_NEXT_SAFE_ACTION_TEXT =
+  "Connect HighLevel, Meta, and Stripe in a separately authorized environment.";
+
 const reviewProduction = {
   OALO_ENVIRONMENT: "production",
   ...stubSynthetic,
@@ -123,17 +127,97 @@ describe("authenticated workspace data boundary", () => {
     expect(session.user.roleLabel).toBe(REVIEW_ROLE_LABEL);
   });
 
+  it("collapses every onboarding item to the model's own no-observation state", () => {
+    const { onboarding } = loadAuthenticatedWorkspace(reviewProduction).ui;
+    const items = [...onboarding.getConnected, ...onboarding.launchReadiness];
+
+    expect(items).toHaveLength(9);
+    for (const item of items) {
+      expect(item.state).toBe("not_started");
+      expect("evidence" in item).toBe(false);
+      expect(item.freshness).toBe("No live observation");
+    }
+    expect(onboarding.getConnected.map((item) => item.id)).toEqual([
+      "install_permissions",
+      "brand_compliance",
+      "ghl_routing",
+      "meta_connection",
+      "team_responsibilities",
+    ]);
+  });
+
+  it("removes every observed grant claim from the review permission groups", () => {
+    const { onboarding } = loadAuthenticatedWorkspace(reviewProduction).ui;
+
+    expect(onboarding.permissionGroups.map((group) => group.category)).toEqual([
+      "required",
+      "granted",
+      "missing",
+      "optional",
+    ]);
+    for (const group of onboarding.permissionGroups) {
+      expect(group.description).toMatch(/has an observed grant state/u);
+      for (const capability of group.capabilities) {
+        expect(capability.evidence).toMatch(/^No evidence\./u);
+        expect(capability.impact).toMatch(/^Not evaluated\./u);
+        expect(capability.nextAction).toBe(REVIEW_NEXT_SAFE_ACTION_TEXT);
+      }
+    }
+  });
+
+  it("collapses every brand value, confirmation, and suggestion in review mode", () => {
+    const { brand } = loadAuthenticatedWorkspace(reviewProduction);
+
+    expect(brand.activeLocation.displayName).toBe(REVIEW_LOCATION_DISPLAY_NAME);
+    expect(brand.canonicalProfile.version).toBe("brand-v0-not-connected");
+    expect(
+      brand.canonicalProfile.fields.every((field) => field.value.startsWith("Not saved.")),
+    ).toBe(true);
+    expect(brand.canonicalProfile.requiredFields.every((field) => field.state === "missing")).toBe(
+      true,
+    );
+    expect(
+      brand.aiAssistance.suggestions.every((suggestion) =>
+        suggestion.proposedValue.startsWith("Not generated."),
+      ),
+    ).toBe(true);
+    expect(JSON.stringify(brand)).not.toContain("Alex Morgan");
+    expect(JSON.stringify(brand)).not.toContain("Prairie Home Lending");
+  });
+
+  it("keeps the brand policy the product declares rather than hiding the surface", () => {
+    const { brand } = loadAuthenticatedWorkspace(reviewProduction);
+
+    expect(brand.aiAssistance.protectedFieldGroups).toContain("NMLS and licenses");
+    expect(brand.canonicalProfile.fields.map((field) => field.label)).toContain("NMLS display");
+    expect(brand.canonicalProfile.requiredFields.length).toBeGreaterThan(4);
+  });
+
   it("leaves the demo-rich synthetic local workspace untouched", () => {
-    const { overview, session } = loadAuthenticatedWorkspace({
+    const localWorkspace = loadAuthenticatedWorkspace({
       OALO_ENVIRONMENT: "local",
       ...stubSynthetic,
-    }).ui;
+    });
+    const { overview, session, onboarding } = localWorkspace.ui;
 
     expect(overview.attention.length).toBeGreaterThan(0);
     expect(overview.recentActivity.length).toBeGreaterThan(0);
     expect(overview.activeWork.length).toBeGreaterThan(0);
     expect(overview.metrics.some((metric) => "value" in metric)).toBe(true);
     expect(session.location.displayName).toBe("Prairie Home Lending");
+    expect(onboarding.getConnected.some((item) => item.state === "complete")).toBe(true);
+    expect(onboarding.permissionGroups.map((group) => group.label)).toEqual([
+      "Required",
+      "Granted",
+      "Missing",
+      "Optional",
+    ]);
+    expect(localWorkspace.brand.canonicalProfile.version).toBe("brand-v3");
+    expect(
+      localWorkspace.brand.canonicalProfile.requiredFields.some(
+        (field) => field.state === "confirmed",
+      ),
+    ).toBe(true);
   });
 
   it("allows the explicit review surface in staging when providers stay stubbed", () => {

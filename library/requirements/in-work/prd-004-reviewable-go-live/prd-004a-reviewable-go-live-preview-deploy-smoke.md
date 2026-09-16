@@ -33,8 +33,8 @@ Deploy PRD-003 to the **existing** Vercel project (`operation-automated-lo-web`)
 | 004A-AC-001 | Preview deployment uses project `operation-automated-lo-web` only. | BLOCKED: operator Vercel access |
 | 004A-AC-002 | `OALO_DATABASE_URL` and auth secrets are server-only env vars on Vercel. | Code half VERIFIED; Vercel half BLOCKED: operator |
 | 004A-AC-003 | `/overview` does not show unlabeled synthetic spend/leads on the review URL. | VERIFIED in review mode; requires `OALO_REVIEW_SURFACE=authorized` |
-| 004A-AC-004 | Create Open House Boost → navigate away → reload → campaign still present (Postgres). | DONE (code); BLOCKED: no observed run |
-| 004A-AC-005 | Authorized approver can approve; aggregate shows approved state after reload. | DONE (code); BLOCKED: no observed run |
+| 004A-AC-004 | Create Open House Boost → navigate away → reload → campaign still present (Postgres). | VERIFIED in-repo against real Postgres; operator preview smoke still blocked |
+| 004A-AC-005 | Authorized approver can approve; aggregate shows approved state after reload. | VERIFIED in-repo against real Postgres; operator preview smoke still blocked |
 | 004A-AC-006 | Smoke log retained per evidence pack; no tokens or PII in git. | BLOCKED: operator smoke run |
 
 Statuses were set by the Gauntlet raid recorded in [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md) (rows `GGL-001` through `GGL-010` and the parked `GGL-B01` through `GGL-B16`). Nothing here is claimed as verified on a real preview URL, because no preview deploy has been performed.
@@ -45,7 +45,7 @@ Statuses were set by the Gauntlet raid recorded in [`EXECUTION_LEDGER.md`](../..
 |---|---|---|
 | Review Postgres URL + Vercel env access | Operator / platform owner | Provide `OALO_DATABASE_URL` on preview env |
 | Honest review surface needs its flag | Operator | Set `OALO_REVIEW_SURFACE=authorized` (server-only) on the review preview. Without it, default preview mode still serves labeled synthetic demo metrics and `004A-AC-003` is not met. See [`docs/production-environments.md`](../../../../docs/production-environments.md). |
-| Real-Postgres round trips are not enforced by CI | Engineering / operator | The tests exist at `packages/db/test/campaign-command.integration.test.mjs` but have never been executed. Supabase local cannot provide a second fully-initialized database under an `oalo_test_` name; see `GGL-B16` for the exact constraint and the remaining routes, now tracked in [PRD-004d](./prd-004d-reviewable-go-live-postgres-command-gate.md). |
+| ~~Real-Postgres round trips are not enforced by CI~~ | ~~Engineering~~ | **Resolved.** `GGL-B16` is closed and tracked in [PRD-004d](./prd-004d-reviewable-go-live-postgres-command-gate.md). The tests at `packages/db/test/campaign-command.integration.test.mjs` now run inside the canonical `pnpm test:db` gate, which CI executes. The blocker was never provisioning: the harness seeded as the bare login role, and the foundation migration grants `migration_owner` `WITH SET TRUE, INHERIT FALSE`, so it now assumes that role exactly as the pgTAP suites do. |
 
 ## Related
 

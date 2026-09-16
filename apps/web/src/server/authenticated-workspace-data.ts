@@ -6,7 +6,14 @@ import { loadSyntheticBrandProfile } from "../features/brand/model/synthetic-bra
 import type { NotConnectedOverviewMetric } from "../features/overview/model/overview-view.js";
 import { loadSyntheticReporting } from "../features/reporting/model/synthetic-reporting.js";
 import { loadSyntheticUiFixture } from "../features/ui-foundation/data/load-synthetic-ui.js";
-import type { DeepReadonly, Overview } from "../features/ui-foundation/model/synthetic-ui.js";
+import {
+  SESSION_SOURCE_DEMO_NOT_CONNECTED,
+  type DeepReadonly,
+  type Navigation,
+  type NavigationItem,
+  type Overview,
+  type SyntheticSession,
+} from "../features/ui-foundation/model/synthetic-ui.js";
 
 export const OALO_REVIEW_SURFACE_ENV = "OALO_REVIEW_SURFACE" as const;
 export const OALO_REVIEW_SURFACE_AUTHORIZED = "authorized" as const;
@@ -25,12 +32,18 @@ const REVIEW_METRIC_SOURCE = "Not connected. Review surface has no live spend, l
 const REVIEW_NO_OBSERVATION = "No live observation";
 const REVIEW_NEXT_SAFE_ACTION =
   "Connect HighLevel, Meta, and Stripe in a separately authorized environment.";
+const REVIEW_NAVIGATION_STATE_DETAIL =
+  "Review surface. Demo navigation only. No live entitlement or provider state is evaluated.";
 
 export const REVIEW_LOCATION_DISPLAY_NAME = "Demo workspace (not connected)";
 export const REVIEW_USER_DISPLAY_NAME = "Demo reviewer";
 export const REVIEW_ROLE_LABEL = "Demo session, no live seat";
 export const REVIEW_SPEND_METRIC_ID = "ad_spend";
 export const REVIEW_SPEND_METRIC_LABEL = "Ad spend";
+
+/** The fixture identifiers carry the demo persona and tenant name, so review mode renames both. */
+const REVIEW_USER_ID = "synthetic-user-demo-reviewer";
+const REVIEW_LOCATION_ID = "synthetic-location-demo-review";
 
 export type AuthenticatedWorkspaceMode = "synthetic" | "review";
 export type { CampaignPersistenceKind };
@@ -154,15 +167,51 @@ function toReviewOverview(overview: ReturnType<typeof loadSyntheticUiFixture>["o
   };
 }
 
-function toReviewSession(session: ReturnType<typeof loadSyntheticUiFixture>["session"]) {
+function toReviewSession(
+  session: ReturnType<typeof loadSyntheticUiFixture>["session"],
+): DeepReadonly<SyntheticSession> {
   return {
     ...withReviewDisclosure(session),
     user: {
       ...session.user,
+      id: REVIEW_USER_ID,
       displayName: REVIEW_USER_DISPLAY_NAME,
       roleLabel: REVIEW_ROLE_LABEL,
     },
-    location: { ...session.location, displayName: REVIEW_LOCATION_DISPLAY_NAME },
+    location: {
+      ...session.location,
+      id: REVIEW_LOCATION_ID,
+      displayName: REVIEW_LOCATION_DISPLAY_NAME,
+      source: SESSION_SOURCE_DEMO_NOT_CONNECTED,
+    },
+  };
+}
+
+/**
+ * Navigation is rebuilt field by field rather than spread, so a field added to the fixture later
+ * is dropped from the review surface until someone decides review mode may carry it. The two
+ * fields that read as observed workspace truth are handled explicitly: `stateDetail` narrates a
+ * pending recheck or a plan entitlement that the review surface cannot have observed, and
+ * `requiredRole` names the role the demo persona would need, which the anonymized review persona
+ * does not have.
+ */
+function toReviewNavigationItem(item: DeepReadonly<NavigationItem>): DeepReadonly<NavigationItem> {
+  return {
+    id: item.id,
+    label: item.label,
+    href: item.href,
+    state: item.state,
+    ...(item.requiredCapability === undefined
+      ? {}
+      : { requiredCapability: item.requiredCapability }),
+    ...(item.stateDetail === undefined ? {} : { stateDetail: REVIEW_NAVIGATION_STATE_DETAIL }),
+  };
+}
+
+function toReviewNavigation(navigation: DeepReadonly<Navigation>): DeepReadonly<Navigation> {
+  return {
+    items: navigation.items.map(toReviewNavigationItem),
+    marketingItems: navigation.marketingItems.map(toReviewNavigationItem),
   };
 }
 
@@ -185,6 +234,7 @@ export function loadAuthenticatedWorkspace(input: unknown = process.env) {
     mode,
     ui: {
       ...ui,
+      navigation: toReviewNavigation(ui.navigation),
       session: toReviewSession(ui.session),
       overview: toReviewOverview(ui.overview),
       onboarding: withReviewDisclosure(ui.onboarding),

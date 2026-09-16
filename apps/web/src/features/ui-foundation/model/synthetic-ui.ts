@@ -10,6 +10,14 @@ export const runtimeSafetySchema = z
   })
   .strict();
 
+/**
+ * Session provenance is a closed vocabulary so no projection can invent a validation claim.
+ * The synthetic fixture always carries the first value; the review surface, which validates no
+ * session at all, is the only projection allowed to carry the second.
+ */
+export const SESSION_SOURCE_VALIDATED_SYNTHETIC = "Validated synthetic session";
+export const SESSION_SOURCE_DEMO_NOT_CONNECTED = "Demo session. No validated HighLevel location.";
+
 export const capabilitySchema = z.enum([
   "campaign:create",
   "location:read",
@@ -42,7 +50,7 @@ export const syntheticSessionSchema = z
       .object({
         id: z.string().startsWith("synthetic-location-"),
         displayName: z.string().min(1),
-        source: z.literal("Validated synthetic session"),
+        source: z.enum([SESSION_SOURCE_VALIDATED_SYNTHETIC, SESSION_SOURCE_DEMO_NOT_CONNECTED]),
         verifiedAt: isoTimestamp,
       })
       .strict(),

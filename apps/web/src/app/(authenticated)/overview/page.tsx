@@ -14,6 +14,7 @@ export default async function OverviewPage() {
       overview={workspace.ui.overview}
       session={workspace.ui.session}
       workspaceCampaigns={workspaceCampaigns}
+      workspaceMode={workspace.mode}
     />
   );
 }

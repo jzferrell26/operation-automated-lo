@@ -5,7 +5,13 @@ import { joinClassNames } from "./internal.js";
 import "./primitives.css";
 
 export type MetricState =
-  "current" | "stale" | "unavailable" | "partial" | "uncertain" | "permission_restricted";
+  | "current"
+  | "stale"
+  | "unavailable"
+  | "not_connected"
+  | "partial"
+  | "uncertain"
+  | "permission_restricted";
 
 const metricStatePresentation: Readonly<
   Record<MetricState, { icon: IconName; label: string; tone: IconTone }>
@@ -13,6 +19,7 @@ const metricStatePresentation: Readonly<
   current: { icon: "check", label: "Current", tone: "success" },
   stale: { icon: "clock", label: "Stale", tone: "warning" },
   unavailable: { icon: "info", label: "Unavailable", tone: "neutral" },
+  not_connected: { icon: "alert-triangle", label: "Not connected", tone: "warning" },
   partial: { icon: "circle-dot", label: "Partial", tone: "info" },
   uncertain: { icon: "loader", label: "Uncertain, reconciling", tone: "uncertain" },
   permission_restricted: {
@@ -46,6 +53,13 @@ type UnavailableMetricProps = Readonly<{
   value?: never;
 }>;
 
+/** No source is wired up at all, so there is nothing to observe and nothing to reconcile. */
+type NotConnectedMetricProps = Readonly<{
+  state: "not_connected";
+  value?: never;
+  nextAction: string;
+}>;
+
 type PartialMetricProps = Readonly<{
   state: "partial";
   value: string | number;
@@ -70,10 +84,24 @@ export type MetricProps = MetricBaseProps &
     | CurrentMetricProps
     | StaleMetricProps
     | UnavailableMetricProps
+    | NotConnectedMetricProps
     | PartialMetricProps
     | UncertainMetricProps
     | PermissionRestrictedMetricProps
   );
+
+function visibleMetricValue(props: MetricProps): string | number {
+  switch (props.state) {
+    case "unavailable":
+      return "Unavailable";
+    case "not_connected":
+      return "Not connected";
+    case "permission_restricted":
+      return "Restricted";
+    default:
+      return props.value;
+  }
+}
 
 /** A source-bearing metric that cannot collapse unavailable or restricted data into zero. */
 export function Metric(props: MetricProps) {
@@ -98,12 +126,7 @@ export function Metric(props: MetricProps) {
   }
   const labelId = useId();
   const presentation = metricStatePresentation[state];
-  const visibleValue =
-    state === "unavailable"
-      ? "Unavailable"
-      : state === "permission_restricted"
-        ? "Restricted"
-        : props.value;
+  const visibleValue = visibleMetricValue(props);
 
   return (
     <article
@@ -140,7 +163,7 @@ export function Metric(props: MetricProps) {
             <dd>Synthetic data</dd>
           </div>
         ) : null}
-        {state === "stale" ? (
+        {state === "stale" || state === "not_connected" ? (
           <div>
             <dt>Next safe action</dt>
             <dd>{props.nextAction}</dd>

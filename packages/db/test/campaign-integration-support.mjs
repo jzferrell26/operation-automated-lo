@@ -29,6 +29,18 @@ export function requiredTestDatabaseUrl() {
   return databaseUrl;
 }
 
+const LOOPBACK_DATABASE_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
+
+/**
+ * This harness disables triggers and bulk-deletes tenant rows, so it is only ever meant to run
+ * against a disposable local database. TLS stays off for loopback and becomes mandatory for
+ * anything else, so an operator-supplied remote URL cannot put credentials on the wire in clear.
+ */
+export function testDatabaseSslMode(connectionString) {
+  const { hostname } = new URL(connectionString);
+  return LOOPBACK_DATABASE_HOSTNAMES.has(hostname.replace(/^\[|\]$/gu, "")) ? "disable" : "require";
+}
+
 export function testPool(connectionString) {
   return createPostgresPool({
     applicationName: "oalo-campaign-integration",
@@ -37,7 +49,7 @@ export function testPool(connectionString) {
     maxConnections: 4,
     poolingMode: "transaction",
     preparedStatements: false,
-    sslMode: "disable",
+    sslMode: testDatabaseSslMode(connectionString),
   });
 }
 

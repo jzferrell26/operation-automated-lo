@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { access, readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -61,10 +61,33 @@ function shouldScanAssignmentFile(filePath) {
   return !assignmentScanIgnoredFileSuffixes.some((suffix) => filePath.endsWith(suffix));
 }
 
-async function loadBuiltConfigModule() {
+/**
+ * A merely *present* build artifact is not enough: auditing a stale `dist` would pass a boundary
+ * violation that only exists in `src`, which is exactly the case this gate has to catch.
+ */
+async function builtConfigModuleIsCurrent() {
+  let builtAtMs;
   try {
-    await access(configModuleUrl);
+    builtAtMs = (await stat(configModuleUrl)).mtimeMs;
   } catch {
+    return false;
+  }
+
+  const configSources = await textFiles(
+    resolve(workspaceRoot, "packages/config/src"),
+    new Set([".ts"]),
+  );
+  for (const filePath of configSources) {
+    if ((await stat(filePath)).mtimeMs > builtAtMs) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+async function loadBuiltConfigModule() {
+  if (!(await builtConfigModuleIsCurrent())) {
     execSync("pnpm --filter @oalo/config build", {
       cwd: workspaceRoot,
       stdio: "inherit",

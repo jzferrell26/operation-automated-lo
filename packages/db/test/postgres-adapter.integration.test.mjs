@@ -10,7 +10,7 @@ import {
   createResolverAwarePostgresDeliveryGuard,
   leaseOutboxBatchContract,
 } from "../dist/index.js";
-import { requiredTestDatabaseUrl } from "./campaign-integration-support.mjs";
+import { requiredTestDatabaseUrl, testDatabaseSslMode } from "./campaign-integration-support.mjs";
 
 const databaseUrl = requiredTestDatabaseUrl();
 
@@ -607,7 +607,7 @@ function testPool(connectionString) {
     maxConnections: 2,
     poolingMode: "transaction",
     preparedStatements: false,
-    sslMode: "disable",
+    sslMode: testDatabaseSslMode(connectionString),
   });
 }
 

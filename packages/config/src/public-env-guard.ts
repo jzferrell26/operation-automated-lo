@@ -4,6 +4,7 @@
  */
 export const SERVER_ONLY_SECRET_ENVIRONMENT_VARIABLE_NAMES = Object.freeze([
   "OALO_DATABASE_URL",
+  "OALO_TEST_DATABASE_URL",
   "OALO_ANTHROPIC_API_KEY",
   "OALO_R2_ACCESS_KEY_ID",
   "OALO_R2_SECRET_ACCESS_KEY",
@@ -15,27 +16,39 @@ export const SERVER_ONLY_SECRET_ENVIRONMENT_VARIABLE_NAMES = Object.freeze([
 export type ServerOnlySecretEnvironmentVariableName =
   (typeof SERVER_ONLY_SECRET_ENVIRONMENT_VARIABLE_NAMES)[number];
 
-const SECRET_BEARING_SEGMENT_PATTERNS: readonly RegExp[] = [
-  /DATABASE/u,
-  /SECRET/u,
-  /TOKEN/u,
-  /PRIVATE/u,
-  /PASSWORD/u,
+/**
+ * Matched against the whole name rather than underscore-delimited segments, because compound
+ * spellings (`APIKEY`, `SIGNINGKEY`) carry credentials just as readily as `ACCESS_KEY` does and
+ * a segment-boundary check cannot see them. A false positive costs a rename; a false negative
+ * publishes a credential to every browser.
+ */
+const SECRET_BEARING_NAME_PATTERNS: readonly RegExp[] = [
+  /AUTH/u,
+  /BEARER/u,
+  /CERT/u,
   /CREDENTIAL/u,
-  /(?:^KEY$|_KEY$|^KEY_|_KEY_)/u,
+  /DATABASE/u,
+  /DSN/u,
+  /HMAC/u,
+  /KEY/u,
+  /PASS/u,
+  /PIT/u,
+  /PRIVATE/u,
+  /SALT/u,
+  /SECRET/u,
+  /SESSION/u,
+  /SIGNATURE/u,
+  /SIGNING/u,
+  /TOKEN/u,
 ];
 
 function publicVariableBaseName(name: string): string {
   return name.startsWith("NEXT_PUBLIC_") ? name.slice("NEXT_PUBLIC_".length) : name;
 }
 
-function segmentBearsSecret(segment: string): boolean {
-  return SECRET_BEARING_SEGMENT_PATTERNS.some((pattern) => pattern.test(segment));
-}
-
 function nameBearsSecret(name: string): boolean {
   const baseName = publicVariableBaseName(name);
-  return baseName.split("_").some((segment) => segment.length > 0 && segmentBearsSecret(segment));
+  return SECRET_BEARING_NAME_PATTERNS.some((pattern) => pattern.test(baseName));
 }
 
 function forbiddenPublicName(publicName: string): string | undefined {

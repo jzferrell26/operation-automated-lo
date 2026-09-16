@@ -57,7 +57,7 @@ Harness readiness is complete on `main` (PR #27, `a530947`: `OALO_GHL_LIVE_CAPTU
 | `embedded_iframe_access` | Same access; capture sanitized iframe/embed observation |
 | `first_party_fallback` | Same access; capture sanitized first-party fallback observation |
 
-Do not flip any of the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` criteria to `VERIFIED` until sanitized fixtures for the relevant cases land and pass `pnpm test:contracts`.
+Do not flip any of the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` criteria to `VERIFIED` until sanitized fixtures for the relevant cases land and pass `pnpm test:contracts`. This is also `GGL-B10` in the [Gauntlet ledger](../../EXECUTION_LEDGER.md#gauntlet-raid-go-live-remaining-in-repo-code). PR #61 (`f4b79f7`) verified `GGL-007`: `PRODUCTION_EXECUTION_LEDGER.md` was untouched and no deferred row was flipped.
 
 ## Matrix checklist
 

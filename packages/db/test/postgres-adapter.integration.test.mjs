@@ -10,7 +10,12 @@ import {
   createResolverAwarePostgresDeliveryGuard,
   leaseOutboxBatchContract,
 } from "../dist/index.js";
-import { requiredTestDatabaseUrl, testDatabaseSslMode } from "./campaign-integration-support.mjs";
+import {
+  assumeMigrationOwnerRequest,
+  requiredTestDatabaseUrl,
+  testDatabaseSslMode,
+  withMigrationOwnerTransaction,
+} from "./campaign-integration-support.mjs";
 
 const databaseUrl = requiredTestDatabaseUrl();
 
@@ -68,6 +73,7 @@ from pg_catalog.pg_prepared_statements
     try {
       await connection.execute(request("test.begin", "begin"));
       transactionOpen = true;
+      await connection.execute(assumeMigrationOwnerRequest);
       await connection.execute(
         request(
           "test.outbox-fixture",
@@ -136,8 +142,7 @@ insert into integration.outbox_events (
     const tenantA = tenantFixture("a", suffix);
     const tenantB = tenantFixture("b", suffix);
     const pool = testPool(databaseUrl);
-    const setupConnection = await pool.connect();
-    try {
+    await withMigrationOwnerTransaction(pool, async (setupConnection) => {
       for (const tenant of [tenantA, tenantB]) {
         await setupConnection.execute(
           request(
@@ -161,9 +166,7 @@ insert into integration.outbox_events (
           ),
         );
       }
-    } finally {
-      await setupConnection.release();
-    }
+    });
 
     const contexts = new Map(
       [tenantA, tenantB].map((tenant) => [tenant.locationRef, resolvedContext(tenant)]),
@@ -270,8 +273,7 @@ insert into integration.outbox_events (
         (error) => error?.code === "42501",
       );
 
-      const verificationConnection = await pool.connect();
-      try {
+      await withMigrationOwnerTransaction(pool, async (verificationConnection) => {
         const persisted = await verificationConnection.execute(
           request(
             "test.delivery-tenant-counts",
@@ -312,42 +314,40 @@ where location_id = $1::uuid and external_delivery_id = $2::text
             status: "completion_uncertain",
           },
         ]);
-      } finally {
-        await verificationConnection.release();
-      }
+      });
     } finally {
-      const cleanupConnection = await pool.connect();
       try {
-        await cleanupConnection.execute(
-          request(
-            "test.cleanup-delivery-claims",
-            "delete from integration.delivery_claims where location_id in ($1::uuid, $2::uuid)",
-            [tenantA.locationId, tenantB.locationId],
-          ),
-        );
-        await cleanupConnection.execute(
-          request(
-            "test.cleanup-delivery-role",
-            "delete from platform.role_bindings where location_id in ($1::uuid, $2::uuid)",
-            [tenantA.locationId, tenantB.locationId],
-          ),
-        );
-        await cleanupConnection.execute(
-          request(
-            "test.cleanup-delivery-actor",
-            "delete from platform.app_users where id in ($1::uuid, $2::uuid)",
-            [tenantA.actorId, tenantB.actorId],
-          ),
-        );
-        await cleanupConnection.execute(
-          request(
-            "test.cleanup-delivery-location",
-            "delete from platform.locations where id in ($1::uuid, $2::uuid)",
-            [tenantA.locationId, tenantB.locationId],
-          ),
-        );
+        await withMigrationOwnerTransaction(pool, async (cleanupConnection) => {
+          await cleanupConnection.execute(
+            request(
+              "test.cleanup-delivery-claims",
+              "delete from integration.delivery_claims where location_id in ($1::uuid, $2::uuid)",
+              [tenantA.locationId, tenantB.locationId],
+            ),
+          );
+          await cleanupConnection.execute(
+            request(
+              "test.cleanup-delivery-role",
+              "delete from platform.role_bindings where location_id in ($1::uuid, $2::uuid)",
+              [tenantA.locationId, tenantB.locationId],
+            ),
+          );
+          await cleanupConnection.execute(
+            request(
+              "test.cleanup-delivery-actor",
+              "delete from platform.app_users where id in ($1::uuid, $2::uuid)",
+              [tenantA.actorId, tenantB.actorId],
+            ),
+          );
+          await cleanupConnection.execute(
+            request(
+              "test.cleanup-delivery-location",
+              "delete from platform.locations where id in ($1::uuid, $2::uuid)",
+              [tenantA.locationId, tenantB.locationId],
+            ),
+          );
+        });
       } finally {
-        await cleanupConnection.release();
         await pool.close();
       }
     }
@@ -358,8 +358,7 @@ where location_id = $1::uuid and external_delivery_id = $2::text
     const tenant = tenantFixture("durable", suffix);
     const actorRef = `actor_${suffix}`;
     const pool = testPool(databaseUrl);
-    const setupConnection = await pool.connect();
-    try {
+    await withMigrationOwnerTransaction(pool, async (setupConnection) => {
       await setupConnection.execute(
         request(
           "test.durable-location",
@@ -381,9 +380,7 @@ where location_id = $1::uuid and external_delivery_id = $2::text
           [tenant.locationId, tenant.actorId],
         ),
       );
-    } finally {
-      await setupConnection.release();
-    }
+    });
 
     const telemetryContext = Object.freeze({
       actorId: tenant.actorId,
@@ -475,8 +472,7 @@ where location_id = $1::uuid and external_delivery_id = $2::text
         "pending",
       );
 
-      const verificationConnection = await pool.connect();
-      try {
+      await withMigrationOwnerTransaction(pool, async (verificationConnection) => {
         const telemetryCounts = await verificationConnection.execute(
           request(
             "test.ai-telemetry-counts",
@@ -532,9 +528,7 @@ where location_id = $1::uuid and idempotency_key = $2::text
             [tenant.locationId, cleanupIntent.idempotencyKey],
           ),
         );
-      } finally {
-        await verificationConnection.release();
-      }
+      });
 
       const secondLease = await cleanup.claimAvailable({
         leaseOwner: `cleanup_retry_${suffix}`,
@@ -550,49 +544,49 @@ where location_id = $1::uuid and idempotency_key = $2::text
       });
       assert.equal(await cleanup.enqueue(cleanupIntent), "already_completed");
     } finally {
-      const cleanupConnection = await pool.connect();
       try {
-        for (const [statementName, text, values] of [
-          [
-            "test.cleanup-publication-intents",
-            "delete from integration.publication_cleanup_intents where location_id = $1::uuid",
-            [tenant.locationId],
-          ],
-          [
-            "test.cleanup-ai-reconciliation",
-            "delete from integration.ai_telemetry_reconciliation_queue where location_id = $1::uuid",
-            [tenant.locationId],
-          ],
-          [
-            "test.cleanup-ai-traces",
-            "delete from integration.ai_trace_records where location_id = $1::uuid",
-            [tenant.locationId],
-          ],
-          [
-            "test.cleanup-ai-usage",
-            "delete from integration.ai_usage_events where location_id = $1::uuid",
-            [tenant.locationId],
-          ],
-          [
-            "test.cleanup-durable-role",
-            "delete from platform.role_bindings where location_id = $1::uuid",
-            [tenant.locationId],
-          ],
-          [
-            "test.cleanup-durable-actor",
-            "delete from platform.app_users where id = $1::uuid",
-            [tenant.actorId],
-          ],
-          [
-            "test.cleanup-durable-location",
-            "delete from platform.locations where id = $1::uuid",
-            [tenant.locationId],
-          ],
-        ]) {
-          await cleanupConnection.execute(request(statementName, text, values));
-        }
+        await withMigrationOwnerTransaction(pool, async (cleanupConnection) => {
+          for (const [statementName, text, values] of [
+            [
+              "test.cleanup-publication-intents",
+              "delete from integration.publication_cleanup_intents where location_id = $1::uuid",
+              [tenant.locationId],
+            ],
+            [
+              "test.cleanup-ai-reconciliation",
+              "delete from integration.ai_telemetry_reconciliation_queue where location_id = $1::uuid",
+              [tenant.locationId],
+            ],
+            [
+              "test.cleanup-ai-traces",
+              "delete from integration.ai_trace_records where location_id = $1::uuid",
+              [tenant.locationId],
+            ],
+            [
+              "test.cleanup-ai-usage",
+              "delete from integration.ai_usage_events where location_id = $1::uuid",
+              [tenant.locationId],
+            ],
+            [
+              "test.cleanup-durable-role",
+              "delete from platform.role_bindings where location_id = $1::uuid",
+              [tenant.locationId],
+            ],
+            [
+              "test.cleanup-durable-actor",
+              "delete from platform.app_users where id = $1::uuid",
+              [tenant.actorId],
+            ],
+            [
+              "test.cleanup-durable-location",
+              "delete from platform.locations where id = $1::uuid",
+              [tenant.locationId],
+            ],
+          ]) {
+            await cleanupConnection.execute(request(statementName, text, values));
+          }
+        });
       } finally {
-        await cleanupConnection.release();
         await pool.close();
       }
     }

@@ -62,6 +62,106 @@ export function request(statementName, text, values = []) {
   });
 }
 
+/**
+ * The foundation migration grants `migration_owner` to the login role `WITH SET TRUE, INHERIT
+ * FALSE` (supabase/migrations/20260721010000_platform_foundation.sql:51-65), so the login role
+ * holds no privileges on the schema objects until it explicitly assumes the owning role. Only a
+ * SUPERUSER login could reach these tables without assuming it, and no role in this system is
+ * SUPERUSER. Harness seeding and teardown therefore assume `migration_owner` exactly as
+ * supabase/tests/*.pgtap.sql already does.
+ */
+export const assumeMigrationOwnerRequest = request(
+  "test.assume-migration-owner",
+  "set local role migration_owner",
+);
+
+/**
+ * `audit.events` and the campaign evidence tables carry BEFORE UPDATE OR DELETE triggers that
+ * reject every mutation, and their location foreign keys are ON DELETE RESTRICT, so teardown
+ * cannot drop a tenant while its evidence rows remain. `session_replication_role = replica` would
+ * bypass the triggers but that GUC is SUSET, meaning only a SUPERUSER could set it. `migration_owner`
+ * owns these tables, so it can disable the named triggers instead; the change is transactional and
+ * reverts on rollback.
+ */
+const APPEND_ONLY_TRIGGERS = Object.freeze([
+  Object.freeze({ table: "audit.events", trigger: "audit_events_append_only" }),
+  Object.freeze({ table: "campaign.campaign_versions", trigger: "campaign_versions_append_only" }),
+  Object.freeze({ table: "campaign.preflight_results", trigger: "preflight_results_append_only" }),
+  Object.freeze({
+    table: "campaign.approval_decisions",
+    trigger: "approval_decisions_append_only",
+  }),
+]);
+
+function appendOnlyTriggerRequests(action) {
+  return APPEND_ONLY_TRIGGERS.map(({ table, trigger }) =>
+    request(
+      `test.${action}-trigger-${trigger}`,
+      `alter table ${table} ${action} trigger ${trigger}`,
+    ),
+  );
+}
+
+const resetRoleRequest = request("test.harness-reset-role", "reset role");
+const roleRestoredRequest = request(
+  "test.harness-role-restored",
+  // `current_user` and `session_user` are SQL keywords, so no search_path qualification applies.
+  "select current_user = session_user as restored",
+);
+
+/**
+ * `SET LOCAL` reverts at transaction end, but `release()` in postgres 3.4.9 only clears the
+ * reserved flag: it issues no `DISCARD ALL` and no session reset. Ending the transaction is
+ * therefore the *only* thing that drops the elevation, so this asserts on the connection that the
+ * role really did revert before it goes back to the pool instead of trusting the reasoning.
+ */
+async function assertElevationReverted(connection) {
+  await connection.execute(resetRoleRequest);
+  const result = await connection.execute(roleRestoredRequest);
+  if (result.rows[0]?.restored !== true) {
+    throw new Error(
+      "Refusing to return a connection to the pool while it still holds an assumed role",
+    );
+  }
+}
+
+/**
+ * Runs `work` inside a transaction that has assumed `migration_owner`. `SET LOCAL` keeps the role
+ * change scoped to the transaction so a pooled connection is never handed back elevated. Cleanup
+ * failures are aggregated rather than swallowed, because a failed ROLLBACK is exactly the event
+ * that would leave an elevated connection in the pool.
+ */
+export async function withMigrationOwnerTransaction(pool, work) {
+  const connection = await pool.connect();
+  // Set before `begin` so a client-side rejection that still reached the server issues the
+  // ROLLBACK that drops the elevation. ROLLBACK with no transaction open is a suppressed notice.
+  let open = true;
+  try {
+    await connection.execute(request("test.harness-begin", "begin"));
+    await connection.execute(assumeMigrationOwnerRequest);
+    const result = await work(connection);
+    await connection.execute(request("test.harness-commit", "commit"));
+    open = false;
+    await assertElevationReverted(connection);
+    return result;
+  } catch (error) {
+    const failures = [error];
+    if (open) {
+      try {
+        await connection.execute(request("test.harness-rollback", "rollback"));
+        open = false;
+        await assertElevationReverted(connection);
+      } catch (cleanupError) {
+        failures.push(cleanupError);
+      }
+    }
+    if (failures.length === 1) throw error;
+    throw new AggregateError(failures, "Migration owner transaction cleanup failed");
+  } finally {
+    await connection.release();
+  }
+}
+
 export function tenantFixture(label, suffix) {
   const token = `${label}${suffix}`.replaceAll("_", "").slice(0, 24);
   return Object.freeze({
@@ -159,8 +259,7 @@ export function preflightRulesFor(version) {
 export async function seedTenant(pool, tenant, displayName, principals = []) {
   const actors =
     principals.length === 0 ? [principalFixture(tenant, "location_admin")] : principals;
-  const connection = await pool.connect();
-  try {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
     await connection.execute(
       request(
         "test.campaign-location",
@@ -184,14 +283,11 @@ export async function seedTenant(pool, tenant, displayName, principals = []) {
         ),
       );
     }
-  } finally {
-    await connection.release();
-  }
+  });
 }
 
 export async function readStatus(pool, locationId, campaignRef) {
-  const connection = await pool.connect();
-  try {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
     const result = await connection.execute(
       request(
         "test.campaign-status",
@@ -200,18 +296,14 @@ export async function readStatus(pool, locationId, campaignRef) {
       ),
     );
     return result.rows[0]?.status;
-  } finally {
-    await connection.release();
-  }
+  });
 }
 
 export async function cleanupTenants(pool, tenants, principals = []) {
-  const connection = await pool.connect();
-  try {
-    await connection.execute(request("test.cleanup-begin", "begin"));
-    await connection.execute(
-      request("test.cleanup-disable-triggers", "set local session_replication_role = replica"),
-    );
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    for (const disableTrigger of appendOnlyTriggerRequests("disable")) {
+      await connection.execute(disableTrigger);
+    }
     for (const tenant of tenants) {
       for (const [statementName, text] of [
         ["test.cleanup-audit", "delete from audit.events where location_id = $1::uuid"],
@@ -255,13 +347,10 @@ export async function cleanupTenants(pool, tenants, principals = []) {
         ]),
       );
     }
-    await connection.execute(request("test.cleanup-commit", "commit"));
-  } catch (error) {
-    await connection.execute(request("test.cleanup-rollback", "rollback")).catch(() => undefined);
-    throw error;
-  } finally {
-    await connection.release();
-  }
+    for (const enableTrigger of appendOnlyTriggerRequests("enable")) {
+      await connection.execute(enableTrigger);
+    }
+  });
 }
 
 function stableJson(value) {

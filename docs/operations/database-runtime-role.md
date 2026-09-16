@@ -27,4 +27,6 @@ Set `OALO_DB_ASSUME_RUNTIME_ROLE=false` (or `0` / `off`) only for migration or o
 
 - Login role used by web/tasks must be granted `app_runtime` and `support_runtime` with `SET` privilege.
 - Do not connect application pools as `migration_owner` or a superuser bypass role.
+- The application login role must **not** be a member of `migration_owner`, not even `WITH SET true, INHERIT false`. `SET ROLE` is authorised against the *session* role, so membership alone lets any statement re-assume the schema owner mid-transaction, and `migration_owner` owns every append-only table. Apply migrations with a separate login role and verify with `select pg_catalog.pg_has_role('<app-login>', 'migration_owner', 'USAGE');` returning false.
+- `app_runtime` holds only `SELECT, INSERT` on `audit.events` and the campaign evidence tables, and it does not own them, so it can neither mutate evidence rows nor `ALTER TABLE ... DISABLE TRIGGER` on the `*_append_only` triggers. Do not add `UPDATE`/`DELETE` grants or table ownership to a runtime role.
 - pgTAP suites already use `SET LOCAL ROLE app_runtime`; keep application and test models aligned.

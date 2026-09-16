@@ -1,6 +1,6 @@
 # Marketplace Listing Copy Pack
 
-> Category: Product Operations | Version: 1.0 | Date: September 2026 | Status: Active
+> Category: Product Operations | Version: 1.1 | Date: September 2026 | Status: Active
 
 Paste-ready listing fields, screenshot shot list, Loom script, and claim-by-claim audit for the Automated LO HighLevel Marketplace listing. Authored ahead of the operator so no copy has to be invented live in the portal at submission time.
 
@@ -34,7 +34,7 @@ Automated LO
 ### Short description (one line)
 
 ```
-Turn one open house into an approved, on-brand Open House Boost campaign, with a named human approval on record.
+Turn one open house into an on-brand Open House Boost campaign version with a named human approval on the record. No ad publishing in this release.
 ```
 
 ### Long description
@@ -49,7 +49,8 @@ rather than altering an approved one.
 
 Before a campaign is treated as final, a named person with approval authority approves
 that exact version. The approval is stored with the version, including who approved it
-and when.
+and when. That approval is where this release ends: Automated LO does not publish or
+distribute the approved version.
 
 What this release does:
 - Installs into your HighLevel location and runs inside HighLevel
@@ -60,6 +61,8 @@ What this release does:
 - Disconnects cleanly when you uninstall
 
 What this release does not do:
+- It does not publish or distribute the approved campaign version anywhere
+- It does not produce co-branded collateral (public page, flyer, PDF, QR materials)
 - It does not publish ads to Facebook or Instagram, set budgets, or spend money
 - It does not capture, route, or notify you about leads
 - It does not bill you inside the app
@@ -106,7 +109,8 @@ Both must point at the hostname that 004a actually deployed and smoked. Do not e
 
 ```
 This release covers Open House Boost campaign creation, persistence, and named human
-approval. Ad publishing, lead routing, and in-app billing are not included.
+approval, and it ends there. Publishing or distributing the approved version, co-branded
+collateral, ad publishing, lead routing, and in-app billing are not included.
 ```
 
 ---
@@ -126,6 +130,17 @@ approval. Ad publishing, lead routing, and in-app billing are not included.
 
 Six frames is enough. Extra frames widen the claim surface for no benefit.
 
+### Plan budget figures in frames 2 through 5
+
+The draft builder and the campaign detail screen both show **planned** daily and total budget dollars, because a budget is one of the campaign inputs. Those are numbers the operator typed, not money anyone spent, but a reviewer skimming a listing screenshot cannot tell the difference.
+
+For any frame that shows a budget figure, do one of the following:
+
+- crop the plan budget fields out of frame; or
+- keep the in-app disclosure in frame, which reads "This flow freezes an immutable campaign version and stores it for this location. It does not publish, spend, or call HighLevel or Meta."
+
+Either satisfies `004E-AC-004`. Do not caption a budget figure as spend, results, or performance, and do not pair one with a metric tile.
+
 ---
 
 ## Loom script
@@ -138,11 +153,11 @@ Target length: 3 to 4 minutes. Narrate only what is on screen.
 | 2. Setup | Brand / compliance / partner setup | "You set up brand, compliance, and Realtor partner details once. These feed every campaign." |
 | 3. Create | Open House Boost form, then submit | "Enter the open house and the property. Automated LO builds an immutable campaign version from those inputs plus your setup." |
 | 4. Persist | Navigate away, return, reopen the campaign | "The campaign is saved. I am leaving the page and coming back, and the same version is still here." |
-| 5. Approve | Approval action, then the recorded approval | "A named person with approval authority approves this exact version. The record keeps who approved what, and when. An edit would create a new version that needs its own approval." |
+| 5. Approve | Approval action, then the recorded approval | "A named person with approval authority approves this exact version. The record keeps who approved what, and when. An edit would create a new version that needs its own approval. Approving does not publish or send anything; this release stops at the approval record." |
 | 6. Honest state | `/overview` not-connected states | "Ad publishing and lead routing are not part of this release, so the product says not connected instead of showing numbers it does not have." |
 | 7. Disconnect | Uninstall from the location | "Uninstalling from your HighLevel location ends the app's access." |
 
-Do not say: published, boosted, spend, budget, leads delivered, appointments, cost per lead, ROI, or "automatically."
+Do not narrate any of these as something the product does: published, boosted, spend, budget, leads delivered, appointments, cost per lead, ROI, "goes out", "sent", "distributed", "flyer", "collateral", "automatically." Saying them in the negative is fine and encouraged, as beat 6 does.
 
 ---
 
@@ -150,17 +165,44 @@ Do not say: published, boosted, spend, budget, leads delivered, appointments, co
 
 Every customer-facing claim, and what it rests on. A claim with no row here does not ship.
 
-| Claim | Rests on | Status |
+**The gating rule.** A positive claim may appear in the listing only when its gate below is cleared. A row whose gate is still open means one of two things must happen before submission: the gate passes, or the sentence comes out of the copy. It is never acceptable to leave a claim stated unconditionally in customer-facing copy while its row here shows an unmet gate. That is the exact defect a quality audit reopened on 2026-09-16, and this table is the control that prevents it.
+
+Negative claims ("it does not publish") need no gate: they are true by construction and get safer, not riskier, as gates close.
+
+### Positive claims
+
+| # | Claim as stated in copy | Rests on | Gate before submission |
+| --- | --- | --- | --- |
+| P1 | Installs into your HighLevel location and runs as a page inside HighLevel, with no separate login | HighLevel install and Custom Page lifecycle; PRD-001A live-auth rows are still `DEFERRED: LIVE HIGHLEVEL AUTH` | **Open:** Test Link install must succeed (`GGL-B06`). The whole listing is blocked on this, so no separate copy edit is needed; if Test Link fails, nothing is submitted. |
+| P2 | Set up brand, compliance, and Realtor partner details once | PRD-001B, 20 of 20 criteria `VERIFIED` | Cleared: repository-proved |
+| P3 | Creates an Open House Boost campaign version from those inputs | PRD-003a (`70531fb`); PRD-001C, 30 of 30 `VERIFIED` | Cleared: merged on `main` |
+| P4 | The version is immutable; an edit creates a new version needing its own approval | PRD-001C immutable-version criteria; `APA-001` | Cleared: merged on `main` |
+| P5 | Your campaign is still there when you come back | PRD-003a + PRD-003d (`26051b3`); `004A-AC-004` | **Open:** code is merged but no run has been observed. Clears on operator smoke (`GGL-B03`) or the PRD-004d run (`GGL-B16`). Both precede submission, so the claim is safe by sequencing, not by assumption. |
+| P6 | You can list your campaigns and open one for detail | PRD-003d (`26051b3`); `APA-006` | Cleared: merged on `main` |
+| P7 | A named human with approval authority approves the exact version, and the record holds who, what, and when | PRD-003c (`71c371d`); `APA-004` | Cleared: merged on `main` |
+| P8 | Another HighLevel location cannot see your campaigns | `APA-003`; RLS plus repository contracts | Cleared: merged on `main` |
+| P9 | Uninstalling ends the app's access | HighLevel install lifecycle | **Open:** observe during Test Link (`GGL-B06`). If uninstall is not exercised, cut the sentence from the FAQ rather than assuming it. |
+| P10 | Where AI assistance is involved, output is a draft a person reviews and never decides compliance, targeting, budget, or approval | Project-map hard boundary 9; PRD-001I metering and boundary criteria | Cleared: stated as a limit on the product, not as a feature |
+| P11 | It stores your configuration, campaign versions, approval records, and audit history; HighLevel stays the system of record | PRD-003a schema; project-map hard boundary 8 | Cleared: merged on `main` |
+| P12 | Surfaces show honest not-connected states rather than invented metrics | `GGL-001` / `GGL-002` | **Conditional:** true in review mode only. Every screenshot and the Loom must be captured with `OALO_REVIEW_SURFACE=authorized` (`004E-AC-004`). |
+
+### Negative and boundary claims
+
+| # | Claim as stated in copy | Rests on |
 | --- | --- | --- |
-| Installs and runs inside a HighLevel location | Test Link install | BLOCKED until `GGL-B06`; do not publish the listing before it passes |
-| Brand / compliance / partner setup | PRD-001B criteria, 20 of 20 `VERIFIED` | Repository-proved |
-| Creates an immutable Open House Boost campaign version | PRD-003a (`70531fb`), PRD-001C criteria | Merged on `main` |
-| The campaign persists across sessions | PRD-003a + PRD-003d (`26051b3`); `004A-AC-004` | Code done; observed run pending (`GGL-B03` / `GGL-B16`) |
-| Named human approval of the exact version | PRD-003c (`71c371d`); `APA-004` | Merged on `main` |
-| Location isolation; no cross-location reads | `APA-003`, RLS + repository contracts | Merged on `main` |
-| Honest not-connected states instead of invented metrics | `GGL-001` / `GGL-002`, review mode only | VERIFIED with `OALO_REVIEW_SURFACE=authorized` |
-| Uninstall ends access | HighLevel install lifecycle | Confirm during Test Link (`GGL-B06`) |
-| No ad publishing, leads, or billing in this release | G3 / G5 / G6 `BLOCKED` | Accurate by construction |
+| N1 | Does not publish or distribute the approved version | No publish path is reachable; `GGL-005` / `GGL-006` prove providers are default-off |
+| N2 | Does not produce co-branded collateral in this release | Collateral surfaces are outside the demonstrated review flow (see the capability boundary in PRD-004e) |
+| N3 | Does not publish ads, set budgets, or spend money | G3 `BLOCKED`; provider default-off proof |
+| N4 | Does not capture, route, or notify about leads | G5 `BLOCKED` |
+| N5 | Does not bill inside the app or process payments | G6 `BLOCKED` |
+| N6 | Does not send email or text messages to consumers | No consumer messaging path in the demonstrated flow |
+| N7 | Makes no promise of leads, appointments, closings, or cost per lead | No measured cohort exists; G8 is an accepted constraint |
+| N8 | Does not replace your CRM | Project-map hard boundary 8 |
+| N9 | Does not decide mortgage advertising compliance for you | Project-map hard boundary 9 |
+
+### Forward-looking statements, and how far they may go
+
+Exactly one forward-looking statement appears in customer-facing copy: that identity separation (Realtor and brokerage confined to approved collateral, paid-ad identity loan officer or lender only) is built into how campaigns are modeled. It is worded as a **design commitment for a later release**, not as something a customer can exercise today, because neither collateral nor paid advertising ships in this release. The underlying separation is genuinely implemented and repository-proved (PRD-001C paid-ad brand-boundary criteria and PRD-001E field separation), which is why the statement is allowed to exist at all. Do not upgrade it to present-tense enforcement language, and do not add a second forward-looking statement without adding a row here.
 
 ---
 
@@ -182,4 +224,5 @@ Every customer-facing claim, and what it rests on. A claim with no row here does
 
 ## Changelog
 
+- v1.1 (2026-09-16): Copy-overclaim remediation after a quality audit reopened `004E-AC-001`, `004E-AC-002`, and `004E-AC-007`. Claim audit rebuilt as gated positive claims plus negative and boundary claims, with a stated gating rule and one labeled forward-looking statement. Long description now says the release does not publish, distribute, or produce collateral. Shot list gained the plan-budget note. `004E-AC-004` unchanged.
 - v1.0 (2026-09-16): Initial pack: listing fields, shot list, Loom script, claim audit, Standard listing-type default. Authored for `004E-AC-003` through `004E-AC-007`.

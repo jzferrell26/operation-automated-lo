@@ -1,6 +1,6 @@
 # Open House Boost FAQ
 
-> Category: FAQ | Version: 1.0 | Date: September 2026 | Status: Draft
+> Category: FAQ | Version: 1.1 | Date: September 2026 | Status: Draft
 
 Answers to the questions a loan officer asks before installing Automated LO, scoped to what the reviewable build actually does.
 
@@ -55,7 +55,9 @@ Where AI assistance is involved, the output is a draft for a person to review. I
 ## Realtor partners and compliance
 
 **Can I co-brand with the listing agent?**
-Co-branding belongs on approved collateral such as the public page, flyer, PDF, and QR materials. Paid advertising identity, when paid advertising becomes available, stays loan-officer or lender only. That separation is enforced in the product, not left to the user.
+Not in this release. Co-branded collateral, meaning the public campaign page, flyer, PDF, and QR materials, is not part of the reviewable build, so there is nothing to co-brand yet. Your Realtor partner details are captured during setup so they are ready when those surfaces arrive.
+
+The separation of identities, Realtor and brokerage on approved collateral and loan officer or lender only on paid advertising, is built into how campaigns are modeled. Neither surface ships in this release, so treat it as a design commitment for later rather than something you can exercise today.
 
 **Does it handle mortgage advertising rules for me?**
 No, and it does not claim to. It gives you a consistent, approval-gated process and keeps brand and compliance inputs in one place. You and your compliance owner remain responsible for what you approve.
@@ -63,6 +65,9 @@ No, and it does not claim to. It gives you a consistent, approval-gated process 
 ---
 
 ## What is not in this release
+
+**What happens after I approve a campaign?**
+Nothing automatic. This release records the approval and stops there. It does not publish, distribute, print, or send the approved version anywhere, and it does not hand it to another system. Publishing is a later release.
 
 **Does it run my Facebook or Instagram ads?**
 No. This release does not publish ads, set budgets, or spend money.

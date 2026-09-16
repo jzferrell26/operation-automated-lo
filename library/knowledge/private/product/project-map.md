@@ -1,6 +1,6 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.9 | Date: September 2026 | Status: Active
+> Category: Product Operations | Version: 1.10 | Date: September 2026 | Status: Active
 
 The canonical internal map of the product boundary, system flow, implementation status, external gates, and next work for Operation Automated LO.
 
@@ -247,6 +247,7 @@ PRD-001 core is complete only when all of the following are true:
 
 ## Changelog
 
+- v1.10 (2026-09-16): Copy-overclaim remediation on the PRD-004e listing content after a quality audit reopened three criteria: collateral and present-tense identity-enforcement claims removed from the customer FAQ, three distribution-implying phrases removed from the customer overview and replaced with an explicit "this release does not publish or distribute" statement, and the claim audit rebuilt with per-claim gates. `004E-AC-004` unchanged. Re-audit owed; nothing claimed verified.
 - v1.9 (2026-09-16): Production-tonight requirements authoring. Added PRD-004d (real-Postgres command gate, owns `GGL-B16`) and PRD-004e (listing content and demo script), the operator runbook under private `operations/`, the internal listing copy pack, and the first customer-facing drafts under `knowledge/public/`. Recorded Standard as the listing-type default for a new app entry. Documentation only: no acceptance-criterion status changed, no deferred G2 row flipped, no G1/G4/G8 reopened, no production traffic claimed.
 - v1.8 (2026-09-16): Recorded PR #61 (`f4b79f7`) locally provable go-live code. `GGL-001`–`GGL-007`, `GGL-010` VERIFIED; operator path `GGL-B01`–`B09` documented. `OALO_REVIEW_SURFACE=authorized` prerequisite for honest review URL.
 - v1.7 (2026-09-15): Added PRD-004 Reviewable Go-Live (004a preview smoke, 004b portal/Test Link, 004c Marketplace submission). PRD-003a-d done; parent exits on 004a. Reviewable preview smoke evidence pack added.

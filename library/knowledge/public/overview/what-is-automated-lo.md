@@ -1,8 +1,8 @@
 # What Automated LO Does Today
 
-> Category: Overview | Version: 1.0 | Date: September 2026 | Status: Draft
+> Category: Overview | Version: 1.1 | Date: September 2026 | Status: Draft
 
-Automated LO is a HighLevel app for loan officers that turns one open house into an approved, on-brand campaign version, with a named human approval on record before anything goes out.
+Automated LO is a HighLevel app for loan officers that turns one open house into an on-brand campaign version with a named human approval on the record. This release ends at that approval: it does not publish or distribute anything.
 
 **Related:**
 
@@ -35,6 +35,8 @@ You tell it about the open house and the property. It assembles a campaign versi
 
 This list is deliberate. These capabilities are either not finished or not yet cleared, and the product does not claim them.
 
+- It does **not** publish or distribute approved campaign versions. Approval is where this release ends; nothing is sent, posted, printed, or handed to another system afterward.
+- It does **not** produce the co-branded collateral (public page, flyer, PDF, QR materials). Those surfaces are not part of this release.
 - It does **not** publish ads to Facebook or Instagram, set budgets, or spend money.
 - It does **not** capture, route, or notify you about leads.
 - It does **not** bill you through the app, and it does not process payments.
@@ -46,15 +48,16 @@ If you need any of those today, Automated LO is not the right fit yet.
 
 ## How approval works, and why it matters
 
-Mortgage marketing carries real compliance weight, so the product is built so that generating something never means sending it.
+Mortgage marketing carries real compliance weight, so the product is built so that creating a version never amounts to approving it.
 
 - A campaign version is **immutable**. Approving one version does not approve a later edit; an edit produces a new version that needs its own approval.
 - Approval is **attributed**. The record holds the approver, the exact version, and the time.
-- Approval is **required**, not advisory. Nothing downstream treats an unapproved version as final.
+- Approval is **required**, not advisory. An unapproved version is never treated as final.
+- Approval is **where this release stops**. It records that a named person accepted an exact version. It does not publish, distribute, or send that version anywhere.
 
 ## Who it is for
 
-A loan officer or a small lending team that already works inside HighLevel, runs open houses with Realtor partners, and needs the marketing that comes out of those open houses to be consistent, on-brand, and approved by a human before it is used.
+A loan officer or a small lending team that already works inside HighLevel, runs open houses with Realtor partners, and wants each open house campaign version to be consistent, on-brand, and approved by a named human on the record.
 
 ## Who it is not for
 

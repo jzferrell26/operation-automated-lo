@@ -60,7 +60,9 @@ The smoke checklist, the portal inspection checklist, and the submission packet 
 | Document | New criteria | Marked `DONE` on this branch | Marked `BLOCKED` or `OPEN` |
 | --- | ---: | ---: | ---: |
 | PRD-004d | 8 (`004D-AC-001` through `008`) | 3 (describe code already on `main`) | 5 |
-| PRD-004e | 9 (`004E-AC-001` through `009`) | 8 (artifacts exist in this branch) | 1 |
+| PRD-004e | 9 (`004E-AC-001` through `009`) | 5 (artifacts exist in this branch) | 1 blocked, 3 reopened then remediated |
+
+> **Addendum, 2026-09-16.** A read-only quality audit of PRD-004e reopened three of its eight authored criteria for copy overclaim, and all three findings were correct: the FAQ claimed co-branded collateral and present-tense identity enforcement that this release does not ship; the overview carried three phrases implying distribution of an approved version; and the claim-audit table was incomplete and listed claims as blocked while the copy asserted them unconditionally. All three are remediated on this branch, and the diagnosis plus fix for each is recorded in the [PRD-004e remediation log](../in-work/prd-004-reviewable-go-live/prd-004e-reviewable-go-live-listing-content-and-demo-script.md#remediation-log). `004E-AC-004` was not changed. The three remediated criteria await an independent re-audit and are not claimed as verified. This is the clearest available illustration of the point made below: an author's `DONE` is not a verification.
 
 No criterion authored here is marked `VERIFIED`. Verification requires an independent pass that has not happened. The `DONE` rows in PRD-004e are self-evidently checkable (the files exist and can be read); the `DONE` rows in PRD-004d point at merged code in `packages/db/test/` and `packages/config/`.
 

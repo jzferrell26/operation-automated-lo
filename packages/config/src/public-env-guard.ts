@@ -166,6 +166,12 @@ function collectApprovalRegistryViolations(): readonly string[] {
       );
     }
 
+    if (approval.serverCounterpart.trim().length === 0) {
+      violations.push(
+        `Browser-publication approval must name the server variable it mirrors: ${approval.name}`,
+      );
+    }
+
     if (serverOnlySecretNames.has(approval.serverCounterpart)) {
       violations.push(
         `Browser-publication approval mirrors server-only secret ${approval.serverCounterpart}: ${approval.name}`,
@@ -369,13 +375,27 @@ export function collectAssignmentViolationsInSource(input: {
   return violations;
 }
 
+/**
+ * This module is the only file exempt from its own scan, because it necessarily spells every
+ * server-only secret name next to `NEXT_PUBLIC_` patterns. The exemption is the one exact
+ * workspace-relative path rather than a filename suffix: a suffix match would silently exempt any
+ * new file someone happened to name `public-env-guard.ts`, turning the scan off for that file.
+ */
+const SCAN_EXEMPT_FILE_PATHS: ReadonlySet<string> = new Set([
+  "packages/config/src/public-env-guard.ts",
+]);
+
+function isScanExempt(filePath: string): boolean {
+  return SCAN_EXEMPT_FILE_PATHS.has(filePath.replaceAll("\\", "/"));
+}
+
 export function collectPublicSecretAssignmentViolationsInSources(
   sources: readonly Readonly<{ filePath: string; source: string }>[],
 ): readonly string[] {
   const violations: string[] = [];
 
   for (const entry of sources) {
-    if (entry.filePath.endsWith("/public-env-guard.ts")) {
+    if (isScanExempt(entry.filePath)) {
       continue;
     }
     violations.push(...collectAssignmentViolationsInSource(entry));

@@ -6,6 +6,7 @@ import {
   assertPublicEnvironmentAllowlistSecure,
   collectAssignmentViolationsInSource,
   collectPublicAllowlistViolations,
+  collectPublicSecretAssignmentViolationsInSources,
 } from "@oalo/config";
 import { describe, expect, it } from "vitest";
 
@@ -68,6 +69,17 @@ describe("browser publication review registry", () => {
       expect(SERVER_ONLY_SECRET_ENVIRONMENT_VARIABLE_NAMES).not.toContain(
         approval.serverCounterpart,
       );
+    }
+  });
+
+  /**
+   * The mirrored server variable is a review artifact, so it has to actually name something. An
+   * empty or whitespace `serverCounterpart` would satisfy every other registry check while
+   * declaring nothing, which is the vacuous form of the review this registry exists to force.
+   */
+  it("requires every approval to name the server variable it mirrors", () => {
+    for (const approval of BROWSER_PUBLICATION_APPROVALS) {
+      expect(approval.serverCounterpart.trim().length).toBeGreaterThan(0);
     }
   });
 
@@ -223,5 +235,29 @@ describe("public secret assignment scan", () => {
 
     expect(collectAssignmentViolationsInSource(assignmentSource(source))).toEqual([]);
     expect(collectPublicAllowlistViolations(["NEXT_PUBLIC_OALO_X"]).length).toBeGreaterThan(0);
+  });
+
+  /**
+   * The scan exempts this guard module, because it necessarily spells every secret name next to
+   * `NEXT_PUBLIC_` patterns. The exemption is one exact path, so it cannot be claimed by naming a
+   * new file `public-env-guard.ts` somewhere else and thereby switching the scan off for it.
+   */
+  it("exempts only the guard module itself, not any file sharing its name", () => {
+    const leak = "process.env.NEXT_PUBLIC_OALO_X = process.env.OALO_DATABASE_URL;";
+
+    expect(
+      collectPublicSecretAssignmentViolationsInSources([
+        { filePath: "packages/config/src/public-env-guard.ts", source: leak },
+      ]),
+    ).toEqual([]);
+
+    for (const filePath of [
+      "apps/web/src/server/public-env-guard.ts",
+      "packages/config/src/nested/public-env-guard.ts",
+    ]) {
+      expect(
+        collectPublicSecretAssignmentViolationsInSources([{ filePath, source: leak }]).length,
+      ).toBeGreaterThan(0);
+    }
   });
 });

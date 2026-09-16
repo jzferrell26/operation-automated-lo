@@ -10,7 +10,10 @@ export const OALO_TEST_DATABASE_URL =
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const defaultRepositoryRoot = resolve(scriptDirectory, "../../..");
-const LOCAL_SUPABASE_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:55422/postgres";
+// `template1` is the maintenance database used for every CREATE/DROP DATABASE statement so that no
+// session of ours is attached to `postgres`, which must have zero other connections to be cloned.
+const LOCAL_MAINTENANCE_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:55422/template1";
+const LOCAL_SUPABASE_DATABASE_NAME = "postgres";
 const OALO_TEST_DATABASE_NAME = "oalo_test_integration";
 
 export async function discoverPgtapFiles(repositoryRoot = defaultRepositoryRoot) {
@@ -45,35 +48,10 @@ export async function discoverPostgresIntegrationFiles(repositoryRoot = defaultR
   return files;
 }
 
-async function discoverMigrationFiles(repositoryRoot = defaultRepositoryRoot) {
-  const migrationsDirectory = resolve(repositoryRoot, "supabase/migrations");
-  const entries = await readdir(migrationsDirectory, { withFileTypes: true });
-  const migrationFileNamePattern = /^\d{14}_.+\.sql$/u;
-  for (const entry of entries) {
-    if (entry.isFile() && !migrationFileNamePattern.test(entry.name)) {
-      process.stdout.write(
-        `[database] Skipping migration ${entry.name} (file name must match pattern "<timestamp>_name.sql")\n`,
-      );
-    }
-  }
-  const files = entries
-    .filter((entry) => entry.isFile() && migrationFileNamePattern.test(entry.name))
-    .map((entry) =>
-      relative(repositoryRoot, resolve(migrationsDirectory, entry.name)).replaceAll("\\", "/"),
-    )
-    .toSorted();
-
-  if (files.length === 0) {
-    throw new Error("No supabase/migrations/<timestamp>_name.sql files were found.");
-  }
-  return files;
-}
-
 export function commandPlan(
   pgtapFiles,
   repositoryRoot = defaultRepositoryRoot,
   postgresIntegrationFiles = [],
-  migrationFiles = [],
 ) {
   const node = process.execPath;
   const packageRunner = resolvePackageRunner(node);
@@ -113,7 +91,7 @@ export function commandPlan(
       Object.freeze({
         command: "psql",
         args: [
-          `--dbname=${LOCAL_SUPABASE_DATABASE_URL}`,
+          `--dbname=${LOCAL_MAINTENANCE_DATABASE_URL}`,
           "--set=ON_ERROR_STOP=1",
           "--command",
           `drop database if exists ${OALO_TEST_DATABASE_NAME} with (force)`,
@@ -123,24 +101,19 @@ export function commandPlan(
       Object.freeze({
         command: "psql",
         args: [
-          `--dbname=${LOCAL_SUPABASE_DATABASE_URL}`,
+          `--dbname=${LOCAL_MAINTENANCE_DATABASE_URL}`,
           "--set=ON_ERROR_STOP=1",
+          // Postgres refuses to clone a template that any other session is connected to, and the
+          // Supabase stack holds such sessions. Both statements run back to back inside one psql
+          // process, and each --command is its own transaction so CREATE DATABASE stays valid.
           "--command",
-          `create database ${OALO_TEST_DATABASE_NAME}`,
+          `select pg_terminate_backend(pid) from pg_stat_activity where datname = '${LOCAL_SUPABASE_DATABASE_NAME}' and pid <> pg_backend_pid()`,
+          "--command",
+          `create database ${OALO_TEST_DATABASE_NAME} template ${LOCAL_SUPABASE_DATABASE_NAME}`,
         ],
-        label: "create the dedicated oalo_test integration database",
+        label:
+          "clone the initialized local database into the dedicated oalo_test integration database",
       }),
-      ...migrationFiles.map((migrationFile) =>
-        Object.freeze({
-          command: "psql",
-          args: [
-            `--dbname=${OALO_TEST_DATABASE_URL}`,
-            "--set=ON_ERROR_STOP=1",
-            `--file=${migrationFile}`,
-          ],
-          label: `apply ${migrationFile} to the dedicated oalo_test database`,
-        }),
-      ),
       Object.freeze({
         command: node,
         args: [turboCli, "run", "build", "--filter=@oalo/db..."],
@@ -174,10 +147,7 @@ export async function runRealDatabaseTests(options = {}) {
   const postgresIntegrationFiles =
     options.postgresIntegrationFiles ??
     (options.run === undefined ? await discoverPostgresIntegrationFiles(repositoryRoot) : []);
-  const migrationFiles =
-    options.migrationFiles ??
-    (options.run === undefined ? await discoverMigrationFiles(repositoryRoot) : []);
-  const plan = commandPlan(pgtapFiles, repositoryRoot, postgresIntegrationFiles, migrationFiles);
+  const plan = commandPlan(pgtapFiles, repositoryRoot, postgresIntegrationFiles);
   let verificationError;
   let cleanupError;
 

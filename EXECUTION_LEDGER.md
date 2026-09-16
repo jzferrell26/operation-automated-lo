@@ -256,8 +256,8 @@ Therefore this raid's actionable surface is exactly the locally provable code po
 | GGL-005 | PRD-004 index, `RGL-007` | "Given this batch completes, when external gates are checked, then no HighLevel provider write, Meta publish, lead routing, or Stripe charge is newly enabled by default." | VERIFIED | `security-guardian` |
 | GGL-006 | PRD-003 index, `APA-008` | "Given this batch is complete, when the production verification gate runs, then no HighLevel, Meta, Stripe, lead-routing, or other provider side effect is newly enabled by default." | VERIFIED | `security-guardian` |
 | GGL-007 | PRD-004 index, `RGL-008` | "Given G2 deferred criteria, when this batch completes, then none of the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` rows flip to `VERIFIED` without sanitized fixtures passing `pnpm test:contracts`." | VERIFIED | `quality-guardian` |
-| GGL-008 | PRD-004a, `004A-AC-004` (local-provable equivalent) | "Create Open House Boost -> navigate away -> reload -> campaign still present (Postgres)." Proven locally through the web command stack against real Postgres in the canonical database gate, not only at the repository layer. | DONE (code) / BLOCKED (automated gate) | `db-guardian` |
-| GGL-009 | PRD-004a, `004A-AC-005` (local-provable equivalent) | "Authorized approver can approve; aggregate shows approved state after reload." Proven locally through the approval command/handler against real Postgres with a fresh read path, not direct SQL. | DONE (code) / BLOCKED (automated gate) | `db-guardian` |
+| GGL-008 | PRD-004a, `004A-AC-004` (local-provable equivalent) | "Create Open House Boost -> navigate away -> reload -> campaign still present (Postgres)." Proven locally through the `@oalo/application` campaign command layer against real PostgreSQL 17, with the reload served by a fresh connection pool, not only at the repository layer and not by direct SQL. Scope limit: the web entry point `compileOpenHouseDraft` (`apps/web/src/server/open-house-draft.ts`) is **not** covered, so its Zod input schema and `assertMayExecuteCampaignMutation` gate remain unexercised against Postgres. Enforced by the dedicated `campaign-command-postgres` job, **not** by the canonical `pnpm test:db` gate. | VERIFIED | `db-guardian` |
+| GGL-009 | PRD-004a, `004A-AC-005` (local-provable equivalent) | "Authorized approver can approve; aggregate shows approved state after reload." Proven locally through the `@oalo/application` `executeHumanCampaignApproval` command against real PostgreSQL 17, with the reload served by a fresh connection pool, not direct SQL. The unauthorized-principal denial is covered too. Scope limit: the web handler `handleCampaignApproval` (`apps/web/src/server/campaign-approval-handler.ts`) is **not** covered. | VERIFIED | `db-guardian` |
 | GGL-010 | PRD-003 index, `APA-010` | "Given the completed implementation, when security and quality review run, then the batch has no unresolved Critical or High security finding and every PRD-003 acceptance criterion is traceable to code and tests before merge." | VERIFIED | `quality-guardian` |
 
 ### Blocked rows with exact operator asks
@@ -281,7 +281,7 @@ These are parked, not skipped. Each carries a specific ask. None is silently dro
 | GGL-B13 | PRD-001, `001I-AC-013` | Legal / AI data handling evidence. | BLOCKED | Counsel sign-off (Wave 6). |
 | GGL-B14 | PRD-001, `001F-AC-026` | G5 synthetic lead evidence. | BLOCKED | No-spend Meta test lead capture (Wave 4). |
 | GGL-B15 | PRD-001, `001E-AC-005`, `001E-AC-006` | G4 Housing Special Ad Category rows. | ACCEPTED CONSTRAINT | None. Product-owner disposition. Do not reopen. |
-| GGL-B16 | Raid-internal, blocks the automated half of GGL-008 and GGL-009 | Run `packages/db/test/*.integration.test.mjs` inside the canonical `pnpm test:db` gate so the real-Postgres command round trips are enforced by CI rather than only runnable on demand. | BLOCKED | Run `OALO_TEST_DATABASE_URL=<url of a disposable database whose name starts with `oalo_test_`> pnpm --filter @oalo/db test:postgres` on a machine with Docker and paste the output, **or** state which of the three provisioning routes below you want pursued. Four CI attempts established the exact constraint, recorded in the raid log: Supabase local cannot hand us a second fully-initialized database under an `oalo_test_` name. `supabase db reset --db-url` ignores the flag and resets the main database; a plain `CREATE DATABASE` plus migration replay lacks Supabase's init grants and fails `42501 permission denied for table locations`; and `CREATE DATABASE ... TEMPLATE postgres` cannot proceed because the local `postgres` role is not superuser and cannot terminate the superuser sessions holding the template. Remaining routes: (1) `pg_dump` the initialized database and restore it into the clone, accepting owner/extension noise; (2) connect as `supabase_admin` for the terminate-and-clone; (3) relax the `oalo_test_` name guard at `packages/db/test/campaign-integration-support.mjs:26-28` to also accept the canonical local stack, which weakens a deliberate safety net and was therefore refused here. |
+| GGL-B16 | Raid-internal, blocked the automated half of GGL-008 and GGL-009 | Run `packages/db/test/*.integration.test.mjs` inside a CI gate so the real-Postgres command round trips are enforced rather than only runnable on demand. | RESOLVED 2026-09-16 (see the follow-up run below); residual: the `campaign-command-postgres` job has not yet run on a GitHub runner | No operator action remains. The blocker's primary ask, an observed execution of the suite, is satisfied. Its secondary ask, CI enforcement, is written and locally rehearsed but not yet observed green on a runner; that resolves on the first PR run and needs no operator. The blocker rested on a false premise: the migrations have no Supabase coupling at all, so the suite never needed Supabase local. It needs one thing Supabase local cannot give and a stock PostgreSQL 17 does: a **superuser** connection, because `20260721010000_platform_foundation.sql` grants its runtime roles `with inherit false`. Original ask, preserved verbatim as history and no longer actionable: "Run `OALO_TEST_DATABASE_URL=<url of a disposable database whose name starts with `oalo_test_`> pnpm --filter @oalo/db test:postgres` on a machine with Docker and paste the output, **or** state which of the three provisioning routes below you want pursued. Four CI attempts established the exact constraint, recorded in the raid log: Supabase local cannot hand us a second fully-initialized database under an `oalo_test_` name. `supabase db reset --db-url` ignores the flag and resets the main database; a plain `CREATE DATABASE` plus migration replay lacks Supabase's init grants and fails `42501 permission denied for table locations`; and `CREATE DATABASE ... TEMPLATE postgres` cannot proceed because the local `postgres` role is not superuser and cannot terminate the superuser sessions holding the template. Remaining routes: (1) `pg_dump` the initialized database and restore it into the clone, accepting owner/extension noise; (2) connect as `supabase_admin` for the terminate-and-clone; (3) relax the `oalo_test_` name guard at `packages/db/test/campaign-integration-support.mjs:26-28` to also accept the canonical local stack, which weakens a deliberate safety net and was therefore refused here." |
 
 ### Out of scope by instruction
 
@@ -367,9 +367,9 @@ A lane stalls if it produces no file change or repeats the same failing approach
 | Criterion | Status |
 | --- | --- |
 | GGL-001, GGL-002, GGL-003, GGL-004, GGL-005, GGL-006, GGL-007, GGL-010 | VERIFIED |
-| GGL-008, GGL-009 | DONE (code) / BLOCKED (automated gate), parked as `GGL-B16` |
+| GGL-008, GGL-009 | DONE (code) / BLOCKED (automated gate), parked as `GGL-B16` — **superseded 2026-09-16, both now VERIFIED; see "Follow-up run" below** |
 
-Eight of ten criteria are VERIFIED. Two are honestly parked: the tests exist and are statically sound, but no execution of them has been observed, so they are not claimed as VERIFIED.
+Eight of ten criteria were VERIFIED at PR #61. Two were honestly parked: the tests existed and were statically sound, but no execution of them had been observed, so they were not claimed as VERIFIED. The follow-up run below closed that gap.
 
 `pnpm verify:offline` passes on exact Node 24.18.0 and pnpm 11.15.1: 473 unit, 41 integration, 71 contracts, 8 database-orchestration, 1 visual, 23 Chromium browser, 16 typechecks, 16 builds, 0 jscpd clones, boundary audit across 16 packages, product-type audit, secret audit across 6 source roots plus the public environment boundary, and no high-severity advisories. `pnpm test:db` cannot run on this VM because Docker is unavailable; CI's `database` job runs it and passes.
 
@@ -378,3 +378,64 @@ Eight of ten criteria are VERIFIED. Two are honestly parked: the tests exist and
 ### The operator prerequisite that matters most
 
 `GGL-001` and `GGL-002` hold in **review mode only**. A review or Marketplace preview URL must set `OALO_REVIEW_SURFACE=authorized` (server-only, never `NEXT_PUBLIC_`). Without it, default preview mode still serves labeled synthetic demo metrics and does not satisfy `RGL-002` or `004A-AC-003`. This is recorded in `docs/production-environments.md`.
+
+---
+
+## Follow-up run: observed real-PostgreSQL execution of GGL-008 and GGL-009
+
+**Branch:** `cursor/gauntlet-remaining-code-a42e`
+**Baseline:** `origin/main` at `deeb3e2` (after PR #61 `f4b79f7` and PR #62 `deeb3e2`)
+**Scope:** exactly two things. Obtain an observed execution of the `GGL-008` / `GGL-009` real-Postgres round trips without weakening the `oalo_test_` guard, and independently re-grade `GGL-001` through `GGL-010`. Nothing else. The post-PR-61 hardening lane on `cursor/gauntlet-followup-hardening-b085` owns the public env-guard inversion, the structural review-surface leak tests, and the UI suite in `verify:offline`; none of those files or rows is touched here.
+
+### The parked blocker rested on a false premise
+
+`GGL-B16` assumed the suite needed a Supabase-initialized database. It does not. The two migration files reference **zero** Supabase objects: no `auth` or `storage` schema, no `service_role` / `authenticated` / `anon` / `supabase_admin` role, and no `create extension` (`gen_random_uuid` is called as `pg_catalog.gen_random_uuid()`, built in since PostgreSQL 13). They are plain PostgreSQL 17 DDL that creates the five runtime roles and six schemas it needs.
+
+The real requirement is narrower and was never stated: the connecting role must be a **superuser**. Supabase local's `postgres` is not one. That single fact explains every one of the four prior CI failures, and it is why `pg_dump` restore, `supabase_admin`, and relaxing the name guard were all the wrong fixes.
+
+Superuser is required for three independent reasons, not one, and a fix that addressed only the first would still fail:
+
+1. `supabase/migrations/20260721010000_platform_foundation.sql:54-63` grants the runtime roles `with inherit false`, so a non-superuser `postgres` is a member of `migration_owner` without inheriting its privileges and cannot reach the schemas it nominally owns. Observed directly: a `nosuperuser` role holding `app_runtime with inherit false` gets `ERROR: permission denied for schema platform` on the first insert into `platform.locations`.
+2. The same migration applies `force row level security` to the tenant tables (`:829-830` and the loop at `:857-862`), which subjects even the table owner to RLS. Only `BYPASSRLS` or superuser can perform the harness's raw fixture inserts.
+3. `cleanupTenants` in `packages/db/test/campaign-integration-support.mjs:213` issues `set local session_replication_role = replica`, a superuser-only parameter. Observed directly: `ERROR: permission denied to set parameter "session_replication_role"`.
+
+Granting `INHERIT` alone would therefore not have unblocked the suite.
+
+### A real defect the parking had been hiding
+
+`GGL-009` had never passed. With a working database it fails on a `ZodError`, not on infrastructure. The test built its `correlationRef` as `` `${tenant.correlationId}-approved` ``, and `OpaqueReferenceSchema` (`packages/contracts/src/campaign-foundation.ts:7`) enforces `/^[a-z][a-z0-9]*(?:_[A-Za-z0-9]+)+$/u`, which permits underscores and rejects hyphens. The denial assertion passed only because the unauthorized path short-circuits before any event is constructed, which is exactly how the defect survived review.
+
+The fix is in the fixture, not the contract. That reference convention is enforced across the contracts package, so the test was wrong and the schema was right. All seven nonconformant suffixes in `packages/db/test/campaign-command.integration.test.mjs` now use `_`. No guard, schema, or production path was relaxed.
+
+### Observed evidence
+
+`pnpm --filter @oalo/db test:postgres` against PostgreSQL 17.11, Node 24.18.0, pnpm 11.15.1, loopback URL on a database named `oalo_test_integration`:
+
+```
+ℹ tests 9
+ℹ suites 3
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+```
+
+Both named cases pass: `GGL-008 creates an Open House Boost through commands and reloads it from a fresh pool` and `GGL-009 approves through the command, rejects an unauthorized principal, and reloads approved state`. Nothing skips. With `OALO_TEST_DATABASE_URL` unset the same command reports `tests 3 / pass 0 / fail 3 / skipped 0`, because `requiredTestDatabaseUrl()` runs at module load, so an unset URL is a hard failure rather than a silent pass. The `oalo_test_` guard at `packages/db/test/campaign-integration-support.mjs:26-28` was satisfied, never modified.
+
+### CI enforcement
+
+A new `campaign-command-postgres` job runs the suite against a digest-pinned `postgres:17-bookworm` service container: create the `oalo_test_integration` database, replay `supabase/migrations/*.sql` with `psql -v ON_ERROR_STOP=1`, build with `turbo run build --filter=@oalo/db...`, then run the tests over loopback. The service container's `postgres` role is already a superuser, which is the only privilege the replay needs, so there is no role or grant bootstrap.
+
+This is a **separate job**. It does not modify `pnpm test:db` or the existing Supabase-backed `database` job, so the previously green gates cannot be destabilized by it. The corollary is that the canonical `pnpm test:db` gate still does not run this suite; the new job is the only thing that does.
+
+**Not yet observed on a GitHub runner.** This job has never executed on GitHub Actions. What is proven is the recipe, not the runner: the identical sequence (create an `oalo_test_` database, replay both `supabase/migrations/*.sql` with `psql -v ON_ERROR_STOP=1`, `turbo run build --filter=@oalo/db...`, then `pnpm --filter @oalo/db test:postgres`) was executed locally against stock PostgreSQL 17 on a database built only from bare migration replay, and returned 9 of 9 passing. The job is therefore claimed as **written and locally rehearsed**, not as a green CI gate. It becomes a green gate only when the PR run reports it. Two residual runner-specific risks were checked rather than assumed: the pinned digest `sha256:051f7b7b…` resolves to the current `postgres:17-bookworm` manifest, which the `server_version_num >= 170000` assertion in `packages/db/test/postgres-adapter.integration.test.mjs:34` depends on; and `ubuntu-24.04` ships a PostgreSQL 16 `psql` client against the 17 server, which is safe here only because neither migration uses a `psql` backslash meta-command, so the replay is plain SQL and the client emits nothing worse than a major-version warning.
+
+### Status change
+
+| Row | Before | After |
+| --- | --- | --- |
+| GGL-008 | DONE (code) / BLOCKED (automated gate) | VERIFIED by observed execution |
+| GGL-009 | DONE (code) / BLOCKED (automated gate) | VERIFIED by observed execution, after its fixture defect was fixed |
+| GGL-B16 | BLOCKED, with an operator ask | RESOLVED. No operator action remains |
+
+`PRODUCTION_EXECUTION_LEDGER.md` remains untouched. None of the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` rows was flipped. No live HighLevel, Meta, Stripe, KMS, or counsel evidence was created or implied, and G1 / G4 / G8 were not reopened.

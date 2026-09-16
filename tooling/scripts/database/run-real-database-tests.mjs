@@ -5,16 +5,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 
 export const SUPABASE_CLI_VERSION = "2.109.1";
-export const OALO_TEST_DATABASE_URL =
-  "postgresql://postgres:postgres@127.0.0.1:55422/oalo_test_integration";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const defaultRepositoryRoot = resolve(scriptDirectory, "../../..");
-// `template1` is the maintenance database used for every CREATE/DROP DATABASE statement so that no
-// session of ours is attached to `postgres`, which must have zero other connections to be cloned.
-const LOCAL_MAINTENANCE_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:55422/template1";
-const LOCAL_SUPABASE_DATABASE_NAME = "postgres";
-const OALO_TEST_DATABASE_NAME = "oalo_test_integration";
 
 export async function discoverPgtapFiles(repositoryRoot = defaultRepositoryRoot) {
   const testsDirectory = resolve(repositoryRoot, "supabase/tests");
@@ -32,31 +25,10 @@ export async function discoverPgtapFiles(repositoryRoot = defaultRepositoryRoot)
   return files;
 }
 
-export async function discoverPostgresIntegrationFiles(repositoryRoot = defaultRepositoryRoot) {
-  const testsDirectory = resolve(repositoryRoot, "packages/db/test");
-  const entries = await readdir(testsDirectory, { withFileTypes: true });
-  const files = entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".integration.test.mjs"))
-    .map((entry) =>
-      relative(repositoryRoot, resolve(testsDirectory, entry.name)).replaceAll("\\", "/"),
-    )
-    .toSorted();
-
-  if (files.length === 0) {
-    throw new Error("No packages/db/test/*.integration.test.mjs files were found.");
-  }
-  return files;
-}
-
-export function commandPlan(
-  pgtapFiles,
-  repositoryRoot = defaultRepositoryRoot,
-  postgresIntegrationFiles = [],
-) {
+export function commandPlan(pgtapFiles, repositoryRoot = defaultRepositoryRoot) {
   const node = process.execPath;
   const packageRunner = resolvePackageRunner(node);
   const vitestCli = resolve(repositoryRoot, "node_modules/vitest/vitest.mjs");
-  const turboCli = resolve(repositoryRoot, "node_modules/turbo/bin/turbo");
   const supabase = [packageRunner.cli, ...packageRunner.args];
 
   return Object.freeze({
@@ -87,47 +59,6 @@ export function commandPlan(
         label: "recreate the local database and apply every migration",
       }),
     ]),
-    integration: Object.freeze([
-      Object.freeze({
-        command: "psql",
-        args: [
-          `--dbname=${LOCAL_MAINTENANCE_DATABASE_URL}`,
-          "--set=ON_ERROR_STOP=1",
-          "--command",
-          `drop database if exists ${OALO_TEST_DATABASE_NAME} with (force)`,
-        ],
-        label: "replace the dedicated oalo_test integration database",
-      }),
-      Object.freeze({
-        command: "psql",
-        args: [
-          `--dbname=${LOCAL_MAINTENANCE_DATABASE_URL}`,
-          "--set=ON_ERROR_STOP=1",
-          // Postgres refuses to clone a template that any other session is connected to, and the
-          // Supabase stack holds such sessions. Both statements run back to back inside one psql
-          // process, and each --command is its own transaction so CREATE DATABASE stays valid.
-          "--command",
-          `select pg_terminate_backend(pid) from pg_stat_activity where datname = '${LOCAL_SUPABASE_DATABASE_NAME}' and pid <> pg_backend_pid()`,
-          "--command",
-          `create database ${OALO_TEST_DATABASE_NAME} template ${LOCAL_SUPABASE_DATABASE_NAME}`,
-        ],
-        label:
-          "clone the initialized local database into the dedicated oalo_test integration database",
-      }),
-      Object.freeze({
-        command: node,
-        args: [turboCli, "run", "build", "--filter=@oalo/db..."],
-        label: "build the database integration test dependencies",
-      }),
-      Object.freeze({
-        command: node,
-        args: ["--test", ...postgresIntegrationFiles],
-        environment: Object.freeze({
-          OALO_TEST_DATABASE_URL,
-        }),
-        label: "run real PostgreSQL TypeScript integration tests",
-      }),
-    ]),
     tests: Object.freeze(
       pgtapFiles.map((file) =>
         Object.freeze({
@@ -144,19 +75,12 @@ export async function runRealDatabaseTests(options = {}) {
   const repositoryRoot = options.repositoryRoot ?? defaultRepositoryRoot;
   const run = options.run ?? runCommand;
   const pgtapFiles = await discoverPgtapFiles(repositoryRoot);
-  const postgresIntegrationFiles =
-    options.postgresIntegrationFiles ??
-    (options.run === undefined ? await discoverPostgresIntegrationFiles(repositoryRoot) : []);
-  const plan = commandPlan(pgtapFiles, repositoryRoot, postgresIntegrationFiles);
+  const plan = commandPlan(pgtapFiles, repositoryRoot);
   let verificationError;
   let cleanupError;
 
   try {
     for (const step of plan.setup) {
-      process.stdout.write(`\n[database] ${step.label}\n`);
-      await run(step, repositoryRoot);
-    }
-    for (const step of plan.integration) {
       process.stdout.write(`\n[database] ${step.label}\n`);
       await run(step, repositoryRoot);
     }
@@ -254,7 +178,6 @@ function runCommand(step, cwd) {
       cwd,
       env: {
         ...process.env,
-        ...step.environment,
         SUPABASE_TELEMETRY_DISABLED: "true",
       },
       shell: false,

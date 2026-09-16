@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { assertPublicEnvironmentAllowlistSecure } from "./public-env-guard.js";
 import {
   DeploymentManifestSchema,
   assertDeploymentManifestCompatibility,
@@ -14,6 +15,8 @@ export const PUBLIC_ENVIRONMENT_VARIABLE_NAMES = Object.freeze([
   "NEXT_PUBLIC_OALO_APP_URL",
   "NEXT_PUBLIC_OALO_BUILD_ID",
 ] as const);
+
+assertPublicEnvironmentAllowlistSecure(PUBLIC_ENVIRONMENT_VARIABLE_NAMES);
 
 type PublicEnvironmentVariableName = (typeof PUBLIC_ENVIRONMENT_VARIABLE_NAMES)[number];
 

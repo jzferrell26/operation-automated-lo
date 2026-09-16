@@ -1,10 +1,11 @@
-import { Card, Icon, Metric, Stack, Surface } from "@oalo/ui";
+import { Card, EmptyState, Icon, Metric, Stack, Surface } from "@oalo/ui";
 
 import type {
   DeepReadonly,
   Overview,
   SyntheticSession,
 } from "../../ui-foundation/model/synthetic-ui.js";
+import type { OverviewMetricView, OverviewView } from "../model/overview-view.js";
 import type { CampaignWorkspaceProjection } from "@oalo/application";
 import { ActivityFeed } from "./activity-feed.js";
 import { OverviewEdgeStateMatrix } from "./overview-edge-state-matrix.js";
@@ -12,14 +13,24 @@ import styles from "./overview.module.css";
 import { ProjectedSafeAction } from "./projected-safe-action.js";
 
 type OverviewScreenProps = Readonly<{
-  overview: DeepReadonly<Overview>;
+  overview: OverviewView;
   session: DeepReadonly<SyntheticSession>;
   workspaceCampaigns?: readonly CampaignWorkspaceProjection[];
+  workspaceMode?: "synthetic" | "review";
 }>;
 
-export function OverviewScreen({ overview, session, workspaceCampaigns }: OverviewScreenProps) {
+export function OverviewScreen({
+  overview,
+  session,
+  workspaceCampaigns,
+  workspaceMode = "synthetic",
+}: OverviewScreenProps) {
   const priorityMetrics = overview.metrics.slice(0, 4);
   const secondaryMetrics = overview.metrics.slice(4);
+  const otherWork =
+    workspaceCampaigns === undefined
+      ? overview.activeWork
+      : overview.activeWork.filter((item) => item.type !== "campaign");
 
   return (
     <div className={styles.overview}>
@@ -31,10 +42,16 @@ export function OverviewScreen({ overview, session, workspaceCampaigns }: Overvi
             {session.location.displayName} · {session.user.roleLabel}
           </p>
           <p>
-            Last system verification:{" "}
-            <time dateTime={overview.lastVerifiedAt}>
-              {formatTimestamp(overview.lastVerifiedAt)}
-            </time>
+            {workspaceMode === "review" ? (
+              "Last system verification: none. The review surface performs no live verification."
+            ) : (
+              <>
+                Last system verification:{" "}
+                <time dateTime={overview.lastVerifiedAt}>
+                  {formatTimestamp(overview.lastVerifiedAt)}
+                </time>
+              </>
+            )}
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -135,38 +152,32 @@ export function OverviewScreen({ overview, session, workspaceCampaigns }: Overvi
           </div>
         </div>
         <div className={styles.listGrid}>
-          {workspaceCampaigns !== undefined ? (
-            workspaceCampaigns.length === 0 ? (
-              <Card padding="md">
-                <p className={styles.itemMeta}>Campaign</p>
-                <h3>No campaigns in this location yet</h3>
-                <p>Create an Open House Boost to persist a tenant-backed campaign.</p>
-                <p>
-                  <strong>Next safe action:</strong> Create marketing campaign
-                </p>
-              </Card>
-            ) : (
-              workspaceCampaigns.map((campaign) => (
-                <Card key={campaign.campaignRef} padding="md">
-                  <p className={styles.itemMeta}>Campaign</p>
-                  <h3>{campaign.headline}</h3>
-                  <p>{stateLabel(campaign.state)}</p>
-                  <p>
-                    <strong>Next safe action:</strong>{" "}
-                    {campaign.nextActions.find((action) => action.available)?.label ??
-                      "Review persisted version evidence."}
-                  </p>
-                  <a className="oalo-action-link" href={campaign.detailHref}>
-                    Open persisted campaign
-                  </a>
-                </Card>
-              ))
-            )
+          {workspaceCampaigns?.length === 0 ? (
+            <Card padding="md">
+              <p className={styles.itemMeta}>Campaign</p>
+              <h3>No campaigns in this location yet</h3>
+              <p>Create an Open House Boost to persist a tenant-backed campaign.</p>
+              <p>
+                <strong>Next safe action:</strong> Create marketing campaign
+              </p>
+            </Card>
           ) : null}
-          {(workspaceCampaigns === undefined
-            ? overview.activeWork
-            : overview.activeWork.filter((item) => item.type !== "campaign")
-          ).map((item) => (
+          {workspaceCampaigns?.map((campaign) => (
+            <Card key={campaign.campaignRef} padding="md">
+              <p className={styles.itemMeta}>Campaign</p>
+              <h3>{campaign.headline}</h3>
+              <p>{stateLabel(campaign.state)}</p>
+              <p>
+                <strong>Next safe action:</strong>{" "}
+                {campaign.nextActions.find((action) => action.available)?.label ??
+                  "Review persisted version evidence."}
+              </p>
+              <a className="oalo-action-link" href={campaign.detailHref}>
+                Open persisted campaign
+              </a>
+            </Card>
+          ))}
+          {otherWork.map((item) => (
             <Card key={item.id} padding="md">
               <p className={styles.itemMeta}>{workTypeLabel(item.type)}</p>
               <h3>{item.title}</h3>
@@ -176,6 +187,12 @@ export function OverviewScreen({ overview, session, workspaceCampaigns }: Overvi
               </p>
             </Card>
           ))}
+          {workspaceCampaigns === undefined && otherWork.length === 0 ? (
+            <EmptyState
+              description="No connected source reports work in progress for this workspace. Nothing is inferred."
+              title="No active work to show"
+            />
+          ) : null}
         </div>
       </section>
 
@@ -214,7 +231,7 @@ function MetricSection({
 }: Readonly<{
   className: string;
   description: string;
-  metrics: DeepReadonly<Overview["metrics"]>;
+  metrics: readonly OverviewMetricView[];
   title: string;
 }>) {
   const titleId = `${title.toLowerCase().replaceAll(" ", "-")}-title`;
@@ -252,6 +269,12 @@ function AttentionQueue({
         </div>
       </div>
       <Stack gap="3">
+        {attention.length === 0 ? (
+          <EmptyState
+            description="No connected source has reported a blocker. Nothing here is inferred or invented."
+            title="No attention items to show"
+          />
+        ) : null}
         {attention.map((item) => (
           <Card key={item.id} padding="md">
             <span className={styles.statusLabel} data-status={item.severity}>

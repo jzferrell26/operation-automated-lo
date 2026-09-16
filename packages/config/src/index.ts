@@ -25,11 +25,15 @@ export {
 } from "./environment.js";
 
 export {
+  BROWSER_PUBLICATION_APPROVALS,
+  BROWSER_PUBLICATION_VALUE_CLASSES,
   SERVER_ONLY_SECRET_ENVIRONMENT_VARIABLE_NAMES,
   assertPublicEnvironmentAllowlistSecure,
   collectAssignmentViolationsInSource,
   collectPublicAllowlistViolations,
   collectPublicSecretAssignmentViolationsInSources,
+  type BrowserPublicationApproval,
+  type BrowserPublicationValueClass,
   type ServerOnlySecretEnvironmentVariableName,
 } from "./public-env-guard.js";
 

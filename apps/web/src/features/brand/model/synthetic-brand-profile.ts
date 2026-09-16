@@ -47,7 +47,7 @@ const aiSuggestionSchema = z
   })
   .strict();
 
-const syntheticBrandProfileSchema = z
+export const syntheticBrandProfileSchema = z
   .object({
     safety: runtimeSafetySchema,
     activeLocation: z

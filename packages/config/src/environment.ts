@@ -10,6 +10,13 @@ import {
   type DeploymentManifest,
 } from "./deployment-manifest.js";
 
+/**
+ * The operational list of public names the runtime reads and forwards. Publishing a variable to
+ * browsers takes two independent edits: adding the name here, and adding a reviewed
+ * `BrowserPublicationApproval` entry in `./public-env-guard.ts`. Adding a name here alone fails
+ * closed in the assertion below. This list is deliberately hand-written rather than derived from the
+ * approval registry, because deriving it would collapse both reviews into one edit.
+ */
 export const PUBLIC_ENVIRONMENT_VARIABLE_NAMES = Object.freeze([
   "NEXT_PUBLIC_OALO_ENVIRONMENT",
   "NEXT_PUBLIC_OALO_APP_URL",

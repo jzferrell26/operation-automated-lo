@@ -95,6 +95,22 @@ export default defineConfig({
           include: ["tooling/tests/e2e-preview/**/*.test.ts"],
         },
       },
+      {
+        oxc: {
+          jsx: {
+            runtime: "automatic",
+          },
+        },
+        resolve: workspaceResolve,
+        test: {
+          name: "components",
+          environment: "node",
+          include: [
+            "packages/ui/src/components/**/*.test.ts",
+            "packages/ui/src/components/**/*.test.tsx",
+          ],
+        },
+      },
     ],
     coverage: {
       provider: "v8",

@@ -25,6 +25,15 @@ export {
 } from "./environment.js";
 
 export {
+  SERVER_ONLY_SECRET_ENVIRONMENT_VARIABLE_NAMES,
+  assertPublicEnvironmentAllowlistSecure,
+  collectAssignmentViolationsInSource,
+  collectPublicAllowlistViolations,
+  collectPublicSecretAssignmentViolationsInSources,
+  type ServerOnlySecretEnvironmentVariableName,
+} from "./public-env-guard.js";
+
+export {
   ProductionServiceConfigurationError,
   parseProductionServiceConfiguration,
   type ProductionServiceConfiguration,

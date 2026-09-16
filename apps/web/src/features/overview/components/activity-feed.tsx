@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card } from "@oalo/ui";
+import { Button, Card, EmptyState } from "@oalo/ui";
 import { useState } from "react";
 
 import type { DeepReadonly, Overview } from "../../ui-foundation/model/synthetic-ui.js";
@@ -38,6 +38,12 @@ export function ActivityFeed({ activity }: Readonly<{ activity: readonly Activit
         </div>
       </div>
       <div className={styles.listGrid}>
+        {visibleActivity.length === 0 ? (
+          <EmptyState
+            description="No connected source has reported activity for this filter. No placeholder history is shown."
+            title="No recorded activity to show"
+          />
+        ) : null}
         {visibleActivity.map((item) => (
           <Card key={item.id} padding="sm">
             <p className={styles.itemMeta}>{item.module} · Synthetic</p>

@@ -18,6 +18,12 @@ export function OverviewEdgeStateMatrix({
           <h2 id="edge-state-title">Overview edge-state matrix</h2>
         </div>
         <p>Each state preserves operational truth and does not invent healthy or zero data.</p>
+        <p data-demo-label="overview-edge-state-matrix">
+          <strong>
+            Illustrative demo states. These are design reference cards, not this workspace&apos;s
+            data.
+          </strong>
+        </p>
       </div>
       <div className={styles.stateGrid}>
         {states.map((state) =>

@@ -5,9 +5,13 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 
 export const SUPABASE_CLI_VERSION = "2.109.1";
+export const OALO_TEST_DATABASE_URL =
+  "postgresql://postgres:postgres@127.0.0.1:55422/oalo_test_integration";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const defaultRepositoryRoot = resolve(scriptDirectory, "../../..");
+const LOCAL_SUPABASE_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:55422/postgres";
+const OALO_TEST_DATABASE_NAME = "oalo_test_integration";
 
 export async function discoverPgtapFiles(repositoryRoot = defaultRepositoryRoot) {
   const testsDirectory = resolve(repositoryRoot, "supabase/tests");
@@ -25,10 +29,56 @@ export async function discoverPgtapFiles(repositoryRoot = defaultRepositoryRoot)
   return files;
 }
 
-export function commandPlan(pgtapFiles, repositoryRoot = defaultRepositoryRoot) {
+export async function discoverPostgresIntegrationFiles(repositoryRoot = defaultRepositoryRoot) {
+  const testsDirectory = resolve(repositoryRoot, "packages/db/test");
+  const entries = await readdir(testsDirectory, { withFileTypes: true });
+  const files = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".integration.test.mjs"))
+    .map((entry) =>
+      relative(repositoryRoot, resolve(testsDirectory, entry.name)).replaceAll("\\", "/"),
+    )
+    .toSorted();
+
+  if (files.length === 0) {
+    throw new Error("No packages/db/test/*.integration.test.mjs files were found.");
+  }
+  return files;
+}
+
+async function discoverMigrationFiles(repositoryRoot = defaultRepositoryRoot) {
+  const migrationsDirectory = resolve(repositoryRoot, "supabase/migrations");
+  const entries = await readdir(migrationsDirectory, { withFileTypes: true });
+  const migrationFileNamePattern = /^\d{14}_.+\.sql$/u;
+  for (const entry of entries) {
+    if (entry.isFile() && !migrationFileNamePattern.test(entry.name)) {
+      process.stdout.write(
+        `[database] Skipping migration ${entry.name} (file name must match pattern "<timestamp>_name.sql")\n`,
+      );
+    }
+  }
+  const files = entries
+    .filter((entry) => entry.isFile() && migrationFileNamePattern.test(entry.name))
+    .map((entry) =>
+      relative(repositoryRoot, resolve(migrationsDirectory, entry.name)).replaceAll("\\", "/"),
+    )
+    .toSorted();
+
+  if (files.length === 0) {
+    throw new Error("No supabase/migrations/<timestamp>_name.sql files were found.");
+  }
+  return files;
+}
+
+export function commandPlan(
+  pgtapFiles,
+  repositoryRoot = defaultRepositoryRoot,
+  postgresIntegrationFiles = [],
+  migrationFiles = [],
+) {
   const node = process.execPath;
   const packageRunner = resolvePackageRunner(node);
   const vitestCli = resolve(repositoryRoot, "node_modules/vitest/vitest.mjs");
+  const turboCli = resolve(repositoryRoot, "node_modules/turbo/bin/turbo");
   const supabase = [packageRunner.cli, ...packageRunner.args];
 
   return Object.freeze({
@@ -59,6 +109,52 @@ export function commandPlan(pgtapFiles, repositoryRoot = defaultRepositoryRoot) 
         label: "recreate the local database and apply every migration",
       }),
     ]),
+    integration: Object.freeze([
+      Object.freeze({
+        command: "psql",
+        args: [
+          `--dbname=${LOCAL_SUPABASE_DATABASE_URL}`,
+          "--set=ON_ERROR_STOP=1",
+          "--command",
+          `drop database if exists ${OALO_TEST_DATABASE_NAME} with (force)`,
+        ],
+        label: "replace the dedicated oalo_test integration database",
+      }),
+      Object.freeze({
+        command: "psql",
+        args: [
+          `--dbname=${LOCAL_SUPABASE_DATABASE_URL}`,
+          "--set=ON_ERROR_STOP=1",
+          "--command",
+          `create database ${OALO_TEST_DATABASE_NAME}`,
+        ],
+        label: "create the dedicated oalo_test integration database",
+      }),
+      ...migrationFiles.map((migrationFile) =>
+        Object.freeze({
+          command: "psql",
+          args: [
+            `--dbname=${OALO_TEST_DATABASE_URL}`,
+            "--set=ON_ERROR_STOP=1",
+            `--file=${migrationFile}`,
+          ],
+          label: `apply ${migrationFile} to the dedicated oalo_test database`,
+        }),
+      ),
+      Object.freeze({
+        command: node,
+        args: [turboCli, "run", "build", "--filter=@oalo/db..."],
+        label: "build the database integration test dependencies",
+      }),
+      Object.freeze({
+        command: node,
+        args: ["--test", ...postgresIntegrationFiles],
+        environment: Object.freeze({
+          OALO_TEST_DATABASE_URL,
+        }),
+        label: "run real PostgreSQL TypeScript integration tests",
+      }),
+    ]),
     tests: Object.freeze(
       pgtapFiles.map((file) =>
         Object.freeze({
@@ -75,12 +171,22 @@ export async function runRealDatabaseTests(options = {}) {
   const repositoryRoot = options.repositoryRoot ?? defaultRepositoryRoot;
   const run = options.run ?? runCommand;
   const pgtapFiles = await discoverPgtapFiles(repositoryRoot);
-  const plan = commandPlan(pgtapFiles, repositoryRoot);
+  const postgresIntegrationFiles =
+    options.postgresIntegrationFiles ??
+    (options.run === undefined ? await discoverPostgresIntegrationFiles(repositoryRoot) : []);
+  const migrationFiles =
+    options.migrationFiles ??
+    (options.run === undefined ? await discoverMigrationFiles(repositoryRoot) : []);
+  const plan = commandPlan(pgtapFiles, repositoryRoot, postgresIntegrationFiles, migrationFiles);
   let verificationError;
   let cleanupError;
 
   try {
     for (const step of plan.setup) {
+      process.stdout.write(`\n[database] ${step.label}\n`);
+      await run(step, repositoryRoot);
+    }
+    for (const step of plan.integration) {
       process.stdout.write(`\n[database] ${step.label}\n`);
       await run(step, repositoryRoot);
     }
@@ -178,6 +284,7 @@ function runCommand(step, cwd) {
       cwd,
       env: {
         ...process.env,
+        ...step.environment,
         SUPABASE_TELEMETRY_DISABLED: "true",
       },
       shell: false,

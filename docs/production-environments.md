@@ -56,6 +56,25 @@ Only these variables may use the `NEXT_PUBLIC_` prefix:
 
 Any other `NEXT_PUBLIC_` variable is rejected. Public values must match their server-side counterparts. Secrets, tokens, provider identifiers, customer data, connection strings, and manifests must never use the public prefix.
 
+CI enforces this boundary in two ways:
+
+1. `assertPublicEnvironmentAllowlistSecure()` rejects any allowlisted `NEXT_PUBLIC_*` name that bears secret-bearing segments (`DATABASE`, `SECRET`, `TOKEN`, `PRIVATE`, `PASSWORD`, `CREDENTIAL`, or `KEY` token segments such as `ACCESS_KEY`) or mirrors a known server-only secret name.
+2. `pnpm audit:secrets` scans `apps/**` and `packages/**` for assignments that map a server-only secret into a `NEXT_PUBLIC_*` variable.
+
+## Review preview server-only secrets (operator)
+
+On the existing Vercel project `operation-automated-lo-web`, the review/preview deployment must keep these values **server-only** (never prefixed with `NEXT_PUBLIC_`):
+
+- `OALO_DATABASE_URL` (Postgres connection string for campaign persistence smoke)
+- `OALO_ANTHROPIC_API_KEY`
+- `OALO_R2_ACCESS_KEY_ID`
+- `OALO_R2_SECRET_ACCESS_KEY`
+- `OALO_GHL_LOCATION_PIT_JSON`
+- `OALO_TASK_AUTHORITY_HMAC_KEY`
+- `OALO_PUBLICATION_CLEANUP_SCHEDULE_AUTHORITY_JSON`
+
+OAuth client secrets, session signing material, refresh tokens, and other auth credentials follow the same rule: configure them as server-only Vercel env vars only. The repository gate blocks `NEXT_PUBLIC_*` names that carry or mirror these secrets; verifying that Vercel preview env is wired correctly remains an operator step (see `docs/operations/evidence-packs/reviewable-preview-smoke.md`).
+
 ## Release manifest rules
 
 The manifest binds environment, commit, build ID, component versions, and evidence state. Candidate generation refuses production. Production validation requires canonical verification, security review, quality review, and independently verified external exercises.

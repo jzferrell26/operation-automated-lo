@@ -11,7 +11,7 @@ function renderMetric(stateProps: MetricProps) {
 }
 
 describe("state and data primitives", () => {
-  it("renders all six Metric states without leaking contract props to the DOM", () => {
+  it("renders all seven Metric states without leaking contract props to the DOM", () => {
     const metrics = [
       {
         freshness: "Verified 2 minutes ago",
@@ -58,6 +58,13 @@ describe("state and data primitives", () => {
         source: "HighLevel",
         state: "permission_restricted",
       },
+      {
+        freshness: "No live observation",
+        label: "Ad spend",
+        nextAction: "Connect a provider in a separately authorized environment",
+        source: "No provider is connected",
+        state: "not_connected",
+      },
     ] satisfies readonly MetricProps[];
 
     const markupByState = metrics.map((metric) => [metric.state, renderMetric(metric)] as const);
@@ -79,6 +86,8 @@ describe("state and data primitives", () => {
     expect(markupByState[4]?.[1]).toContain("corr-metric-42");
     expect(markupByState[5]?.[1]).toContain("Permission restricted");
     expect(markupByState[5]?.[1]).not.toContain("Pipeline value</p>");
+    expect(markupByState[6]?.[1]).toContain('<p class="oalo-metric__value">Not connected</p>');
+    expect(markupByState[6]?.[1]).toContain("Next safe action");
   });
 
   it("labels synthetic metrics and exposes source and freshness", () => {

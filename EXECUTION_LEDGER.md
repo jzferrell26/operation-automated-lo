@@ -212,3 +212,145 @@ Fetch and rebase on `origin/main`, rerun the exact Node 24 and pnpm 11 frozen-in
 | 2026-07-21 | Rebase resolved the sole ledger conflict by preserving `origin/main` PR #9 G8 evidence verbatim and retaining the separate UI section. The rebased main ledger and current pre-UI prefix are ordinal-equal with normalized SHA-256 `756cfdd4d54c945823af2544e88238fc48c78c8d91169e6e5d040202d4fa0470`. |
 | 2026-07-21 | Ready PR #10 opened MERGEABLE. Its first canonical GitHub run exposed that Linux CI did not provision Playwright Chromium. The read-only SHA-pinned workflow now installs the pinned Chromium build and system dependencies before verification. Security reran with 0 Critical and 0 High findings, then the complete local `pnpm verify` gate passed again. UIF-029 remains OPEN pending repaired green GitHub evidence. |
 | 2026-07-21 | Repaired GitHub Actions run `29815891707` passed canonical verification in 2 minutes 59 seconds and preview smoke in 23 seconds at head `f917a3543360b2b23c380a056332322920cb251b`. GitHub reports ready PR #10 `MERGEABLE` with merge state `CLEAN`; `origin/main` is an ancestor and the PR remains open and unmerged. UIF-029 is VERIFIED. |
+
+---
+
+# Gauntlet Raid: Go-Live Remaining In-Repo Code
+
+This section is **additive**. Every Phase 0 (`P0-*`) and UI Foundation (`UIF-*`) row above remains unchanged, with its original owner, status, and evidence.
+
+## Raid contract
+
+- Branch: `cursor/gauntlet-go-live-remaining-code-b085`
+- Baseline: `origin/main` at `6d5982f` (after PRD-003d `26051b3`, PRD-003c `71c371d`, App Test maps `65dd527`, PRD-003 ledger sync `#59`)
+- Scope authority: PRD-003 index (`APA-*`), PRD-004 index and PRD-004a (`RGL-*`, `004A-AC-*`) as authored in draft PR #60, and the non-`VERIFIED` rows of `PRODUCTION_EXECUTION_LEDGER.md`
+- Authorized scope: **remaining in-repo code only.** Locally provable acceptance criteria, their tests, and the CI wiring that proves them.
+- Prohibited scope: live Marketplace submission, Developer Portal sign-in, Vercel env mutation, cloud deploy, live HighLevel / Meta / Stripe / KMS / counsel evidence, inventing G2 fixtures, flipping any of the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` rows, PRD-002 add-ons, and any edit to `library/**`, `NEXT_BATCH_LEDGER.md`, `.cursor/rules/core/the-map.mdc`, or `docs/operations/evidence-packs/**` while PR #60 is open
+- Status flow: `OPEN` -> `IN PROGRESS` -> `DONE` -> `VERIFIED`, with `BLOCKED` reserved for rows carrying an exact operator ask
+- The-neeson overlay: `../the-neeson` is **not clonable** (no such repository under `jzferrell26`). Per `AGENTS.md`, this raid falls back to this repository's `.cursor/skills/` snapshot.
+
+## Scope determination
+
+`PRODUCTION_EXECUTION_LEDGER.md` holds 305 PRD-001 acceptance-criteria rows. Exact status counts on `6d5982f`:
+
+| Status string | Count | Bucket |
+| --- | ---: | --- |
+| `VERIFIED` | 267 | Already terminal |
+| `DEFERRED: LIVE HIGHLEVEL AUTH` | 28 | Blocked-external (G2) |
+| `BLOCKED: EXTERNAL EVIDENCE` | 7 | Blocked-external |
+| `ACCEPTED CONSTRAINT` | 2 (AC rows) | Product-owner disposition |
+| `BLOCKED: G5` | 1 | Blocked-external |
+
+267 + 28 + 7 + 2 + 1 = 305. **There are zero locally provable OPEN PRD-001 acceptance criteria.** The three remaining `ACCEPTED CONSTRAINT` and four `BLOCKED` / `DEFERRED FOR NOW` strings in that file are external-gate rows, not acceptance criteria.
+
+Therefore this raid's actionable surface is exactly the locally provable code portion of PRD-003 parent closeout and PRD-004a, cross-checked against the Librarian's inventory at `docs/remaining-requirements.md` in the Project store.
+
+## Acceptance-criteria ledger
+
+| ID | Source PRD | Exact criterion | Status | Owner |
+| --- | --- | --- | --- | --- |
+| GGL-001 | PRD-004 index, `RGL-002` | "Given a review preview URL, when `/overview` loads for an authenticated tenant without persisted spend/leads, then the surface shows honest empty or not-connected states and is not unlabeled synthetic demo data." | OPEN | `react-guardian` |
+| GGL-002 | PRD-004a, `004A-AC-003` | "`/overview` does not show unlabeled synthetic spend/leads on the review URL." | OPEN | `react-guardian` |
+| GGL-003 | PRD-004 index, `RGL-001` (code portion only) | "Given the existing Vercel project `operation-automated-lo-web`, when a preview deployment is promoted for review, then server-only env includes `OALO_DATABASE_URL` and other required secrets without `NEXT_PUBLIC` leakage, and the deployment is not a second Vercel project." | OPEN | `devops-guardian` |
+| GGL-004 | PRD-004a, `004A-AC-002` (code portion only) | "`OALO_DATABASE_URL` and auth secrets are server-only env vars on Vercel." | OPEN | `devops-guardian` |
+| GGL-005 | PRD-004 index, `RGL-007` | "Given this batch completes, when external gates are checked, then no HighLevel provider write, Meta publish, lead routing, or Stripe charge is newly enabled by default." | OPEN | `security-guardian` |
+| GGL-006 | PRD-003 index, `APA-008` | "Given this batch is complete, when the production verification gate runs, then no HighLevel, Meta, Stripe, lead-routing, or other provider side effect is newly enabled by default." | OPEN | `security-guardian` |
+| GGL-007 | PRD-004 index, `RGL-008` | "Given G2 deferred criteria, when this batch completes, then none of the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` rows flip to `VERIFIED` without sanitized fixtures passing `pnpm test:contracts`." | OPEN | `quality-guardian` |
+| GGL-008 | PRD-004a, `004A-AC-004` (local-provable equivalent) | "Create Open House Boost -> navigate away -> reload -> campaign still present (Postgres)." Proven locally through the web command stack against real Postgres in the canonical database gate, not only at the repository layer. | OPEN | `db-guardian` |
+| GGL-009 | PRD-004a, `004A-AC-005` (local-provable equivalent) | "Authorized approver can approve; aggregate shows approved state after reload." Proven locally through the approval command/handler against real Postgres with a fresh read path, not direct SQL. | OPEN | `db-guardian` |
+| GGL-010 | PRD-003 index, `APA-010` | "Given the completed implementation, when security and quality review run, then the batch has no unresolved Critical or High security finding and every PRD-003 acceptance criterion is traceable to code and tests before merge." | OPEN | `quality-guardian` |
+
+### Blocked rows with exact operator asks
+
+These are parked, not skipped. Each carries a specific ask. None is silently dropped, and none may be flipped by this raid.
+
+| ID | Source | Exact criterion | Status | Exact operator ask |
+| --- | --- | --- | --- | --- |
+| GGL-B01 | PRD-004a, `004A-AC-001` | "Preview deployment uses project `operation-automated-lo-web` only." | BLOCKED | Grant Vercel access to project `operation-automated-lo-web`, or run the preview deploy yourself with root directory `apps/web`. No second project. |
+| GGL-B02 | PRD-004a, `004A-AC-006` | "Smoke log retained per evidence pack; no tokens or PII in git." | BLOCKED | Run the smoke checklist after the preview deploy and retain the log outside git. |
+| GGL-B03 | PRD-004 index, `RGL-003` (deploy portion) | "Given a review preview URL and Test Link or authorized session, when an operator creates an Open House Boost, reloads the page, and approves it, then campaign evidence is read from Postgres and the flow matches PRD-003 APA-001 through APA-006." | BLOCKED | Provide a review/staging `OALO_DATABASE_URL` (not production seed data) as a server-only env var on the preview environment. |
+| GGL-B04 | PRD-004b, `004B-AC-001` | "Inspection checklist in submission packet is complete with listing type recorded." | BLOCKED | Sign in at `marketplace.gohighlevel.com/login` and record app name, version, visibility, publisher, OAuth scopes, HTTPS callback, Custom Page URL, and listing type. |
+| GGL-B05 | PRD-004b, `004B-AC-002` | "OAuth callback and Custom Page URL match the verified preview hostname." | BLOCKED | Decide the review hostname (existing `operation-automated-lo-web.vercel.app` vs a custom domain) and set it in the Developer Portal. |
+| GGL-B06 | PRD-004b, `004B-AC-003` | "Test Link install succeeds into a sandbox location." | BLOCKED | Create an App Test Account and run Manage -> Versions -> Test Link against a sandbox location. |
+| GGL-B07 | PRD-004b, `004B-AC-004` | "Operator can reach create -> persist -> approve on preview after install." | BLOCKED | Depends on GGL-B03 and GGL-B06. |
+| GGL-B08 | PRD-004b, `004B-AC-005` | "No tokens, client secrets, or PII committed to git." | BLOCKED | Keep operator notes outside git. Repo-side enforcement is covered by `pnpm audit:secrets` under GGL-003. |
+| GGL-B09 | PRD-004c, `004C-AC-001` through `004C-AC-005` | Submission packet artifacts complete; listing claims only create -> persist -> approve; Loom matches live Test Link; screenshots contain no misleading synthetic spend/lead metrics; submission recorded with date and no secrets in git. | BLOCKED | Depends on GGL-B03 and GGL-B06. Packet authorship lives in `library/**`, which PR #60 owns. |
+| GGL-B10 | PRD-001, 28 rows | The 28 `DEFERRED: LIVE HIGHLEVEL AUTH` acceptance criteria (`001J-AC-022/023/024/028`, `001A-AC-005` through `001A-AC-016`, `001A-AC-018` through `001A-AC-023`, `001A-AC-026/028/038`, `001H-AC-002/003/005`). | BLOCKED | Sanitized HighLevel App Test fixtures that pass `pnpm test:contracts`. Do not invent G2 evidence. |
+| GGL-B11 | PRD-001, `001J-AC-026`, `001J-AC-029` | Per-environment KMS rotation and recovery proof; preview/staging/production isolation inventory. | BLOCKED | Cloud owner with KMS and environment inventory access (Wave 2). |
+| GGL-B12 | PRD-001, `001J-AC-033`, `001H-AC-001`, `001I-AC-007`, `001I-AC-014` | Launch Ready and AI cost operations evidence. | BLOCKED | Operations owner evidence pack (Wave 7). |
+| GGL-B13 | PRD-001, `001I-AC-013` | Legal / AI data handling evidence. | BLOCKED | Counsel sign-off (Wave 6). |
+| GGL-B14 | PRD-001, `001F-AC-026` | G5 synthetic lead evidence. | BLOCKED | No-spend Meta test lead capture (Wave 4). |
+| GGL-B15 | PRD-001, `001E-AC-005`, `001E-AC-006` | G4 Housing Special Ad Category rows. | ACCEPTED CONSTRAINT | None. Product-owner disposition. Do not reopen. |
+
+### Out of scope by instruction
+
+- PRD-003a / 003b / 003c / 003d implementation: already on `main`. Not restarted.
+- PRD-002a through 002h: `backlog/`, no implementation authorized.
+- `library/**` PRD authorship: owned by the Librarian's draft PR #60.
+
+## Wave plan
+
+```mermaid
+flowchart TD
+  p0[Phase 0 recon and ledger]
+  w1a[Wave 1a react-guardian: honest review surface]
+  w1b[Wave 1b devops-guardian: env boundary proof]
+  w1c[Wave 1c security-guardian: provider default-off proof]
+  w1d[Wave 1d db-guardian: real-Postgres command round trip]
+  w2[Wave 2 independent verification, different pass than implementer]
+  w3[Wave 3 security-guardian then quality-guardian]
+  w4[Wave 4 ship: PR, CI green, squash-merge]
+  p0 --> w1a
+  p0 --> w1b
+  p0 --> w1c
+  p0 --> w1d
+  w1a --> w2
+  w1b --> w2
+  w1c --> w2
+  w1d --> w2
+  w2 --> w3 --> w4
+```
+
+### Wave 1: parallel implementation
+
+| Lane | Owner | Model | Owns | Files it may touch | Exit criteria |
+| --- | --- | --- | --- | --- | --- |
+| 1a | `react-guardian` | `claude-opus-5-thinking-high` — the honest-surface boundary is a cross-cutting trust decision where a wrong call ships misleading data to a Marketplace reviewer. Strongest reasoning tier. | GGL-001, GGL-002 | `apps/web/src/server/authenticated-workspace-data.ts`, `apps/web/src/features/overview/**`, `apps/web/src/features/shell/**`, `packages/ui/src/components/metric.tsx` and its test, new/updated tests alongside | Every authenticated surface in review mode is honest empty / not-connected or carries a visible synthetic label; new tests fail before the fix and pass after |
+| 1b | `devops-guardian` | `composer-2.5` — bounded, mechanical config-and-audit work against a clear spec. | GGL-003, GGL-004 | `packages/config/src/environment.ts`, `tooling/scripts/audit-secrets.mjs`, `tooling/tests/unit/delivery-observability/**` | An automated gate fails if a server secret name ever appears in the public `NEXT_PUBLIC_*` allowlist, and `pnpm verify:offline` runs it |
+| 1c | `security-guardian` | `claude-opus-5-thinking-high` — provider default-off is the single highest-consequence invariant in the repo. | GGL-005, GGL-006 | `tests/security/**`, `tooling/tests/unit/foundation.test.ts` | An executable default-env test proves no HighLevel write, Meta publish, lead route, or Stripe charge is reachable by default |
+| 1d | `db-guardian` | `gpt-5.6-terra-high` — real-Postgres wiring plus a CI runner change; tool-heavy with careful database judgment and no schema authorship. | GGL-008, GGL-009 | `packages/db/test/**`, `tooling/scripts/database/run-real-database-tests.mjs`, new web-layer Postgres test | Create -> fresh-read and approve -> fresh-read round trips run against real Postgres inside the canonical database gate |
+
+### Wave 2: independent verification
+
+A fresh verifier that did **not** implement the lane re-checks each criterion against its source text. Implementers do not grade their own homework. Any failure returns the row to `OPEN` and back to its owning lane with a narrower brief.
+
+### Wave 3: mandatory close-out, never reversed
+
+1. `security-guardian` (`claude-opus-5-thinking-high`) audits the whole diff and remediates every Medium-or-higher finding.
+2. `quality-guardian` (`composer-2.5`) then independently verifies every row, including GGL-007 and GGL-010.
+3. Any regression reopens its row and returns to Wave 1.
+
+### Wave 4: ship
+
+Rebase on `origin/main`, rerun the exact Node 24.18.0 / pnpm 11.15.1 gate, push, open the PR with this ledger, monitor CI to green, then squash-merge.
+
+## Watchdog
+
+A lane stalls if it produces no file change or repeats the same failing approach. A stalled lane is terminated, decomposed into narrower briefs, and re-dispatched. Every termination and decomposition is logged below.
+
+## Raid log
+
+| Time | Event |
+| --- | --- |
+| 2026-09-15 | Phase 0 recon. Read PRD-003 index, PRD-004 index, PRD-004a/b/c from draft PR #60, all six repo-root ledgers, and the Librarian inventory. Confirmed 267/305 PRD-001 rows `VERIFIED` and **zero** locally provable OPEN PRD-001 rows. |
+| 2026-09-15 | `../the-neeson` is not clonable: no repository of that name exists under `jzferrell26`. Fell back to the in-repo `.cursor/skills/` snapshot per `AGENTS.md`. |
+| 2026-09-15 | Code recon found the real defect behind GGL-001/GGL-002: `/overview` review mode rewrites metrics and the health strip to not-connected, but Attention Queue, non-campaign Active Work, Workspace Status, and the edge-state matrix still render raw synthetic fixture content with no synthetic label. Default preview mode (no `OALO_REVIEW_SURFACE`) renders labeled synthetic demo numbers, which does not satisfy "honest empty or not-connected". |
+| 2026-09-15 | Coverage recon found no test proving the create -> reload and approve -> reload round trips against real Postgres through the command stack; existing real-DB coverage stops at the repository layer and at direct SQL status reads. Docker is unavailable on this VM, so GGL-008 and GGL-009 are authored here and proven by the CI `database` job. |
+| 2026-09-15 | Branched `cursor/gauntlet-go-live-remaining-code-b085` from `origin/main` at `6d5982f`. Wave 1 dispatched. |
+| 2026-09-15 | PR #60 merged, so the branch was rebased onto `origin/main` at `011c53c` and the PRD-004 acceptance criteria were confirmed byte-identical to the text folded into this ledger before the merge. |
+| 2026-09-16 | All four Wave 1 lanes landed with non-overlapping file ownership and no collisions. `pnpm verify:offline` passes end to end on exact Node 24.18.0 and pnpm 11.15.1: 473 unit, 41 integration, 71 contracts, 23 Chromium, 16 typechecks, 16 builds, 0 clones, boundary audit across 16 packages, product-type audit, secret audit across 6 source roots plus the public environment boundary, and no high-severity advisories. |
+| 2026-09-16 | Wave 1a found the concrete defect behind GGL-001 and GGL-002 and fixed it: review mode now collapses `workspaceStatus`, `activeWork`, `attention`, and `recentActivity` onto explicit not-connected evidence, anonymizes the demo persona, and adds a `not_connected` metric state so spend and leads have a reachable honest representation. |
+| 2026-09-16 | Wave 1d found that `packages/db/test/*.integration.test.mjs`, the strongest TypeScript-against-real-Postgres coverage in the repo, had never executed in CI and skipped silently whenever `OALO_TEST_DATABASE_URL` was unset. |
+| 2026-09-16 | Draft PR #61 opened. CI "Application verification" and "Release and recovery contract" pass. |
+| 2026-09-16 | CI database job failure 1 of 2: the gate spawned `node_modules/.bin/pnpm`, which does not exist in CI because pnpm comes from Corepack rather than a workspace dependency. `psql`, `CREATE DATABASE`, the turbo build, and guaranteed teardown all worked. Watchdog re-dispatched the owning lane with a narrowed brief rather than relaunching at the original scope. Fixed by enumerating the test files and invoking the Node test runner directly, with empty discovery treated as an error. |
+| 2026-09-16 | CI database job failure 2 of 2: the tests then executed and failed with `database "oalo_test_integration" does not exist`. Root cause is that `supabase db reset --db-url` ignores the flag for targeting and performs a full local reset, printing "Recreating database" and "Restarting containers", which destroyed the dedicated database created by the prior step. Watchdog decomposed again to a single-step brief: provision and populate the test database with `psql` migration replay instead. |

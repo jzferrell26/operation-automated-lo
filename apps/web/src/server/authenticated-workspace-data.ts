@@ -3,14 +3,34 @@ import { z } from "zod";
 import type { CampaignPersistenceKind } from "@oalo/application";
 
 import { loadSyntheticBrandProfile } from "../features/brand/model/synthetic-brand-profile.js";
+import type { NotConnectedOverviewMetric } from "../features/overview/model/overview-view.js";
 import { loadSyntheticReporting } from "../features/reporting/model/synthetic-reporting.js";
 import { loadSyntheticUiFixture } from "../features/ui-foundation/data/load-synthetic-ui.js";
+import type { DeepReadonly, Overview } from "../features/ui-foundation/model/synthetic-ui.js";
 
 export const OALO_REVIEW_SURFACE_ENV = "OALO_REVIEW_SURFACE" as const;
 export const OALO_REVIEW_SURFACE_AUTHORIZED = "authorized" as const;
 
 export const REVIEW_SURFACE_DISCLOSURE =
   "REVIEW SURFACE. Demo fixtures only. Not connected to HighLevel, Meta, or Stripe. These numbers are not live customer data.";
+
+/**
+ * Review mode must never present a fixture as observed tenant state. Every region that would
+ * read as live workspace truth collapses onto these strings instead of fixture narrative.
+ */
+const REVIEW_NOT_CONNECTED_DETAIL = "Not connected. Review surface only. No live provider link.";
+const REVIEW_NOT_CONNECTED_SOURCE =
+  "Review surface. HighLevel, Meta, and Stripe are not connected.";
+const REVIEW_METRIC_SOURCE = "Not connected. Review surface has no live spend, leads, or CRM feed.";
+const REVIEW_NO_OBSERVATION = "No live observation";
+const REVIEW_NEXT_SAFE_ACTION =
+  "Connect HighLevel, Meta, and Stripe in a separately authorized environment.";
+
+export const REVIEW_LOCATION_DISPLAY_NAME = "Demo workspace (not connected)";
+export const REVIEW_USER_DISPLAY_NAME = "Demo reviewer";
+export const REVIEW_ROLE_LABEL = "Demo session, no live seat";
+export const REVIEW_SPEND_METRIC_ID = "ad_spend";
+export const REVIEW_SPEND_METRIC_LABEL = "Ad spend";
 
 export type AuthenticatedWorkspaceMode = "synthetic" | "review";
 export type { CampaignPersistenceKind };
@@ -92,26 +112,57 @@ function withReviewDisclosure<T extends { safety: { disclosure: string } }>(valu
   };
 }
 
+type OverviewStatus = DeepReadonly<Overview>["health"][number];
+
+function toReviewStatus(item: OverviewStatus): OverviewStatus {
+  return {
+    ...item,
+    state: "setup_required",
+    detail: REVIEW_NOT_CONNECTED_DETAIL,
+    source: REVIEW_NOT_CONNECTED_SOURCE,
+    freshness: REVIEW_NO_OBSERVATION,
+  };
+}
+
+/** The only metric shape the review surface may emit: labelled, sourced, and value-free. */
+export function notConnectedReviewMetric(id: string, label: string): NotConnectedOverviewMetric {
+  return {
+    id,
+    label,
+    source: REVIEW_METRIC_SOURCE,
+    freshness: REVIEW_NO_OBSERVATION,
+    synthetic: true,
+    state: "not_connected",
+    nextAction: REVIEW_NEXT_SAFE_ACTION,
+  };
+}
+
 function toReviewOverview(overview: ReturnType<typeof loadSyntheticUiFixture>["overview"]) {
   return {
     ...withReviewDisclosure(overview),
     heading: "Review dashboard (demo, not connected)",
     readiness: "attention_required" as const,
-    health: overview.health.map((item) => ({
-      ...item,
-      state: "setup_required" as const,
-      detail: "Not connected. Review surface only. No live provider link.",
-      source: "Review surface. HighLevel, Meta, and Stripe are not connected.",
-      freshness: "No live observation",
-    })),
-    metrics: overview.metrics.map((metric) => ({
-      id: metric.id,
-      label: metric.label,
-      source: "Not connected. Review surface has no live spend, leads, or CRM feed.",
-      freshness: "No live observation",
-      synthetic: true as const,
-      state: "unavailable" as const,
-    })),
+    health: overview.health.map(toReviewStatus),
+    workspaceStatus: overview.workspaceStatus.map(toReviewStatus),
+    metrics: [
+      notConnectedReviewMetric(REVIEW_SPEND_METRIC_ID, REVIEW_SPEND_METRIC_LABEL),
+      ...overview.metrics.map((metric) => notConnectedReviewMetric(metric.id, metric.label)),
+    ],
+    activeWork: [],
+    attention: [],
+    recentActivity: [],
+  };
+}
+
+function toReviewSession(session: ReturnType<typeof loadSyntheticUiFixture>["session"]) {
+  return {
+    ...withReviewDisclosure(session),
+    user: {
+      ...session.user,
+      displayName: REVIEW_USER_DISPLAY_NAME,
+      roleLabel: REVIEW_ROLE_LABEL,
+    },
+    location: { ...session.location, displayName: REVIEW_LOCATION_DISPLAY_NAME },
   };
 }
 
@@ -134,7 +185,7 @@ export function loadAuthenticatedWorkspace(input: unknown = process.env) {
     mode,
     ui: {
       ...ui,
-      session: withReviewDisclosure(ui.session),
+      session: toReviewSession(ui.session),
       overview: toReviewOverview(ui.overview),
       onboarding: withReviewDisclosure(ui.onboarding),
     },

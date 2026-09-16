@@ -5,9 +5,13 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 
 export const SUPABASE_CLI_VERSION = "2.109.1";
+export const OALO_TEST_DATABASE_URL =
+  "postgresql://postgres:postgres@127.0.0.1:55422/oalo_test_integration";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const defaultRepositoryRoot = resolve(scriptDirectory, "../../..");
+const LOCAL_SUPABASE_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:55422/postgres";
+const OALO_TEST_DATABASE_NAME = "oalo_test_integration";
 
 export async function discoverPgtapFiles(repositoryRoot = defaultRepositoryRoot) {
   const testsDirectory = resolve(repositoryRoot, "supabase/tests");
@@ -29,6 +33,8 @@ export function commandPlan(pgtapFiles, repositoryRoot = defaultRepositoryRoot) 
   const node = process.execPath;
   const packageRunner = resolvePackageRunner(node);
   const vitestCli = resolve(repositoryRoot, "node_modules/vitest/vitest.mjs");
+  const turboCli = resolve(repositoryRoot, "node_modules/turbo/bin/turbo");
+  const workspacePnpm = resolve(repositoryRoot, "node_modules/.bin/pnpm");
   const supabase = [packageRunner.cli, ...packageRunner.args];
 
   return Object.freeze({
@@ -59,6 +65,46 @@ export function commandPlan(pgtapFiles, repositoryRoot = defaultRepositoryRoot) 
         label: "recreate the local database and apply every migration",
       }),
     ]),
+    integration: Object.freeze([
+      Object.freeze({
+        command: "psql",
+        args: [
+          `--dbname=${LOCAL_SUPABASE_DATABASE_URL}`,
+          "--set=ON_ERROR_STOP=1",
+          "--command",
+          `drop database if exists ${OALO_TEST_DATABASE_NAME} with (force)`,
+        ],
+        label: "replace the dedicated oalo_test integration database",
+      }),
+      Object.freeze({
+        command: "psql",
+        args: [
+          `--dbname=${LOCAL_SUPABASE_DATABASE_URL}`,
+          "--set=ON_ERROR_STOP=1",
+          "--command",
+          `create database ${OALO_TEST_DATABASE_NAME}`,
+        ],
+        label: "create the dedicated oalo_test integration database",
+      }),
+      Object.freeze({
+        command: node,
+        args: [...supabase, "db", "reset", "--db-url", OALO_TEST_DATABASE_URL],
+        label: "apply migrations and RLS policies to the dedicated oalo_test database",
+      }),
+      Object.freeze({
+        command: node,
+        args: [turboCli, "run", "build", "--filter=@oalo/db..."],
+        label: "build the database integration test dependencies",
+      }),
+      Object.freeze({
+        command: workspacePnpm,
+        args: ["--filter", "@oalo/db", "test:postgres"],
+        environment: Object.freeze({
+          OALO_TEST_DATABASE_URL,
+        }),
+        label: "run real PostgreSQL TypeScript integration tests",
+      }),
+    ]),
     tests: Object.freeze(
       pgtapFiles.map((file) =>
         Object.freeze({
@@ -81,6 +127,10 @@ export async function runRealDatabaseTests(options = {}) {
 
   try {
     for (const step of plan.setup) {
+      process.stdout.write(`\n[database] ${step.label}\n`);
+      await run(step, repositoryRoot);
+    }
+    for (const step of plan.integration) {
       process.stdout.write(`\n[database] ${step.label}\n`);
       await run(step, repositoryRoot);
     }
@@ -178,6 +228,7 @@ function runCommand(step, cwd) {
       cwd,
       env: {
         ...process.env,
+        ...step.environment,
         SUPABASE_TELEMETRY_DISABLED: "true",
       },
       shell: false,

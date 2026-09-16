@@ -65,6 +65,16 @@ All four sub-PRDs are merged on `main`. The parent stays **In Work** until [PRD-
 | APA-009 | Given the schema changes, when migrations and pgTAP execute, then campaign-version and approval records have tenant RLS, required indexes, append-only protections where applicable, and rollback-safe additive migration behavior. |
 | APA-010 | Given the completed implementation, when security and quality review run, then the batch has no unresolved Critical or High security finding and every PRD-003 acceptance criterion is traceable to code and tests before merge. |
 
+### Status (Gauntlet raid, `f4b79f7`)
+
+| ID | Status | Evidence |
+|---|---|---|
+| APA-001 through APA-007 | VERIFIED (sub-PRDs 003a–d on `main`) | PRs #54–#58 |
+| APA-008 | VERIFIED | `GGL-006` in [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md) |
+| APA-009 | VERIFIED | pgTAP + migrations on `main` |
+| APA-010 | VERIFIED | `GGL-010` |
+| Parent exit | BLOCKED | Operator preview smoke (`GGL-B01`–`B03`); see [PRD-004a](../prd-004-reviewable-go-live/prd-004a-reviewable-go-live-preview-deploy-smoke.md) |
+
 ---
 
 ## Data model changes

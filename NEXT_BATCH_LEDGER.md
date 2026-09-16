@@ -2,14 +2,14 @@
 
 ## Contract
 
-| Field        | Value                                                                                                                                                                                                                                                        |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Branch       | Prep and G2 harness landed on `main` (PRs #26, #27). PRD-003a-d on `main` (`70531fb`, `2ee2634`, `71c371d`, `26051b3`). Live Wave 1: try sandbox + Test Link now; do not invent G2 evidence. Preview/review smoke blocked on existing Vercel env + Postgres. |
-| Date         | 2026-08-26                                                                                                                                                                                                                                                   |
-| Prerequisite | Gauntlet closeout (`25c0bdc`), evidence packs (`6965bf7`), G2 harness (`a530947`) on `main`                                                                                                                                                                  |
-| Scope        | Unblock production-path evidence for G2, environment/KMS, G3, G5, G6, G7, and remaining timed/AI cost criteria                                                                                                                                               |
-| Honest bound | Agents cannot invent live HighLevel, Meta, Stripe, KMS, or counsel evidence. This batch is operator-led with agent-supported harnesses, checklists, and ledger updates.                                                                                      |
-| Current park | Operator-led App Test: try sandbox + Test Link now (prior Marketplace approval not documented as required). G2 harness ready; no sanitized fixtures yet.                                                                                                     |
+| Field        | Value                                                                                                                                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Branch       | `main` at `f4b79f7` (PR #61 go-live code, PR #60 PRD-004 docs). PRD-004a in-repo code VERIFIED (`GGL-001`–`GGL-007`, `GGL-010`). Operator path blocked (`GGL-B01`–`B09`). Live Wave 1: try sandbox + Test Link; do not invent G2 evidence. |
+| Date         | 2026-08-26                                                                                                                                                                                                                                 |
+| Prerequisite | Gauntlet closeout (`25c0bdc`), evidence packs (`6965bf7`), G2 harness (`a530947`) on `main`                                                                                                                                                |
+| Scope        | Unblock production-path evidence for G2, environment/KMS, G3, G5, G6, G7, and remaining timed/AI cost criteria                                                                                                                             |
+| Honest bound | Agents cannot invent live HighLevel, Meta, Stripe, KMS, or counsel evidence. This batch is operator-led with agent-supported harnesses, checklists, and ledger updates.                                                                    |
+| Current park | **Production tonight:** operator preview smoke (`GGL-B01`–`B03`) then portal/Test Link (`GGL-B04`–`B07`). Parallel Wave 1 G2: no sanitized fixtures; do not flip deferred ACs (`GGL-B10`).                                                 |
 
 Upstream closeout: [`GAUNTLET_EXECUTION_LEDGER.md`](./GAUNTLET_EXECUTION_LEDGER.md) (267 `VERIFIED`, 38 non-verified parked). Authoritative AC source remains [`PRODUCTION_EXECUTION_LEDGER.md`](./PRODUCTION_EXECUTION_LEDGER.md).
 
@@ -19,7 +19,7 @@ Upstream closeout: [`GAUNTLET_EXECUTION_LEDGER.md`](./GAUNTLET_EXECUTION_LEDGER.
 
 In-repo PRD-001 work that can be proved locally is done. The project-map next steps and the Gauntlet external park list now dominate critical path. The next batch optimizes for **shortest path to production authorization**: clear the largest deferred block (G2 live HighLevel auth), then environment isolation, then Meta/lead/billing/legal.
 
-Separately, [PRD-003: Authenticated Product Activation](./library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) stays in `in-work/` for parallel in-repo productization. **003a** done (`70531fb`, PR #54). **003b** done (`2ee2634`, PR #55). **003c** done (`71c371d`, PR #57). **003d** done (`26051b3`, PR #58). Preview/review smoke on the existing Vercel project is blocked until the operator sets review env + `OALO_DATABASE_URL`. Do not create a second Vercel project. Do not submit Marketplace. PRD-003 does not convert any blocked/deferred criterion to verified status and does not enable production provider traffic.
+[PRD-003](./library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) stays in `in-work/` until operator preview smoke passes. **003a**–**003d** done on `main`. [PRD-004](./library/requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md) in-repo code is **done** (`f4b79f7`, PR #61); operator deploy/smoke (`GGL-B01`–`B03`), portal (`GGL-B04`–`B07`), and listing (`GGL-B09`) remain blocked. Set `OALO_REVIEW_SURFACE=authorized` on the review URL for honest surfaces. See [`EXECUTION_LEDGER.md`](./EXECUTION_LEDGER.md) Gauntlet section. Do not flip deferred G2 ACs.
 
 ```mermaid
 flowchart TD
@@ -60,12 +60,12 @@ flowchart TD
 
 ### Parallel product activation (in-repo, no provider traffic)
 
-| Owner                                       | Deliverable                              | Exit criteria                                                                                               |
-| ------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `library-guardian`                          | PRD-003 Authenticated Product Activation | 003a-d **done** on `main`; parent exits when PRD-004a preview smoke passes                                  |
-| `library-guardian`                          | PRD-004 Reviewable Go-Live               | In `in-work/`; 004a preview smoke blocked on `OALO_DATABASE_URL`; 004b portal unsigned-in; 004c after smoke |
-| implementation Guardians                    | Execute PRD-004 sub-PRDs in order        | Preview deploy, Test Link, Marketplace packet; no second Vercel project                                     |
-| `security-guardian` then `quality-guardian` | Closeout reports                         | No unresolved Critical/High finding; PRD-004 ACs traceable before merge                                     |
+| Owner                                       | Deliverable                              | Exit criteria                                                                                                                      |
+| ------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `library-guardian`                          | PRD-003 Authenticated Product Activation | 003a-d **done** on `main`; parent exits when PRD-004a preview smoke passes                                                         |
+| `library-guardian`                          | PRD-004 Reviewable Go-Live               | 004a code **done** (`f4b79f7`); operator `GGL-B01`–`B03` blocked; 004b `GGL-B04`–`B07`; 004c `GGL-B09`                             |
+| `release-deploy-guardian` + operator        | Production tonight operator path         | Wire `operation-automated-lo-web`; run [reviewable-preview-smoke.md](./docs/operations/evidence-packs/reviewable-preview-smoke.md) |
+| `security-guardian` then `quality-guardian` | Go-live code closeout (PR #61)           | `GGL-001`–`GGL-007`, `GGL-010` VERIFIED on `main`; no deferred G2 flips (`GGL-B10`)                                                |
 
 **Boundary:** PRD-003/004 are reviewable go-live only. G2/G3/G5/G6/G7 evidence and production authorization remain governed by Waves 1-7 below. Do not flip deferred G2 ACs without sanitized fixtures.
 

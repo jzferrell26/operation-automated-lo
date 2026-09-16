@@ -6,7 +6,7 @@ Each pack lists the acceptance criteria or gate it unblocks, the sanitized artif
 
 | Pack | Wave | Primary unblock |
 | --- | --- | --- |
-| [Reviewable preview smoke](reviewable-preview-smoke.md) | Go-live (PRD-004a) | PRD-003 parent exit; Marketplace demo URL |
+| [Reviewable preview smoke](reviewable-preview-smoke.md) | Go-live (PRD-004a operator) | `GGL-B01`–`B03`; PRD-003 parent exit; requires `OALO_REVIEW_SURFACE=authorized` |
 | [G2 HighLevel App Test](g2-highlevel-app-test.md) | 1 | 28 `DEFERRED: LIVE HIGHLEVEL AUTH` criteria |
 | [Environment isolation and KMS](env-isolation-and-kms.md) | 2 | `001J-AC-026`, `001J-AC-029` |
 | [G3 Meta no-spend](g3-meta-no-spend.md) | 3 | Gate G3 |

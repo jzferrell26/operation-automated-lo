@@ -104,3 +104,5 @@ None required for this batch beyond PRD-003. OAuth callback and Custom Page URLs
 - [Reviewable preview smoke evidence pack](../../../../docs/operations/evidence-packs/reviewable-preview-smoke.md)
 - [G2 App Test evidence pack](../../../../docs/operations/evidence-packs/g2-highlevel-app-test.md)
 - [Project map](../../../knowledge/private/product/project-map.md)
+- [Go-live raid ledger](../../../../EXECUTION_LEDGER.md#gauntlet-raid-go-live-remaining-in-repo-code)
+- [Production environment contract](../../../../docs/production-environments.md)

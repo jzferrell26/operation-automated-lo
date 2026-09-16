@@ -1,6 +1,6 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.6 | Date: September 2026 | Status: Active
+> Category: Product Operations | Version: 1.8 | Date: September 2026 | Status: Active
 
 The canonical internal map of the product boundary, system flow, implementation status, external gates, and next work for Operation Automated LO.
 
@@ -13,6 +13,7 @@ The canonical internal map of the product boundary, system flow, implementation 
 - [PRD-003: Authenticated Product Activation](../../../requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md)
 - [PRD-004: Reviewable Go-Live](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md)
 - [HighLevel Marketplace submission packet](highlevel-marketplace-submission.md)
+- [Go-live raid ledger (GGL rows)](../../../../EXECUTION_LEDGER.md#gauntlet-raid-go-live-remaining-in-repo-code)
 - [Agent terrain map](../../../../.cursor/rules/core/the-map.mdc) (Codex / Claude / Cursor handoff)
 
 ---
@@ -27,11 +28,11 @@ Before this document, no canonical single project map existed. The information w
 
 ## Status snapshot
 
-Status date: September 15, 2026.
+Status date: September 16, 2026.
 
 | Area | Current state |
 | --- | --- |
-| Delivery | Gauntlet closeout on `main` (PR #25). External Evidence Sprint prep (PR #26). G2 harness (PR #27). Reverse-review + H1-H3 (PRs #29/#30). Hygiene (PR #31). Dependabot noise control (PR #39). Labeled review dashboard (PR #53). PRD-003a-d on `main` (PRs #54/#55/#57/#58, tip `26051b3`). Planned Actions major raid (checkout 7 / cache 6 / setup-node 7) is SHA-pinned follow-up. Live Wave 1 parked. Preview/review smoke blocked on env. |
+| Delivery | PRD-003a-d on `main` (PRs #54/#55/#57/#58). PRD-004 docs (#60) and locally provable go-live code (#61, `f4b79f7`). `GGL-001` through `GGL-007` and `GGL-010` VERIFIED; `GGL-008`/`GGL-009` DONE (code), BLOCKED (automated gate) as `GGL-B16`. Operator path blocked: Vercel env (`GGL-B01`–`B03`), portal sign-in (`GGL-B04`–`B07`), listing (`GGL-B09`). Live Wave 1 G2 still has no sanitized fixtures. |
 | Critical path (Wave 1 G2) | **Try sandbox + Test Link now** per official docs; do not wait for prior Marketplace approval before App Test. G2 harness is ready and fail-closed; **do not invent live G2 evidence** until sanitized fixtures pass `pnpm test:contracts`. |
 | PRD-001 lifecycle | `IN WORK`. The repository implementation is complete for every criterion that can be proved locally, but production acceptance is not complete. |
 | Acceptance criteria | 305 total: 267 `VERIFIED`, 28 `DEFERRED: LIVE HIGHLEVEL AUTH`, 7 `BLOCKED: EXTERNAL EVIDENCE`, 1 `BLOCKED: G5`, and 2 `ACCEPTED CONSTRAINT` (G4 housing Special Ad Category criteria). |
@@ -53,14 +54,17 @@ Status date: September 15, 2026.
 4. Library Schema v2 scaffold gaps closed (Gauntlet Raid B).
 5. External Evidence Sprint prep: [`NEXT_BATCH_LEDGER.md`](../../../../NEXT_BATCH_LEDGER.md) and [`docs/operations/evidence-packs/`](../../../../docs/operations/evidence-packs/README.md) on `main`.
 6. G2 harness on `main`: env-gated adapter (`OALO_GHL_LIVE_CAPTURE=authorized` only), nine-case matrix, `pnpm ghl:g2-matrix`, sanitization hardening, contract + unit coverage. Security then quality PASS for the harness PR.
+7. PRD-004a in-repo code (`f4b79f7`, PR #61): honest review surfaces when `OALO_REVIEW_SURFACE=authorized`, public-env secret boundary gate, provider default-off tests. See [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md) `GGL-*` rows.
 
 ### Pending (external / operator)
 
-1. **HighLevel App Test** (operator-led): try sandbox + Test Link now; do not invent G2 evidence.
-2. Named App Test operator + controlled location credentials/invite for the live OAuth/session matrix.
-3. Wave 1 live capture of sanitized fixtures; then flip or residual-ask the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` rows (none flipped yet).
-4. Waves 2-7: env/KMS, G3 Meta no-spend, G5 synthetic lead, G6 billing, G7 counsel, timed Launch Ready / AI cost (see next-batch ledger).
-5. Production traffic remains disabled. PRD-001 stays in `in-work/` until core completion.
+1. **Production tonight (PRD-004 operator):** wire `OALO_DATABASE_URL` + `OALO_REVIEW_SURFACE=authorized` on `operation-automated-lo-web`, run [`reviewable-preview-smoke.md`](../../../../docs/operations/evidence-packs/reviewable-preview-smoke.md) (`GGL-B01`–`B03`), then Developer Portal + Test Link (`GGL-B04`–`B07`).
+2. **HighLevel App Test** (operator-led): try sandbox + Test Link now; do not invent G2 evidence (`GGL-B10`).
+3. Named App Test operator + controlled location credentials/invite for the live OAuth/session matrix.
+4. Wave 1 live capture of sanitized fixtures; then flip or residual-ask the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` rows (none flipped yet).
+5. Waves 2-7: env/KMS (`GGL-B11`), G3 Meta no-spend, G5 synthetic lead (`GGL-B14`), G6 billing, G7 counsel (`GGL-B13`), timed Launch Ready / AI cost (`GGL-B12`).
+6. Optional: `GGL-B16` real-Postgres command tests in canonical CI (`OALO_TEST_DATABASE_URL`).
+7. Production traffic remains disabled. PRD-001 stays in `in-work/` until core completion.
 
 ## Library and Librarian status
 
@@ -170,13 +174,13 @@ The detailed capture requirements and unblock procedures remain authoritative in
 
 Authoritative batch plan: [External Evidence Sprint](../../../../NEXT_BATCH_LEDGER.md). Packs: [`docs/operations/evidence-packs/`](../../../../docs/operations/evidence-packs/README.md). Agent brief: [the-map.mdc](../../../../.cursor/rules/core/the-map.mdc).
 
-### Now (Wave 1 G2 + PRD-003)
+### Now (production tonight: PRD-004 operator + Wave 1 G2)
 
-1. **Try HighLevel sandbox + Test Link now.** Official docs do not require prior Marketplace approval for App Test ([`highlevel-marketplace-submission.md`](highlevel-marketplace-submission.md)). Do not invent G2 evidence. Keep the harness fail-closed until sanitized fixtures pass `pnpm test:contracts`.
-2. Confirm founding distribution stays private App Test / one-agency beta (G1 unchanged: Marketplace **listing** is still not a launch prerequisite).
-3. Run the G2 matrix in [`g2-highlevel-app-test.md`](../../../../docs/operations/evidence-packs/g2-highlevel-app-test.md) after operator access (`pnpm --filter @oalo/ghl build`, then `OALO_GHL_LIVE_CAPTURE=authorized` only in the operator shell).
-4. Ingest sanitized fixtures only. Flip each of the 28 deferred auth ACs to `VERIFIED` only with evidence pointers, or leave deferred with a precise residual ask. Update this map, the next-batch watchdog, and the production ledger.
-5. Close any Wave 1 code PR with `security-guardian` then `quality-guardian`, CI green, squash-merge.
+1. **Operator (tonight):** on existing Vercel project `operation-automated-lo-web`, set server-only `OALO_DATABASE_URL`, `OALO_REVIEW_SURFACE=authorized`, and other secrets per [`docs/production-environments.md`](../../../../docs/production-environments.md). Run [`reviewable-preview-smoke.md`](../../../../docs/operations/evidence-packs/reviewable-preview-smoke.md). Satisfies `GGL-B01`–`B03` when complete.
+2. **Human:** sign in to Developer Portal; complete inspection + Test Link (`GGL-B04`–`B07`). See [`highlevel-marketplace-submission.md`](highlevel-marketplace-submission.md).
+3. **After smoke + Test Link:** Marketplace submission packet (`GGL-B09`, PRD-004c).
+4. **Parallel Wave 1 G2:** try sandbox + Test Link; do not invent evidence; do not flip the 28 deferred auth ACs without sanitized fixtures (`GGL-B10`).
+5. Run the G2 matrix in [`g2-highlevel-app-test.md`](../../../../docs/operations/evidence-packs/g2-highlevel-app-test.md) after operator access (`OALO_GHL_LIVE_CAPTURE=authorized` only in the operator shell).
 
 ### Parallel when a cloud owner is available (Wave 2)
 
@@ -186,7 +190,7 @@ Authoritative batch plan: [External Evidence Sprint](../../../../NEXT_BATCH_LEDG
 
 PRD-003 is the implementation bridge from the repository-proved PRD-001 contracts to a real authenticated tenant-backed product surface. It replaces the new local filesystem/synthetic campaign path with Postgres persistence, verified server session authority, persisted human approval, and tenant-backed authenticated workspace reads. It does not reopen PRD-001, change G1/G4/G8 dispositions, enable provider traffic, or satisfy any external evidence criterion by itself.
 
-This work proceeds in parallel with Wave 1 App Test because it is locally verifiable and fail-closed for provider side effects. **Status (September 2026):** PRD-003 stays in `requirements/in-work/`. **003a** through **003d** are **done** on `main` (`70531fb`, `2ee2634`, `71c371d`, `26051b3`). Labeled review dashboard merged as `6f64201` (PR #53). Parent PRD-003 exits when [PRD-004a](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004a-reviewable-go-live-preview-deploy-smoke.md) preview smoke passes on the existing Vercel project (`operation-automated-lo-web`); blocked on operator env including `OALO_DATABASE_URL`. [PRD-004](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md) covers preview deploy, Developer Portal Test Link, and Marketplace submission. Do not create a second Vercel project. `/overview` on the review URL may still show unlabeled synthetic data until 004a deploy. Marketplace portal inspect is unsigned-in. Do not submit Marketplace until 004a smoke and 004b Test Link pass. Do not flip deferred G2 ACs without sanitized fixtures.
+PRD-003 stays in `requirements/in-work/` until operator preview smoke passes. **003a** through **003d** are **done** on `main`. [PRD-004](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md) **in-repo code is done** (`f4b79f7`, PR #61): `GGL-001`/`GGL-002` VERIFIED in review mode when `OALO_REVIEW_SURFACE=authorized`; `GGL-003`/`GGL-004`/`GGL-005`/`GGL-007`/`GGL-010` VERIFIED; `GGL-008`/`GGL-009` DONE (code), BLOCKED (automated gate) as `GGL-B16`. **Operator blocked:** `GGL-B01`–`B03` (Vercel env + smoke log), `GGL-B04`–`B07` (portal unsigned-in), `GGL-B09` (listing after smoke). Honest `/overview` requires `OALO_REVIEW_SURFACE=authorized` on the review URL; default preview still serves labeled synthetic demo metrics. Do not create a second Vercel project. Do not flip deferred G2 ACs (`GGL-B10`).
 
 ### Later waves (do not start without the named external unlock)
 
@@ -232,6 +236,7 @@ PRD-001 core is complete only when all of the following are true:
 
 ## Changelog
 
+- v1.8 (2026-09-16): Recorded PR #61 (`f4b79f7`) locally provable go-live code. `GGL-001`–`GGL-007`, `GGL-010` VERIFIED; operator path `GGL-B01`–`B09` documented. `OALO_REVIEW_SURFACE=authorized` prerequisite for honest review URL.
 - v1.7 (2026-09-15): Added PRD-004 Reviewable Go-Live (004a preview smoke, 004b portal/Test Link, 004c Marketplace submission). PRD-003a-d done; parent exits on 004a. Reviewable preview smoke evidence pack added.
 - v1.6 (2026-09-15): Recorded PRD-003c (`71c371d`, PR #57) and PRD-003d (`26051b3`, PR #58) as done on `main`. Parent PRD-003 stays in `in-work/`. Preview/review smoke is blocked on existing-project env + Postgres. No second Vercel project. No Marketplace submit.
 - v1.5 (2026-09-15): Recreated Marketplace submission packet. App Test is "try sandbox + Test Link now"; do not invent G2 evidence. PRD-003 in-work: 003a done (`70531fb`), 003b done (`2ee2634`), review dashboard merged (`6f64201`).

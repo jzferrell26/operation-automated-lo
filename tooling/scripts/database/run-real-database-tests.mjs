@@ -29,12 +29,31 @@ export async function discoverPgtapFiles(repositoryRoot = defaultRepositoryRoot)
   return files;
 }
 
-export function commandPlan(pgtapFiles, repositoryRoot = defaultRepositoryRoot) {
+export async function discoverPostgresIntegrationFiles(repositoryRoot = defaultRepositoryRoot) {
+  const testsDirectory = resolve(repositoryRoot, "packages/db/test");
+  const entries = await readdir(testsDirectory, { withFileTypes: true });
+  const files = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".integration.test.mjs"))
+    .map((entry) =>
+      relative(repositoryRoot, resolve(testsDirectory, entry.name)).replaceAll("\\", "/"),
+    )
+    .toSorted();
+
+  if (files.length === 0) {
+    throw new Error("No packages/db/test/*.integration.test.mjs files were found.");
+  }
+  return files;
+}
+
+export function commandPlan(
+  pgtapFiles,
+  repositoryRoot = defaultRepositoryRoot,
+  postgresIntegrationFiles = [],
+) {
   const node = process.execPath;
   const packageRunner = resolvePackageRunner(node);
   const vitestCli = resolve(repositoryRoot, "node_modules/vitest/vitest.mjs");
   const turboCli = resolve(repositoryRoot, "node_modules/turbo/bin/turbo");
-  const workspacePnpm = resolve(repositoryRoot, "node_modules/.bin/pnpm");
   const supabase = [packageRunner.cli, ...packageRunner.args];
 
   return Object.freeze({
@@ -97,8 +116,8 @@ export function commandPlan(pgtapFiles, repositoryRoot = defaultRepositoryRoot) 
         label: "build the database integration test dependencies",
       }),
       Object.freeze({
-        command: workspacePnpm,
-        args: ["--filter", "@oalo/db", "test:postgres"],
+        command: node,
+        args: ["--test", ...postgresIntegrationFiles],
         environment: Object.freeze({
           OALO_TEST_DATABASE_URL,
         }),
@@ -121,7 +140,10 @@ export async function runRealDatabaseTests(options = {}) {
   const repositoryRoot = options.repositoryRoot ?? defaultRepositoryRoot;
   const run = options.run ?? runCommand;
   const pgtapFiles = await discoverPgtapFiles(repositoryRoot);
-  const plan = commandPlan(pgtapFiles, repositoryRoot);
+  const postgresIntegrationFiles =
+    options.postgresIntegrationFiles ??
+    (options.run === undefined ? await discoverPostgresIntegrationFiles(repositoryRoot) : []);
+  const plan = commandPlan(pgtapFiles, repositoryRoot, postgresIntegrationFiles);
   let verificationError;
   let cleanupError;
 

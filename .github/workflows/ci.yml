@@ -105,6 +105,105 @@ jobs:
       - name: Run the canonical real database verification
         run: pnpm test:db
 
+  campaign-command-postgres:
+    name: Campaign command round trips on real PostgreSQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres@sha256:051f7b7b3abdd564d5d1bd1e8c4b9c1b6e77087d1dd22020ede611c096a272e0 # 17-bookworm
+        env:
+          POSTGRES_PASSWORD: oalo_test_only_local
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: oalo_test_only_local
+      OALO_TEST_DATABASE_NAME: oalo_test_integration
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+          package-manager-cache: false
+
+      - name: Enable Corepack and confirm pnpm
+        run: |
+          corepack enable
+          pnpm --version
+
+      - name: Resolve pnpm store path
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore pnpm store cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Confirm the PostgreSQL 17 server is reachable
+        shell: bash
+        run: |
+          psql --version
+          psql -d postgres -tAc "select current_setting('server_version_num')"
+
+      - name: Provision the disposable oalo_test_ database
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${OALO_TEST_DATABASE_NAME}" == oalo_test_* ]] || { echo "Refusing to drop or create ${OALO_TEST_DATABASE_NAME}: the disposable database name must start with oalo_test_." >&2; exit 1; }
+          psql -d postgres -v ON_ERROR_STOP=1 \
+            -c "drop database if exists ${OALO_TEST_DATABASE_NAME}"
+          psql -d postgres -v ON_ERROR_STOP=1 \
+            -c "create database ${OALO_TEST_DATABASE_NAME}"
+          shopt -s nullglob
+          migrations=(supabase/migrations/*.sql)
+          if [ ${#migrations[@]} -eq 0 ]; then
+            echo "No supabase/migrations/*.sql files were found." >&2
+            exit 1
+          fi
+          for migration in "${migrations[@]}"; do
+            echo "Applying ${migration}"
+            psql -d "${OALO_TEST_DATABASE_NAME}" -v ON_ERROR_STOP=1 -f "${migration}"
+          done
+
+      - name: Build the packages the integration tests import
+        run: pnpm turbo run build --filter=@oalo/db...
+
+      - name: Run the campaign command round trips against real PostgreSQL
+        env:
+          OALO_TEST_DATABASE_URL: postgres://${{ env.PGUSER }}:${{ env.PGPASSWORD }}@${{ env.PGHOST }}:${{ env.PGPORT }}/${{ env.OALO_TEST_DATABASE_NAME }}
+        run: pnpm --filter @oalo/db test:postgres
+
+      - name: Drop the disposable database
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${OALO_TEST_DATABASE_NAME}" == oalo_test_* ]] || { echo "Skipping teardown: ${OALO_TEST_DATABASE_NAME} is not an oalo_test_ database." >&2; exit 0; }
+          psql -d postgres -c "drop database if exists ${OALO_TEST_DATABASE_NAME}" || true
+
   release-contract:
     name: Release and recovery contract
     runs-on: ubuntu-24.04
@@ -250,6 +349,7 @@ jobs:
     needs:
       - verify
       - database
+      - campaign-command-postgres
       - release-contract
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04

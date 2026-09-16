@@ -432,6 +432,20 @@ This is a **separate job**. It does not modify `pnpm test:db` or the existing Su
 
 Before that run, the claim was recipe-only, and it is recorded here as it stood: the identical sequence (create an `oalo_test_` database, replay both `supabase/migrations/*.sql` with `psql -v ON_ERROR_STOP=1`, `turbo run build --filter=@oalo/db...`, then `pnpm --filter @oalo/db test:postgres`) was executed locally against stock PostgreSQL 17 on a database built only from bare migration replay, and returned 9 of 9 passing. The job is therefore claimed as **written and locally rehearsed**, not as a green CI gate. It becomes a green gate only when the PR run reports it. Two residual runner-specific risks were checked rather than assumed: the pinned digest `sha256:051f7b7b…` resolves to the current `postgres:17-bookworm` manifest, which the `server_version_num >= 170000` assertion in `packages/db/test/postgres-adapter.integration.test.mjs:34` depends on; and `ubuntu-24.04` ships a PostgreSQL 16 `psql` client against the 17 server, which is safe here only because neither migration uses a `psql` backslash meta-command, so the replay is plain SQL and the client emits nothing worse than a major-version warning.
 
+### Independent re-grade of GGL-001 through GGL-010
+
+The second half of this run's scope. A verifier that implemented none of the work re-derived every row against its exact criterion text and the code, rather than against the ledger's own evidence column. **All ten rows hold. No row was over-claimed.** Each was re-proven by opening the implementing source and executing the test, not by reading the prior summary: the review-mode collapse at `apps/web/src/server/authenticated-workspace-data.ts:140-167` with `overview-review-surface.integration.test.tsx` passing 10 of 10; the value-free `notConnectedReviewMetric` rendering with no value slot; the public-env guard traced literally through `package.json` into `audit:secrets` with its negative case proven; and `provider-side-effect-default-off.test.ts` passing 10 of 10 against the real `executeProviderOperation`.
+
+Two methodological points from that pass are worth preserving:
+
+- `GGL-007` was re-checked against the pre-raid tip `6d5982f` rather than only `deeb3e2`, because at the time of the check this branch was byte-identical to `origin/main`, which would have made the diff trivially empty and therefore meaningless. Both diffs are empty, so the conclusion survives the stronger test. Exactly 28 `DEFERRED: LIVE HIGHLEVEL AUTH` rows remain.
+- The provider default-off proof was specifically checked for tautology. One assertion does read a hardcoded constant, but it carries no weight: `durable-foundation.test.ts:427-431` proves `executeProviderOperation` returns `confirmed` under healthy authority, so the blocked-by-default assertions genuinely discriminate rather than restating a function that always blocks.
+
+Two observations were raised that this run deliberately did **not** act on, because neither is in its scope and one belongs to another lane:
+
+- `GGL-010`'s security half is attested rather than reproducible. "No unresolved Critical or High finding" has no committed artifact; only the raid-log prose above. The remediations it describes are visible in the PR #61 diff, so the row was not downgraded, but that clause cannot be re-derived from the repo alone.
+- `packages/ui/src/components/state-primitives.test.tsx` matches no `include` glob in `vitest.config.ts` and is reachable only through `packages/ui`'s `test:components`, which neither `verify:offline` nor `turbo.json` invokes. It passes 12 of 12 when run by hand. This is pre-existing, no `GGL-*` row depends on it, and wiring the UI component suite into `verify:offline` is the declared scope of the parallel lane on `cursor/gauntlet-followup-hardening-b085`. It is therefore left untouched here by design, not overlooked.
+
 ### Status change
 
 | Row | Before | After |

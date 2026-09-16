@@ -115,21 +115,21 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
       };
 
       const denied = await executeHumanCampaignApproval(
-        { ...approvalInput, correlationRef: `${tenant.correlationId}-denied` },
+        { ...approvalInput, correlationRef: `${tenant.correlationId}_denied` },
         creator,
         createPostgresCampaignApprovalRepository(
           pool,
-          createPrincipalBoundTenantContextAuthority(creator, `${tenant.correlationId}-denied`),
+          createPrincipalBoundTenantContextAuthority(creator, `${tenant.correlationId}_denied`),
         ),
       );
       assert.deepEqual(denied, { kind: "denied" });
 
       const committed = await executeHumanCampaignApproval(
-        { ...approvalInput, correlationRef: `${tenant.correlationId}-approved` },
+        { ...approvalInput, correlationRef: `${tenant.correlationId}_approved` },
         approver,
         createPostgresCampaignApprovalRepository(
           pool,
-          createPrincipalBoundTenantContextAuthority(approver, `${tenant.correlationId}-approved`),
+          createPrincipalBoundTenantContextAuthority(approver, `${tenant.correlationId}_approved`),
         ),
       );
       assert.equal(committed.kind, "committed");

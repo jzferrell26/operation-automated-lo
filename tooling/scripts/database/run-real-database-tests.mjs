@@ -45,10 +45,35 @@ export async function discoverPostgresIntegrationFiles(repositoryRoot = defaultR
   return files;
 }
 
+async function discoverMigrationFiles(repositoryRoot = defaultRepositoryRoot) {
+  const migrationsDirectory = resolve(repositoryRoot, "supabase/migrations");
+  const entries = await readdir(migrationsDirectory, { withFileTypes: true });
+  const migrationFileNamePattern = /^\d{14}_.+\.sql$/u;
+  for (const entry of entries) {
+    if (entry.isFile() && !migrationFileNamePattern.test(entry.name)) {
+      process.stdout.write(
+        `[database] Skipping migration ${entry.name} (file name must match pattern "<timestamp>_name.sql")\n`,
+      );
+    }
+  }
+  const files = entries
+    .filter((entry) => entry.isFile() && migrationFileNamePattern.test(entry.name))
+    .map((entry) =>
+      relative(repositoryRoot, resolve(migrationsDirectory, entry.name)).replaceAll("\\", "/"),
+    )
+    .toSorted();
+
+  if (files.length === 0) {
+    throw new Error("No supabase/migrations/<timestamp>_name.sql files were found.");
+  }
+  return files;
+}
+
 export function commandPlan(
   pgtapFiles,
   repositoryRoot = defaultRepositoryRoot,
   postgresIntegrationFiles = [],
+  migrationFiles = [],
 ) {
   const node = process.execPath;
   const packageRunner = resolvePackageRunner(node);
@@ -105,11 +130,17 @@ export function commandPlan(
         ],
         label: "create the dedicated oalo_test integration database",
       }),
-      Object.freeze({
-        command: node,
-        args: [...supabase, "db", "reset", "--db-url", OALO_TEST_DATABASE_URL],
-        label: "apply migrations and RLS policies to the dedicated oalo_test database",
-      }),
+      ...migrationFiles.map((migrationFile) =>
+        Object.freeze({
+          command: "psql",
+          args: [
+            `--dbname=${OALO_TEST_DATABASE_URL}`,
+            "--set=ON_ERROR_STOP=1",
+            `--file=${migrationFile}`,
+          ],
+          label: `apply ${migrationFile} to the dedicated oalo_test database`,
+        }),
+      ),
       Object.freeze({
         command: node,
         args: [turboCli, "run", "build", "--filter=@oalo/db..."],
@@ -143,7 +174,10 @@ export async function runRealDatabaseTests(options = {}) {
   const postgresIntegrationFiles =
     options.postgresIntegrationFiles ??
     (options.run === undefined ? await discoverPostgresIntegrationFiles(repositoryRoot) : []);
-  const plan = commandPlan(pgtapFiles, repositoryRoot, postgresIntegrationFiles);
+  const migrationFiles =
+    options.migrationFiles ??
+    (options.run === undefined ? await discoverMigrationFiles(repositoryRoot) : []);
+  const plan = commandPlan(pgtapFiles, repositoryRoot, postgresIntegrationFiles, migrationFiles);
   let verificationError;
   let cleanupError;
 

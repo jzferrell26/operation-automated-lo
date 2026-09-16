@@ -39,7 +39,7 @@ This PRD covers preview deploy smoke, Developer Portal inspection, Test Link ins
 
 | Sub-PRD | Scope | Status |
 |---|---|---|
-| [`prd-004a-reviewable-go-live-preview-deploy-smoke`](./prd-004a-reviewable-go-live-preview-deploy-smoke.md) | Preview deploy on `operation-automated-lo-web`, env wiring, Postgres smoke | **Not started** (blocked: operator env + `OALO_DATABASE_URL`) |
+| [`prd-004a-reviewable-go-live-preview-deploy-smoke`](./prd-004a-reviewable-go-live-preview-deploy-smoke.md) | Preview deploy on `operation-automated-lo-web`, env wiring, Postgres smoke | **In work.** In-repo code complete and verified; deploy, env wiring, and smoke blocked on operator env + `OALO_DATABASE_URL` |
 | [`prd-004b-reviewable-go-live-portal-and-test-link`](./prd-004b-reviewable-go-live-portal-and-test-link.md) | Developer Portal inspection, sandbox Test Link install, operator checklist | **Not started** (blocked: Marketplace portal sign-in) |
 | [`prd-004c-reviewable-go-live-marketplace-submission`](./prd-004c-reviewable-go-live-marketplace-submission.md) | Listing artifacts, Loom demo, submission packet, terminology audit if needed | **Not started** (blocked: 004a smoke + 004b Test Link) |
 
@@ -59,6 +59,20 @@ Execute in order: **004a** → **004b** (may overlap after preview URL exists) �
 | RGL-006 | Given 004a and 004b pass, when the Marketplace submission packet is complete, then profile, screenshots, pricing, support email, HTTPS callback, and Loom video describe only create → persist → approve with no Meta, lead, or billing claims. |
 | RGL-007 | Given this batch completes, when external gates are checked, then no HighLevel provider write, Meta publish, lead routing, or Stripe charge is newly enabled by default. |
 | RGL-008 | Given G2 deferred criteria, when this batch completes, then none of the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` rows flip to `VERIFIED` without sanitized fixtures passing `pnpm test:contracts`. |
+
+### Status
+
+Set by the Gauntlet raid recorded in [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md), rows `GGL-001` through `GGL-010`.
+
+| ID | Status |
+|---|---|
+| RGL-001 | Code half VERIFIED (no `NEXT_PUBLIC` leakage, gate-enforced); Vercel env wiring BLOCKED on operator |
+| RGL-002 | VERIFIED in review mode. Requires `OALO_REVIEW_SURFACE=authorized` on the review URL |
+| RGL-003 | BLOCKED: needs a review preview URL and `OALO_DATABASE_URL` |
+| RGL-004, RGL-005 | BLOCKED: Developer Portal sign-in and sandbox Test Link |
+| RGL-006 | BLOCKED: depends on RGL-003 and RGL-005 |
+| RGL-007 | VERIFIED by executable proof under default and preview environments |
+| RGL-008 | VERIFIED. `PRODUCTION_EXECUTION_LEDGER.md` is untouched and no deferred row was flipped |
 
 ---
 

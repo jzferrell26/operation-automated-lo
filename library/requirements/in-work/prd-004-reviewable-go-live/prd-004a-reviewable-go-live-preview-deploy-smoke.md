@@ -1,7 +1,7 @@
 # PRD-004a: Reviewable Go-Live - Preview Deploy and Smoke
 
 > **Parent:** [PRD-004](./prd-004-reviewable-go-live-index.md)
-> **Status:** Not started
+> **Status:** In work. In-repo code complete; deploy and smoke blocked on operator
 > **Priority:** P0
 > **Schema changes:** None
 > **Owner Guardians:** `release-deploy-guardian`, `devops-guardian`, `db-guardian`
@@ -28,21 +28,24 @@ Deploy PRD-003 to the **existing** Vercel project (`operation-automated-lo-web`)
 
 ## Acceptance criteria
 
-| ID | Criterion |
-|---|---|
-| 004A-AC-001 | Preview deployment uses project `operation-automated-lo-web` only. |
-| 004A-AC-002 | `OALO_DATABASE_URL` and auth secrets are server-only env vars on Vercel. |
-| 004A-AC-003 | `/overview` does not show unlabeled synthetic spend/leads on the review URL. |
-| 004A-AC-004 | Create Open House Boost → navigate away → reload → campaign still present (Postgres). |
-| 004A-AC-005 | Authorized approver can approve; aggregate shows approved state after reload. |
-| 004A-AC-006 | Smoke log retained per evidence pack; no tokens or PII in git. |
+| ID | Criterion | Status |
+|---|---|---|
+| 004A-AC-001 | Preview deployment uses project `operation-automated-lo-web` only. | BLOCKED: operator Vercel access |
+| 004A-AC-002 | `OALO_DATABASE_URL` and auth secrets are server-only env vars on Vercel. | Code half VERIFIED; Vercel half BLOCKED: operator |
+| 004A-AC-003 | `/overview` does not show unlabeled synthetic spend/leads on the review URL. | VERIFIED in review mode; requires `OALO_REVIEW_SURFACE=authorized` |
+| 004A-AC-004 | Create Open House Boost → navigate away → reload → campaign still present (Postgres). | DONE (code); BLOCKED: no observed run |
+| 004A-AC-005 | Authorized approver can approve; aggregate shows approved state after reload. | DONE (code); BLOCKED: no observed run |
+| 004A-AC-006 | Smoke log retained per evidence pack; no tokens or PII in git. | BLOCKED: operator smoke run |
+
+Statuses were set by the Gauntlet raid recorded in [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md) (rows `GGL-001` through `GGL-010` and the parked `GGL-B01` through `GGL-B16`). Nothing here is claimed as verified on a real preview URL, because no preview deploy has been performed.
 
 ## Blockers (honest)
 
 | Blocker | Owner | Unblock |
 |---|---|---|
 | Review Postgres URL + Vercel env access | Operator / platform owner | Provide `OALO_DATABASE_URL` on preview env |
-| Current `/overview` may still serve synthetic fixtures | Engineering | Verify after deploy; fix if smoke fails |
+| Honest review surface needs its flag | Operator | Set `OALO_REVIEW_SURFACE=authorized` (server-only) on the review preview. Without it, default preview mode still serves labeled synthetic demo metrics and `004A-AC-003` is not met. See [`docs/production-environments.md`](../../../../docs/production-environments.md). |
+| Real-Postgres round trips are not enforced by CI | Engineering / operator | The tests exist at `packages/db/test/campaign-command.integration.test.mjs` but have never been executed. Supabase local cannot provide a second fully-initialized database under an `oalo_test_` name; see `GGL-B16` for the exact constraint and the three remaining routes. |
 
 ## Related
 

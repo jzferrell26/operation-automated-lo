@@ -1,6 +1,6 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.8 | Date: September 2026 | Status: Active
+> Category: Product Operations | Version: 1.10 | Date: September 2026 | Status: Active
 
 The canonical internal map of the product boundary, system flow, implementation status, external gates, and next work for Operation Automated LO.
 
@@ -13,6 +13,8 @@ The canonical internal map of the product boundary, system flow, implementation 
 - [PRD-003: Authenticated Product Activation](../../../requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md)
 - [PRD-004: Reviewable Go-Live](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md)
 - [HighLevel Marketplace submission packet](highlevel-marketplace-submission.md)
+- [Marketplace listing copy pack](marketplace-listing-copy-pack.md)
+- [Production tonight operator runbook](../operations/production-tonight-operator-runbook.md)
 - [Go-live raid ledger (GGL rows)](../../../../EXECUTION_LEDGER.md#gauntlet-raid-go-live-remaining-in-repo-code)
 - [Agent terrain map](../../../../.cursor/rules/core/the-map.mdc) (Codex / Claude / Cursor handoff)
 
@@ -32,7 +34,7 @@ Status date: September 16, 2026.
 
 | Area | Current state |
 | --- | --- |
-| Delivery | PRD-003a-d on `main` (PRs #54/#55/#57/#58). PRD-004 docs (#60) and locally provable go-live code (#61, `f4b79f7`). `GGL-001` through `GGL-007` and `GGL-010` VERIFIED; `GGL-008`/`GGL-009` DONE (code), BLOCKED (automated gate) as `GGL-B16`. Operator path blocked: Vercel env (`GGL-B01`–`B03`), portal sign-in (`GGL-B04`–`B07`), listing (`GGL-B09`). Live Wave 1 G2 still has no sanitized fixtures. |
+| Delivery | PRD-003a-d on `main` (PRs #54/#55/#57/#58). PRD-004 docs (#60), locally provable go-live code (#61, `f4b79f7`), production-tonight docs (#62, `deeb3e2`). `GGL-001` through `GGL-007` and `GGL-010` VERIFIED; `GGL-008`/`GGL-009` DONE (code), BLOCKED (automated gate) as `GGL-B16`, now owned by PRD-004d. Operator path blocked: Vercel env (`GGL-B01`–`B03`), portal sign-in (`GGL-B04`–`B07`), listing capture and submit (`GGL-B09`). Listing **content** is authored in-repo under PRD-004e. Live Wave 1 G2 still has no sanitized fixtures. |
 | Critical path (Wave 1 G2) | **Try sandbox + Test Link now** per official docs; do not wait for prior Marketplace approval before App Test. G2 harness is ready and fail-closed; **do not invent live G2 evidence** until sanitized fixtures pass `pnpm test:contracts`. |
 | PRD-001 lifecycle | `IN WORK`. The repository implementation is complete for every criterion that can be proved locally, but production acceptance is not complete. |
 | Acceptance criteria | 305 total: 267 `VERIFIED`, 28 `DEFERRED: LIVE HIGHLEVEL AUTH`, 7 `BLOCKED: EXTERNAL EVIDENCE`, 1 `BLOCKED: G5`, and 2 `ACCEPTED CONSTRAINT` (G4 housing Special Ad Category criteria). |
@@ -55,20 +57,24 @@ Status date: September 16, 2026.
 5. External Evidence Sprint prep: [`NEXT_BATCH_LEDGER.md`](../../../../NEXT_BATCH_LEDGER.md) and [`docs/operations/evidence-packs/`](../../../../docs/operations/evidence-packs/README.md) on `main`.
 6. G2 harness on `main`: env-gated adapter (`OALO_GHL_LIVE_CAPTURE=authorized` only), nine-case matrix, `pnpm ghl:g2-matrix`, sanitization hardening, contract + unit coverage. Security then quality PASS for the harness PR.
 7. PRD-004a in-repo code (`f4b79f7`, PR #61): honest review surfaces when `OALO_REVIEW_SURFACE=authorized`, public-env secret boundary gate, provider default-off tests. See [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md) `GGL-*` rows.
+8. Production-tonight requirements authoring: [PRD-004d](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004d-reviewable-go-live-postgres-command-gate.md) now owns `GGL-B16` (the last locally provable row), [PRD-004e](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004e-reviewable-go-live-listing-content-and-demo-script.md) holds the authored listing content, the [operator runbook](../operations/production-tonight-operator-runbook.md) holds the step order and return artifacts, and [`2026-09-16` coverage report](../../../requirements/reports/2026-09-16-production-tonight-requirements-coverage-report.md) shows every parked `GGL-B*` row with an owner. Documentation only: no criterion status changed.
 
 ### Pending (external / operator)
 
-1. **Production tonight (PRD-004 operator):** wire `OALO_DATABASE_URL` + `OALO_REVIEW_SURFACE=authorized` on `operation-automated-lo-web`, run [`reviewable-preview-smoke.md`](../../../../docs/operations/evidence-packs/reviewable-preview-smoke.md) (`GGL-B01`–`B03`), then Developer Portal + Test Link (`GGL-B04`–`B07`).
+1. **Production tonight (PRD-004 operator):** follow the [operator runbook](../operations/production-tonight-operator-runbook.md), which sequences the steps below. Wire `OALO_DATABASE_URL` + `OALO_REVIEW_SURFACE=authorized` on `operation-automated-lo-web`, run [`reviewable-preview-smoke.md`](../../../../docs/operations/evidence-packs/reviewable-preview-smoke.md) (`GGL-B01`–`B03`), then Developer Portal + Test Link (`GGL-B04`–`B07`), then capture and submit the authored listing (`GGL-B09`).
 2. **HighLevel App Test** (operator-led): try sandbox + Test Link now; do not invent G2 evidence (`GGL-B10`).
 3. Named App Test operator + controlled location credentials/invite for the live OAuth/session matrix.
 4. Wave 1 live capture of sanitized fixtures; then flip or residual-ask the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` rows (none flipped yet).
 5. Waves 2-7: env/KMS (`GGL-B11`), G3 Meta no-spend, G5 synthetic lead (`GGL-B14`), G6 billing, G7 counsel (`GGL-B13`), timed Launch Ready / AI cost (`GGL-B12`).
-6. Optional: `GGL-B16` real-Postgres command tests in canonical CI (`OALO_TEST_DATABASE_URL`).
-7. Production traffic remains disabled. PRD-001 stays in `in-work/` until core completion.
+6. `GGL-B16` real-Postgres command tests in canonical CI: the last locally provable row, owned by [PRD-004d](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004d-reviewable-go-live-postgres-command-gate.md). Needs one observed run with `OALO_TEST_DATABASE_URL`, or a provisioning-route decision.
+7. Three operator-supplied listing values are still missing: support email, publisher display name, pricing ([PRD-004e](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004e-reviewable-go-live-listing-content-and-demo-script.md)). None was invented.
+8. Production traffic remains disabled. PRD-001 stays in `in-work/` until core completion.
 
 ## Library and Librarian status
 
 The July Schema v2 migration decisions are implemented: PRD-001 is in `requirements/in-work/`, PRD-002 remains in `requirements/backlog/`, discovery lives under private knowledge, QA reports remain in their authorized locations, and `notes/` contains only its human-owned README. The [Library Schema v2 raid ledger](../../../../LIBRARY_SCHEMA_V2_RAID_LEDGER.md) retains the migration evidence.
+
+A read-only drift check on 2026-09-16 (recorded in the [production-tonight coverage report](../../../requirements/reports/2026-09-16-production-tonight-requirements-coverage-report.md)) again found no legacy v1 directory, no invalid PRD folder name, no duplicate PRD number, no missing PRD index or `qa/` directory, and only its own README in `notes/`. `library/knowledge/public/` now holds its first content: draft customer-facing listing sources under `overview/` and `faqs/`. One low-severity finding stands: 24 directories, mostly private domain folders and per-PRD folders, lack a seeded `README.md`. That is recommended as a separate hygiene pass rather than folded into requirements work. The repository has no open GitHub issues, so no IRD exists or should be invented.
 
 The August 12 read-only drift check found no legacy v1 directory, invalid PRD or IRD folder name, duplicate PRD number, missing PRD index, missing PRD `qa/` directory, or unauthorized notes content. Five scaffold gaps identified in that audit were closed on 2026-08-25 by Gauntlet Raid B: `library/knowledge/private/README.md`, `library/knowledge/private/architecture/README.md`, `library/knowledge/private/standards/` (with README and `documentation-framework.md`), and `library/requirements/backlog/README.md`. No further Schema v2 scaffold gaps remain open as of that date.
 
@@ -190,7 +196,9 @@ Authoritative batch plan: [External Evidence Sprint](../../../../NEXT_BATCH_LEDG
 
 PRD-003 is the implementation bridge from the repository-proved PRD-001 contracts to a real authenticated tenant-backed product surface. It replaces the new local filesystem/synthetic campaign path with Postgres persistence, verified server session authority, persisted human approval, and tenant-backed authenticated workspace reads. It does not reopen PRD-001, change G1/G4/G8 dispositions, enable provider traffic, or satisfy any external evidence criterion by itself.
 
-PRD-003 stays in `requirements/in-work/` until operator preview smoke passes. **003a** through **003d** are **done** on `main`. [PRD-004](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md) **in-repo code is done** (`f4b79f7`, PR #61): `GGL-001`/`GGL-002` VERIFIED in review mode when `OALO_REVIEW_SURFACE=authorized`; `GGL-003`/`GGL-004`/`GGL-005`/`GGL-007`/`GGL-010` VERIFIED; `GGL-008`/`GGL-009` DONE (code), BLOCKED (automated gate) as `GGL-B16`. **Operator blocked:** `GGL-B01`–`B03` (Vercel env + smoke log), `GGL-B04`–`B07` (portal unsigned-in), `GGL-B09` (listing after smoke). Honest `/overview` requires `OALO_REVIEW_SURFACE=authorized` on the review URL; default preview still serves labeled synthetic demo metrics. Do not create a second Vercel project. Do not flip deferred G2 ACs (`GGL-B10`).
+PRD-003 stays in `requirements/in-work/` until operator preview smoke passes. **003a** through **003d** are **done** on `main`. [PRD-004](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md) **in-repo code is done** (`f4b79f7`, PR #61): `GGL-001`/`GGL-002` VERIFIED in review mode when `OALO_REVIEW_SURFACE=authorized`; `GGL-003`/`GGL-004`/`GGL-005`/`GGL-007`/`GGL-010` VERIFIED; `GGL-008`/`GGL-009` DONE (code), BLOCKED (automated gate) as `GGL-B16`. **Operator blocked:** `GGL-B01`–`B03` (Vercel env + smoke log), `GGL-B04`–`B07` (portal unsigned-in), `GGL-B09` (listing capture and submit). Honest `/overview` requires `OALO_REVIEW_SURFACE=authorized` on the review URL; default preview still serves labeled synthetic demo metrics. Do not create a second Vercel project. Do not flip deferred G2 ACs (`GGL-B10`).
+
+Requirements coverage for the operator half is complete as of 2026-09-16: **004d** owns the real-Postgres command gate (`GGL-B16`), **004e** holds the authored customer-facing scope statement, FAQ, paste-ready listing fields, six-frame screenshot shot list, Loom script, and claim audit, and the [operator runbook](../operations/production-tonight-operator-runbook.md) holds step order, per-step return artifacts, and abort conditions. Recorded listing-type default for a newly created app is **Standard**; a White-label listing would require a terminology pass the current shell would fail. No criterion status changed and no listing value was invented.
 
 ### Later waves (do not start without the named external unlock)
 
@@ -227,6 +235,9 @@ PRD-001 core is complete only when all of the following are true:
 | What future work is preserved but unauthorized? | [PRD-002 index](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md) |
 | What is the exact criterion status and external evidence ask? | [Production execution ledger](../../../../PRODUCTION_EXECUTION_LEDGER.md) |
 | What is the short agent resume brief (Codex / Claude / Cursor)? | [Agent terrain map](../../../../.cursor/rules/core/the-map.mdc) |
+| What does the operator do tonight, in what order? | [Production tonight operator runbook](../operations/production-tonight-operator-runbook.md) |
+| What exactly may the Marketplace listing claim? | [Marketplace listing copy pack](marketplace-listing-copy-pack.md) |
+| What does the product tell customers it does today? | [What Automated LO does today](../../public/overview/what-is-automated-lo.md) |
 | What is the External Evidence Sprint wave plan? | [Next batch ledger](../../../../NEXT_BATCH_LEDGER.md) |
 | What is the final repository quality result? | [Final post-security QA report](../../../requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-12-prd001-core-raid-qa-report-final-post-security.md) |
 | What is the final security result and open follow-up? | [PRD-001 core security audit](../../../requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-12-prd001-core-raid-security-audit.md) |
@@ -236,6 +247,8 @@ PRD-001 core is complete only when all of the following are true:
 
 ## Changelog
 
+- v1.10 (2026-09-16): Copy-overclaim remediation on the PRD-004e listing content after a quality audit reopened three criteria: collateral and present-tense identity-enforcement claims removed from the customer FAQ, three distribution-implying phrases removed from the customer overview and replaced with an explicit "this release does not publish or distribute" statement, and the claim audit rebuilt with per-claim gates. `004E-AC-004` unchanged. Re-audit owed; nothing claimed verified.
+- v1.9 (2026-09-16): Production-tonight requirements authoring. Added PRD-004d (real-Postgres command gate, owns `GGL-B16`) and PRD-004e (listing content and demo script), the operator runbook under private `operations/`, the internal listing copy pack, and the first customer-facing drafts under `knowledge/public/`. Recorded Standard as the listing-type default for a new app entry. Documentation only: no acceptance-criterion status changed, no deferred G2 row flipped, no G1/G4/G8 reopened, no production traffic claimed.
 - v1.8 (2026-09-16): Recorded PR #61 (`f4b79f7`) locally provable go-live code. `GGL-001`–`GGL-007`, `GGL-010` VERIFIED; operator path `GGL-B01`–`B09` documented. `OALO_REVIEW_SURFACE=authorized` prerequisite for honest review URL.
 - v1.7 (2026-09-15): Added PRD-004 Reviewable Go-Live (004a preview smoke, 004b portal/Test Link, 004c Marketplace submission). PRD-003a-d done; parent exits on 004a. Reviewable preview smoke evidence pack added.
 - v1.6 (2026-09-15): Recorded PRD-003c (`71c371d`, PR #57) and PRD-003d (`26051b3`, PR #58) as done on `main`. Parent PRD-003 stays in `in-work/`. Preview/review smoke is blocked on existing-project env + Postgres. No second Vercel project. No Marketplace submit.

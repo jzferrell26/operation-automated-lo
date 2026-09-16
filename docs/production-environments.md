@@ -40,9 +40,9 @@ Set these values independently in each environment:
 - `OALO_PROVIDER_APP_ID`
 - `OALO_RELEASE_MANIFEST_JSON`, required outside local
 
-Optional review-surface flag (server-only, never `NEXT_PUBLIC_`):
+Review-surface flag (server-only, never `NEXT_PUBLIC_`):
 
-- `OALO_REVIEW_SURFACE`, unset by default (fail-closed). Set the exact value `authorized` to render the labeled REVIEW / DEMO / NOT CONNECTED dashboard on production or preview. Still requires `OALO_PROVIDER_MODE=stub` and `OALO_SYNTHETIC_DATA_ONLY=true`. Does not enable HighLevel, Meta, or Stripe traffic.
+- `OALO_REVIEW_SURFACE`, unset by default (fail-closed). **Required** on any review or Marketplace preview URL so `/overview` and `/reports` satisfy PRD-004 `RGL-002` and PRD-004a `004A-AC-003`: set the exact value `authorized` to render honest not-connected states instead of labeled synthetic spend and leads. Without it, default preview still serves synthetic demo metrics (for example `USD 74.25` on `/reports`) and does not satisfy those review URL criteria. Still requires `OALO_PROVIDER_MODE=stub` and `OALO_SYNTHETIC_DATA_ONLY=true`. Does not enable HighLevel, Meta, or Stripe traffic.
 
 Database, task project, secret scope, private storage, published storage, and provider app identifiers must be unique across all four environments. The isolation fixture in CI is synthetic contract evidence, not proof about live resources.
 
@@ -65,6 +65,7 @@ CI enforces this boundary in two ways:
 
 On the existing Vercel project `operation-automated-lo-web`, the review/preview deployment must keep these values **server-only** (never prefixed with `NEXT_PUBLIC_`):
 
+- `OALO_REVIEW_SURFACE=authorized` (required for honest review surfaces; see above)
 - `OALO_DATABASE_URL` (Postgres connection string for campaign persistence smoke)
 - `OALO_ANTHROPIC_API_KEY`
 - `OALO_R2_ACCESS_KEY_ID`

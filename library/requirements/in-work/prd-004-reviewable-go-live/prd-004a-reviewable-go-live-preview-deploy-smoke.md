@@ -45,9 +45,11 @@ Statuses were set by the Gauntlet raid recorded in [`EXECUTION_LEDGER.md`](../..
 |---|---|---|
 | Review Postgres URL + Vercel env access | Operator / platform owner | Provide `OALO_DATABASE_URL` on preview env |
 | Honest review surface needs its flag | Operator | Set `OALO_REVIEW_SURFACE=authorized` (server-only) on the review preview. Without it, default preview mode still serves labeled synthetic demo metrics and `004A-AC-003` is not met. See [`docs/production-environments.md`](../../../../docs/production-environments.md). |
-| Real-Postgres round trips are not enforced by CI | Engineering / operator | The tests exist at `packages/db/test/campaign-command.integration.test.mjs` but have never been executed. Supabase local cannot provide a second fully-initialized database under an `oalo_test_` name; see `GGL-B16` for the exact constraint and the three remaining routes. |
+| Real-Postgres round trips are not enforced by CI | Engineering / operator | The tests exist at `packages/db/test/campaign-command.integration.test.mjs` but have never been executed. Supabase local cannot provide a second fully-initialized database under an `oalo_test_` name; see `GGL-B16` for the exact constraint and the remaining routes, now tracked in [PRD-004d](./prd-004d-reviewable-go-live-postgres-command-gate.md). |
 
 ## Related
 
 - [Reviewable preview smoke evidence pack](../../../../docs/operations/evidence-packs/reviewable-preview-smoke.md)
 - [PRD-003 index](../prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) (parent exit gate)
+- [PRD-004d: real-Postgres command gate](./prd-004d-reviewable-go-live-postgres-command-gate.md) (automated half of `004A-AC-004`/`005`)
+- [Production tonight operator runbook](../../../knowledge/private/operations/production-tonight-operator-runbook.md) (steps 1 and 2)

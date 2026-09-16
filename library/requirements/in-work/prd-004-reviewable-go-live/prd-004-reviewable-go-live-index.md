@@ -42,8 +42,10 @@ This PRD covers preview deploy smoke, Developer Portal inspection, Test Link ins
 | [`prd-004a-reviewable-go-live-preview-deploy-smoke`](./prd-004a-reviewable-go-live-preview-deploy-smoke.md) | Preview deploy on `operation-automated-lo-web`, env wiring, Postgres smoke | **In work.** In-repo code complete and verified; deploy, env wiring, and smoke blocked on operator env + `OALO_DATABASE_URL` |
 | [`prd-004b-reviewable-go-live-portal-and-test-link`](./prd-004b-reviewable-go-live-portal-and-test-link.md) | Developer Portal inspection, sandbox Test Link install, operator checklist | **Not started** (blocked: Marketplace portal sign-in) |
 | [`prd-004c-reviewable-go-live-marketplace-submission`](./prd-004c-reviewable-go-live-marketplace-submission.md) | Listing artifacts, Loom demo, submission packet, terminology audit if needed | **Not started** (blocked: 004a smoke + 004b Test Link) |
+| [`prd-004d-reviewable-go-live-postgres-command-gate`](./prd-004d-reviewable-go-live-postgres-command-gate.md) | Real-Postgres command round trips in an observed run and in the canonical CI gate | **In work.** Tests on `main`; no observed run; CI wiring parked as `GGL-B16` |
+| [`prd-004e-reviewable-go-live-listing-content-and-demo-script`](./prd-004e-reviewable-go-live-listing-content-and-demo-script.md) | Customer-facing scope statement, FAQ, paste-ready listing fields, screenshot shot list, Loom script, claim audit | **Content authored in-repo.** Capture and submission still blocked (`GGL-B09`) |
 
-Execute in order: **004a** → **004b** (may overlap after preview URL exists) → **004c**.
+Execute in order: **004a** → **004b** (may overlap after preview URL exists) → **004c**. **004d** and **004e** run in parallel and depend on no operator step: 004d needs a database URL or a provisioning route decision, and 004e is authored content that removes the "draft listing copy live in the portal" risk from 004c.
 
 ---
 
@@ -74,6 +76,8 @@ Set by the Gauntlet raid recorded in [`EXECUTION_LEDGER.md`](../../../../EXECUTI
 | RGL-007 | VERIFIED by executable proof under default and preview environments |
 | RGL-008 | VERIFIED. `PRODUCTION_EXECUTION_LEDGER.md` is untouched and no deferred row was flipped |
 
+The automated half of `RGL-003` is tracked separately in [PRD-004d](./prd-004d-reviewable-go-live-postgres-command-gate.md) as `GGL-B16`: the create and approve round-trip tests exist on `main` but have never been executed, so `GGL-008`/`GGL-009` are `DONE (code)` and not `VERIFIED`.
+
 ---
 
 ## Data model changes
@@ -90,17 +94,23 @@ None required for this batch beyond PRD-003. OAuth callback and Custom Page URLs
 
 ## Open questions
 
-- [ ] Does the existing Automated LO Marketplace app exist, and is it Standard or White-label?
+- [ ] Does the existing Automated LO Marketplace app exist, and is it Standard or White-label? **Recorded default for a newly created app: Standard**, because a White-label listing forbids all HighLevel terminology across listing, screenshots, OAuth screens, embedded UI, and support copy, which today's shell would fail. If the app already exists, keep its current type. See the [listing copy pack](../../../knowledge/private/product/marketplace-listing-copy-pack.md#listing-type). Confirm in portal inspection (`GGL-B04`).
 - [ ] Which preview hostname is the OAuth callback and Custom Page URL (existing `operation-automated-lo-web.vercel.app` vs custom domain)?
 - [ ] Who holds Vercel + Supabase credentials for review env wiring?
+- [ ] Which real-Postgres provisioning route closes `GGL-B16`? Routes R1 through R4 are recorded in [PRD-004d](./prd-004d-reviewable-go-live-postgres-command-gate.md#provisioning-routes-decision-required).
+- [ ] Operator-supplied listing values still missing: support email, publisher display name, pricing. Listed in [PRD-004e](./prd-004e-reviewable-go-live-listing-content-and-demo-script.md#operator-supplied-values-still-missing).
 
 ---
 
 ## Related
 
-- [Go-live plan (Project store)](../../../../cursor/stores/bc-a116fca0-6063-487a-8602-a0504f81a42e/docs/go-live-plan-attached.md)
+- Go-live plan: Project store at `/cursor/stores/bc-a116fca0-6063-487a-8602-a0504f81a42e/docs/go-live-plan-attached.md` (outside this repository)
 - [PRD-003: Authenticated Product Activation](../prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md)
 - [HighLevel Marketplace submission packet](../../../knowledge/private/product/highlevel-marketplace-submission.md)
+- [Marketplace listing copy pack](../../../knowledge/private/product/marketplace-listing-copy-pack.md)
+- [Production tonight operator runbook](../../../knowledge/private/operations/production-tonight-operator-runbook.md)
+- [What Automated LO does today](../../../knowledge/public/overview/what-is-automated-lo.md) (customer-facing listing source)
+- [Open House Boost FAQ](../../../knowledge/public/faqs/open-house-boost-faq.md) (customer-facing listing source)
 - [Reviewable preview smoke evidence pack](../../../../docs/operations/evidence-packs/reviewable-preview-smoke.md)
 - [G2 App Test evidence pack](../../../../docs/operations/evidence-packs/g2-highlevel-app-test.md)
 - [Project map](../../../knowledge/private/product/project-map.md)

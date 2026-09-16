@@ -38,16 +38,21 @@ Submit the Automated LO Marketplace listing for the demonstrated Open House Boos
 
 Screenshots and Loom must reflect **review mode** (`OALO_REVIEW_SURFACE=authorized`) or honest not-connected states, not default labeled synthetic demo metrics.
 
+The **content** these criteria submit is already authored in-repo under [PRD-004e](./prd-004e-reviewable-go-live-listing-content-and-demo-script.md): listing fields, the six-frame screenshot shot list, the Loom script, and a claim-by-claim audit live in the [listing copy pack](../../../knowledge/private/product/marketplace-listing-copy-pack.md). What remains for 004c is capture, placeholder resolution, and the submit action.
+
 ## Blockers (honest)
 
 | Blocker | Owner | Unblock |
 |---|---|---|
 | 004a operator smoke | Operator | `GGL-B01`–`B03` |
 | 004b Test Link | Operator + `gohighlevel-guardian` | `GGL-B06`–`B07` |
-| Listing type decision | Product owner | After portal inspection (`GGL-B04`) |
+| Listing type decision | Product owner | After portal inspection (`GGL-B04`). Recorded default for a new app: **Standard** |
+| Operator-supplied listing values | Product owner | Support email, publisher display name, pricing. Placeholders are marked in the copy pack |
 
 ## Related
 
 - [HighLevel Marketplace submission packet](../../../knowledge/private/product/highlevel-marketplace-submission.md)
+- [PRD-004e: listing content and demo script](./prd-004e-reviewable-go-live-listing-content-and-demo-script.md)
+- [Marketplace listing copy pack](../../../knowledge/private/product/marketplace-listing-copy-pack.md)
 - [PRD-004 index](./prd-004-reviewable-go-live-index.md)
 - [Go-live raid ledger](../../../../EXECUTION_LEDGER.md#gauntlet-raid-go-live-remaining-in-repo-code)

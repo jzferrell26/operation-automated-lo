@@ -86,6 +86,9 @@
   --radius-panel: 1rem;
   --radius-pill: 999px;
 
+  /* Minimum interactive target from design brief section 14 (44px by 44px). */
+  --target-min-size: 2.75rem;
+
   /* Reference breakpoints for JavaScript and build-time tooling. */
   --breakpoint-mobile: 390px;
   --breakpoint-tablet: 768px;

@@ -1,0 +1,119 @@
+/* Dialog and Sheet. Governed by design brief sections 8, 11, 12, 14, and 18. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: var(--sf-overlay);
+}
+
+.panel {
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--space-4);
+  inline-size: min(100%, 44rem);
+  max-block-size: calc(100vh - var(--space-8));
+  padding: var(--space-6);
+  overflow-y: auto;
+  color: var(--tx-strong);
+  background: var(--sf-card);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-raised);
+  font-family: var(--font-interface);
+  transition-duration: var(--motion-slow);
+  transition-property: opacity;
+  transition-timing-function: var(--ease-standard);
+}
+
+.panel[data-panel-size="sm"] {
+  inline-size: min(100%, 28rem);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  color: var(--tx-strong);
+  font-size: var(--text-section-size);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+}
+
+.description {
+  margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-body-size);
+  line-height: var(--leading-normal);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Sheet: a non-modal panel anchored beside the control that opened it. */
+.sheet {
+  position: absolute;
+  z-index: 30;
+  inline-size: min(100vw - var(--space-8), 24rem);
+  max-block-size: min(32rem, 70vh);
+  padding: var(--space-5);
+  overflow-y: auto;
+  border-radius: var(--radius-panel);
+}
+
+.sheet[data-anchor="inline-end"] {
+  inset-block-start: 0;
+  inset-inline-start: 100%;
+  margin-inline-start: var(--space-3);
+}
+
+.sheet[data-anchor="block-end"] {
+  inset-block-start: 100%;
+  inset-inline-start: 0;
+  margin-block-start: var(--space-3);
+}
+
+.sheetAnchor {
+  position: relative;
+  display: inline-block;
+}
+
+/* Design brief section 14: the sheet becomes a bottom sheet on mobile and the
+ * sticky surface never covers a field, an error, or the safe-area inset.
+ */
+@media (max-width: 768px) {
+  .sheet {
+    position: fixed;
+    inset: auto 0 0;
+    inline-size: 100%;
+    max-block-size: 80vh;
+    margin: 0;
+    padding-block-end: calc(var(--space-5) + env(safe-area-inset-bottom));
+    border-end-end-radius: 0;
+    border-end-start-radius: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transition-duration: 0ms;
+  }
+}

@@ -19,11 +19,18 @@ The canvases are visual reference photographs. They are not production code, pro
 | Artifact | Purpose | Status |
 |---|---|---|
 | [00-design-brief.md](00-design-brief.md) | Product-wide visual, interaction, responsive, and safety contract | Approved design scope |
-| [01-master-tokens.css](01-master-tokens.css) | Semantic Light and Dark tokens | Approved baseline, implementation must validate contrast |
-| [02-surfaces-and-borders.css](02-surfaces-and-borders.css) | Named surfaces, focus, motion, and elevation utilities | Approved baseline |
+| [01-master-tokens.css](01-master-tokens.css) | Semantic Light and Dark tokens | Reconciled 2026-09-19 with `packages/ui/src/tokens.css`; contrast enforced by `apps/web/src/theme/token-contrast.unit.test.ts` |
+| [02-surfaces-and-borders.css](02-surfaces-and-borders.css) | Named surfaces, focus, motion, and elevation utilities | Reference only since 2026-09-19; the product implements these as `oalo-*` in `packages/ui/src/components/primitives.css`, and the file carries the mapping |
+| [06-review-rubric.md](06-review-rubric.md) | The scored review every user-visible screen passes before it ships | Approved scope, PRD-006d D1 to D3 |
 | [03-components/application-shell-and-navigation.md](03-components/application-shell-and-navigation.md) | Platform shell and navigation contract | Approved scope |
 | [03-components/status-feedback-and-attention.md](03-components/status-feedback-and-attention.md) | Status, attention, disabled, and uncertain-state behavior | Approved scope |
 | [03-components/campaign-and-artifact-workflow.md](03-components/campaign-and-artifact-workflow.md) | Campaign, artifact, preflight, approval, and launch components | Approved scope |
+| [03-components/form-field-and-text-inputs.md](03-components/form-field-and-text-inputs.md) | `FormField`, `TextField`, `TextArea`, `PasswordField` | Approved scope, shipped 2026-09-19 |
+| [03-components/link.md](03-components/link.md) | `Link`, the product link primitive | Approved scope, shipped 2026-09-19 |
+| [03-components/sheet-and-dialog.md](03-components/sheet-and-dialog.md) | `Dialog`, `Sheet`, `SheetAnchor`, the dismissable layers | Approved scope, shipped 2026-09-19 |
+| [03-components/stepper.md](03-components/stepper.md) | `Stepper`, guided and campaign progress | Approved scope, shipped 2026-09-19 |
+| [03-components/badge-and-live-region.md](03-components/badge-and-live-region.md) | `Badge` and `LiveRegion` | Approved scope, shipped 2026-09-19 |
+| [../../../../apps/web/public/fonts/README.md](../../../../apps/web/public/fonts/README.md) | The font pipeline ruling for design brief section 10 | Recorded 2026-09-19, revisited when a licensed Geist build is vendored |
 | [04-screens/platform-overview.md](04-screens/platform-overview.md) | Root platform overview | Approved scope |
 | [04-screens/marketing-suite-campaign-performance.md](04-screens/marketing-suite-campaign-performance.md) | Campaign performance module | Approved scope |
 | [04-screens/campaign-lifecycle.md](04-screens/campaign-lifecycle.md) | Campaign creation through reporting | Approved scope |

@@ -12,6 +12,8 @@ export type IconName =
   | "circle-x"
   | "clock"
   | "external-link"
+  | "eye"
+  | "eye-off"
   | "info"
   | "loader"
   | "lock"
@@ -89,6 +91,22 @@ function IconGeometry({ name }: Readonly<{ name: IconName }>) {
           <path d="M14 5h5v5" />
           <path d="m10 14 9-9" />
           <path d="M19 14v5H5V5h5" />
+        </>
+      );
+    case "eye":
+      return (
+        <>
+          <path d="M2.2 12a10.6 10.6 0 0 1 19.6 0 10.6 10.6 0 0 1-19.6 0Z" />
+          <circle cx="12" cy="12" r="3" />
+        </>
+      );
+    case "eye-off":
+      return (
+        <>
+          <path d="M10.7 6.2A10.6 10.6 0 0 1 21.8 12a10.7 10.7 0 0 1-3.4 4.1" />
+          <path d="M6.5 6.6A10.7 10.7 0 0 0 2.2 12a10.6 10.6 0 0 0 12.4 5.6" />
+          <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+          <path d="m3 3 18 18" />
         </>
       );
     case "info":

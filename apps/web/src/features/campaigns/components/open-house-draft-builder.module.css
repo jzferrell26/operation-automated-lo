@@ -131,7 +131,7 @@
   display: block;
   overflow-wrap: anywhere;
 }
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   .form fieldset,
   .summaryGrid,
   .findings {
@@ -139,5 +139,14 @@
   }
   .reviewHeading {
     flex-direction: column;
+  }
+}
+
+/* Brief section 12: the draft builder declares no motion, and cannot gain any. */
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .page * {
+    animation: none;
+    transition-duration: 0ms;
   }
 }

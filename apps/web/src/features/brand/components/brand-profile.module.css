@@ -172,3 +172,12 @@
     inline-size: 100%;
   }
 }
+
+/* Brief section 12: the brand profile declares no motion, and cannot gain any. */
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .page * {
+    animation: none;
+    transition-duration: 0ms;
+  }
+}

@@ -21,3 +21,7 @@ Current in-work PRDs:
 - PRD-005 Authenticated Review Runtime (completion review findings C1 through C4, 2026-09-19)
   - moved from `backlog/` to `in-work/` on 2026-09-19 at gauntlet raid start; ledger section "Gauntlet raid: completion review C1 through C4 (PRD-005)" in [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md)
   - 005a runtime authentication composition, 005b review session issuance and store, 005c correlation and retry idempotency, 005d handoff reconciliation, 005e deployed qualification
+- PRD-006 First-Party Sign-In and Guided Experience (product owner requirements of 2026-09-19)
+  - moved from `backlog/` to `in-work/` on 2026-09-19 when the gauntlet raid took it on; ledger rows follow the PRD-005 section in [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md)
+  - 006a email and password sign-in with sign-up, forgot-password, and reset; 006b user language; 006c guided setup under five minutes; 006d design quality bar (10 of 10)
+  - supersedes PRD-005b design decision D4 (persona plus operator secret); reuses the PRD-005b session store

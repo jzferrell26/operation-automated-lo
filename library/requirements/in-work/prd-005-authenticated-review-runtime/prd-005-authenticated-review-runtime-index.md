@@ -1,6 +1,6 @@
 # PRD-005: Authenticated Review Runtime
 
-> **Status:** Backlog
+> **Status:** In Work (moved from backlog at gauntlet raid start, 2026-09-19)
 > **Priority:** P1. The 2026-09-19 completion review rates C1 (real request authentication) and C4 (deployed qualification) P1 and C2 (correlation validation and retry idempotency) and C3 (stale handoff documents) P2. They ride in one batch because C2's proof runs through the request path C1 builds, and C3 and C4 must cite what C1 and C2 actually merged.
 > **Effort:** XL (> 3d engineering, plus operator time for the isolated review database and the deployed proof)
 > **Schema changes:** Additive (005b adds a first-party session store and its functions; nothing existing changes shape)

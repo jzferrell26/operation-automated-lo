@@ -3,6 +3,7 @@ import {
   createCampaignTenantContext,
   type AuthenticatedPrincipal,
 } from "@oalo/application";
+import { CorrelationReferenceSchema } from "@oalo/contracts";
 
 import type {
   DatabaseConnection,
@@ -299,10 +300,10 @@ function validateTenantContext(context: TenantDatabaseContext): TenantDatabaseCo
   if (!UUID_PATTERN.test(context.locationId) || !UUID_PATTERN.test(context.actorId)) {
     throw new DatabaseContextError("DB_CONTEXT_INVALID", "Tenant and actor IDs must be UUIDs");
   }
-  if (!SAFE_REFERENCE_PATTERN.test(context.correlationId)) {
+  if (!CorrelationReferenceSchema.safeParse(context.correlationId).success) {
     throw new DatabaseContextError(
       "DB_CONTEXT_INVALID",
-      "Correlation ID is not a safe opaque reference",
+      "Correlation ID is not a canonical opaque correlation reference",
     );
   }
   return Object.freeze({ ...context });

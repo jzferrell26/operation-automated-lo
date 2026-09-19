@@ -1,10 +1,11 @@
 import { z } from "zod";
 
-const OpaqueReferenceSchema = z
+export const OpaqueReferenceSchema = z
   .string()
   .min(8)
   .max(128)
   .regex(/^[a-z][a-z0-9]*(?:_[A-Za-z0-9]+)+$/u);
+export const CorrelationReferenceSchema = OpaqueReferenceSchema;
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/u);
 const VersionSchema = z.string().regex(/^[0-9]+\.[0-9]+\.[0-9]+$/u);
 const HttpsUrlSchema = z.url({ protocol: /^https$/u });

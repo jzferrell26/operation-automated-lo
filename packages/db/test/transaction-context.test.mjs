@@ -11,7 +11,7 @@ import {
 const tenantContext = Object.freeze({
   locationId: "11111111-1111-4111-8111-111111111111",
   actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-  correlationId: "corr.db-test-001",
+  correlationId: "correlation_db_test_001",
 });
 
 const rowContract = defineSqlContract({
@@ -177,5 +177,31 @@ describe("tenant transaction boundary", () => {
       DatabaseContextError,
     );
     assert.equal(pool.connectCalls, 0);
+  });
+
+  it("rejects a UUID-shaped correlation id and accepts the canonical opaque form", async () => {
+    const pool = new FakePool();
+    await assert.rejects(
+      withTenantTransaction(
+        pool,
+        {
+          resolveTenantDatabaseContext: async () => ({
+            ...tenantContext,
+            correlationId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          }),
+        },
+        async () => undefined,
+      ),
+      DatabaseContextError,
+    );
+    assert.equal(pool.connectCalls, 0);
+
+    const acceptedPool = new FakePool();
+    const result = await withTenantTransaction(
+      acceptedPool,
+      { resolveTenantDatabaseContext: async () => tenantContext },
+      async (transaction) => (await transaction.read(rowContract))[0]?.value,
+    );
+    assert.equal(result, "verified");
   });
 });

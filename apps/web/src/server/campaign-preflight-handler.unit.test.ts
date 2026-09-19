@@ -41,6 +41,24 @@ describe("campaign preflight handler", () => {
     expect(payload.persistenceKind).toBe("filesystem");
     expect(payload.propertyAddress).toContain("Dallas");
     expect(payload.campaignRef.startsWith("campaign_")).toBe(true);
+    expect(response.headers.get("x-oalo-correlation-ref")).toMatch(
+      /^correlation_preflight_[0-9a-f]+$/u,
+    );
+    expect(response.headers.get("x-correlation-id")).toBeNull();
+  });
+
+  it("echoes an accepted x-correlation-id tracing header alongside the canonical reference", async () => {
+    await store.enter();
+    const response = await handleCampaignPreflight(
+      post(OPEN_HOUSE_DRAFT_INPUT, { "x-correlation-id": "trace-123" }),
+      store.env(),
+      createDefaultCampaignCommandPorts(),
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-correlation-id")).toBe("trace-123");
+    expect(response.headers.get("x-oalo-correlation-ref")).toMatch(
+      /^correlation_preflight_[0-9a-f]+$/u,
+    );
   });
 
   it("returns 400 when the body tries to supply a tenant field", async () => {
@@ -52,6 +70,9 @@ describe("campaign preflight handler", () => {
     );
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({ error: "INVALID_CAMPAIGN_DRAFT" });
+    expect(response.headers.get("x-oalo-correlation-ref")).toMatch(
+      /^correlation_preflight_[0-9a-f]+$/u,
+    );
   });
 
   it("returns 401 when review mode has no verified session", async () => {

@@ -188,13 +188,14 @@ export function embeddedSessionFixture(input: EmbeddedSessionFixtureInput): Embe
 }
 
 /**
- * Environment for the route-level Postgres regression matrix (005C-AC-007, 008, 009, 011, 012).
- * `OALO_REVIEW_SURFACE=authorized` selects the "review" workspace mode, which
- * `campaignPersistenceKind` maps onto the real Postgres repositories instead of the synthetic
- * filesystem store. Authentication itself still goes through the embedded-bearer test ports
- * (see `authenticated-principal.ts`'s `createStaticIdentityDirectory` /
- * `createStaticRoleBindingPort`), not a first-party session: 005b's session issuance is a
- * separate lane and this matrix does not depend on it landing first.
+ * A review-mode environment for a Postgres-backed test: `OALO_REVIEW_SURFACE=authorized` selects
+ * the "review" workspace mode, which `campaignPersistenceKind` maps onto the real Postgres
+ * repositories instead of the synthetic filesystem store.
+ *
+ * The route-level correlation matrix no longer uses this. It builds its environment through
+ * `campaign-route-postgres-support.ts`'s `routeEnvironment`, authenticates with real first-party
+ * sessions issued by PRD-005b, and installs that environment on the process so the exported route
+ * handlers read it the way they read it in production.
  */
 export function reviewPostgresEnv(databaseUrl: string): Readonly<Record<string, string>> {
   return Object.freeze({
@@ -208,17 +209,16 @@ export function reviewPostgresEnv(databaseUrl: string): Readonly<Record<string, 
 }
 
 /**
- * NOTE for Wave 2: this module intentionally does not seed a tenant or read audit/command rows
- * itself. The repository's database-privilege-escalation security test refuses any shipped
- * `apps/**` source that assumes the harness's elevated schema-owning database role (or touches
- * the append-only trigger switches), and `platform.locations` / `audit.events` /
- * `integration.command_executions` are not writable or fully readable under the tenant runtime
- * role outside the campaign repositories' own security-definer paths. Seeding a review tenant is
- * 005b's `tooling/scripts/database/seed-review-location.mjs` (see `EXECUTION_LEDGER.md` lane
- * 1b); reading back stored correlation ids for assertions needs either that script's own
- * verification output or a sanctioned read path 005a/005b expose. The two
- * `*.correlation.postgres.test.ts` suites are authored as `it.todo` cases against this
- * constraint rather than against a helper that would fail the security gate.
+ * This module still does not seed a tenant or read audit and command rows itself, and it must not.
+ * The repository's database-privilege-escalation security test refuses any shipped `apps/**`
+ * source that assumes the schema-owning database role or touches the append-only trigger switches,
+ * and `platform.locations`, `audit.events`, and `integration.command_executions` are not writable
+ * or fully readable under the tenant runtime role.
+ *
+ * Both capabilities now exist, on the far side of that boundary:
+ * `packages/db/test/campaign-integration-support.mjs` holds the elevation, and
+ * `campaign-route-postgres-support.ts` reaches it through the `.js` re-export bridge. Nothing
+ * under `apps/` elevates.
  */
 export function reviewPostgresPool(databaseUrl: string): PostgresDatabasePool {
   return createPostgresPool({

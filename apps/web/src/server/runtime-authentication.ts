@@ -23,7 +23,11 @@ import {
 import {
   createPostgresFirstPartySessionLookup,
   createPostgresIdentityDirectory,
+  createPostgresReviewSessionPort,
   createPostgresRoleBindingPort,
+  createPostgresSessionActivityPort,
+  createPostgresSessionDisplayPort,
+  firstPartySessionIsActive,
 } from "./postgres-authentication-ports.js";
 
 /**
@@ -223,14 +227,14 @@ function parsePublicKeysById(raw: string): Readonly<Record<string, string>> {
  * HighLevel signed-context exchange exists. A partial set is a composition failure, so a
  * half-configured issuer cannot silently degrade into "no embedded policy".
  *
- * `isSessionActive` answers `false` unconditionally. PRD-005b D3 exposes no predicate keyed by a
- * session id (`lookup_first_party_session` takes a secret hash, which a bearer request does not
- * carry), so a bearer session's liveness cannot be proven here, and the only correct answer to an
- * unprovable activity check is no. When the exchange lands with its own activity function, this is
- * the single line that changes.
+ * 005A-AC-003. `isSessionActive` is the 005b predicate keyed by the session reference the token
+ * carries, so a bearer token whose session was revoked or has expired is refused even while the
+ * token's own signature and expiry still check out. A reference the predicate cannot resolve is
+ * inactive, because the only safe answer to an unprovable activity check is no.
  */
 function parseEmbeddedPort(
   environment: RuntimeAuthenticationEnvironment,
+  pool: DatabasePool,
 ): EmbeddedSessionPort | undefined {
   const missing = EMBEDDED_VARIABLES.filter(
     (variable) => rawValue(environment, variable) === undefined,
@@ -242,14 +246,15 @@ function parseEmbeddedPort(
   }
   const issuer = requiredValue(environment, "OALO_EMBEDDED_SESSION_ISSUER");
   httpsUrl(issuer, "OALO_EMBEDDED_SESSION_ISSUER");
-  return Object.freeze({
+  const port: EmbeddedSessionPort = {
     issuer,
     audience: requiredValue(environment, "OALO_EMBEDDED_SESSION_AUDIENCE"),
     publicKeysById: parsePublicKeysById(
       requiredValue(environment, "OALO_EMBEDDED_SESSION_PUBLIC_KEYS_JSON"),
     ),
-    isSessionActive: () => false,
-  });
+    isSessionActive: (claims) => firstPartySessionIsActive(pool, claims.sessionId),
+  };
+  return Object.freeze(port);
 }
 
 function sslModeFor(
@@ -281,12 +286,17 @@ function createAuthenticationPool(environment: RuntimeAuthenticationEnvironment)
 
 function buildVerifiedPorts(environment: RuntimeAuthenticationEnvironment): CampaignCommandPorts {
   const mutation = parseMutationGate(environment);
-  const embedded = parseEmbeddedPort(environment);
+  // The pool is built before the embedded policy because the policy's activity check is a query,
+  // and after the mutation gate so a bad origin list fails without opening a connection.
   const pool = createAuthenticationPool(environment);
+  const embedded = parseEmbeddedPort(environment, pool);
   const ports: CampaignCommandPorts = {
     identityDirectory: createPostgresIdentityDirectory(pool),
     roleBindings: createPostgresRoleBindingPort(pool),
     firstPartySessions: createPostgresFirstPartySessionLookup(pool),
+    sessionActivity: createPostgresSessionActivityPort(pool),
+    sessionDisplay: createPostgresSessionDisplayPort(pool),
+    reviewSessions: createPostgresReviewSessionPort(pool),
     mutation,
     ...(embedded === undefined ? {} : { embedded }),
   };
@@ -456,27 +466,29 @@ const UNAUTHENTICATED_SHELL: Readonly<Omit<RuntimeShellSession, "mode">> = Objec
  * 005A-AC-011 and 005A-AC-012. Projects the verified principal into the shape the shell paints and
  * mints the session-bound CSRF token the browser helper sends.
  *
- * Display names are the canonical references the verified session carries, because no PRD-005b
- * function exposes `platform.locations.display_name` or `platform.app_users.safe_display_name`
- * before a tenant context exists, and `app_runtime` holds no `select` grant on
- * `platform.app_users`. Rendering the reference states exactly what the session proves; inventing a
+ * Display names come from `platform.resolve_session_display`, the definer read that returns
+ * `platform.locations.display_name` and `platform.app_users.safe_display_name` only while both
+ * rows are active. When that read returns nothing the shell falls back to the canonical references
+ * the session carries: a reference states exactly what the session proves, and inventing a
  * friendly name would not.
  */
 export async function resolveRuntimeShellSession(
   request: Request,
   input: unknown = process.env,
+  portsOverride?: CampaignCommandPorts,
 ): Promise<RuntimeShellSession> {
   const composition = resolveRuntimeAuthenticationComposition(input);
   if (composition.mode !== "review") {
     return Object.freeze({ mode: composition.mode, ...UNAUTHENTICATED_SHELL });
   }
+  const ports = portsOverride ?? composition.ports;
   let principal: Readonly<AuthenticatedPrincipal>;
   try {
-    principal = await resolveAuthenticatedReadPrincipal(request, input, composition.ports);
+    principal = await resolveAuthenticatedReadPrincipal(request, input, ports);
   } catch {
     return Object.freeze({ mode: composition.mode, ...UNAUTHENTICATED_SHELL });
   }
-  const gate = composition.ports.mutation;
+  const gate = ports.mutation;
   const csrfToken =
     gate === undefined
       ? undefined
@@ -484,6 +496,10 @@ export async function resolveRuntimeShellSession(
           serverSecret: gate.csrfServerSecret,
           sessionId: principal.sessionId,
         });
+  const display = await ports.sessionDisplay?.resolve({
+    locationRef: principal.locationRef,
+    actorRef: principal.actorRef,
+  });
   const session: WorkspaceSessionView = Object.freeze({
     safety: Object.freeze({
       dataMode: "synthetic" as const,
@@ -491,12 +507,12 @@ export async function resolveRuntimeShellSession(
       disclosure: REVIEW_SURFACE_DISCLOSURE,
     }),
     user: Object.freeze({
-      displayName: principal.actorRef,
+      displayName: display?.userDisplayName ?? principal.actorRef,
       roleLabel: ROLE_LABELS[principal.role],
       capabilities: CAPABILITIES_BY_ROLE[principal.role],
     }),
     location: Object.freeze({
-      displayName: principal.locationRef,
+      displayName: display?.locationDisplayName ?? principal.locationRef,
       source: VERIFIED_SESSION_SOURCE,
     }),
   });

@@ -57,7 +57,7 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
 
       const reloaded = await createPostgresCampaignReadRepository(
         pool,
-        createPrincipalBoundTenantContextAuthority(creator, `${tenantA.correlationId}-reload`),
+        createPrincipalBoundTenantContextAuthority(creator, `${tenantA.correlationId}_reload`),
       ).getByCampaignRef(campaignRef);
       assert.ok(reloaded);
       assert.equal(reloaded.state, "awaiting_approval");
@@ -73,7 +73,7 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
       assert.equal(
         await createPostgresCampaignReadRepository(
           pool,
-          createPrincipalBoundTenantContextAuthority(readerB, `${tenantB.correlationId}-detail`),
+          createPrincipalBoundTenantContextAuthority(readerB, `${tenantB.correlationId}_detail`),
         ).getByCampaignRef(campaignRef),
         undefined,
       );
@@ -144,7 +144,7 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
 
       const reloaded = await createPostgresCampaignReadRepository(
         pool,
-        createPrincipalBoundTenantContextAuthority(approver, `${tenant.correlationId}-reload`),
+        createPrincipalBoundTenantContextAuthority(approver, `${tenant.correlationId}_reload`),
       ).getByCampaignRef(campaignRef);
       assert.ok(reloaded);
       assert.equal(reloaded.state, "approved");

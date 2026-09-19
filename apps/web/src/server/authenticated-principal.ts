@@ -12,6 +12,7 @@ import {
   authenticateInboundEmbeddedSession,
   authenticateInboundFirstPartySession,
   assertBrowserMutationRequest,
+  type DatabaseBindingRole,
   type EmbeddedSessionTokenClaims,
   type EstablishedFirstPartySession,
   type FirstPartySessionLookup,
@@ -60,12 +61,73 @@ export interface EmbeddedSessionPort {
   readonly isSessionActive: (claims: EmbeddedSessionTokenClaims) => boolean | Promise<boolean>;
 }
 
+/**
+ * PRD-005b D4. Authenticated mutations move `last_seen_at` on the session they used. Reads do not,
+ * so a tab left open overnight does not keep a session alive on its own.
+ */
+export interface SessionActivityPort {
+  touch(sessionRef: string): Promise<void>;
+}
+
+export interface SessionDisplayNames {
+  readonly locationDisplayName: string;
+  readonly userDisplayName: string;
+}
+
+/**
+ * PRD-005a 005A-AC-011. The one read that turns a verified principal into the names the review
+ * shell paints. It answers `undefined` whenever the location or the person is not active, so a
+ * name can never outlive the row that justifies it.
+ */
+export interface SessionDisplayPort {
+  resolve(input: {
+    locationRef: string;
+    actorRef: string;
+  }): Promise<Readonly<SessionDisplayNames> | undefined>;
+}
+
+export interface ReviewSessionIssuance {
+  readonly locationId: string;
+  readonly userId: string;
+  readonly bindingRole: DatabaseBindingRole;
+  readonly sessionRole: ApplicationRole;
+  readonly sessionSecretHash: string;
+  readonly lifetimeSeconds: number;
+  readonly correlationRef: string;
+}
+
+/**
+ * PRD-005b D4. The three `security definer` calls the review sign-in and sign-out paths make. Every
+ * decision they describe is taken inside the database function, not here: this interface exists so
+ * the handler can be driven from a unit test without a connection, and so the one pool the runtime
+ * composition opens is the only pool the review routes use.
+ */
+export interface ReviewSessionPort {
+  resolvePersona(
+    input: Readonly<{ locationId: string; bindingRole: DatabaseBindingRole }>,
+  ): Promise<string>;
+  issue(input: Readonly<ReviewSessionIssuance>): Promise<string>;
+  revoke(
+    input: Readonly<{ sessionRef: string; reason: "sign_out"; correlationRef: string }>,
+  ): Promise<boolean>;
+  /**
+   * 005B-AC-016. `issue` writes its own denied audit row and then raises, so that row dies with
+   * the transaction. This records the attempt afterwards, in a transaction of its own.
+   */
+  recordDeniedAttempt(
+    input: Readonly<{ locationId: string; userId: string; correlationRef: string }>,
+  ): Promise<boolean>;
+}
+
 export interface CampaignCommandPorts {
   readonly identityDirectory: IdentityDirectory;
   readonly roleBindings: RoleBindingPort;
   readonly firstPartySessions?: FirstPartySessionLookup;
   readonly embedded?: EmbeddedSessionPort;
   readonly mutation?: BrowserMutationGate;
+  readonly sessionActivity?: SessionActivityPort;
+  readonly sessionDisplay?: SessionDisplayPort;
+  readonly reviewSessions?: ReviewSessionPort;
 }
 
 function nowEpochSeconds(clock?: () => number): number {
@@ -306,6 +368,9 @@ async function resolveFirstPartyPrincipal(
   });
   if (mutationRequired) {
     assertMutationGate(request, session.sessionId, "cookie", ports.mutation);
+    // PRD-005b D4. Only after the whole gate passes, so a refused request never
+    // reports activity on the session it failed to use.
+    await ports.sessionActivity?.touch(session.sessionId);
   }
   return bindPrincipal({
     actorRef: session.userId,

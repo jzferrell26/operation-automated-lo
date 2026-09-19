@@ -1,27 +1,96 @@
-/**
- * Route-level Postgres proof for PRD-005c's correlation boundary on the preflight route
- * (005C-AC-008), authored per the raid contract. See the sibling
- * `campaign-approval-handler.correlation.postgres.test.ts` for the full rationale: every case
- * here is `it.todo`, not a real assertion, because it needs a seeded review tenant that only
- * `packages/db/test/campaign-integration-support.mjs`'s sanctioned elevated database role can
- * create (the repository's database-privilege-escalation security test refuses that capability
- * anywhere under `apps/**`), and that seeding is 005b's
- * `tooling/scripts/database/seed-review-location.mjs`, not this lane's.
- *
- * `correlationReferenceForRequest` and `handleCampaignPreflight`'s header wiring are already
- * unit-proven in `correlation-boundary.unit.test.ts` and
- * `campaign-preflight-handler.unit.test.ts` against the synthetic filesystem adapter; what is
- * missing here is the real-Postgres round trip.
- */
-import { describe, it } from "vitest";
+import { CorrelationReferenceSchema } from "@oalo/contracts";
+import type { PostgresDatabasePool } from "@oalo/db";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { CORRELATION_HEADER_MATRIX } from "./campaign-command-test-support.js";
+import { POST } from "../app/api/campaigns/preflight/route.js";
+import {
+  CORRELATION_HEADER_MATRIX,
+  OPEN_HOUSE_DRAFT_INPUT,
+} from "./campaign-command-test-support.js";
+import {
+  AUDIT_TABLE,
+  COMMAND_TABLE,
+  applyRouteEnvironment,
+  browserRequest,
+  createRouteTestPool,
+  csrfSecretFor,
+  issueSession,
+  routeEnvironment,
+  seedActor,
+  seedLocation,
+  storedCorrelationIds,
+  type IssuedSession,
+  type RoutePostgresEnvironment,
+  type SeededActor,
+  type SeededLocation,
+} from "./campaign-route-postgres-support.js";
+import { CORRELATION_REFERENCE_HEADER, TRACING_ID_HEADER } from "./correlation-boundary.js";
+
+/**
+ * PRD-005c 005C-AC-008. The same `x-correlation-id` matrix as the approve route, run against the
+ * preflight route with a creator session. Every case must persist and answer 200: the header's
+ * shape is a tracing concern and has no say in whether a command executes.
+ */
+
+const environment: RoutePostgresEnvironment = routeEnvironment();
+
+let pool: PostgresDatabasePool;
+let location: SeededLocation;
+let creator: SeededActor;
+let creatorSession: IssuedSession;
+let csrfServerSecret: Uint8Array;
+let restoreEnvironment: () => void;
+
+beforeAll(async () => {
+  restoreEnvironment = applyRouteEnvironment(environment);
+  pool = createRouteTestPool();
+  csrfServerSecret = csrfSecretFor(environment);
+  location = await seedLocation(pool, "Correlation preflight location");
+  creator = await seedActor(pool, location, {
+    displayName: "Correlation preflight creator",
+    bindingRole: "creator",
+    sessionRole: "campaign_creator",
+  });
+  creatorSession = await issueSession(pool, location, creator);
+});
+
+afterAll(async () => {
+  await pool.close();
+  restoreEnvironment();
+});
 
 describe("campaign preflight handler correlation matrix (real Postgres)", () => {
-  // 005C-AC-008: the same x-correlation-id matrix as 005C-AC-007, run against the preflight
-  // route with a creator session, yields 200 with the canonical `x-oalo-correlation-ref` for
-  // every case.
-  for (const [label] of CORRELATION_HEADER_MATRIX) {
-    it.todo(`persists with a canonical response reference for ${label}`);
-  }
+  it.each(CORRELATION_HEADER_MATRIX)(
+    "persists with a canonical response reference for %s",
+    async (_label, header) => {
+      const response = await POST(
+        browserRequest({
+          path: "/api/campaigns/preflight",
+          body: OPEN_HOUSE_DRAFT_INPUT,
+          session: creatorSession,
+          csrfServerSecret,
+          ...(header === undefined ? {} : { correlationId: header }),
+        }),
+      );
+
+      expect(response.status).toBe(200);
+      const canonical = response.headers.get(CORRELATION_REFERENCE_HEADER);
+      expect(canonical).toMatch(/^correlation_preflight_[0-9a-f]{24}$/u);
+      expect(CorrelationReferenceSchema.safeParse(canonical).success).toBe(true);
+      expect(canonical).not.toBe(header);
+
+      const echoed = response.headers.get(TRACING_ID_HEADER);
+      if (header !== undefined && header.length <= 300) {
+        expect(echoed).toBe(header);
+      } else {
+        expect(echoed).toBeNull();
+      }
+
+      for (const table of [COMMAND_TABLE, AUDIT_TABLE]) {
+        for (const stored of await storedCorrelationIds(pool, table, location.locationId)) {
+          expect(CorrelationReferenceSchema.safeParse(stored).success).toBe(true);
+        }
+      }
+    },
+  );
 });

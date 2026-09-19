@@ -157,10 +157,23 @@ export function commandPlan(discovery, repositoryRoot = defaultRepositoryRoot) {
       // The build precedes the contract tests because those tests spawn the integration test
       // files, which load packages/db/dist, to prove a missing OALO_TEST_DATABASE_URL fails
       // instead of skipping.
+      // @oalo/auth is built alongside @oalo/db because
+      // packages/db/test/campaign-integration-support.mjs imports the shared role
+      // map from packages/auth/dist (PRD-005a 005A-AC-007), and @oalo/db must not
+      // depend on @oalo/auth, so the dependency graph will never pull it in.
+      // Without this filter a clean checkout's `pnpm test:db` fails on a missing
+      // dist file instead of on a real defect.
       Object.freeze({
         command: node,
-        args: [turboCli, "run", "build", "--filter=@oalo/db..."],
-        label: "build @oalo/db and its workspace dependencies",
+        args: [
+          turboCli,
+          "run",
+          "build",
+          "--filter=@oalo/db...",
+          "--filter=@oalo/auth...",
+          "--filter=@oalo/contracts...",
+        ],
+        label: "build @oalo/db, @oalo/auth, and their workspace dependencies",
       }),
       Object.freeze({
         command: node,
@@ -235,26 +248,15 @@ export function commandPlan(discovery, repositoryRoot = defaultRepositoryRoot) {
         }),
         label: "run the real-PostgreSQL integration tests",
       }),
-      // PRD-005b: the route-level suite runs only when a matching file exists.
-      // `notices` below carries the message the runner prints when none does.
-      ...(webPostgresTestFiles.length === 0
-        ? []
-        : [
-            Object.freeze({
-              command: node,
-              args: [vitestCli, "run", "--project", WEB_POSTGRES_PROJECT],
-              env: Object.freeze({
-                OALO_TEST_DATABASE_URL: localDatabaseUrl(databasePort, testDatabaseName, {
-                  withPassword: true,
-                }),
-              }),
-              label: "run the route-level PostgreSQL tests",
-            }),
-          ]),
-      // The seeding script talks to PostgreSQL through the postgres driver, not
-      // psql, so the disposable database's well-known local password travels in
-      // the URL argument rather than in PGPASSWORD. It is the same throwaway
-      // credential already hardcoded in this file for the local stack.
+      // The seeding script runs before the route-level suite, not after it. Its
+      // own guard refuses a database that holds an active location it does not
+      // own (005B-AC-017), and the route-level suite seeds several of exactly
+      // that kind. Seeding first keeps the guard meaningful: it still faces a
+      // database it did not create, and the route suites cannot make it pass by
+      // accident. The script talks to PostgreSQL through the postgres driver
+      // rather than psql, so the disposable database's well-known local password
+      // travels in the URL argument instead of PGPASSWORD. It is the same
+      // throwaway credential already hardcoded in this file for the local stack.
       Object.freeze({
         command: node,
         args: [
@@ -278,6 +280,22 @@ export function commandPlan(discovery, repositoryRoot = defaultRepositoryRoot) {
         ],
         label: "prove the review seeding script inserts nothing on a second run",
       }),
+      // PRD-005b: the route-level suite runs only when a matching file exists.
+      // `notices` below carries the message the runner prints when none does.
+      ...(webPostgresTestFiles.length === 0
+        ? []
+        : [
+            Object.freeze({
+              command: node,
+              args: [vitestCli, "run", "--project", WEB_POSTGRES_PROJECT],
+              env: Object.freeze({
+                OALO_TEST_DATABASE_URL: localDatabaseUrl(databasePort, testDatabaseName, {
+                  withPassword: true,
+                }),
+              }),
+              label: "run the route-level PostgreSQL tests",
+            }),
+          ]),
     ]),
     notices: Object.freeze(
       webPostgresTestFiles.length === 0

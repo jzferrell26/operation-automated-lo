@@ -90,6 +90,15 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
       >
         {shell.authenticated ? (
           <form action={REVIEW_SIGN_OUT_PATH} method="post">
+            {/*
+              A form post cannot set x-csrf-token, so the session-bound token travels as a field and
+              the sign-out route promotes it to the header before the 005a mutation gate sees it.
+              The value is the same HMAC the meta element carries; the cookie never reaches the
+              document either way.
+            */}
+            {shell.csrfToken === undefined ? null : (
+              <input name="csrfToken" type="hidden" value={shell.csrfToken} />
+            )}
             <button type="submit">Sign out of the review session</button>
           </form>
         ) : (

@@ -6,7 +6,9 @@ import { POST } from "../app/api/campaigns/preflight/route.js";
 import { resolveAuthenticatedReadPrincipal } from "./authenticated-principal.js";
 import { OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
 import {
+  applyRouteEnvironment,
   browserRequest,
+  currentRowVersion,
   createRouteTestPool,
   revokeSession,
   grantBinding,
@@ -27,6 +29,7 @@ import {
   resetRuntimeAuthenticationForTests,
   resolveRuntimeCampaignCommandPorts,
 } from "./runtime-authentication.js";
+import { POST as approvePost } from "../app/api/campaigns/approve/route.js";
 
 /**
  * PRD-005a 005A-AC-013 and the create half of 005A-AC-014, against a disposable Postgres.
@@ -47,10 +50,13 @@ let creator: SeededActor;
 let outsiderAdmin: SeededActor;
 let creatorSession: IssuedSession;
 let outsiderSession: IssuedSession;
+let approver: SeededActor;
+let approverSession: IssuedSession;
 let csrfServerSecret: Uint8Array;
+let restoreEnvironment: () => void;
 
 beforeAll(async () => {
-  resetRuntimeAuthenticationForTests();
+  restoreEnvironment = applyRouteEnvironment(environment);
   pool = createRouteTestPool();
   csrfServerSecret = csrfSecretFor(environment);
   location = await seedLocation(pool, "Route preflight location");
@@ -65,13 +71,19 @@ beforeAll(async () => {
     bindingRole: "location_admin",
     sessionRole: "location_admin",
   });
+  approver = await seedActor(pool, location, {
+    displayName: "Route preflight approver",
+    bindingRole: "approver",
+    sessionRole: "campaign_approver",
+  });
   creatorSession = await issueSession(pool, location, creator);
+  approverSession = await issueSession(pool, location, approver);
   outsiderSession = await issueSession(pool, outsiderLocation, outsiderAdmin);
 });
 
 afterAll(async () => {
-  resetRuntimeAuthenticationForTests();
   await pool.close();
+  restoreEnvironment();
 });
 
 function preflightRequest(
@@ -172,5 +184,64 @@ describe("POST /api/campaigns/preflight with a real first-party session", () => 
         environment,
       ),
     ).toBeUndefined();
+  });
+
+  /**
+   * 005A-AC-014 in full. The composition cache is cleared between the write and the read, so the
+   * second half resolves a fresh principal over a fresh pool from the same cookie the browser
+   * still holds. Nothing is carried across in memory: what is read back is what Postgres kept.
+   */
+  it("reads the same version, preflight, and state back after the pool is rebuilt, then approves", async () => {
+    const created = await POST(preflightRequest(creatorSession));
+    expect(created.status).toBe(200);
+    const draft = (await created.json()) as {
+      campaignRef: string;
+      campaignVersionRef: string;
+      preflightResultHash: string;
+      manifestHash: string;
+      state: string;
+    };
+
+    resetRuntimeAuthenticationForTests();
+
+    const reloaded = await loadWorkspaceCampaign(
+      await principalFromSession(creatorSession),
+      draft.campaignRef,
+      environment,
+    );
+    expect(reloaded?.campaignVersionRef).toBe(draft.campaignVersionRef);
+    expect(reloaded?.preflight.resultHash).toBe(draft.preflightResultHash);
+    expect(reloaded?.manifestHash).toBe(draft.manifestHash);
+    expect(reloaded?.state).toBe(draft.state);
+
+    const approved = await approvePost(
+      browserRequest({
+        path: "/api/campaigns/approve",
+        body: {
+          campaignRef: draft.campaignRef,
+          decision: "approved",
+          expectedCampaignVersionRef: draft.campaignVersionRef,
+          expectedManifestHash: draft.manifestHash,
+          expectedPreflightResultHash: draft.preflightResultHash,
+          expectedRowVersion: await currentRowVersion(
+            creatorSession,
+            draft.campaignRef,
+            environment,
+          ),
+        },
+        session: approverSession,
+        csrfServerSecret,
+      }),
+    );
+    expect(approved.status).toBe(200);
+
+    resetRuntimeAuthenticationForTests();
+
+    const afterApproval = await loadWorkspaceCampaign(
+      await principalFromSession(creatorSession),
+      draft.campaignRef,
+      environment,
+    );
+    expect(afterApproval?.state).toBe("approved");
   });
 });

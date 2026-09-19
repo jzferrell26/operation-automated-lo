@@ -17,6 +17,15 @@ import { DatabaseContextError, shouldAssumeRuntimeRole } from "./transaction-con
  * PRD-005b `security definer` contracts, keyed by statement name. Any other contract is refused
  * with `DB_CONTRACT_ACCESS_MISMATCH` before a connection is taken.
  *
+ * `access` classifies the statement, not the function. Every entry below is a `select`, so none of
+ * them can carry a caller-composed write, and the `access !== "read"` refusal keeps it that way.
+ * Four of the functions do change state inside their own definer body: `touch` moves
+ * `last_seen_at`, `issue` inserts a session row plus its audit row, `revoke` closes a session plus
+ * its audit row, and `record-denied-session-issuance` writes the audit row a refused issuance
+ * cannot keep. That is the point of the trust boundary. The mutation is written by the
+ * definer function under the schema-owning role, from arguments it validates itself, and it is
+ * audited; the caller supplies parameters and never SQL.
+ *
  * Adding a name to `RUNTIME_FUNCTION_CONTRACT_NAMES` widens the only unscoped database path in the
  * product, so it is a security change and needs `security-guardian` review, not a routine edit.
  */
@@ -27,6 +36,12 @@ export const RUNTIME_FUNCTION_CONTRACT_NAMES = Object.freeze([
   "runtime.current-role-version.v1",
   "runtime.lookup-first-party-session.v1",
   "runtime.touch-first-party-session.v1",
+  "runtime.first-party-session-is-active.v1",
+  "runtime.resolve-session-display.v1",
+  "runtime.resolve-review-persona.v1",
+  "runtime.issue-first-party-session.v1",
+  "runtime.revoke-first-party-session.v1",
+  "runtime.record-denied-session-issuance.v1",
 ] as const);
 
 export type RuntimeFunctionContractName = (typeof RUNTIME_FUNCTION_CONTRACT_NAMES)[number];
@@ -128,7 +143,9 @@ export async function queryRuntimeFunction<Row>(
 async function rollbackQuietly(connection: DatabaseConnection): Promise<void> {
   try {
     await connection.execute(ROLLBACK_REQUEST);
-  } catch {
-    // Intentionally suppressed. The caller receives the failure that opened this path.
+  } catch (rollbackFailure) {
+    // Named and discarded on purpose, rather than left as an empty block: the caller receives the
+    // failure that opened this path, and replacing it with a rollback failure would hide the cause.
+    void rollbackFailure;
   }
 }

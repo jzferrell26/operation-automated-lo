@@ -63,13 +63,18 @@ describe("real database test orchestration", () => {
       true,
     );
     expect(plan.setup.map((step) => step.label)).toEqual([
-      "build @oalo/db and its workspace dependencies",
+      "build @oalo/db, @oalo/auth, and their workspace dependencies",
       "run database orchestration contract tests",
       `verify Supabase CLI ${SUPABASE_CLI_VERSION}`,
       "start local Supabase",
       "recreate the local database and apply every migration",
     ]);
     expect(plan.setup[1]?.args).toContain("--project");
+    // The harness reads the shared role map out of packages/auth/dist, and
+    // @oalo/db is forbidden from depending on @oalo/auth, so the gate builds it
+    // explicitly rather than relying on the dependency graph.
+    expect(plan.setup[0]?.args).toContain("--filter=@oalo/auth...");
+    expect(plan.setup[0]?.args).toContain("--filter=@oalo/db...");
     expect(
       [...plan.setup.slice(2), ...plan.tests].every((step) =>
         step.args.includes(`supabase@${SUPABASE_CLI_VERSION}`),
@@ -221,6 +226,8 @@ describe("real PostgreSQL integration phase", () => {
       `seed the review location into ${TEST_DATABASE_NAME}`,
       "prove the review seeding script inserts nothing on a second run",
     ]);
+    // No route-level file exists in this fixture, so the suite's own step is absent and the
+    // seeding pair is last. The ordering assertion for a present suite lives in its own case.
   });
 
   it("stops psql on the first error and applies each migration atomically", async () => {
@@ -337,12 +344,23 @@ describe("real PostgreSQL integration phase", () => {
         (step) => step.label === "run the real-PostgreSQL integration tests",
       ),
     );
+    // The seeding guard refuses a database holding an active location it does not own, and the
+    // route-level suite seeds exactly that. Seeding has to happen first or the guard fires on the
+    // suite's own fixtures instead of on a real foreign tenant.
+    expect(plan.integration.indexOf(routeStep!)).toBeGreaterThan(
+      plan.integration.findIndex(
+        (step) => step.label === "prove the review seeding script inserts nothing on a second run",
+      ),
+    );
   });
 
   it("seeds the review location and then proves the second run changes nothing", async () => {
     const repositoryRoot = await fixtureRepository({});
     const plan = await fixturePlan(repositoryRoot);
-    const [seedStep, idempotencyStep] = plan.integration.slice(-2);
+    const seedIndex = plan.integration.findIndex(
+      (step) => step.label === `seed the review location into ${TEST_DATABASE_NAME}`,
+    );
+    const [seedStep, idempotencyStep] = plan.integration.slice(seedIndex, seedIndex + 2);
 
     expect(seedStep?.label).toBe(`seed the review location into ${TEST_DATABASE_NAME}`);
     expect(seedStep?.command).toBe(process.execPath);

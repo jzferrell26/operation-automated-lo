@@ -12,15 +12,19 @@ import { describe, expect, it } from "vitest";
 import {
   createPostgresFirstPartySessionLookup,
   createPostgresIdentityDirectory,
+  createPostgresReviewSessionPort,
   createPostgresRoleBindingPort,
+  createPostgresSessionActivityPort,
+  createPostgresSessionDisplayPort,
+  firstPartySessionIsActive,
 } from "./postgres-authentication-ports.js";
 
 /**
  * These are the pure halves of the Postgres ports: reference parsing, the statement each port
  * sends, the parameters it binds, and how it decodes what PRD-005b's `security definer` functions
- * are specified to return. The functions themselves do not exist in this worktree, so the pool
- * below answers exactly what their contracts promise. Proving the functions behave that way is
- * PRD-005b's pgTAP suite and the Wave 2 `pnpm test:db` run, not this file.
+ * are specified to return. The pool below answers exactly what their contracts promise. Proving
+ * the functions themselves behave that way is PRD-005b's pgTAP suite and the `pnpm test:db` run,
+ * not this file.
  */
 
 const LOCATION_ID = "00000000-0000-4000-8000-0000000007a1";
@@ -226,5 +230,191 @@ describe("Postgres first-party session lookup", () => {
     expect(
       await createPostgresFirstPartySessionLookup(pool).getActive(secret, nowEpochSeconds),
     ).toBeUndefined();
+  });
+});
+
+describe("first-party session activity predicate (005A-AC-003)", () => {
+  it("asks platform.first_party_session_is_active for a canonical session reference", async () => {
+    const pool = createRecordingPool({
+      "runtime.first-party-session-is-active.v1": [{ active: true }],
+    });
+
+    expect(await firstPartySessionIsActive(pool, formatSessionRef(SESSION_ID))).toBe(true);
+
+    const sent = contractRequests(pool);
+    expect(sent[0]?.text).toContain("platform.first_party_session_is_active");
+    expect(sent[0]?.values).toEqual([SESSION_ID]);
+  });
+
+  it("is false when the predicate refuses the session", async () => {
+    const pool = createRecordingPool({
+      "runtime.first-party-session-is-active.v1": [{ active: false }],
+    });
+
+    expect(await firstPartySessionIsActive(pool, formatSessionRef(SESSION_ID))).toBe(false);
+  });
+
+  it("is false, and sends nothing, for a reference that is not canonical", async () => {
+    const pool = createRecordingPool({});
+
+    expect(await firstPartySessionIsActive(pool, "session-not-canonical")).toBe(false);
+    expect(contractRequests(pool)).toHaveLength(0);
+  });
+});
+
+describe("session display port (005A-AC-011)", () => {
+  it("returns both names for an active location and user", async () => {
+    const pool = createRecordingPool({
+      "runtime.resolve-session-display.v1": [
+        {
+          location_display_name: "Review location (not connected)",
+          user_safe_display_name: "Review creator",
+        },
+      ],
+    });
+
+    expect(
+      await createPostgresSessionDisplayPort(pool).resolve({
+        locationRef: formatLocationRef(LOCATION_ID),
+        actorRef: formatActorRef(ACTOR_ID),
+      }),
+    ).toEqual({
+      locationDisplayName: "Review location (not connected)",
+      userDisplayName: "Review creator",
+    });
+
+    const sent = contractRequests(pool);
+    expect(sent[0]?.text).toContain("platform.resolve_session_display");
+    expect(sent[0]?.values).toEqual([LOCATION_ID, ACTOR_ID]);
+  });
+
+  it("returns nothing when the definer read yields no row", async () => {
+    const pool = createRecordingPool({ "runtime.resolve-session-display.v1": [] });
+
+    expect(
+      await createPostgresSessionDisplayPort(pool).resolve({
+        locationRef: formatLocationRef(LOCATION_ID),
+        actorRef: formatActorRef(ACTOR_ID),
+      }),
+    ).toBeUndefined();
+  });
+
+  it("sends nothing for a reference that is not canonical", async () => {
+    const pool = createRecordingPool({});
+
+    expect(
+      await createPostgresSessionDisplayPort(pool).resolve({
+        locationRef: "location-not-canonical",
+        actorRef: formatActorRef(ACTOR_ID),
+      }),
+    ).toBeUndefined();
+    expect(contractRequests(pool)).toHaveLength(0);
+  });
+});
+
+describe("review session port (PRD-005b D4)", () => {
+  const secretHash = createHash("sha256").update("review-session-secret").digest("hex");
+
+  it("resolves a persona through the definer function", async () => {
+    const pool = createRecordingPool({
+      "runtime.resolve-review-persona.v1": [{ user_id: ACTOR_ID }],
+    });
+
+    expect(
+      await createPostgresReviewSessionPort(pool).resolvePersona({
+        locationId: LOCATION_ID,
+        bindingRole: "creator",
+      }),
+    ).toBe(ACTOR_ID);
+
+    const sent = contractRequests(pool);
+    expect(sent[0]?.text).toContain("platform.resolve_review_persona");
+    expect(sent[0]?.values).toEqual([LOCATION_ID, "creator"]);
+  });
+
+  it("issues with the hash only and returns a canonical session reference", async () => {
+    const pool = createRecordingPool({
+      "runtime.issue-first-party-session.v1": [{ id: SESSION_ID }],
+    });
+
+    expect(
+      await createPostgresReviewSessionPort(pool).issue({
+        locationId: LOCATION_ID,
+        userId: ACTOR_ID,
+        bindingRole: "creator",
+        sessionRole: "campaign_creator",
+        sessionSecretHash: secretHash,
+        lifetimeSeconds: 43_200,
+        correlationRef: "correlation_session_0123456789abcdef01234567",
+      }),
+    ).toBe(formatSessionRef(SESSION_ID));
+
+    const sent = contractRequests(pool);
+    expect(sent[0]?.text).toContain("platform.issue_first_party_session");
+    expect(sent[0]?.values).toEqual([
+      LOCATION_ID,
+      ACTOR_ID,
+      "creator",
+      "campaign_creator",
+      secretHash,
+      43_200,
+      "correlation_session_0123456789abcdef01234567",
+    ]);
+    expect(JSON.stringify(pool.requests)).not.toContain("review-session-secret");
+  });
+
+  it("revokes and reports whether a row moved", async () => {
+    const pool = createRecordingPool({
+      "runtime.revoke-first-party-session.v1": [{ revoked: true }],
+    });
+
+    expect(
+      await createPostgresReviewSessionPort(pool).revoke({
+        sessionRef: formatSessionRef(SESSION_ID),
+        reason: "sign_out",
+        correlationRef: "correlation_signOut_0123456789abcdef01234",
+      }),
+    ).toBe(true);
+
+    const sent = contractRequests(pool);
+    expect(sent[0]?.text).toContain("platform.revoke_first_party_session");
+    expect(sent[0]?.values).toEqual([
+      SESSION_ID,
+      "sign_out",
+      "correlation_signOut_0123456789abcdef01234",
+    ]);
+  });
+
+  it("revokes nothing for a reference that is not canonical", async () => {
+    const pool = createRecordingPool({});
+
+    expect(
+      await createPostgresReviewSessionPort(pool).revoke({
+        sessionRef: "session-not-canonical",
+        reason: "sign_out",
+        correlationRef: "correlation_signOut_0123456789abcdef01234",
+      }),
+    ).toBe(false);
+    expect(contractRequests(pool)).toHaveLength(0);
+  });
+});
+
+describe("session activity port (PRD-005b D4)", () => {
+  it("touches an active session by its canonical reference", async () => {
+    const pool = createRecordingPool({ "runtime.touch-first-party-session.v1": [] });
+
+    await createPostgresSessionActivityPort(pool).touch(formatSessionRef(SESSION_ID));
+
+    const sent = contractRequests(pool);
+    expect(sent[0]?.text).toContain("platform.touch_first_party_session");
+    expect(sent[0]?.values).toEqual([SESSION_ID]);
+  });
+
+  it("sends nothing for a reference that is not canonical", async () => {
+    const pool = createRecordingPool({});
+
+    await createPostgresSessionActivityPort(pool).touch("session-not-canonical");
+
+    expect(contractRequests(pool)).toHaveLength(0);
   });
 });

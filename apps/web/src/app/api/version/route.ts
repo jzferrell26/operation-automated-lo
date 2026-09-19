@@ -16,7 +16,17 @@ export function versionEvidenceForEnvironment(input: unknown) {
 }
 
 export function GET(): Response {
-  return Response.json(versionEvidenceForEnvironment(process.env), {
-    headers: { "Cache-Control": "no-store, max-age=0" },
-  });
+  try {
+    return Response.json(versionEvidenceForEnvironment(process.env), {
+      headers: { "Cache-Control": "no-store, max-age=0" },
+    });
+  } catch {
+    return Response.json(
+      { status: "unavailable", code: "CONFIGURATION_INVALID" },
+      {
+        status: 503,
+        headers: { "Cache-Control": "no-store, max-age=0" },
+      },
+    );
+  }
 }

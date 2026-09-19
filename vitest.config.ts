@@ -68,6 +68,18 @@ export default defineConfig({
         },
       },
       {
+        // PRD-005b: the route-level suite that drives the exported route
+        // handlers against the disposable `oalo_test_` database. It is run only
+        // by `pnpm test:db`, after the migrations are applied, because every
+        // file in it requires OALO_TEST_DATABASE_URL.
+        resolve: workspaceResolve,
+        test: {
+          name: "web-postgres",
+          environment: "node",
+          include: ["apps/web/src/**/*.postgres.test.ts"],
+        },
+      },
+      {
         resolve: workspaceResolve,
         test: {
           name: "contracts",

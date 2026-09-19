@@ -1,6 +1,7 @@
 export const SUPABASE_CLI_VERSION: "2.109.1";
 export const TEST_DATABASE_NAME: string;
 export const TEST_DATABASE_NAME_PREFIX: "oalo_test_";
+export const WEB_POSTGRES_PROJECT: "web-postgres";
 
 export interface DatabaseCommandStep {
   readonly command: string;
@@ -14,12 +15,14 @@ export interface DatabaseCommandPlan {
   readonly setup: readonly DatabaseCommandStep[];
   readonly tests: readonly DatabaseCommandStep[];
   readonly integration: readonly DatabaseCommandStep[];
+  readonly notices: readonly string[];
 }
 
 export interface DatabaseCommandDiscovery {
   readonly pgtapFiles: readonly string[];
   readonly migrationFiles: readonly string[];
   readonly integrationTestFiles: readonly string[];
+  readonly webPostgresTestFiles?: readonly string[];
   readonly databasePort: number;
 }
 
@@ -36,6 +39,7 @@ export interface RunRealDatabaseTestsOptions {
 export function discoverPgtapFiles(repositoryRoot?: string): Promise<string[]>;
 export function discoverMigrationFiles(repositoryRoot?: string): Promise<string[]>;
 export function discoverIntegrationTestFiles(repositoryRoot?: string): Promise<string[]>;
+export function discoverWebPostgresTestFiles(repositoryRoot?: string): Promise<string[]>;
 export function resolveLocalDatabasePort(configToml: string): number;
 export function readLocalDatabasePort(repositoryRoot?: string): Promise<number>;
 export function localDatabaseUrl(

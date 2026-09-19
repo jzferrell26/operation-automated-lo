@@ -1,6 +1,6 @@
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -12,9 +12,11 @@ import {
   TEST_DATABASE_NAME_PREFIX,
   assertDisposableTestDatabaseName,
   commandPlan,
+  WEB_POSTGRES_PROJECT,
   discoverIntegrationTestFiles,
   discoverMigrationFiles,
   discoverPgtapFiles,
+  discoverWebPostgresTestFiles,
   localDatabaseUrl,
   resolveLocalDatabasePort,
   resolveNpmCli,
@@ -216,6 +218,8 @@ describe("real PostgreSQL integration phase", () => {
       `apply supabase/migrations/20260101_first.sql to ${TEST_DATABASE_NAME}`,
       `apply supabase/migrations/20260102_second.sql to ${TEST_DATABASE_NAME}`,
       "run the real-PostgreSQL integration tests",
+      `seed the review location into ${TEST_DATABASE_NAME}`,
+      "prove the review seeding script inserts nothing on a second run",
     ]);
   });
 
@@ -240,7 +244,9 @@ describe("real PostgreSQL integration phase", () => {
       integrationTestFiles: ["a.integration.test.mjs", "b.integration.test.mjs"],
     });
     const plan = await fixturePlan(repositoryRoot);
-    const testStep = plan.integration.at(-1);
+    const testStep = plan.integration.find(
+      (step) => step.label === "run the real-PostgreSQL integration tests",
+    );
     const databaseUrl = testStep?.env?.OALO_TEST_DATABASE_URL;
 
     expect(testStep?.command).toBe(process.execPath);
@@ -287,6 +293,70 @@ describe("real PostgreSQL integration phase", () => {
     );
     expect(labels).not.toContain("run the real-PostgreSQL integration tests");
     expect(labels.at(-1)).toBe("stop local Supabase without preserving database state");
+  });
+
+  it("omits the route-level step and records a notice when no matching file exists", async () => {
+    const repositoryRoot = await fixtureRepository({});
+    const plan = await fixturePlan(repositoryRoot);
+
+    expect(await discoverWebPostgresTestFiles(repositoryRoot)).toEqual([]);
+    expect(plan.integration.map((step) => step.label)).not.toContain(
+      "run the route-level PostgreSQL tests",
+    );
+    expect(plan.notices).toEqual([
+      `no apps/web/src/**/*.postgres.test.ts file exists, so the ${WEB_POSTGRES_PROJECT} step is not in this plan`,
+    ]);
+  });
+
+  it("runs the route-level project with the disposable URL once a matching file exists", async () => {
+    const repositoryRoot = await fixtureRepository({
+      webPostgresTestFiles: [
+        "server/review-session-handler.postgres.test.ts",
+        "app/api/campaigns/approve/route.postgres.test.ts",
+      ],
+    });
+    const plan = await fixturePlan(repositoryRoot);
+    const routeStep = plan.integration.find(
+      (step) => step.label === "run the route-level PostgreSQL tests",
+    );
+
+    expect(await discoverWebPostgresTestFiles(repositoryRoot)).toEqual([
+      "apps/web/src/app/api/campaigns/approve/route.postgres.test.ts",
+      "apps/web/src/server/review-session-handler.postgres.test.ts",
+    ]);
+    expect(plan.notices).toEqual([]);
+    expect(routeStep?.command).toBe(process.execPath);
+    expect(routeStep?.args).toContain(WEB_POSTGRES_PROJECT);
+    expect(
+      new URL(routeStep?.env?.OALO_TEST_DATABASE_URL as string).pathname.startsWith(
+        `/${TEST_DATABASE_NAME_PREFIX}`,
+      ),
+    ).toBe(true);
+    expect(plan.integration.indexOf(routeStep!)).toBeGreaterThan(
+      plan.integration.findIndex(
+        (step) => step.label === "run the real-PostgreSQL integration tests",
+      ),
+    );
+  });
+
+  it("seeds the review location and then proves the second run changes nothing", async () => {
+    const repositoryRoot = await fixtureRepository({});
+    const plan = await fixturePlan(repositoryRoot);
+    const [seedStep, idempotencyStep] = plan.integration.slice(-2);
+
+    expect(seedStep?.label).toBe(`seed the review location into ${TEST_DATABASE_NAME}`);
+    expect(seedStep?.command).toBe(process.execPath);
+    expect(seedStep?.args.at(0)?.replaceAll("\\", "/")).toContain(
+      "tooling/scripts/database/seed-review-location.mjs",
+    );
+    expect(seedStep?.args).toContain("--confirm-database");
+    expect(seedStep?.args).toContain(TEST_DATABASE_NAME);
+    expect(seedStep?.args).not.toContain("--expect-unchanged");
+    expect(idempotencyStep?.args).toContain("--expect-unchanged");
+    for (const step of [seedStep, idempotencyStep]) {
+      const urlArgument = step?.args[step.args.indexOf("--review-database-url") + 1];
+      expect(new URL(urlArgument as string).pathname).toBe(`/${TEST_DATABASE_NAME}`);
+    }
   });
 
   it("reports pgTAP and integration failures together", async () => {
@@ -390,6 +460,7 @@ async function fixturePlan(repositoryRoot: string) {
       integrationTestFiles: await discoverIntegrationTestFiles(repositoryRoot),
       migrationFiles: await discoverMigrationFiles(repositoryRoot),
       pgtapFiles: await discoverPgtapFiles(repositoryRoot),
+      webPostgresTestFiles: await discoverWebPostgresTestFiles(repositoryRoot),
     },
     repositoryRoot,
   );
@@ -399,10 +470,12 @@ async function fixtureRepository({
   integrationTestFiles = ["only.integration.test.mjs"],
   migrationFiles = ["20260101_only.sql"],
   pgtapFiles = ["only.pgtap.sql"],
+  webPostgresTestFiles = [],
 }: {
   integrationTestFiles?: string[];
   migrationFiles?: string[];
   pgtapFiles?: string[];
+  webPostgresTestFiles?: string[];
 }) {
   const repositoryRoot = await mkdtemp(join(tmpdir(), "oalo-db-orchestration-"));
   temporaryDirectories.push(repositoryRoot);
@@ -427,5 +500,12 @@ async function fixtureRepository({
         ),
     ),
   ]);
+  // The route-level suite is discovered recursively, so its fixture files are
+  // written under nested directories rather than one flat folder.
+  for (const file of webPostgresTestFiles) {
+    const absolute = join(repositoryRoot, "apps", "web", "src", ...file.split("/"));
+    await mkdir(dirname(absolute), { recursive: true });
+    await writeFile(absolute, "export {};\n", "utf8");
+  }
   return repositoryRoot;
 }

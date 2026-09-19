@@ -91,8 +91,8 @@ select is(
         )
       )
   ),
-  23,
-  'the expected twenty-three tenant tables are present'
+  24,
+  'the expected twenty-four tenant tables are present'
 );
 
 select is(

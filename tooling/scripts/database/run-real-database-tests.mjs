@@ -20,6 +20,11 @@ const LOCAL_DATABASE_HOST = "127.0.0.1";
 const LOCAL_DATABASE_ROLE = "postgres";
 const LOCAL_DATABASE_PASSWORD = "postgres";
 
+export const WEB_POSTGRES_PROJECT = "web-postgres";
+const WEB_POSTGRES_TEST_DIRECTORY = "apps/web/src";
+const WEB_POSTGRES_TEST_SUFFIX = ".postgres.test.ts";
+const SEED_REVIEW_LOCATION_SCRIPT = "tooling/scripts/database/seed-review-location.mjs";
+
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const defaultRepositoryRoot = resolve(scriptDirectory, "../../..");
 
@@ -49,6 +54,28 @@ export async function discoverMigrationFiles(repositoryRoot = defaultRepositoryR
 
 export async function discoverIntegrationTestFiles(repositoryRoot = defaultRepositoryRoot) {
   return discoverSqlFiles(repositoryRoot, "packages/db/test", ".integration.test.mjs");
+}
+
+/**
+ * The route-level PostgreSQL suite (`apps/web/src/**\/*.postgres.test.ts`, the
+ * `web-postgres` vitest project) is discovered rather than required, because
+ * PRD-005b lands the migration and the gate wiring in Wave 1 while PRD-005b's
+ * own route rows and PRD-005a's composition add the first matching file in
+ * Wave 2. An empty discovery is NOT treated as success: the step is omitted and
+ * `runRealDatabaseTests` prints a notice naming the empty pattern, so an
+ * accidentally deleted suite is visible in the gate log instead of silent. Once
+ * a file exists the step runs and a failure fails the gate like any other.
+ */
+export async function discoverWebPostgresTestFiles(repositoryRoot = defaultRepositoryRoot) {
+  const absoluteDirectory = resolve(repositoryRoot, WEB_POSTGRES_TEST_DIRECTORY);
+  if (!existsSync(absoluteDirectory)) return [];
+  const entries = await readdir(absoluteDirectory, { recursive: true, withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith(WEB_POSTGRES_TEST_SUFFIX))
+    .map((entry) =>
+      relative(repositoryRoot, resolve(entry.parentPath, entry.name)).replaceAll("\\", "/"),
+    )
+    .toSorted();
 }
 
 /**
@@ -108,6 +135,7 @@ export function assertDisposableTestDatabaseName(databaseName) {
 
 export function commandPlan(discovery, repositoryRoot = defaultRepositoryRoot) {
   const { pgtapFiles, migrationFiles, integrationTestFiles, databasePort } = discovery;
+  const webPostgresTestFiles = discovery.webPostgresTestFiles ?? [];
   const node = process.execPath;
   const packageRunner = resolvePackageRunner(node);
   const vitestCli = resolve(repositoryRoot, "node_modules/vitest/vitest.mjs");
@@ -207,7 +235,57 @@ export function commandPlan(discovery, repositoryRoot = defaultRepositoryRoot) {
         }),
         label: "run the real-PostgreSQL integration tests",
       }),
+      // PRD-005b: the route-level suite runs only when a matching file exists.
+      // `notices` below carries the message the runner prints when none does.
+      ...(webPostgresTestFiles.length === 0
+        ? []
+        : [
+            Object.freeze({
+              command: node,
+              args: [vitestCli, "run", "--project", WEB_POSTGRES_PROJECT],
+              env: Object.freeze({
+                OALO_TEST_DATABASE_URL: localDatabaseUrl(databasePort, testDatabaseName, {
+                  withPassword: true,
+                }),
+              }),
+              label: "run the route-level PostgreSQL tests",
+            }),
+          ]),
+      // The seeding script talks to PostgreSQL through the postgres driver, not
+      // psql, so the disposable database's well-known local password travels in
+      // the URL argument rather than in PGPASSWORD. It is the same throwaway
+      // credential already hardcoded in this file for the local stack.
+      Object.freeze({
+        command: node,
+        args: [
+          resolve(repositoryRoot, SEED_REVIEW_LOCATION_SCRIPT),
+          "--review-database-url",
+          localDatabaseUrl(databasePort, testDatabaseName, { withPassword: true }),
+          "--confirm-database",
+          testDatabaseName,
+        ],
+        label: `seed the review location into ${testDatabaseName}`,
+      }),
+      Object.freeze({
+        command: node,
+        args: [
+          resolve(repositoryRoot, SEED_REVIEW_LOCATION_SCRIPT),
+          "--review-database-url",
+          localDatabaseUrl(databasePort, testDatabaseName, { withPassword: true }),
+          "--confirm-database",
+          testDatabaseName,
+          "--expect-unchanged",
+        ],
+        label: "prove the review seeding script inserts nothing on a second run",
+      }),
     ]),
+    notices: Object.freeze(
+      webPostgresTestFiles.length === 0
+        ? [
+            `no ${WEB_POSTGRES_TEST_DIRECTORY}/**/*${WEB_POSTGRES_TEST_SUFFIX} file exists, so the ${WEB_POSTGRES_PROJECT} step is not in this plan`,
+          ]
+        : [],
+    ),
   });
 }
 
@@ -220,6 +298,7 @@ export async function runRealDatabaseTests(options = {}) {
       integrationTestFiles: await discoverIntegrationTestFiles(repositoryRoot),
       migrationFiles: await discoverMigrationFiles(repositoryRoot),
       pgtapFiles: await discoverPgtapFiles(repositoryRoot),
+      webPostgresTestFiles: await discoverWebPostgresTestFiles(repositoryRoot),
     },
     repositoryRoot,
   );
@@ -239,6 +318,9 @@ export async function runRealDatabaseTests(options = {}) {
       } catch (error) {
         pgtapFailures.push(error);
       }
+    }
+    for (const notice of plan.notices) {
+      process.stdout.write(`\n[database] notice: ${notice}\n`);
     }
     // Provisioning is sequential, so a failed step invalidates every later one.
     const integrationFailures = [];

@@ -6,5 +6,5 @@ export default function OverviewError({
   error,
   reset,
 }: Readonly<{ error: Error & { digest?: string }; reset: () => void }>) {
-  return <RouteError error={error} reset={reset} routeName="Platform Overview" />;
+  return <RouteError error={error} reset={reset} routeName="Overview" />;
 }

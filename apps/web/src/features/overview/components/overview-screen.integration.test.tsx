@@ -25,7 +25,7 @@ describe("Platform Overview", () => {
         workspaceCampaigns={[]}
       />,
     );
-    expect(screen.getByText("No campaigns in this location yet")).toBeInTheDocument();
+    expect(screen.getByText("No campaigns yet")).toBeInTheDocument();
     expect(screen.queryByText("Summer buyer education")).not.toBeInTheDocument();
   });
 
@@ -34,17 +34,19 @@ describe("Platform Overview", () => {
     render(<OverviewScreen overview={fixture.overview} session={fixture.session} />);
 
     for (const heading of [
-      "Workspace health",
+      "How things stand",
       "Quick actions",
-      "Business Pulse",
-      "Active Work",
-      "Attention Queue",
-      "Recent Activity",
-      "Workspace Status",
+      "Your numbers",
+      "What you have going on",
+      "Needs your attention",
+      "What happened lately",
+      "Your workspace",
     ]) {
       expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
     }
-    expect(screen.getAllByText("Synthetic data")).toHaveLength(8);
+    // PRD-006b D4 and D5. The `synthetic` prop keeps its meaning, which is that the value is not a
+    // live reading; the row now says that in words a loan officer uses.
+    expect(screen.getAllByText("Not live data")).toHaveLength(8);
     expect(
       screen.getByText("Unavailable", { selector: ".oalo-metric__value" }),
     ).toBeInTheDocument();
@@ -54,14 +56,14 @@ describe("Platform Overview", () => {
   });
 
   it("keeps consequential actions disabled with persistent reasons", () => {
-    render(<ProjectedSafeAction label="Create marketing campaign" />);
+    render(<ProjectedSafeAction label="Create an Open House Boost" />);
 
-    expect(screen.getByRole("button", { name: "Create marketing campaign" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Create an Open House Boost" })).toBeDisabled();
     expect(
-      screen.getByText("A separately authorized production provider path"),
+      screen.getByText("HighLevel, Meta, and Stripe connected to your workspace"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Platform Owner")).toBeInTheDocument();
-    expect(screen.getByText("Review the synthetic projection only.")).toBeInTheDocument();
+    expect(screen.getByText("Automated LO")).toBeInTheDocument();
+    expect(screen.getByText("Connect your accounts when you're ready.")).toBeInTheDocument();
   });
 
   it("retries only the local safe read and performs no network request", async () => {
@@ -70,9 +72,9 @@ describe("Platform Overview", () => {
     vi.stubGlobal("fetch", network);
     render(<SafeRetryState state="safe_retry" />);
 
-    await user.click(screen.getByRole("button", { name: "Retry safe read" }));
+    await user.click(screen.getByRole("button", { name: "Try again" }));
 
-    expect(screen.getByText("Safe retry attempts: 1")).toBeInTheDocument();
+    expect(screen.getByText("Tries: 1")).toBeInTheDocument();
     expect(network).not.toHaveBeenCalled();
   });
 
@@ -80,10 +82,10 @@ describe("Platform Overview", () => {
     render(<OverviewState state="restricted_viewer" />);
 
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("Permission restricted");
-    expect(status).toHaveTextContent("Owner or Agency User");
+    expect(status).toHaveTextContent("No access");
+    expect(status).toHaveTextContent("A workspace owner");
     expect(status).toHaveTextContent(
-      "No protected values or cross-tenant placeholders are rendered.",
+      "Nothing from another workspace is shown here, and nothing is guessed at.",
     );
   });
 

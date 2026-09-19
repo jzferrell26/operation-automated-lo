@@ -10,10 +10,10 @@ const onboardingStatePresentation: Readonly<
   Record<OnboardingItemState, { icon: IconName; label: string; tone: IconTone }>
 > = Object.freeze({
   not_started: { icon: "circle-dot", label: "Not started", tone: "neutral" },
-  in_progress: { icon: "clock", label: "In progress", tone: "warning" },
-  blocked: { icon: "alert-triangle", label: "Blocked", tone: "critical" },
-  complete: { icon: "check", label: "Complete", tone: "success" },
-  stale: { icon: "clock", label: "Stale", tone: "warning" },
+  in_progress: { icon: "clock", label: "Started", tone: "warning" },
+  blocked: { icon: "alert-triangle", label: "Stuck", tone: "critical" },
+  complete: { icon: "check", label: "Done", tone: "success" },
+  stale: { icon: "clock", label: "Needs a refresh", tone: "warning" },
 });
 
 export interface OnboardingEvidence {
@@ -83,26 +83,31 @@ export function OnboardingChecklistItem({
         <div className="oalo-checklist-item__description">{item.description}</div>
       ) : null}
       {locked ? (
-        <p className="oalo-checklist-item__locked">Locked until the prior phase is complete.</p>
+        <p className="oalo-checklist-item__locked">Locked until the steps above are done.</p>
       ) : null}
-      {item.state === "complete" ? <OnboardingEvidenceDetails evidence={item.evidence} /> : null}
+      {item.state === "complete" ? (
+        <>
+          <OnboardingEvidenceDetails evidence={item.evidence} />
+          <OnboardingSupportDetails evidence={item.evidence} />
+        </>
+      ) : null}
       {item.state !== "complete" && (item.reason || item.responsibleParty || item.nextAction) ? (
         <dl className="oalo-evidence-list">
           {item.reason ? (
             <div>
-              <dt>Reason</dt>
+              <dt>Why</dt>
               <dd>{item.reason}</dd>
             </div>
           ) : null}
           {item.responsibleParty ? (
             <div>
-              <dt>Responsible party</dt>
+              <dt>Who can do this</dt>
               <dd>{item.responsibleParty}</dd>
             </div>
           ) : null}
           {item.nextAction ? (
             <div>
-              <dt>Next safe action</dt>
+              <dt>What to do next</dt>
               <dd>{item.nextAction}</dd>
             </div>
           ) : null}
@@ -117,24 +122,42 @@ function OnboardingEvidenceDetails({ evidence }: { evidence: OnboardingEvidence 
   return (
     <dl className="oalo-evidence-list">
       <div>
-        <dt>Evidence</dt>
+        <dt>What we checked</dt>
         <dd>{evidence.summary}</dd>
       </div>
       <div>
-        <dt>Verified</dt>
+        <dt>Checked on</dt>
         <dd>{evidence.verifiedAt}</dd>
       </div>
-      <div>
-        <dt>Verifier version</dt>
-        <dd className="oalo-data-text">{evidence.verifierVersion}</dd>
-      </div>
-      {evidence.providerIds?.map((providerId) => (
-        <div key={providerId}>
-          <dt>Provider reference</dt>
-          <dd className="oalo-data-text">{providerId}</dd>
-        </div>
-      ))}
     </dl>
+  );
+}
+
+/**
+ * The checker's version and the account references behind a finished step.
+ *
+ * Both are real and both are kept, but neither is something a loan officer reads: they are what
+ * support asks for. PRD-006b D8 gives them one collapsed region, closed by default, with plain
+ * labels, and `data-support-details` so the rendered-output guard can subtract this region before
+ * asserting that no identifier appears anywhere else on the page.
+ */
+function OnboardingSupportDetails({ evidence }: { evidence: OnboardingEvidence }) {
+  return (
+    <details data-support-details>
+      <summary>Details for support</summary>
+      <dl className="oalo-evidence-list">
+        <div>
+          <dt>Checker version</dt>
+          <dd className="oalo-data-text">{evidence.verifierVersion}</dd>
+        </div>
+        {evidence.providerIds?.map((providerId) => (
+          <div key={providerId}>
+            <dt>Account reference</dt>
+            <dd className="oalo-data-text">{providerId}</dd>
+          </div>
+        ))}
+      </dl>
+    </details>
   );
 }
 
@@ -173,10 +196,10 @@ export function OnboardingChecklist({
           {description ? <div className="oalo-checklist__description">{description}</div> : null}
         </div>
         <p
-          aria-label={`${completedCount} of ${items.length} complete`}
+          aria-label={`${completedCount} of ${items.length} done`}
           className="oalo-checklist__progress"
         >
-          {completedCount}/{items.length} complete
+          {completedCount} of {items.length} done
         </p>
       </div>
       <ol className="oalo-checklist__items">

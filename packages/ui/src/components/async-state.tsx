@@ -14,10 +14,10 @@ const asyncStatePresentation: Readonly<
   error: { icon: "circle-x", label: "Error", tone: "critical" },
   permission_restricted: {
     icon: "lock",
-    label: "Permission restricted",
+    label: "No access",
     tone: "uncertain",
   },
-  degraded: { icon: "clock", label: "Degraded", tone: "warning" },
+  degraded: { icon: "clock", label: "Having trouble", tone: "warning" },
 });
 
 type AsyncStateBaseProps = Omit<HTMLAttributes<HTMLElement>, "children" | "title"> & {
@@ -68,15 +68,15 @@ export function AsyncState(props: AsyncStateProps) {
     kind === "permission_restricted" ? (
       <dl className="oalo-evidence-list">
         <div>
-          <dt>Reason</dt>
+          <dt>Why</dt>
           <dd>{props.reason}</dd>
         </div>
         <div>
-          <dt>Required role</dt>
+          <dt>Who can do this</dt>
           <dd>{props.requiredRole}</dd>
         </div>
         <div>
-          <dt>Authorized resolver</dt>
+          <dt>Ask</dt>
           <dd>{props.responsibleParty}</dd>
         </div>
       </dl>

@@ -6,5 +6,5 @@ export default function AuthenticatedError({
   error,
   reset,
 }: Readonly<{ error: Error & { digest?: string }; reset: () => void }>) {
-  return <RouteError error={error} reset={reset} routeName="authenticated workspace" />;
+  return <RouteError error={error} reset={reset} routeName="your workspace" />;
 }

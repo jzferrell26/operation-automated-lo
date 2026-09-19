@@ -47,38 +47,54 @@ const connectionsAllowances: readonly ReviewSurfaceAllowance[] = [
   {
     path: "onboarding.permissionGroups[*].label",
     value: "Optional",
-    because: "Substring of the review group label 'Optional access this app can use'.",
+    because: "Substring of the not-connected group label 'Optional access'.",
+  },
+  {
+    path: "onboarding.permissionGroups[*].label",
+    value: "Missing",
+    because:
+      "The screen's own state chip for the missing group renders this word (PRD-006b D5 rule R4); the fixture's group label never reaches this route.",
   },
   {
     path: "onboarding.getConnected[*].state",
     value: "blocked",
     because:
-      "Substring of the review group label 'Access this app reports when an outcome is blocked'.",
+      "Substring of the group label 'Access this app tells you about when something is blocked'.",
   },
   {
     path: "navigation.items[*].id",
     value: "reports",
-    because: "Substring of the same review group label; navigation does not render here.",
+    because: "Substring of the allowed capability label 'Read agency reports'.",
   },
   {
     path: "overview.activeWork[*].type",
     value: "campaign",
-    because: "Substring of the allowed business purpose 'Prepare campaign drafts ...'.",
+    because: "Substring of the allowed capability label 'Create campaigns'.",
   },
   {
     path: "overview.health[*].id",
     value: "routing",
-    because: "Substring of the allowed business purposes that name safe routing context.",
+    because: "Substring of the allowed business purpose that names your HighLevel routing.",
   },
   {
     path: "overview.health[*].label",
     value: "HighLevel",
-    because: "Substring of the review disclosure, 'Not connected to HighLevel, Meta, or Stripe.'.",
+    because: "Substring of the not-connected disclosure, which names all three accounts.",
   },
   {
     path: "overview.health[*].label",
     value: "Meta",
-    because: "Substring of the review disclosure.",
+    because: "Substring of the not-connected disclosure.",
+  },
+  {
+    path: "navigation.items[*].id",
+    value: "leads",
+    because: "Substring of the allowed business purpose about where new leads land.",
+  },
+  {
+    path: "navigation.marketingItems[*].id",
+    value: "campaigns",
+    because: "Substring of the allowed capability label 'Create campaigns'.",
   },
 ];
 
@@ -125,14 +141,18 @@ describe("authenticated settings connections route", () => {
     );
 
     expect(capabilities.length).toBeGreaterThan(0);
-    expect(capabilities.every((capability) => capability.evidence.startsWith("No evidence."))).toBe(
+    expect(capabilities.every((capability) => capability.evidence === "Nothing checked yet.")).toBe(
       true,
     );
-    expect(capabilities.every((capability) => capability.impact.startsWith("Not evaluated."))).toBe(
-      true,
-    );
+    expect(
+      capabilities.every((capability) => capability.impact === "No effect until you connect."),
+    ).toBe(true);
     expect(container.textContent).not.toContain("Synthetic App Test evidence verified");
-    expect(screen.getAllByText(/observed grant state/u).length).toBe(4);
+    expect(
+      screen.getAllByText(
+        "You haven't connected HighLevel yet, so there's nothing to confirm here.",
+      ).length,
+    ).toBe(4);
   });
 
   it("restates each group label as the category's meaning rather than an observation", () => {
@@ -140,10 +160,10 @@ describe("authenticated settings connections route", () => {
     const labels = workspace.ui.onboarding.permissionGroups.map((group) => group.label);
 
     expect(labels).toEqual([
-      "Core access this app must request",
-      "Access this app verifies after install",
-      "Access this app reports when an outcome is blocked",
-      "Optional access this app can use",
+      "Access this app needs",
+      "Access this app confirms after you connect",
+      "Access this app tells you about when something is blocked",
+      "Optional access",
     ]);
   });
 

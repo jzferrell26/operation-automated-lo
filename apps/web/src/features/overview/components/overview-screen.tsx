@@ -1,5 +1,11 @@
 import { Card, EmptyState, Icon, Metric, Stack, Surface } from "@oalo/ui";
 
+import {
+  NOT_CONNECTED_NEXT_STEP,
+  NOT_CONNECTED_SOURCE,
+  SUPPORT_DETAILS_LABELS,
+} from "../../../copy/user-language.js";
+import { SupportDetails } from "../../shell/components/support-details.js";
 import type {
   DeepReadonly,
   Overview,
@@ -36,17 +42,19 @@ export function OverviewScreen({
     <div className={styles.overview}>
       <header className={styles.pageHeader}>
         <div>
-          <p className={styles.eyebrow}>Platform Overview</p>
+          <p className={styles.eyebrow}>{session.location.displayName}</p>
           <h1>{overview.heading}</h1>
           <p>
-            {session.location.displayName} · {session.user.roleLabel}
+            {workspaceMode === "review"
+              ? NOT_CONNECTED_SOURCE
+              : `${session.user.displayName}, ${session.user.roleLabel}`}
           </p>
           <p>
             {workspaceMode === "review" ? (
-              "Last system verification: none. The review surface performs no live verification."
+              NOT_CONNECTED_NEXT_STEP
             ) : (
               <>
-                Last system verification:{" "}
+                Checked on{" "}
                 <time dateTime={overview.lastVerifiedAt}>
                   {formatTimestamp(overview.lastVerifiedAt)}
                 </time>
@@ -62,17 +70,17 @@ export function OverviewScreen({
               size="sm"
               tone={overview.readiness === "launch_ready" ? "success" : "warning"}
             />
-            {overview.readiness === "launch_ready" ? "Launch Ready" : "Attention Required"}
+            {overview.readiness === "launch_ready" ? "Ready to launch" : "Still to do"}
           </span>
-          <ProjectedSafeAction label="Create" />
+          <ProjectedSafeAction label="Create a campaign" />
         </div>
       </header>
 
       <section aria-labelledby="health-strip-title" className={styles.healthSection}>
         <div className={styles.sectionHeading}>
           <div>
-            <p className={styles.eyebrow}>Last safe server-shaped evidence</p>
-            <h2 id="health-strip-title">Workspace health</h2>
+            <p className={styles.eyebrow}>What we last checked</p>
+            <h2 id="health-strip-title">How things stand</h2>
           </div>
         </div>
         <div className={styles.healthStrip}>
@@ -91,25 +99,25 @@ export function OverviewScreen({
       <section aria-labelledby="quick-actions-title" className={styles.quickActionsSection}>
         <div className={styles.sectionHeading}>
           <div>
-            <p className={styles.eyebrow}>Authority-aware shortcuts</p>
+            <p className={styles.eyebrow}>Things you can do now</p>
             <h2 id="quick-actions-title">Quick actions</h2>
           </div>
         </div>
         <div className={styles.quickActions}>
           <a className="oalo-action-link" href="/marketing/campaigns/new">
-            Create marketing campaign
+            Create an Open House Boost
           </a>
           <a className="oalo-action-link" href="/settings/routing">
-            Resolve highest-priority connection issue
+            Fix the connection that needs attention first
           </a>
         </div>
       </section>
 
       <MetricSection
         className={styles.priorityMetricsSection ?? ""}
-        description="Synthetic leads are excluded. Every value carries source, freshness, and truth state."
+        description="Every number here says where it came from and when we last checked."
         metrics={priorityMetrics}
-        title="Business Pulse"
+        title="Your numbers"
       />
 
       <AttentionQueue attention={overview.attention} />
@@ -117,7 +125,7 @@ export function OverviewScreen({
       <section aria-labelledby="more-actions-title" className={styles.secondaryActionsSection}>
         <div className={styles.sectionHeading}>
           <div>
-            <p className={styles.eyebrow}>Additional authorized shortcuts</p>
+            <p className={styles.eyebrow}>Coming later</p>
             <h2 id="more-actions-title">More quick actions</h2>
           </div>
         </div>
@@ -126,19 +134,19 @@ export function OverviewScreen({
           <ProjectedSafeAction label="Generate PDF and creative" />
           <ProjectedSafeAction label="Add Realtor partner" />
           <a className="oalo-action-link" href="/leads">
-            Review leads
+            See your leads
           </a>
           <a className="oalo-action-link" href="/leads/pipeline">
-            Open HighLevel pipeline
+            Open your HighLevel pipeline
           </a>
         </div>
       </section>
 
       <MetricSection
         className={styles.secondaryMetricsSection ?? ""}
-        description="Lower-priority outcomes remain distinct from the primary mobile pulse."
+        description="Useful to know, but not what you check first."
         metrics={secondaryMetrics}
-        title="Additional Business Pulse"
+        title="More numbers"
       />
 
       <section
@@ -147,18 +155,18 @@ export function OverviewScreen({
       >
         <div className={styles.sectionHeading}>
           <div>
-            <p className={styles.eyebrow}>Cross-module work</p>
-            <h2 id="active-work-title">Active Work</h2>
+            <p className={styles.eyebrow}>Across the product</p>
+            <h2 id="active-work-title">What you have going on</h2>
           </div>
         </div>
         <div className={styles.listGrid}>
           {workspaceCampaigns?.length === 0 ? (
             <Card padding="md">
               <p className={styles.itemMeta}>Campaign</p>
-              <h3>No campaigns in this location yet</h3>
-              <p>Create an Open House Boost to persist a tenant-backed campaign.</p>
+              <h3>No campaigns yet</h3>
+              <p>Create your first Open House Boost. It's saved as you go.</p>
               <p>
-                <strong>Next safe action:</strong> Create marketing campaign
+                <strong>What to do next:</strong> Create an Open House Boost
               </p>
             </Card>
           ) : null}
@@ -168,12 +176,12 @@ export function OverviewScreen({
               <h3>{campaign.headline}</h3>
               <p>{stateLabel(campaign.state)}</p>
               <p>
-                <strong>Next safe action:</strong>{" "}
+                <strong>What to do next:</strong>{" "}
                 {campaign.nextActions.find((action) => action.available)?.label ??
-                  "Review persisted version evidence."}
+                  "Open it and see where it stands."}
               </p>
               <a className="oalo-action-link" href={campaign.detailHref}>
-                Open persisted campaign
+                Open campaign
               </a>
             </Card>
           ))}
@@ -183,14 +191,14 @@ export function OverviewScreen({
               <h3>{item.title}</h3>
               <p>{item.status}</p>
               <p>
-                <strong>Next safe action:</strong> {item.nextAction}
+                <strong>What to do next:</strong> {item.nextAction}
               </p>
             </Card>
           ))}
           {workspaceCampaigns === undefined && otherWork.length === 0 ? (
             <EmptyState
-              description="No connected source reports work in progress for this workspace. Nothing is inferred."
-              title="No active work to show"
+              description="Nothing is in progress right now. We don't guess at what might be."
+              title="Nothing in progress"
             />
           ) : null}
         </div>
@@ -201,8 +209,8 @@ export function OverviewScreen({
       <section aria-labelledby="workspace-status-title" className={styles.section}>
         <div className={styles.sectionHeading}>
           <div>
-            <p className={styles.eyebrow}>Entitlement and readiness</p>
-            <h2 id="workspace-status-title">Workspace Status</h2>
+            <p className={styles.eyebrow}>What's in your plan, and what's ready</p>
+            <h2 id="workspace-status-title">Your workspace</h2>
           </div>
         </div>
         <div className={styles.workspaceGrid}>
@@ -240,7 +248,7 @@ function MetricSection({
     <section aria-labelledby={titleId} className={`${styles.section} ${className}`}>
       <div className={styles.sectionHeading}>
         <div>
-          <p className={styles.eyebrow}>Source-bearing metrics</p>
+          <p className={styles.eyebrow}>Where each number comes from</p>
           <h2 id={titleId}>{title}</h2>
           <p>{description}</p>
         </div>
@@ -264,15 +272,15 @@ function AttentionQueue({
     >
       <div className={styles.sectionHeading}>
         <div>
-          <p className={styles.eyebrow}>Highest-priority blockers first</p>
-          <h2 id="attention-title">Attention Queue</h2>
+          <p className={styles.eyebrow}>Most urgent first</p>
+          <h2 id="attention-title">Needs your attention</h2>
         </div>
       </div>
       <Stack gap="3">
         {attention.length === 0 ? (
           <EmptyState
-            description="No connected source has reported a blocker. Nothing here is inferred or invented."
-            title="No attention items to show"
+            description="Nothing is blocked right now. We only list what we've actually checked."
+            title="Nothing needs your attention"
           />
         ) : null}
         {attention.map((item) => (
@@ -289,34 +297,36 @@ function AttentionQueue({
             <h3>{item.title}</h3>
             <dl className={styles.evidenceList}>
               <div>
-                <dt>Affected module</dt>
+                <dt>Where</dt>
                 <dd>{item.affectedModule}</dd>
               </div>
               <div>
-                <dt>Responsible party</dt>
+                <dt>Who can do this</dt>
                 <dd>{item.responsibleParty}</dd>
               </div>
               <div>
-                <dt>Remediation</dt>
+                <dt>How to fix it</dt>
                 <dd>{item.remediation}</dd>
               </div>
               <div>
-                <dt>Next safe action</dt>
+                <dt>What to do next</dt>
                 <dd>{item.nextAction}</dd>
               </div>
               <div>
-                <dt>Last attempt</dt>
+                <dt>Last tried</dt>
                 <dd>{formatTimestamp(item.lastAttempt)}</dd>
               </div>
-              <div>
-                <dt>Exception code</dt>
-                <dd>{item.exceptionCode}</dd>
-              </div>
-              <div>
-                <dt>Correlation ID</dt>
-                <dd>{item.correlationId}</dd>
-              </div>
             </dl>
+            {/*
+              The two references support asks for. PRD-006b D8 keeps them and moves them out of the
+              card's prose, so a loan officer reads five plain rows and support still gets both.
+            */}
+            <SupportDetails
+              rows={[
+                [SUPPORT_DETAILS_LABELS.rule, item.exceptionCode],
+                [SUPPORT_DETAILS_LABELS.supportReference, item.correlationId],
+              ]}
+            />
           </Card>
         ))}
       </Stack>
@@ -375,9 +385,9 @@ function statusText(state: Overview["health"][number]["state"]): string {
     case "setup_required":
       return "Setup required";
     case "restricted":
-      return "Plan or role restricted";
+      return "No access";
     case "planned":
-      return "Planned, unavailable";
+      return "Coming later";
   }
 }
 
@@ -390,9 +400,9 @@ function workTypeLabel(type: Overview["activeWork"][number]["type"]): string {
     case "property_site":
       return "Property site";
     case "ai_confirmation":
-      return "AI suggestion requiring human confirmation";
+      return "AI suggestion waiting for you";
     case "system":
-      return "System";
+      return "Automated LO";
   }
 }
 

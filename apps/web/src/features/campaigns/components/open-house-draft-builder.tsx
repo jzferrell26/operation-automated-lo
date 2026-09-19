@@ -3,7 +3,14 @@
 import { Button, Card, Icon } from "@oalo/ui";
 import { useState, type FormEvent } from "react";
 
+import {
+  CHECK_RESULT_NEEDS_CHANGES,
+  CHECK_RESULT_READY,
+  SUPPORT_DETAILS_LABELS,
+} from "../../../copy/user-language.js";
+import { isMappedErrorCode, userMessageSentence } from "../../http/user-messages.js";
 import { postInternalJson } from "../../http/internal-api.js";
+import { SupportDetails } from "../../shell/components/support-details.js";
 import styles from "./open-house-draft-builder.module.css";
 
 type PreflightResponse = Readonly<{
@@ -32,13 +39,17 @@ type PreflightResponse = Readonly<{
 
 export function OpenHouseDraftBuilder() {
   const [result, setResult] = useState<PreflightResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  /**
+   * `null` means nothing has gone wrong. `undefined` means something went wrong and the route gave
+   * us no code to map, which renders the generic sentence plus the support reference.
+   */
+  const [errorCode, setErrorCode] = useState<string | null | undefined>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
-    setError(null);
+    setErrorCode(null);
     setResult(null);
     const form = new FormData(event.currentTarget);
 
@@ -63,12 +74,18 @@ export function OpenHouseDraftBuilder() {
       });
       const payload: unknown = await response.json();
       if (!response.ok) {
-        const record = payload as { message?: string; error?: string };
-        throw new Error(record.message ?? record.error ?? "Campaign preflight failed");
+        /**
+         * The route answers with a code. PRD-006b D7 says a code never reaches a status line, so
+         * the code is mapped to sentences here and kept only for the support region below.
+         */
+        const record = payload as { error?: string };
+        setErrorCode(record.error);
+        return;
       }
+      setErrorCode(null);
       setResult(payload as PreflightResponse);
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Campaign preflight failed");
+    } catch {
+      setErrorCode(undefined);
     } finally {
       setSubmitting(false);
     }
@@ -79,10 +96,10 @@ export function OpenHouseDraftBuilder() {
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Open House Boost</p>
-          <h1>Create campaign</h1>
+          <h1>Create an Open House Boost</h1>
           <p>
-            Build one frozen campaign version and run the same deterministic preflight contract used
-            by the production application layer.
+            Tell us about the open house. We&apos;ll check it against the rules before anyone
+            approves it.
           </p>
         </div>
       </header>
@@ -90,17 +107,14 @@ export function OpenHouseDraftBuilder() {
       <Card className={styles.notice} padding="md">
         <Icon decorative name="lock" size="sm" tone="info" />
         <div>
-          <strong>Persisted campaign draft</strong>
-          <p>
-            This flow freezes an immutable campaign version and stores it for this location. It does
-            not publish, spend, or call HighLevel or Meta.
-          </p>
+          <strong>Nothing goes out from this page</strong>
+          <p>This is saved to your workspace. It doesn&apos;t publish, spend, or send anything.</p>
         </div>
       </Card>
 
       <form className={styles.form} onSubmit={handleSubmit}>
         <fieldset>
-          <legend>Property and event</legend>
+          <legend>The property and the open house</legend>
           <label>
             Property address
             <input name="address" required defaultValue="123 Main Street, Dallas" />
@@ -130,17 +144,17 @@ export function OpenHouseDraftBuilder() {
             <input name="realtorDisplayName" required defaultValue="Jordan Smith" />
           </label>
           <label className={styles.check}>
-            <input name="propertyPermissionConfirmed" type="checkbox" /> I confirm property
-            marketing rights.
+            <input name="propertyPermissionConfirmed" type="checkbox" /> I have permission to market
+            this property.
           </label>
           <label className={styles.check}>
-            <input name="realtorPermissionConfirmed" type="checkbox" /> I confirm Realtor collateral
-            permission.
+            <input name="realtorPermissionConfirmed" type="checkbox" /> I have permission to use the
+            Realtor&apos;s materials.
           </label>
         </fieldset>
 
         <fieldset>
-          <legend>Campaign content</legend>
+          <legend>What the ad says</legend>
           <label>
             Headline
             <input name="headline" required defaultValue="Tour this home this weekend" />
@@ -176,9 +190,9 @@ export function OpenHouseDraftBuilder() {
         </fieldset>
 
         <fieldset>
-          <legend>Meta plan</legend>
+          <legend>Budget and area</legend>
           <label>
-            Region
+            Where the ad runs
             <input name="region" required defaultValue="Dallas-Fort Worth" />
           </label>
           <label>
@@ -203,38 +217,44 @@ export function OpenHouseDraftBuilder() {
               defaultValue="125"
             />
           </label>
-          <p className={styles.hint}>Housing Special Ad Category is enforced automatically.</p>
+          <p className={styles.hint}>
+            Housing ads have their own rules. We apply them for you, every time.
+          </p>
         </fieldset>
 
         <Button disabled={submitting} type="submit">
-          {submitting ? "Running preflight…" : "Freeze draft and run preflight"}
+          {submitting ? "Running the checks" : "Save and run the checks"}
         </Button>
       </form>
 
-      {error ? (
+      {errorCode === null ? null : (
         <Card padding="md">
-          <strong>Could not compile draft</strong>
-          <p>{error}</p>
+          <strong>We couldn&apos;t save this yet</strong>
+          <p>{userMessageSentence(errorCode)}</p>
+          {isMappedErrorCode(errorCode) ? null : (
+            <SupportDetails
+              rows={[[SUPPORT_DETAILS_LABELS.supportReference, errorCode ?? "Not recorded"]]}
+            />
+          )}
         </Card>
-      ) : null}
-      {result ? <PreflightReview result={result} /> : null}
+      )}
+      {result ? <CampaignCheckResult result={result} /> : null}
     </div>
   );
 }
 
-function PreflightReview({ result }: Readonly<{ result: PreflightResponse }>) {
+function CampaignCheckResult({ result }: Readonly<{ result: PreflightResponse }>) {
   const dollars = (minor: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(minor / 100);
+  const headline = result.blocking ? CHECK_RESULT_NEEDS_CHANGES : CHECK_RESULT_READY;
   return (
-    <section className={styles.review} aria-labelledby="preflight-review-title">
+    <section className={styles.review} aria-labelledby="campaign-check-title">
       <div className={styles.reviewHeading}>
         <div>
-          <p className={styles.eyebrow}>Frozen version</p>
-          <h2 id="preflight-review-title">Preflight {result.blocking ? "blocked" : "passed"}</h2>
+          <p className={styles.eyebrow}>Saved</p>
+          <h2 id="campaign-check-title">{headline}</h2>
         </div>
-        <span data-blocking={result.blocking}>
-          {result.blocking ? "Blocked" : "Ready for approval"}
-        </span>
+        <span data-blocking={result.blocking}>{headline}</span>
       </div>
       <div className={styles.summaryGrid}>
         <Card padding="sm">
@@ -258,29 +278,45 @@ function PreflightReview({ result }: Readonly<{ result: PreflightResponse }>) {
       </div>
       {result.findings.length === 0 ? (
         <Card padding="md">
-          <strong>No blocking findings.</strong>
-          <p>The frozen draft passed the deterministic founding ruleset.</p>
+          <strong>Nothing to fix.</strong>
+          <p>This campaign meets every rule we check. An approver can sign off on it now.</p>
         </Card>
       ) : (
         <div className={styles.findings}>
           {result.findings.map((finding) => (
-            <Card key={finding.ruleCode} padding="md">
-              <strong>{finding.ruleCode}</strong>
-              <p>{finding.description}</p>
-              <small>{finding.remediation}</small>
-            </Card>
+            <CampaignCheckFinding finding={finding} key={finding.ruleCode} />
           ))}
         </div>
       )}
       <a className="oalo-action-link" href={result.detailHref}>
-        Open persisted campaign
+        Open campaign
       </a>
-      <details>
-        <summary>Immutable evidence</summary>
-        <code>{result.campaignVersionRef}</code>
-        <code>{result.manifestHash}</code>
-        <code>{result.preflightResultHash}</code>
-      </details>
+      <SupportDetails
+        rows={[
+          [SUPPORT_DETAILS_LABELS.versionId, result.campaignVersionRef],
+          [SUPPORT_DETAILS_LABELS.contentFingerprint, result.manifestHash],
+          [SUPPORT_DETAILS_LABELS.checkFingerprint, result.preflightResultHash],
+        ]}
+      />
     </section>
+  );
+}
+
+/**
+ * One thing the checks found. The plain explanation comes first and the fix second, because that is
+ * the order a loan officer needs them in; the rule's code is real and stays, one region down.
+ */
+function CampaignCheckFinding({
+  finding,
+}: Readonly<{ finding: PreflightResponse["findings"][number] }>) {
+  return (
+    <Card padding="md">
+      <strong>{finding.description}</strong>
+      <p>{finding.remediation}</p>
+      <small>
+        {finding.severity === "blocking" ? "Fix this before approving" : "Worth a look"}
+      </small>
+      <SupportDetails rows={[[SUPPORT_DETAILS_LABELS.rule, finding.ruleCode]]} />
+    </Card>
   );
 }

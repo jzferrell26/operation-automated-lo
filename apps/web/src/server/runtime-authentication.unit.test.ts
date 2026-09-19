@@ -388,7 +388,7 @@ describe("runtime shell session", () => {
 
     expect(shell.authenticated).toBe(true);
     expect(shell.session?.user.displayName).toBe("Review approver");
-    expect(shell.session?.user.roleLabel).toBe("Campaign approver");
+    expect(shell.session?.user.roleLabel).toBe("Approver");
     expect(shell.session?.user.capabilities).not.toContain("campaign:create");
     expect(shell.session?.location.displayName).toBe("Review location (not connected)");
     expect(shell.session?.location.source).toBe(VERIFIED_SESSION_SOURCE);

@@ -17,14 +17,14 @@ const metricStatePresentation: Readonly<
   Record<MetricState, { icon: IconName; label: string; tone: IconTone }>
 > = Object.freeze({
   current: { icon: "check", label: "Current", tone: "success" },
-  stale: { icon: "clock", label: "Stale", tone: "warning" },
+  stale: { icon: "clock", label: "Needs a refresh", tone: "warning" },
   unavailable: { icon: "info", label: "Unavailable", tone: "neutral" },
   not_connected: { icon: "alert-triangle", label: "Not connected", tone: "warning" },
   partial: { icon: "circle-dot", label: "Partial", tone: "info" },
   uncertain: { icon: "loader", label: "Uncertain, reconciling", tone: "uncertain" },
   permission_restricted: {
     icon: "lock",
-    label: "Permission restricted",
+    label: "No access",
     tone: "uncertain",
   },
 });
@@ -97,7 +97,7 @@ function visibleMetricValue(props: MetricProps): string | number {
     case "not_connected":
       return "Not connected";
     case "permission_restricted":
-      return "Restricted";
+      return "No access";
     default:
       return props.value;
   }
@@ -154,36 +154,36 @@ export function Metric(props: MetricProps) {
           <dd>{source}</dd>
         </div>
         <div>
-          <dt>Freshness</dt>
+          <dt>Last updated</dt>
           <dd>{freshness}</dd>
         </div>
         {synthetic ? (
           <div>
             <dt>Data type</dt>
-            <dd>Synthetic data</dd>
+            <dd>Not live data</dd>
           </div>
         ) : null}
         {state === "stale" || state === "not_connected" ? (
           <div>
-            <dt>Next safe action</dt>
+            <dt>What to do next</dt>
             <dd>{props.nextAction}</dd>
           </div>
         ) : null}
         {state === "partial" ? (
           <div>
-            <dt>Sources pending</dt>
+            <dt>Still waiting on</dt>
             <dd>{props.pendingSources.join(", ")}</dd>
           </div>
         ) : null}
         {state === "uncertain" ? (
           <>
             <div>
-              <dt>Reconciliation</dt>
-              <dd>Read-back in progress</dd>
+              <dt>Checking</dt>
+              <dd>We are reading this back now</dd>
             </div>
             {props.correlationId ? (
               <div>
-                <dt>Correlation ID</dt>
+                <dt>Support reference</dt>
                 <dd className="oalo-data-text">{props.correlationId}</dd>
               </div>
             ) : null}
@@ -192,11 +192,11 @@ export function Metric(props: MetricProps) {
         {state === "permission_restricted" ? (
           <>
             <div>
-              <dt>Required role</dt>
+              <dt>Who can do this</dt>
               <dd>{props.requiredRole}</dd>
             </div>
             <div>
-              <dt>Access path</dt>
+              <dt>How to get access</dt>
               <dd>{props.accessPath}</dd>
             </div>
           </>

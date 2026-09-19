@@ -73,14 +73,12 @@ export function ReportingAcceptanceSurface({
       id: `local-${action.id}-${String(localAuditHistory.length + 1).padStart(2, "0")}`,
       event: action.event,
       state: "staged locally",
-      source: "Synthetic Realtor sharing control",
+      source: "Realtor sharing control",
       occurredAt: new Date().toISOString(),
       target: action.target,
     };
     setLocalAuditHistory((current) => [...current, record]);
-    setAuditStatus(
-      `${action.event} audit staged locally for ${action.target}. No external mutation occurred.`,
-    );
+    setAuditStatus(`${action.event} recorded for ${action.target}. Nothing was sent anywhere.`);
   }
 
   return (
@@ -166,7 +164,7 @@ export function ReportingAcceptanceSurface({
               </div>
               <dl className={styles.inlineDetails}>
                 <Detail label="Last attempt" value={formatTimestamp(exception.lastAttempt)} />
-                <Detail label="Correlation ID" value={exception.correlationId} />
+                <Detail label="Support reference" value={exception.correlationId} />
                 <Detail label="Next action" value={exception.nextAction} />
               </dl>
             </Card>
@@ -195,9 +193,7 @@ export function ReportingAcceptanceSurface({
             {projection.blueprintLearning.minimumSampleSize}, minimum privacy buckets{" "}
             {projection.blueprintLearning.minimumTenantCount}.
           </p>
-          <p>
-            Low-volume groups suppressed. Tenant identities omitted. Campaign mutation disabled.
-          </p>
+          <p>Small groups are hidden. No workspace is named. Nothing here changes a campaign.</p>
           <div
             aria-label="Blueprint grouping results"
             className={styles.tableRegion}
@@ -214,7 +210,7 @@ export function ReportingAcceptanceSurface({
                   <th scope="col">Privacy buckets</th>
                   <th scope="col">Leads</th>
                   <th scope="col">Appointments</th>
-                  <th scope="col">Evidence</th>
+                  <th scope="col">What we checked</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,18 +238,18 @@ export function ReportingAcceptanceSurface({
         <Card padding="md">
           <p>{projection.cohort.gateSummary}</p>
           <div
-            aria-label="Cohort milestone evidence"
+            aria-label="Every founding-cohort milestone, in a table"
             className={styles.tableRegion}
             role="region"
             tabIndex={0}
           >
             <table>
-              <caption>Structured synthetic cohort state and evidence</caption>
+              <caption>Where the founding cohort stands</caption>
               <thead>
                 <tr>
                   <th scope="col">Milestone</th>
-                  <th scope="col">State</th>
-                  <th scope="col">Evidence</th>
+                  <th scope="col">Where it stands</th>
+                  <th scope="col">What we checked</th>
                   <th scope="col">Source</th>
                 </tr>
               </thead>
@@ -277,7 +273,7 @@ export function ReportingAcceptanceSurface({
       </section>
 
       <section aria-labelledby="realtor-projection-title" className={styles.portfolio}>
-        <h2 id="realtor-projection-title">Assigned Realtor projection</h2>
+        <h2 id="realtor-projection-title">Your Realtor partner</h2>
         <Card data-realtor-identity={projection.realtor.identity} padding="md">
           <h3>{projection.realtor.identity}</h3>
           <p>{projection.realtor.assignmentSource}</p>

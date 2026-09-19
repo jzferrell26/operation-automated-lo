@@ -22,8 +22,10 @@ describe("validated navigation projection", () => {
         marketplace: "planned",
       }),
     );
-    expect(navigation.items.find((item) => item.id === "reports")?.stateDetail).toContain(
-      "Owner or Agency User",
+    // PRD-006b D5. The role is lowered into sentence position and given its article, so the
+    // detail reads as a sentence rather than as a token pasted into the middle of one.
+    expect(navigation.items.find((item) => item.id === "reports")?.stateDetail).toBe(
+      "Only an owner or agency user can do this. Ask your workspace owner.",
     );
   });
 

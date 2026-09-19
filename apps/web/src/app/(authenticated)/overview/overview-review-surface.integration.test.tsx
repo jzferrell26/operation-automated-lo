@@ -48,12 +48,6 @@ const renderedAllowances: readonly ReviewSurfaceAllowance[] = [
     path: "navigation.marketingItems[*].state",
     because: "Closed navigationStateSchema enum; the visible label is component-authored.",
   },
-  {
-    path: "navigation.items[*].requiredRole",
-    value: "Owner or Agency User",
-    because:
-      "Review navigation drops requiredRole; this hit is the illustrative edge-state matrix card in overview-edge-state-matrix.tsx, which is labelled a design reference.",
-  },
 
   // Region identity the review projection deliberately keeps. Collapsing a region's evidence while
   // still naming the region is the whole point of the not-connected projection.
@@ -101,34 +95,7 @@ const renderedAllowances: readonly ReviewSurfaceAllowance[] = [
     path: "onboarding.getConnected[*].completionHref",
     because: "Route paths that collide with the navigation and quick-action hrefs.",
   },
-  {
-    path: "onboarding.permissionGroups[*].label",
-    value: "Required",
-    because: "Substring of the component-authored readiness chip 'Attention Required'.",
-  },
-  {
-    path: "onboarding.launchReadiness[*].title",
-    value: "Synthetic lead",
-    because:
-      "Substring of the component-authored metric caption 'Synthetic leads are excluded. ...'.",
-  },
 
-  // Role names that the illustrative edge-state matrix prints as part of its own demo cards.
-  {
-    path: "overview.attention[*].responsibleParty",
-    value: "Location Owner",
-    because: "Printed by the illustrative edge-state matrix; review mode empties attention.",
-  },
-  {
-    path: "onboarding.getConnected[*].responsibleParty",
-    value: "Location Owner",
-    because: "Printed by the illustrative edge-state matrix; onboarding does not render here.",
-  },
-  {
-    path: "onboarding.launchReadiness[*].responsibleParty",
-    value: "Location Owner",
-    because: "Printed by the illustrative edge-state matrix; onboarding does not render here.",
-  },
   {
     path: "overview.workspaceStatus[*].detail",
     value: "Active",
@@ -232,7 +199,16 @@ describe("review surface honesty invariant", () => {
       overview: workspace.ui.overview,
       session: workspace.ui.session,
     });
-    const forbidden = forbiddenReviewStrings(loadSyntheticUiFixture(), projectionAllowances);
+    /**
+     * The payload, not a page. It legitimately carries closed enums such as `setup_required` and
+     * capability slugs, which gate what the page renders and which no user ever reads, so the
+     * user-language contract's vocabulary does not apply here (PRD-006b D2 governs what is read).
+     */
+    const forbidden = forbiddenReviewStrings(
+      loadSyntheticUiFixture(),
+      projectionAllowances,
+      "projection",
+    );
 
     expect(leakedReviewStrings(projection, forbidden)).toEqual([]);
   });
@@ -243,21 +219,17 @@ describe("review surface honesty invariant", () => {
     expect(workspace.ui.navigation.items.every((item) => item.requiredRole === undefined)).toBe(
       true,
     );
-    expect(container.textContent).toContain(
-      "Review surface. Demo navigation only. No live entitlement or provider state is evaluated.",
-    );
+    expect(container.textContent).toContain("Available once your accounts are connected.");
     /**
-     * Since PRD-005a the review shell states the session it actually has. Without a verified
-     * first-party session that is "Not signed in", not the fixture's demo persona, so the fixture
-     * provenance string must be absent rather than present.
+     * Since PRD-005a the shell states the session it actually has. Without a real sign-in that is
+     * "You're signed out", not the fixture's demo persona, so the fixture provenance string must be
+     * absent rather than present. PRD-006b D4 supplies the words.
      */
-    expect(container.textContent).not.toContain("Demo session. No validated HighLevel location.");
+    expect(container.textContent).not.toContain("Demo session");
     expect(container.textContent).not.toContain("Demo reviewer");
-    expect(container.textContent).toContain("Not signed in");
-    expect(container.textContent).toContain(
-      "No first-party session was presented, so no location was resolved.",
-    );
-    expect(screen.getByText("REVIEW / DEMO / NOT CONNECTED")).toBeInTheDocument();
+    expect(container.textContent).toContain("You're signed out");
+    expect(container.textContent).toContain("Sign in to see your workspace");
+    expect(screen.getAllByText("Not connected yet").length).toBeGreaterThan(0);
   });
 
   it("renders no numeric demo value in any review metric", async () => {
@@ -278,7 +250,7 @@ describe("review surface honesty invariant", () => {
       const metric = screen.getByRole("article", { name: label });
       expect(within(metric).getByText("Not connected", { selector: ".oalo-state-label" }));
       expect(metric.textContent).toContain(
-        "Not connected. Review surface has no live spend, leads, or CRM feed.",
+        "Not live yet. Connect Meta and HighLevel to see spend and leads here.",
       );
     }
   });
@@ -286,12 +258,11 @@ describe("review surface honesty invariant", () => {
   it("replaces the persona header and the verification claim in review mode", async () => {
     const { container } = await renderReviewOverview();
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Review dashboard (demo, not connected)",
-    );
-    expect(container.textContent).toContain("Demo workspace (not connected)");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Overview");
+    expect(container.textContent).toContain("Your workspace");
+    expect(container.textContent).toContain("HighLevel, Meta, and Stripe aren't connected.");
     expect(container.textContent).toContain(
-      "Last system verification: none. The review surface performs no live verification.",
+      "Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do.",
     );
   });
 
@@ -299,9 +270,9 @@ describe("review surface honesty invariant", () => {
     await renderReviewOverview();
 
     for (const title of [
-      "No attention items to show",
-      "No recorded activity to show",
-      "No campaigns in this location yet",
+      "Nothing needs your attention",
+      "Nothing to show yet",
+      "No campaigns yet",
     ]) {
       expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
     }
@@ -311,6 +282,6 @@ describe("review surface honesty invariant", () => {
     const { container } = await renderReviewOverview();
     const label = container.querySelector("[data-demo-label='overview-edge-state-matrix']");
 
-    expect(label?.textContent).toContain("Illustrative demo states");
+    expect(label?.textContent).toContain("Examples only");
   });
 });

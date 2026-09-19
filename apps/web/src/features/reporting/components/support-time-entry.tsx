@@ -21,19 +21,19 @@ export function SupportTimeEntry({ supportEntry }: SupportTimeEntryProps) {
     const parsedMinutes = Number(minutes);
 
     if (!Number.isInteger(parsedMinutes) || parsedMinutes < 5 || parsedMinutes > 240) {
-      setResult("Enter support time from 5 to 240 minutes in whole minutes.");
+      setResult("Enter a whole number of minutes, from 5 to 240.");
       return;
     }
 
-    setResult(`${activity}: ${parsedMinutes} minutes staged locally. No support record was saved.`);
+    setResult(`${activity}: ${parsedMinutes} minutes. Nothing was saved.`);
   }
 
   return (
     <Card padding="md">
       <form className={styles.supportForm} onSubmit={stageEntry}>
         <div>
-          <h2>Support time entry</h2>
-          <p>Record a simple local projection for review. Saving is disabled.</p>
+          <h2>Log support time</h2>
+          <p>Try it out. Nothing is saved yet.</p>
         </div>
         <label>
           Activity
@@ -57,7 +57,7 @@ export function SupportTimeEntry({ supportEntry }: SupportTimeEntryProps) {
             value={minutes}
           />
         </label>
-        <Button type="submit">Add local entry</Button>
+        <Button type="submit">Add entry</Button>
         {result ? <p role="status">{result}</p> : null}
       </form>
     </Card>

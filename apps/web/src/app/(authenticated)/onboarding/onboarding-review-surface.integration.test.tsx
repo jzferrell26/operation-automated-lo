@@ -69,21 +69,6 @@ const onboardingAllowances: readonly ReviewSurfaceAllowance[] = [
   // Short closed-vocabulary tokens that are substrings of copy this route legitimately renders.
   // Each is pinned to its one colliding value, so the rest of the field stays forbidden.
   {
-    path: "onboarding.permissionGroups[*].label",
-    value: "Required",
-    because: "Substring of the screen's own component-authored 'Attention Required' chip.",
-  },
-  {
-    path: "onboarding.permissionGroups[*].category",
-    value: "missing",
-    because: "Substring of the guidance dismiss copy, 'Dismissing guidance cannot complete...'.",
-  },
-  {
-    path: "onboarding.permissionGroups[*].category",
-    value: "optional",
-    because: "Substring of the step description '... field mappings, and optional workflow.'.",
-  },
-  {
     path: "navigation.items[*].href",
     value: "/settings",
     because: "Substring of the allowed completion hrefs such as '/settings/connections'.",
@@ -104,19 +89,28 @@ const onboardingAllowances: readonly ReviewSurfaceAllowance[] = [
     because: "Substring of the pinned step title 'Brand and compliance'.",
   },
   {
-    path: "overview.metrics[*].state",
-    value: "current",
-    because: "Substring of the checklist's component-authored '... with current ... evidence.'.",
+    path: "overview.activeWork[*].type",
+    value: "campaign",
+    because:
+      "Substring of the component-authored setup copy that names an Open House Boost campaign.",
   },
   {
-    path: "overview.health[*].id",
-    value: "freshness",
-    because: "Substring of the component-authored 'Evidence freshness:' label.",
+    path: "navigation.marketingItems[*].id",
+    value: "campaigns",
+    because:
+      "Substring of the pinned step copy that says who creates campaigns; navigation does not render here.",
+  },
+  {
+    path: "navigation.items[*].id",
+    value: "leads",
+    because:
+      "Substring of the pinned step copy about where new leads land; navigation does not render here.",
   },
   {
     path: "overview.health[*].id",
     value: "meta",
-    because: "Substring of 'metric exclusions' in the pinned Results review description.",
+    because:
+      "Substring of the pinned 'Meta connection' step title; the overview does not render here.",
   },
   {
     path: "overview.health[*].id",
@@ -189,8 +183,8 @@ describe("authenticated onboarding route", () => {
     ]) {
       expect(container.textContent).not.toContain(evidence);
     }
-    expect(screen.getByLabelText("0 of 5 complete")).toBeInTheDocument();
-    expect(screen.getByLabelText("0 of 4 complete")).toBeInTheDocument();
+    expect(screen.getByLabelText("0 of 5 done")).toBeInTheDocument();
+    expect(screen.getByLabelText("0 of 4 done")).toBeInTheDocument();
   });
 
   it("replaces every onboarding reason, owner, and freshness claim with a review statement", () => {
@@ -200,10 +194,14 @@ describe("authenticated onboarding route", () => {
       ...workspace.ui.onboarding.launchReadiness,
     ];
 
+    // PRD-006b D4 reworded all three. What each one claims is unchanged: nothing was checked,
+    // nothing is live, and the person who finishes the step is the user, once they connect.
     for (const item of items) {
-      expect(item.freshness).toBe("No live observation");
-      expect(item.state === "complete" ? "" : item.reason).toMatch(/Review surface/u);
-      expect(item.state === "complete" ? "" : item.responsibleParty).toMatch(/no live seat/u);
+      expect(item.freshness).toBe("Not live yet");
+      expect(item.state === "complete" ? "" : item.reason).toBe(
+        "Nothing to check yet. This step waits for a connected account.",
+      );
+      expect(item.state === "complete" ? "" : item.responsibleParty).toBe("You, once you connect");
     }
   });
 

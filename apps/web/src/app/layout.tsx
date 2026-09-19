@@ -15,7 +15,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Operation Automated LO",
-  description: "Phase 0 evidence harness and platform scaffold",
+  description: "Automated LO: Open House Boost campaigns with a named approval on the record.",
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

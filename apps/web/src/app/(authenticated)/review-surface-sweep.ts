@@ -12,6 +12,8 @@
  * added next to it.
  */
 
+import { FORBIDDEN_IDENTIFIER_PATTERNS, FORBIDDEN_TERMS } from "../../copy/forbidden-vocabulary.js";
+
 /** Normalized fixture path: array indices collapse to `[*]` so one allowance covers one field. */
 export type FixtureString = Readonly<{ path: string; value: string }>;
 
@@ -24,13 +26,39 @@ export type ReviewSurfaceAllowance = Readonly<{
   because: string;
 }>;
 
-export type ForbiddenReviewString = Readonly<{ value: string; paths: readonly string[] }>;
+/**
+ * How `leakedReviewStrings` looks for one forbidden value.
+ *
+ * `substring` is the fixture sweep's rule: a fixture narrative string is a leak wherever it turns
+ * up. `word` and `pattern` belong to the user-language contract, which bans a vocabulary and a set
+ * of shapes rather than a set of values, so they match on a word boundary or by regular expression.
+ */
+export type ForbiddenReviewMatch = "substring" | "word" | "pattern";
+
+export type ForbiddenReviewString = Readonly<{
+  value: string;
+  paths: readonly string[];
+  match?: ForbiddenReviewMatch;
+}>;
 
 /**
  * Every attribute a reviewer can read without opening devtools. Class names and `data-*` hooks are
  * deliberately excluded: they are implementation handles, not statements about the workspace.
+ *
+ * `aria-describedby` is handled separately below rather than listed here, because its value is a
+ * set of element ids rather than prose: PRD-006b D6 asks for the text of what it names, since that
+ * is what a screen reader reads aloud.
  */
 const inspectedAttributes = ["alt", "aria-label", "href", "placeholder", "title"] as const;
+
+/**
+ * The collapsed region the user-language contract reserves for a version reference, a fingerprint,
+ * a rule code, or a support reference (PRD-006b D8, contract section 6). It is closed by default,
+ * so it is not part of what a user reads at rest, and it is the one place those values are allowed.
+ * The sweep removes it before reading the page, which is what turns "no identifier renders outside
+ * this region" into a testable claim rather than a convention.
+ */
+const SUPPORT_DETAILS_SELECTOR = "[data-support-details]";
 
 export function collectFixtureStrings(fixture: unknown): readonly FixtureString[] {
   const collected: FixtureString[] = [];
@@ -68,13 +96,50 @@ function allows(allowance: ReviewSurfaceAllowance, candidate: FixtureString): bo
 }
 
 /**
- * A value is forbidden unless at least one of the paths that produce it is allowed. The sweep
- * matches by substring, so a value that legitimately renders from an allowed path cannot also be
- * reported as a leak from an unallowed one.
+ * The user-language contract's own entries: the forbidden vocabulary as word matches and the
+ * forbidden identifier shapes as pattern matches (PRD-006b D2 and D6).
+ *
+ * These carry no allowance model. A fixture string can earn an allowance by naming a route or a
+ * region of the product; a contract term cannot, because the contract's claim is that the word
+ * itself has no user-facing sense in this product. Where one did, the product changed the word.
+ */
+export function userLanguageForbiddenStrings(): readonly ForbiddenReviewString[] {
+  return [
+    ...FORBIDDEN_TERMS.map((term) => ({
+      value: term,
+      paths: ["user-language-contract:forbidden-vocabulary"],
+      match: "word" as const,
+    })),
+    ...FORBIDDEN_IDENTIFIER_PATTERNS.map(({ name, pattern }) => ({
+      value: pattern.source,
+      paths: [`user-language-contract:identifier:${name}`],
+      match: "pattern" as const,
+    })),
+  ];
+}
+
+/**
+ * Which surface the caller is about to sweep.
+ *
+ * `rendered` is a page a user reads, so it carries the user-language contract's vocabulary and
+ * identifier shapes as well as the fixture strings. `projection` is the server payload behind that
+ * page, which legitimately holds closed enums such as `setup_required` and `not_connected`: those
+ * are the state model's own names, they gate what the page renders, and no user ever sees them. The
+ * contract governs what is read, not what is computed, so the vocabulary entries are left out
+ * there and the fixture sweep alone applies.
+ */
+export type ReviewSweepScope = "rendered" | "projection";
+
+/**
+ * A fixture value is forbidden unless at least one of the paths that produce it is allowed, and on
+ * a rendered surface every user-language contract entry is forbidden unconditionally. The fixture
+ * sweep matches by substring, so a value that legitimately renders from an allowed path cannot also
+ * be reported as a leak from an unallowed one.
  */
 export function forbiddenReviewStrings(
   fixture: unknown,
   allowances: readonly ReviewSurfaceAllowance[],
+  scope: ReviewSweepScope = "rendered",
 ): readonly ForbiddenReviewString[] {
   const byValue = new Map<string, { paths: Set<string>; allowed: boolean }>();
 
@@ -85,10 +150,13 @@ export function forbiddenReviewStrings(
     byValue.set(candidate.value, entry);
   }
 
-  return [...byValue.entries()]
-    .filter(([, entry]) => !entry.allowed)
-    .map(([value, entry]) => ({ value, paths: [...entry.paths].sort() }))
-    .sort((left, right) => left.value.localeCompare(right.value));
+  return [
+    ...[...byValue.entries()]
+      .filter(([, entry]) => !entry.allowed)
+      .map(([value, entry]) => ({ value, paths: [...entry.paths].sort() }))
+      .sort((left, right) => left.value.localeCompare(right.value)),
+    ...(scope === "rendered" ? userLanguageForbiddenStrings() : []),
+  ];
 }
 
 /**
@@ -110,15 +178,41 @@ export function staleAllowances(
     );
 }
 
-/** The readable surface of a rendered review route: visible text plus accessible attributes. */
+/**
+ * The readable surface of a rendered review route: visible text, accessible attributes, the text of
+ * every `aria-describedby` target, and every `<code>` value, minus the collapsed support region.
+ *
+ * `aria-describedby` targets are resolved against the owning document rather than the container,
+ * because a description can live outside the rendered subtree and a screen reader still reads it.
+ */
 export function reviewSurfaceText(container: HTMLElement): string {
-  const fragments = [container.textContent ?? ""];
+  const readable = container.cloneNode(true) as HTMLElement;
+  for (const supportRegion of readable.querySelectorAll(SUPPORT_DETAILS_SELECTOR)) {
+    supportRegion.remove();
+  }
 
-  for (const element of container.querySelectorAll("*")) {
+  const fragments = [readable.textContent ?? ""];
+
+  for (const element of readable.querySelectorAll("code")) {
+    fragments.push(element.textContent ?? "");
+  }
+
+  for (const element of readable.querySelectorAll("*")) {
     for (const attribute of inspectedAttributes) {
       const value = element.getAttribute(attribute);
       if (value !== null && value.length > 0) {
         fragments.push(value);
+      }
+    }
+
+    const describedBy = element.getAttribute("aria-describedby");
+    if (describedBy === null) {
+      continue;
+    }
+    for (const id of describedBy.split(/\s+/u).filter((token) => token.length > 0)) {
+      const target = container.ownerDocument.getElementById(id);
+      if (target !== null && target.closest(SUPPORT_DETAILS_SELECTOR) === null) {
+        fragments.push(target.textContent ?? "");
       }
     }
   }
@@ -126,11 +220,27 @@ export function reviewSurfaceText(container: HTMLElement): string {
   return fragments.join("\n");
 }
 
+function buildWordPattern(term: string): RegExp {
+  const escaped = term.replaceAll(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  return new RegExp(`(?<![\\w-])${escaped}(?![\\w-])`, "iu");
+}
+
+function matchesSurface(surface: string, entry: ForbiddenReviewString): boolean {
+  switch (entry.match ?? "substring") {
+    case "substring":
+      return surface.includes(entry.value);
+    case "word":
+      return buildWordPattern(entry.value).test(surface);
+    case "pattern":
+      return new RegExp(entry.value, "iu").test(surface);
+  }
+}
+
 export function leakedReviewStrings(
   surface: string,
   forbidden: readonly ForbiddenReviewString[],
 ): readonly string[] {
   return forbidden
-    .filter((entry) => surface.includes(entry.value))
+    .filter((entry) => matchesSurface(surface, entry))
     .map((entry) => `${entry.paths.join(" | ")} = ${JSON.stringify(entry.value)}`);
 }

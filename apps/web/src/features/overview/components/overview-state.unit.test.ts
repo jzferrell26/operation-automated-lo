@@ -10,17 +10,17 @@ describe("Platform Overview edge states", () => {
     expect(stateMatrix).toHaveLength(11);
     expect(new Set(stateMatrix)).toHaveProperty("size", 11);
     expect(stateMatrix.map((state) => getOverviewStatePresentation(state).title)).toEqual([
-      "Loading verified workspace data",
-      "New workspace",
-      "Setup incomplete",
-      "Workspace blocked",
-      "Healthy without an active campaign",
-      "Provider degraded",
-      "Outcome data unavailable",
-      "Protected metrics restricted",
-      "Authorized agency context",
-      "Safe retry available",
-      "Safe retry available",
+      "Loading your workspace",
+      "A fresh start",
+      "Setup isn't finished",
+      "Something is blocking you",
+      "All set, no campaigns yet",
+      "HighLevel is having trouble",
+      "We can't show this number",
+      "These numbers are hidden from you",
+      "Agency view",
+      "You can try again",
+      "You can try again",
     ]);
   });
 

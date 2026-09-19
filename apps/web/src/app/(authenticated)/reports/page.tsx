@@ -25,11 +25,11 @@ export default function ReportsPage() {
   if (workspace.mode === "review") {
     return (
       <ReviewNotConnectedScreen
-        eyebrow="Review surface"
-        heading="Reporting is not connected"
-        lead="No HighLevel, Meta, or Stripe reporting source is attached to this deployment, so no spend, lead, or outcome value can be reported here."
+        eyebrow="Reports"
+        heading="Reports aren't live yet"
+        lead="Once Meta and HighLevel are connected, spend, leads, and results show up here."
         regions={reviewReportingMeasures}
-        regionsTitle="Reporting measures"
+        regionsTitle="What you'll see here"
         regionsTitleId="review-reporting-title"
       />
     );

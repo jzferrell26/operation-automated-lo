@@ -33,6 +33,20 @@ export interface WorkspaceSessionView {
   };
 }
 
+/** What a user reads when nothing about their role explains the lock. */
+export const NO_ACCESS_DETAIL = "You don't have access to this. Ask your workspace owner.";
+
+/**
+ * "Only a publisher can do this", "Only an approver can do this". The role arrives as a display
+ * label, so it is lowered into sentence position and given the right article rather than being
+ * pasted in mid-sentence with its own capitals.
+ */
+export function restrictedByRoleDetail(requiredRole: string): string {
+  const role = requiredRole.toLocaleLowerCase("en-US");
+  const article = /^[aeiou]/u.test(role) ? "an" : "a";
+  return `Only ${article} ${role} can do this. Ask your workspace owner.`;
+}
+
 function projectItem(
   item: DeepReadonly<NavigationItem>,
   session: WorkspaceSessionView,
@@ -46,9 +60,7 @@ function projectItem(
     return deepFreeze({
       ...item,
       state: "permission_restricted" as const,
-      stateDetail: item.requiredRole
-        ? `Requires ${item.requiredRole}. Ask an authorized resolver for access.`
-        : "Your validated role does not include this capability. Ask an authorized resolver.",
+      stateDetail: item.requiredRole ? restrictedByRoleDetail(item.requiredRole) : NO_ACCESS_DETAIL,
     });
   }
 

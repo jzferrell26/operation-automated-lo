@@ -3,6 +3,8 @@
 import { Button, Card, Icon, Stack } from "@oalo/ui";
 import { useState } from "react";
 
+import { BRAND_FIELD_STATE_LABELS, SUPPORT_DETAILS_LABELS } from "../../../copy/user-language.js";
+import { SupportDetails } from "../../shell/components/support-details.js";
 import type { DeepReadonly } from "../../ui-foundation/model/synthetic-ui.js";
 import type { SyntheticBrandProfile } from "../model/synthetic-brand-profile.js";
 import styles from "./brand-profile.module.css";
@@ -27,20 +29,20 @@ export function BrandProfileScreen({ profile }: BrandProfileScreenProps) {
     <div className={styles.page}>
       <header className={styles.pageHeader}>
         <div>
-          <p className={styles.eyebrow}>Canonical profile</p>
-          <h1>Brand and compliance profile</h1>
+          <p className={styles.eyebrow}>Your brand</p>
+          <h1>Brand and compliance details</h1>
           <p>
-            One current profile supplies reusable Open House Boost values for{" "}
-            {profile.activeLocation.displayName}.
+            Fill these in once and every Open House Boost for {profile.activeLocation.displayName}{" "}
+            uses them.
           </p>
         </div>
-        <span className={styles.versionBadge}>{profile.canonicalProfile.version}, current</span>
+        <span className={styles.versionBadge}>Current</span>
       </header>
 
       <Card className={styles.safetyNotice} padding="md">
         <Icon decorative name="lock" size="sm" tone="info" />
         <div>
-          <strong>Suggestion-only synthetic assistance</strong>
+          <strong>Suggestions only. You decide what&apos;s saved.</strong>
           <p>{profile.safety.disclosure}</p>
         </div>
       </Card>
@@ -48,10 +50,12 @@ export function BrandProfileScreen({ profile }: BrandProfileScreenProps) {
       <section aria-labelledby="canonical-profile-title" className={styles.section}>
         <div className={styles.sectionHeading}>
           <div>
-            <h2 id="canonical-profile-title">Current canonical profile</h2>
+            <h2 id="canonical-profile-title">Your current details</h2>
             <p>{profile.canonicalProfile.source}</p>
           </div>
-          <span>{profile.canonicalProfile.id}</span>
+          <SupportDetails
+            rows={[[SUPPORT_DETAILS_LABELS.versionId, profile.canonicalProfile.version]]}
+          />
         </div>
         <div className={styles.fieldGrid}>
           {profile.canonicalProfile.fields.map((field) => (
@@ -67,17 +71,17 @@ export function BrandProfileScreen({ profile }: BrandProfileScreenProps) {
       <section aria-labelledby="required-fields-title" className={styles.section}>
         <div className={styles.sectionHeading}>
           <div>
-            <h2 id="required-fields-title">Open House Boost required fields</h2>
-            <p>Required by the selected blueprint, state, lender policy, and channels.</p>
+            <h2 id="required-fields-title">What every Open House Boost needs</h2>
+            <p>Your state, your lender&apos;s policy, and where the ad runs all ask for these.</p>
           </div>
-          <span>{missingFields.length} missing</span>
+          <span>{missingFields.length} still to add</span>
         </div>
         <Stack gap="3">
           {profile.canonicalProfile.requiredFields.map((field) => (
             <Card data-profile-field-state={field.state} key={field.id} padding="sm">
               <div className={styles.fieldStatusHeading}>
                 <h3>{field.label}</h3>
-                <span>{field.state}</span>
+                <span>{BRAND_FIELD_STATE_LABELS[field.state]}</span>
               </div>
               {field.state === "confirmed" ? (
                 <p>{field.evidence}</p>
@@ -85,7 +89,7 @@ export function BrandProfileScreen({ profile }: BrandProfileScreenProps) {
                 <>
                   <p>{field.reason}</p>
                   <p>
-                    <strong>Next safe action:</strong> {field.nextAction}
+                    <strong>What to do next:</strong> {field.nextAction}
                   </p>
                 </>
               )}
@@ -97,17 +101,17 @@ export function BrandProfileScreen({ profile }: BrandProfileScreenProps) {
       <section aria-labelledby="ai-profile-title" className={styles.section}>
         <div className={styles.sectionHeading}>
           <div>
-            <h2 id="ai-profile-title">AI-assisted profile draft</h2>
-            <p>Suggestions come only from the approved synthetic samples listed below.</p>
+            <h2 id="ai-profile-title">Suggested from your approved samples</h2>
+            <p>Every suggestion comes from the marketing you approved below. Nothing else.</p>
           </div>
-          <span>Human acceptance required</span>
+          <span>You decide what&apos;s saved</span>
         </div>
 
-        <ul className={styles.sampleList} aria-label="Approved marketing samples">
+        <ul className={styles.sampleList} aria-label="Your approved marketing samples">
           {profile.aiAssistance.approvedSamples.map((sample) => (
             <li key={sample.id}>
               <strong>{sample.displayName}</strong>
-              <span>{sample.permission.replaceAll("_", " ")}</span>
+              <span>You approved this for suggestions</span>
             </li>
           ))}
         </ul>
@@ -124,18 +128,18 @@ export function BrandProfileScreen({ profile }: BrandProfileScreenProps) {
               >
                 <div className={styles.fieldStatusHeading}>
                   <h3>{suggestion.label}</h3>
-                  <span>{accepted ? "accepted locally" : suggestion.confidenceLabel}</span>
+                  <span>{accepted ? "Added to your draft" : suggestion.confidenceLabel}</span>
                 </div>
                 <p>{suggestion.proposedValue}</p>
                 <p className={styles.sourceText}>
-                  Sources: {suggestion.sourceSampleIds.join(", ")}
+                  Based on {suggestion.sourceSampleIds.length} of your samples
                 </p>
                 <Button
                   disabled={accepted}
                   onClick={() => acceptSuggestion(suggestion.id)}
                   variant="secondary"
                 >
-                  {accepted ? "Accepted into local draft" : `Accept ${suggestion.label} suggestion`}
+                  {accepted ? "Added to your draft" : `Use this for ${suggestion.label}`}
                 </Button>
               </Card>
             );
@@ -144,13 +148,13 @@ export function BrandProfileScreen({ profile }: BrandProfileScreenProps) {
 
         <p className={styles.acceptanceStatus} role="status">
           {acceptedSuggestionIds.length === 0
-            ? "No AI suggestion has been accepted. The current canonical profile is unchanged."
-            : `${acceptedSuggestionIds.length} suggestion${acceptedSuggestionIds.length === 1 ? "" : "s"} accepted into the local profile draft. The current canonical profile is unchanged.`}
+            ? "Nothing saved from a suggestion yet."
+            : `${acceptedSuggestionIds.length} suggestion${acceptedSuggestionIds.length === 1 ? "" : "s"} added to your draft. Your saved details haven't changed.`}
         </p>
       </section>
 
       <Card className={styles.protectedFields} padding="md">
-        <h2>Never accepted from AI</h2>
+        <h2>We never suggest these</h2>
         <ul>
           {profile.aiAssistance.protectedFieldGroups.map((group) => (
             <li key={group}>{group}</li>

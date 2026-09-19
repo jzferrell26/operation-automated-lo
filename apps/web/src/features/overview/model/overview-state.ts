@@ -6,73 +6,72 @@ export type OverviewStatePresentation = Readonly<{
   description: string;
 }>;
 
+/**
+ * What the overview says in each of its states, in the words the user-language contract asks for
+ * (PRD-006b D1 and D3). Each one names what is true and, where there is one, what to do next.
+ */
 export function getOverviewStatePresentation(state: OverviewStateKind): OverviewStatePresentation {
   switch (state) {
     case "loading":
       return {
         kind: "loading",
-        title: "Loading verified workspace data",
-        description: "Labels and source context remain visible while the safe read completes.",
+        title: "Loading your workspace",
+        description: "Labels stay put while the numbers load, so nothing jumps around.",
       };
     case "new_workspace":
       return {
         kind: "empty",
-        title: "New workspace",
-        description:
-          "No business activity exists yet. Authorized setup remains the next safe action.",
+        title: "A fresh start",
+        description: "Nothing has happened here yet. Finishing setup is the next thing to do.",
       };
     case "setup_incomplete":
       return {
         kind: "empty",
-        title: "Setup incomplete",
-        description: "Get Connected must finish before launch readiness can begin.",
+        title: "Setup isn't finished",
+        description: "Connect your accounts first. Everything after that unlocks together.",
       };
     case "blocked":
       return {
         kind: "error",
-        title: "Workspace blocked",
-        description:
-          "A required routing prerequisite is missing and the responsible party is identified.",
+        title: "Something is blocking you",
+        description: "One thing is missing, and this says who can sort it out.",
       };
     case "healthy_without_campaign":
       return {
         kind: "empty",
-        title: "Healthy without an active campaign",
-        description:
-          "The workspace remains useful and reports an authoritative campaign count of zero.",
+        title: "All set, no campaigns yet",
+        description: "Everything is working. You just haven't created a campaign yet.",
       };
     case "provider_degraded":
       return {
         kind: "degraded",
-        title: "Provider degraded",
-        description:
-          "The last safe state remains visible while read-back reconciles the provider result.",
+        title: "HighLevel is having trouble",
+        description: "You're seeing the last thing we knew for sure while we check again.",
       };
     case "unavailable_data":
       return {
         kind: "empty",
-        title: "Outcome data unavailable",
-        description: "No numeric substitute is shown because there is no authoritative source.",
+        title: "We can't show this number",
+        description: "There's no reliable source for it, so we won't put a number in its place.",
       };
     case "restricted_viewer":
       return {
         kind: "permission_restricted",
-        title: "Protected metrics restricted",
-        description: "No protected values or cross-tenant placeholders are rendered.",
+        title: "These numbers are hidden from you",
+        description: "Nothing from another workspace is shown here, and nothing is guessed at.",
       };
     case "authorized_agency":
       return {
         kind: "empty",
-        title: "Authorized agency context",
-        description:
-          "Only installed locations from validated session authority can be made available.",
+        title: "Agency view",
+        description: "Only the workspaces your sign-in covers can appear here.",
       };
     case "route_error":
     case "safe_retry":
       return {
         kind: "error",
-        title: "Safe retry available",
-        description: "Only the idempotent synthetic read can be retried.",
+        title: "You can try again",
+        description: "Nothing was changed, so trying again can't do anything twice.",
       };
   }
 }

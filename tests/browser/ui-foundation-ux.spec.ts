@@ -123,16 +123,16 @@ test("1180 and 390 layouts preserve the required Overview priorities", async ({ 
   const guard = await guardSyntheticLocalPage(page);
   await page.setViewportSize({ width: 1180, height: 900 });
   await page.goto("/overview");
-  for (const heading of ["Business Pulse", "Active Work", "Attention Queue"]) {
+  for (const heading of ["Your numbers", "What you have going on", "Needs your attention"]) {
     await expect(page.getByRole("heading", { name: heading, exact: true })).toBeAttached();
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
-  const readiness = page.getByText("Attention Required", { exact: true }).last();
+  const readiness = page.getByText("Still to do", { exact: true }).last();
   const quickActions = page.getByRole("heading", { name: "Quick actions", exact: true });
-  const businessPulse = page.getByRole("heading", { name: "Business Pulse", exact: true });
-  const attention = page.getByRole("heading", { name: "Attention Queue", exact: true });
+  const businessPulse = page.getByRole("heading", { name: "Your numbers", exact: true });
+  const attention = page.getByRole("heading", { name: "Needs your attention", exact: true });
   const moreActions = page.getByRole("heading", { name: "More quick actions", exact: true });
   const prioritySection = businessPulse.locator("xpath=ancestor::section");
   const priorityActions = quickActions
@@ -205,16 +205,18 @@ test("keyboard focus, target size, checklist order, and reduced motion meet the 
   expect(undersized).toEqual([]);
 
   const checklistHeadings = await page.locator("[data-tour^='onboarding-'] h3").allTextContents();
+  // PRD-006b D5. The nine steps and their order are unchanged; each one is now named the way a
+  // loan officer would name it, and the schema pins the new titles per position.
   expect(checklistHeadings).toEqual([
-    "Install and permissions",
+    "Install and access",
     "Brand and compliance",
     "HighLevel routing",
     "Meta connection",
-    "Team responsibilities",
-    "Dependency recheck",
-    "Synthetic lead",
-    "Results review",
-    "Launch Ready",
+    "Who does what",
+    "Check everything again",
+    "Send a test lead",
+    "Look at the result",
+    "Ready to launch",
   ]);
   const animated = await page.locator("main *").evaluateAll((elements) =>
     elements
@@ -275,7 +277,7 @@ test("open drawer and Overview state gallery meet accessibility contracts", asyn
     element.style.position = "static";
   });
   const gallery = page
-    .getByRole("heading", { name: "Overview edge-state matrix" })
+    .getByRole("heading", { name: "How this page looks in every state" })
     .locator("xpath=ancestor::section");
   await gallery.scrollIntoViewIfNeeded();
   if (regenerateEvidence) {
@@ -292,9 +294,9 @@ test("synthetic acceptance surfaces preserve history, checklist, and authorizati
   await page.setViewportSize({ width: 1180, height: 900 });
 
   await page.goto("/onboarding");
-  await page.getByRole("button", { name: "Dismiss optional guidance" }).click();
-  await expect(page.getByRole("region", { name: "Get Connected" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Launch Readiness" })).toBeVisible();
+  await page.getByRole("button", { name: "Close this tip" }).click();
+  await expect(page.getByRole("region", { name: "Connect your accounts" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Ready to launch" })).toBeVisible();
 
   await page.goto("/settings/connections");
   for (const group of ["Required", "Granted", "Missing", "Optional"]) {
@@ -302,14 +304,14 @@ test("synthetic acceptance surfaces preserve history, checklist, and authorizati
   }
 
   await page.goto("/marketing/campaigns/synthetic-open-house-001");
-  await page.getByRole("button", { name: "Preview version 2" }).click();
+  await page.getByRole("button", { name: "Version 2", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Cedar Street open house, disclosure revision" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Duplicate as new draft" }).click();
-  await expect(page.getByText("Local draft projection staged from version 2")).toBeVisible();
-  await expect(page.getByText("Immutable history: 3 versions")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open approved public link" })).toHaveAttribute(
+  await page.getByRole("button", { name: "Start a new draft from this" }).click();
+  await expect(page.getByText("New draft started from version 2")).toBeVisible();
+  await expect(page.getByText("3 versions, none of them edited after the fact")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open the approved page" })).toHaveAttribute(
     "href",
     "/public/synthetic-open-house-v3",
   );
@@ -321,8 +323,8 @@ test("synthetic acceptance surfaces preserve history, checklist, and authorizati
   await expect(restricted.getByRole("link")).toHaveCount(0);
   await page.getByLabel("Activity").selectOption("Campaign review");
   await page.getByLabel("Minutes").fill("25");
-  await page.getByRole("button", { name: "Add local entry" }).click();
-  await expect(page.getByRole("status")).toContainText("No support record was saved");
+  await page.getByRole("button", { name: "Add entry" }).click();
+  await expect(page.getByRole("status")).toContainText("Nothing was saved");
 
   await assertGuardClean(guard);
 });
@@ -360,31 +362,33 @@ test("canonical profile, creative delivery, Meta assets, approval scope, and lau
   await page.setViewportSize({ width: 1180, height: 900 });
 
   await page.goto("/brand");
-  await expect(page.getByText("brand-v3, current")).toBeVisible();
+  // PRD-006b D8. The version reference is still there, inside the collapsed support region, which
+  // is closed by default: that is the point, so it is asserted as present rather than as visible.
+  await expect(page.getByText("Details for support")).toBeVisible();
+  await expect(page.getByText("Version ID")).toBeAttached();
+  await expect(page.getByText("brand-v3", { exact: true })).toBeAttached();
   await expect(page.locator('[data-profile-field-state="missing"]')).toHaveCount(2);
   await expect(page.getByText("Approved spring newsletter")).toBeVisible();
-  await page.getByRole("button", { name: "Accept Voice suggestion" }).click();
-  await expect(page.getByRole("status")).toContainText(
-    "1 suggestion accepted into the local profile draft",
-  );
-  await expect(page.getByText("brand-v3, current")).toBeVisible();
+  await page.getByRole("button", { name: "Use this for Voice" }).click();
+  await expect(page.getByRole("status")).toContainText("1 suggestion added to your draft");
+  await expect(page.getByText("brand-v3", { exact: true })).toBeAttached();
 
   await page.goto("/marketing/campaigns/synthetic-open-house-001");
   await expect(page.getByAltText("Open House feed creative preview")).toBeVisible();
   await expect(page.getByAltText("Open House story creative preview")).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Download original Open House feed creative" }),
+    page.getByRole("link", { name: "Download Open House feed creative" }),
   ).toHaveAttribute("download", "synthetic-open-house-feed-v3.svg");
   await expect(
-    page.getByRole("link", { name: "Download original Open House story creative" }),
+    page.getByRole("link", { name: "Download Open House story creative" }),
   ).toHaveAttribute("download", "synthetic-open-house-story-v3.svg");
   for (const creative of [
     {
-      linkName: "Download original Open House feed creative",
+      linkName: "Download Open House feed creative",
       fileName: "synthetic-open-house-feed-v3.svg",
     },
     {
-      linkName: "Download original Open House story creative",
+      linkName: "Download Open House story creative",
       fileName: "synthetic-open-house-story-v3.svg",
     },
   ]) {
@@ -395,7 +399,8 @@ test("canonical profile, creative delivery, Meta assets, approval scope, and lau
     expect(download.suggestedFilename()).toBe(creative.fileName);
   }
   await expect(page.locator("[data-meta-asset-kind]")).toHaveCount(5);
-  await expect(page.getByText("synthetic-provider-instagram-001")).toBeVisible();
+  // PRD-006b D2. The account references are internal, so no screen prints one.
+  await expect(page.getByText("synthetic-provider-instagram-001")).toHaveCount(0);
   await expect(page.getByRole("table")).toContainText("destination-v3");
   await expect(page.getByRole("table").getByRole("row")).toHaveCount(11);
   await expect(page.getByText("Austin metro geography class")).toBeVisible();
@@ -404,17 +409,15 @@ test("canonical profile, creative delivery, Meta assets, approval scope, and lau
   await expect(page.getByText("2026-07-25")).toBeVisible();
   await expect(page.getByText("2026-07-27")).toBeVisible();
 
-  await page.getByRole("button", { name: "Confirm final launch summary" }).click();
+  await page.getByRole("button", { name: "Confirm the launch summary" }).click();
   const confirmation = page.getByRole("alertdialog", {
     name: "Confirm the exact synthetic launch summary",
   });
   await expect(confirmation).toBeVisible();
-  await expect(confirmation).toContainText("Campaign synthetic-campaign-open-house-001, version 3");
-  await confirmation.getByRole("button", { name: "Confirm exact local summary" }).click();
+  await expect(confirmation).toContainText("Version 3 of this campaign");
+  await confirmation.getByRole("button", { name: "Yes, that is right" }).click();
   await expect(
-    page.getByText(
-      "Final launch summary confirmed locally for campaign version 3. No provider write occurred.",
-    ),
+    page.getByText("You confirmed the launch summary. Nothing was launched."),
   ).toBeVisible();
 
   await assertGuardClean(guard);
@@ -431,13 +434,13 @@ test("delivered approval table, alertdialog, and drawer modal resolve semantic L
     await page.goto("/marketing/campaigns/synthetic-open-house-001");
     await chooseTheme(page, theme);
     const tableRegion = page.getByRole("region", {
-      name: "Exact approved artifact and launch versions",
+      name: "Exactly what was approved",
     });
     await tableRegion.focus();
     expect(
       await tableRegion.evaluate((element) => getComputedStyle(element).outlineWidth),
     ).not.toBe("0px");
-    await page.getByRole("button", { name: "Confirm final launch summary" }).click();
+    await page.getByRole("button", { name: "Confirm the launch summary" }).click();
     const alertdialog = page.getByRole("alertdialog", {
       name: "Confirm the exact synthetic launch summary",
     });

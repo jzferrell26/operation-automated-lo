@@ -14,15 +14,12 @@ export function OverviewEdgeStateMatrix({
     <section aria-labelledby="edge-state-title" className={styles.section}>
       <div className={styles.sectionHeading}>
         <div>
-          <p className={styles.eyebrow}>Deterministic evidence</p>
-          <h2 id="edge-state-title">Overview edge-state matrix</h2>
+          <p className={styles.eyebrow}>Design reference</p>
+          <h2 id="edge-state-title">How this page looks in every state</h2>
         </div>
-        <p>Each state preserves operational truth and does not invent healthy or zero data.</p>
+        <p>Each one tells you the truth. None of them invents a healthy reading or a zero.</p>
         <p data-demo-label="overview-edge-state-matrix">
-          <strong>
-            Illustrative demo states. These are design reference cards, not this workspace&apos;s
-            data.
-          </strong>
+          <strong>Examples only. These cards are not your workspace&apos;s data.</strong>
         </p>
       </div>
       <div className={styles.stateGrid}>
@@ -47,9 +44,9 @@ export function OverviewState({ state }: Readonly<{ state: OverviewStateKind }>)
         data-overview-state={state}
         description={presentation.description}
         kind="permission_restricted"
-        reason="The validated viewer role does not expose protected metrics."
-        requiredRole="Owner or Agency User"
-        responsibleParty="Location Owner"
+        reason="A viewer can't see these numbers."
+        requiredRole="A workspace owner"
+        responsibleParty="Your workspace owner"
         title={presentation.title}
       />
     );
@@ -71,15 +68,15 @@ export function SafeRetryState({ state }: Readonly<{ state: "route_error" | "saf
   return (
     <AsyncState
       data-overview-state={state}
-      description="The failed operation was a read-only synthetic parse, so retry cannot duplicate provider work."
-      details={<p aria-live="polite">Safe retry attempts: {attempts}</p>}
+      description="Nothing was changed, so trying again can't do anything twice."
+      details={<p aria-live="polite">Tries: {attempts}</p>}
       kind="error"
       primaryAction={
         <Button onClick={() => setAttempts((current) => current + 1)} variant="secondary">
-          Retry safe read
+          Try again
         </Button>
       }
-      title={state === "route_error" ? "Route error" : "Safe retry available"}
+      title={state === "route_error" ? "This page didn't load" : "You can try again"}
     />
   );
 }

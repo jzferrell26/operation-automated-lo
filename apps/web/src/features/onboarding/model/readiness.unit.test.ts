@@ -45,7 +45,7 @@ describe("onboarding readiness projection", () => {
     expect([...states].sort()).toEqual(
       ["blocked", "complete", "in_progress", "not_started", "stale"].sort(),
     );
-    expect(onboarding.launchReadiness.at(-1)?.title).toBe("Launch Ready");
+    expect(onboarding.launchReadiness.at(-1)?.title).toBe("Ready to launch");
   });
 
   it("provides no browser completion authority", () => {

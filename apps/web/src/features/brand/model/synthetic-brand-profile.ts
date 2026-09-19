@@ -232,7 +232,7 @@ const rawSyntheticBrandProfile: unknown = {
       "Lender and disclosures",
       "Rates and proof points",
       "Consent and partner permission",
-      "Routing and provider assets",
+      "Routing and connected accounts",
     ],
   },
 };

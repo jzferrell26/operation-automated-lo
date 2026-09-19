@@ -10,19 +10,19 @@ Parallel to Wave 1 G2; required before Marketplace submission (PRD-004c). Parent
 
 Does **not** unblock the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` criteria (`GGL-B10`; see [g2-highlevel-app-test.md](./g2-highlevel-app-test.md)).
 
-## Honest status (September 2026, `main` at `f4b79f7`)
+## Honest status (September 2026, `main` at `c140f11`)
 
 | Item | Status |
 | --- | --- |
 | PRD-003a–d code | **Done** (`70531fb`, `2ee2634`, `71c371d`, `26051b3`) |
 | PRD-004a in-repo code (PR #61) | **Done** — `GGL-001`/`GGL-002` VERIFIED in review mode; `GGL-003`/`GGL-004`/`GGL-005`/`GGL-007` VERIFIED |
-| `GGL-008` / `GGL-009` (create/approve round trips) | **DONE (code)** / **BLOCKED (automated gate)** — parked as `GGL-B16`; run `pnpm --filter @oalo/db test:postgres` with `OALO_TEST_DATABASE_URL` |
+| `GGL-008` / `GGL-009` (create/approve round trips) | **VERIFIED** (CI run `35058370796` at `dab2ec6`, PR #65, `c140f11`); reproduce with `pnpm test:db` (the gate provisions the disposable database itself) |
 | Vercel project `operation-automated-lo-web` | Exists; operator deploy not observed (`GGL-B01`) |
 | `OALO_DATABASE_URL` on preview | **Blocked** (`GGL-B03`) — operator must set server-only on existing project |
 | `OALO_REVIEW_SURFACE=authorized` on preview | **Required** for honest `/overview` and `/reports` (`GGL-001`/`GGL-002`). Without it, default preview serves **labeled** synthetic demo metrics and does not satisfy review URL criteria |
 | Marketplace portal | **Unsigned-in** (`GGL-B04`–`B06`) |
 
-Ledger: [`EXECUTION_LEDGER.md`](../../EXECUTION_LEDGER.md) Gauntlet section, rows `GGL-*` and `GGL-B*`.
+Ledger: [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md) Gauntlet section, rows `GGL-*` and `GGL-B*`. PR #66 was a separate, closed and unmerged approach to the same gate; it is not the gate's proof and is not reopened.
 
 ## Need from user before smoke
 
@@ -31,6 +31,7 @@ Ledger: [`EXECUTION_LEDGER.md`](../../EXECUTION_LEDGER.md) Gauntlet section, row
 - [ ] Server-only `OALO_REVIEW_SURFACE=authorized` on the review preview URL
 - [ ] Server-only auth/OAuth secrets for preview env (see [`production-environments.md`](../../production-environments.md))
 - [ ] Confirm no second Vercel project will be created
+- [ ] The five PRD-005e operator asks (isolated review Postgres, the PRD-005 server-only env names, a review sign-in secret, one run of the seeding script, and presence for the seven-point proof), stated in full in [PRD-005e, section "Exact operator ask"](../../../library/requirements/in-work/prd-005-authenticated-review-runtime/prd-005e-authenticated-review-runtime-deployed-qualification.md)
 
 ## Production tonight operator sequence
 
@@ -69,7 +70,7 @@ Ledger: [`EXECUTION_LEDGER.md`](../../EXECUTION_LEDGER.md) Gauntlet section, row
 
 ## Related
 
-- [PRD-004a](../../library/requirements/in-work/prd-004-reviewable-go-live/prd-004a-reviewable-go-live-preview-deploy-smoke.md)
-- [HighLevel Marketplace submission packet](../../library/knowledge/private/product/highlevel-marketplace-submission.md)
+- [PRD-004a](../../../library/requirements/in-work/prd-004-reviewable-go-live/prd-004a-reviewable-go-live-preview-deploy-smoke.md)
+- [HighLevel Marketplace submission packet](../../../library/knowledge/private/product/highlevel-marketplace-submission.md)
 - [G2 App Test pack](./g2-highlevel-app-test.md)
 - [Production environment contract](../../production-environments.md)

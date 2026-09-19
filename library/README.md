@@ -24,6 +24,9 @@ New PRD folders contain an index, independently implementable sub-PRDs, and a `q
 |---|---|---|
 | [PRD-001: Operation Automated LO](requirements/in-work/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md) | In Work | Founding Open House Boost product. Production traffic remains blocked on G1 through G7. |
 | [PRD-002: Operation Automated LO Add-On Portfolio](requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md) | Backlog | Independently gated future expansion modules. Not authorized for implementation. |
+| [PRD-003: Authenticated Product Activation](requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md) | In Work | Postgres persistence, verified server session authority, human approval, and tenant-backed authenticated workspace reads for the campaign domain. 003a through 003d done on `main`. |
+| [PRD-004: Reviewable Go-Live](requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md) | In Work | Preview deploy, Developer Portal inspection, Test Link, real-Postgres command gate, and Marketplace listing content for a reviewable go-live. 004d complete (PR #65); PR #66 was a separate, closed and unmerged attempt at the same gate. |
+| [PRD-005: Authenticated Review Runtime](requirements/in-work/prd-005-authenticated-review-runtime/prd-005-authenticated-review-runtime-index.md) | In Work | Closes completion review findings C1 through C4: real request authentication, correlation and retry correctness, handoff documentation reconciliation, and deployed qualification. In progress on branch `claude/completion-review-2026-09-19`, unmerged. |
 
 ## Current build gate
 

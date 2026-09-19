@@ -42,10 +42,10 @@ This PRD covers preview deploy smoke, Developer Portal inspection, Test Link ins
 | [`prd-004a-reviewable-go-live-preview-deploy-smoke`](./prd-004a-reviewable-go-live-preview-deploy-smoke.md) | Preview deploy on `operation-automated-lo-web`, env wiring, Postgres smoke | **In work.** In-repo code complete and verified; deploy, env wiring, and smoke blocked on operator env + `OALO_DATABASE_URL` |
 | [`prd-004b-reviewable-go-live-portal-and-test-link`](./prd-004b-reviewable-go-live-portal-and-test-link.md) | Developer Portal inspection, sandbox Test Link install, operator checklist | **Not started** (blocked: Marketplace portal sign-in) |
 | [`prd-004c-reviewable-go-live-marketplace-submission`](./prd-004c-reviewable-go-live-marketplace-submission.md) | Listing artifacts, Loom demo, submission packet, terminology audit if needed | **Not started** (blocked: 004a smoke + 004b Test Link) |
-| [`prd-004d-reviewable-go-live-postgres-command-gate`](./prd-004d-reviewable-go-live-postgres-command-gate.md) | Real-Postgres command round trips in an observed run and in the canonical CI gate | **In work.** Tests on `main`; no observed run; CI wiring parked as `GGL-B16` |
+| [`prd-004d-reviewable-go-live-postgres-command-gate`](./prd-004d-reviewable-go-live-postgres-command-gate.md) | Real-Postgres command round trips in an observed run and in the canonical CI gate | **Complete** (PR #65, `c140f11`; CI run `35058370796` at `dab2ec6`) |
 | [`prd-004e-reviewable-go-live-listing-content-and-demo-script`](./prd-004e-reviewable-go-live-listing-content-and-demo-script.md) | Customer-facing scope statement, FAQ, paste-ready listing fields, screenshot shot list, Loom script, claim audit | **Content authored in-repo.** Capture and submission still blocked (`GGL-B09`) |
 
-Execute in order: **004a** → **004b** (may overlap after preview URL exists) → **004c**. **004d** and **004e** run in parallel and depend on no operator step: 004d needs a database URL or a provisioning route decision, and 004e is authored content that removes the "draft listing copy live in the portal" risk from 004c.
+Execute in order: **004a** → **004b** (may overlap after preview URL exists) → **004c**. **004d** and **004e** depend on no operator step: 004d is complete, and 004e is authored content that removes the "draft listing copy live in the portal" risk from 004c.
 
 ---
 
@@ -70,13 +70,13 @@ Set by the Gauntlet raid recorded in [`EXECUTION_LEDGER.md`](../../../../EXECUTI
 |---|---|
 | RGL-001 | Code half VERIFIED (no `NEXT_PUBLIC` leakage, gate-enforced); Vercel env wiring BLOCKED on operator |
 | RGL-002 | VERIFIED in review mode. Requires `OALO_REVIEW_SURFACE=authorized` on the review URL |
-| RGL-003 | BLOCKED: needs a review preview URL and `OALO_DATABASE_URL` |
+| RGL-003 | BLOCKED: needs a review preview URL and `OALO_DATABASE_URL`. Automated half VERIFIED (004d, PR #65, `c140f11`, CI run `35058370796`); deployed half additionally requires PRD-005a and PRD-005b (completion review finding C1). |
 | RGL-004, RGL-005 | BLOCKED: Developer Portal sign-in and sandbox Test Link |
 | RGL-006 | BLOCKED: depends on RGL-003 and RGL-005 |
 | RGL-007 | VERIFIED by executable proof under default and preview environments |
 | RGL-008 | VERIFIED. `PRODUCTION_EXECUTION_LEDGER.md` is untouched and no deferred row was flipped |
 
-The automated half of `RGL-003` is tracked separately in [PRD-004d](./prd-004d-reviewable-go-live-postgres-command-gate.md) as `GGL-B16`: the create and approve round-trip tests exist on `main` but have never been executed, so `GGL-008`/`GGL-009` are `DONE (code)` and not `VERIFIED`.
+The automated half of `RGL-003` is tracked separately in [PRD-004d](./prd-004d-reviewable-go-live-postgres-command-gate.md): `GGL-008` and `GGL-009` are `VERIFIED` in the canonical `pnpm test:db` gate (CI run `35058370796` at `dab2ec6`, PR #65, `c140f11`). PR #66 was a separate, closed and unmerged approach to the same gate; it is not the gate's proof and is not reopened. The deployed navigate-and-reload proof remains `GGL-B01` through `GGL-B03` and is now sequenced behind [PRD-005](../prd-005-authenticated-review-runtime/prd-005-authenticated-review-runtime-index.md) (005a, 005b).
 
 ---
 
@@ -97,7 +97,7 @@ None required for this batch beyond PRD-003. OAuth callback and Custom Page URLs
 - [ ] Does the existing Automated LO Marketplace app exist, and is it Standard or White-label? **Recorded default for a newly created app: Standard**, because a White-label listing forbids all HighLevel terminology across listing, screenshots, OAuth screens, embedded UI, and support copy, which today's shell would fail. If the app already exists, keep its current type. See the [listing copy pack](../../../knowledge/private/product/marketplace-listing-copy-pack.md#listing-type). Confirm in portal inspection (`GGL-B04`).
 - [ ] Which preview hostname is the OAuth callback and Custom Page URL (existing `operation-automated-lo-web.vercel.app` vs custom domain)?
 - [ ] Who holds Vercel + Supabase credentials for review env wiring?
-- [ ] Which real-Postgres provisioning route closes `GGL-B16`? Routes R1 through R4 are recorded in [PRD-004d](./prd-004d-reviewable-go-live-postgres-command-gate.md#provisioning-routes-decision-required).
+- [x] Which real-Postgres provisioning route closes `GGL-B16`? **Resolved: R5**, adopted and recorded in [PRD-004d](./prd-004d-reviewable-go-live-postgres-command-gate.md#provisioning-routes-decided-r5).
 - [ ] Operator-supplied listing values still missing: support email, publisher display name, pricing. Listed in [PRD-004e](./prd-004e-reviewable-go-live-listing-content-and-demo-script.md#operator-supplied-values-still-missing).
 
 ---

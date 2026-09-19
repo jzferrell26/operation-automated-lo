@@ -508,10 +508,11 @@ export async function readLocationCorrelationIds(pool, table, locationId) {
 }
 
 /**
- * PRD-005b 005B-AC-016. A location with an active user and an active binding but no installation
- * row. `platform.resolve_review_persona` accepts it, because it does not look at installations, and
- * `platform.issue_first_party_session` then refuses it and writes exactly one denied audit row. It
- * is the one deterministic way to drive a denied issuance where the location is known.
+ * PRD-005b 005B-AC-016. A workspace with an active person and an active binding but no
+ * installation row. Everything ahead of issuance accepts it, because nothing ahead of issuance
+ * looks at installations, and `platform.issue_first_party_session` then refuses it and writes
+ * exactly one denied audit row. It is the one deterministic way to drive a denied issuance where
+ * the location is known.
  */
 export async function seedReviewLocationWithoutInstallation(pool, displayName) {
   const locationId = randomUUID();
@@ -590,4 +591,307 @@ function stableJson(value) {
     .sort(([left], [right]) => left.localeCompare(right, "en"))
     .map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`)
     .join(",")}}`;
+}
+
+/**
+ * PRD-006a. The credential-side reads and writes the route-level proofs need.
+ *
+ * `platform.user_credentials`, `platform.credential_tokens`, and `platform.auth_rate_limits`
+ * carry no grant for any runtime role at all, so every assertion about them is an owner-
+ * privileged read and belongs here, in the one sanctioned holder of that elevation, rather than
+ * under `apps/`. Nothing below writes a password: the hash is derived by the caller and passed in.
+ */
+
+export async function seedReviewCredential(pool, input) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.credential-upsert",
+        `insert into platform.user_credentials (user_id, email_normalized, email_display, password_hash)
+         values ($1::uuid, $2::text, $2::text, $3::text)
+         on conflict (user_id) do update
+           set email_normalized = excluded.email_normalized,
+               email_display = excluded.email_display,
+               password_hash = excluded.password_hash,
+               failed_attempt_count = 0,
+               locked_until = null,
+               email_verified_at = null,
+               updated_at = now()`,
+        [input.userId, input.emailNormalized, input.passwordHash],
+      ),
+    );
+  });
+}
+
+export async function readReviewCredential(pool, userId) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.credential-read",
+        `select password_hash,
+                failed_attempt_count::text as failed_attempt_count,
+                (locked_until is not null and locked_until > now())::text as locked,
+                (email_verified_at is not null)::text as email_verified,
+                (password_rotated_at is not null)::text as rotated
+         from platform.user_credentials where user_id = $1::uuid`,
+        [userId],
+      ),
+    );
+    const row = result.rows[0];
+    if (row === undefined) return undefined;
+    return Object.freeze({
+      passwordHash: row.password_hash,
+      failedAttemptCount: Number(row.failed_attempt_count),
+      locked: isTrue(row.locked),
+      emailVerified: isTrue(row.email_verified),
+      rotated: isTrue(row.rotated),
+    });
+  });
+}
+
+function isTrue(value) {
+  return value === true || value === "true" || value === "t";
+}
+
+/** Moves an account's lock into the past, which is how a proof lets a lockout lapse. */
+export async function expireReviewCredentialLock(pool, userId) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.credential-expire-lock",
+        "update platform.user_credentials set locked_until = now() - interval '1 minute' where user_id = $1::uuid",
+        [userId],
+      ),
+    );
+  });
+}
+
+export async function countCredentialTokens(pool, input) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.credential-token-count",
+        `select count(*)::text as total from platform.credential_tokens
+         where user_id = $1::uuid and purpose = $2::text
+           and ($3::text is null or (consumed_at is null and superseded_at is null))`,
+        [input.userId, input.purpose, input.liveOnly === true ? "live" : null],
+      ),
+    );
+    return Number(result.rows[0]?.total ?? "0");
+  });
+}
+
+/** The lifetime of the newest token of a purpose, in seconds, so a proof can pin thirty minutes. */
+export async function newestCredentialTokenLifetimeSeconds(pool, input) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.credential-token-lifetime",
+        `select round(extract(epoch from (expires_at - issued_at)))::text as lifetime
+         from platform.credential_tokens
+         where user_id = $1::uuid and purpose = $2::text
+         order by issued_at desc, id desc limit 1`,
+        [input.userId, input.purpose],
+      ),
+    );
+    const lifetime = result.rows[0]?.lifetime;
+    return lifetime === undefined ? undefined : Number(lifetime);
+  });
+}
+
+/** Every audit row a correlation reference produced, in insertion order. */
+export async function readAuditEventsForCorrelation(pool, correlationId) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.audit-read-by-correlation",
+        `select action, result, subject_type, subject_id
+         from audit.events where correlation_id = $1::text
+         order by created_at, id`,
+        [correlationId],
+      ),
+    );
+    return Object.freeze(
+      result.rows.map((row) =>
+        Object.freeze({
+          action: row.action,
+          result: row.result,
+          subjectType: row.subject_type,
+          subjectId: row.subject_id,
+        }),
+      ),
+    );
+  });
+}
+
+/** The session rows a person holds, newest first, for the revocation proofs. */
+export async function readFirstPartySessionsForUser(pool, userId) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.session-read-by-user",
+        `select id::text as id, issued_by, revocation_reason,
+                (revoked_at is not null)::text as revoked,
+                round(extract(epoch from (expires_at - issued_at)))::text as lifetime
+         from platform.first_party_sessions where user_id = $1::uuid
+         order by issued_at desc, id desc`,
+        [userId],
+      ),
+    );
+    return Object.freeze(
+      result.rows.map((row) =>
+        Object.freeze({
+          id: row.id,
+          issuedBy: row.issued_by,
+          revocationReason: row.revocation_reason,
+          revoked: isTrue(row.revoked),
+          lifetimeSeconds: Number(row.lifetime),
+        }),
+      ),
+    );
+  });
+}
+
+/**
+ * Clears the fixed-window counters for ONE key, so a proof can start from a known count.
+ *
+ * It takes a key on purpose. The route-level suites run as separate vitest files against one
+ * database, and vitest runs files in parallel, so a helper that emptied the table would delete
+ * counters another file was in the middle of counting. That is not a hypothetical: it is what an
+ * earlier version of this helper did, and it made both rate-limit proofs fail intermittently
+ * while the product was correct.
+ */
+export async function clearAuthRateLimitsForKey(pool, keyHash) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.rate-limit-clear-key",
+        "delete from platform.auth_rate_limits where key_hash = $1::text",
+        [keyHash],
+      ),
+    );
+  });
+}
+
+/** The person a seeded email address names, for a proof that needs the id the route never returns. */
+export async function readUserIdForEmail(pool, emailNormalized) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.credential-user-for-email",
+        "select user_id::text as user_id from platform.user_credentials where email_normalized = $1::text",
+        [emailNormalized],
+      ),
+    );
+    return result.rows[0]?.user_id;
+  });
+}
+
+/** Suspends a seeded person, so a proof can show a suspended account is refused a session. */
+export async function suspendReviewActor(pool, actorId) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-suspend-actor",
+        "update platform.app_users set status = 'suspended', updated_at = now() where id = $1::uuid",
+        [actorId],
+      ),
+    );
+  });
+}
+
+/**
+ * PRD-006a. Tears down one credential fixture so the seeding script's guard still means what it
+ * says: it refuses a database holding an active workspace it does not own, and a proof that left
+ * its own workspaces behind would turn that guard into noise.
+ *
+ * The order is the foreign-key order, and the audit rows go first because every other delete here
+ * is blocked by them. `platform.first_party_sessions` refuses deletes outright, so a fixture that
+ * issued one cannot be torn down this way; nothing that uses this helper issues one.
+ */
+export async function cleanupCredentialFixture(pool, input) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    for (const disableTrigger of appendOnlyTriggerRequests("disable")) {
+      await connection.execute(disableTrigger);
+    }
+    await connection.execute(
+      request(
+        "test.credential-cleanup-audit",
+        "delete from audit.events where location_id = $1::uuid",
+        [input.locationId],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.credential-cleanup-tokens",
+        "delete from platform.credential_tokens where user_id = $1::uuid",
+        [input.userId],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.credential-cleanup-credential",
+        "delete from platform.user_credentials where user_id = $1::uuid",
+        [input.userId],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.credential-cleanup-bindings",
+        "delete from platform.role_bindings where location_id = $1::uuid",
+        [input.locationId],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.credential-cleanup-installations",
+        "delete from platform.marketplace_installations where location_id = $1::uuid",
+        [input.locationId],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.credential-cleanup-actor",
+        "delete from platform.app_users where id = $1::uuid",
+        [input.userId],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.credential-cleanup-location",
+        "delete from platform.locations where id = $1::uuid",
+        [input.locationId],
+      ),
+    );
+    for (const enableTrigger of appendOnlyTriggerRequests("enable")) {
+      await connection.execute(enableTrigger);
+    }
+  });
+}
+
+/** PRD-006a 006A-AC-009. The counter rows themselves, so a proof can see the window it made. */
+export async function readAuthRateLimitRows(pool, scope) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.rate-limit-read",
+        `select scope, key_hash, attempt_count::text as attempt_count,
+                window_start::text as window_start
+         from platform.auth_rate_limits
+         where $1::text is null or scope = $1::text
+         order by scope, key_hash, window_start`,
+        [scope ?? null],
+      ),
+    );
+    return Object.freeze(
+      result.rows.map((row) =>
+        Object.freeze({
+          scope: row.scope,
+          keyHash: row.key_hash,
+          attemptCount: Number(row.attempt_count),
+          windowStart: row.window_start,
+        }),
+      ),
+    );
+  });
 }

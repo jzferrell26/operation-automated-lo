@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { spawn } from "node:child_process";
 
 import {
+  GATE_SEEDED_CREDENTIALS,
   SUPABASE_CLI_VERSION,
   TEST_DATABASE_NAME,
   TEST_DATABASE_NAME_PREFIX,
@@ -223,7 +224,7 @@ describe("real PostgreSQL integration phase", () => {
       `apply supabase/migrations/20260101_first.sql to ${TEST_DATABASE_NAME}`,
       `apply supabase/migrations/20260102_second.sql to ${TEST_DATABASE_NAME}`,
       "run the real-PostgreSQL integration tests",
-      `seed the review location into ${TEST_DATABASE_NAME}`,
+      `seed the review location and its credentials into ${TEST_DATABASE_NAME}`,
       "prove the review seeding script inserts nothing on a second run",
     ]);
     // No route-level file exists in this fixture, so the suite's own step is absent and the
@@ -318,7 +319,7 @@ describe("real PostgreSQL integration phase", () => {
   it("runs the route-level project with the disposable URL once a matching file exists", async () => {
     const repositoryRoot = await fixtureRepository({
       webPostgresTestFiles: [
-        "server/review-session-handler.postgres.test.ts",
+        "server/password-authentication-handler.postgres.test.ts",
         "app/api/campaigns/approve/route.postgres.test.ts",
       ],
     });
@@ -329,11 +330,18 @@ describe("real PostgreSQL integration phase", () => {
 
     expect(await discoverWebPostgresTestFiles(repositoryRoot)).toEqual([
       "apps/web/src/app/api/campaigns/approve/route.postgres.test.ts",
-      "apps/web/src/server/review-session-handler.postgres.test.ts",
+      "apps/web/src/server/password-authentication-handler.postgres.test.ts",
     ]);
     expect(plan.notices).toEqual([]);
     expect(routeStep?.command).toBe(process.execPath);
     expect(routeStep?.args).toContain(WEB_POSTGRES_PROJECT);
+    // The suite signs in with the credentials the seeding step just created.
+    expect(routeStep?.env?.OALO_TEST_SEEDED_SIGN_IN_EMAIL).toBe(
+      GATE_SEEDED_CREDENTIALS.creatorEmail,
+    );
+    expect(routeStep?.env?.OALO_TEST_SEEDED_SIGN_IN_PASSWORD).toBe(
+      GATE_SEEDED_CREDENTIALS.password,
+    );
     expect(
       new URL(routeStep?.env?.OALO_TEST_DATABASE_URL as string).pathname.startsWith(
         `/${TEST_DATABASE_NAME_PREFIX}`,
@@ -358,11 +366,14 @@ describe("real PostgreSQL integration phase", () => {
     const repositoryRoot = await fixtureRepository({});
     const plan = await fixturePlan(repositoryRoot);
     const seedIndex = plan.integration.findIndex(
-      (step) => step.label === `seed the review location into ${TEST_DATABASE_NAME}`,
+      (step) =>
+        step.label === `seed the review location and its credentials into ${TEST_DATABASE_NAME}`,
     );
     const [seedStep, idempotencyStep] = plan.integration.slice(seedIndex, seedIndex + 2);
 
-    expect(seedStep?.label).toBe(`seed the review location into ${TEST_DATABASE_NAME}`);
+    expect(seedStep?.label).toBe(
+      `seed the review location and its credentials into ${TEST_DATABASE_NAME}`,
+    );
     expect(seedStep?.command).toBe(process.execPath);
     expect(seedStep?.args.at(0)?.replaceAll("\\", "/")).toContain(
       "tooling/scripts/database/seed-review-location.mjs",
@@ -371,6 +382,17 @@ describe("real PostgreSQL integration phase", () => {
     expect(seedStep?.args).toContain(TEST_DATABASE_NAME);
     expect(seedStep?.args).not.toContain("--expect-unchanged");
     expect(idempotencyStep?.args).toContain("--expect-unchanged");
+
+    // PRD-006a D8 and 006A-AC-029. The gate has no terminal, so the three passwords arrive on
+    // standard input, and no password appears in an argument vector, where any process listing
+    // would show it.
+    expect(seedStep?.args).toContain("--set-password");
+    expect(seedStep?.args).toContain("--password-stdin");
+    expect(seedStep?.args).toContain("--creator-email");
+    expect(seedStep?.stdin?.split("\n").filter((line) => line.length > 0)).toHaveLength(3);
+    expect(seedStep?.args.join(" ")).not.toContain(GATE_SEEDED_CREDENTIALS.password);
+    expect(idempotencyStep?.args).not.toContain("--set-password");
+    expect(idempotencyStep?.stdin).toBeUndefined();
     for (const step of [seedStep, idempotencyStep]) {
       const urlArgument = step?.args[step.args.indexOf("--review-database-url") + 1];
       expect(new URL(urlArgument as string).pathname).toBe(`/${TEST_DATABASE_NAME}`);

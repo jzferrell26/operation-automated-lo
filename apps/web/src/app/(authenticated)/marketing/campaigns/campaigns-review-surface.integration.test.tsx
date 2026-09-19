@@ -199,7 +199,7 @@ describe("authenticated marketing campaign routes", () => {
   it("redirects an unauthenticated review visitor instead of listing an empty location", async () => {
     await expect(CampaignListPage()).rejects.toMatchObject({ digest: expect.any(String) });
 
-    expect(redirectCalls).toEqual(["/review/sign-in"]);
+    expect(redirectCalls).toEqual(["/sign-in"]);
   });
 
   it("keeps the demo-rich synthetic campaign detail for local development", () => {

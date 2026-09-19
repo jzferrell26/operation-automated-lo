@@ -13,8 +13,8 @@ import {
 } from "../../server/authenticated-workspace-data.js";
 import {
   CSRF_META_NAME,
-  REVIEW_SIGN_IN_PATH,
-  REVIEW_SIGN_OUT_PATH,
+  SIGN_IN_PATH,
+  SIGN_OUT_PATH,
   resolveRuntimeShellSession,
 } from "../../server/runtime-authentication.js";
 
@@ -48,7 +48,7 @@ const SIGNED_OUT_SESSION: WorkspaceSessionView = Object.freeze({
  * In synthetic mode nothing changes: the shell renders the fixture session exactly as before.
  *
  * In review mode the shell renders only what a verified principal supports. Without a session it
- * renders the not-signed-in shell above and a link to the review sign-in path, never the fixture
+ * renders the signed-out shell above and a link to the sign-in page, never the fixture
  * persona. The read pages are what refuse to render tenant content; the layout's job is to stop
  * claiming an identity it does not have.
  *
@@ -89,7 +89,7 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
         workspaceMode={workspace.mode}
       >
         {shell.authenticated ? (
-          <form action={REVIEW_SIGN_OUT_PATH} method="post">
+          <form action={SIGN_OUT_PATH} method="post">
             {/*
               A form post cannot set x-csrf-token, so the session-bound token travels as a field and
               the sign-out route promotes it to the header before the 005a mutation gate sees it.
@@ -104,7 +104,7 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
         ) : (
           <p>
             {SIGNED_OUT_HEADING}{" "}
-            <a className="oalo-action-link" href={REVIEW_SIGN_IN_PATH}>
+            <a className="oalo-action-link" href={SIGN_IN_PATH}>
               {SIGNED_OUT_PROMPT}
             </a>
           </p>

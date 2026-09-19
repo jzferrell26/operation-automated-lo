@@ -18,7 +18,18 @@ export const TRACING_ID_HEADER = "x-correlation-id";
  * {@link CorrelationReferenceSchema} allows only underscores as separators, so a hyphenated route
  * name would produce a reference the schema rejects at its own boundary.
  */
-export type CorrelationRouteName = "approve" | "preflight" | "session" | "signOut";
+export type CorrelationRouteName =
+  | "approve"
+  | "preflight"
+  | "session"
+  | "signOut"
+  | "signIn"
+  | "signUp"
+  | "chooseWorkspace"
+  | "forgotPassword"
+  | "resetPassword"
+  | "verifyEmail"
+  | "changePassword";
 
 export interface RequestCorrelation {
   /** The canonical, schema-verified reference that may reach a database correlation column. */

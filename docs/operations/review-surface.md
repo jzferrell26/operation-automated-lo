@@ -49,15 +49,18 @@ Read-only inspection, recorded per PRD-005e (`005E-AC-001`). No environment vari
   - `/api/health/ready` returned 503 with body `{"status":"unavailable","checks":[{"name":"configuration","ready":false,"code":"CONFIGURATION_INVALID"}]}`. This is the fail-closed production-environment contract working as designed; the deployment has no `OALO_*` variables set yet.
   - `/api/version` returned an empty 500. This was a route-hardening defect, not the environment contract: `parseRuntimeEnvironment` threw and nothing caught it. Fixed in this batch (`005E-AC-002`); see `apps/web/src/app/api/version/route.ts` and `apps/web/src/app/api/version/route.unit.test.ts`.
 
-## Review sign-in path (PRD-005b, Wave 2)
+## Sign-in path (PRD-006a)
 
-The review surface's authenticated pages will read their session from a first-party sign-in path, not from HighLevel SSO and not from the `local_synthetic` fixture principal:
+The authenticated pages read their session from an email and password sign-in, not from HighLevel single sign-on and not from the `local_synthetic` fixture principal:
 
-- Sign-in page: `/review/sign-in`.
-- Sign-in and sign-out API routes: `POST /api/review/session`, `POST /api/review/session/sign-out`.
-- Seeding procedure for the review location and its two review users: `docs/operations/review-session-seeding.md`.
+- Sign-in page: `/sign-in`, with a visible "Forgot your password?" link.
+- The other pages: `/sign-up` (served only when `OALO_SELF_SERVE_SIGNUP=enabled`), `/forgot-password`, `/reset-password`, `/verify-email`, and `/settings/account`.
+- API routes: `POST /api/auth/sign-in`, `/api/auth/choose`, `/api/auth/sign-up`, `/api/auth/forgot-password`, `/api/auth/reset-password`, `/api/auth/verify-email`, `/api/auth/sign-out`, and `/api/auth/change-password`.
+- Setting up the workspaces, the people, and their first passwords: `docs/operations/review-session-seeding.md`.
 
-These paths are added by PRD-005b and wired into the review surface in Wave 2 of the PRD-005 raid. This document records the pointer; PRD-005b's own sub-PRD and `docs/operations/review-session-seeding.md` are authoritative on the mechanics. A review sign-in session is not HighLevel evidence and does not satisfy any `DEFERRED: LIVE HIGHLEVEL AUTH` row.
+PRD-006a replaces the persona selector PRD-005b D4 described. `/review/sign-in`, `POST /api/review/session`, `POST /api/review/session/sign-out`, and `OALO_REVIEW_SIGNIN_SECRET` no longer exist. PRD-006a's own sub-PRD and the seeding runbook are authoritative on the mechanics.
+
+Signing in here proves nothing about HighLevel. It is this product's own login, it satisfies no `DEFERRED: LIVE HIGHLEVEL AUTH` row, and the sign-in page says so.
 
 ## Dispositions recorded 2026-09-19
 

@@ -46,9 +46,15 @@ Runtime authentication server variables (PRD-005a D7 and PRD-005b D6, all server
 - `OALO_EMBEDDED_SESSION_ISSUER` (new, optional), the https issuer the embedded session policy accepts.
 - `OALO_EMBEDDED_SESSION_AUDIENCE` (new, optional), the audience the embedded session policy accepts.
 - `OALO_EMBEDDED_SESSION_PUBLIC_KEYS_JSON` (new, optional), a JSON object mapping key id to SPKI PEM. Public key material, but the name carries `KEY` and `SESSION`, so no `NEXT_PUBLIC_` spelling is accepted.
-- `OALO_REVIEW_SIGNIN_SECRET` (new, secret), at least 32 bytes. The operator-held secret the review sign-in path compares in constant time. Never shared with an agent and never written to this repository.
-- `OALO_REVIEW_LOCATION_ID` (new, non-secret UUID), the seeded review location.
-- `OALO_REVIEW_OUTSIDER_LOCATION_ID` (new, non-secret UUID), the seeded outsider location used to prove cross-tenant refusal.
+Email and password sign-in server variables (PRD-006a D7, all server-only, never `NEXT_PUBLIC_`):
+
+- `OALO_RESEND_API_KEY` (new, secret), the Resend API key the password-reset and email-confirmation messages are sent with. Never shared with an agent, never written to this repository, and never included in a log line or an error.
+- `OALO_EMAIL_FROM` (new, server-only, not secret), the address those messages are sent from. It must be on a domain verified in Resend.
+- `OALO_SELF_SERVE_SIGNUP` (new, server-only), the exact value `enabled` to serve `/sign-up` and `POST /api/auth/sign-up`. Unset, both answer 404 and the deployment admits no new accounts.
+
+The two email variables are a set: both present composes the Resend adapter, both absent composes the not-configured adapter, which makes no network request at all, and exactly one present is a composition failure logged by variable name. Until both are set, a password reset is performed by re-running the seeding script for that person; see `docs/operations/review-session-seeding.md`.
+
+`OALO_REVIEW_SIGNIN_SECRET`, `OALO_REVIEW_LOCATION_ID`, and `OALO_REVIEW_OUTSIDER_LOCATION_ID` were removed by PRD-006a D9 together with the persona sign-in path they configured. The application reads none of them. The seeding script still prints the two seeded location ids, under neutral labels, for PRD-005e's deployed proof.
 
 The three embedded variables are optional as a set: all three present or all three absent. A partial set is a composition failure, so a half-configured issuer cannot degrade into no embedded policy at all. When the set is absent, bearer requests are refused, which is where this product sits until the HighLevel signed-context exchange exists.
 
@@ -104,7 +110,7 @@ On the existing Vercel project `operation-automated-lo-web`, the review/preview 
 - `OALO_TASK_AUTHORITY_HMAC_KEY`
 - `OALO_PUBLICATION_CLEANUP_SCHEDULE_AUTHORITY_JSON`
 - `OALO_CSRF_SERVER_SECRET`
-- `OALO_REVIEW_SIGNIN_SECRET`
+- `OALO_RESEND_API_KEY`
 - `OALO_EMBEDDED_SESSION_PUBLIC_KEYS_JSON` (public key material, still server-only)
 
 OAuth client secrets, session signing material, refresh tokens, and other auth credentials follow the same rule: configure them as server-only Vercel env vars only. The repository gate blocks every `NEXT_PUBLIC_*` name outside the reviewed publication registry, so these values cannot be published under any spelling; verifying that Vercel preview env is wired correctly remains an operator step (see `docs/operations/evidence-packs/reviewable-preview-smoke.md`).

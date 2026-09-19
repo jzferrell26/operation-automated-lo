@@ -5,14 +5,14 @@ import { Card } from "@oalo/ui";
 
 import styles from "../../../../features/campaigns/components/open-house-draft-builder.module.css";
 import { readWorkspaceCampaignsForRequest } from "../../../../server/campaign-workspace-reads.js";
-import { REVIEW_SIGN_IN_PATH } from "../../../../server/runtime-authentication.js";
+import { SIGN_IN_PATH } from "../../../../server/runtime-authentication.js";
 
 export default async function CampaignListPage() {
   const incoming = await headers();
   const request = new Request("https://oalo.local/marketing/campaigns", { headers: incoming });
   const read = await readWorkspaceCampaignsForRequest(request, process.env);
   // 005A-AC-010. "No campaigns in this location yet" is a tenant claim, so it needs a session.
-  if (!read.authenticated) redirect(REVIEW_SIGN_IN_PATH);
+  if (!read.authenticated) redirect(SIGN_IN_PATH);
   const campaigns = read.campaigns;
 
   return (

@@ -19,6 +19,8 @@ import {
 } from "@oalo/auth";
 
 import { authenticatedWorkspaceMode } from "./authenticated-workspace-data.js";
+import type { CredentialPort } from "./credential-ports.js";
+import type { TransactionalEmailPort } from "./email/transactional-email.js";
 
 export const LOCAL_SYNTHETIC_LOCATION_ID = "00000000-0000-4000-8000-000000000801";
 export const LOCAL_SYNTHETIC_ACTOR_ID = "00000000-0000-4000-8000-000000000811";
@@ -86,27 +88,30 @@ export interface SessionDisplayPort {
   }): Promise<Readonly<SessionDisplayNames> | undefined>;
 }
 
-export interface ReviewSessionIssuance {
+export interface FirstPartySessionIssuance {
   readonly locationId: string;
   readonly userId: string;
   readonly bindingRole: DatabaseBindingRole;
   readonly sessionRole: ApplicationRole;
   readonly sessionSecretHash: string;
   readonly lifetimeSeconds: number;
+  /**
+   * PRD-006a D1 widened this. `review_sign_in` was the persona selector's issuer and no longer
+   * has a caller; a password sign-in issues `password_sign_in` and a completed reset issues
+   * `password_reset`, so the store records which exchange minted each session.
+   */
+  readonly issuedBy: "password_sign_in" | "password_reset" | "embedded_exchange";
   readonly correlationRef: string;
 }
 
 /**
- * PRD-005b D4. The three `security definer` calls the review sign-in and sign-out paths make. Every
- * decision they describe is taken inside the database function, not here: this interface exists so
- * the handler can be driven from a unit test without a connection, and so the one pool the runtime
- * composition opens is the only pool the review routes use.
+ * PRD-005b D4, as PRD-006a D9 leaves it. The three `security definer` calls the sign-in and
+ * sign-out paths make. Every decision they describe is taken inside the database function, not
+ * here: this interface exists so the handler can be driven from a unit test without a connection,
+ * and so the one pool the runtime composition opens is the only pool the auth routes use.
  */
-export interface ReviewSessionPort {
-  resolvePersona(
-    input: Readonly<{ locationId: string; bindingRole: DatabaseBindingRole }>,
-  ): Promise<string>;
-  issue(input: Readonly<ReviewSessionIssuance>): Promise<string>;
+export interface FirstPartySessionIssuancePort {
+  issue(input: Readonly<FirstPartySessionIssuance>): Promise<string>;
   revoke(
     input: Readonly<{ sessionRef: string; reason: "sign_out"; correlationRef: string }>,
   ): Promise<boolean>;
@@ -127,7 +132,11 @@ export interface CampaignCommandPorts {
   readonly mutation?: BrowserMutationGate;
   readonly sessionActivity?: SessionActivityPort;
   readonly sessionDisplay?: SessionDisplayPort;
-  readonly reviewSessions?: ReviewSessionPort;
+  readonly sessionIssuance?: FirstPartySessionIssuancePort;
+  /** PRD-006a D1. The credential trust boundary. Absent outside review mode. */
+  readonly credentials?: CredentialPort;
+  /** PRD-006a D6. Never the Resend adapter in synthetic mode. */
+  readonly transactionalEmail?: TransactionalEmailPort;
 }
 
 function nowEpochSeconds(clock?: () => number): number {

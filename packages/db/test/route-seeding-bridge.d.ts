@@ -71,3 +71,88 @@ export declare function seedReviewLocationWithoutInstallation(
   pool: DatabasePool,
   displayName: string,
 ): Promise<string>;
+
+/** PRD-006a. The credential-side reads and writes the route-level proofs need. */
+
+export declare function seedReviewCredential(
+  pool: DatabasePool,
+  input: Readonly<{ userId: string; emailNormalized: string; passwordHash: string }>,
+): Promise<void>;
+
+export declare function readReviewCredential(
+  pool: DatabasePool,
+  userId: string,
+): Promise<
+  | Readonly<{
+      passwordHash: string;
+      failedAttemptCount: number;
+      locked: boolean;
+      emailVerified: boolean;
+      rotated: boolean;
+    }>
+  | undefined
+>;
+
+export declare function expireReviewCredentialLock(
+  pool: DatabasePool,
+  userId: string,
+): Promise<void>;
+
+export declare function countCredentialTokens(
+  pool: DatabasePool,
+  input: Readonly<{ userId: string; purpose: string; liveOnly?: boolean }>,
+): Promise<number>;
+
+export declare function newestCredentialTokenLifetimeSeconds(
+  pool: DatabasePool,
+  input: Readonly<{ userId: string; purpose: string }>,
+): Promise<number | undefined>;
+
+export declare function readAuditEventsForCorrelation(
+  pool: DatabasePool,
+  correlationId: string,
+): Promise<
+  readonly Readonly<{
+    action: string;
+    result: string;
+    subjectType: string;
+    subjectId: string;
+  }>[]
+>;
+
+export declare function readFirstPartySessionsForUser(
+  pool: DatabasePool,
+  userId: string,
+): Promise<
+  readonly Readonly<{
+    id: string;
+    issuedBy: string;
+    revocationReason: string | null;
+    revoked: boolean;
+    lifetimeSeconds: number;
+  }>[]
+>;
+
+export declare function clearAuthRateLimitsForKey(
+  pool: DatabasePool,
+  keyHash: string,
+): Promise<void>;
+
+export declare function readUserIdForEmail(
+  pool: DatabasePool,
+  emailNormalized: string,
+): Promise<string | undefined>;
+
+export declare function suspendReviewActor(pool: DatabasePool, actorId: string): Promise<void>;
+
+export declare function readAuthRateLimitRows(
+  pool: DatabasePool,
+  scope?: string,
+): Promise<
+  readonly Readonly<{
+    scope: string;
+    keyHash: string;
+    attemptCount: number;
+    windowStart: string;
+  }>[]
+>;

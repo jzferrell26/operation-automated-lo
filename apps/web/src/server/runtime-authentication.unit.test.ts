@@ -78,8 +78,16 @@ const EMBEDDED_ENV = Object.freeze({
   }),
 });
 
+/**
+ * The variables the composition cannot do without. Two groups are optional as a set rather than
+ * individually: the three embedded ones (PRD-005a) and the two email ones (PRD-006a D6). All
+ * present or all absent is fine; a partial set is the composition failure the case below pins.
+ */
 const REQUIRED_VARIABLES = RUNTIME_AUTHENTICATION_VARIABLES.filter(
-  (name) => !name.startsWith("OALO_EMBEDDED"),
+  (name) =>
+    !name.startsWith("OALO_EMBEDDED") &&
+    name !== "OALO_RESEND_API_KEY" &&
+    name !== "OALO_EMAIL_FROM",
 );
 
 function withoutVariable(variable: string): Record<string, string> {
@@ -257,7 +265,11 @@ describe("runtime authentication composition", () => {
     expect(typeof composition.ports.embedded?.isSessionActive).toBe("function");
     expect(composition.ports.sessionActivity).toBeDefined();
     expect(composition.ports.sessionDisplay).toBeDefined();
-    expect(composition.ports.reviewSessions).toBeDefined();
+    expect(composition.ports.sessionIssuance).toBeDefined();
+    // PRD-006a D1 and D6. Review mode composes the credential boundary, and composes the
+    // not-configured email adapter until both sending variables are set.
+    expect(composition.ports.credentials).toBeDefined();
+    expect(composition.ports.transactionalEmail).toBeDefined();
   });
 
   it("rejects malformed embedded public key material by name", () => {

@@ -1,33 +1,40 @@
-# Review session seeding
+# Review account seeding
 
 **Status:** procedure only. Running it requires an isolated review database that does not yet exist.
 
-**Owner:** the operator. No agent runs this, and no agent receives the sign-in secret.
+**Owner:** the operator. No agent runs this, and no agent ever receives a password. If an agent asks you for one, refuse.
 
-This page tells you how to put the five rows the review sign-in path needs into an isolated review database, and which three environment variables to set afterwards. It assumes no knowledge of this repository. Every command below is meant to be copied exactly.
+**Escalation:** if any step below fails and this page does not say what to do, stop and post in the engineering channel with the exact command you ran and the exact error text, redacting nothing except passwords. Expect a reply within one business day. Do not improvise a database change.
+
+This page tells you how to put the rows the sign-in page needs into an isolated review database, how to set the first password for each of the three seeded people, and which environment variables to set afterwards. It assumes no knowledge of this repository. Every command below is meant to be copied exactly.
 
 ## What this is, and what it is not
 
-The review surface needs a real person to hold a real session. This procedure seeds two tenants, three users, their role bindings, and one pending marketplace installation per tenant, so that the review sign-in route has real rows to bind a session to.
+The product needs a real person to hold a real session. This procedure seeds two workspaces, three people, their role bindings, one pending marketplace installation per workspace, and one credential per person, so that signing in at `/sign-in` with an email address and a password produces a real session bound to real rows.
 
-It is **not** HighLevel single sign-on, and it does not satisfy any acceptance criterion marked `DEFERRED: LIVE HIGHLEVEL AUTH`. It creates no provider connection, no OAuth token, and no live integration. Both seeded tenants are named "not connected" for exactly that reason.
+It is **not** HighLevel single sign-on, and it satisfies no acceptance criterion marked `DEFERRED: LIVE HIGHLEVEL AUTH`. It creates no provider connection, no OAuth token, and no live integration. Both seeded workspaces are named "not connected" for exactly that reason.
 
 ## Before you start
 
-You need four things.
+You need five things.
 
-1. **An isolated review database.** A PostgreSQL 17 instance whose only tenants are the ones this script creates. Never production. Never a database that holds a customer's rows. The script refuses to run if it finds an active tenant it does not own, but do not rely on that: choose a fresh database.
-2. **The migration login.** The database login that applied the migrations. It is a member of the `migration_owner` role. It is **not** the login the application uses. `docs/operations/database-runtime-role.md` explains why those two must stay separate: the application login must never be able to assume `migration_owner`.
+1. **An isolated review database.** A PostgreSQL 17 instance whose only workspaces are the ones this script creates. Never production. Never a database that holds a customer's rows. The script refuses to run if it finds an active workspace it does not own, but do not rely on that: choose a fresh database.
+2. **The migration login.** The database login that applied the migrations. It is a member of the `migration_owner` role. It is **not** the login the application uses. `docs/operations/database-runtime-role.md` explains why those two must stay separate: the application login must never be able to assume that role.
 3. **The migrations already applied** to that database, in filename order, from `supabase/migrations/`.
 4. **Node 24.18.0 and pnpm 11.15.1**, and this repository checked out, with `pnpm install --frozen-lockfile` already run.
+5. **Three email addresses**, one per seeded person, that you can actually receive mail at. They are stored so that a password reset can reach the person. Use addresses you control.
 
-## Step 1: build the database package
+You also need somewhere to put three passwords. Your password manager. Not a note, not a chat message, not this repository.
 
-The seeding script talks to PostgreSQL through the compiled `@oalo/db` package. Build it once.
+## Step 1: build the packages the script uses
+
+The script talks to PostgreSQL through the compiled `@oalo/db` package and derives password hashes through the compiled `@oalo/auth` package. Build both once.
 
 ```
-pnpm exec turbo run build --filter=@oalo/db...
+pnpm exec turbo run build --filter=@oalo/db... --filter=@oalo/auth...
 ```
+
+Expected: the command exits 0. If it does not, stop; the rest of this page will not work.
 
 ## Step 2: find your database name
 
@@ -39,76 +46,131 @@ postgresql://USER:PASSWORD@HOST:5432/THIS_PART_IS_THE_DATABASE_NAME
 
 A managed instance may legitimately call it `postgres`. That is fine. Write the name down exactly; step 3 needs it twice.
 
-## Step 3: run the seeding script
+## Step 3: seed the rows and set the three passwords
 
-Run it from the repository root. Replace the two placeholders with your values, and keep the database name identical in both places.
+Run this from the repository root, on your own machine, in a terminal. Replace the five placeholders. Keep the database name identical in both places.
 
 ```
 node tooling/scripts/database/seed-review-location.mjs \
-  --review-database-url "postgresql://MIGRATION_LOGIN:PASSWORD@HOST:5432/DBNAME" \
-  --confirm-database "DBNAME"
+  --review-database-url postgresql://USER:PASSWORD@HOST:5432/DBNAME \
+  --confirm-database DBNAME \
+  --set-password \
+  --creator-email YOUR_CREATOR_ADDRESS \
+  --approver-email YOUR_APPROVER_ADDRESS \
+  --outsider-email YOUR_OUTSIDER_ADDRESS
 ```
 
-The script refuses, and changes nothing, when any of these is true.
-
-| Refusal | What it means |
-| --- | --- |
-| `--review-database-url is required.` | You left out the connection URL. |
-| `--confirm-database is required.` | You left out the confirmation. It exists so a mistyped URL cannot silently seed the wrong database. |
-| `--confirm-database X does not match the database named in the connection URL.` | The two names differ. Fix the one that is wrong; do not change the other to match. |
-| `Refusing to seed review rows while OALO_ENVIRONMENT=production is set in this shell.` | Your shell declares production. Open a different shell. |
-| `Refusing to seed: the target database already holds N active location(s) that this script does not own.` | The database holds tenants that are not the seeded pair. Stop. You are pointed at the wrong database. |
-| `Unknown argument ...` | A flag is misspelled. Only the three documented flags exist. |
-
-On success it prints the database name, how many rows it inserted, and the identifiers you need. It prints no password, no token, and no secret.
-
-Running it a second time inserts nothing. The rows carry fixed identifiers and are inserted with `on conflict do nothing`, so a repeat run is safe.
-
-## Step 4: set the three environment variables
-
-Copy two of the printed values into the Vercel project's environment, **server-side only**. Never add a `NEXT_PUBLIC_` prefix to any of them.
-
-| Variable | Value | Kind |
-| --- | --- | --- |
-| `OALO_REVIEW_LOCATION_ID` | the `OALO_REVIEW_LOCATION_ID=` value the script printed | not secret, but server-only |
-| `OALO_REVIEW_OUTSIDER_LOCATION_ID` | the `OALO_REVIEW_OUTSIDER_LOCATION_ID=` value the script printed | not secret, but server-only |
-| `OALO_REVIEW_SIGNIN_SECRET` | you generate it in step 5 | secret |
-
-## Step 5: generate the sign-in secret yourself
-
-The script never generates, prints, or stores this. You do.
+The script prompts you three times, in this order:
 
 ```
-openssl rand -base64 32 | tr '+/' '-_' | tr -d '='
+Password for review creator:
+Password for review approver:
+Password for review outsider admin:
 ```
 
-That gives at least 32 bytes of entropy in a URL-safe form. Put the result in two places and nowhere else.
+Type each password and press Enter. **Nothing appears on screen while you type.** That is the echo being suppressed on purpose, not a hung terminal. Press Ctrl+C to cancel; nothing is written if you do.
 
-1. The Vercel project's server-side environment, as `OALO_REVIEW_SIGNIN_SECRET`.
-2. Your password manager.
+Each password must be at least 12 characters and at most 128, must not contain the person's name or the local part of their address, and must not be one of the common passwords the policy refuses. A short phrase of three or four ordinary words works well and is easy to type at a review.
 
-Then redeploy so the running deployment picks it up.
+**Save each password in your password manager as you type it.** Nothing in this system can show it to you again.
 
-## What never goes in git, a chat window, or a ticket
+Expected output, with your own ids and counts:
 
-- The sign-in secret, in any form, including a partial one.
-- The review database's connection URL, password, host, or port.
-- Any session cookie value, session secret, or hash of one.
-- A screenshot that shows any of the above.
+```
+[seed-review] database: DBNAME
+[seed-review] rows inserted this run: 4
+[seed-review] review location id: 4f6a1c2e-0000-4000-8000-000000000001
+[seed-review] outsider location id: 4f6a1c2e-0000-4000-8000-000000000002
+[seed-review] review creator user id: 4f6a1c2e-0000-4000-8000-000000000011
+[seed-review] review approver user id: 4f6a1c2e-0000-4000-8000-000000000012
+[seed-review] review outsider admin user id: 4f6a1c2e-0000-4000-8000-000000000013
+[seed-review] credential set: review creator
+[seed-review] credential set: review approver
+[seed-review] credential set: review outsider admin
+[seed-review] nothing secret is printed here, and nothing secret is written to this repository.
+```
 
-Only these are safe to record in git or hand to an agent: the variable **names**, the seeded UUIDs the script prints, the database **name**, commit SHAs, CI run identifiers, and deployment URLs.
+No password, no password hash, and no email address is ever printed, logged, or written to a file by this script.
 
-## Rotating the secret
+### If the script refuses
 
-Change `OALO_REVIEW_SIGNIN_SECRET` in the Vercel environment and redeploy. Sessions already issued stay valid until they expire or are revoked, because a session is bound to database rows rather than to the secret. To end them immediately, revoke each one in the database.
+| What it said | What it means | What to do |
+|---|---|---|
+| `--confirm-database X does not match the database named in the connection URL.` | The two values disagree. | Re-read the URL. The name is the part after the last slash. |
+| `Refusing to seed review rows while OALO_ENVIRONMENT=production is set in this shell.` | Your shell says production. | Open a new terminal. Do not unset the variable to get past this. |
+| `Refusing to seed: the target database already holds N active location(s) that this script does not own.` | The database is not empty. | Use a fresh database. Do not delete rows to make room. |
+| `--set-password requires --creator-email, --approver-email, --outsider-email.` | One of the three addresses is missing. | Supply all three. |
+| `The password for the review creator was refused: PASSWORD_TOO_SHORT.` | The policy refused it. The reason code names which rule. | Run the command again and choose a password that satisfies the rule. Nothing was written. |
+| `Standard input is not a terminal, so a password cannot be typed without being echoed.` | You are not on a terminal. | Run it on a terminal. `--password-stdin` exists for the automated gate, not for you. |
 
-## Undoing the seed
+Each refusal happens before any row is written, so a refused run leaves the database exactly as it was.
 
-Sessions cannot be deleted, so a seeded review database is not meant to be cleaned up in place. Drop the whole database and start again with a fresh one.
+## Step 4: run it again to confirm it changed nothing
+
+Run the same command **without** the credential flags. It must report zero rows inserted.
+
+```
+node tooling/scripts/database/seed-review-location.mjs \
+  --review-database-url postgresql://USER:PASSWORD@HOST:5432/DBNAME \
+  --confirm-database DBNAME \
+  --expect-unchanged
+```
+
+Expected: `rows inserted this run: 0` and exit code 0. If it reports anything else, stop and escalate: the database is not in the state this procedure assumes.
+
+## Step 5: set the environment variables in Vercel
+
+Set these on the review deployment, all server-side, never with a `NEXT_PUBLIC_` prefix. The repository gate rejects every `NEXT_PUBLIC_` spelling of them, so a mistake here cannot reach a browser bundle, but set them correctly anyway.
+
+| Name | Value | Secret? |
+|---|---|---|
+| `OALO_SELF_SERVE_SIGNUP` | `enabled` to let people create their own accounts at `/sign-up`; leave unset to turn that page off | not secret |
+| `OALO_RESEND_API_KEY` | the API key from your Resend account | **secret** |
+| `OALO_EMAIL_FROM` | an address on a domain you have verified in Resend | not secret |
+
+`OALO_RESEND_API_KEY` and `OALO_EMAIL_FROM` are a pair. Set both or neither. Setting exactly one is a configuration failure: the deployment logs the missing variable by name and refuses every request, which is deliberate, because a half-configured sending domain would otherwise look like working email that silently goes nowhere.
+
+Redeploy after setting them. Vercel does not apply environment changes to a running deployment.
+
+## Step 6: sign in
+
+Open `/sign-in` on the review deployment. Enter the creator's email address and the password you set in step 3. You should land on `/overview`.
+
+If you do not:
+
+- **"That email and password don't match."** The address or the password is wrong. The page says the same thing either way, on purpose. Re-run step 3 for that person to set a known password.
+- **The page is a 404.** The deployment is not in review mode. Set `OALO_REVIEW_SURFACE=authorized` and redeploy; see `docs/production-environments.md`.
+- **"Too many attempts."** You have used the twenty sign-in attempts this deployment allows from one address in fifteen minutes. Wait and try again.
+- **Ten wrong passwords in a row** lock that account for fifteen minutes. Wait, or re-run step 3 for that person, which clears the lock.
+
+## What to do until email is configured
+
+Until `OALO_RESEND_API_KEY` and `OALO_EMAIL_FROM` are both set, the "Forgot your password?" link still works and still says a link is on its way, but no message is sent. That is deliberate: the page must answer identically whether or not an address has an account, so it cannot tell the person that email is off.
+
+A forgotten password is recovered by re-running step 3 for that person. It sets a new password, clears any lock, and changes nothing else.
+
+Once both variables are set, the link works normally: the message arrives, and it is valid for thirty minutes.
+
+## Changing a password later
+
+Two ways, both fine:
+
+- **The person changes it themselves.** Signed in, at `/settings/account`. This keeps them signed in on the device they are using and signs them out everywhere else.
+- **You reset it.** Re-run step 3 for all three people. It overwrites all three passwords, so you will need to redistribute all three.
+
+## What never goes in git
+
+No password. No password hash. No `OALO_RESEND_API_KEY`. No database URL containing a password. None of these belongs in this repository, in a pull request, in a commit message, in an issue, or in a message to an agent. `pnpm audit:secrets` fails the build if one appears.
+
+The seeded ids in step 3's output are not secret and may be pasted anywhere.
+
+## Testing this runbook
+
+Exercise it end to end whenever the seeding script changes and at least once a quarter, against a throwaway database: run step 3 with a password you deliberately choose badly (fewer than 12 characters) to confirm the refusal, then with a good one, then sign in at step 6. The automated gate (`pnpm test:db`) runs the same script non-interactively with `--password-stdin` and then signs in through the real route with the credentials it just created, so a regression in the script fails CI as well.
 
 ## Related
 
-- `docs/operations/database-runtime-role.md`: why the migration login and the application login must stay separate.
-- `docs/operations/review-surface.md`: what the labeled review surface is.
-- `supabase/migrations/20260919120000_first_party_sessions.sql`: the session store and its functions.
-- `tooling/scripts/database/seed-review-location.mjs`: the script this page runs.
+- `docs/production-environments.md`: the full environment variable contract.
+- `docs/operations/database-runtime-role.md`: why the migration login and the application login stay separate.
+- `docs/operations/review-surface.md`: what the review deployment is, and what it is not.
+- `docs/operations/retention-and-deletion.md` and `docs/operations/export.md`: the tables this procedure writes hold email addresses, which are personal data.

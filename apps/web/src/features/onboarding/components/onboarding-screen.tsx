@@ -6,6 +6,10 @@ import type {
   OnboardingItem,
   SyntheticSession,
 } from "../../ui-foundation/model/synthetic-ui.js";
+import {
+  GUIDED_SETUP_ANCHORS,
+  onboardingChecklistAnchor,
+} from "../../guided-setup/anchor-registry.js";
 import { isLaunchReadinessLocked } from "../model/readiness.js";
 import { OnboardingGuidance } from "./onboarding-guidance.js";
 import styles from "./onboarding.module.css";
@@ -48,14 +52,14 @@ export function OnboardingScreen({ onboarding, session }: OnboardingScreenProps)
       <OnboardingGuidance guidance={onboarding.guidance} />
 
       <OnboardingChecklist
-        data-tour="onboarding-get-connected"
+        data-tour={GUIDED_SETUP_ANCHORS.onboardingGetConnected}
         description="Five things to connect"
         items={getConnected}
         title="Connect your accounts"
       />
 
       <OnboardingChecklist
-        data-tour="onboarding-launch-readiness"
+        data-tour={GUIDED_SETUP_ANCHORS.onboardingLaunchReadiness}
         description={
           launchReadinessLocked
             ? "Locked until everything above is connected"
@@ -110,7 +114,7 @@ function projectChecklistItem(
   const action = (
     <a
       className="oalo-action-link"
-      data-tour={`onboarding-${item.id}`}
+      data-tour={onboardingChecklistAnchor(item.id)}
       href={item.completionHref}
       tabIndex={locked ? -1 : undefined}
     >

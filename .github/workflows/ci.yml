@@ -64,7 +64,12 @@ jobs:
   database:
     name: Real PostgreSQL migrations and pgTAP
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # PRD-006c D9 added the review browser run to `pnpm test:db`: a web build, a real `next start`
+    # in review mode behind a TLS terminator, and the five `review` Playwright specs. The timed
+    # spec alone spends its budget on deliberate typing and reading pauses, and the accessibility
+    # matrix walks the steps four times. 45 minutes is the measured duration with headroom for a
+    # cold pnpm store; it is a ceiling, not a target.
+    timeout-minutes: 45
     permissions:
       contents: read
     env:
@@ -101,6 +106,11 @@ jobs:
 
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+
+      # PRD-006c D9. The review browser run inside `pnpm test:db` drives a real browser, so this
+      # job needs the same Chromium the verify job installs.
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Run the canonical real database verification
         run: pnpm test:db

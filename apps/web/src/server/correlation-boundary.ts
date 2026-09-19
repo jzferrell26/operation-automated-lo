@@ -29,7 +29,10 @@ export type CorrelationRouteName =
   | "forgotPassword"
   | "resetPassword"
   | "verifyEmail"
-  | "changePassword";
+  | "changePassword"
+  // PRD-006c D4. The guided setup's two preference writes.
+  | "setupProgress"
+  | "setupProfile";
 
 export interface RequestCorrelation {
   /** The canonical, schema-verified reference that may reach a database correlation column. */

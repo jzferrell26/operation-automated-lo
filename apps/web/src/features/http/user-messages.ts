@@ -71,6 +71,18 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
     what: "We couldn't find that.",
     whatToDo: "Go back to your campaigns and open it from the list.",
   },
+  SETUP_PREFERENCE_INVALID: {
+    what: "We couldn't save that part of your setup.",
+    whatToDo: "Check the fields you just filled in and try again.",
+  },
+  SETUP_PREFERENCE_FAILED: {
+    what: "We couldn't save where you got to in the setup.",
+    whatToDo: "Keep going. We'll try again, and nothing you typed is lost.",
+  },
+  SETUP_PREFERENCE_UNAVAILABLE: {
+    what: "The guided setup isn't available in this workspace.",
+    whatToDo: "You can still create a campaign from the Marketing menu.",
+  },
   INVALID_AUTH_REQUEST: {
     what: "Something in this request didn't look right to us.",
     whatToDo: "Refresh the page and try again.",

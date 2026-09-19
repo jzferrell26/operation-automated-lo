@@ -8,11 +8,15 @@ import {
   CAMPAIGN_CREATOR_PARTY,
   WORKSPACE_OWNER_PARTY,
 } from "../../../copy/user-language.js";
+import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
+import { CampaignHandOff } from "./campaign-hand-off.js";
 import { userMessageSentence } from "../../http/user-messages.js";
 import { postInternalJson } from "../../http/internal-api.js";
 import styles from "./open-house-draft-builder.module.css";
 
 export type CampaignApprovalControlsProps = Readonly<{
+  /** Where this campaign lives, so a user who cannot approve can hand the address to someone who can. */
+  campaignHref: string;
   campaignRef: string;
   campaignVersionRef: string;
   manifestHash: string;
@@ -25,6 +29,7 @@ export type CampaignApprovalControlsProps = Readonly<{
 }>;
 
 export function CampaignApprovalControls({
+  campaignHref,
   campaignRef,
   campaignVersionRef,
   manifestHash,
@@ -78,7 +83,7 @@ export function CampaignApprovalControls({
   }
 
   return (
-    <Card padding="md">
+    <Card data-tour={GUIDED_SETUP_ANCHORS.campaignApproveControl} padding="md">
       <strong>Approve this campaign</strong>
       <p>Approving applies to this exact version. Nothing is published or sent.</p>
       <SafeAction
@@ -97,6 +102,7 @@ export function CampaignApprovalControls({
           Send back for changes
         </button>
       ) : null}
+      {canApprove ? null : <CampaignHandOff campaignHref={campaignHref} />}
       <p role="status">{status ?? "Nobody has approved this version yet."}</p>
     </Card>
   );

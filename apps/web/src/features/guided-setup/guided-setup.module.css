@@ -1,0 +1,153 @@
+/* PRD-006c D6 and D7. The guided setup's own layer.
+ *
+ * Everything visible comes from the token layer: no hex literal, no bespoke
+ * duration, no shadow that is not `--shadow-raised`. The panel itself is the
+ * `Sheet` primitive, so its surface, radius, border, and padding are the
+ * primitive's; this file only places it and caps its height at the mobile frame.
+ */
+
+/* The layer spans the viewport but takes no pointer events of its own, so the
+ * page underneath stays fully operable while a step is open. Only the panel
+ * takes them back. There is no dimming overlay: D6 makes the highlight a focus
+ * ring rather than a scrim, so the surrounding page keeps its own contrast.
+ */
+.layer {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* The panel. Its position comes from `model/panel-placement.ts` as an inline
+ * style whenever there is an element to point at; the resting position below is
+ * what it uses before the first measurement and for the three steps whose form
+ * is inside the panel itself. A panel that starts at the origin and jumps is
+ * worse than one that starts where it can stay.
+ */
+.panel[data-guided-setup-step] {
+  position: fixed;
+  inset: auto var(--space-4) var(--space-6) auto;
+  max-block-size: min(28rem, 60vh);
+  margin: 0;
+  pointer-events: auto;
+}
+
+.stepBody {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-body-size);
+  line-height: var(--leading-normal);
+}
+
+.stepFields {
+  display: grid;
+  gap: var(--space-4);
+  padding: 0;
+  border: 0;
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.starterNote {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--tx-faint);
+  font-size: var(--text-secondary-size);
+}
+
+.findingList {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.finding {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.findingTitle {
+  color: var(--tx-strong);
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-medium);
+}
+
+.fieldChecklist {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.fieldChecklistItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--tx-body);
+  font-size: var(--text-body-size);
+}
+
+.fieldChecklistItem[data-current="true"] {
+  color: var(--tx-strong);
+  font-weight: var(--weight-medium);
+}
+
+.copiedNotice {
+  color: var(--st-success-fg);
+  font-size: var(--text-secondary-size);
+}
+
+/* The shell chip and the help menu.
+ * Both are ordinary controls in the workspace header, sized to the 44 by 44
+ * floor by the `Button` primitive they are built from.
+ */
+.shellSlot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.helpMenu {
+  position: relative;
+  display: inline-block;
+}
+
+.helpMenuList {
+  position: absolute;
+  z-index: 35;
+  inset-block-start: 100%;
+  inset-inline-end: 0;
+  display: grid;
+  min-inline-size: 14rem;
+  padding: var(--space-2);
+  margin-block-start: var(--space-2);
+  background: var(--sf-card);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-raised);
+  gap: var(--space-1);
+  list-style: none;
+}
+
+/* Design brief section 14. Below the tablet frame the panel is a bottom sheet
+ * whose height is capped at 40 percent of the viewport, so the field the user
+ * is typing into stays visible above it (D7). The primitive's own mobile rule
+ * caps at 80vh; this narrows it for the walkthrough only.
+ */
+@media (max-width: 768px) {
+  /* The inline style the wide frames use is not applied below 768, so these
+   * rules are the whole placement: a bottom sheet across the full width, capped
+   * at 40 percent of the viewport so the field being edited stays above it.
+   */
+  .panel[data-guided-setup-step] {
+    inset: auto 0 0;
+    max-block-size: 40vh;
+    inline-size: 100%;
+  }
+}

@@ -24,6 +24,9 @@ export const WEB_POSTGRES_PROJECT = "web-postgres";
 const WEB_POSTGRES_TEST_DIRECTORY = "apps/web/src";
 const WEB_POSTGRES_TEST_SUFFIX = ".postgres.test.ts";
 const SEED_REVIEW_LOCATION_SCRIPT = "tooling/scripts/database/seed-review-location.mjs";
+/** PRD-006c D9. The review browser run, a step in this plan like every other one. */
+const REVIEW_BROWSER_RUN_SCRIPT = "tooling/scripts/database/review-browser-run.mjs";
+export const REVIEW_BROWSER_RUN_LABEL = "run the review browser suite";
 
 /**
  * PRD-006a D8 and 006A-AC-029. The credentials the gate seeds and then signs in with.
@@ -166,6 +169,9 @@ export function commandPlan(discovery, repositoryRoot = defaultRepositoryRoot) {
   const testDatabaseName = assertDisposableTestDatabaseName(TEST_DATABASE_NAME);
   const administrativeDsn = localDatabaseUrl(databasePort, "postgres");
   const testDsn = localDatabaseUrl(databasePort, testDatabaseName);
+  const testDsnWithPassword = localDatabaseUrl(databasePort, testDatabaseName, {
+    withPassword: true,
+  });
   const psqlEnvironment = Object.freeze({ PGPASSWORD: LOCAL_DATABASE_PASSWORD });
   const psqlBaseArguments = Object.freeze(["--no-psqlrc", "--quiet", "--set=ON_ERROR_STOP=1"]);
 
@@ -332,6 +338,30 @@ export function commandPlan(discovery, repositoryRoot = defaultRepositoryRoot) {
               label: "run the route-level PostgreSQL tests",
             }),
           ]),
+      /**
+       * PRD-006c D9. The review browser run goes last, after the migrations are applied and the
+       * review location and its credentials are seeded, because it signs in as one of those
+       * people and creates an account of its own. It is a step like every other one here, so the
+       * orchestration contract test can drive the whole plan without a browser.
+       *
+       * The disposable database's URL travels as an argument rather than in `env`, the way the
+       * seeding step's does, so the guard that keeps `OALO_TEST_DATABASE_URL` on exactly one step
+       * stays exactly that.
+       */
+      Object.freeze({
+        command: node,
+        args: [
+          resolve(repositoryRoot, REVIEW_BROWSER_RUN_SCRIPT),
+          "--database-url",
+          testDsnWithPassword,
+          "--creator-email",
+          GATE_SEEDED_CREDENTIALS.creatorEmail,
+          "--approver-email",
+          GATE_SEEDED_CREDENTIALS.approverEmail,
+        ],
+        env: Object.freeze({ OALO_TEST_SEEDED_PASSWORD: GATE_SEEDED_CREDENTIALS.password }),
+        label: REVIEW_BROWSER_RUN_LABEL,
+      }),
     ]),
     notices: Object.freeze(
       webPostgresTestFiles.length === 0

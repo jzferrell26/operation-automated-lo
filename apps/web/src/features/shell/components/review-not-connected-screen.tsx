@@ -1,5 +1,6 @@
 import { Card, Icon, Metric } from "@oalo/ui";
 
+import { NOT_CONNECTED_HEADLINE } from "../../../copy/user-language.js";
 import {
   notConnectedReviewMetric,
   REVIEW_SURFACE_DISCLOSURE,
@@ -44,7 +45,7 @@ export function ReviewNotConnectedScreen({
       <Card padding="md">
         <Icon decorative name="alert-triangle" size="sm" tone="warning" />
         <div>
-          <strong>REVIEW / DEMO / NOT CONNECTED</strong>
+          <strong>{NOT_CONNECTED_HEADLINE}</strong>
           <p>{REVIEW_SURFACE_DISCLOSURE}</p>
         </div>
       </Card>

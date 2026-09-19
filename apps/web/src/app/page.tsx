@@ -1,4 +1,3 @@
-import { getFoundationSnapshot } from "@oalo/application";
 import { phaseZeroUiTokens } from "@oalo/ui";
 import { redirect } from "next/navigation.js";
 
@@ -6,29 +5,25 @@ import { canRenderReviewSurface } from "../server/authenticated-workspace-data.j
 
 export const dynamic = "force-dynamic";
 
+/**
+ * On a deployment with a workspace, `/` is the workspace's front door and redirects to the
+ * overview. Everywhere else this is a developer's own machine, and PRD-006b D5 asks it to read as
+ * a plain local landing rather than as an internal status report: no phase, no environment variable
+ * name, and no claim that anything is connected.
+ */
 export default function HomePage() {
   if (canRenderReviewSurface()) {
     redirect("/overview");
   }
 
-  const foundation = getFoundationSnapshot();
-
   return (
     <main style={{ background: phaseZeroUiTokens.background }}>
       <section>
-        <p>Operation Automated LO</p>
-        <h1>Phase 0 evidence harness</h1>
+        <p>Automated LO</p>
+        <h1>Local demo</h1>
+        <p>This is a local demo with sample data. Nothing is connected.</p>
         <p>
-          This deployment contains scaffold, contract, and deterministic fixture checks only.
-          Production feature traffic is disabled.
-        </p>
-        <p>
-          Runtime state: <code>{foundation.phase}</code>
-        </p>
-        <p>
-          HighLevel reviewers: the labeled review dashboard is at <a href="/overview">/overview</a>{" "}
-          when <code>OALO_REVIEW_SURFACE=authorized</code> is set. Fixtures are demo and not
-          connected.
+          <a href="/overview">Open the demo workspace</a>
         </p>
       </section>
     </main>

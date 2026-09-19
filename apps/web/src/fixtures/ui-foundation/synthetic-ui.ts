@@ -27,7 +27,7 @@ export const rawSyntheticUiFixture: unknown = {
     location: {
       id: "synthetic-location-prairie-home",
       displayName: "Prairie Home Lending",
-      source: "Validated synthetic session",
+      source: "Local demo. Nothing is connected.",
       verifiedAt: "2026-07-21T14:30:00.000Z",
     },
   },
@@ -456,21 +456,21 @@ export const rawSyntheticUiFixture: unknown = {
         "Synthetic workspace. Provider reads, provider writes, and customer data are disabled.",
     },
     guidance: {
-      title: "Review the setup guide when you need it",
+      title: "Need a hand? Open the setup guide",
       description:
-        "This optional synthetic guide can be dismissed for this view. Dismissal does not complete, hide, or change the persistent setup checklist.",
-      dismissLabel: "Dismiss optional guidance",
+        "You can close this tip. Closing it does not finish a step and does not change your setup list.",
+      dismissLabel: "Close this tip",
     },
     permissionGroups: [
       {
         category: "required",
         label: "Required",
-        description: "Core access the installation must request for the product workflow.",
+        description: "Access Automated LO has to ask for before it can do anything.",
         capabilities: [
           {
             id: "synthetic-permission-location-read",
-            label: "Location read",
-            businessPurpose: "Identify the authorized workspace and its safe routing context.",
+            label: "Read your workspace",
+            businessPurpose: "Know which workspace you are in and where your leads should go.",
             evidence: "Included in the synthetic installation manifest.",
             impact: "Setup cannot verify the selected location without it.",
             nextAction: "Ask a Location Owner to review the installation request.",
@@ -480,12 +480,12 @@ export const rawSyntheticUiFixture: unknown = {
       {
         category: "granted",
         label: "Granted",
-        description: "Required access with current read-only synthetic evidence.",
+        description: "Access you have already given, and we have checked.",
         capabilities: [
           {
             id: "synthetic-permission-campaign-create",
-            label: "Campaign workspace",
-            businessPurpose: "Prepare campaign drafts inside the authorized location.",
+            label: "Create campaigns",
+            businessPurpose: "Let you build an Open House Boost in your own workspace.",
             evidence: "Synthetic App Test evidence verified 8 minutes ago.",
             impact: "Draft preparation is available; provider writes remain disabled.",
             nextAction: "No action is required for this synthetic projection.",
@@ -495,12 +495,12 @@ export const rawSyntheticUiFixture: unknown = {
       {
         category: "missing",
         label: "Missing",
-        description: "Required access that blocks a named business outcome.",
+        description: "Access we need but do not have, and what it stops you doing.",
         capabilities: [
           {
             id: "synthetic-permission-reports-read",
-            label: "Agency reports read",
-            businessPurpose: "Show authorized multi-location portfolio totals and exceptions.",
+            label: "Read agency reports",
+            businessPurpose: "Show totals across every workspace an agency sign-in covers.",
             evidence: "No synthetic reports capability is present for the current session.",
             impact: "Agency totals remain unavailable in this loan officer session.",
             nextAction: "Ask an Owner or Agency User to open the authorized report projection.",
@@ -510,12 +510,13 @@ export const rawSyntheticUiFixture: unknown = {
       {
         category: "optional",
         label: "Optional",
-        description: "Enhancements that are not required to complete core setup.",
+        description: "Nice to have. You can finish setup without any of these.",
         capabilities: [
           {
             id: "synthetic-permission-workflow-read",
-            label: "Workflow read",
-            businessPurpose: "Display optional workflow context during routing review.",
+            label: "Read your workflows",
+            businessPurpose:
+              "Show your HighLevel workflows beside your routing, so you can see both.",
             evidence: "Not requested by this synthetic installation.",
             impact: "Core routing verification remains available without it.",
             nextAction: "Leave unrequested unless the location adopts workflow-based routing.",
@@ -526,9 +527,8 @@ export const rawSyntheticUiFixture: unknown = {
     getConnected: [
       {
         id: "install_permissions",
-        title: "Install and permissions",
-        description:
-          "Verify installation, signed context, scopes, token health, and administrator authority.",
+        title: "Install and access",
+        description: "Install Automated LO in HighLevel and give it the access it needs.",
         freshness: "Verified 8 minutes ago",
         state: "complete",
         completionHref: "/settings/connections",
@@ -542,7 +542,7 @@ export const rawSyntheticUiFixture: unknown = {
       {
         id: "brand_compliance",
         title: "Brand and compliance",
-        description: "Complete identity, license, disclosure, consent, and approved asset values.",
+        description: "Add your name, licence, disclosures, consent wording, and approved artwork.",
         freshness: "Observed 11 minutes ago",
         state: "in_progress",
         completionHref: "/brand",
@@ -553,8 +553,7 @@ export const rawSyntheticUiFixture: unknown = {
       {
         id: "ghl_routing",
         title: "HighLevel routing",
-        description:
-          "Verify owner, pipeline, stage, calendar, tag, field mappings, and optional workflow.",
+        description: "Choose where new leads land: the owner, pipeline, stage, calendar, and tags.",
         freshness: "Last attempted 12 minutes ago",
         state: "blocked",
         completionHref: "/settings/routing",
@@ -565,7 +564,7 @@ export const rawSyntheticUiFixture: unknown = {
       {
         id: "meta_connection",
         title: "Meta connection",
-        description: "Verify HighLevel Meta integration and accessible blueprint assets.",
+        description: "Connect Meta through HighLevel so your ads can run from your own account.",
         freshness: "Last safe evidence observed 18 minutes ago",
         state: "stale",
         completionHref: "/settings/connections/meta",
@@ -575,8 +574,9 @@ export const rawSyntheticUiFixture: unknown = {
       },
       {
         id: "team_responsibilities",
-        title: "Team responsibilities",
-        description: "Assign creator, approver, publisher, and viewer responsibilities.",
+        title: "Who does what",
+        description:
+          "Say who creates campaigns, who approves them, who publishes, and who just looks.",
         freshness: "No authoritative observation yet",
         state: "not_started",
         completionHref: "/settings/team",
@@ -588,8 +588,9 @@ export const rawSyntheticUiFixture: unknown = {
     launchReadiness: [
       {
         id: "dependency_recheck",
-        title: "Dependency recheck",
-        description: "Revalidate scopes, profiles, mappings, roles, and provider assets.",
+        title: "Check everything again",
+        description:
+          "We look over your access, details, routing, and roles once more before you launch.",
         freshness: "Locked, no observation",
         state: "not_started",
         completionHref: "/onboarding/dependency-recheck",
@@ -599,9 +600,8 @@ export const rawSyntheticUiFixture: unknown = {
       },
       {
         id: "synthetic_lead",
-        title: "Synthetic lead",
-        description:
-          "Run a clearly labeled test excluded from business metrics and production routing.",
+        title: "Send a test lead",
+        description: "Send one clearly marked test lead. It never counts in your numbers.",
         freshness: "Locked, no synthetic test executed",
         state: "not_started",
         completionHref: "/onboarding/synthetic-lead",
@@ -611,9 +611,9 @@ export const rawSyntheticUiFixture: unknown = {
       },
       {
         id: "results_review",
-        title: "Results review",
+        title: "Look at the result",
         description:
-          "Review synthetic objects, metric exclusions, warnings, and authorized exceptions.",
+          "See where the test lead landed, what was left out of your numbers, and any warnings.",
         freshness: "Locked, no result evidence",
         state: "not_started",
         completionHref: "/onboarding/results",
@@ -623,8 +623,8 @@ export const rawSyntheticUiFixture: unknown = {
       },
       {
         id: "launch_ready",
-        title: "Launch Ready",
-        description: "Display server-verified readiness evidence and the next safe action.",
+        title: "Ready to launch",
+        description: "See what we checked, and what to do next.",
         freshness: "Locked, no readiness decision",
         state: "not_started",
         completionHref: "/onboarding/launch-ready",

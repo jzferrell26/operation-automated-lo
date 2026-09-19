@@ -20,8 +20,8 @@ export function ActivityFeed({ activity }: Readonly<{ activity: readonly Activit
     <section aria-labelledby="recent-activity-title" className={styles.section}>
       <div className={styles.sectionHeading}>
         <div>
-          <p className={styles.eyebrow}>Audit-friendly timeline</p>
-          <h2 id="recent-activity-title">Recent Activity</h2>
+          <p className={styles.eyebrow}>Recent activity</p>
+          <h2 id="recent-activity-title">What happened lately</h2>
         </div>
         <div aria-label="Filter recent activity" className={styles.filters} role="group">
           {filters.map((option) => (
@@ -40,13 +40,13 @@ export function ActivityFeed({ activity }: Readonly<{ activity: readonly Activit
       <div className={styles.listGrid}>
         {visibleActivity.length === 0 ? (
           <EmptyState
-            description="No connected source has reported activity for this filter. No placeholder history is shown."
-            title="No recorded activity to show"
+            description="Nothing has happened here yet. We don't show placeholder history."
+            title="Nothing to show yet"
           />
         ) : null}
         {visibleActivity.map((item) => (
           <Card key={item.id} padding="sm">
-            <p className={styles.itemMeta}>{item.module} · Synthetic</p>
+            <p className={styles.itemMeta}>{item.module} · Not live</p>
             <strong>{item.summary}</strong>
             <time dateTime={item.occurredAt}>{formatTimestamp(item.occurredAt)}</time>
           </Card>

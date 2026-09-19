@@ -12,6 +12,7 @@ Engineering and documentation standards for Operation Automated LO.
 | File | Purpose |
 |---|---|
 | [documentation-framework.md](documentation-framework.md) | Single source of truth for how documentation is written in this repository |
+| [user-language-contract.md](user-language-contract.md) | Single source of truth for the words the product shows a user: voice, forbidden and preferred vocabulary, the not-connected strings, and the support-details rule |
 
 ## What does NOT belong here
 

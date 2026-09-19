@@ -32,13 +32,16 @@ describe("persisted campaign approval screen", () => {
     );
 
     const { unmount } = render(<PersistedCampaignScreen campaign={creatorView} />);
+    // PRD-006b D5 and D2. The rule is unchanged and the role tokens never reach the screen.
     expect(
-      screen.getByText(
-        "Only a verified human with campaign_approver or location_admin may approve.",
-      ),
+      screen.getByText("Only an approver or your workspace owner can approve a campaign."),
     ).toBeInTheDocument();
+    expect(screen.getAllByText("An approver or the workspace owner").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Approve this version" })).toBeDisabled();
-    expect(screen.getByText(compiled.version.campaignVersionRef)).toBeInTheDocument();
+    // PRD-006b D8. The version reference is kept, under a plain label, inside the support region.
+    expect(screen.getAllByText(compiled.version.campaignVersionRef).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Details for support").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Version ID").length).toBeGreaterThan(0);
     unmount();
 
     const approverView = projectCampaignWorkspace(
@@ -53,8 +56,17 @@ describe("persisted campaign approval screen", () => {
     );
     render(<PersistedCampaignScreen campaign={approverView} />);
     expect(screen.getByRole("button", { name: "Approve this version" })).toBeEnabled();
-    expect(screen.getByText(/Exact version/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Approval applies to this exact version. If you change the campaign, the new version needs its own approval.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Dallas-Fort Worth/)).toBeInTheDocument();
-    expect(screen.getByText("Persisted tenant campaign record")).toBeInTheDocument();
+    expect(screen.getByText("Saved")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Saved to your workspace. This campaign won't run as an ad yet: HighLevel and Meta aren't connected.",
+      ),
+    ).toBeInTheDocument();
   });
 });

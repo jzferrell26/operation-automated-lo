@@ -5,6 +5,7 @@ import { createSessionBoundCsrfToken } from "@oalo/auth";
 import type { ApplicationRole } from "@oalo/contracts";
 import { createPostgresPool, type DatabasePool } from "@oalo/db";
 
+import { SIGNED_IN_SOURCE, ROLE_LABELS as USER_ROLE_LABELS } from "../copy/user-language.js";
 import type { WorkspaceSessionView } from "../features/shell/model/navigation.js";
 import type { Capability } from "../features/ui-foundation/model/synthetic-ui.js";
 import {
@@ -426,23 +427,18 @@ const CAPABILITIES_BY_ROLE: Readonly<Record<ApplicationRole, readonly Capability
     platform_support: Object.freeze(["location:read"] as const),
   });
 
-const ROLE_LABELS: Readonly<Record<ApplicationRole, string>> = Object.freeze({
-  location_admin: "Location administrator",
-  campaign_creator: "Campaign creator",
-  campaign_approver: "Campaign approver",
-  campaign_publisher: "Campaign publisher",
-  viewer: "Viewer",
-  platform_support: "Platform support",
-});
+/**
+ * The shell shows the user their own role. PRD-006b D3 fixes what each role is called, and the map
+ * lives in the copy module so the same six words appear wherever a role is named.
+ */
+const ROLE_LABELS: Readonly<Record<ApplicationRole, string>> = USER_ROLE_LABELS;
 
 /**
- * The provenance string for a principal-derived session. It states two separate facts: the session
- * itself was verified on this request, and the deployment holds no provider connection. Neither
- * claim is borrowed from the synthetic fixture's closed vocabulary, because neither means the same
- * thing here.
+ * Where a signed-in user's shell identity comes from. It states two separate facts: this request
+ * carried a real sign-in, and nothing is connected to the workspace behind it. Neither claim is
+ * borrowed from the demo fixture's closed vocabulary, because neither means the same thing here.
  */
-export const VERIFIED_SESSION_SOURCE =
-  "Verified first-party session. No HighLevel, Meta, or Stripe connection on this deployment.";
+export const VERIFIED_SESSION_SOURCE = SIGNED_IN_SOURCE;
 
 export const CSRF_META_NAME = "oalo-csrf-token";
 export const REVIEW_SIGN_IN_PATH = "/review/sign-in";

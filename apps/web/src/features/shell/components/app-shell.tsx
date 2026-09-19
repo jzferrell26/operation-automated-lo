@@ -4,6 +4,11 @@ import { Button, Icon, IconButton, Surface } from "@oalo/ui";
 import { usePathname } from "next/navigation.js";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import {
+  NOT_CONNECTED_BANNER_LABEL,
+  NOT_CONNECTED_HEADLINE,
+  WORKSPACE_EYEBROW,
+} from "../../../copy/user-language.js";
 import { ThemeControl } from "../../../theme/index.js";
 import type {
   DeepReadonly,
@@ -144,7 +149,7 @@ export function AppShell({
             />
           </div>
           <div className={styles.locationContext}>
-            <span className={styles.eyebrow}>Current HighLevel location</span>
+            <span className={styles.eyebrow}>{WORKSPACE_EYEBROW}</span>
             <strong>{session.location.displayName}</strong>
             <span>{session.user.roleLabel}</span>
           </div>
@@ -158,8 +163,8 @@ export function AppShell({
           data-review-surface={workspaceMode === "review" || undefined}
           aria-label={
             workspaceMode === "review"
-              ? "Review surface. Demo, not connected"
-              : "Synthetic workspace safety"
+              ? NOT_CONNECTED_BANNER_LABEL
+              : "Local demo, nothing connected"
           }
         >
           <Icon
@@ -169,9 +174,7 @@ export function AppShell({
             tone={workspaceMode === "review" ? "warning" : "info"}
           />
           <span>{session.safety.disclosure}</span>
-          <strong>
-            {workspaceMode === "review" ? "REVIEW / DEMO / NOT CONNECTED" : "Writes disabled"}
-          </strong>
+          <strong>{workspaceMode === "review" ? NOT_CONNECTED_HEADLINE : "Local demo"}</strong>
         </aside>
 
         <main className={styles.content} id="main-content">
@@ -390,13 +393,13 @@ function navigationStateLabel(state: NavigationItem["state"]): string {
     case "available":
       return "Available";
     case "permission_restricted":
-      return "Restricted";
+      return "No access";
     case "unavailable":
-      return "Not included";
+      return "Not included in your plan";
     case "planned":
-      return "Planned";
+      return "Coming later";
     case "degraded":
-      return "Degraded";
+      return "Having trouble";
   }
 }
 

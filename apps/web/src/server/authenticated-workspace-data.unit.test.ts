@@ -23,9 +23,14 @@ const stubSynthetic = {
   OALO_SYNTHETIC_DATA_ONLY: "true",
 } as const;
 
-/** Asserted as a literal so a reworded next safe action has to be reviewed, not silently adopted. */
-const REVIEW_NEXT_SAFE_ACTION_TEXT =
-  "Connect HighLevel, Meta, and Stripe in a separately authorized environment.";
+/**
+ * Asserted as literals so a reworded not-connected state has to be reviewed, not silently adopted.
+ * PRD-006b D4 rewrote every one of these; the truth each states is unchanged, which is what
+ * PRD-004 RGL-002 requires and what these assertions exist to hold.
+ */
+const REVIEW_NEXT_STEP_TEXT =
+  "Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do.";
+const REVIEW_NOT_LIVE_TEXT = "Not live yet";
 
 const reviewProduction = {
   OALO_ENVIRONMENT: "production",
@@ -85,7 +90,7 @@ describe("authenticated workspace data boundary", () => {
     expect(workspace.mode).toBe("review");
     expect(workspace.ui.session.safety.dataMode).toBe("synthetic");
     expect(workspace.ui.session.safety.disclosure).toBe(REVIEW_SURFACE_DISCLOSURE);
-    expect(workspace.ui.overview.heading).toMatch(/demo, not connected/i);
+    expect(workspace.ui.overview.heading).toBe("Overview");
     expect(workspace.ui.overview.health.every((item) => item.state === "setup_required")).toBe(
       true,
     );
@@ -95,9 +100,9 @@ describe("authenticated workspace data boundary", () => {
     expect(workspace.ui.overview.metrics.some((metric) => "value" in metric)).toBe(false);
     expect(workspace.brand.safety.disclosure).toBe(REVIEW_SURFACE_DISCLOSURE);
     expect(workspace.reporting.safety.disclosure).toBe(REVIEW_SURFACE_DISCLOSURE);
-    expect(REVIEW_SURFACE_DISCLOSURE).toMatch(/REVIEW SURFACE/u);
-    expect(REVIEW_SURFACE_DISCLOSURE).toMatch(/Demo fixtures only/u);
-    expect(REVIEW_SURFACE_DISCLOSURE).toMatch(/Not connected/u);
+    expect(REVIEW_SURFACE_DISCLOSURE).toBe(
+      "HighLevel, Meta, and Stripe aren't connected to this workspace yet, so nothing here is live and nothing can be published.",
+    );
   });
 
   it("projects spend and leads as reachable not-connected metrics on the review surface", () => {
@@ -107,7 +112,9 @@ describe("authenticated workspace data boundary", () => {
     for (const label of [REVIEW_SPEND_METRIC_LABEL, "New leads"]) {
       const metric = byLabel.get(label);
       expect(metric?.state).toBe("not_connected");
-      expect(metric?.source).toMatch(/Not connected/u);
+      expect(metric?.source).toBe(
+        "Not live yet. Connect Meta and HighLevel to see spend and leads here.",
+      );
       expect(metric && "value" in metric).toBe(false);
     }
     expect(byLabel.get(REVIEW_SPEND_METRIC_LABEL)?.id).toBe(REVIEW_SPEND_METRIC_ID);
@@ -120,7 +127,7 @@ describe("authenticated workspace data boundary", () => {
     expect(overview.recentActivity).toEqual([]);
     expect(overview.activeWork).toEqual([]);
     expect(overview.workspaceStatus.every((item) => item.state === "setup_required")).toBe(true);
-    expect(overview.workspaceStatus.every((item) => item.freshness === "No live observation")).toBe(
+    expect(overview.workspaceStatus.every((item) => item.freshness === REVIEW_NOT_LIVE_TEXT)).toBe(
       true,
     );
     expect(session.location.displayName).toBe(REVIEW_LOCATION_DISPLAY_NAME);
@@ -136,7 +143,7 @@ describe("authenticated workspace data boundary", () => {
     for (const item of items) {
       expect(item.state).toBe("not_started");
       expect("evidence" in item).toBe(false);
-      expect(item.freshness).toBe("No live observation");
+      expect(item.freshness).toBe(REVIEW_NOT_LIVE_TEXT);
     }
     expect(onboarding.getConnected.map((item) => item.id)).toEqual([
       "install_permissions",
@@ -157,11 +164,13 @@ describe("authenticated workspace data boundary", () => {
       "optional",
     ]);
     for (const group of onboarding.permissionGroups) {
-      expect(group.description).toMatch(/has an observed grant state/u);
+      expect(group.description).toBe(
+        "You haven't connected HighLevel yet, so there's nothing to confirm here.",
+      );
       for (const capability of group.capabilities) {
-        expect(capability.evidence).toMatch(/^No evidence\./u);
-        expect(capability.impact).toMatch(/^Not evaluated\./u);
-        expect(capability.nextAction).toBe(REVIEW_NEXT_SAFE_ACTION_TEXT);
+        expect(capability.evidence).toBe("Nothing checked yet.");
+        expect(capability.impact).toBe("No effect until you connect.");
+        expect(capability.nextAction).toBe(REVIEW_NEXT_STEP_TEXT);
       }
     }
   });
@@ -171,15 +180,16 @@ describe("authenticated workspace data boundary", () => {
 
     expect(brand.activeLocation.displayName).toBe(REVIEW_LOCATION_DISPLAY_NAME);
     expect(brand.canonicalProfile.version).toBe("brand-v0-not-connected");
-    expect(
-      brand.canonicalProfile.fields.every((field) => field.value.startsWith("Not saved.")),
-    ).toBe(true);
+    expect(brand.canonicalProfile.fields.every((field) => field.value === "Not saved yet")).toBe(
+      true,
+    );
     expect(brand.canonicalProfile.requiredFields.every((field) => field.state === "missing")).toBe(
       true,
     );
     expect(
-      brand.aiAssistance.suggestions.every((suggestion) =>
-        suggestion.proposedValue.startsWith("Not generated."),
+      brand.aiAssistance.suggestions.every(
+        (suggestion) =>
+          suggestion.proposedValue === "No suggestion yet. Add a sample of your marketing first.",
       ),
     ).toBe(true);
     expect(JSON.stringify(brand)).not.toContain("Alex Morgan");

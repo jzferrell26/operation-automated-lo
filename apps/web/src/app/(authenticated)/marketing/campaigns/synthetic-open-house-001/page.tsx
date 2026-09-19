@@ -12,17 +12,17 @@ import { loadAuthenticatedWorkspace } from "../../../../../server/authenticated-
  * regions instead and reports each as not connected.
  */
 const reviewCampaignRegions: readonly ReviewNotConnectedRegion[] = Object.freeze([
-  ["meta_connection", "Meta connection"],
-  ["selected_assets", "Selected Meta assets"],
-  ["artifact_versions", "Artifact versions"],
-  ["creative_originals", "Creative previews and originals"],
-  ["campaign_history", "Campaign history"],
-  ["approval_scope", "Approval scope"],
-  ["launch_summary", "Launch summary"],
+  ["meta_connection", "Your Meta connection"],
+  ["selected_assets", "The Meta pages and accounts you picked"],
+  ["artifact_versions", "Versions of this campaign"],
+  ["creative_originals", "Artwork and downloads"],
+  ["campaign_history", "What changed, and when"],
+  ["approval_scope", "What the approval covers"],
+  ["launch_summary", "The launch summary"],
 ] as const satisfies readonly ReviewNotConnectedRegion[]);
 
 const REVIEW_CAMPAIGN_REGION_SOURCE =
-  "Not connected. Review surface has no campaign version, provider asset, or approval record.";
+  "HighLevel and Meta aren't connected, so there's no campaign, no ad, and no approval to show.";
 
 export default function SyntheticCampaignPage() {
   const workspace = loadAuthenticatedWorkspace();
@@ -30,12 +30,12 @@ export default function SyntheticCampaignPage() {
   if (workspace.mode === "review") {
     return (
       <ReviewNotConnectedScreen
-        eyebrow="Review surface"
-        heading="This campaign is not connected"
-        lead="No HighLevel or Meta connection exists on this deployment, so no campaign version, creative, approval, or launch plan can be shown here."
+        eyebrow="Campaign"
+        heading="This campaign isn't connected yet"
+        lead="HighLevel and Meta aren't connected to this workspace, so there's no campaign, artwork, approval, or launch plan to show."
         regionSource={REVIEW_CAMPAIGN_REGION_SOURCE}
         regions={reviewCampaignRegions}
-        regionsTitle="Campaign detail regions"
+        regionsTitle="What you'll see here"
         regionsTitleId="review-campaign-title"
       />
     );

@@ -20,18 +20,16 @@ export default async function CampaignListPage() {
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Open House Boost</p>
-          <h1>Campaigns in this location</h1>
-          <p>
-            Only campaigns for the verified location are listed. Provider publication is disabled.
-          </p>
+          <h1>Your campaigns</h1>
+          <p>Every Open House Boost you&apos;ve created in this workspace.</p>
         </div>
       </header>
       {campaigns.length === 0 ? (
         <Card padding="md">
-          <strong>No campaigns in this location yet.</strong>
-          <p>Create an Open House Boost to persist a tenant-backed campaign record.</p>
+          <strong>No campaigns yet.</strong>
+          <p>Create your first Open House Boost. It&apos;s saved as you go.</p>
           <a className="oalo-action-link" href="/marketing/campaigns/new">
-            Create marketing campaign
+            Create an Open House Boost
           </a>
         </Card>
       ) : (
@@ -43,7 +41,7 @@ export default async function CampaignListPage() {
               <p>{campaign.propertyAddress}</p>
               <p>{campaign.nextActions.find((action) => action.available)?.label}</p>
               <a className="oalo-action-link" href={campaign.detailHref}>
-                Open persisted campaign
+                Open campaign
               </a>
             </Card>
           ))}

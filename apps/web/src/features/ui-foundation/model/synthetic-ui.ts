@@ -12,11 +12,12 @@ export const runtimeSafetySchema = z
 
 /**
  * Session provenance is a closed vocabulary so no projection can invent a validation claim.
- * The synthetic fixture always carries the first value; the review surface, which validates no
- * session at all, is the only projection allowed to carry the second.
+ * The demo fixture always carries the first value; a deployment that validates no session at all
+ * is the only projection allowed to carry the second. Both are words a user reads, so both follow
+ * the user-language contract (PRD-006b D1).
  */
-export const SESSION_SOURCE_VALIDATED_SYNTHETIC = "Validated synthetic session";
-export const SESSION_SOURCE_DEMO_NOT_CONNECTED = "Demo session. No validated HighLevel location.";
+export const SESSION_SOURCE_VALIDATED_SYNTHETIC = "Local demo. Nothing is connected.";
+export const SESSION_SOURCE_DEMO_NOT_CONNECTED = "Not connected yet.";
 
 export const capabilitySchema = z.enum([
   "campaign:create",
@@ -299,17 +300,17 @@ export const onboardingSchema = z
       exactPermissionGroup("optional"),
     ]),
     getConnected: z.tuple([
-      exactOnboardingItem("install_permissions", "Install and permissions"),
+      exactOnboardingItem("install_permissions", "Install and access"),
       exactOnboardingItem("brand_compliance", "Brand and compliance"),
       exactOnboardingItem("ghl_routing", "HighLevel routing"),
       exactOnboardingItem("meta_connection", "Meta connection"),
-      exactOnboardingItem("team_responsibilities", "Team responsibilities"),
+      exactOnboardingItem("team_responsibilities", "Who does what"),
     ]),
     launchReadiness: z.tuple([
-      exactOnboardingItem("dependency_recheck", "Dependency recheck"),
-      exactOnboardingItem("synthetic_lead", "Synthetic lead"),
-      exactOnboardingItem("results_review", "Results review"),
-      exactOnboardingItem("launch_ready", "Launch Ready"),
+      exactOnboardingItem("dependency_recheck", "Check everything again"),
+      exactOnboardingItem("synthetic_lead", "Send a test lead"),
+      exactOnboardingItem("results_review", "Look at the result"),
+      exactOnboardingItem("launch_ready", "Ready to launch"),
     ]),
   })
   .strict();

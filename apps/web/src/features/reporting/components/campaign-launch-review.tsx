@@ -29,12 +29,12 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
   const decision: SafeActionDecision = {
     state: "ready",
     explanation:
-      "Review every version, selected asset, target, exclusion, budget value, and date before confirming.",
-    requiredRole: "Synthetic Publisher",
+      "Read every version, account, audience, exclusion, budget, and date before you confirm.",
+    requiredRole: "A publisher",
     confirmation: {
       title: campaign.launchSummary.confirmation.title,
       effect: campaign.launchSummary.confirmation.effect,
-      scope: `Campaign ${campaign.id}, version ${campaign.currentVersion}`,
+      scope: `Version ${campaign.currentVersion} of this campaign`,
       result: campaign.launchSummary.confirmation.result,
     },
   };
@@ -44,11 +44,8 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
       <section aria-labelledby="meta-connection-title" className={styles.launchSection}>
         <div className={styles.sectionHeading}>
           <div>
-            <h2 id="meta-connection-title">Meta connection and selected assets</h2>
-            <p>
-              Active location: {campaign.metaConnection.activeLocationName} (
-              {campaign.metaConnection.activeLocationId})
-            </p>
+            <h2 id="meta-connection-title">Your Meta connection</h2>
+            <p>Workspace: {campaign.metaConnection.activeLocationName}</p>
           </div>
           <span data-connection-state={campaign.metaConnection.state}>
             {campaign.metaConnection.state}
@@ -69,7 +66,6 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
                 <span>{asset.optional ? "Optional, selected" : "Selected"}</span>
               </div>
               <p>{asset.displayName}</p>
-              <code>{asset.providerId}</code>
             </Card>
           ))}
         </div>
@@ -78,28 +74,26 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
       <section aria-labelledby="approval-scope-title" className={styles.launchSection}>
         <div className={styles.sectionHeading}>
           <div>
-            <h2 id="approval-scope-title">Exact approval scope</h2>
+            <h2 id="approval-scope-title">What the approval covers</h2>
             <p>
-              Campaign version {campaign.approvalSnapshot.campaignVersion}, approved by{" "}
+              Version {campaign.approvalSnapshot.campaignVersion}, approved by{" "}
               {campaign.approvalSnapshot.approver}
             </p>
           </div>
           <span>{campaign.approvalSnapshot.status}</span>
         </div>
         <div
-          aria-label="Exact approved artifact and launch versions"
+          aria-label="Exactly what was approved"
           className={styles.tableRegion}
           role="region"
           tabIndex={0}
         >
           <table>
-            <caption>
-              Exact approved versions for campaign version {campaign.currentVersion}
-            </caption>
+            <caption>What was approved in version {campaign.currentVersion}</caption>
             <thead>
               <tr>
-                <th scope="col">Approval item</th>
-                <th scope="col">Exact version</th>
+                <th scope="col">Item</th>
+                <th scope="col">Version</th>
               </tr>
             </thead>
             <tbody>
@@ -117,15 +111,15 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
       <section aria-labelledby="final-launch-title" className={styles.launchSection}>
         <div className={styles.sectionHeading}>
           <div>
-            <h2 id="final-launch-title">Final synthetic launch summary</h2>
+            <h2 id="final-launch-title">The launch summary</h2>
             <p>{campaign.launchSummary.policyClassification}</p>
           </div>
-          <span>Provider write disabled</span>
+          <span>Nothing launches from here</span>
         </div>
 
         <div className={styles.launchSummaryGrid}>
           <Card padding="md">
-            <h3>Every target</h3>
+            <h3>Who sees it</h3>
             <ul>
               {campaign.launchSummary.targets.map((target) => (
                 <li key={target}>{target}</li>
@@ -133,7 +127,7 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
             </ul>
           </Card>
           <Card padding="md">
-            <h3>Every exclusion</h3>
+            <h3>Who does not</h3>
             <ul>
               {campaign.launchSummary.exclusions.map((exclusion) => (
                 <li key={exclusion}>{exclusion}</li>
@@ -167,15 +161,15 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
         </div>
 
         <SafeAction
-          confirmLabel="Confirm exact local summary"
+          confirmLabel="Yes, that is right"
           decision={decision}
-          label="Confirm final launch summary"
+          label="Confirm the launch summary"
           onConfirm={() => setConfirmed(true)}
         />
         <p className={styles.confirmationStatus} role="status">
           {confirmed
-            ? "Final launch summary confirmed locally for campaign version 3. No provider write occurred."
-            : "Final launch summary has not been confirmed. No provider write is available."}
+            ? "You confirmed the launch summary. Nothing was launched."
+            : "You have not confirmed the launch summary yet. Nothing can launch from here."}
         </p>
       </section>
     </Stack>

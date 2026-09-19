@@ -1,0 +1,124 @@
+/**
+ * Every error a route can hand the browser, as two sentences a loan officer can act on
+ * (PRD-006b D7, `library/knowledge/private/standards/user-language-contract.md` section 7).
+ *
+ * The codes themselves stay: they are how support and the audit trail find one request. What
+ * changes is that none of them reaches a screen. A status line renders `what` and `whatToDo`, and
+ * the code travels with the support reference inside the collapsed "Details for support" region.
+ *
+ * An unmapped code is not a crash and not a silent blank. It renders `UNKNOWN_ERROR_MESSAGE`, which
+ * says the failure is ours and what to do about it, and `user-messages.unit.test.ts` fails if any
+ * code the campaign or auth handlers emit is missing from the table, so the fallback stays a
+ * safety net rather than the usual path.
+ */
+
+export type UserMessage = Readonly<{
+  /** What happened, in the user's terms. Never a variable name, a value, or a stack. */
+  what: string;
+  /** What to do about it. Always present, even when the answer is to wait or to ask someone. */
+  whatToDo: string;
+}>;
+
+/**
+ * Keyed by the code the route puts in `{ "error": ... }`. Includes the codes PRD-006a's auth
+ * routes will emit, so those screens have their sentences the day they are built.
+ */
+export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Object.freeze({
+  INVALID_CAMPAIGN_DRAFT: {
+    what: "Some of the campaign details aren't filled in the way the checks expect.",
+    whatToDo: "Look over the fields marked below and try again.",
+  },
+  INVALID_CAMPAIGN_COMMAND: {
+    what: "Something in this request didn't look right to us.",
+    whatToDo: "Refresh the page and try again.",
+  },
+  CAMPAIGN_PREFLIGHT_FAILED: {
+    what: "We couldn't finish the checks on this campaign.",
+    whatToDo: "Try again. If it keeps happening, contact support with the reference below.",
+  },
+  CAMPAIGN_APPROVAL_CONFLICT: {
+    what: "This campaign changed since you opened it.",
+    whatToDo: "Refresh the page and look again before approving.",
+  },
+  CAMPAIGN_APPROVAL_NOT_READY: {
+    what: "This campaign isn't ready to approve yet.",
+    whatToDo: "Fix what the checks found, save it again, then approve the new version.",
+  },
+  CAMPAIGN_APPROVAL_FAILED: {
+    what: "We couldn't record your approval.",
+    whatToDo: "Refresh the page and try again.",
+  },
+  CAMPAIGN_STORE_UNAVAILABLE: {
+    what: "We can't reach your saved campaigns right now.",
+    whatToDo: "Try again in a minute. Nothing you've saved is lost.",
+  },
+  WORKSPACE_UNAVAILABLE: {
+    what: "We can't reach your workspace right now.",
+    whatToDo: "Try again in a minute.",
+  },
+  UNAUTHENTICATED: {
+    what: "You've been signed out.",
+    whatToDo: "Sign in again to continue.",
+  },
+  FORBIDDEN: {
+    what: "You don't have access to this.",
+    whatToDo: "Ask your workspace owner to give you access.",
+  },
+  NOT_FOUND: {
+    what: "We couldn't find that.",
+    whatToDo: "Go back to your campaigns and open it from the list.",
+  },
+  INVALID_SIGN_IN: {
+    what: "That email and password don't match.",
+    whatToDo: "Try again, or reset your password.",
+  },
+  RATE_LIMITED: {
+    what: "There have been too many attempts.",
+    whatToDo: "Wait a few minutes and try again.",
+  },
+  ACCOUNT_LOCKED: {
+    what: "There have been too many attempts.",
+    whatToDo: "Wait a few minutes and try again.",
+  },
+  INVALID_RESET_TOKEN: {
+    what: "This reset link has expired or was already used.",
+    whatToDo: "Request a new one.",
+  },
+  INVALID_VERIFICATION_TOKEN: {
+    what: "This link has expired.",
+    whatToDo: "We'll send a new one when you sign in.",
+  },
+  EMAIL_NOT_CONFIGURED: {
+    what: "We can't send email from this workspace yet.",
+    whatToDo: "Contact support and they'll set your password for you.",
+  },
+  SIGNUP_DISABLED: {
+    what: "New accounts aren't open here.",
+    whatToDo: "Ask whoever invited you for a sign-in.",
+  },
+});
+
+/** What a user sees when a code has no sentence of its own. Always shown with the reference. */
+export const UNKNOWN_ERROR_MESSAGE: UserMessage = Object.freeze({
+  what: "Something went wrong on our side.",
+  whatToDo: "Try again, and contact support if it keeps happening.",
+});
+
+/** The sentence pair for one code, or the honest generic pair. Never returns the code. */
+export function userMessageForCode(code: string | undefined): UserMessage {
+  if (code === undefined) {
+    return UNKNOWN_ERROR_MESSAGE;
+  }
+  return USER_MESSAGES_BY_CODE[code] ?? UNKNOWN_ERROR_MESSAGE;
+}
+
+/** Whether a code has its own sentences, so a caller can decide to show the support reference. */
+export function isMappedErrorCode(code: string | undefined): boolean {
+  return code !== undefined && Object.hasOwn(USER_MESSAGES_BY_CODE, code);
+}
+
+/** One line for a status region: what happened, then what to do. */
+export function userMessageSentence(code: string | undefined): string {
+  const message = userMessageForCode(code);
+  return `${message.what} ${message.whatToDo}`;
+}

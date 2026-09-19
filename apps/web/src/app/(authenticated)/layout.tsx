@@ -1,6 +1,7 @@
 import { headers } from "next/headers.js";
 import type { ReactNode } from "react";
 
+import { SIGN_OUT_LABEL, SIGNED_OUT_HEADING, SIGNED_OUT_PROMPT } from "../../copy/user-language.js";
 import { AppShell } from "../../features/shell/components/app-shell.js";
 import {
   projectNavigationForSession,
@@ -20,25 +21,24 @@ import {
 export const dynamic = "force-dynamic";
 
 /**
- * The shell a review visitor sees before presenting a session. It states that fact rather than
- * borrowing the demo persona: the fixture "Demo reviewer" in "Demo workspace (not connected)" reads
- * as a signed-in identity, and on a deployment that verifies real sessions it is not one.
- * Capabilities are empty, so every capability-gated navigation item projects as restricted.
+ * The shell a visitor sees before signing in. It says so rather than borrowing the demo persona,
+ * which would read as a signed-in identity on a deployment that checks real sessions. Capabilities
+ * are empty, so every capability-gated navigation item projects as restricted.
  */
-const UNAUTHENTICATED_REVIEW_SESSION: WorkspaceSessionView = Object.freeze({
+const SIGNED_OUT_SESSION: WorkspaceSessionView = Object.freeze({
   safety: Object.freeze({
     dataMode: "synthetic" as const,
     writesEnabled: false as const,
     disclosure: REVIEW_SURFACE_DISCLOSURE,
   }),
   user: Object.freeze({
-    displayName: "Not signed in",
-    roleLabel: "No verified session on this request",
+    displayName: SIGNED_OUT_HEADING,
+    roleLabel: SIGNED_OUT_PROMPT,
     capabilities: Object.freeze([]),
   }),
   location: Object.freeze({
-    displayName: "No verified location",
-    source: "No first-party session was presented, so no location was resolved.",
+    displayName: SIGNED_OUT_HEADING,
+    source: SIGNED_OUT_PROMPT,
   }),
 });
 
@@ -76,7 +76,7 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
     new Request("https://oalo.local/", { headers: incoming }),
     process.env,
   );
-  const session = shell.session ?? UNAUTHENTICATED_REVIEW_SESSION;
+  const session = shell.session ?? SIGNED_OUT_SESSION;
 
   return (
     <>
@@ -99,13 +99,13 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
             {shell.csrfToken === undefined ? null : (
               <input name="csrfToken" type="hidden" value={shell.csrfToken} />
             )}
-            <button type="submit">Sign out of the review session</button>
+            <button type="submit">{SIGN_OUT_LABEL}</button>
           </form>
         ) : (
           <p>
-            No verified session was presented with this request.{" "}
+            {SIGNED_OUT_HEADING}{" "}
             <a className="oalo-action-link" href={REVIEW_SIGN_IN_PATH}>
-              Go to review sign-in
+              {SIGNED_OUT_PROMPT}
             </a>
           </p>
         )}

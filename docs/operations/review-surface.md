@@ -73,7 +73,9 @@ The completion review dated 2026-09-19 recommends continuing in one primary sess
 
 The authenticated shell banner must remain:
 
-- `REVIEW SURFACE. Demo fixtures only. Not connected to HighLevel, Meta, or Stripe. These numbers are not live customer data.`
-- `REVIEW / DEMO / NOT CONNECTED`
+- `HighLevel, Meta, and Stripe aren't connected to this workspace yet, so nothing here is live and nothing can be published.`
+- `Not connected yet`
+
+PRD-006b D4 reworded both lines from the wording PRD-005 shipped. Their meaning is unchanged and is what PRD-005e proof point 6 reads against: the banner states that nothing is connected and that nothing can be published, and no figure on the page is presented as live. The headline is one shared constant, `NOT_CONNECTED_HEADLINE` in `apps/web/src/copy/user-language.ts`, used by both the shell and the not-connected screen. The banner's accessible name is `Not connected yet: HighLevel, Meta, and Stripe`.
 
 Review-mode spend, leads, and CRM tiles render as unavailable / not-connected. They must not show invented live counts.

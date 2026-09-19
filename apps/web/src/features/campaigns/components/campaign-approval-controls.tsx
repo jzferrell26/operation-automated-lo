@@ -3,6 +3,12 @@
 import { Card, SafeAction, type SafeActionDecision } from "@oalo/ui";
 import { useState } from "react";
 
+import {
+  APPROVER_OR_OWNER,
+  CAMPAIGN_CREATOR_PARTY,
+  WORKSPACE_OWNER_PARTY,
+} from "../../../copy/user-language.js";
+import { userMessageSentence } from "../../http/user-messages.js";
 import { postInternalJson } from "../../http/internal-api.js";
 import styles from "./open-house-draft-builder.module.css";
 
@@ -30,9 +36,7 @@ export function CampaignApprovalControls({
   state,
 }: CampaignApprovalControlsProps) {
   const [status, setStatus] = useState<string | null>(
-    alreadyDecided === undefined
-      ? null
-      : `Recorded ${alreadyDecided}. Provider publication remains disabled.`,
+    alreadyDecided === undefined ? null : decisionStatus(alreadyDecided, false),
   );
   const [busy, setBusy] = useState(false);
 
@@ -59,17 +63,15 @@ export function CampaignApprovalControls({
       });
       const payload: unknown = await response.json();
       if (!response.ok) {
+        // PRD-006b D7. The route's code becomes two sentences; the code never reaches this line.
         const record = payload as { error?: string };
-        throw new Error(record.error ?? "CAMPAIGN_APPROVAL_FAILED");
+        setStatus(userMessageSentence(record.error));
+        return;
       }
-      const body = payload as { decision: string; duplicate?: boolean };
-      setStatus(
-        body.duplicate
-          ? `Already recorded ${body.decision}. Provider publication remains disabled.`
-          : `Recorded ${body.decision}. Provider publication remains disabled.`,
-      );
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "CAMPAIGN_APPROVAL_FAILED");
+      const body = payload as { decision: "approved" | "rejected"; duplicate?: boolean };
+      setStatus(decisionStatus(body.decision, body.duplicate === true));
+    } catch {
+      setStatus(userMessageSentence(undefined));
     } finally {
       setBusy(false);
     }
@@ -77,14 +79,10 @@ export function CampaignApprovalControls({
 
   return (
     <Card padding="md">
-      <strong>Human approval</strong>
-      <p>
-        Approval binds to this exact campaign version and preflight hash. Later edits create a new
-        version and cannot inherit this decision. No HighLevel or Meta publish runs from this
-        control.
-      </p>
+      <strong>Approve this campaign</strong>
+      <p>Approving applies to this exact version. Nothing is published or sent.</p>
       <SafeAction
-        confirmLabel="Record approved"
+        confirmLabel="Yes, approve"
         decision={decision}
         label="Approve this version"
         onConfirm={() => submit("approved")}
@@ -96,12 +94,24 @@ export function CampaignApprovalControls({
           type="button"
           onClick={() => void submit("rejected")}
         >
-          Record rejected (stays awaiting approval)
+          Send back for changes
         </button>
       ) : null}
-      <p role="status">{status ?? "No approval has been recorded for this version."}</p>
+      <p role="status">{status ?? "Nobody has approved this version yet."}</p>
     </Card>
   );
+}
+
+/** What a recorded decision says, once, wherever it is said. */
+function decisionStatus(decision: "approved" | "rejected", duplicate: boolean): string {
+  if (decision === "rejected") {
+    return duplicate
+      ? "Already sent back for changes."
+      : "Sent back for changes. The campaign creator can fix it and save a new version.";
+  }
+  return duplicate
+    ? "Already approved."
+    : "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.";
 }
 
 function resolveDecision(input: {
@@ -115,51 +125,51 @@ function resolveDecision(input: {
   if (input.busy) {
     return {
       state: "loading",
-      explanation: "Recording the human approval decision.",
-      requiredRole: "location_admin or campaign_approver",
-      lastSafeState: input.state,
-      progressLabel: "Recording approval",
+      explanation: "Saving your decision.",
+      requiredRole: APPROVER_OR_OWNER,
+      lastSafeState: "Nothing has changed yet",
+      progressLabel: "Saving your decision",
     };
   }
   if (input.alreadyDecided !== undefined) {
     return {
       state: "blocked",
-      explanation: "This version already has a recorded human decision.",
-      requiredRole: "location_admin or campaign_approver",
-      prerequisite: "A new campaign version after material edits",
-      responsibleParty: "Campaign creator",
-      nextAction: "Review the recorded decision. Do not republish from this screen.",
+      explanation: "Someone has already decided on this version.",
+      requiredRole: APPROVER_OR_OWNER,
+      prerequisite: "A new version, after someone changes the campaign",
+      responsibleParty: CAMPAIGN_CREATOR_PARTY,
+      nextAction: "Read the decision below. Nothing else happens from this page.",
     };
   }
   if (!input.canApprove) {
     return {
       state: "permission_restricted",
-      explanation: "Only a verified human with campaign_approver or location_admin may approve.",
-      requiredRole: "location_admin or campaign_approver",
-      responsibleParty: "Workspace administrator",
-      nextAction: "Ask an authorized approver to review this exact version.",
+      explanation: "Only an approver or your workspace owner can approve a campaign.",
+      requiredRole: APPROVER_OR_OWNER,
+      responsibleParty: WORKSPACE_OWNER_PARTY,
+      nextAction: "Send them this page and ask them to look at this version.",
     };
   }
   if (input.blocking || input.state !== "awaiting_approval") {
     return {
       state: "blocked",
-      explanation: "A current passing preflight on this exact version is required before approval.",
-      requiredRole: "location_admin or campaign_approver",
-      prerequisite: "Passing deterministic preflight for this campaign version",
-      responsibleParty: "Campaign creator",
-      nextAction: "Fix blocking findings and freeze a new version if the content changed.",
+      explanation: "This version needs changes before anyone can approve it.",
+      requiredRole: APPROVER_OR_OWNER,
+      prerequisite: "A version where the checks find nothing to fix",
+      responsibleParty: CAMPAIGN_CREATOR_PARTY,
+      nextAction: "Fix what the checks found, then save it again.",
     };
   }
   return {
     state: "ready",
     explanation:
-      "Review the version, preflight, budget, targeting, dates, disclosures, and approval scope before recording a human decision.",
-    requiredRole: "location_admin or campaign_approver",
+      "Read the wording, the budget, where the ad runs, the dates, and the disclosures before you approve.",
+    requiredRole: APPROVER_OR_OWNER,
     confirmation: {
-      title: "Approve this exact campaign version",
-      effect: "Records an auditable human approval. Does not publish to any provider.",
-      scope: `Campaign version ${input.campaignVersionRef}`,
-      result: "Campaign status becomes approved for this version only.",
+      title: "Approve this version",
+      effect: "Records your name against this exact version. Nothing is published or sent.",
+      scope: "This version of the campaign, as it reads right now",
+      result: "The campaign is approved. Changing it later needs a new approval.",
     },
   };
 }

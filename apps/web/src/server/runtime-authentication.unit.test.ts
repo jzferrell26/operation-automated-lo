@@ -10,6 +10,11 @@ import {
 } from "@oalo/contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type {
+  IdentityDirectory,
+  RoleBindingPort,
+  SessionDisplayNames,
+} from "./authenticated-principal.js";
 import { OALO_REVIEW_SURFACE_AUTHORIZED } from "./authenticated-workspace-data.js";
 import { handleCampaignApproval } from "./campaign-approval-handler.js";
 import { LOCAL_SYNTHETIC_ENV } from "./campaign-command-test-support.js";
@@ -89,6 +94,25 @@ function mutationRequest(headers: Readonly<Record<string, string>> = {}): Reques
     headers: { "content-type": "application/json", ...headers },
     body: JSON.stringify({ campaignRef: "campaign_reviewProbe001", decision: "approved" }),
   });
+}
+
+function denyingIdentityDirectory(): IdentityDirectory {
+  return {
+    async resolveLocationId() {
+      return undefined;
+    },
+    async resolveActorId() {
+      return undefined;
+    },
+  };
+}
+
+function denyingRoleBindings(): RoleBindingPort {
+  return {
+    async currentRoleVersion() {
+      return undefined;
+    },
+  };
 }
 
 function cookieHeaders(): Record<string, string> {
@@ -216,18 +240,24 @@ describe("runtime authentication composition", () => {
     expect(partial.ports.firstPartySessions).toBeUndefined();
   });
 
-  it("parses a complete embedded set and still refuses a session it cannot prove is live", () => {
+  /**
+   * 005A-AC-003. The composition wires the activity check to PRD-005b's
+   * `platform.first_party_session_is_active` rather than to a constant. That the predicate answers
+   * true only for a live session is proven where it can be: the pgTAP suite for the function, and
+   * `postgres-authentication-ports.unit.test.ts` for the port that calls it. What is proven here is
+   * that the composition supplies it at all, and that a database read is what answers the question.
+   */
+  it("parses a complete embedded set and wires the activity check to the session store", () => {
     const composition = resolveRuntimeAuthenticationComposition(EMBEDDED_ENV);
 
     expect(composition.failedVariable).toBeUndefined();
     expect(composition.ports.embedded?.issuer).toBe(EMBEDDED_ENV.OALO_EMBEDDED_SESSION_ISSUER);
     expect(composition.ports.embedded?.audience).toBe("oalo-web");
     expect(Object.keys(composition.ports.embedded?.publicKeysById ?? {})).toEqual(["key_primary"]);
-    expect(
-      composition.ports.embedded?.isSessionActive({
-        sessionId: formatSessionRef(SESSION_ID),
-      } as never),
-    ).toBe(false);
+    expect(typeof composition.ports.embedded?.isSessionActive).toBe("function");
+    expect(composition.ports.sessionActivity).toBeDefined();
+    expect(composition.ports.sessionDisplay).toBeDefined();
+    expect(composition.ports.reviewSessions).toBeDefined();
   });
 
   it("rejects malformed embedded public key material by name", () => {
@@ -306,7 +336,15 @@ describe("runtime shell session", () => {
     expect(shell.csrfToken).toBeUndefined();
   });
 
-  it("projects the verified principal and emits a session-bound CSRF token, never the cookie", async () => {
+  /**
+   * Resolves the shell for a verified principal with a stubbed display read. The other ports deny,
+   * because the read principal is already mocked and nothing else in the shell path consults them:
+   * anything that started to would fail here rather than silently succeed against a live pool.
+   */
+  async function shellForDisplay(
+    role: AuthenticatedPrincipal["role"],
+    display: SessionDisplayNames | undefined,
+  ) {
     const gate = resolveRuntimeCampaignCommandPorts(REVIEW_ENV).mutation;
     if (gate === undefined) throw new Error("The review composition must supply a mutation gate");
     const principal: AuthenticatedPrincipal = {
@@ -315,25 +353,44 @@ describe("runtime shell session", () => {
       locationRef: formatLocationRef(LOCATION_ID),
       locationId: LOCATION_ID,
       installationRef: formatInstallationRef(INSTALLATION_ID),
-      role: "campaign_approver",
+      role,
       roleVersion: 17,
       sessionId: formatSessionRef(SESSION_ID),
       authenticationMode: "first_party",
     };
     ports.resolveAuthenticatedReadPrincipal.mockResolvedValue(Object.freeze(principal));
-
     const shell = await resolveRuntimeShellSession(
       new Request("https://review.operation-automated-lo.test/overview", {
         headers: cookieHeaders(),
       }),
       REVIEW_ENV,
+      {
+        identityDirectory: denyingIdentityDirectory(),
+        roleBindings: denyingRoleBindings(),
+        mutation: gate,
+        sessionDisplay: {
+          async resolve() {
+            return display;
+          },
+        },
+      },
     );
+    return { gate, principal, shell };
+  }
+
+  // 005A-AC-011. The display names come from the definer read, not from the fixture persona and
+  // not from anything the browser sent.
+  it("projects the verified principal and emits a session-bound CSRF token, never the cookie", async () => {
+    const { gate, principal, shell } = await shellForDisplay("campaign_approver", {
+      locationDisplayName: "Review location (not connected)",
+      userDisplayName: "Review approver",
+    });
 
     expect(shell.authenticated).toBe(true);
-    expect(shell.session?.user.displayName).toBe(principal.actorRef);
+    expect(shell.session?.user.displayName).toBe("Review approver");
     expect(shell.session?.user.roleLabel).toBe("Campaign approver");
     expect(shell.session?.user.capabilities).not.toContain("campaign:create");
-    expect(shell.session?.location.displayName).toBe(principal.locationRef);
+    expect(shell.session?.location.displayName).toBe("Review location (not connected)");
     expect(shell.session?.location.source).toBe(VERIFIED_SESSION_SOURCE);
     expect(shell.csrfToken).toBe(
       createSessionBoundCsrfToken({
@@ -342,6 +399,17 @@ describe("runtime shell session", () => {
       }),
     );
     expect(shell.csrfToken).not.toBe(SESSION_COOKIE_VALUE);
+  });
+
+  /**
+   * 005A-AC-011's failure direction. When the definer read yields nothing, the shell states the
+   * canonical references the session carries rather than inventing a friendly name.
+   */
+  it("falls back to the canonical references when the display read yields nothing", async () => {
+    const { principal, shell } = await shellForDisplay("campaign_creator", undefined);
+
+    expect(shell.session?.user.displayName).toBe(principal.actorRef);
+    expect(shell.session?.location.displayName).toBe(principal.locationRef);
   });
 
   it("never projects a shell session in synthetic mode", async () => {

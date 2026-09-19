@@ -13,7 +13,12 @@ export const TRACING_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,299}$/u;
 export const CORRELATION_REFERENCE_HEADER = "x-oalo-correlation-ref";
 export const TRACING_ID_HEADER = "x-correlation-id";
 
-export type CorrelationRouteName = "approve" | "preflight";
+/**
+ * The route segment of a canonical reference. Each value is camel case because
+ * {@link CorrelationReferenceSchema} allows only underscores as separators, so a hyphenated route
+ * name would produce a reference the schema rejects at its own boundary.
+ */
+export type CorrelationRouteName = "approve" | "preflight" | "session" | "signOut";
 
 export interface RequestCorrelation {
   /** The canonical, schema-verified reference that may reach a database correlation column. */

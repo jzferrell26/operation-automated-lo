@@ -2,7 +2,7 @@
 -- Target: PostgreSQL 17 through the local Supabase 2.109.1 contract.
 --
 -- Migration safety:
--- - Additive only. One new table, two trigger functions, two triggers, eight
+-- - Additive only. One new table, one trigger function, two triggers, eleven
 --   functions, three policies, and grants on the new objects. No existing
 --   table, column, constraint, index, policy, function, or grant is touched.
 -- - Lock classes: every ACCESS EXCLUSIVE lock is taken while creating a new
@@ -466,6 +466,116 @@ begin
 end
 $function$;
 
+-- PRD-005a 005A-AC-003. The activity predicate an embedded bearer session needs.
+-- platform.lookup_first_party_session is keyed by a secret hash, which a bearer
+-- request does not carry, so liveness for a session already named by its id has
+-- no answer without this. It is deliberately the narrowest possible read: one
+-- boolean, keyed by the primary key, and it never raises, because the caller is
+-- an activity check whose only two honest answers are yes and no.
+create function platform.first_party_session_is_active(session_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select exists (
+    select 1
+    from platform.first_party_sessions as session_row
+    where session_row.id = first_party_session_is_active.session_id
+      and session_row.revoked_at is null
+      and session_row.expires_at > pg_catalog.now()
+  )
+$function$;
+
+-- PRD-005a 005A-AC-011. The shell renders the location and the person a verified
+-- session actually names, not the opaque reference. app_runtime holds no select
+-- grant on platform.app_users and every app_runtime policy needs app.location_id,
+-- which does not exist while the shell is still deciding whether the visitor is
+-- signed in, so this is the same pre-context read problem the rest of this file
+-- solves the same way. It returns no row unless both the location and the user
+-- are active, so a suspended actor cannot keep a name on screen.
+create function platform.resolve_session_display(
+  location_id uuid,
+  user_id uuid
+)
+returns table (
+  location_display_name text,
+  user_safe_display_name text
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select location_row.display_name, actor.safe_display_name
+  from platform.locations as location_row
+  join platform.app_users as actor
+    on actor.id = resolve_session_display.user_id
+   and actor.status = 'active'
+  where location_row.id = resolve_session_display.location_id
+    and location_row.status = 'active'
+$function$;
+
+-- PRD-005b 005B-AC-016. The denied-attempt audit row that survives.
+--
+-- platform.issue_first_party_session writes its own denied row and then raises
+-- 42501 in the same transaction, so that row is rolled back with the exception
+-- and never reaches the table. The row is still owed: an attempt that reached a
+-- known location and a known actor is exactly the attempt an operator needs to
+-- see. This function is how the caller pays it, in a fresh transaction after the
+-- refusal, so the refusal stays a refusal and the audit trail stays complete.
+--
+-- It writes the same shape the in-function branch writes and nothing else. Both
+-- identifiers are required because audit.events.actor_id is not nullable, and
+-- an attempt that never resolved an actor has no honest row to write.
+create function platform.record_denied_session_issuance(
+  location_id uuid,
+  user_id uuid,
+  correlation_id text
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $function$
+begin
+  if record_denied_session_issuance.location_id is null
+    or record_denied_session_issuance.user_id is null
+    or record_denied_session_issuance.correlation_id is null
+    or pg_catalog.length(record_denied_session_issuance.correlation_id) not between 1 and 200
+    or not exists (
+      select 1
+      from platform.locations as location_row
+      where location_row.id = record_denied_session_issuance.location_id
+    )
+    or not exists (
+      select 1
+      from platform.app_users as actor
+      where actor.id = record_denied_session_issuance.user_id
+    )
+  then
+    return false;
+  end if;
+
+  insert into audit.events (
+    location_id, actor_type, actor_id, subject_type, subject_id,
+    action, result, correlation_id
+  ) values (
+    record_denied_session_issuance.location_id,
+    'user',
+    record_denied_session_issuance.user_id,
+    'first_party_session_request',
+    'actor_' || pg_catalog.replace(record_denied_session_issuance.user_id::text, '-', ''),
+    'session.issued',
+    'denied',
+    record_denied_session_issuance.correlation_id
+  );
+  return true;
+end
+$function$;
+
 grant select on platform.first_party_sessions to app_runtime;
 grant select on platform.first_party_sessions to support_runtime;
 
@@ -480,6 +590,9 @@ revoke execute on function platform.issue_first_party_session(
 revoke execute on function platform.lookup_first_party_session(text) from public;
 revoke execute on function platform.touch_first_party_session(uuid) from public;
 revoke execute on function platform.revoke_first_party_session(uuid, text, text) from public;
+revoke execute on function platform.first_party_session_is_active(uuid) from public;
+revoke execute on function platform.resolve_session_display(uuid, uuid) from public;
+revoke execute on function platform.record_denied_session_issuance(uuid, uuid, text) from public;
 
 grant execute on function platform.location_is_active(uuid) to app_runtime;
 grant execute on function platform.actor_is_active(uuid) to app_runtime;
@@ -491,6 +604,9 @@ grant execute on function platform.issue_first_party_session(
 grant execute on function platform.lookup_first_party_session(text) to app_runtime;
 grant execute on function platform.touch_first_party_session(uuid) to app_runtime;
 grant execute on function platform.revoke_first_party_session(uuid, text, text) to app_runtime;
+grant execute on function platform.first_party_session_is_active(uuid) to app_runtime;
+grant execute on function platform.resolve_session_display(uuid, uuid) to app_runtime;
+grant execute on function platform.record_denied_session_issuance(uuid, uuid, text) to app_runtime;
 
 comment on table platform.first_party_sessions is
   'First-party browser sessions bound to a location, user, role binding, and installation. Stores only a SHA-256 hash of the cookie secret. Never store the cookie value, a bearer token, or any PII.';

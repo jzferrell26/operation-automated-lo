@@ -57,13 +57,19 @@ function createPool(behaviour: { failOn?: string } = {}) {
 }
 
 describe("context-free runtime function helper", () => {
-  it("recognises exactly the five PRD-005b contract names", () => {
+  it("recognises exactly the eleven PRD-005b contract names", () => {
     expect([...RUNTIME_FUNCTION_CONTRACT_NAMES]).toEqual([
       "runtime.location-is-active.v1",
       "runtime.actor-is-active.v1",
       "runtime.current-role-version.v1",
       "runtime.lookup-first-party-session.v1",
       "runtime.touch-first-party-session.v1",
+      "runtime.first-party-session-is-active.v1",
+      "runtime.resolve-session-display.v1",
+      "runtime.resolve-review-persona.v1",
+      "runtime.issue-first-party-session.v1",
+      "runtime.revoke-first-party-session.v1",
+      "runtime.record-denied-session-issuance.v1",
     ]);
     for (const name of RUNTIME_FUNCTION_CONTRACT_NAMES) {
       expect(isRuntimeFunctionContractName(name)).toBe(true);

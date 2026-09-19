@@ -60,3 +60,14 @@ export declare function revokeReviewSession(
   reason: string,
   correlationId: string,
 ): Promise<void>;
+
+export declare function readLocationCorrelationIds(
+  pool: DatabasePool,
+  table: string,
+  locationId: string,
+): Promise<readonly string[]>;
+
+export declare function seedReviewLocationWithoutInstallation(
+  pool: DatabasePool,
+  displayName: string,
+): Promise<string>;

@@ -10,7 +10,7 @@
 
 begin;
 
-select plan(82);
+select plan(102);
 
 create function pg_temp.assert_is(actual anyelement, expected anyelement, description text)
 returns text
@@ -327,7 +327,7 @@ select ok(
   'the campaign activation grant set is unchanged'
 );
 
--- 005B-AC-003: the six functions and the two predicates, by exact signature.
+-- 005B-AC-003: the six functions and the five predicates, by exact signature.
 select ok(
   pg_catalog.to_regprocedure('platform.location_is_active(uuid)') is not null,
   'location_is_active exists'
@@ -362,6 +362,20 @@ select ok(
   pg_catalog.to_regprocedure('platform.revoke_first_party_session(uuid, text, text)') is not null,
   'revoke_first_party_session exists'
 );
+select ok(
+  pg_catalog.to_regprocedure('platform.first_party_session_is_active(uuid)') is not null,
+  'first_party_session_is_active exists'
+);
+select ok(
+  pg_catalog.to_regprocedure('platform.resolve_session_display(uuid, uuid)') is not null,
+  'resolve_session_display exists'
+);
+select ok(
+  pg_catalog.to_regprocedure(
+    'platform.record_denied_session_issuance(uuid, uuid, text)'
+  ) is not null,
+  'record_denied_session_issuance exists'
+);
 select is(
   (
     select pg_catalog.count(*)::integer
@@ -370,14 +384,15 @@ select is(
       and routine.proname in (
         'resolve_review_persona', 'issue_first_party_session', 'lookup_first_party_session',
         'current_role_version', 'touch_first_party_session', 'revoke_first_party_session',
-        'location_is_active', 'actor_is_active'
+        'location_is_active', 'actor_is_active', 'first_party_session_is_active',
+        'resolve_session_display', 'record_denied_session_issuance'
       )
       and routine.proowner = 'migration_owner'::regrole
       and routine.prosecdef
       and routine.proconfig @> array['search_path=""']
   ),
-  8,
-  'all eight session functions are migration_owner security definer with an empty search path'
+  11,
+  'all eleven session functions are migration_owner security definer with an empty search path'
 );
 select is(
   (
@@ -387,12 +402,13 @@ select is(
       and routine.proname in (
         'resolve_review_persona', 'issue_first_party_session', 'lookup_first_party_session',
         'current_role_version', 'touch_first_party_session', 'revoke_first_party_session',
-        'location_is_active', 'actor_is_active'
+        'location_is_active', 'actor_is_active', 'first_party_session_is_active',
+        'resolve_session_display', 'record_denied_session_issuance'
       )
       and has_function_privilege('app_runtime', routine.oid, 'EXECUTE')
   ),
-  8,
-  'app runtime can execute all eight session functions'
+  11,
+  'app runtime can execute all eleven session functions'
 );
 select is(
   (
@@ -402,7 +418,8 @@ select is(
       and routine.proname in (
         'resolve_review_persona', 'issue_first_party_session', 'lookup_first_party_session',
         'current_role_version', 'touch_first_party_session', 'revoke_first_party_session',
-        'location_is_active', 'actor_is_active'
+        'location_is_active', 'actor_is_active', 'first_party_session_is_active',
+        'resolve_session_display', 'record_denied_session_issuance'
       )
       and (
         has_function_privilege('public', routine.oid, 'EXECUTE')
@@ -943,6 +960,193 @@ select pg_temp.assert_ok(
 select pg_temp.assert_ok(
   not platform.actor_is_active(null),
   'actor_is_active returns false rather than raising on null'
+);
+
+-- PRD-005a 005A-AC-003. platform.first_party_session_is_active answers the one
+-- question a bearer session can ask about itself: is the row it names still
+-- live. An expired row that was never revoked is seeded here, after every count
+-- assertion above, so this case is genuine expiry rather than expiry plus
+-- revocation.
+reset role;
+set local role migration_owner;
+insert into platform.first_party_sessions (
+  id, session_secret_hash, location_id, user_id, role_binding_id, installation_id,
+  session_role, role_version, issued_by, issued_at, expires_at, correlation_id
+) values (
+  '00000000-0000-4000-8000-000000000943',
+  pg_catalog.repeat('c', 64),
+  '00000000-0000-4000-8000-000000000901',
+  '00000000-0000-4000-8000-000000000911',
+  '00000000-0000-4000-8000-000000000921',
+  '00000000-0000-4000-8000-000000000931',
+  'campaign_creator',
+  1784649600000000,
+  'review_sign_in',
+  '2026-01-01T00:00:00.000Z',
+  '2026-01-02T00:00:00.000Z',
+  'corr.session-expired-unrevoked'
+);
+
+reset role;
+set local role app_runtime;
+select pg_temp.assert_ok(
+  platform.first_party_session_is_active('00000000-0000-4000-8000-000000000942'),
+  'first_party_session_is_active accepts an unrevoked, unexpired session'
+);
+select pg_temp.assert_ok(
+  not platform.first_party_session_is_active('00000000-0000-4000-8000-000000000943'),
+  'first_party_session_is_active refuses an expired session that was never revoked'
+);
+select pg_temp.assert_ok(
+  not platform.first_party_session_is_active('00000000-0000-4000-8000-000000000941'),
+  'first_party_session_is_active refuses a revoked session'
+);
+select pg_temp.assert_ok(
+  not platform.first_party_session_is_active('00000000-0000-4000-8000-0000000009ff'),
+  'first_party_session_is_active refuses an unknown session id'
+);
+select pg_temp.assert_ok(
+  not platform.first_party_session_is_active(null),
+  'first_party_session_is_active returns false rather than raising on null'
+);
+
+-- PRD-005a 005A-AC-011. platform.resolve_session_display is the only read that
+-- puts a location or person name on the review shell, and it yields nothing
+-- unless both rows are active.
+select pg_temp.assert_is(
+  (
+    select display_row.location_display_name
+    from platform.resolve_session_display(
+      '00000000-0000-4000-8000-000000000901',
+      '00000000-0000-4000-8000-000000000911'
+    ) as display_row
+  ),
+  'Session Tenant A',
+  'resolve_session_display returns the location display name'
+);
+select pg_temp.assert_is(
+  (
+    select display_row.user_safe_display_name
+    from platform.resolve_session_display(
+      '00000000-0000-4000-8000-000000000901',
+      '00000000-0000-4000-8000-000000000911'
+    ) as display_row
+  ),
+  'Session Creator',
+  'resolve_session_display returns the safe display name of the user'
+);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.count(*)::integer
+    from platform.resolve_session_display(
+      '00000000-0000-4000-8000-000000000903',
+      '00000000-0000-4000-8000-00000000091a'
+    )
+  ),
+  0,
+  'resolve_session_display returns nothing for a suspended location'
+);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.count(*)::integer
+    from platform.resolve_session_display(
+      '00000000-0000-4000-8000-000000000901',
+      '00000000-0000-4000-8000-000000000913'
+    )
+  ),
+  0,
+  'resolve_session_display returns nothing for a suspended user'
+);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.count(*)::integer
+    from platform.resolve_session_display(
+      '00000000-0000-4000-8000-0000000009fe',
+      '00000000-0000-4000-8000-0000000009ff'
+    )
+  ),
+  0,
+  'resolve_session_display returns nothing for unknown identifiers'
+);
+
+-- PRD-005b 005B-AC-016. The denied-attempt recorder. Its whole reason to exist
+-- is that platform.issue_first_party_session's own denied insert dies with the
+-- 42501 it raises, so the caller records the attempt afterwards instead.
+select pg_temp.assert_ok(
+  platform.record_denied_session_issuance(
+    '00000000-0000-4000-8000-000000000901',
+    '00000000-0000-4000-8000-000000000911',
+    'corr.session-denied'
+  ),
+  'record_denied_session_issuance accepts a known location and actor'
+);
+select pg_temp.assert_ok(
+  not platform.record_denied_session_issuance(
+    '00000000-0000-4000-8000-0000000009fe',
+    '00000000-0000-4000-8000-000000000911',
+    'corr.session-denied'
+  ),
+  'record_denied_session_issuance refuses an unknown location without raising'
+);
+select pg_temp.assert_ok(
+  not platform.record_denied_session_issuance(
+    '00000000-0000-4000-8000-000000000901',
+    null,
+    'corr.session-denied'
+  ),
+  'record_denied_session_issuance refuses a null actor without raising'
+);
+
+reset role;
+set local role migration_owner;
+select pg_temp.assert_is(
+  (
+    select pg_catalog.count(*)::integer
+    from audit.events as event_row
+    where event_row.action = 'session.issued'
+      and event_row.result = 'denied'
+      and event_row.correlation_id = 'corr.session-denied'
+  ),
+  1,
+  'exactly one denied audit row survives the recorder'
+);
+select pg_temp.assert_is(
+  (
+    select event_row.subject_type
+    from audit.events as event_row
+    where event_row.correlation_id = 'corr.session-denied'
+  ),
+  'first_party_session_request',
+  'the denied audit row names the attempt, not a session that was never issued'
+);
+
+-- The refusal inside the issuance function still rolls its own audit row back,
+-- which is the fact the recorder exists to compensate for. Pinning it here keeps
+-- the compensation from being quietly removed as redundant.
+reset role;
+set local role app_runtime;
+select pg_temp.assert_is(
+  pg_temp.capture_sqlstate($sql$
+    select platform.issue_first_party_session(
+      '00000000-0000-4000-8000-000000000901',
+      '00000000-0000-4000-8000-000000000911',
+      'approver', 'campaign_approver', pg_catalog.repeat('9', 64), 43200,
+      'review_sign_in', 'corr.session-rolled-back'
+    )
+  $sql$),
+  '42501',
+  'an issuance refusal raises 42501'
+);
+reset role;
+set local role migration_owner;
+select pg_temp.assert_is(
+  (
+    select pg_catalog.count(*)::integer
+    from audit.events as event_row
+    where event_row.correlation_id = 'corr.session-rolled-back'
+  ),
+  0,
+  'the refusal takes its own audit row down with it'
 );
 
 reset role;

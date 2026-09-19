@@ -5,30 +5,34 @@ import { POST as approvePost } from "../app/api/campaigns/approve/route.js";
 import { POST as preflightPost } from "../app/api/campaigns/preflight/route.js";
 import { OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
 import {
+  approvalPayload,
   browserRequest,
-  countRows,
-  createRouteTestPool,
-  revokeSession,
+  closeApprovalSuite,
+  createDraftThroughPreflight,
   grantBinding,
   issueSession,
+  openApprovalSuite,
   revokeBinding,
+  revokeSession,
   routeEnvironment,
   seedActor,
   seedLocation,
+  tableCountsFor,
+  type ApprovalSuiteFixture,
   type BrowserRequestOverrides,
   type IssuedSession,
+  type PersistedDraft,
   type RoutePostgresEnvironment,
   type SeededActor,
   type SeededLocation,
-  csrfSecretFor,
 } from "./campaign-route-postgres-support.js";
-import { resetRuntimeAuthenticationForTests } from "./runtime-authentication.js";
 
 /**
  * PRD-005a 005A-AC-013 and the approve half of 005A-AC-014, against a disposable Postgres.
  *
- * Authored in Wave 1; run in Wave 2, after PRD-005b's migration and `security definer` functions
- * merge and `vitest.config.ts` gains the `web-postgres` project.
+ * Every request goes through the exported `POST` in
+ * `apps/web/src/app/api/campaigns/approve/route.ts` with the headers a browser actually sends, so
+ * the route wiring is part of what is proven.
  *
  * Every negative case asserts that the campaign, command, approval, and audit tables are unchanged,
  * because a refusal that still wrote a row is not a refusal. The one exception is the creator's
@@ -37,44 +41,21 @@ import { resetRuntimeAuthenticationForTests } from "./runtime-authentication.js"
 
 const environment: RoutePostgresEnvironment = routeEnvironment();
 
-interface PersistedDraft {
-  readonly campaignRef: string;
-  readonly campaignVersionRef: string;
-  readonly manifestHash: string;
-  readonly preflightResultHash: string;
-  readonly rowVersion: number;
-}
-
+let suite: ApprovalSuiteFixture;
 let pool: PostgresDatabasePool;
 let location: SeededLocation;
-let creator: SeededActor;
 let approver: SeededActor;
 let creatorSession: IssuedSession;
 let approverSession: IssuedSession;
 let csrfServerSecret: Uint8Array;
 
 beforeAll(async () => {
-  resetRuntimeAuthenticationForTests();
-  pool = createRouteTestPool();
-  csrfServerSecret = csrfSecretFor(environment);
-  location = await seedLocation(pool, "Route approval location");
-  creator = await seedActor(pool, location, {
-    displayName: "Route approval creator",
-    bindingRole: "creator",
-    sessionRole: "campaign_creator",
-  });
-  approver = await seedActor(pool, location, {
-    displayName: "Route approval approver",
-    bindingRole: "approver",
-    sessionRole: "campaign_approver",
-  });
-  creatorSession = await issueSession(pool, location, creator);
-  approverSession = await issueSession(pool, location, approver);
+  suite = await openApprovalSuite(environment, "Route approval");
+  ({ pool, location, approver, creatorSession, approverSession, csrfServerSecret } = suite);
 });
 
 afterAll(async () => {
-  resetRuntimeAuthenticationForTests();
-  await pool.close();
+  await closeApprovalSuite(suite);
 });
 
 function approvalRequest(
@@ -92,37 +73,19 @@ function approvalRequest(
 }
 
 async function createDraft(): Promise<PersistedDraft> {
-  const response = await preflightPost(
-    browserRequest({
-      path: "/api/campaigns/preflight",
-      body: OPEN_HOUSE_DRAFT_INPUT,
-      session: creatorSession,
-      csrfServerSecret,
-    }),
-  );
-  expect(response.status).toBe(200);
-  const body = (await response.json()) as Omit<PersistedDraft, "rowVersion">;
-  return { ...body, rowVersion: 1 };
+  return createDraftThroughPreflight({
+    preflight: preflightPost,
+    session: creatorSession,
+    csrfServerSecret,
+    environment,
+    body: OPEN_HOUSE_DRAFT_INPUT,
+  });
 }
 
-function approvalBody(draft: PersistedDraft) {
-  return {
-    campaignRef: draft.campaignRef,
-    decision: "approved" as const,
-    expectedCampaignVersionRef: draft.campaignVersionRef,
-    expectedManifestHash: draft.manifestHash,
-    expectedPreflightResultHash: draft.preflightResultHash,
-    expectedRowVersion: draft.rowVersion,
-  };
-}
+const approvalBody = approvalPayload;
 
 async function tableCounts() {
-  return {
-    campaigns: await countRows(pool, "campaign.campaigns", location.locationId),
-    commands: await countRows(pool, "campaign.campaign_commands", location.locationId),
-    approvals: await countRows(pool, "campaign.campaign_approvals", location.locationId),
-    audit: await countRows(pool, "audit.events", location.locationId),
-  };
+  return tableCountsFor(pool, location.locationId);
 }
 
 describe("POST /api/campaigns/approve with a real first-party session", () => {

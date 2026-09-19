@@ -13,8 +13,10 @@ export {
   countLocationRows,
   grantReviewBinding,
   issueReviewSession,
+  readLocationCorrelationIds,
   revokeReviewBinding,
   revokeReviewSession,
   seedReviewActor,
   seedReviewLocation,
+  seedReviewLocationWithoutInstallation,
 } from "./campaign-integration-support.mjs";

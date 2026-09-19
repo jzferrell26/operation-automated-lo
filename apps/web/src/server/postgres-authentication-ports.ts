@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import {
   databaseRoleForApplicationRole,
   isSessionApplicationRole,
+  type DatabaseBindingRole,
   type EstablishedFirstPartySession,
   type FirstPartySessionLookup,
 } from "@oalo/auth";
@@ -19,10 +20,19 @@ import {
   defineSqlContract,
   queryRuntimeFunction,
   type DatabasePool,
+  type SqlContract,
   type SqlScalar,
 } from "@oalo/db";
 
-import type { IdentityDirectory, RoleBindingPort } from "./authenticated-principal.js";
+import type {
+  IdentityDirectory,
+  ReviewSessionIssuance,
+  ReviewSessionPort,
+  RoleBindingPort,
+  SessionActivityPort,
+  SessionDisplayNames,
+  SessionDisplayPort,
+} from "./authenticated-principal.js";
 
 /**
  * PRD-005a: the Postgres-backed halves of `CampaignCommandPorts`. Every statement here is one of
@@ -41,6 +51,22 @@ interface ActiveRow {
 
 interface RoleVersionRow {
   readonly roleVersion: number | undefined;
+}
+
+interface ReviewPersonaRow {
+  readonly userId: string;
+}
+
+interface IssuedSessionRow {
+  readonly sessionId: string;
+}
+
+interface RevocationRow {
+  readonly revoked: boolean;
+}
+
+interface RecordedRow {
+  readonly recorded: boolean;
 }
 
 interface SessionRow {
@@ -95,6 +121,34 @@ function decodeEpochSeconds(value: unknown, column: string): number {
     throw new Error(`Runtime function column ${column} must be a timestamp`);
   }
   return Math.floor(milliseconds / 1000);
+}
+
+function decodeSessionDisplay(row: unknown): SessionDisplayNames {
+  const record = recordRow(row);
+  return Object.freeze({
+    locationDisplayName: requiredText(record.location_display_name, "location_display_name"),
+    userDisplayName: requiredText(record.user_safe_display_name, "user_safe_display_name"),
+  });
+}
+
+function decodeReviewPersona(row: unknown): ReviewPersonaRow {
+  const record = recordRow(row);
+  return Object.freeze({ userId: requiredText(record.user_id, "user_id") });
+}
+
+function decodeIssuedSession(row: unknown): IssuedSessionRow {
+  const record = recordRow(row);
+  return Object.freeze({ sessionId: requiredText(record.id, "id") });
+}
+
+function decodeRevocation(row: unknown): RevocationRow {
+  const record = recordRow(row);
+  return Object.freeze({ revoked: record.revoked === true });
+}
+
+function decodeRecorded(row: unknown): RecordedRow {
+  const record = recordRow(row);
+  return Object.freeze({ recorded: record.recorded === true });
 }
 
 function decodeSession(row: unknown): SessionRow {
@@ -165,9 +219,62 @@ export const touchFirstPartySessionContract = defineSqlContract<Record<string, n
   },
 });
 
+export const firstPartySessionIsActiveContract = defineSqlContract<ActiveRow>({
+  name: "runtime.first-party-session-is-active.v1",
+  access: "read",
+  text: "select platform.first_party_session_is_active($1::uuid) as active",
+  decode: decodeActive,
+});
+
+export const resolveSessionDisplayContract = defineSqlContract<SessionDisplayNames>({
+  name: "runtime.resolve-session-display.v1",
+  access: "read",
+  text: `
+select
+  display_row.location_display_name,
+  display_row.user_safe_display_name
+from platform.resolve_session_display($1::uuid, $2::uuid) as display_row
+  `.trim(),
+  decode: decodeSessionDisplay,
+});
+
+export const resolveReviewPersonaContract = defineSqlContract<ReviewPersonaRow>({
+  name: "runtime.resolve-review-persona.v1",
+  access: "read",
+  text: "select platform.resolve_review_persona($1::uuid, $2::text)::text as user_id",
+  decode: decodeReviewPersona,
+});
+
+export const issueFirstPartySessionContract = defineSqlContract<IssuedSessionRow>({
+  name: "runtime.issue-first-party-session.v1",
+  access: "read",
+  text: `
+select (
+  platform.issue_first_party_session(
+    $1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::integer, 'review_sign_in', $7::text
+  )
+).id::text as id
+  `.trim(),
+  decode: decodeIssuedSession,
+});
+
+export const recordDeniedSessionIssuanceContract = defineSqlContract<RecordedRow>({
+  name: "runtime.record-denied-session-issuance.v1",
+  access: "read",
+  text: "select platform.record_denied_session_issuance($1::uuid, $2::uuid, $3::text) as recorded",
+  decode: decodeRecorded,
+});
+
+export const revokeFirstPartySessionContract = defineSqlContract<RevocationRow>({
+  name: "runtime.revoke-first-party-session.v1",
+  access: "read",
+  text: "select platform.revoke_first_party_session($1::uuid, $2::text, $3::text) as revoked",
+  decode: decodeRevocation,
+});
+
 async function isActive(
   pool: DatabasePool,
-  contract: typeof locationIsActiveContract,
+  contract: SqlContract<ActiveRow>,
   id: string,
 ): Promise<boolean> {
   const values: readonly SqlScalar[] = [id];
@@ -245,7 +352,7 @@ export function createPostgresFirstPartySessionLookup(pool: DatabasePool): First
   };
 }
 
-/** PRD-005b calls this on authenticated mutations. Nothing in PRD-005a reads its result. */
+/** PRD-005b D4 calls this on authenticated mutations. Nothing reads its result. */
 export async function touchFirstPartySession(
   pool: DatabasePool,
   sessionRef: string,
@@ -254,4 +361,124 @@ export async function touchFirstPartySession(
   if (sessionId === undefined) return;
   const values: readonly SqlScalar[] = [sessionId];
   await queryRuntimeFunction(pool, touchFirstPartySessionContract, values);
+}
+
+export function createPostgresSessionActivityPort(pool: DatabasePool): SessionActivityPort {
+  return {
+    async touch(sessionRef) {
+      await touchFirstPartySession(pool, sessionRef);
+    },
+  };
+}
+
+/**
+ * 005A-AC-003. The activity answer for a session named by its reference rather than by its secret.
+ * A reference that is not canonical, or a session the predicate refuses, is inactive: an activity
+ * check that cannot prove liveness has exactly one safe answer.
+ */
+export async function firstPartySessionIsActive(
+  pool: DatabasePool,
+  sessionRef: string,
+): Promise<boolean> {
+  const sessionId = sessionReference.tryParse(sessionRef);
+  if (sessionId === undefined) return false;
+  return isActive(pool, firstPartySessionIsActiveContract, sessionId);
+}
+
+/**
+ * 005A-AC-011. Both references are parsed back to UUIDs through the canonical codec before they
+ * reach SQL, and the function itself yields nothing unless both rows are active.
+ */
+export function createPostgresSessionDisplayPort(pool: DatabasePool): SessionDisplayPort {
+  return {
+    async resolve(input) {
+      const locationId = locationReference.tryParse(input.locationRef);
+      const actorId = actorReference.tryParse(input.actorRef);
+      if (locationId === undefined || actorId === undefined) return undefined;
+      const values: readonly SqlScalar[] = [locationId, actorId];
+      const rows = await queryRuntimeFunction(pool, resolveSessionDisplayContract, values);
+      return rows[0];
+    },
+  };
+}
+
+/**
+ * PRD-005b D4. The persona name the browser submitted has already been mapped to a location and a
+ * binding role by the server; this resolves that pair to the one active user who holds it. The
+ * function raises `42501` for zero or more than one candidate, which the handler turns into the
+ * single generic 401.
+ */
+export async function resolveReviewPersona(
+  pool: DatabasePool,
+  locationId: string,
+  bindingRole: DatabaseBindingRole,
+): Promise<string> {
+  const values: readonly SqlScalar[] = [locationId, bindingRole];
+  const rows = await queryRuntimeFunction(pool, resolveReviewPersonaContract, values);
+  const row = rows[0];
+  if (row === undefined) {
+    throw new Error("platform.resolve_review_persona returned no user id");
+  }
+  return row.userId;
+}
+
+/**
+ * PRD-005b D4. Issuance is the definer function's decision, not this module's: every check, the
+ * success audit row, and the denied audit row all live inside
+ * `platform.issue_first_party_session`. Only the SHA-256 hash of the cookie secret crosses this
+ * boundary; the secret itself is never a statement parameter.
+ */
+export async function issueFirstPartySession(
+  pool: DatabasePool,
+  input: Readonly<ReviewSessionIssuance>,
+): Promise<string> {
+  const values: readonly SqlScalar[] = [
+    input.locationId,
+    input.userId,
+    input.bindingRole,
+    input.sessionRole,
+    input.sessionSecretHash,
+    input.lifetimeSeconds,
+    input.correlationRef,
+  ];
+  const rows = await queryRuntimeFunction(pool, issueFirstPartySessionContract, values);
+  const row = rows[0];
+  if (row === undefined) {
+    throw new Error("platform.issue_first_party_session returned no session id");
+  }
+  return formatSessionRef(row.sessionId);
+}
+
+/** PRD-005b D4. Reports whether a row moved, so a repeated sign-out is honest, not a failure. */
+export async function revokeFirstPartySession(
+  pool: DatabasePool,
+  sessionRef: string,
+  reason: "sign_out" | "operator" | "binding_revoked",
+  correlationRef: string,
+): Promise<boolean> {
+  const sessionId = sessionReference.tryParse(sessionRef);
+  if (sessionId === undefined) return false;
+  const values: readonly SqlScalar[] = [sessionId, reason, correlationRef];
+  const rows = await queryRuntimeFunction(pool, revokeFirstPartySessionContract, values);
+  return rows[0]?.revoked === true;
+}
+
+/** PRD-005b D4. The three definer calls the review routes make, over the composition's one pool. */
+export function createPostgresReviewSessionPort(pool: DatabasePool): ReviewSessionPort {
+  return {
+    async resolvePersona(input) {
+      return resolveReviewPersona(pool, input.locationId, input.bindingRole);
+    },
+    async issue(input) {
+      return issueFirstPartySession(pool, input);
+    },
+    async revoke(input) {
+      return revokeFirstPartySession(pool, input.sessionRef, input.reason, input.correlationRef);
+    },
+    async recordDeniedAttempt(input) {
+      const values: readonly SqlScalar[] = [input.locationId, input.userId, input.correlationRef];
+      const rows = await queryRuntimeFunction(pool, recordDeniedSessionIssuanceContract, values);
+      return rows[0]?.recorded === true;
+    },
+  };
 }

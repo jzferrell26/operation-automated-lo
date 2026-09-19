@@ -452,17 +452,79 @@ export async function grantReviewBinding(pool, locationId, actorId, bindingRole)
   });
 }
 
+/**
+ * The tables the route-level proofs count and read. The name reaches unparameterised SQL below, so
+ * it is checked against this closed set rather than trusted: a table name is the one part of these
+ * statements a caller supplies, and PostgreSQL has no placeholder for it.
+ */
+export const REVIEW_ASSERTABLE_TABLES = Object.freeze([
+  "campaign.campaigns",
+  "campaign.campaign_versions",
+  "campaign.preflight_results",
+  "campaign.approval_decisions",
+  "integration.command_executions",
+  "audit.events",
+]);
+
+function assertAssertableTable(table) {
+  if (!REVIEW_ASSERTABLE_TABLES.includes(table)) {
+    throw new Error(`${table} is not an assertable table for the route-level proofs`);
+  }
+  return table;
+}
+
 export async function countLocationRows(pool, table, locationId) {
+  const safeTable = assertAssertableTable(table);
   return withMigrationOwnerTransaction(pool, async (connection) => {
     const result = await connection.execute(
       request(
         "test.review-count-rows",
-        `select count(*)::text as total from ${table} where location_id = $1::uuid`,
+        `select count(*)::text as total from ${safeTable} where location_id = $1::uuid`,
         [locationId],
       ),
     );
     return Number(result.rows[0]?.total ?? "0");
   });
+}
+
+/**
+ * PRD-005c 005C-AC-007, 008, and 009. The stored correlation reference on a row the route wrote.
+ * `integration.command_executions` and `audit.events` carry no runtime `select` grant, so reading
+ * them for an assertion goes through this harness like every other owner-privileged read.
+ */
+export async function readLocationCorrelationIds(pool, table, locationId) {
+  const safeTable = assertAssertableTable(table);
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.review-read-correlations",
+        `select correlation_id from ${safeTable} where location_id = $1::uuid` +
+          " order by created_at, correlation_id",
+        [locationId],
+      ),
+    );
+    return result.rows.map((row) => row.correlation_id);
+  });
+}
+
+/**
+ * PRD-005b 005B-AC-016. A location with an active user and an active binding but no installation
+ * row. `platform.resolve_review_persona` accepts it, because it does not look at installations, and
+ * `platform.issue_first_party_session` then refuses it and writes exactly one denied audit row. It
+ * is the one deterministic way to drive a denied issuance where the location is known.
+ */
+export async function seedReviewLocationWithoutInstallation(pool, displayName) {
+  const locationId = randomUUID();
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-location-no-installation",
+        "insert into platform.locations (id, display_name, status) values ($1::uuid, $2::text, 'active')",
+        [locationId, displayName],
+      ),
+    );
+  });
+  return locationId;
 }
 
 /** Runs one PRD-005b definer contract as `app_runtime`, with no tenant context and no elevation. */

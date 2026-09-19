@@ -40,6 +40,20 @@ Set these values independently in each environment:
 - `OALO_PROVIDER_APP_ID`
 - `OALO_RELEASE_MANIFEST_JSON`, required outside local
 
+Runtime authentication server variables (PRD-005a D7 and PRD-005b D6, all server-only, never `NEXT_PUBLIC_`):
+
+- `OALO_CSRF_SERVER_SECRET` (new, secret), at least 32 bytes encoded as base64url. Backs `csrfServerSecret` in the browser mutation gate. Without it the runtime authentication composition fails closed: every campaign mutation returns 401 and every campaign read renders unauthenticated.
+- `OALO_EMBEDDED_SESSION_ISSUER` (new, optional), the https issuer the embedded session policy accepts.
+- `OALO_EMBEDDED_SESSION_AUDIENCE` (new, optional), the audience the embedded session policy accepts.
+- `OALO_EMBEDDED_SESSION_PUBLIC_KEYS_JSON` (new, optional), a JSON object mapping key id to SPKI PEM. Public key material, but the name carries `KEY` and `SESSION`, so no `NEXT_PUBLIC_` spelling is accepted.
+- `OALO_REVIEW_SIGNIN_SECRET` (new, secret), at least 32 bytes. The operator-held secret the review sign-in path compares in constant time. Never shared with an agent and never written to this repository.
+- `OALO_REVIEW_LOCATION_ID` (new, non-secret UUID), the seeded review location.
+- `OALO_REVIEW_OUTSIDER_LOCATION_ID` (new, non-secret UUID), the seeded outsider location used to prove cross-tenant refusal.
+
+The three embedded variables are optional as a set: all three present or all three absent. A partial set is a composition failure, so a half-configured issuer cannot degrade into no embedded policy at all. When the set is absent, bearer requests are refused, which is where this product sits until the HighLevel signed-context exchange exists.
+
+`OALO_APP_URL`, `OALO_ALLOWED_ORIGINS`, and `OALO_DATABASE_URL` are already required above; the runtime authentication composition reads all three and fails closed when any of them is missing or malformed. A composition failure is logged once per process naming the variable, never its value.
+
 Review-surface flag (server-only, never `NEXT_PUBLIC_`):
 
 - `OALO_REVIEW_SURFACE`, unset by default (fail-closed). **Required** on any review or Marketplace preview URL so `/overview` and `/reports` satisfy PRD-004 `RGL-002` and PRD-004a `004A-AC-003`: set the exact value `authorized` to render honest not-connected states instead of labeled synthetic spend and leads. Without it, default preview still serves synthetic demo metrics (for example `USD 74.25` on `/reports`) and does not satisfy those review URL criteria. Still requires `OALO_PROVIDER_MODE=stub` and `OALO_SYNTHETIC_DATA_ONLY=true`. Does not enable HighLevel, Meta, or Stripe traffic.
@@ -89,6 +103,9 @@ On the existing Vercel project `operation-automated-lo-web`, the review/preview 
 - `OALO_GHL_LOCATION_PIT_JSON`
 - `OALO_TASK_AUTHORITY_HMAC_KEY`
 - `OALO_PUBLICATION_CLEANUP_SCHEDULE_AUTHORITY_JSON`
+- `OALO_CSRF_SERVER_SECRET`
+- `OALO_REVIEW_SIGNIN_SECRET`
+- `OALO_EMBEDDED_SESSION_PUBLIC_KEYS_JSON` (public key material, still server-only)
 
 OAuth client secrets, session signing material, refresh tokens, and other auth credentials follow the same rule: configure them as server-only Vercel env vars only. The repository gate blocks every `NEXT_PUBLIC_*` name outside the reviewed publication registry, so these values cannot be published under any spelling; verifying that Vercel preview env is wired correctly remains an operator step (see `docs/operations/evidence-packs/reviewable-preview-smoke.md`).
 

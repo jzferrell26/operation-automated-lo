@@ -17,6 +17,7 @@ import {
   type ReviewSurfaceAllowance,
 } from "../review-surface-sweep.js";
 
+vi.mock("next/headers.js", () => ({ headers: () => Promise.resolve(new Headers()) }));
 vi.mock("next/navigation.js", () => ({ usePathname: () => "/overview" }));
 vi.mock("../../../theme/index.js", () => ({
   ThemeControl: () => <div aria-label="Theme control">Theme control</div>,
@@ -185,17 +186,25 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-function renderReviewOverview() {
+/**
+ * The layout is an async server component since PRD-005a, and in review mode it resolves the shell
+ * session from the request rather than from the fixture. No session is presented here, so the shell
+ * renders its explicit not-signed-in identity. That is the state a review visitor actually reaches,
+ * so it is the state this honesty sweep should cover.
+ */
+async function renderReviewOverview() {
   const workspace = loadAuthenticatedWorkspace();
   const { container } = render(
-    <AuthenticatedLayout>
-      <OverviewScreen
-        overview={workspace.ui.overview}
-        session={workspace.ui.session}
-        workspaceCampaigns={[]}
-        workspaceMode="review"
-      />
-    </AuthenticatedLayout>,
+    await AuthenticatedLayout({
+      children: (
+        <OverviewScreen
+          overview={workspace.ui.overview}
+          session={workspace.ui.session}
+          workspaceCampaigns={[]}
+          workspaceMode="review"
+        />
+      ),
+    }),
   );
   return { container, workspace };
 }
@@ -209,8 +218,8 @@ describe("review surface honesty invariant", () => {
     expect(staleAllowances(fixture, projectionAllowances)).toEqual([]);
   });
 
-  it("keeps every unallowed fixture string out of the rendered review route", () => {
-    const { container } = renderReviewOverview();
+  it("keeps every unallowed fixture string out of the rendered review route", async () => {
+    const { container } = await renderReviewOverview();
     const forbidden = forbiddenReviewStrings(loadSyntheticUiFixture(), renderedAllowances);
 
     expect(leakedReviewStrings(reviewSurfaceText(container), forbidden)).toEqual([]);
@@ -228,8 +237,8 @@ describe("review surface honesty invariant", () => {
     expect(leakedReviewStrings(projection, forbidden)).toEqual([]);
   });
 
-  it("replaces navigation state detail and session provenance with review-mode statements", () => {
-    const { container, workspace } = renderReviewOverview();
+  it("replaces navigation state detail and session provenance with review-mode statements", async () => {
+    const { container, workspace } = await renderReviewOverview();
 
     expect(workspace.ui.navigation.items.every((item) => item.requiredRole === undefined)).toBe(
       true,
@@ -237,12 +246,22 @@ describe("review surface honesty invariant", () => {
     expect(container.textContent).toContain(
       "Review surface. Demo navigation only. No live entitlement or provider state is evaluated.",
     );
-    expect(container.textContent).toContain("Demo session. No validated HighLevel location.");
+    /**
+     * Since PRD-005a the review shell states the session it actually has. Without a verified
+     * first-party session that is "Not signed in", not the fixture's demo persona, so the fixture
+     * provenance string must be absent rather than present.
+     */
+    expect(container.textContent).not.toContain("Demo session. No validated HighLevel location.");
+    expect(container.textContent).not.toContain("Demo reviewer");
+    expect(container.textContent).toContain("Not signed in");
+    expect(container.textContent).toContain(
+      "No first-party session was presented, so no location was resolved.",
+    );
     expect(screen.getByText("REVIEW / DEMO / NOT CONNECTED")).toBeInTheDocument();
   });
 
-  it("renders no numeric demo value in any review metric", () => {
-    const { container } = renderReviewOverview();
+  it("renders no numeric demo value in any review metric", async () => {
+    const { container } = await renderReviewOverview();
     const values = [...container.querySelectorAll(".oalo-metric__value")].map(
       (element) => element.textContent ?? "",
     );
@@ -252,8 +271,8 @@ describe("review surface honesty invariant", () => {
     expect(values.join(" ")).not.toMatch(/\d/u);
   });
 
-  it("reaches an honest not-connected representation for spend and leads", () => {
-    renderReviewOverview();
+  it("reaches an honest not-connected representation for spend and leads", async () => {
+    await renderReviewOverview();
 
     for (const label of ["Ad spend", "New leads"]) {
       const metric = screen.getByRole("article", { name: label });
@@ -264,8 +283,8 @@ describe("review surface honesty invariant", () => {
     }
   });
 
-  it("replaces the persona header and the verification claim in review mode", () => {
-    const { container } = renderReviewOverview();
+  it("replaces the persona header and the verification claim in review mode", async () => {
+    const { container } = await renderReviewOverview();
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       "Review dashboard (demo, not connected)",
@@ -276,8 +295,8 @@ describe("review surface honesty invariant", () => {
     );
   });
 
-  it("shows honest empty regions instead of fixture operational state", () => {
-    renderReviewOverview();
+  it("shows honest empty regions instead of fixture operational state", async () => {
+    await renderReviewOverview();
 
     for (const title of [
       "No attention items to show",
@@ -288,8 +307,8 @@ describe("review surface honesty invariant", () => {
     }
   });
 
-  it("labels the illustrative edge-state matrix as demo rather than tenant data", () => {
-    const { container } = renderReviewOverview();
+  it("labels the illustrative edge-state matrix as demo rather than tenant data", async () => {
+    const { container } = await renderReviewOverview();
     const label = container.querySelector("[data-demo-label='overview-edge-state-matrix']");
 
     expect(label?.textContent).toContain("Illustrative demo states");

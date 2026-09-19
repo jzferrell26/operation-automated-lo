@@ -16,7 +16,19 @@ import CampaignListPage from "./page.js";
 import NewCampaignPage from "./new/page.js";
 import SyntheticCampaignPage from "./synthetic-open-house-001/page.js";
 
+const redirectCalls: string[] = [];
+
 vi.mock("next/headers.js", () => ({ headers: () => Promise.resolve(new Headers()) }));
+vi.mock("next/navigation.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next/navigation.js")>();
+  return {
+    ...actual,
+    redirect(path: string) {
+      redirectCalls.push(path);
+      return actual.redirect(path);
+    },
+  };
+});
 
 /**
  * Nothing from the synthetic reporting fixture may reach any marketing campaign route in review
@@ -123,6 +135,7 @@ function stubWorkspaceEnvironment(environment: string, reviewSurface: string | u
 }
 
 beforeEach(() => {
+  redirectCalls.length = 0;
   stubWorkspaceEnvironment("production", OALO_REVIEW_SURFACE_AUTHORIZED);
 });
 
@@ -183,11 +196,15 @@ describe("authenticated marketing campaign routes", () => {
     expect(sweepSurface(container)).toEqual([]);
   });
 
-  it("lists no campaign on the review surface because none is persisted", async () => {
-    const { container } = render(await CampaignListPage());
+  /**
+   * PRD-005a 005A-AC-010. "No campaigns in this location yet" is a claim about a tenant, so the
+   * review list route no longer renders it for a visitor with no verified session. It redirects to
+   * the review sign-in path instead, which Next.js signals by throwing a redirect.
+   */
+  it("redirects an unauthenticated review visitor instead of listing an empty location", async () => {
+    await expect(CampaignListPage()).rejects.toMatchObject({ digest: expect.any(String) });
 
-    expect(sweepSurface(container)).toEqual([]);
-    expect(container.textContent).toContain("No campaigns in this location yet.");
+    expect(redirectCalls).toEqual(["/review/sign-in"]);
   });
 
   it("keeps the demo-rich synthetic campaign detail for local development", () => {

@@ -9,15 +9,18 @@ import type {
   DeepReadonly,
   Navigation,
   NavigationItem,
-  SyntheticSession,
 } from "../../ui-foundation/model/synthetic-ui.js";
-import { isNavigationItemInteractive, isNavigationItemSelected } from "../model/navigation.js";
+import {
+  isNavigationItemInteractive,
+  isNavigationItemSelected,
+  type WorkspaceSessionView,
+} from "../model/navigation.js";
 import styles from "./app-shell.module.css";
 
 type AppShellProps = Readonly<{
   children: ReactNode;
   navigation: DeepReadonly<Navigation>;
-  session: DeepReadonly<SyntheticSession>;
+  session: WorkspaceSessionView;
   workspaceMode?: "synthetic" | "review";
 }>;
 
@@ -366,7 +369,7 @@ function NavigationItemView({
 function SessionIdentity({
   isCollapsed,
   session,
-}: Readonly<{ isCollapsed: boolean; session: DeepReadonly<SyntheticSession> }>) {
+}: Readonly<{ isCollapsed: boolean; session: WorkspaceSessionView }>) {
   return (
     <Surface className={styles.identity} data-collapsed={isCollapsed || undefined} padding="sm">
       <Icon decorative name="lock" size="sm" tone="navigation" />

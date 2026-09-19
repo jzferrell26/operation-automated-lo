@@ -9,13 +9,13 @@ import { OpaqueReferenceSchema } from "@oalo/contracts";
 import { z } from "zod";
 
 import {
-  createDefaultCampaignCommandPorts,
   resolveAuthenticatedPrincipal,
   type CampaignCommandPorts,
 } from "./authenticated-principal.js";
 import { campaignCommandAuthErrorResponse, jsonCommandError } from "./campaign-command-http.js";
 import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
 import { correlationReferenceForRequest, withCorrelationHeaders } from "./correlation-boundary.js";
+import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
 
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/u);
 
@@ -41,7 +41,7 @@ export function principalMayApprove(principal: Readonly<AuthenticatedPrincipal>)
 export async function handleCampaignApproval(
   request: Request,
   environment: unknown = process.env,
-  ports: CampaignCommandPorts = createDefaultCampaignCommandPorts(),
+  ports: CampaignCommandPorts = resolveRuntimeCampaignCommandPorts(environment),
 ): Promise<Response> {
   const correlation = correlationReferenceForRequest(request, "approve");
   try {

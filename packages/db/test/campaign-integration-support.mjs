@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
+import { databaseRoleForApplicationRole } from "../../auth/dist/role-binding-map.js";
 import { createPostgresPool } from "../dist/index.js";
 import { campaignManifestFixture } from "./campaign-manifest-fixture.mjs";
 
@@ -256,6 +257,24 @@ export function preflightRulesFor(version) {
   });
 }
 
+/**
+ * PRD-005a 005A-AC-007. The harness no longer carries its own two-role approximation. The one
+ * mapping between application session roles and `platform.role_bindings.role` lives in
+ * `@oalo/auth`, and it is imported from that package's build output because this harness runs as
+ * plain ESM under `node --test`.
+ *
+ * `@oalo/db` does not and must not depend on `@oalo/auth` (see `tooling/boundaries.json`), so the
+ * import is a path into the sibling package's `dist/`. `pnpm verify` builds every package before
+ * `pnpm test:db` runs, so that file is present on the canonical gate.
+ */
+function bindingRoleFor(applicationRole) {
+  const bindingRole = databaseRoleForApplicationRole(applicationRole);
+  if (bindingRole === undefined) {
+    throw new Error(`No database binding role backs the application role ${applicationRole}`);
+  }
+  return bindingRole;
+}
+
 export async function seedTenant(pool, tenant, displayName, principals = []) {
   const actors =
     principals.length === 0 ? [principalFixture(tenant, "location_admin")] : principals;
@@ -279,7 +298,7 @@ export async function seedTenant(pool, tenant, displayName, principals = []) {
         request(
           "test.campaign-role",
           "insert into platform.role_bindings (location_id, user_id, role) values ($1::uuid, $2::uuid, $3::text)",
-          [tenant.locationId, actor.actorId, databaseRoleFor(actor.role)],
+          [tenant.locationId, actor.actorId, bindingRoleFor(actor.role)],
         ),
       );
     }
@@ -353,6 +372,155 @@ export async function cleanupTenants(pool, tenants, principals = []) {
   });
 }
 
+/**
+ * PRD-005a 005A-AC-013 and 005A-AC-014 seeding, for the route-level proofs in
+ * `apps/web/src/server/*.postgres.test.ts`.
+ *
+ * These live here rather than beside those tests because this file is the one sanctioned holder of
+ * owner elevation in the repository, which
+ * `tests/security/database-privilege-escalation-boundary.test.ts` asserts directly. Session
+ * issuance is deliberately not elevated: it runs PRD-005b's
+ * `platform.issue_first_party_session`, which is `security definer` and granted to `app_runtime`,
+ * so the proof exercises the real issuance path rather than an insert that could drift from it.
+ */
+export async function seedReviewLocation(pool, displayName) {
+  const locationId = randomUUID();
+  const installationId = randomUUID();
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-location",
+        "insert into platform.locations (id, display_name, status) values ($1::uuid, $2::text, 'active')",
+        [locationId, displayName],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.review-installation",
+        "insert into platform.marketplace_installations (id, location_id, marketplace_app_id, status)" +
+          " values ($1::uuid, $2::uuid, 'oalo-review-surface', 'pending')",
+        [installationId, locationId],
+      ),
+    );
+  });
+  return Object.freeze({ locationId, installationId });
+}
+
+export async function seedReviewActor(pool, locationId, displayName, bindingRole) {
+  const actorId = randomUUID();
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-actor",
+        "insert into platform.app_users (id, safe_display_name) values ($1::uuid, $2::text)",
+        [actorId, displayName],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.review-binding",
+        "insert into platform.role_bindings (location_id, user_id, role) values ($1::uuid, $2::uuid, $3::text)",
+        [locationId, actorId, bindingRole],
+      ),
+    );
+  });
+  return actorId;
+}
+
+export async function revokeReviewBinding(pool, locationId, actorId, bindingRole) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-revoke-binding",
+        "update platform.role_bindings set revoked_at = now() where location_id = $1::uuid" +
+          " and user_id = $2::uuid and role = $3::text and revoked_at is null",
+        [locationId, actorId, bindingRole],
+      ),
+    );
+  });
+}
+
+export async function grantReviewBinding(pool, locationId, actorId, bindingRole) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-grant-binding",
+        "insert into platform.role_bindings (location_id, user_id, role) values ($1::uuid, $2::uuid, $3::text)",
+        [locationId, actorId, bindingRole],
+      ),
+    );
+  });
+}
+
+export async function countLocationRows(pool, table, locationId) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.review-count-rows",
+        `select count(*)::text as total from ${table} where location_id = $1::uuid`,
+        [locationId],
+      ),
+    );
+    return Number(result.rows[0]?.total ?? "0");
+  });
+}
+
+/** Runs one PRD-005b definer contract as `app_runtime`, with no tenant context and no elevation. */
+async function withRuntimeRole(pool, work) {
+  const connection = await pool.connect();
+  let open = false;
+  try {
+    await connection.execute(request("test.review-begin", "begin"));
+    open = true;
+    await connection.execute(request("test.review-assume-runtime", "set local role app_runtime"));
+    const result = await work(connection);
+    await connection.execute(request("test.review-commit", "commit"));
+    open = false;
+    return result;
+  } finally {
+    if (open) await connection.execute(request("test.review-rollback", "rollback"));
+    await connection.release();
+  }
+}
+
+export async function issueReviewSession(pool, input) {
+  return withRuntimeRole(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.review-issue-session",
+        "select (platform.issue_first_party_session($1::uuid, $2::uuid, $3::text, $4::text," +
+          " $5::text, $6::integer, 'review_sign_in', $7::text)).id::text as id",
+        [
+          input.locationId,
+          input.actorId,
+          input.bindingRole,
+          input.sessionRole,
+          input.secretHash,
+          input.lifetimeSeconds,
+          input.correlationId,
+        ],
+      ),
+    );
+    const id = result.rows[0]?.id;
+    if (typeof id !== "string") {
+      throw new Error("platform.issue_first_party_session returned no session id");
+    }
+    return id;
+  });
+}
+
+export async function revokeReviewSession(pool, sessionId, reason, correlationId) {
+  await withRuntimeRole(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-revoke-session",
+        "select platform.revoke_first_party_session($1::uuid, $2::text, $3::text)",
+        [sessionId, reason, correlationId],
+      ),
+    );
+  });
+}
+
 function stableJson(value) {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
@@ -360,10 +528,4 @@ function stableJson(value) {
     .sort(([left], [right]) => left.localeCompare(right, "en"))
     .map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`)
     .join(",")}}`;
-}
-
-function databaseRoleFor(applicationRole) {
-  if (applicationRole === "campaign_creator") return "creator";
-  if (applicationRole === "campaign_approver") return "approver";
-  return "location_admin";
 }

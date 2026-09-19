@@ -236,3 +236,24 @@ export {
   type ReportingMetric,
   type ReportingMetricSource,
 } from "./reporting.js";
+
+export {
+  CANONICAL_REFERENCE_CODECS,
+  CANONICAL_REFERENCE_KINDS,
+  CanonicalReferenceError,
+  CanonicalReferenceSchema,
+  actorReference,
+  formatActorRef,
+  formatInstallationRef,
+  formatLocationRef,
+  formatSessionRef,
+  installationReference,
+  locationReference,
+  parseActorRef,
+  parseInstallationRef,
+  parseLocationRef,
+  parseSessionRef,
+  sessionReference,
+  type CanonicalReferenceCodec,
+  type CanonicalReferenceKind,
+} from "./canonical-reference.js";

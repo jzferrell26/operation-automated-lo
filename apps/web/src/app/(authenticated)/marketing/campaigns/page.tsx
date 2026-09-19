@@ -1,14 +1,19 @@
 import { headers } from "next/headers.js";
+import { redirect } from "next/navigation.js";
 
 import { Card } from "@oalo/ui";
 
 import styles from "../../../../features/campaigns/components/open-house-draft-builder.module.css";
-import { loadWorkspaceCampaignsForRequest } from "../../../../server/campaign-workspace-reads.js";
+import { readWorkspaceCampaignsForRequest } from "../../../../server/campaign-workspace-reads.js";
+import { REVIEW_SIGN_IN_PATH } from "../../../../server/runtime-authentication.js";
 
 export default async function CampaignListPage() {
   const incoming = await headers();
   const request = new Request("https://oalo.local/marketing/campaigns", { headers: incoming });
-  const campaigns = await loadWorkspaceCampaignsForRequest(request, process.env);
+  const read = await readWorkspaceCampaignsForRequest(request, process.env);
+  // 005A-AC-010. "No campaigns in this location yet" is a tenant claim, so it needs a session.
+  if (!read.authenticated) redirect(REVIEW_SIGN_IN_PATH);
+  const campaigns = read.campaigns;
 
   return (
     <div className={styles.page}>

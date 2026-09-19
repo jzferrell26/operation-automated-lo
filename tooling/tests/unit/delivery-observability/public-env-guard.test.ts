@@ -130,6 +130,42 @@ describe("browser publication review registry", () => {
     expect(collectPublicAllowlistViolations([name]).length).toBeGreaterThan(0);
   });
 
+  /**
+   * PRD-005a 005A-AC-017 and PRD-005b D6. One case per new secret-bearing server variable. Each is
+   * rejected twice over: it is absent from the review registry, and its name carries a
+   * secret-bearing segment (`SECRET`, `SESSION`, or `KEY`). `OALO_REVIEW_LOCATION_ID` and
+   * `OALO_REVIEW_OUTSIDER_LOCATION_ID` are omitted deliberately: they are non-secret UUIDs, so the
+   * registry is what keeps them off the public allowlist, not the name pattern.
+   */
+  it.each([
+    "NEXT_PUBLIC_OALO_CSRF_SERVER_SECRET",
+    "NEXT_PUBLIC_OALO_REVIEW_SIGNIN_SECRET",
+    "NEXT_PUBLIC_OALO_EMBEDDED_SESSION_ISSUER",
+    "NEXT_PUBLIC_OALO_EMBEDDED_SESSION_AUDIENCE",
+    "NEXT_PUBLIC_OALO_EMBEDDED_SESSION_PUBLIC_KEYS_JSON",
+  ])("rejects the runtime authentication secret name %s", (name) => {
+    const violations = collectPublicAllowlistViolations([name]);
+
+    expect(violations).toContain(
+      `Public environment variable is not in the reviewed browser-publication registry: ${name}`,
+    );
+    expect(violations).toContain(
+      `Public environment variable name bears a secret-bearing segment: ${name}`,
+    );
+    expect(() => assertPublicEnvironmentAllowlistSecure([name])).toThrow(
+      /violates secret boundary/u,
+    );
+  });
+
+  it.each(["NEXT_PUBLIC_OALO_REVIEW_LOCATION_ID", "NEXT_PUBLIC_OALO_REVIEW_OUTSIDER_LOCATION_ID"])(
+    "rejects the unreviewed non-secret review name %s",
+    (name) => {
+      expect(collectPublicAllowlistViolations([name])).toContain(
+        `Public environment variable is not in the reviewed browser-publication registry: ${name}`,
+      );
+    },
+  );
+
   it("still rejects a name that omits the public prefix", () => {
     expect(collectPublicAllowlistViolations(["OALO_APP_URL"])).toContain(
       "Public environment variable must use NEXT_PUBLIC_ prefix: OALO_APP_URL",

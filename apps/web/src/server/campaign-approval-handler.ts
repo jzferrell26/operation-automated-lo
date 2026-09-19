@@ -8,12 +8,12 @@ import {
 import { z } from "zod";
 
 import {
-  createDefaultCampaignCommandPorts,
   resolveAuthenticatedPrincipal,
   type CampaignCommandPorts,
 } from "./authenticated-principal.js";
 import { campaignCommandAuthErrorResponse, jsonCommandError } from "./campaign-command-http.js";
 import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
+import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
 
 const OpaqueReferenceSchema = z
   .string()
@@ -52,7 +52,7 @@ export function principalMayApprove(principal: Readonly<AuthenticatedPrincipal>)
 export async function handleCampaignApproval(
   request: Request,
   environment: unknown = process.env,
-  ports: CampaignCommandPorts = createDefaultCampaignCommandPorts(),
+  ports: CampaignCommandPorts = resolveRuntimeCampaignCommandPorts(environment),
 ): Promise<Response> {
   try {
     const principal = await resolveAuthenticatedPrincipal(request, environment, ports);

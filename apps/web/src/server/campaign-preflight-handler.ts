@@ -2,13 +2,13 @@ import { projectCampaignWorkspace } from "@oalo/application";
 import { ZodError } from "zod";
 
 import {
-  createDefaultCampaignCommandPorts,
   resolveAuthenticatedPrincipal,
   type CampaignCommandPorts,
 } from "./authenticated-principal.js";
 import { campaignCommandAuthErrorResponse, jsonCommandError } from "./campaign-command-http.js";
 import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
 import { compileOpenHouseDraft } from "./open-house-draft.js";
+import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
 
 function campaignCommandErrorResponse(error: unknown): Response {
   if (error instanceof ZodError) {
@@ -25,7 +25,7 @@ function campaignCommandErrorResponse(error: unknown): Response {
 export async function handleCampaignPreflight(
   request: Request,
   environment: unknown = process.env,
-  ports: CampaignCommandPorts = createDefaultCampaignCommandPorts(),
+  ports: CampaignCommandPorts = resolveRuntimeCampaignCommandPorts(environment),
 ): Promise<Response> {
   try {
     const principal = await resolveAuthenticatedPrincipal(request, environment, ports);

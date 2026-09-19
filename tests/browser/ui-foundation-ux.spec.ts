@@ -40,6 +40,24 @@ async function guardSyntheticLocalPage(page: Page) {
 async function chooseTheme(page: Page, theme: "Light" | "Dark") {
   await page.getByRole("radio", { name: theme }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme.toLowerCase());
+
+  /* The segmented control moves its fill and its label colour over
+   * `--motion-base`. axe reads computed colour, so sampling before the
+   * transition settles reports a blended pair that exists for 180ms and is not
+   * a token. Wait for the control to come to rest, with a ceiling above
+   * `--motion-slow` for the case where no transition runs at all.
+   */
+  await page.getByRole("radiogroup", { name: "Appearance theme" }).evaluate(
+    (group) =>
+      new Promise<void>((resolve) => {
+        const settle = () => {
+          window.clearTimeout(ceiling);
+          resolve();
+        };
+        const ceiling = window.setTimeout(settle, 400);
+        group.addEventListener("transitionend", settle, { once: true });
+      }),
+  );
 }
 
 async function assertAxeClean(page: Page) {
@@ -231,10 +249,17 @@ test("keyboard focus, target size, checklist order, and reduced motion meet the 
   await assertGuardClean(guard);
 });
 
+/* PRD-006d, 006D-AC-017: the tablet frame from design brief section 14 joins the
+ * matrix. The brief's tablet rules are a collapsible rail and single-column
+ * forms, asserted separately below.
+ */
+const TABLET_FRAME = { width: 768, height: 1024 } as const;
+
 for (const route of ["overview", "onboarding"] as const) {
   for (const theme of ["Light", "Dark"] as const) {
     for (const viewport of [
       { width: 1180, height: 900 },
+      TABLET_FRAME,
       { width: 390, height: 844 },
     ] as const) {
       test(`${route} ${theme} ${viewport.width}x${viewport.height} is axe-clean`, async ({
@@ -255,6 +280,56 @@ for (const route of ["overview", "onboarding"] as const) {
     }
   }
 }
+
+test("the 768 tablet frame uses the collapsible rail and single-column content", async ({
+  page,
+}) => {
+  const guard = await guardSyntheticLocalPage(page);
+  await page.setViewportSize(TABLET_FRAME);
+
+  for (const route of ["overview", "onboarding", "brand"] as const) {
+    await page.goto(`/${route}`);
+
+    // Design brief section 14: tablet uses a collapsible navigation rail, not
+    // the mobile top bar and drawer.
+    const sidebar = page.getByLabel("Primary workspace");
+    await expect(sidebar).toBeVisible();
+    expect((await sidebar.boundingBox())?.width).toBe(80);
+    await expect(page.getByRole("button", { name: "Open navigation" })).toBeHidden();
+
+    // Section 14: no horizontal overflow, and a constrained width puts the
+    // page into a single column.
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    const multiColumn = await page
+      .locator("main :where(section, form, article, div)")
+      .evaluateAll((elements) =>
+        elements
+          .filter((element) => {
+            const columns = getComputedStyle(element).gridTemplateColumns;
+            return columns.split(" ").filter((track) => track.endsWith("px")).length > 2;
+          })
+          .map((element) => element.className),
+      );
+    expect(multiColumn).toEqual([]);
+
+    // Section 14: 44 by 44 targets survive the frame change.
+    const undersized = await page
+      .locator("button:visible, a[href]:visible, [role='button']:visible")
+      .evaluateAll((elements) =>
+        elements
+          .map((element) => ({
+            name: element.getAttribute("aria-label") ?? element.textContent?.trim() ?? "unnamed",
+            rect: element.getBoundingClientRect().toJSON(),
+          }))
+          .filter(({ rect }) => rect.width < 44 || rect.height < 44),
+      );
+    expect(undersized).toEqual([]);
+  }
+
+  await assertGuardClean(guard);
+});
 
 test("open drawer and Overview state gallery meet accessibility contracts", async ({ page }) => {
   const guard = await guardSyntheticLocalPage(page);
@@ -338,6 +413,7 @@ for (const route of [
 
     for (const contract of [
       { theme: "Light" as const, viewport: { width: 1180, height: 900 } },
+      { theme: "Light" as const, viewport: TABLET_FRAME },
       { theme: "Dark" as const, viewport: { width: 390, height: 844 } },
     ]) {
       await page.setViewportSize(contract.viewport);

@@ -411,3 +411,12 @@
     gap: var(--space-1);
   }
 }
+
+/* Brief section 12: reporting declares no motion, and cannot gain any. */
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .page * {
+    animation: none;
+    transition-duration: 0ms;
+  }
+}

@@ -255,7 +255,12 @@
   font-size: var(--text-section-size);
 }
 
-@media (max-width: 1180px) and (min-width: 769px) {
+/* Design brief section 14. The 768px tablet frame is a reference width that the
+ * tablet rules own, so the compact rail range includes it and the mobile drawer
+ * range stops just below it. Before PRD-006d the boundary was `min-width: 769px`
+ * against `max-width: 768px`, which handed the tablet frame the mobile drawer.
+ */
+@media (max-width: 1180px) and (min-width: 768px) {
   .desktopSidebar {
     inline-size: 5rem;
   }
@@ -275,7 +280,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .desktopSidebar {
     display: none;
   }

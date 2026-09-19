@@ -1,5 +1,70 @@
 /* Operation Automated LO approved semantic baseline.
- * Validate final contrast in the production component context.
+ *
+ * RECONCILED 2026-09-19 (PRD-006d, 006D-AC-005) by ux-ui-guardian, signed under
+ * the design-system-guardian authority this batch carries.
+ *
+ * This file and the shipped `packages/ui/src/tokens.css` had drifted apart. The
+ * shipped side had been re-tuned for measured WCAG AA contrast; this side still
+ * carried the pre-tuning values. The product is the authority on a value that
+ * was changed to meet the accessibility floor in design brief section 18, so
+ * this file now carries the shipped, contrast-validated values. Every changed
+ * token is listed below with its old value and the reason.
+ *
+ * The measurement is no longer a matter of judgement: `apps/web/src/theme/
+ * token-contrast.unit.test.ts` computes the WCAG ratio for every rendered
+ * text-on-surface pair in both themes on every `pnpm test:unit` run, so a token
+ * edit that drops a pair below 4.5 for text or 3.0 for a component fails before
+ * it reaches a screen.
+ *
+ * Changed on this side to match the product. Every ratio below was measured
+ * with the same luminance function the contrast test uses.
+ *
+ *   Below the AA floor before the change, so the product value is the standard:
+ *     Light --tx-faint         was #98a2b3, 2.58:1 on --sf-card
+ *     Light --st-info-fg       was #2f6fed, 4.04:1 on --st-info-bg
+ *     Light --st-uncertain-fg  was #6d5fd4, 4.31:1 on --st-uncertain-bg
+ *     Dark  --tx-faint         was #697083, 3.37:1 on --sf-card
+ *     Dark  --st-critical-fg   was #e0574a, 4.49:1 on --st-critical-bg
+ *     Dark  --ac-primary       was #4a7bf0, --tx-on-action only 3.90:1 on it
+ *     Dark  --ac-primary-hover was #6f9cf5, --tx-on-action only 2.71:1 on it,
+ *                              and it was lighter than rest, which inverted the
+ *                              press direction; it is now darker than rest
+ *
+ *   Already above the floor, changed for consistency with the re-tuned Dark
+ *   surfaces rather than to fix a failure:
+ *     Dark --tx-body           was #9aa1b0, 6.43:1 on --sf-card
+ *     Dark --st-info-fg        was #6f9cf5, 5.76:1 on --st-info-bg
+ *     Dark --st-neutral-fg     was #9aa1b0, 5.68:1 on --st-neutral-bg
+ *     Dark --st-uncertain-fg   was #a495e8, 6.10:1 on --st-uncertain-bg
+ *     Dark --bd-hairline       was #262a33, raised so a card and a sunken well
+ *                              keep a perceivable boundary on the Dark canvas
+ *     Dark --bd-input          was #333947, raised for the same reason on a
+ *                              control boundary
+ *
+ * Added on this side, already shipped, no change in meaning:
+ *   --ac-primary-active, --weight-regular, --weight-medium, --weight-bold,
+ *   --tracking-page, --leading-tight, --leading-normal,
+ *   --breakpoint-mobile, --breakpoint-tablet, --breakpoint-embedded,
+ *   --breakpoint-desktop.
+ *
+ * Added in this batch (PRD-006d, D4), present in both files:
+ *   --target-min-size     the 44px interactive target from brief section 14,
+ *                         so no primitive repeats the literal.
+ *
+ * Kept only on this side, on purpose: the `prefers-color-scheme` block at the
+ * end. The product resolves the theme before first paint with the bootstrap
+ * script in `apps/web/src/theme/theme-bootstrap.ts` and always writes
+ * `data-theme`, so the shipped file does not need the media query. This file
+ * keeps it so the token layer reads correctly on its own.
+ *
+ * Open delta, not fixed here, owner `design-system-guardian`:
+ *   --ac-primary in Dark is 3.20:1 on --sf-card and 2.90:1 on --sf-sunken. It
+ *   is safe as a fill behind --tx-on-action, and it is never used as text, but
+ *   it is also --focus-color, so the focus ring on a Dark sunken surface is
+ *   below the 3.0 non-text floor. The fix is a Dark focus token that does not
+ *   follow the tenant accent; it is out of PRD-006d's file scope because the
+ *   rendered value comes from the tenant accent catalog in
+ *   `apps/web/src/theme/tenant-accent.ts`. Recorded in `06-review-rubric.md`.
  */
 
 :root {
@@ -13,7 +78,7 @@
 
   --tx-strong: #1c2431;
   --tx-body: #5b6574;
-  --tx-faint: #98a2b3;
+  --tx-faint: #667085;
   --tx-on-action: #ffffff;
   --tx-on-nav: #e8ecf5;
 
@@ -22,6 +87,7 @@
 
   --ac-primary: #2f6fed;
   --ac-primary-hover: #1f4bb8;
+  --ac-primary-active: #193f9c;
   --ac-secondary: #2b9d8f;
 
   --st-success-fg: #157a46;
@@ -30,11 +96,11 @@
   --st-warning-bg: #fdf3dd;
   --st-critical-fg: #c03a2e;
   --st-critical-bg: #fdecea;
-  --st-info-fg: #2f6fed;
+  --st-info-fg: #285ecb;
   --st-info-bg: #eaf2ff;
   --st-neutral-fg: #5b6574;
   --st-neutral-bg: #eef1f6;
-  --st-uncertain-fg: #6d5fd4;
+  --st-uncertain-fg: #5d4fc1;
   --st-uncertain-bg: #f3ecff;
 
   --font-interface: "Geist", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -46,6 +112,12 @@
   --text-body-size: 0.8125rem;
   --text-secondary-size: 0.71875rem;
   --text-caption-size: 0.65625rem;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --tracking-page: -0.02em;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -60,6 +132,13 @@
   --radius-card: 0.875rem;
   --radius-panel: 1rem;
   --radius-pill: 999px;
+
+  --target-min-size: 2.75rem;
+
+  --breakpoint-mobile: 390px;
+  --breakpoint-tablet: 768px;
+  --breakpoint-embedded: 1180px;
+  --breakpoint-desktop: 1440px;
 
   --shadow-rest: 0 1px 2px rgb(23 32 50 / 6%);
   --shadow-card: 0 1px 2px rgb(23 32 50 / 5%), 0 10px 24px -16px rgb(23 32 50 / 18%);
@@ -85,29 +164,30 @@
   --sf-overlay: rgb(0 0 0 / 68%);
 
   --tx-strong: #e8eaef;
-  --tx-body: #9aa1b0;
-  --tx-faint: #697083;
+  --tx-body: #b0b7c4;
+  --tx-faint: #a6adbb;
   --tx-on-action: #ffffff;
   --tx-on-nav: #e8eaef;
 
-  --bd-hairline: #262a33;
-  --bd-input: #333947;
+  --bd-hairline: #343946;
+  --bd-input: #454c5c;
 
-  --ac-primary: #4a7bf0;
-  --ac-primary-hover: #6f9cf5;
+  --ac-primary: #3566d6;
+  --ac-primary-hover: #2f5dc7;
+  --ac-primary-active: #264da8;
   --ac-secondary: #3db3a4;
 
   --st-success-fg: #4ecb8d;
   --st-success-bg: #132a20;
   --st-warning-fg: #e8b64c;
   --st-warning-bg: #2d2413;
-  --st-critical-fg: #e0574a;
+  --st-critical-fg: #f0786d;
   --st-critical-bg: #2f1715;
-  --st-info-fg: #6f9cf5;
+  --st-info-fg: #8bb0ff;
   --st-info-bg: #16233f;
-  --st-neutral-fg: #9aa1b0;
+  --st-neutral-fg: #b0b7c4;
   --st-neutral-bg: #242833;
-  --st-uncertain-fg: #a495e8;
+  --st-uncertain-fg: #b9acf5;
   --st-uncertain-bg: #241d3d;
 
   --shadow-rest: 0 1px 2px rgb(0 0 0 / 24%);
@@ -124,24 +204,25 @@
     --sf-sunken: #22262f;
     --sf-nav: #0b1122;
     --tx-strong: #e8eaef;
-    --tx-body: #9aa1b0;
-    --tx-faint: #697083;
-    --bd-hairline: #262a33;
-    --bd-input: #333947;
-    --ac-primary: #4a7bf0;
-    --ac-primary-hover: #6f9cf5;
+    --tx-body: #b0b7c4;
+    --tx-faint: #a6adbb;
+    --bd-hairline: #343946;
+    --bd-input: #454c5c;
+    --ac-primary: #3566d6;
+    --ac-primary-hover: #2f5dc7;
+    --ac-primary-active: #264da8;
     --ac-secondary: #3db3a4;
     --st-success-fg: #4ecb8d;
     --st-success-bg: #132a20;
     --st-warning-fg: #e8b64c;
     --st-warning-bg: #2d2413;
-    --st-critical-fg: #e0574a;
+    --st-critical-fg: #f0786d;
     --st-critical-bg: #2f1715;
-    --st-info-fg: #6f9cf5;
+    --st-info-fg: #8bb0ff;
     --st-info-bg: #16233f;
-    --st-neutral-fg: #9aa1b0;
+    --st-neutral-fg: #b0b7c4;
     --st-neutral-bg: #242833;
-    --st-uncertain-fg: #a495e8;
+    --st-uncertain-fg: #b9acf5;
     --st-uncertain-bg: #241d3d;
   }
 }

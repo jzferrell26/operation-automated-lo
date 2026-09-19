@@ -1,5 +1,36 @@
-/* Named visual utilities. Production integration may express these through
- * product component wrappers or Tailwind utilities backed by the same tokens.
+/* Named visual utilities.
+ *
+ * REFERENCE ONLY, ANNOTATED 2026-09-19 (PRD-006d, 006D-AC-005).
+ *
+ * No `.ui-*` class in this file has a consumer in `apps/` or `packages/`, and
+ * none is expected to gain one. The product expresses every rule below through
+ * the `oalo-*` classes in `packages/ui/src/components/primitives.css` and the
+ * CSS modules beside each component, all backed by the same tokens in
+ * `01-master-tokens.css`. The file is kept, not deleted, because it is the
+ * readable statement of what a surface, a focus ring, and a motion bucket mean;
+ * `primitives.css` is the implementation of that statement.
+ *
+ * The mapping, so a reviewer can check one against the other:
+ *
+ *   .ui-canvas          -> `apps/web/src/app/globals.css`, the `html, body` rule
+ *   .ui-card            -> `.oalo-surface[data-variant="card"]`
+ *   .ui-panel           -> `.oalo-surface[data-variant="raised"]`, `.panel` in
+ *                          `overlay.module.css`
+ *   .ui-sunken          -> `.oalo-surface[data-variant="sunken"]`
+ *   .ui-nav             -> `.desktopSidebar` in `app-shell.module.css`
+ *   .ui-focusable       -> the `:focus-visible` rule each component declares
+ *                          with `--focus-width`, `--focus-color`,
+ *                          `--focus-offset`
+ *   .ui-interactive     -> the `--motion-fast` transition block in
+ *                          `Button.module.css`, `Icon.module.css`,
+ *                          `field.module.css`, `link.module.css`
+ *   .ui-reveal          -> the `--motion-base` block in `stepper.module.css`
+ *   .ui-overlay-motion  -> the `--motion-slow` block in `overlay.module.css`
+ *   .ui-status-*        -> `.oalo-state-label[data-tone="*"]`, exported as
+ *                          `Badge`
+ *
+ * Adding a `.ui-*` class here without adding its product counterpart is a
+ * finding, and so is the reverse.
  */
 
 .ui-canvas {

@@ -211,3 +211,12 @@
     gap: var(--space-1);
   }
 }
+
+/* Brief section 12: onboarding declares no motion, and cannot gain any. */
+@media (prefers-reduced-motion: reduce) {
+  .onboarding,
+  .onboarding * {
+    animation: none;
+    transition-duration: 0ms;
+  }
+}

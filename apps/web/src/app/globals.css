@@ -1,16 +1,24 @@
 @import "@oalo/ui/tokens.css";
 
+/* Design brief section 10. The interface and data families come from the token
+ * layer, never from a local stack, so one edit in `tokens.css` moves the whole
+ * product. The font pipeline ruling for this batch is recorded in
+ * `apps/web/public/fonts/README.md`: no font file is fetched at runtime, so the
+ * declared families resolve through the token stack to the system sans and
+ * system monospace faces until a licensed Geist build is vendored.
+ */
 :root {
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: var(--font-interface);
   background: var(--sf-canvas);
   color: var(--tx-strong);
+}
+
+code,
+kbd,
+samp,
+pre,
+[data-text-tone="data"] {
+  font-family: var(--font-data);
 }
 
 html,
@@ -19,6 +27,11 @@ body {
   color: var(--tx-strong);
 }
 
+/* Superseded by `<Link variant="action">` from `@oalo/ui` (PRD-006d, D4).
+ * It stays here only until the raw `<a className="oalo-action-link">` call
+ * sites listed in 006D-AC-003 are migrated to the primitive; it must not be
+ * used by any new screen.
+ */
 .oalo-action-link {
   display: inline-flex;
   min-block-size: 44px;

@@ -25,6 +25,28 @@ const WEB_POSTGRES_TEST_DIRECTORY = "apps/web/src";
 const WEB_POSTGRES_TEST_SUFFIX = ".postgres.test.ts";
 const SEED_REVIEW_LOCATION_SCRIPT = "tooling/scripts/database/seed-review-location.mjs";
 
+/**
+ * PRD-006a D8 and 006A-AC-029. The credentials the gate seeds and then signs in with.
+ *
+ * These are throwaway values for a disposable database that is created and dropped inside this
+ * run, in the same spirit as the local stack password already hardcoded above. The addresses are
+ * under the reserved `.invalid` top-level domain, so no message could ever reach a real inbox even
+ * if a sending domain were configured, which on this gate it never is.
+ *
+ * They travel to the seeding step on standard input and to the route-level suite as environment
+ * variables, so the suite signs in with credentials this run actually created rather than with a
+ * row it inserted itself.
+ */
+export const GATE_SEEDED_CREDENTIALS = Object.freeze({
+  creatorEmail: "review-creator@oalo.invalid",
+  approverEmail: "review-approver@oalo.invalid",
+  outsiderEmail: "review-outsider@oalo.invalid",
+  // The policy refuses a password containing a person's name or the local part of their
+  // address, and every seeded person here is called "Review something", so this phrase
+  // deliberately shares no word with any of them.
+  password: "gate harbour lantern phrase",
+});
+
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const defaultRepositoryRoot = resolve(scriptDirectory, "../../..");
 
@@ -257,6 +279,9 @@ export function commandPlan(discovery, repositoryRoot = defaultRepositoryRoot) {
       // rather than psql, so the disposable database's well-known local password
       // travels in the URL argument instead of PGPASSWORD. It is the same
       // throwaway credential already hardcoded in this file for the local stack.
+      // PRD-006a D8. The same seeding run also sets the three credentials, through
+      // --password-stdin because this shell has no terminal to type at. The route-level suite
+      // below then signs in through the real route with one of them.
       Object.freeze({
         command: node,
         args: [
@@ -265,8 +290,17 @@ export function commandPlan(discovery, repositoryRoot = defaultRepositoryRoot) {
           localDatabaseUrl(databasePort, testDatabaseName, { withPassword: true }),
           "--confirm-database",
           testDatabaseName,
+          "--set-password",
+          "--password-stdin",
+          "--creator-email",
+          GATE_SEEDED_CREDENTIALS.creatorEmail,
+          "--approver-email",
+          GATE_SEEDED_CREDENTIALS.approverEmail,
+          "--outsider-email",
+          GATE_SEEDED_CREDENTIALS.outsiderEmail,
         ],
-        label: `seed the review location into ${testDatabaseName}`,
+        stdin: `${GATE_SEEDED_CREDENTIALS.password}\n`.repeat(3),
+        label: `seed the review location and its credentials into ${testDatabaseName}`,
       }),
       Object.freeze({
         command: node,
@@ -292,6 +326,8 @@ export function commandPlan(discovery, repositoryRoot = defaultRepositoryRoot) {
                 OALO_TEST_DATABASE_URL: localDatabaseUrl(databasePort, testDatabaseName, {
                   withPassword: true,
                 }),
+                OALO_TEST_SEEDED_SIGN_IN_EMAIL: GATE_SEEDED_CREDENTIALS.creatorEmail,
+                OALO_TEST_SEEDED_SIGN_IN_PASSWORD: GATE_SEEDED_CREDENTIALS.password,
               }),
               label: "run the route-level PostgreSQL tests",
             }),
@@ -456,9 +492,14 @@ export function runCommand(step, cwd) {
         ...step.env,
       },
       shell: false,
-      stdio: "inherit",
+      // A step that supplies stdin gets a pipe instead of the inherited terminal, so the value
+      // never reaches this process's own standard input and never appears on screen.
+      stdio: step.stdin === undefined ? "inherit" : ["pipe", "inherit", "inherit"],
       windowsHide: true,
     });
+    if (step.stdin !== undefined) {
+      child.stdin.end(step.stdin);
+    }
     child.once("error", rejectPromise);
     child.once("exit", (code, signal) => {
       if (code === 0) {

@@ -3,11 +3,23 @@ export const TEST_DATABASE_NAME: string;
 export const TEST_DATABASE_NAME_PREFIX: "oalo_test_";
 export const WEB_POSTGRES_PROJECT: "web-postgres";
 
+/** PRD-006a D8. The throwaway credentials the gate seeds and then signs in with. */
+export interface GateSeededCredentials {
+  readonly creatorEmail: string;
+  readonly approverEmail: string;
+  readonly outsiderEmail: string;
+  readonly password: string;
+}
+
+export const GATE_SEEDED_CREDENTIALS: GateSeededCredentials;
+
 export interface DatabaseCommandStep {
   readonly command: string;
   readonly args: readonly string[];
   readonly label: string;
   readonly env?: Readonly<Record<string, string>>;
+  /** Written to the child's standard input, so a value never lands in an argument vector. */
+  readonly stdin?: string;
 }
 
 export interface DatabaseCommandPlan {

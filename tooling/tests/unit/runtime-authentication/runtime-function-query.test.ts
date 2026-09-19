@@ -57,7 +57,7 @@ function createPool(behaviour: { failOn?: string } = {}) {
 }
 
 describe("context-free runtime function helper", () => {
-  it("recognises exactly the eleven PRD-005b contract names", () => {
+  it("recognises exactly the twenty-three allowlisted contract names (006A-AC-003)", () => {
     expect([...RUNTIME_FUNCTION_CONTRACT_NAMES]).toEqual([
       "runtime.location-is-active.v1",
       "runtime.actor-is-active.v1",
@@ -66,11 +66,25 @@ describe("context-free runtime function helper", () => {
       "runtime.touch-first-party-session.v1",
       "runtime.first-party-session-is-active.v1",
       "runtime.resolve-session-display.v1",
-      "runtime.resolve-review-persona.v1",
       "runtime.issue-first-party-session.v1",
       "runtime.revoke-first-party-session.v1",
       "runtime.record-denied-session-issuance.v1",
+      "runtime.lookup-password-credential.v1",
+      "runtime.lookup-password-credential-for-user.v1",
+      "runtime.list-sign-in-bindings.v1",
+      "runtime.record-password-sign-in-failure.v1",
+      "runtime.record-password-sign-in-success.v1",
+      "runtime.issue-credential-token.v1",
+      "runtime.consume-credential-token.v1",
+      "runtime.revoke-all-first-party-sessions-for-user.v1",
+      "runtime.set-password.v1",
+      "runtime.register-password-account.v1",
+      "runtime.mark-email-verified.v1",
+      "runtime.record-email-delivery.v1",
+      "runtime.consume-auth-rate-limit.v1",
     ]);
+    // PRD-006a D9 drops the persona resolver with the route that called it.
+    expect(isRuntimeFunctionContractName("runtime.resolve-review-persona.v1")).toBe(false);
     for (const name of RUNTIME_FUNCTION_CONTRACT_NAMES) {
       expect(isRuntimeFunctionContractName(name)).toBe(true);
     }

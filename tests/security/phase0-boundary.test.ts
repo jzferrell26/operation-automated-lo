@@ -96,6 +96,12 @@ describe("Phase 0 security coverage and traffic boundary", () => {
 
     expect(findings.sort()).toEqual(
       [
+        // PRD-006a D6. The product's own account emails: one POST to Resend's send endpoint,
+        // composed only when an operator has set both email variables on the deployment, and
+        // never composed in synthetic mode. `tests/security/auth-email-default-off.test.ts`
+        // proves the default-off behaviour and that this file is its only caller. The allowlist
+        // stays closed: any other file that acquires an outbound transport still fails here.
+        "apps/web/src/server/email/resend-email-adapter.ts",
         "packages/ai/src/anthropic-messages-provider.ts",
         "packages/ghl/src/leadconnector-v2-http-transport.ts",
         "packages/storage/src/r2-object-store-client.ts",

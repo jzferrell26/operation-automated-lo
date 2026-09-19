@@ -14,17 +14,37 @@ import { DatabaseContextError, shouldAssumeRuntimeRole } from "./transaction-con
  *
  * This helper therefore runs `begin; set local role app_runtime; <one allowlisted contract>;
  * commit` on a pooled connection and nothing else. The allowlist below is the complete set of
- * PRD-005b `security definer` contracts, keyed by statement name. Any other contract is refused
- * with `DB_CONTRACT_ACCESS_MISMATCH` before a connection is taken.
+ * PRD-005b and PRD-006a `security definer` contracts, keyed by statement name. Any other contract
+ * is refused with `DB_CONTRACT_ACCESS_MISMATCH` before a connection is taken.
  *
  * `access` classifies the statement, not the function. Every entry below is a `select`, so none of
  * them can carry a caller-composed write, and the `access !== "read"` refusal keeps it that way.
- * Four of the functions do change state inside their own definer body: `touch` moves
- * `last_seen_at`, `issue` inserts a session row plus its audit row, `revoke` closes a session plus
- * its audit row, and `record-denied-session-issuance` writes the audit row a refused issuance
- * cannot keep. That is the point of the trust boundary. The mutation is written by the
- * definer function under the schema-owning role, from arguments it validates itself, and it is
- * audited; the caller supplies parameters and never SQL.
+ * Most of the functions do change state inside their own definer body. That is the point of the
+ * trust boundary: the mutation is written by the definer function under the schema-owning role,
+ * from arguments it validates itself, and it is audited; the caller supplies parameters and never
+ * SQL.
+ *
+ * PRD-006a widened this list by thirteen names and removed one. The inventory of what each new
+ * caller is, so a reviewer does not have to search for them:
+ *
+ * - `lookup-password-credential`, `record-password-sign-in-failure`,
+ *   `record-password-sign-in-success`, `list-sign-in-bindings`: the sign-in exchange in
+ *   `apps/web/src/server/password-authentication-handler.ts`. Reading a credential and counting a
+ *   failed attempt both happen before any principal exists, which is why they are here at all.
+ * - `issue-credential-token`, `consume-credential-token`: the forgot-password, reset, and
+ *   verify-email flows, and the workspace-choice step, in the same handler. Also pre-principal.
+ * - `set-password`, `revoke-all-first-party-sessions-for-user`: reset and change-password. The
+ *   change path runs with a principal in hand but on the same pool and the same boundary.
+ * - `register-password-account`: sign-up, which by definition has no principal.
+ * - `lookup-password-credential-for-user`: change-password, which has a verified session and no
+ *   email address in hand. Looking a credential up by an address the browser supplied would be a
+ *   credential oracle even with the result checked against the session.
+ * - `mark-email-verified`: the verify-email confirmation.
+ * - `record-email-delivery`: the audit row an email send leaves behind, written after the
+ *   provider answers. 006A-AC-017 counts those rows; nothing else can write them.
+ * - `consume-auth-rate-limit`: every pre-session route, before it does anything else.
+ * - `resolve-review-persona` is gone: PRD-006a D9 drops the function with the persona selector
+ *   that was its only caller.
  *
  * Adding a name to `RUNTIME_FUNCTION_CONTRACT_NAMES` widens the only unscoped database path in the
  * product, so it is a security change and needs `security-guardian` review, not a routine edit.
@@ -38,10 +58,22 @@ export const RUNTIME_FUNCTION_CONTRACT_NAMES = Object.freeze([
   "runtime.touch-first-party-session.v1",
   "runtime.first-party-session-is-active.v1",
   "runtime.resolve-session-display.v1",
-  "runtime.resolve-review-persona.v1",
   "runtime.issue-first-party-session.v1",
   "runtime.revoke-first-party-session.v1",
   "runtime.record-denied-session-issuance.v1",
+  "runtime.lookup-password-credential.v1",
+  "runtime.lookup-password-credential-for-user.v1",
+  "runtime.list-sign-in-bindings.v1",
+  "runtime.record-password-sign-in-failure.v1",
+  "runtime.record-password-sign-in-success.v1",
+  "runtime.issue-credential-token.v1",
+  "runtime.consume-credential-token.v1",
+  "runtime.revoke-all-first-party-sessions-for-user.v1",
+  "runtime.set-password.v1",
+  "runtime.register-password-account.v1",
+  "runtime.mark-email-verified.v1",
+  "runtime.record-email-delivery.v1",
+  "runtime.consume-auth-rate-limit.v1",
 ] as const);
 
 export type RuntimeFunctionContractName = (typeof RUNTIME_FUNCTION_CONTRACT_NAMES)[number];

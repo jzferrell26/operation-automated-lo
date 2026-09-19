@@ -1,0 +1,103 @@
+.page {
+  display: grid;
+  justify-items: center;
+  padding-block: var(--space-7);
+  padding-inline: var(--space-4);
+  color: var(--tx-strong);
+}
+.panel {
+  display: grid;
+  inline-size: 100%;
+  max-inline-size: 26rem;
+  gap: var(--space-5);
+}
+.header {
+  display: grid;
+  gap: var(--space-2);
+}
+.header h1 {
+  margin: 0;
+  font-size: var(--text-page-size);
+  line-height: var(--leading-tight);
+}
+.header p {
+  margin: 0;
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+}
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+.field {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--tx-strong);
+  font-weight: var(--weight-medium);
+}
+.field input {
+  inline-size: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--bd-input);
+  border-radius: var(--radius-control);
+  background: var(--sf-input);
+  color: var(--tx-strong);
+  font: inherit;
+}
+.field input:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+.helper {
+  margin: 0;
+  color: var(--tx-faint);
+  font-weight: var(--weight-regular);
+  font-size: var(--text-caption-size);
+}
+.check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--tx-strong);
+  font-weight: var(--weight-regular);
+}
+.check input {
+  inline-size: auto;
+}
+.problem {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--st-critical-bg);
+  color: var(--st-critical-fg);
+  line-height: var(--leading-normal);
+}
+.notice {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--st-info-bg);
+  color: var(--st-info-fg);
+  line-height: var(--leading-normal);
+}
+.footer {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+}
+.honesty {
+  margin: 0;
+  color: var(--tx-faint);
+  font-size: var(--text-caption-size);
+  line-height: var(--leading-normal);
+}
+.choices {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

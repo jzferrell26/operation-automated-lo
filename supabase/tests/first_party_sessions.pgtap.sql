@@ -10,7 +10,7 @@
 
 begin;
 
-select plan(102);
+select plan(98);
 
 create function pg_temp.assert_is(actual anyelement, expected anyelement, description text)
 returns text
@@ -341,10 +341,6 @@ select ok(
   'current_role_version exists'
 );
 select ok(
-  pg_catalog.to_regprocedure('platform.resolve_review_persona(uuid, text)') is not null,
-  'resolve_review_persona exists'
-);
-select ok(
   pg_catalog.to_regprocedure(
     'platform.issue_first_party_session(uuid, uuid, text, text, text, integer, text, text)'
   ) is not null,
@@ -382,7 +378,7 @@ select is(
     from pg_catalog.pg_proc as routine
     where routine.pronamespace = 'platform'::regnamespace
       and routine.proname in (
-        'resolve_review_persona', 'issue_first_party_session', 'lookup_first_party_session',
+        'issue_first_party_session', 'lookup_first_party_session',
         'current_role_version', 'touch_first_party_session', 'revoke_first_party_session',
         'location_is_active', 'actor_is_active', 'first_party_session_is_active',
         'resolve_session_display', 'record_denied_session_issuance'
@@ -391,8 +387,8 @@ select is(
       and routine.prosecdef
       and routine.proconfig @> array['search_path=""']
   ),
-  11,
-  'all eleven session functions are migration_owner security definer with an empty search path'
+  10,
+  'all ten session functions are migration_owner security definer with an empty search path'
 );
 select is(
   (
@@ -400,15 +396,15 @@ select is(
     from pg_catalog.pg_proc as routine
     where routine.pronamespace = 'platform'::regnamespace
       and routine.proname in (
-        'resolve_review_persona', 'issue_first_party_session', 'lookup_first_party_session',
+        'issue_first_party_session', 'lookup_first_party_session',
         'current_role_version', 'touch_first_party_session', 'revoke_first_party_session',
         'location_is_active', 'actor_is_active', 'first_party_session_is_active',
         'resolve_session_display', 'record_denied_session_issuance'
       )
       and has_function_privilege('app_runtime', routine.oid, 'EXECUTE')
   ),
-  11,
-  'app runtime can execute all eleven session functions'
+  10,
+  'app runtime can execute all ten session functions'
 );
 select is(
   (
@@ -416,7 +412,7 @@ select is(
     from pg_catalog.pg_proc as routine
     where routine.pronamespace = 'platform'::regnamespace
       and routine.proname in (
-        'resolve_review_persona', 'issue_first_party_session', 'lookup_first_party_session',
+        'issue_first_party_session', 'lookup_first_party_session',
         'current_role_version', 'touch_first_party_session', 'revoke_first_party_session',
         'location_is_active', 'actor_is_active', 'first_party_session_is_active',
         'resolve_session_display', 'record_denied_session_issuance'
@@ -753,32 +749,8 @@ select pg_temp.assert_ok(
   'a revoke and re-grant changes the derived role version'
 );
 
--- 005B-AC-010: resolve_review_persona.
 reset role;
 set local role app_runtime;
-select pg_temp.assert_is(
-  platform.resolve_review_persona('00000000-0000-4000-8000-000000000901', 'creator'),
-  '00000000-0000-4000-8000-000000000911'::uuid,
-  'resolve_review_persona returns the single active creator'
-);
-select pg_temp.assert_is(
-  pg_temp.capture_sqlstate($sql$
-    select platform.resolve_review_persona(
-      '00000000-0000-4000-8000-000000000901', 'publisher'
-    )
-  $sql$),
-  '42501',
-  'resolve_review_persona raises when no candidate exists'
-);
-select pg_temp.assert_is(
-  pg_temp.capture_sqlstate($sql$
-    select platform.resolve_review_persona(
-      '00000000-0000-4000-8000-000000000905', 'creator'
-    )
-  $sql$),
-  '42501',
-  'resolve_review_persona raises when two candidates exist'
-);
 
 -- The tenant policy on reads.
 select platform.set_app_context(

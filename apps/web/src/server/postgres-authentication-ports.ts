@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import {
   databaseRoleForApplicationRole,
   isSessionApplicationRole,
-  type DatabaseBindingRole,
   type EstablishedFirstPartySession,
   type FirstPartySessionLookup,
 } from "@oalo/auth";
@@ -25,9 +24,9 @@ import {
 } from "@oalo/db";
 
 import type {
+  FirstPartySessionIssuance,
+  FirstPartySessionIssuancePort,
   IdentityDirectory,
-  ReviewSessionIssuance,
-  ReviewSessionPort,
   RoleBindingPort,
   SessionActivityPort,
   SessionDisplayNames,
@@ -51,10 +50,6 @@ interface ActiveRow {
 
 interface RoleVersionRow {
   readonly roleVersion: number | undefined;
-}
-
-interface ReviewPersonaRow {
-  readonly userId: string;
 }
 
 interface IssuedSessionRow {
@@ -129,11 +124,6 @@ function decodeSessionDisplay(row: unknown): SessionDisplayNames {
     locationDisplayName: requiredText(record.location_display_name, "location_display_name"),
     userDisplayName: requiredText(record.user_safe_display_name, "user_safe_display_name"),
   });
-}
-
-function decodeReviewPersona(row: unknown): ReviewPersonaRow {
-  const record = recordRow(row);
-  return Object.freeze({ userId: requiredText(record.user_id, "user_id") });
 }
 
 function decodeIssuedSession(row: unknown): IssuedSessionRow {
@@ -238,20 +228,13 @@ from platform.resolve_session_display($1::uuid, $2::uuid) as display_row
   decode: decodeSessionDisplay,
 });
 
-export const resolveReviewPersonaContract = defineSqlContract<ReviewPersonaRow>({
-  name: "runtime.resolve-review-persona.v1",
-  access: "read",
-  text: "select platform.resolve_review_persona($1::uuid, $2::text)::text as user_id",
-  decode: decodeReviewPersona,
-});
-
 export const issueFirstPartySessionContract = defineSqlContract<IssuedSessionRow>({
   name: "runtime.issue-first-party-session.v1",
   access: "read",
   text: `
 select (
   platform.issue_first_party_session(
-    $1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::integer, 'review_sign_in', $7::text
+    $1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::integer, $7::text, $8::text
   )
 ).id::text as id
   `.trim(),
@@ -403,26 +386,6 @@ export function createPostgresSessionDisplayPort(pool: DatabasePool): SessionDis
 }
 
 /**
- * PRD-005b D4. The persona name the browser submitted has already been mapped to a location and a
- * binding role by the server; this resolves that pair to the one active user who holds it. The
- * function raises `42501` for zero or more than one candidate, which the handler turns into the
- * single generic 401.
- */
-export async function resolveReviewPersona(
-  pool: DatabasePool,
-  locationId: string,
-  bindingRole: DatabaseBindingRole,
-): Promise<string> {
-  const values: readonly SqlScalar[] = [locationId, bindingRole];
-  const rows = await queryRuntimeFunction(pool, resolveReviewPersonaContract, values);
-  const row = rows[0];
-  if (row === undefined) {
-    throw new Error("platform.resolve_review_persona returned no user id");
-  }
-  return row.userId;
-}
-
-/**
  * PRD-005b D4. Issuance is the definer function's decision, not this module's: every check, the
  * success audit row, and the denied audit row all live inside
  * `platform.issue_first_party_session`. Only the SHA-256 hash of the cookie secret crosses this
@@ -430,7 +393,7 @@ export async function resolveReviewPersona(
  */
 export async function issueFirstPartySession(
   pool: DatabasePool,
-  input: Readonly<ReviewSessionIssuance>,
+  input: Readonly<FirstPartySessionIssuance>,
 ): Promise<string> {
   const values: readonly SqlScalar[] = [
     input.locationId,
@@ -439,6 +402,7 @@ export async function issueFirstPartySession(
     input.sessionRole,
     input.sessionSecretHash,
     input.lifetimeSeconds,
+    input.issuedBy,
     input.correlationRef,
   ];
   const rows = await queryRuntimeFunction(pool, issueFirstPartySessionContract, values);
@@ -463,12 +427,15 @@ export async function revokeFirstPartySession(
   return rows[0]?.revoked === true;
 }
 
-/** PRD-005b D4. The three definer calls the review routes make, over the composition's one pool. */
-export function createPostgresReviewSessionPort(pool: DatabasePool): ReviewSessionPort {
+/**
+ * PRD-005b D4, as PRD-006a D9 leaves it. The three definer calls the auth routes make, over the
+ * composition's one pool. The persona resolver that used to be the fourth is gone with the
+ * persona selector that called it.
+ */
+export function createPostgresFirstPartySessionIssuancePort(
+  pool: DatabasePool,
+): FirstPartySessionIssuancePort {
   return {
-    async resolvePersona(input) {
-      return resolveReviewPersona(pool, input.locationId, input.bindingRole);
-    },
     async issue(input) {
       return issueFirstPartySession(pool, input);
     },

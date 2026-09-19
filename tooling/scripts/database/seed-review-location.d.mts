@@ -23,6 +23,26 @@ export interface SeedArguments {
   readonly reviewDatabaseUrl: string;
   readonly confirmDatabase: string;
   readonly expectUnchanged: boolean;
+  readonly setPassword: boolean;
+  readonly passwordStdin: boolean;
+  readonly creatorEmail?: string;
+  readonly approverEmail?: string;
+  readonly outsiderEmail?: string;
+}
+
+export interface CredentialTarget {
+  readonly flag: string;
+  readonly key: "creatorEmail" | "approverEmail" | "outsiderEmail";
+  readonly idKey: "creatorUserId" | "approverUserId" | "outsiderAdminUserId";
+  readonly label: string;
+  readonly displayName: string;
+}
+
+export const CREDENTIAL_TARGETS: readonly CredentialTarget[];
+
+export interface SeedStreams {
+  readonly input: NodeJS.ReadStream;
+  readonly output: NodeJS.WritableStream;
 }
 
 export interface SeedConnectionProfile {
@@ -59,6 +79,7 @@ export interface SeedReviewLocationOptions {
   readonly environment?: Readonly<Record<string, string | undefined>>;
   readonly connect?: (connectionString: string) => Promise<SeedSession>;
   readonly log?: (line: string) => void;
+  readonly streams?: SeedStreams;
 }
 
 export function parseSeedArguments(argv: readonly string[]): SeedArguments;
@@ -70,5 +91,9 @@ export function assertNotProductionEnvironment(
 export function assertNoForeignActiveLocations(activeLocationIds: readonly string[]): void;
 export function resolveConnectionProfile(connectionString: string): SeedConnectionProfile;
 export function summarizeSeedResult(insertedByTable: Record<string, number>): SeedSummary;
-export function reportLines(databaseName: string, summary: SeedSummary): readonly string[];
+export function reportLines(
+  databaseName: string,
+  summary: SeedSummary,
+  credentialsSet?: readonly string[],
+): readonly string[];
 export function seedReviewLocation(options?: SeedReviewLocationOptions): Promise<SeedSummary>;

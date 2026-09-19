@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation.js";
 import { PersistedCampaignScreen } from "../../../../../features/campaigns/components/persisted-campaign-screen.js";
 import { CampaignWorkspaceStoreUnavailableError } from "../../../../../server/campaign-persistence-runtime.js";
 import { readWorkspaceCampaignForRequest } from "../../../../../server/campaign-workspace-reads.js";
-import { REVIEW_SIGN_IN_PATH } from "../../../../../server/runtime-authentication.js";
+import { SIGN_IN_PATH } from "../../../../../server/runtime-authentication.js";
 
 export default async function CampaignPage({
   params,
@@ -20,7 +20,7 @@ export default async function CampaignPage({
     notFound();
   }
   // 005A-AC-010. Not signed in is not the same answer as this campaign does not exist.
-  if (!read.authenticated) redirect(REVIEW_SIGN_IN_PATH);
+  if (!read.authenticated) redirect(SIGN_IN_PATH);
   if (read.campaign === undefined) notFound();
   return <PersistedCampaignScreen campaign={read.campaign} />;
 }

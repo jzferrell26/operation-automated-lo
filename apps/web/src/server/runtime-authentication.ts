@@ -20,15 +20,19 @@ import {
   authenticatedWorkspaceMode,
   REVIEW_SURFACE_DISCLOSURE,
 } from "./authenticated-workspace-data.js";
+import { createNotConfiguredEmailAdapter } from "./email/not-configured-email-adapter.js";
+import { createResendEmailAdapter } from "./email/resend-email-adapter.js";
+import type { TransactionalEmailPort } from "./email/transactional-email.js";
 import {
+  createPostgresFirstPartySessionIssuancePort,
   createPostgresFirstPartySessionLookup,
   createPostgresIdentityDirectory,
-  createPostgresReviewSessionPort,
   createPostgresRoleBindingPort,
   createPostgresSessionActivityPort,
   createPostgresSessionDisplayPort,
   firstPartySessionIsActive,
 } from "./postgres-authentication-ports.js";
+import { createPostgresCredentialPort } from "./postgres-credential-ports.js";
 
 /**
  * PRD-005a D5 and D7. The server-only composition of `CampaignCommandPorts`.
@@ -54,6 +58,8 @@ export const RUNTIME_AUTHENTICATION_VARIABLES = Object.freeze([
   "OALO_EMBEDDED_SESSION_ISSUER",
   "OALO_EMBEDDED_SESSION_AUDIENCE",
   "OALO_EMBEDDED_SESSION_PUBLIC_KEYS_JSON",
+  "OALO_RESEND_API_KEY",
+  "OALO_EMAIL_FROM",
 ] as const);
 
 export type RuntimeAuthenticationVariable = (typeof RUNTIME_AUTHENTICATION_VARIABLES)[number];
@@ -81,6 +87,9 @@ const RuntimeAuthenticationEnvironmentSchema = z
     OALO_EMBEDDED_SESSION_ISSUER: z.string().optional(),
     OALO_EMBEDDED_SESSION_AUDIENCE: z.string().optional(),
     OALO_EMBEDDED_SESSION_PUBLIC_KEYS_JSON: z.string().optional(),
+    OALO_RESEND_API_KEY: z.string().optional(),
+    OALO_EMAIL_FROM: z.string().optional(),
+    OALO_SELF_SERVE_SIGNUP: z.string().optional(),
   })
   .passthrough();
 
@@ -257,6 +266,35 @@ function parseEmbeddedPort(
   return Object.freeze(port);
 }
 
+const EMAIL_VARIABLES = Object.freeze(["OALO_RESEND_API_KEY", "OALO_EMAIL_FROM"] as const);
+
+/**
+ * PRD-006a D6. Both variables present selects Resend; both absent selects the not-configured
+ * adapter, which never calls `fetch`; exactly one present is a composition failure, logged by
+ * variable name, in the same shape the embedded set uses. A half-configured sending domain must
+ * not silently degrade into "no email", because an operator who set one of the two believes mail
+ * is going out.
+ *
+ * Synthetic mode never reaches this function: `composeRuntimeAuthentication` returns the static
+ * synthetic ports before any of it runs, and those carry no email port at all.
+ */
+function parseTransactionalEmailPort(
+  environment: RuntimeAuthenticationEnvironment,
+): TransactionalEmailPort {
+  const missing = EMAIL_VARIABLES.filter(
+    (variable) => rawValue(environment, variable) === undefined,
+  );
+  if (missing.length === EMAIL_VARIABLES.length) return createNotConfiguredEmailAdapter();
+  const firstMissing = missing[0];
+  if (firstMissing !== undefined) {
+    throw new RuntimeAuthenticationConfigurationError(firstMissing);
+  }
+  return createResendEmailAdapter({
+    apiKey: requiredValue(environment, "OALO_RESEND_API_KEY"),
+    from: requiredValue(environment, "OALO_EMAIL_FROM"),
+  });
+}
+
 function sslModeFor(
   deploymentEnvironment: "local" | "preview" | "staging" | "production",
   explicit: "disable" | "require" | "verify-full" | undefined,
@@ -296,7 +334,9 @@ function buildVerifiedPorts(environment: RuntimeAuthenticationEnvironment): Camp
     firstPartySessions: createPostgresFirstPartySessionLookup(pool),
     sessionActivity: createPostgresSessionActivityPort(pool),
     sessionDisplay: createPostgresSessionDisplayPort(pool),
-    reviewSessions: createPostgresReviewSessionPort(pool),
+    sessionIssuance: createPostgresFirstPartySessionIssuancePort(pool),
+    credentials: createPostgresCredentialPort(pool),
+    transactionalEmail: parseTransactionalEmailPort(environment),
     mutation,
     ...(embedded === undefined ? {} : { embedded }),
   };
@@ -426,13 +466,14 @@ const CAPABILITIES_BY_ROLE: Readonly<Record<ApplicationRole, readonly Capability
     platform_support: Object.freeze(["location:read"] as const),
   });
 
+/** PRD-006b D5. The labels a loan officer reads, not the tokens the database stores. */
 const ROLE_LABELS: Readonly<Record<ApplicationRole, string>> = Object.freeze({
-  location_admin: "Location administrator",
+  location_admin: "Workspace owner",
   campaign_creator: "Campaign creator",
-  campaign_approver: "Campaign approver",
-  campaign_publisher: "Campaign publisher",
+  campaign_approver: "Approver",
+  campaign_publisher: "Publisher",
   viewer: "Viewer",
-  platform_support: "Platform support",
+  platform_support: "Support",
 });
 
 /**
@@ -442,11 +483,17 @@ const ROLE_LABELS: Readonly<Record<ApplicationRole, string>> = Object.freeze({
  * thing here.
  */
 export const VERIFIED_SESSION_SOURCE =
-  "Verified first-party session. No HighLevel, Meta, or Stripe connection on this deployment.";
+  "Signed in with your email. HighLevel, Meta, and Stripe aren't connected yet.";
 
 export const CSRF_META_NAME = "oalo-csrf-token";
-export const REVIEW_SIGN_IN_PATH = "/review/sign-in";
-export const REVIEW_SIGN_OUT_PATH = "/api/review/session/sign-out";
+
+/**
+ * PRD-006a D9. The persona selector's two paths are gone with it. Everything that used to send a
+ * visitor to `/review/sign-in` now sends them to the email and password sign-in page, and the
+ * shell's sign-out control posts to the auth route rather than the review one.
+ */
+export const SIGN_IN_PATH = "/sign-in";
+export const SIGN_OUT_PATH = "/api/auth/sign-out";
 
 export interface RuntimeShellSession {
   readonly mode: RuntimeAuthenticationMode;

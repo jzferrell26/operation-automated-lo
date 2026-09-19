@@ -247,16 +247,14 @@ describe("review surface honesty invariant", () => {
       "Review surface. Demo navigation only. No live entitlement or provider state is evaluated.",
     );
     /**
-     * Since PRD-005a the review shell states the session it actually has. Without a verified
-     * first-party session that is "Not signed in", not the fixture's demo persona, so the fixture
-     * provenance string must be absent rather than present.
+     * Since PRD-005a the shell states the session it actually has. Without one that is "You're
+     * signed out", not the fixture's demo persona, so the fixture provenance string must be
+     * absent rather than present. PRD-006b D4 is what those two sentences now say.
      */
     expect(container.textContent).not.toContain("Demo session. No validated HighLevel location.");
     expect(container.textContent).not.toContain("Demo reviewer");
     expect(container.textContent).toContain("Not signed in");
-    expect(container.textContent).toContain(
-      "No first-party session was presented, so no location was resolved.",
-    );
+    expect(container.textContent).toContain("Sign in to see your workspace.");
     expect(screen.getByText("REVIEW / DEMO / NOT CONNECTED")).toBeInTheDocument();
   });
 

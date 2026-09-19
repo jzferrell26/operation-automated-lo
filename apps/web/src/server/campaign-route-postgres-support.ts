@@ -345,26 +345,6 @@ export function browserRequest(input: {
   });
 }
 
-/**
- * The request the review sign-in form sends: no session cookie, because there is none yet, and no
- * CSRF token, because there is no session to bind one to. Origin and host are the whole gate.
- */
-export function signInRequest(input: {
-  readonly body: unknown;
-  readonly overrides?: Readonly<{ origin?: string; host?: string }>;
-}): Request {
-  const overrides = input.overrides ?? {};
-  return new Request(`${REVIEW_ORIGIN}/api/review/session`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      origin: overrides.origin ?? REVIEW_ORIGIN,
-      host: overrides.host ?? REVIEW_HOST,
-    },
-    body: JSON.stringify(input.body),
-  });
-}
-
 /** Resolves a principal the way a page render does: through the production read resolver. */
 export async function principalForSession(
   session: IssuedSession,

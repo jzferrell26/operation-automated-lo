@@ -54,8 +54,111 @@ describe("seed-review-location arguments", () => {
     ).toEqual({
       confirmDatabase: "oalo_review",
       expectUnchanged: true,
+      passwordStdin: false,
       reviewDatabaseUrl: REVIEW_URL,
+      setPassword: false,
     });
+  });
+
+  /** PRD-006a D8 and 006A-AC-029. The credential flags travel as a set or not at all. */
+  it("requires the three email flags with --set-password", () => {
+    expect(() =>
+      parseSeedArguments([
+        "--review-database-url",
+        REVIEW_URL,
+        "--confirm-database",
+        "oalo_review",
+        "--set-password",
+        "--creator-email",
+        "creator@example.test",
+      ]),
+    ).toThrow("--set-password requires --creator-email, --approver-email, --outsider-email.");
+  });
+
+  it("refuses an email flag without --set-password", () => {
+    expect(() =>
+      parseSeedArguments([
+        "--review-database-url",
+        REVIEW_URL,
+        "--confirm-database",
+        "oalo_review",
+        "--creator-email",
+        "creator@example.test",
+      ]),
+    ).toThrow("--creator-email is only accepted together with --set-password");
+  });
+
+  it("refuses --password-stdin without --set-password", () => {
+    expect(() =>
+      parseSeedArguments([
+        "--review-database-url",
+        REVIEW_URL,
+        "--confirm-database",
+        "oalo_review",
+        "--password-stdin",
+      ]),
+    ).toThrow("--password-stdin is only accepted together with --set-password");
+  });
+
+  it("refuses a malformed address without echoing it", () => {
+    let message = "";
+    try {
+      parseSeedArguments([
+        "--review-database-url",
+        REVIEW_URL,
+        "--confirm-database",
+        "oalo_review",
+        "--set-password",
+        "--creator-email",
+        "not-an-address",
+        "--approver-email",
+        "approver@example.test",
+        "--outsider-email",
+        "outsider@example.test",
+      ]);
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error);
+    }
+
+    expect(message).toContain("--creator-email is not a well-formed email address.");
+    expect(message).not.toContain("not-an-address");
+  });
+
+  it("refuses the same address for two seeded people", () => {
+    expect(() =>
+      parseSeedArguments([
+        "--review-database-url",
+        REVIEW_URL,
+        "--confirm-database",
+        "oalo_review",
+        "--set-password",
+        "--creator-email",
+        "same@example.test",
+        "--approver-email",
+        "same@example.test",
+        "--outsider-email",
+        "outsider@example.test",
+      ]),
+    ).toThrow("Each seeded user needs its own email address.");
+  });
+
+  it("normalizes each address the way the credential table stores it", () => {
+    const parsed = parseSeedArguments([
+      "--review-database-url",
+      REVIEW_URL,
+      "--confirm-database",
+      "oalo_review",
+      "--set-password",
+      "--creator-email",
+      "  Creator@Example.TEST ",
+      "--approver-email",
+      "approver@example.test",
+      "--outsider-email",
+      "outsider@example.test",
+    ]);
+
+    expect(parsed.creatorEmail).toBe("creator@example.test");
+    expect(parsed.setPassword).toBe(true);
   });
 });
 
@@ -118,11 +221,15 @@ describe("seed-review-location reporting", () => {
     const lines = reportLines("oalo_review", summarizeSeedResult({ "platform.locations": 0 }));
     const text = lines.join("\n");
 
-    expect(text).toContain(`OALO_REVIEW_LOCATION_ID=${SEED_IDS.reviewLocationId}`);
-    expect(text).toContain(`OALO_REVIEW_OUTSIDER_LOCATION_ID=${SEED_IDS.outsiderLocationId}`);
-    expect(text).toContain("no secret is printed here");
+    // PRD-006a D9. The two ids PRD-005e's deployed proof reads still print, under neutral labels
+    // now that no application environment variable is named after them.
+    expect(text).toContain(`review location id: ${SEED_IDS.reviewLocationId}`);
+    expect(text).toContain(`outsider location id: ${SEED_IDS.outsiderLocationId}`);
+    expect(text).not.toContain("OALO_REVIEW_LOCATION_ID");
+    expect(text).not.toContain("OALO_REVIEW_OUTSIDER_LOCATION_ID");
+    expect(text).not.toContain("OALO_REVIEW_SIGNIN_SECRET");
+    expect(text).toContain("nothing secret is printed here");
     expect(text).not.toMatch(/secret\s*[:=]\s*\S/iu);
-    expect(text).not.toContain("password");
   });
 });
 

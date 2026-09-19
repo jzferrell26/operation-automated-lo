@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 import {
   createPostgresFirstPartySessionLookup,
   createPostgresIdentityDirectory,
-  createPostgresReviewSessionPort,
+  createPostgresFirstPartySessionIssuancePort,
   createPostgresRoleBindingPort,
   createPostgresSessionActivityPort,
   createPostgresSessionDisplayPort,
@@ -312,25 +312,8 @@ describe("session display port (005A-AC-011)", () => {
   });
 });
 
-describe("review session port (PRD-005b D4)", () => {
+describe("first-party session issuance port (PRD-005b D4, as PRD-006a D9 leaves it)", () => {
   const secretHash = createHash("sha256").update("review-session-secret").digest("hex");
-
-  it("resolves a persona through the definer function", async () => {
-    const pool = createRecordingPool({
-      "runtime.resolve-review-persona.v1": [{ user_id: ACTOR_ID }],
-    });
-
-    expect(
-      await createPostgresReviewSessionPort(pool).resolvePersona({
-        locationId: LOCATION_ID,
-        bindingRole: "creator",
-      }),
-    ).toBe(ACTOR_ID);
-
-    const sent = contractRequests(pool);
-    expect(sent[0]?.text).toContain("platform.resolve_review_persona");
-    expect(sent[0]?.values).toEqual([LOCATION_ID, "creator"]);
-  });
 
   it("issues with the hash only and returns a canonical session reference", async () => {
     const pool = createRecordingPool({
@@ -338,13 +321,14 @@ describe("review session port (PRD-005b D4)", () => {
     });
 
     expect(
-      await createPostgresReviewSessionPort(pool).issue({
+      await createPostgresFirstPartySessionIssuancePort(pool).issue({
         locationId: LOCATION_ID,
         userId: ACTOR_ID,
         bindingRole: "creator",
         sessionRole: "campaign_creator",
         sessionSecretHash: secretHash,
         lifetimeSeconds: 43_200,
+        issuedBy: "password_sign_in",
         correlationRef: "correlation_session_0123456789abcdef01234567",
       }),
     ).toBe(formatSessionRef(SESSION_ID));
@@ -358,6 +342,7 @@ describe("review session port (PRD-005b D4)", () => {
       "campaign_creator",
       secretHash,
       43_200,
+      "password_sign_in",
       "correlation_session_0123456789abcdef01234567",
     ]);
     expect(JSON.stringify(pool.requests)).not.toContain("review-session-secret");
@@ -369,7 +354,7 @@ describe("review session port (PRD-005b D4)", () => {
     });
 
     expect(
-      await createPostgresReviewSessionPort(pool).revoke({
+      await createPostgresFirstPartySessionIssuancePort(pool).revoke({
         sessionRef: formatSessionRef(SESSION_ID),
         reason: "sign_out",
         correlationRef: "correlation_signOut_0123456789abcdef01234",
@@ -389,7 +374,7 @@ describe("review session port (PRD-005b D4)", () => {
     const pool = createRecordingPool({});
 
     expect(
-      await createPostgresReviewSessionPort(pool).revoke({
+      await createPostgresFirstPartySessionIssuancePort(pool).revoke({
         sessionRef: "session-not-canonical",
         reason: "sign_out",
         correlationRef: "correlation_signOut_0123456789abcdef01234",

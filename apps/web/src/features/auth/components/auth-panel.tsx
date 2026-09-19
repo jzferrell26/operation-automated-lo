@@ -1,0 +1,26 @@
+import { Card } from "@oalo/ui";
+import type { ReactNode } from "react";
+
+import styles from "./auth-form.module.css";
+
+/**
+ * The frame every auth page shares: one centred panel, a title, an optional lead, and the form.
+ * PRD-006d reviews this; keeping it in one component means that review changes one file.
+ */
+export function AuthPanel({
+  title,
+  lead,
+  children,
+}: Readonly<{ title: string; lead?: string; children: ReactNode }>): ReactNode {
+  return (
+    <div className={styles.page}>
+      <Card className={styles.panel}>
+        <header className={styles.header}>
+          <h1>{title}</h1>
+          {lead === undefined ? null : <p>{lead}</p>}
+        </header>
+        {children}
+      </Card>
+    </div>
+  );
+}

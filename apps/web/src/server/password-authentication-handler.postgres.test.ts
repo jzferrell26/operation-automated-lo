@@ -164,6 +164,29 @@ async function signIn(
   return handlePasswordSignIn(authRequest("/api/auth/sign-in", body, overrides));
 }
 
+/**
+ * Signs `email` in and proves it works, applies `change` to the account, then proves the next
+ * sign-in is refused with the same answer a wrong password gets. The suspended-user and
+ * revoked-binding proofs of 006A-AC-013 differ only in the change.
+ */
+async function expectSignInRefusedAfter(
+  email: string,
+  change: () => Promise<unknown>,
+): Promise<void> {
+  const before = await signIn(
+    { email, password: PASSWORD },
+    { clientAddress: nextClientAddress() },
+  );
+  expect(before.status).toBe(200);
+
+  await change();
+
+  const after = await signIn({ email, password: PASSWORD }, { clientAddress: nextClientAddress() });
+  expect(after.status).toBe(401);
+  expect(await after.text()).toBe('{"error":"AUTH_CREDENTIALS_REJECTED"}');
+  expect(after.headers.get("set-cookie")).toBeNull();
+}
+
 async function newestSessionRefFor(userId: string): Promise<string> {
   const sessions = await readFirstPartySessionsForUser(pool, userId);
   const newest = sessions[0];
@@ -302,21 +325,9 @@ describe("POST /api/auth/sign-in", () => {
   it("refuses a person whose last binding was revoked (006A-AC-013)", async () => {
     // The password is right and the account is active. What is missing is a binding that grants a
     // session, and the answer is the same one a wrong password gets.
-    const before = await signIn(
-      { email: UNBOUND_EMAIL, password: PASSWORD },
-      { clientAddress: nextClientAddress() },
+    await expectSignInRefusedAfter(UNBOUND_EMAIL, () =>
+      revokeReviewBinding(pool, location.locationId, unboundId, "publisher"),
     );
-    expect(before.status).toBe(200);
-
-    await revokeReviewBinding(pool, location.locationId, unboundId, "publisher");
-
-    const after = await signIn(
-      { email: UNBOUND_EMAIL, password: PASSWORD },
-      { clientAddress: nextClientAddress() },
-    );
-    expect(after.status).toBe(401);
-    expect(await after.text()).toBe('{"error":"AUTH_CREDENTIALS_REJECTED"}');
-    expect(after.headers.get("set-cookie")).toBeNull();
   });
 
   /**
@@ -385,21 +396,7 @@ describe("POST /api/auth/sign-in", () => {
   it("refuses a suspended person the same way (006A-AC-013)", async () => {
     // The suspended person is suspended here rather than in the shared fixture, so every other
     // proof in this file still has a person it can sign in as.
-    const before = await signIn(
-      { email: SUSPENDED_EMAIL, password: PASSWORD },
-      { clientAddress: nextClientAddress() },
-    );
-    expect(before.status).toBe(200);
-
-    await suspendReviewActor(pool, suspendedId);
-
-    const after = await signIn(
-      { email: SUSPENDED_EMAIL, password: PASSWORD },
-      { clientAddress: nextClientAddress() },
-    );
-    expect(after.status).toBe(401);
-    expect(await after.text()).toBe('{"error":"AUTH_CREDENTIALS_REJECTED"}');
-    expect(after.headers.get("set-cookie")).toBeNull();
+    await expectSignInRefusedAfter(SUSPENDED_EMAIL, () => suspendReviewActor(pool, suspendedId));
   });
 
   it("rejects an identity field in the body with 400 (006A-AC-016)", async () => {

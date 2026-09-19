@@ -186,38 +186,70 @@ describe("campaign approval handler", () => {
     await store.enter();
     const session = sessionFixture();
     const draft = await persistDraft(session.ports, session.creatorHeaders);
+    const approvalPayload = {
+      campaignRef: draft.campaignRef,
+      decision: "approved" as const,
+      expectedCampaignVersionRef: draft.campaignVersionRef,
+      expectedManifestHash: draft.manifestHash,
+      expectedPreflightResultHash: draft.resultHash,
+      expectedRowVersion: 1,
+    };
     const first = await handleCampaignApproval(
-      approveRequest(
-        {
-          campaignRef: draft.campaignRef,
-          decision: "approved",
-          expectedCampaignVersionRef: draft.campaignVersionRef,
-          expectedManifestHash: draft.manifestHash,
-          expectedPreflightResultHash: draft.resultHash,
-          expectedRowVersion: 1,
-        },
-        session.approverHeaders,
-      ),
+      approveRequest(approvalPayload, session.approverHeaders),
       store.env(),
       session.ports,
     );
     expect(first.status).toBe(200);
     const body = (await first.json()) as { decision: string; duplicate: boolean; state: string };
     expect(body).toMatchObject({ decision: "approved", duplicate: false, state: "approved" });
+    expect(first.headers.get("x-oalo-correlation-ref")).toMatch(/^correlation_approve_[0-9a-f]+$/u);
+
+    // The browser retries with byte-identical payload, including the pre-approval
+    // expectedRowVersion it read before submitting (it never re-fetches evidence first). D5
+    // requires this to resolve as the idempotent duplicate, not a 409 conflict.
     const retry = await handleCampaignApproval(
-      approveRequest(
-        {
-          campaignRef: draft.campaignRef,
-          decision: "approved",
-          expectedCampaignVersionRef: draft.campaignVersionRef,
-        },
-        session.approverHeaders,
-      ),
+      approveRequest(approvalPayload, session.approverHeaders),
       store.env(),
       session.ports,
     );
     expect(retry.status).toBe(200);
     await expect(retry.json()).resolves.toMatchObject({ duplicate: true, decision: "approved" });
+    expect(retry.headers.get("x-oalo-correlation-ref")).toMatch(/^correlation_approve_[0-9a-f]+$/u);
+  });
+
+  it("carries the canonical correlation reference on the response and echoes an accepted tracing header", async () => {
+    await store.enter();
+    const session = sessionFixture();
+    const draft = await persistDraft(session.ports, session.creatorHeaders);
+
+    const withUuidHeader = await handleCampaignApproval(
+      approveRequest(
+        { campaignRef: draft.campaignRef, decision: "approved", expectedRowVersion: 1 },
+        { ...session.approverHeaders, "x-correlation-id": "3fa85f64-5717-4562-b3fc-2c963f66afa6" },
+      ),
+      store.env(),
+      session.ports,
+    );
+    expect(withUuidHeader.status).toBe(200);
+    expect(withUuidHeader.headers.get("x-oalo-correlation-ref")).toMatch(
+      /^correlation_approve_[0-9a-f]+$/u,
+    );
+    expect(withUuidHeader.headers.get("x-correlation-id")).toBe(
+      "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    );
+
+    const withoutHeader = await handleCampaignApproval(
+      approveRequest(
+        { campaignRef: draft.campaignRef, decision: "approved" },
+        session.approverHeaders,
+      ),
+      store.env(),
+      session.ports,
+    );
+    expect(withoutHeader.headers.get("x-correlation-id")).toBeNull();
+    expect(withoutHeader.headers.get("x-oalo-correlation-ref")).toMatch(
+      /^correlation_approve_[0-9a-f]+$/u,
+    );
   });
 
   it("rejects stale browser version hints without mutating the campaign", async () => {
@@ -234,6 +266,9 @@ describe("campaign approval handler", () => {
     );
     expect(response.status).toBe(409);
     await expect(response.json()).resolves.toEqual({ error: "CAMPAIGN_APPROVAL_CONFLICT" });
+    expect(response.headers.get("x-oalo-correlation-ref")).toMatch(
+      /^correlation_approve_[0-9a-f]+$/u,
+    );
   });
 
   it("returns 401 when review mode has no verified session", async () => {
@@ -247,5 +282,8 @@ describe("campaign approval handler", () => {
       createDefaultCampaignCommandPorts(),
     );
     expect(response.status).toBe(401);
+    expect(response.headers.get("x-oalo-correlation-ref")).toMatch(
+      /^correlation_approve_[0-9a-f]+$/u,
+    );
   });
 });

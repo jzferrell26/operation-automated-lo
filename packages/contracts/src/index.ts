@@ -121,6 +121,8 @@ export {
   type PreflightRules,
 } from "./campaign-foundation.js";
 
+export { CorrelationReferenceSchema, OpaqueReferenceSchema } from "./campaign-foundation.js";
+
 export {
   AcceptedGenerationSchema,
   AiAssistedBrandProfileReviewSchema,

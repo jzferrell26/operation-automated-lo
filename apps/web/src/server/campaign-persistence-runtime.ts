@@ -103,13 +103,21 @@ export async function resetCampaignDatabasePoolForTests(): Promise<void> {
   await previous?.close();
 }
 
-function correlationIdFor(principal: Readonly<AuthenticatedPrincipal>): string {
+function defaultCorrelationIdFor(principal: Readonly<AuthenticatedPrincipal>): string {
   return `correlation_workspace_${principal.sessionId}`;
 }
 
+/**
+ * Builds the persistence adapter for one authenticated request. `correlationRef` should be the
+ * canonical reference this request's route boundary already derived (see
+ * `correlation-boundary.ts`), so the same value reaches the transaction, the command, and the
+ * event. Read-only callers that have no request-scoped correlation reference of their own may
+ * omit it and fall back to a workspace-session-derived value.
+ */
 export function createCampaignPersistenceAdapter(
   principal: Readonly<AuthenticatedPrincipal>,
   environment: unknown = process.env,
+  correlationRef: string = defaultCorrelationIdFor(principal),
 ): CampaignPersistenceAdapter {
   const kind = campaignPersistenceKind(environment);
   if (kind === "filesystem") {
@@ -128,10 +136,7 @@ export function createCampaignPersistenceAdapter(
   }
 
   const pool = campaignDatabasePool(environment);
-  const authority = createPrincipalBoundTenantContextAuthority(
-    principal,
-    correlationIdFor(principal),
-  );
+  const authority = createPrincipalBoundTenantContextAuthority(principal, correlationRef);
   const versionRepository = createPostgresCampaignVersionRepository(pool, authority);
   const readRepository = createPostgresCampaignReadRepository(pool, authority);
   return {

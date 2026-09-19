@@ -16,3 +16,6 @@ Current in-work PRDs:
   - 004a operator smoke: **blocked** (`GGL-B01`–`B03`: `OALO_DATABASE_URL`, `OALO_REVIEW_SURFACE=authorized`, smoke log)
   - 004b portal + Test Link: **not started** (`GGL-B04`–`B07`; portal unsigned-in)
   - 004c Marketplace submission: **not started** (`GGL-B09`; blocked on smoke + Test Link)
+- PRD-005 Authenticated Review Runtime (completion review findings C1 through C4, 2026-09-19)
+  - moved from `backlog/` to `in-work/` on 2026-09-19 at gauntlet raid start; ledger section "Gauntlet raid: completion review C1 through C4 (PRD-005)" in [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md)
+  - 005a runtime authentication composition, 005b review session issuance and store, 005c correlation and retry idempotency, 005d handoff reconciliation, 005e deployed qualification

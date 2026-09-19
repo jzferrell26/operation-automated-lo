@@ -26,6 +26,7 @@ Planned PRDs not yet in implementation. All new PRD folders are created here.
 | PRD | Folder | Authorization |
 |---|---|---|
 | PRD-002 | [prd-002-operation-automated-lo-add-ons/](prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md) | Future add-on portfolio. **Not authorized for implementation.** Independently gated expansion modules preserved for after PRD-001 core completion. |
+| PRD-005 | [../in-work/prd-005-authenticated-review-runtime/](../in-work/prd-005-authenticated-review-runtime/prd-005-authenticated-review-runtime-index.md) | Authored here on 2026-09-19 for completion review findings C1 through C4; **moved to `in-work/` the same day** when the gauntlet raid started. Listed for lineage only. |
 
 PRD-001 lives in `library/requirements/in-work/` and is the only authorized founding implementation.
 

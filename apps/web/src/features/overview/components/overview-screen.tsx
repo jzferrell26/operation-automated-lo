@@ -5,6 +5,7 @@ import {
   NOT_CONNECTED_SOURCE,
   SUPPORT_DETAILS_LABELS,
 } from "../../../copy/user-language.js";
+import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
 import { SupportDetails } from "../../shell/components/support-details.js";
 import type {
   DeepReadonly,
@@ -103,7 +104,7 @@ export function OverviewScreen({
             <h2 id="quick-actions-title">Quick actions</h2>
           </div>
         </div>
-        <div className={styles.quickActions}>
+        <div className={styles.quickActions} data-tour={GUIDED_SETUP_ANCHORS.setupWelcome}>
           <a className="oalo-action-link" href="/marketing/campaigns/new">
             Create an Open House Boost
           </a>

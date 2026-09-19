@@ -150,3 +150,10 @@
     transition-duration: 0ms;
   }
 }
+
+/* PRD-006c D3 step 6. The hand-off control for a user who cannot approve. */
+.handOff {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}

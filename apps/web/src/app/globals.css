@@ -86,3 +86,19 @@ section {
 code {
   color: var(--ac-primary);
 }
+
+/* PRD-006c D6. The guided setup's highlight.
+ *
+ * It is the focus ring the brief already defines (2 px, 3 px offset), drawn
+ * around the element the current step points at, plus the panel's own words.
+ * It is deliberately not a dimming overlay: a scrim over the rest of the page
+ * changes the contrast of every word on it, which is how a walkthrough turns an
+ * accessible screen into an inaccessible one. The provider sets the attribute
+ * on exactly one element at a time and removes it when the step closes.
+ */
+[data-guided-setup-highlight="true"] {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--radius-control);
+  scroll-margin-block: var(--space-8);
+}

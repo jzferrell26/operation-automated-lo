@@ -10,6 +10,7 @@ import {
   CHECK_RESULT_READY,
   SUPPORT_DETAILS_LABELS,
 } from "../../../copy/user-language.js";
+import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
 import { SupportDetails } from "../../shell/components/support-details.js";
 import { CampaignApprovalControls } from "./campaign-approval-controls.js";
 import styles from "./open-house-draft-builder.module.css";
@@ -88,7 +89,7 @@ export function PersistedCampaignScreen({
       </div>
 
       <section className={styles.review} aria-labelledby="campaign-check-title">
-        <div className={styles.reviewHeading}>
+        <div className={styles.reviewHeading} data-tour={GUIDED_SETUP_ANCHORS.campaignCheckResult}>
           <div>
             <p className={styles.eyebrow}>Campaign check</p>
             <h2 id="campaign-check-title">
@@ -96,14 +97,17 @@ export function PersistedCampaignScreen({
             </h2>
           </div>
         </div>
-        {campaign.preflight.findings.length === 0 ? (
-          <Card padding="md">
-            <strong>Nothing to fix.</strong>
-            <p>This campaign meets every rule we check. An approver can sign off on it now.</p>
-          </Card>
-        ) : (
-          <div className={styles.findings}>
-            {campaign.preflight.findings.map((finding) => (
+        {/* PRD-006c D2. The anchor is on the container, not on the list, because step 5 points at
+            what the checks found whether or not they found anything, and an anchor that exists
+            only in one branch is an anchor a step can fail to find. */}
+        <div className={styles.findings} data-tour={GUIDED_SETUP_ANCHORS.campaignCheckFindings}>
+          {campaign.preflight.findings.length === 0 ? (
+            <Card padding="md">
+              <strong>Nothing to fix.</strong>
+              <p>This campaign meets every rule we check. An approver can sign off on it now.</p>
+            </Card>
+          ) : (
+            campaign.preflight.findings.map((finding) => (
               <Card key={finding.ruleCode} padding="md">
                 <strong>{finding.description}</strong>
                 <p>{finding.remediation}</p>
@@ -112,9 +116,9 @@ export function PersistedCampaignScreen({
                 </small>
                 <SupportDetails rows={[[SUPPORT_DETAILS_LABELS.rule, finding.ruleCode]]} />
               </Card>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </section>
 
       {campaign.approval !== undefined ? (
@@ -154,6 +158,7 @@ export function PersistedCampaignScreen({
       </section>
 
       <CampaignApprovalControls
+        campaignHref={campaign.detailHref}
         campaignRef={campaign.campaignRef}
         campaignVersionRef={campaign.campaignVersionRef}
         manifestHash={campaign.manifestHash}

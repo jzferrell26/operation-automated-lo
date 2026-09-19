@@ -1,7 +1,15 @@
+import { CAMPAIGN_APPROVAL_ROLES } from "@oalo/application";
 import { headers } from "next/headers.js";
 import type { ReactNode } from "react";
 
-import { SIGN_OUT_LABEL, SIGNED_OUT_HEADING, SIGNED_OUT_PROMPT } from "../../copy/user-language.js";
+import {
+  ROLE_LABELS,
+  SIGN_OUT_LABEL,
+  SIGNED_OUT_HEADING,
+  SIGNED_OUT_PROMPT,
+} from "../../copy/user-language.js";
+import { GuidedSetupProvider } from "../../features/guided-setup/guided-setup-provider.js";
+import { GuidedSetupShellControls } from "../../features/guided-setup/guided-setup-progress.js";
 import { AppShell } from "../../features/shell/components/app-shell.js";
 import {
   projectNavigationForSession,
@@ -17,6 +25,7 @@ import {
   SIGN_OUT_PATH,
   resolveRuntimeShellSession,
 } from "../../server/runtime-authentication.js";
+import { readSetupPreferencesForRequest } from "../../server/setup-preferences.js";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +52,19 @@ const SIGNED_OUT_SESSION: WorkspaceSessionView = Object.freeze({
 });
 
 /**
+ * PRD-006c D5 step 6. Which branch of the approve step this person sees.
+ *
+ * The shell projects a role into the label a user reads, and the label is what the layout has, so
+ * the comparison is made in label space. The set is built from the same `CAMPAIGN_APPROVAL_ROLES`
+ * the approval command enforces rather than typed out again, so the step can never offer to
+ * approve to somebody the command would refuse. A self-serve account from PRD-006a is a
+ * `location_admin` and reaches the approve branch; a seeded creator reaches the hand-off branch.
+ */
+const APPROVER_CAPABLE_ROLE_LABELS: ReadonlySet<string> = new Set(
+  CAMPAIGN_APPROVAL_ROLES.map((role) => ROLE_LABELS[role]),
+);
+
+/**
  * PRD-005a 005A-AC-011 and 005A-AC-012.
  *
  * In synthetic mode nothing changes: the shell renders the fixture session exactly as before.
@@ -54,6 +76,10 @@ const SIGNED_OUT_SESSION: WorkspaceSessionView = Object.freeze({
  *
  * The CSRF element carries `createSessionBoundCsrfToken` output, an HMAC of the session reference
  * under the server secret. The `__Host-oalo_session` cookie value never reaches the document.
+ *
+ * PRD-006c D5 adds the guided setup. Progress and the profile are read here, on the server, before
+ * anything renders, and handed to the provider as props. That is what makes the welcome step part
+ * of the first HTML the browser receives rather than something that appears a moment later.
  */
 export default async function AuthenticatedLayout({ children }: Readonly<{ children: ReactNode }>) {
   const workspace = loadAuthenticatedWorkspace();
@@ -72,45 +98,65 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
   }
 
   const incoming = await headers();
-  const shell = await resolveRuntimeShellSession(
-    new Request("https://oalo.local/", { headers: incoming }),
-    process.env,
-  );
+  const request = new Request("https://oalo.local/", { headers: incoming });
+  const shell = await resolveRuntimeShellSession(request, process.env);
   const session = shell.session ?? SIGNED_OUT_SESSION;
+  const preferences = shell.authenticated
+    ? await readSetupPreferencesForRequest(request, process.env)
+    : undefined;
+
+  const shellBody = (
+    <AppShell
+      headerControls={shell.authenticated ? <GuidedSetupShellControls /> : undefined}
+      navigation={projectNavigationForSession(workspace.ui.navigation, session)}
+      session={session}
+      workspaceMode={workspace.mode}
+    >
+      {shell.authenticated ? (
+        <form action={SIGN_OUT_PATH} method="post">
+          {/*
+            A form post cannot set x-csrf-token, so the session-bound token travels as a field and
+            the sign-out route promotes it to the header before the 005a mutation gate sees it.
+            The value is the same HMAC the meta element carries; the cookie never reaches the
+            document either way.
+          */}
+          {shell.csrfToken === undefined ? null : (
+            <input name="csrfToken" type="hidden" value={shell.csrfToken} />
+          )}
+          <button type="submit">{SIGN_OUT_LABEL}</button>
+        </form>
+      ) : (
+        <p>
+          {SIGNED_OUT_HEADING}{" "}
+          <a className="oalo-action-link" href={SIGN_IN_PATH}>
+            {SIGNED_OUT_PROMPT}
+          </a>
+        </p>
+      )}
+      {children}
+    </AppShell>
+  );
 
   return (
     <>
       {shell.csrfToken === undefined ? null : (
         <meta content={shell.csrfToken} name={CSRF_META_NAME} />
       )}
-      <AppShell
-        navigation={projectNavigationForSession(workspace.ui.navigation, session)}
-        session={session}
-        workspaceMode={workspace.mode}
-      >
-        {shell.authenticated ? (
-          <form action={SIGN_OUT_PATH} method="post">
-            {/*
-              A form post cannot set x-csrf-token, so the session-bound token travels as a field and
-              the sign-out route promotes it to the header before the 005a mutation gate sees it.
-              The value is the same HMAC the meta element carries; the cookie never reaches the
-              document either way.
-            */}
-            {shell.csrfToken === undefined ? null : (
-              <input name="csrfToken" type="hidden" value={shell.csrfToken} />
-            )}
-            <button type="submit">{SIGN_OUT_LABEL}</button>
-          </form>
-        ) : (
-          <p>
-            {SIGNED_OUT_HEADING}{" "}
-            <a className="oalo-action-link" href={SIGN_IN_PATH}>
-              {SIGNED_OUT_PROMPT}
-            </a>
-          </p>
-        )}
-        {children}
-      </AppShell>
+      {preferences === undefined ? (
+        shellBody
+      ) : (
+        <GuidedSetupProvider
+          canApprove={APPROVER_CAPABLE_ROLE_LABELS.has(session.user.roleLabel)}
+          enabled
+          initialProfile={preferences.profile}
+          initialProgress={preferences.progress}
+          serverNowIso={new Date().toISOString()}
+          sessionDisplayName={session.user.displayName}
+          sessionWorkspaceName={session.location.displayName}
+        >
+          {shellBody}
+        </GuidedSetupProvider>
+      )}
     </>
   );
 }

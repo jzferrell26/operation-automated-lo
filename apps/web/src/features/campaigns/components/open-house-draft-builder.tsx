@@ -8,6 +8,14 @@ import {
   CHECK_RESULT_READY,
   SUPPORT_DETAILS_LABELS,
 } from "../../../copy/user-language.js";
+import { GUIDED_SETUP_STEPS } from "../../../copy/guided-setup-messages.js";
+import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
+import { useGuidedSetup } from "../../guided-setup/guided-setup-context.js";
+import {
+  CAMPAIGN_FIELD_PLACEHOLDERS,
+  campaignDraftPrefill,
+  type SetupProfile,
+} from "../../guided-setup/model/profile.js";
 import { isMappedErrorCode, userMessageSentence } from "../../http/user-messages.js";
 import { postInternalJson } from "../../http/internal-api.js";
 import { SupportDetails } from "../../shell/components/support-details.js";
@@ -37,7 +45,21 @@ type PreflightResponse = Readonly<{
   providerPublicationAuthorized: false;
 }>;
 
-export function OpenHouseDraftBuilder() {
+/**
+ * PRD-006c D3's prefill rule. The demo defaults this screen shipped with are gone.
+ *
+ * Every field is now either derived from the profile the guided setup collected, or empty with a
+ * placeholder that says what belongs there, or one of five pieces of starter wording that the
+ * screen labels as starter wording. A signed-in user never sees a value the product invented and
+ * presented as theirs: "123 Main Street, Dallas" reads exactly like an address somebody typed, and
+ * an approver has no way to tell the difference.
+ *
+ * `profile` is passed in by the page, which reads it on the server, so this component makes no
+ * request of its own to find out who the user is.
+ */
+export function OpenHouseDraftBuilder({
+  profile,
+}: Readonly<{ profile?: SetupProfile | undefined }> = {}) {
   const [result, setResult] = useState<PreflightResponse | null>(null);
   /**
    * `null` means nothing has gone wrong. `undefined` means something went wrong and the route gave
@@ -45,6 +67,14 @@ export function OpenHouseDraftBuilder() {
    */
   const [errorCode, setErrorCode] = useState<string | null | undefined>(null);
   const [submitting, setSubmitting] = useState(false);
+  const guidedSetup = useGuidedSetup();
+  /**
+   * The walkthrough's own copy wins when it has one. The page reads the profile on the server, and
+   * the step before this one writes it a moment earlier, so on a client navigation the server's
+   * copy can be one write behind. Preferring the copy in memory means the Realtor's name the user
+   * just typed is already in the field when the screen appears, rather than a render later.
+   */
+  const prefill = campaignDraftPrefill(guidedSetup?.profile ?? profile);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -83,7 +113,15 @@ export function OpenHouseDraftBuilder() {
         return;
       }
       setErrorCode(null);
-      setResult(payload as PreflightResponse);
+      const saved = payload as PreflightResponse;
+      setResult(saved);
+      // PRD-006c D3 step 4. The walkthrough finishes this step when the checks have actually run,
+      // which only this component knows. It is a callback up the tree the builder is already in.
+      guidedSetup?.reportCampaignSaved({
+        campaignRef: saved.campaignRef,
+        detailHref: saved.detailHref,
+        findings: saved.findings,
+      });
     } catch {
       setErrorCode(undefined);
     } finally {
@@ -115,85 +153,102 @@ export function OpenHouseDraftBuilder() {
       <form className={styles.form} onSubmit={handleSubmit}>
         <fieldset>
           <legend>The property and the open house</legend>
-          <label>
-            Property address
-            <input name="address" required defaultValue="123 Main Street, Dallas" />
-          </label>
-          <label>
-            State
-            <input name="stateCode" required maxLength={2} defaultValue="TX" />
-          </label>
-          <label>
-            Property description
-            <textarea
-              name="propertyDescription"
+          <div data-tour={GUIDED_SETUP_ANCHORS.campaignCreateAddress}>
+            <label>
+              Property address
+              <input
+                name="address"
+                required
+                defaultValue=""
+                placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.address}
+              />
+            </label>
+            <label>
+              State
+              <input
+                name="stateCode"
+                required
+                maxLength={2}
+                defaultValue=""
+                placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.stateCode}
+              />
+            </label>
+            <label>
+              Property description
+              <textarea
+                name="propertyDescription"
+                required
+                defaultValue=""
+                placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.propertyDescription}
+              />
+            </label>
+          </div>
+          <div data-tour={GUIDED_SETUP_ANCHORS.campaignCreateDates}>
+            <label>
+              Open house starts
+              <input name="openHouseStartsAt" required type="datetime-local" />
+            </label>
+            <label>
+              Open house ends
+              <input name="openHouseEndsAt" required type="datetime-local" />
+            </label>
+          </div>
+          <label data-tour={GUIDED_SETUP_ANCHORS.campaignCreateRealtor}>
+            Realtor name
+            <input
+              name="realtorDisplayName"
               required
-              defaultValue="Beautiful home prepared for an upcoming open house."
+              defaultValue={prefill.realtorDisplayName}
+              placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.realtorDisplayName}
             />
           </label>
-          <label>
-            Open house starts
-            <input name="openHouseStartsAt" required type="datetime-local" />
-          </label>
-          <label>
-            Open house ends
-            <input name="openHouseEndsAt" required type="datetime-local" />
-          </label>
-          <label>
-            Realtor name
-            <input name="realtorDisplayName" required defaultValue="Jordan Smith" />
-          </label>
-          <label className={styles.check}>
-            <input name="propertyPermissionConfirmed" type="checkbox" /> I have permission to market
-            this property.
-          </label>
-          <label className={styles.check}>
-            <input name="realtorPermissionConfirmed" type="checkbox" /> I have permission to use the
-            Realtor&apos;s materials.
-          </label>
+          <div data-tour={GUIDED_SETUP_ANCHORS.campaignCreatePermissions}>
+            <label className={styles.check}>
+              <input name="propertyPermissionConfirmed" type="checkbox" /> I have permission to
+              market this property.
+            </label>
+            <label className={styles.check}>
+              <input name="realtorPermissionConfirmed" type="checkbox" /> I have permission to use
+              the Realtor&apos;s materials.
+            </label>
+          </div>
         </fieldset>
 
-        <fieldset>
+        <fieldset data-tour={GUIDED_SETUP_ANCHORS.campaignCreateHeadline}>
           <legend>What the ad says</legend>
+          <p className={styles.hint}>{GUIDED_SETUP_STEPS.createCampaign.starterTextNote}</p>
           <label>
             Headline
-            <input name="headline" required defaultValue="Tour this home this weekend" />
+            <input name="headline" required defaultValue={prefill.headline} />
           </label>
           <label>
             Body
-            <textarea
-              name="body"
-              required
-              defaultValue="Join us for the open house and explore the property in person."
-            />
+            <textarea name="body" required defaultValue={prefill.body} />
           </label>
           <label>
             Call to action
-            <input name="callToAction" required defaultValue="Get open house details" />
+            <input name="callToAction" required defaultValue={prefill.callToAction} />
           </label>
           <label>
             Disclosure
-            <textarea
-              name="disclosureText"
-              required
-              defaultValue="Equal Housing Opportunity. Additional lender disclosures apply."
-            />
+            <textarea name="disclosureText" required defaultValue={prefill.disclosureText} />
           </label>
           <label>
             Lead consent
-            <textarea
-              name="consentText"
-              required
-              defaultValue="By submitting, you agree to be contacted about this property and related mortgage services."
-            />
+            <textarea name="consentText" required defaultValue={prefill.consentText} />
           </label>
         </fieldset>
 
-        <fieldset>
+        <fieldset data-tour={GUIDED_SETUP_ANCHORS.campaignCreateBudget}>
           <legend>Budget and area</legend>
           <label>
             Where the ad runs
-            <input name="region" required defaultValue="Dallas-Fort Worth" />
+            <input
+              name="region"
+              required
+              defaultValue={prefill.region}
+              placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.region}
+            />
           </label>
           <label>
             Daily budget ($)
@@ -203,7 +258,7 @@ export function OpenHouseDraftBuilder() {
               type="number"
               min="5"
               step="1"
-              defaultValue="25"
+              defaultValue={prefill.dailyBudgetDollars}
             />
           </label>
           <label>
@@ -214,7 +269,7 @@ export function OpenHouseDraftBuilder() {
               type="number"
               min="5"
               step="1"
-              defaultValue="125"
+              defaultValue={prefill.totalBudgetDollars}
             />
           </label>
           <p className={styles.hint}>
@@ -222,7 +277,11 @@ export function OpenHouseDraftBuilder() {
           </p>
         </fieldset>
 
-        <Button disabled={submitting} type="submit">
+        <Button
+          data-tour={GUIDED_SETUP_ANCHORS.campaignCreateSubmit}
+          disabled={submitting}
+          type="submit"
+        >
           {submitting ? "Running the checks" : "Save and run the checks"}
         </Button>
       </form>
@@ -249,6 +308,9 @@ function CampaignCheckResult({ result }: Readonly<{ result: PreflightResponse }>
   const headline = result.blocking ? CHECK_RESULT_NEEDS_CHANGES : CHECK_RESULT_READY;
   return (
     <section className={styles.review} aria-labelledby="campaign-check-title">
+      {/* No guided-setup anchor here on purpose: step 5 reads the result on the campaign's own
+          page, which is where the walkthrough sends the user next, and an id that existed on two
+          screens would let a step point at whichever happened to render. */}
       <div className={styles.reviewHeading}>
         <div>
           <p className={styles.eyebrow}>Saved</p>
@@ -276,18 +338,18 @@ function CampaignCheckResult({ result }: Readonly<{ result: PreflightResponse }>
           <p>{result.specialAdCategory}</p>
         </Card>
       </div>
-      {result.findings.length === 0 ? (
-        <Card padding="md">
-          <strong>Nothing to fix.</strong>
-          <p>This campaign meets every rule we check. An approver can sign off on it now.</p>
-        </Card>
-      ) : (
-        <div className={styles.findings}>
-          {result.findings.map((finding) => (
+      <div className={styles.findings}>
+        {result.findings.length === 0 ? (
+          <Card padding="md">
+            <strong>Nothing to fix.</strong>
+            <p>This campaign meets every rule we check. An approver can sign off on it now.</p>
+          </Card>
+        ) : (
+          result.findings.map((finding) => (
             <CampaignCheckFinding finding={finding} key={finding.ruleCode} />
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
       <a className="oalo-action-link" href={result.detailHref}>
         Open campaign
       </a>

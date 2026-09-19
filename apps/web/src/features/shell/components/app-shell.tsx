@@ -24,6 +24,12 @@ import styles from "./app-shell.module.css";
 
 type AppShellProps = Readonly<{
   children: ReactNode;
+  /**
+   * PRD-006c D5. The guided setup's two ways back in: the "Finish setup" chip and the help menu.
+   * The shell takes them as a slot rather than importing them, so the shell keeps knowing nothing
+   * about the walkthrough, and a workspace without one simply passes nothing.
+   */
+  headerControls?: ReactNode;
   navigation: DeepReadonly<Navigation>;
   session: WorkspaceSessionView;
   workspaceMode?: "synthetic" | "review";
@@ -37,6 +43,7 @@ const focusableSelector = [
 
 export function AppShell({
   children,
+  headerControls,
   navigation,
   session,
   workspaceMode = "synthetic",
@@ -153,6 +160,7 @@ export function AppShell({
             <strong>{session.location.displayName}</strong>
             <span>{session.user.roleLabel}</span>
           </div>
+          {headerControls}
           <div className={styles.themeControl} aria-label="Theme settings">
             <ThemeControl />
           </div>

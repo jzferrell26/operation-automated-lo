@@ -13,6 +13,7 @@ import {
   TEST_DATABASE_NAME_PREFIX,
   assertDisposableTestDatabaseName,
   commandPlan,
+  REVIEW_BROWSER_RUN_LABEL,
   WEB_POSTGRES_PROJECT,
   discoverIntegrationTestFiles,
   discoverMigrationFiles,
@@ -226,9 +227,11 @@ describe("real PostgreSQL integration phase", () => {
       "run the real-PostgreSQL integration tests",
       `seed the review location and its credentials into ${TEST_DATABASE_NAME}`,
       "prove the review seeding script inserts nothing on a second run",
+      REVIEW_BROWSER_RUN_LABEL,
     ]);
     // No route-level file exists in this fixture, so the suite's own step is absent and the
-    // seeding pair is last. The ordering assertion for a present suite lives in its own case.
+    // seeding pair runs straight into the review browser suite. The ordering assertion for a
+    // present route-level suite lives in its own case.
   });
 
   it("stops psql on the first error and applies each migration atomically", async () => {

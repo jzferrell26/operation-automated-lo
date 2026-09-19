@@ -20,8 +20,11 @@ export type UserMessage = Readonly<{
 }>;
 
 /**
- * Keyed by the code the route puts in `{ "error": ... }`. Includes the codes PRD-006a's auth
- * routes will emit, so those screens have their sentences the day they are built.
+ * Keyed by the code the route puts in `{ "error": ... }`. Includes every code PRD-006a's auth
+ * routes emit (`apps/web/src/server/password-authentication-handler.ts`), among them the password
+ * policy reasons from `@oalo/auth`, which the sign-up, reset, and change-password routes return as
+ * the error code itself. The sentences are PRD-006b D10's, split at the sentence boundary into the
+ * pair.
  */
 export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Object.freeze({
   INVALID_CAMPAIGN_DRAFT: {
@@ -68,33 +71,53 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
     what: "We couldn't find that.",
     whatToDo: "Go back to your campaigns and open it from the list.",
   },
-  INVALID_SIGN_IN: {
+  INVALID_AUTH_REQUEST: {
+    what: "Something in this request didn't look right to us.",
+    whatToDo: "Refresh the page and try again.",
+  },
+  AUTH_CREDENTIALS_REJECTED: {
     what: "That email and password don't match.",
     whatToDo: "Try again, or reset your password.",
   },
-  RATE_LIMITED: {
+  AUTH_RATE_LIMITED: {
     what: "There have been too many attempts.",
     whatToDo: "Wait a few minutes and try again.",
   },
-  ACCOUNT_LOCKED: {
-    what: "There have been too many attempts.",
-    whatToDo: "Wait a few minutes and try again.",
+  AUTH_EMAIL_ALREADY_REGISTERED: {
+    what: "That email already has an account.",
+    whatToDo: "Sign in, or reset your password.",
   },
-  INVALID_RESET_TOKEN: {
+  AUTH_RESET_LINK_EXPIRED: {
     what: "This reset link has expired or was already used.",
     whatToDo: "Request a new one.",
   },
-  INVALID_VERIFICATION_TOKEN: {
+  AUTH_VERIFICATION_LINK_EXPIRED: {
     what: "This link has expired.",
     whatToDo: "We'll send a new one when you sign in.",
   },
-  EMAIL_NOT_CONFIGURED: {
-    what: "We can't send email from this workspace yet.",
-    whatToDo: "Contact support and they'll set your password for you.",
+  AUTH_PASSWORDS_DO_NOT_MATCH: {
+    what: "Those passwords don't match.",
+    whatToDo: "Type the same password in both fields.",
   },
-  SIGNUP_DISABLED: {
-    what: "New accounts aren't open here.",
-    whatToDo: "Ask whoever invited you for a sign-in.",
+  AUTH_CURRENT_PASSWORD_REJECTED: {
+    what: "That doesn't match your current password.",
+    whatToDo: "Check it and try again.",
+  },
+  PASSWORD_TOO_SHORT: {
+    what: "That password is too short.",
+    whatToDo: "Use at least 12 characters.",
+  },
+  PASSWORD_TOO_LONG: {
+    what: "That password is too long.",
+    whatToDo: "Use at most 128 characters.",
+  },
+  PASSWORD_LOOKS_PERSONAL: {
+    what: "That password looks like your name or email.",
+    whatToDo: "Choose a password that isn't your name or email.",
+  },
+  PASSWORD_TOO_COMMON: {
+    what: "That password is too common.",
+    whatToDo: "Try a short phrase instead.",
   },
 });
 

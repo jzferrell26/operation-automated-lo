@@ -22,7 +22,7 @@ For implementation batches in this TypeScript / Next.js / Postgres / Supabase co
 
 You can also invoke routing explicitly with the `/dungeon-master` prompt (see [`.codex/prompts/dungeon-master.md`](./.codex/prompts/dungeon-master.md) and `.codex/README.md` for install).
 
-The paths above use `.cursor/` because that is the source of truth in this repo. The identical trees exist at `.claude/` for Claude Code; pick whichever your harness reads.
+The paths above use `.cursor/` because that is the source of truth in this repo. At `c140f11` no `.claude/` tree exists in git; `.codex/` holds only `README.md` and `prompts/dungeon-master.md`, neither of which mirrors the Guardian or Weapon trees.
 
 ## What an agent is
 

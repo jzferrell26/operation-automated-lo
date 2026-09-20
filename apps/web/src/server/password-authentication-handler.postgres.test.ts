@@ -17,6 +17,7 @@ import {
 } from "../../../../packages/db/test/route-seeding-bridge.js";
 import { POST as signInRoutePost } from "../app/api/auth/sign-in/route.js";
 import { POST as preflightPost } from "../app/api/campaigns/preflight/route.js";
+import type { CampaignCommandPorts } from "./authenticated-principal.js";
 import { OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
 import {
   REVIEW_HOST,
@@ -65,6 +66,7 @@ const UNBOUND_EMAIL = "route-unbound@oalo.invalid";
 const MULTI_EMAIL = "route-multi@oalo.invalid";
 const LOCKOUT_EMAIL = "route-lockout@oalo.invalid";
 const CHANGE_EMAIL = "route-change@oalo.invalid";
+const DENIED_EMAIL = "route-denied@oalo.invalid";
 
 let pool: PostgresDatabasePool;
 let environment: RoutePostgresEnvironment;
@@ -78,6 +80,7 @@ let unboundId: string;
 let multiId: string;
 let lockoutId: string;
 let changeId: string;
+let deniedId: string;
 
 /** A different client address per proof, so a rate-limit window is never shared by accident. */
 let addressCounter = 0;
@@ -137,6 +140,16 @@ beforeAll(async () => {
       sessionRole: "viewer",
     })
   ).actorId;
+  // 006A-AC-031 counts the denied rows a refusal writes. That count has to be taken on an account
+  // no other proof in this file touches, because a failed attempt here and a successful one there
+  // share a counter, and a shared counter turns "exactly one" into an accident of ordering.
+  deniedId = (
+    await seedActor(pool, location, {
+      displayName: "Denied attempt person",
+      bindingRole: "creator",
+      sessionRole: "campaign_creator",
+    })
+  ).actorId;
 
   await seedCredential(pool, { userId: creatorId, email: CREATOR_EMAIL, password: PASSWORD });
   await seedCredential(pool, { userId: suspendedId, email: SUSPENDED_EMAIL, password: PASSWORD });
@@ -144,6 +157,7 @@ beforeAll(async () => {
   await seedCredential(pool, { userId: multiId, email: MULTI_EMAIL, password: PASSWORD });
   await seedCredential(pool, { userId: lockoutId, email: LOCKOUT_EMAIL, password: PASSWORD });
   await seedCredential(pool, { userId: changeId, email: CHANGE_EMAIL, password: PASSWORD });
+  await seedCredential(pool, { userId: deniedId, email: DENIED_EMAIL, password: PASSWORD });
 });
 
 afterAll(async () => {
@@ -255,6 +269,37 @@ describe("POST /api/auth/sign-in", () => {
     expect(rendered).not.toContain(PASSWORD);
     const credential = await readReviewCredential(pool, creatorId);
     expect(rendered).not.toContain(credential?.passwordHash ?? "no hash");
+
+    // 006A-AC-031 names the session secret and its hash alongside the password and the password
+    // hash. The secret has exactly one legitimate home, the `Set-Cookie` header, so it is read
+    // back from there and then looked for everywhere else: a leak of the cookie value or of the
+    // hash the session row is keyed by is a session takeover, not a formatting mistake.
+    const sessionSecret = sessionCookieFrom(response)?.split("=")[1] ?? "";
+    expect(sessionSecret.length).toBeGreaterThan(0);
+    expect(rendered).not.toContain(sessionSecret);
+    expect(rendered).not.toContain(createHash("sha256").update(sessionSecret).digest("hex"));
+  });
+
+  /**
+   * 006A-AC-031 and 005B-AC-016, the denied half. The success path is counted above; a refusal is
+   * the case where an over-eager handler double-writes, because the failure is recorded once by
+   * the credential function and once again by whatever catches the error. One correlation
+   * reference, one row.
+   */
+  it("writes exactly one denied sign-in row for a refused attempt (006A-AC-031)", async () => {
+    const response = await signIn(
+      { email: DENIED_EMAIL, password: WRONG_PASSWORD_SAME_LENGTH },
+      { clientAddress: nextClientAddress() },
+    );
+    expect(response.status).toBe(401);
+
+    const correlationRef = response.headers.get("x-oalo-correlation-ref") ?? "";
+    expect(correlationRef.length).toBeGreaterThan(0);
+    const events = await readAuditEventsForCorrelation(pool, correlationRef);
+
+    expect(events.map((event) => `${event.action}:${event.result}`)).toEqual([
+      "auth.sign-in:denied",
+    ]);
   });
 
   it("honours keep me signed in with the thirty-day lifetime (006A-AC-012)", async () => {
@@ -431,17 +476,38 @@ describe("POST /api/auth/sign-in", () => {
 describe("lockout (006A-AC-014)", () => {
   it("locks after ten consecutive failures and clears when the lock lapses", async () => {
     const address = nextClientAddress();
+    const correlationRefs: string[] = [];
     for (let attempt = 0; attempt < 10; attempt += 1) {
       const refused = await signIn(
         { email: LOCKOUT_EMAIL, password: WRONG_PASSWORD_SAME_LENGTH },
         { clientAddress: address },
       );
       expect(refused.status).toBe(401);
+      correlationRefs.push(refused.headers.get("x-oalo-correlation-ref") ?? "");
     }
 
     const locked = await readReviewCredential(pool, lockoutId);
     expect(locked?.locked).toBe(true);
     expect(locked?.failedAttemptCount).toBe(10);
+
+    // 006A-AC-031. Every one of the ten failures writes its own denied row, and exactly one of
+    // them, the tenth, also writes the lockout row. Reading all ten correlation references rather
+    // than the last one is what makes that "exactly one": a lockout row written early, or written
+    // twice, shows up as a mismatch on one of the first nine.
+    //
+    // The two rows of the locking attempt are written inside one transaction, so they share a
+    // `created_at` and the read's tie-break is a random uuid. What is pinned is therefore the set
+    // of rows, sorted, and not an order the database never promised.
+    const eventsPerAttempt = await Promise.all(
+      correlationRefs.map(async (reference) => {
+        const events = await readAuditEventsForCorrelation(pool, reference);
+        return events.map((event) => `${event.action}:${event.result}`).sort();
+      }),
+    );
+    expect(eventsPerAttempt).toEqual([
+      ...Array.from({ length: 9 }, () => ["auth.sign-in:denied"]),
+      ["auth.lockout:success", "auth.sign-in:denied"],
+    ]);
 
     // The correct password is still refused while the lock holds.
     const duringLock = await signIn(
@@ -641,6 +707,15 @@ describe("POST /api/auth/sign-out (006A-AC-022)", () => {
     const revoked = sessions.find((session) => formatSessionRef(session.id) === sessionRef);
     expect(revoked?.revoked).toBe(true);
     expect(revoked?.revocationReason).toBe("sign_out");
+
+    // 006A-AC-031. A revocation is an account event, so it is counted the same way an issuance
+    // is: one correlation reference, exactly one row, and that row says the revocation succeeded.
+    const correlationRef = response.headers.get("x-oalo-correlation-ref") ?? "";
+    expect(correlationRef.length).toBeGreaterThan(0);
+    const events = await readAuditEventsForCorrelation(pool, correlationRef);
+    expect(events.map((event) => `${event.action}:${event.result}`)).toEqual([
+      "session.revoked:success",
+    ]);
   });
 
   it("revokes nothing without the cross-site token", async () => {
@@ -784,7 +859,31 @@ describe("the shell after a password sign-in (006A-AC-028)", () => {
 });
 
 describe("the modes that do not serve a sign-in (006A-AC-026)", () => {
-  it("answers 404 in synthetic mode without writing a session row", async () => {
+  /**
+   * 005B-AC-020 and 006A-AC-026 say the 404 comes *before* the database, not merely instead of a
+   * session row. An unchanged session count cannot tell the two apart: a route that read the
+   * credential, found the mode wrong, and answered 404 would pass it.
+   *
+   * So the handler is handed a ports object that cannot be used at all. Every property access on
+   * it throws, and the rate limiter is the route's first touch of any port
+   * (`password-authentication-handler.ts` `consumeAddressLimit`), so reaching the database at all
+   * turns this into a thrown error rather than a 404. The handler's own default argument is what
+   * would otherwise build the real ports, and passing this in its place means it is never built.
+   */
+  function unusablePorts(): CampaignCommandPorts {
+    return new Proxy(
+      {},
+      {
+        get(_target, property) {
+          throw new Error(
+            `The route reached ports.${String(property)} before answering 404, so it did not refuse before the database`,
+          );
+        },
+      },
+    ) as CampaignCommandPorts;
+  }
+
+  it("answers 404 in synthetic mode before any database access", async () => {
     restoreEnvironment();
     const syntheticEnvironment = authEnvironment();
     const restoreSynthetic = applyRouteEnvironment({
@@ -800,6 +899,8 @@ describe("the modes that do not serve a sign-in (006A-AC-026)", () => {
           { email: CREATOR_EMAIL, password: PASSWORD },
           { clientAddress: DEFAULT_CLIENT_ADDRESS },
         ),
+        process.env,
+        unusablePorts(),
       );
 
       expect(response.status).toBe(404);
@@ -811,7 +912,7 @@ describe("the modes that do not serve a sign-in (006A-AC-026)", () => {
     }
   });
 
-  it("answers 404 in production without the review flag (006A-AC-026)", async () => {
+  it("answers 404 in production without the review flag, before any database access", async () => {
     restoreEnvironment();
     const restoreProduction = applyRouteEnvironment({
       ...authEnvironment(),
@@ -819,11 +920,16 @@ describe("the modes that do not serve a sign-in (006A-AC-026)", () => {
       OALO_REVIEW_SURFACE: "",
     });
     try {
+      const before = (await readFirstPartySessionsForUser(pool, creatorId)).length;
+
       const response = await handlePasswordSignIn(
         authRequest("/api/auth/sign-in", { email: CREATOR_EMAIL, password: PASSWORD }),
+        process.env,
+        unusablePorts(),
       );
 
       expect(response.status).toBe(404);
+      expect((await readFirstPartySessionsForUser(pool, creatorId)).length).toBe(before);
     } finally {
       restoreProduction();
       restoreEnvironment = applyRouteEnvironment(environment);

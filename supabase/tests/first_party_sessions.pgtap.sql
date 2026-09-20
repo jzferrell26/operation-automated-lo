@@ -10,7 +10,7 @@
 
 begin;
 
-select plan(98);
+select plan(103);
 
 create function pg_temp.assert_is(actual anyelement, expected anyelement, description text)
 returns text
@@ -43,8 +43,7 @@ values
   ('00000000-0000-4000-8000-000000000901', 'Session Tenant A', 'active'),
   ('00000000-0000-4000-8000-000000000902', 'Session Tenant B', 'active'),
   ('00000000-0000-4000-8000-000000000903', 'Session Tenant Suspended', 'suspended'),
-  ('00000000-0000-4000-8000-000000000904', 'Session Tenant Without Installation', 'active'),
-  ('00000000-0000-4000-8000-000000000905', 'Session Tenant Two Creators', 'active');
+  ('00000000-0000-4000-8000-000000000904', 'Session Tenant Without Installation', 'active');
 
 insert into platform.app_users (id, safe_display_name, status)
 values
@@ -54,8 +53,6 @@ values
   ('00000000-0000-4000-8000-000000000914', 'Session Deleted User', 'deleted'),
   ('00000000-0000-4000-8000-000000000915', 'Session Tenant B User', 'active'),
   ('00000000-0000-4000-8000-000000000916', 'Session Revoked User', 'active'),
-  ('00000000-0000-4000-8000-000000000917', 'Session Duplicate Creator One', 'active'),
-  ('00000000-0000-4000-8000-000000000918', 'Session Duplicate Creator Two', 'active'),
   ('00000000-0000-4000-8000-000000000919', 'Session Uninstalled Creator', 'active'),
   ('00000000-0000-4000-8000-00000000091a', 'Session Suspended Tenant Creator', 'active'),
   ('00000000-0000-4000-8000-00000000091b', 'Session Unbound User', 'active');
@@ -111,22 +108,6 @@ values
     '2026-07-21T16:10:00.000Z'
   ),
   (
-    '00000000-0000-4000-8000-000000000927',
-    '00000000-0000-4000-8000-000000000905',
-    '00000000-0000-4000-8000-000000000917',
-    'creator',
-    '2026-07-21T16:11:00.000Z',
-    null
-  ),
-  (
-    '00000000-0000-4000-8000-000000000928',
-    '00000000-0000-4000-8000-000000000905',
-    '00000000-0000-4000-8000-000000000918',
-    'creator',
-    '2026-07-21T16:12:00.000Z',
-    null
-  ),
-  (
     '00000000-0000-4000-8000-000000000929',
     '00000000-0000-4000-8000-000000000904',
     '00000000-0000-4000-8000-000000000919',
@@ -154,12 +135,6 @@ values
   (
     '00000000-0000-4000-8000-000000000932',
     '00000000-0000-4000-8000-000000000902',
-    'oalo-review-surface',
-    'pending'
-  ),
-  (
-    '00000000-0000-4000-8000-000000000933',
-    '00000000-0000-4000-8000-000000000905',
     'oalo-review-surface',
     'pending'
   ),
@@ -1119,6 +1094,83 @@ select pg_temp.assert_is(
   ),
   0,
   'the refusal takes its own audit row down with it'
+);
+
+-- The binding role and the application role must describe the same authority.
+-- packages/auth/src/role-binding-map.ts is where that pairing is written for the
+-- Node callers; 20260919180000_first_party_session_role_check.sql mirrors it
+-- inside the definer boundary so a caller that derives the pair wrongly, or not
+-- at all, cannot mint a session that claims more than its binding grants.
+--
+-- The analyst case is the one that proves the mirror is the map rather than a
+-- string comparison: 'analyst' pairs with 'viewer', and the two names differ.
+insert into platform.role_bindings (id, location_id, user_id, role, granted_at)
+values (
+  '00000000-0000-4000-8000-00000000092c',
+  '00000000-0000-4000-8000-000000000901',
+  '00000000-0000-4000-8000-000000000911',
+  'analyst',
+  '2026-07-21T19:00:00.000Z'
+);
+
+reset role;
+set local role app_runtime;
+select pg_temp.assert_ok(
+  (
+    select issued.session_role = 'campaign_creator'
+    from platform.issue_first_party_session(
+      '00000000-0000-4000-8000-000000000901',
+      '00000000-0000-4000-8000-000000000911',
+      'creator', 'campaign_creator', pg_catalog.repeat('d', 64), 43200,
+      'review_sign_in', 'corr.session-role-paired'
+    ) as issued
+  ),
+  'issuance accepts the application role the binding role is paired with'
+);
+select pg_temp.assert_ok(
+  (
+    select issued.session_role = 'viewer'
+    from platform.issue_first_party_session(
+      '00000000-0000-4000-8000-000000000901',
+      '00000000-0000-4000-8000-000000000911',
+      'analyst', 'viewer', pg_catalog.repeat('ab', 32), 43200,
+      'review_sign_in', 'corr.session-role-analyst'
+    ) as issued
+  ),
+  'issuance accepts a pairing whose two role names differ'
+);
+select pg_temp.assert_is(
+  pg_temp.capture_sqlstate($sql$
+    select platform.issue_first_party_session(
+      '00000000-0000-4000-8000-000000000901',
+      '00000000-0000-4000-8000-000000000911',
+      'analyst', 'location_admin', pg_catalog.repeat('cd', 32), 43200,
+      'review_sign_in', 'corr.session-role-mismatch'
+    )
+  $sql$),
+  '42501',
+  'issuance refuses an application role the binding role is not paired with'
+);
+
+reset role;
+set local role migration_owner;
+select pg_temp.assert_is(
+  (
+    select pg_catalog.count(*)::integer
+    from platform.first_party_sessions as session_row
+    where session_row.session_secret_hash = pg_catalog.repeat('cd', 32)
+  ),
+  0,
+  'the mismatched pair inserted no session row'
+);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.count(*)::integer
+    from audit.events as event_row
+    where event_row.correlation_id = 'corr.session-role-mismatch'
+  ),
+  0,
+  'the mismatch refusal takes its own audit row down with it too'
 );
 
 reset role;

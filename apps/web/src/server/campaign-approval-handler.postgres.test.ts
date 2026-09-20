@@ -1,3 +1,4 @@
+import { createSessionBoundCsrfToken } from "@oalo/auth";
 import type { PostgresDatabasePool } from "@oalo/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -145,7 +146,7 @@ describe("POST /api/campaigns/approve with a real first-party session", () => {
     ["a wrong host", { host: "attacker.example" } as BrowserRequestOverrides],
     ["no CSRF token", { csrfToken: null } as BrowserRequestOverrides],
     [
-      "a CSRF token bound to a different session",
+      "a forged CSRF token",
       { csrfToken: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" } as BrowserRequestOverrides,
     ],
   ])("refuses an approval with %s and writes nothing", async (_label, overrides) => {
@@ -154,6 +155,28 @@ describe("POST /api/campaigns/approve with a real first-party session", () => {
 
     const response = await approvePost(
       approvalRequest(approverSession, approvalBody(draft), overrides),
+    );
+
+    expect(response.status).toBe(401);
+    expect(await tableCounts()).toEqual(before);
+  });
+
+  /**
+   * 005A-AC-004. The token here is real: the deployment's own server secret over a second live
+   * session, the creator's. The forged token above proves the HMAC is verified; this proves the
+   * session identifier inside the token is verified against the session in the cookie, which is
+   * the only thing that makes the binding worth having.
+   */
+  it("refuses a CSRF token bound to a different live session and writes nothing", async () => {
+    const draft = await createDraft();
+    const otherSessionToken = createSessionBoundCsrfToken({
+      serverSecret: csrfServerSecret,
+      sessionId: creatorSession.sessionRef,
+    });
+    const before = await tableCounts();
+
+    const response = await approvePost(
+      approvalRequest(approverSession, approvalBody(draft), { csrfToken: otherSessionToken }),
     );
 
     expect(response.status).toBe(401);

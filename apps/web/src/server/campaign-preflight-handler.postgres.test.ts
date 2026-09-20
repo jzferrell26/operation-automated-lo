@@ -1,4 +1,5 @@
 import type { AuthenticatedPrincipal } from "@oalo/application";
+import { createSessionBoundCsrfToken } from "@oalo/auth";
 import type { PostgresDatabasePool } from "@oalo/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -17,6 +18,7 @@ import {
   routeEnvironment,
   seedActor,
   seedLocation,
+  tableCountsFor,
   type BrowserRequestOverrides,
   type IssuedSession,
   type RoutePostgresEnvironment,
@@ -99,6 +101,15 @@ function preflightRequest(
   });
 }
 
+/**
+ * 005A-AC-013. The campaign, command, approval, and audit counts for this suite's location, in
+ * one call, so a negative case cannot prove three of the four and forget the fourth. Every
+ * refusal below is bracketed by this: a refusal that still wrote a row is not a refusal.
+ */
+async function tableCounts() {
+  return tableCountsFor(pool, location.locationId);
+}
+
 /** Resolves a principal the way a page render does, through the production resolver. */
 async function principalFromSession(
   session: IssuedSession,
@@ -128,32 +139,42 @@ describe("POST /api/campaigns/preflight with a real first-party session", () => 
     expect(readBack?.state).toBe(body.state);
   });
 
-  it("refuses a request that carries no session", async () => {
+  it("refuses a request that carries no session and writes nothing", async () => {
+    const before = await tableCounts();
+
     const response = await POST(preflightRequest(creatorSession, { cookie: "", csrfToken: null }));
 
     expect(response.status).toBe(401);
+    expect(await tableCounts()).toEqual(before);
   });
 
-  it("refuses a revoked session", async () => {
+  it("refuses a revoked session and writes nothing", async () => {
     const revoked = await issueSession(pool, location, creator);
     await revokeSession(pool, revoked);
+    const before = await tableCounts();
 
     expect((await POST(preflightRequest(revoked))).status).toBe(401);
+    expect(await tableCounts()).toEqual(before);
   });
 
-  it("refuses a session past its expiry", async () => {
+  it("refuses a session past its expiry and writes nothing", async () => {
     const shortLived = await issueSession(pool, location, creator, 1);
     await new Promise((resolve) => setTimeout(resolve, 1_500));
+    const before = await tableCounts();
 
     expect((await POST(preflightRequest(shortLived))).status).toBe(401);
+    expect(await tableCounts()).toEqual(before);
   });
 
   it("refuses a session minted under a binding that was revoked and re-granted", async () => {
     const stale = await issueSession(pool, location, creator);
     await revokeBinding(pool, location, creator);
     await grantBinding(pool, location, creator);
+    const before = await tableCounts();
 
     expect((await POST(preflightRequest(stale))).status).toBe(401);
+    expect(await tableCounts()).toEqual(before);
+
     await revokeBinding(pool, location, creator);
     await grantBinding(pool, location, creator);
     creatorSession = await issueSession(pool, location, creator);
@@ -164,11 +185,33 @@ describe("POST /api/campaigns/preflight with a real first-party session", () => 
     ["a wrong host", { host: "attacker.example" } as BrowserRequestOverrides],
     ["no CSRF token", { csrfToken: null } as BrowserRequestOverrides],
     [
-      "a CSRF token bound to a different session",
+      "a forged CSRF token",
       { csrfToken: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" } as BrowserRequestOverrides,
     ],
-  ])("refuses a mutation with %s", async (_label, overrides) => {
+  ])("refuses a mutation with %s and writes nothing", async (_label, overrides) => {
+    const before = await tableCounts();
+
     expect((await POST(preflightRequest(creatorSession, overrides))).status).toBe(401);
+    expect(await tableCounts()).toEqual(before);
+  });
+
+  /**
+   * 005A-AC-004. A token the deployment itself minted, from the real server secret, for a real
+   * live session that is not the one in the cookie. The forged token above only proves the HMAC
+   * is checked; this proves the session identifier inside it is part of what is checked, which is
+   * the whole point of binding the token to a session.
+   */
+  it("refuses a CSRF token bound to a different live session and writes nothing", async () => {
+    const otherSessionToken = createSessionBoundCsrfToken({
+      serverSecret: csrfServerSecret,
+      sessionId: approverSession.sessionRef,
+    });
+    const before = await tableCounts();
+
+    const response = await POST(preflightRequest(creatorSession, { csrfToken: otherSessionToken }));
+
+    expect(response.status).toBe(401);
+    expect(await tableCounts()).toEqual(before);
   });
 
   it("keeps an outsider session's write inside the outsider location", async () => {

@@ -77,7 +77,10 @@ type DismissableLayerOptions = Readonly<{
  * Escape, restores focus to the opener on close, and locks background scroll for
  * a modal layer only. The layer never hides the rest of the page from assistive
  * technology, so nothing has to be unhidden when it closes: a modal layer relies
- * on `aria-modal` plus the focus trap instead.
+ * on `aria-modal="true"` plus the focus trap instead. A non-modal layer carries
+ * `aria-modal="false"` rather than no attribute at all, so that a panel which
+ * deliberately leaves the page reachable is distinguishable from one whose author
+ * forgot to say (PRD-006c D6, 006C-AC-010).
  */
 function useDismissableLayer({ modal, onClose, open, panelRef }: DismissableLayerOptions) {
   const openerRef = useRef<HTMLElement | null>(null);
@@ -204,7 +207,7 @@ function Layer({
       ref={panelRef}
       aria-describedby={hasDescription ? descriptionId : undefined}
       aria-labelledby={titleId}
-      aria-modal={modal ? "true" : undefined}
+      aria-modal={modal ? "true" : "false"}
       className={joinClassNames(panelClassName, className)}
       role={role}
     >

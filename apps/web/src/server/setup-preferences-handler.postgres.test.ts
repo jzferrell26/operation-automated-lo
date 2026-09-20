@@ -1,11 +1,14 @@
 import type { PostgresDatabasePool } from "@oalo/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { POST as preflightPost } from "../app/api/campaigns/preflight/route.js";
 import { POST as profilePost } from "../app/api/setup/profile/route.js";
 import { POST as progressPost } from "../app/api/setup/progress/route.js";
+import { OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
 import {
   applyRouteEnvironment,
   browserRequest,
+  createDraftThroughPreflight,
   createRouteTestPool,
   csrfSecretFor,
   issueSession,
@@ -40,8 +43,10 @@ let pool: PostgresDatabasePool;
 let location: SeededLocation;
 let otherLocation: SeededLocation;
 let creator: SeededActor;
+let approver: SeededActor;
 let otherAdmin: SeededActor;
 let session: IssuedSession;
+let approverSession: IssuedSession;
 let otherSession: IssuedSession;
 let csrfServerSecret: Uint8Array;
 let restoreEnvironment: () => void;
@@ -70,12 +75,18 @@ beforeAll(async () => {
     bindingRole: "creator",
     sessionRole: "campaign_creator",
   });
+  approver = await seedActor(pool, location, {
+    displayName: "Setup preferences approver",
+    bindingRole: "approver",
+    sessionRole: "campaign_approver",
+  });
   otherAdmin = await seedActor(pool, otherLocation, {
     displayName: "Setup preferences outsider",
     bindingRole: "location_admin",
     sessionRole: "location_admin",
   });
   session = await issueSession(pool, location, creator);
+  approverSession = await issueSession(pool, location, approver);
   otherSession = await issueSession(pool, otherLocation, otherAdmin);
 });
 
@@ -94,6 +105,15 @@ function progressRequest(body: unknown, overrides = {}) {
   });
 }
 
+function approverProgressRequest(body: unknown) {
+  return browserRequest({
+    path: "/api/setup/progress",
+    body,
+    session: approverSession,
+    csrfServerSecret,
+  });
+}
+
 function profileRequest(body: unknown, overrides = {}) {
   return browserRequest({
     path: "/api/setup/profile",
@@ -103,6 +123,27 @@ function profileRequest(body: unknown, overrides = {}) {
     overrides,
   });
 }
+
+/**
+ * A draft saved through the real create route, so the check result the read below returns is the
+ * one the product produced rather than one this file wrote down.
+ */
+async function saveDraft(body: unknown) {
+  return createDraftThroughPreflight({
+    preflight: preflightPost,
+    session,
+    csrfServerSecret,
+    environment,
+    body,
+  });
+}
+
+/** The same draft with an open house that has already finished, which the checks refuse. */
+const FINISHED_OPEN_HOUSE = Object.freeze({
+  ...OPEN_HOUSE_DRAFT_INPUT,
+  openHouseStartsAt: "2020-06-12T17:00:00.000Z",
+  openHouseEndsAt: "2020-06-12T19:00:00.000Z",
+});
 
 describe("setup preference routes", () => {
   it("stores progress for the signed-in person and reads it back", async () => {
@@ -136,6 +177,113 @@ describe("setup preference routes", () => {
     );
     expect(foreign.profile).toBeUndefined();
     expect(foreign.progress.status).toBe("not_started");
+  });
+
+  /**
+   * PRD-006c D3 step 5, through 006C-AC-006. The saved campaign's check result comes back with
+   * the progress, read under the same tenant context.
+   *
+   * This is what stops step 5 guessing. The browser used to be the only place the result existed,
+   * so a person who signed in again was told their campaign was ready whatever the checks had
+   * decided. The read now answers the campaign the stored progress names, and answers it from the
+   * row.
+   */
+  it("reads the saved campaign's check result back with the progress", async () => {
+    const draft = await saveDraft(OPEN_HOUSE_DRAFT_INPUT);
+    expect(
+      (
+        await progressPost(
+          progressRequest({ progress: { ...VALID_PROGRESS, campaignRef: draft.campaignRef } }),
+        )
+      ).status,
+    ).toBe(200);
+
+    const stored = await readSetupPreferences(
+      await principalForSession(session, environment),
+      environment,
+    );
+    expect(stored.campaign?.campaignRef).toBe(draft.campaignRef);
+    expect(stored.campaign?.ready).toBe(true);
+    expect(stored.campaign?.findings).toEqual([]);
+    expect(stored.campaign?.detailHref).toContain(draft.campaignRef);
+  });
+
+  /**
+   * The branch the defect lived in. An open house that has already finished is the product's own
+   * `OPEN_HOUSE_DATES_INVALID`, and what comes back is the sentence a person reads plus the fix,
+   * never the rule's own code: PRD-006b D5 puts a code in the campaign page's collapsed support
+   * region and the walkthrough panel is not that region.
+   */
+  it("says a campaign the checks refused is not ready, in words and without a code", async () => {
+    const blocked = await saveDraft(FINISHED_OPEN_HOUSE);
+    expect(
+      (
+        await progressPost(
+          progressRequest({ progress: { ...VALID_PROGRESS, campaignRef: blocked.campaignRef } }),
+        )
+      ).status,
+    ).toBe(200);
+
+    const stored = await readSetupPreferences(
+      await principalForSession(session, environment),
+      environment,
+    );
+    expect(stored.campaign?.ready).toBe(false);
+    expect(stored.campaign?.findings.length).toBeGreaterThan(0);
+    const [finding] = stored.campaign?.findings ?? [];
+    expect(finding?.description).toContain("open-house dates");
+    expect(finding?.remediation.length ?? 0).toBeGreaterThan(0);
+    expect(JSON.stringify(stored.campaign?.findings)).not.toContain("OPEN_HOUSE");
+  });
+
+  /** A reference to a campaign this person cannot read is the honest third answer, not a guess. */
+  it("answers no campaign when the stored reference cannot be read", async () => {
+    expect(
+      (
+        await progressPost(
+          progressRequest({
+            progress: { ...VALID_PROGRESS, campaignRef: "campaign_0000000000000000000000000000" },
+          }),
+        )
+      ).status,
+    ).toBe(200);
+
+    const stored = await readSetupPreferences(
+      await principalForSession(session, environment),
+      environment,
+    );
+    expect(stored.campaign).toBeUndefined();
+  });
+
+  /**
+   * PRD-006c D5 and 006C-AC-016. Somebody who can approve, and has no campaign of their own, is
+   * given the newest one in their workspace that is waiting for a decision.
+   *
+   * The creator in the same workspace gets nothing here, which is the other half of the rule: a
+   * person who cannot approve has no decision to be handed.
+   */
+  it("hands an approver with no campaign of their own the one awaiting a decision", async () => {
+    const draft = await saveDraft(OPEN_HOUSE_DRAFT_INPUT);
+    expect((await progressPost(approverProgressRequest({ progress: VALID_PROGRESS }))).status).toBe(
+      200,
+    );
+
+    const approverView = await readSetupPreferences(
+      await principalForSession(approverSession, environment),
+      environment,
+    );
+    expect(approverView.campaign).toBeUndefined();
+    expect(approverView.awaitingDecision?.campaignRef).toBe(draft.campaignRef);
+    expect(approverView.awaitingDecision?.ready).toBe(true);
+
+    // The other half of the rule. The creator is in the same workspace and on the same step, and
+    // is handed nothing, because they have no decision to make.
+    expect((await progressPost(progressRequest({ progress: VALID_PROGRESS }))).status).toBe(200);
+    const creatorView = await readSetupPreferences(
+      await principalForSession(session, environment),
+      environment,
+    );
+    expect(creatorView.awaitingDecision).toBeUndefined();
   });
 
   /**

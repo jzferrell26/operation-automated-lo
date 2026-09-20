@@ -1,13 +1,17 @@
 import { expect, test, type Browser } from "@playwright/test";
 
+import { FINISHED_OPEN_HOUSE } from "../helpers/open-house-draft.js";
 import {
   NEW_ACCOUNT_NAME,
   NEW_ACCOUNT_PASSWORD,
+  STEP_ARRIVES_TIMEOUT_MS,
   continueToPanel,
   expectNoExternalRequests,
   freshEmail,
   guardLocalOrigin,
+  restartGuidedSetup,
   saveTheCampaign,
+  seededCredentials,
   signInExisting,
   signUpFreshAccount,
   typeIntoLabel,
@@ -83,6 +87,51 @@ test("progress survives a closed browser, a dismissal, and a restart", async ({ 
   await expect(third.page.getByLabel("Your name")).toHaveValue(NEW_ACCOUNT_NAME);
   expectNoExternalRequests(third.guard);
   await third.context.close();
+});
+
+/**
+ * PRD-006c D3 step 5, and the user-facing defect the PRD-006c verifier found on 2026-09-20.
+ *
+ * Step 5 used to read its result out of the browser session that pressed "Save and run the
+ * checks". A person who closed the tab and signed in again had no result in memory, so the panel
+ * had no findings and chose the ready sentence: a campaign the checks had blocked was described
+ * as saved and ready for approval, on the page that was saying the opposite underneath it.
+ *
+ * The second context is the whole assertion. Nothing of the save survives it, so whatever step 5
+ * says on the other side of it can only have come from the server.
+ *
+ * It uses the seeded creator rather than a fresh account because the product allows ten sign-ups
+ * an hour per address (`apps/web/src/server/password-authentication-handler.ts:118`) and this run
+ * already spends six of them; the two people the gate seeds exist for exactly this.
+ */
+test("a resumed result step says a campaign the checks refused needs changes", async ({
+  browser,
+}) => {
+  const { creatorEmail, password } = seededCredentials();
+
+  const first = await freshPage(browser);
+  await signInExisting(first.page, creatorEmail, password);
+  await restartGuidedSetup(first.page);
+  await walkToTheCreateStep(first.page);
+  // An open house that finished years ago is the product's own refusal, not an invented one.
+  await saveTheCampaign(first.page, "3 Foxglove Way, Austin", FINISHED_OPEN_HOUSE);
+  await expect(first.page.getByRole("dialog", { name: "Read the result" })).toContainText(
+    "the checks found things to fix first",
+  );
+  expectNoExternalRequests(first.guard);
+  await first.context.close();
+
+  const second = await freshPage(browser);
+  await signInExisting(second.page, creatorEmail, password);
+  const resumed = second.page.getByRole("dialog", { name: "Read the result" });
+  await expect(resumed).toBeVisible({ timeout: STEP_ARRIVES_TIMEOUT_MS });
+  await expect(resumed).toContainText("the checks found things to fix first");
+  await expect(resumed).toContainText("The open-house dates are expired or out of order.");
+  await expect(resumed).not.toContainText("ready for approval");
+  // The rule's own code belongs to the campaign page's collapsed support region, never the panel.
+  await expect(resumed).not.toContainText("OPEN_HOUSE_DATES_INVALID");
+  expectNoExternalRequests(second.guard);
+  await second.context.close();
 });
 
 test("a completed setup never opens itself again", async ({ browser }) => {

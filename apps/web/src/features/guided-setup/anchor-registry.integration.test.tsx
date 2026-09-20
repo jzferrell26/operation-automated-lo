@@ -9,12 +9,15 @@ import { loadSyntheticUiFixture } from "../ui-foundation/data/load-synthetic-ui.
 import {
   GUIDED_SETUP_ANCHOR_REGISTRY,
   GUIDED_SETUP_PANEL_SURFACE,
+  SHELL_SURFACE,
   anchorSelector,
   guidedSetupAnchorIds,
   requiredAnchorsForRoute,
   type GuidedSetupAnchorId,
 } from "./anchor-registry.js";
+import { GuidedSetupShellControls } from "./guided-setup-progress.js";
 import { GuidedSetupProvider } from "./guided-setup-provider.js";
+import { complete, initialGuidedSetupProgress } from "./model/progress.js";
 import { campaignProjection, progressAt } from "./guided-setup.test-support.js";
 
 vi.mock("next/navigation.js", () => ({
@@ -39,20 +42,29 @@ function countAnchors(container: HTMLElement, anchor: GuidedSetupAnchorId): numb
   return container.querySelectorAll(anchorSelector(anchor)).length;
 }
 
-function renderPanelAt(step: number) {
+const SERVER_NOW = "2026-09-19T12:00:00.000Z";
+
+function renderInsideTheProvider(
+  progress: ReturnType<typeof initialGuidedSetupProgress>,
+  children = <div />,
+) {
   return render(
     <GuidedSetupProvider
       canApprove
       enabled
       initialProfile={undefined}
-      initialProgress={progressAt(step)}
-      serverNowIso="2026-09-19T12:00:00.000Z"
+      initialProgress={progress}
+      serverNowIso={SERVER_NOW}
       sessionDisplayName="Dana Reyes"
       sessionWorkspaceName="Northgate Lending"
     >
-      <div />
+      {children}
     </GuidedSetupProvider>,
   );
+}
+
+function renderPanelAt(step: number) {
+  return renderInsideTheProvider(progressAt(step));
 }
 
 describe("guided setup anchors on the screens the registry names", () => {
@@ -117,10 +129,31 @@ describe("guided setup anchors on the screens the registry names", () => {
     }
   });
 
+  /**
+   * 006C-AC-002's shell half, which was a claim about the registry until 2026-09-20.
+   *
+   * `shell.help.menu` used to be excused with an assertion that its registry row named a route,
+   * which is a fact about this file rather than about any screen: the element could have been
+   * deleted and the row would still have had a route. The shell's controls are rendered here, the
+   * way the layout renders them, and the anchor has to be on exactly one element.
+   *
+   * The walkthrough is finished in this render so the panel is shut, which is the state the shell
+   * is in whenever somebody uses the help menu to start again.
+   */
+  it("renders every required shell anchor exactly once", () => {
+    const { container } = renderInsideTheProvider(
+      complete(initialGuidedSetupProgress(), new Date(SERVER_NOW)),
+      <GuidedSetupShellControls />,
+    );
+    const required = requiredAnchorsForRoute(SHELL_SURFACE);
+    expect(required).toContain("shell.help.menu");
+    for (const anchor of required) {
+      expect(countAnchors(container, anchor), anchor).toBe(1);
+    }
+  });
+
   it("covers every registry entry with a rendering proof or a stated reason", () => {
     const provenElsewhere: readonly GuidedSetupAnchorId[] = [
-      // The shell controls render inside the provider, which the shell-controls suite drives.
-      "shell.help.menu",
       // Optional by design: present only inside the seven-day window after a dismissal.
       "shell.finish-setup.chip",
       // Optional by design: only a user who cannot approve ever sees it, proven above.

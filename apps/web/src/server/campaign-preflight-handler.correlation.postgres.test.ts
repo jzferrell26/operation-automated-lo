@@ -8,8 +8,6 @@ import {
   OPEN_HOUSE_DRAFT_INPUT,
 } from "./campaign-command-test-support.js";
 import {
-  AUDIT_TABLE,
-  COMMAND_TABLE,
   applyRouteEnvironment,
   browserRequest,
   createRouteTestPool,
@@ -18,7 +16,7 @@ import {
   routeEnvironment,
   seedActor,
   seedLocation,
-  storedCorrelationIds,
+  tableCountsFor,
   type IssuedSession,
   type RoutePostgresEnvironment,
   type SeededActor,
@@ -63,6 +61,7 @@ describe("campaign preflight handler correlation matrix (real Postgres)", () => 
   it.each(CORRELATION_HEADER_MATRIX)(
     "persists with a canonical response reference for %s",
     async (_label, header) => {
+      const before = await tableCountsFor(pool, location.locationId);
       const response = await POST(
         browserRequest({
           path: "/api/campaigns/preflight",
@@ -86,13 +85,15 @@ describe("campaign preflight handler correlation matrix (real Postgres)", () => 
         expect(echoed).toBeNull();
       }
 
-      for (const table of [COMMAND_TABLE, AUDIT_TABLE]) {
-        const stored = await storedCorrelationIds(pool, table, location.locationId);
-        expect(stored.length).toBeGreaterThan(0);
-        for (const reference of stored) {
-          expect(CorrelationReferenceSchema.safeParse(reference).success).toBe(true);
-        }
-      }
+      // A preflight persists a draft (a campaign row, its version, and its preflight result) and
+      // nothing else: no command execution and no audit row carry this request's reference, so
+      // reading those tables here proved nothing until Wave 3c asserted they were non-empty and
+      // they were not. What the route must have done is save the draft under this location.
+      const after = await tableCountsFor(pool, location.locationId);
+      expect(after.campaigns).toBe(before.campaigns + 1);
+      expect(after.commands).toBe(before.commands);
+      expect(after.approvals).toBe(before.approvals);
+      expect(after.audit).toBe(before.audit);
     },
   );
 });

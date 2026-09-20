@@ -1,13 +1,11 @@
 import { render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { OverviewScreen } from "../../../features/overview/components/overview-screen.js";
 import { loadSyntheticUiFixture } from "../../../features/ui-foundation/data/load-synthetic-ui.js";
-import {
-  OALO_REVIEW_SURFACE_AUTHORIZED,
-  loadAuthenticatedWorkspace,
-} from "../../../server/authenticated-workspace-data.js";
+import { loadAuthenticatedWorkspace } from "../../../server/authenticated-workspace-data.js";
 import AuthenticatedLayout from "../layout.js";
+import { useReviewModeEnvironment } from "../review-mode-test-support.js";
 import {
   collectFixtureStrings,
   forbiddenReviewStrings,
@@ -142,16 +140,7 @@ const projectionAllowances: readonly ReviewSurfaceAllowance[] = [
   ...projectionOnlyAllowances,
 ];
 
-beforeEach(() => {
-  vi.stubEnv("OALO_ENVIRONMENT", "production");
-  vi.stubEnv("OALO_PROVIDER_MODE", "stub");
-  vi.stubEnv("OALO_SYNTHETIC_DATA_ONLY", "true");
-  vi.stubEnv("OALO_REVIEW_SURFACE", OALO_REVIEW_SURFACE_AUTHORIZED);
-});
-
-afterEach(() => {
-  vi.unstubAllEnvs();
-});
+useReviewModeEnvironment();
 
 /**
  * The layout is an async server component since PRD-005a, and in review mode it resolves the shell

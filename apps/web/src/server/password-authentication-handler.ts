@@ -70,6 +70,24 @@ export const OVERVIEW_PATH = "/overview";
 export const RESET_PASSWORD_PATH = "/reset-password";
 export const VERIFY_EMAIL_PATH = "/verify-email";
 
+/**
+ * PRD-006b D10. The one signal a completed reset leaves behind.
+ *
+ * D10 asks that the person land in the workspace with "Your password is saved. You're signed in."
+ * The route has the only knowledge that a reset just happened, and the workspace page has the only
+ * place to say so, so the fact travels between them the way `signedOut=1` already travels to the
+ * sign-in page: a fixed key and a fixed value, built on the server from these two constants and
+ * appended to a path this module owns.
+ *
+ * It is deliberately not a redirect target. The browser never supplies it, nothing echoes a
+ * caller-provided URL, and the reset token never appears in it, so there is no open redirect here
+ * and nothing secret in the address bar or in browser history. The notice also clears itself: it
+ * lives in the query, so the next navigation is a workspace without it.
+ */
+export const PASSWORD_RESET_NOTICE_PARAMETER = "passwordReset";
+export const PASSWORD_RESET_NOTICE_VALUE = "1";
+export const OVERVIEW_AFTER_PASSWORD_RESET_PATH = `${OVERVIEW_PATH}?${PASSWORD_RESET_NOTICE_PARAMETER}=${PASSWORD_RESET_NOTICE_VALUE}`;
+
 /** PRD-005b's default, carried forward unchanged, and D5's opt-in extension. */
 export const DEFAULT_SESSION_LIFETIME_SECONDS = 43_200;
 export const EXTENDED_SESSION_LIFETIME_SECONDS = 2_592_000;
@@ -1028,8 +1046,9 @@ export async function handleResetPassword(
       lifetimeSeconds: DEFAULT_SESSION_LIFETIME_SECONDS,
       issuedBy: "password_reset",
     });
+    // PRD-006b D10. The workspace, plus the one flag that lets it say the password is saved.
     return withCorrelationHeaders(
-      jsonResponse(200, { next: OVERVIEW_PATH }, session.cookie),
+      jsonResponse(200, { next: OVERVIEW_AFTER_PASSWORD_RESET_PATH }, session.cookie),
       context.correlation,
     );
   } catch (error) {

@@ -372,7 +372,13 @@ describe("POST /api/auth/reset-password (006A-AC-018)", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(await response.clone().json()).toEqual({ next: "/overview" });
+    /**
+     * PRD-006b D10. The workspace, carrying the one flag the landing page reads to say "Your
+     * password is saved. You're signed in." The exact value is asserted, not a prefix, because a
+     * route that quietly dropped the flag would still land the person in the workspace and would
+     * still pass a looser check, leaving the person with no confirmation their password changed.
+     */
+    expect(await response.clone().json()).toEqual({ next: "/overview?passwordReset=1" });
     expect(sessionCookieFrom(response)).toBeDefined();
 
     const sessions = await readFirstPartySessionsForUser(pool, resetUserId);

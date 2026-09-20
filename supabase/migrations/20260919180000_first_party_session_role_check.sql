@@ -96,7 +96,7 @@ begin
       'campaign_publisher', 'viewer', 'platform_support'
     )
     -- The cross-check. packages/auth/src/role-binding-map.ts is the one place
-    -- this pairing is written in TypeScript; this CASE is its mirror. A binding
+    -- this pairing is written in TypeScript, and this CASE is its mirror. A binding
     -- role the map leaves unmapped yields null, and `is distinct from` makes
     -- that a mismatch rather than a null the whole condition swallows.
     or issue_first_party_session.session_role is distinct from case

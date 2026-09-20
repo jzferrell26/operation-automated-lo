@@ -20,6 +20,30 @@ const REVIEW_TEST_DIR = "./tests/browser/review";
  */
 const reviewRun = process.env["OALO_REVIEW_BROWSER_RUN"] === "true";
 
+/**
+ * PRD-006d D8, the platform rule. Text rasterises differently on every platform, so a screen
+ * baseline only means something on the platform that drew it. The committed baselines under
+ * `tests/visual/screens/` are drawn by the `ubuntu-24.04` runner
+ * (`.github/workflows/screen-baselines.yml`) and compared wherever `CI` is set, which is that same
+ * runner. Every other run skips the comparison rather than failing on rasterisation, unless
+ * `OALO_COMPARE_SCREEN_BASELINES=true` asks for it.
+ *
+ * `OALO_SCREEN_SNAPSHOT_DIR` points both projects' pictures at a directory outside the
+ * repository, which is how the D9 sign-off captures a real set of every screen on any machine
+ * without touching a baseline. `OALO_UPDATE_SCREEN_BASELINES` (`all`, `changed`, `missing`, or
+ * `true` for missing) selects the write mode for both projects; the review runner passes the same
+ * value on its command line, so the two agree.
+ */
+const captureDirectory = process.env["OALO_SCREEN_SNAPSHOT_DIR"]?.replaceAll("\\", "/");
+const compareBaselines =
+  Boolean(process.env["CI"]) || process.env["OALO_COMPARE_SCREEN_BASELINES"] === "true";
+const baselineWriteMode = ((): "all" | "changed" | "missing" | undefined => {
+  const mode = process.env["OALO_UPDATE_SCREEN_BASELINES"];
+  if (mode === "true") return "missing";
+  if (mode === "all" || mode === "changed" || mode === "missing") return mode;
+  return undefined;
+})();
+
 export default defineConfig({
   testDir: "./tests/browser",
   outputDir: "./test-results/browser",
@@ -34,7 +58,12 @@ export default defineConfig({
    * byte-level rendering goldens in `tests/visual/rendering/`, and `tests/visual/screens/README.md`
    * says why the two are different things.
    */
-  snapshotPathTemplate: "tests/visual/screens/{projectName}/{arg}{ext}",
+  snapshotPathTemplate:
+    captureDirectory === undefined
+      ? "tests/visual/screens/{projectName}/{arg}{ext}"
+      : `${captureDirectory}/{projectName}/{arg}{ext}`,
+  ignoreSnapshots: captureDirectory === undefined && !compareBaselines,
+  ...(baselineWriteMode === undefined ? {} : { updateSnapshots: baselineWriteMode }),
   expect: {
     timeout: 5_000,
     toHaveScreenshot: {

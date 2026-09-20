@@ -1,0 +1,140 @@
+name: Screen baselines
+
+# PRD-006d D8. Regenerates every screen baseline on the platform that compares them, the
+# ubuntu-24.04 runner, and hands the pictures back as two artifacts. Nothing here commits: a
+# person downloads the artifacts into tests/visual/screens/, reads the diff of every picture that
+# changed against the rubric, and commits them with the "Baseline change:" line the pull request
+# template asks for (006D-AC-013). tests/visual/screens/README.md has the exact commands.
+#
+# Runs on demand, and once on a push to a non-main branch that changes this file, so a branch that
+# introduces the workflow can regenerate before the file exists on main.
+
+on:
+  workflow_dispatch:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - .github/workflows/screen-baselines.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: screen-baselines-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic:
+    name: Synthetic screens (chromium project)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      OALO_UPDATE_SCREEN_BASELINES: all
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+          package-manager-cache: false
+
+      - name: Enable Corepack and confirm pnpm
+        run: |
+          corepack enable
+          pnpm --version
+
+      - name: Resolve pnpm store path
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore pnpm store cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Draw every synthetic screen
+        run: pnpm test:browser --update-snapshots=all
+
+      - name: Hand back the pictures
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: screen-baselines-chromium
+          path: tests/visual/screens/chromium/*.png
+          if-no-files-found: error
+          retention-days: 7
+
+  review:
+    name: Account screens and guided setup (review project)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      SUPABASE_TELEMETRY_DISABLED: "true"
+      OALO_UPDATE_SCREEN_BASELINES: all
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+          package-manager-cache: false
+
+      - name: Enable Corepack and confirm pnpm
+        run: |
+          corepack enable
+          pnpm --version
+
+      - name: Resolve pnpm store path
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore pnpm store cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      # The review project only exists inside the database gate, which starts the disposable
+      # database, seeds the people, and runs the TLS terminator. The write mode above makes its
+      # screenshot step draw instead of compare; every other step of the gate still has to pass.
+      - name: Draw every account screen and guided-setup step
+        run: pnpm test:db
+
+      - name: Hand back the pictures
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: screen-baselines-review
+          path: tests/visual/screens/review/*.png
+          if-no-files-found: error
+          retention-days: 7

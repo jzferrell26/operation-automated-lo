@@ -38,22 +38,35 @@ screens and the guided-setup steps) comes from `snapshotPathTemplate` in `playwr
 
 ## Platform
 
-**The baselines currently committed here were generated on Windows and must be regenerated on the
-`ubuntu-24.04` runner before they gate anything.**
+Text rasterises differently on every platform, so a baseline only means something on the platform
+that drew it. **Every committed baseline is drawn by the `ubuntu-24.04` runner, and the comparison
+runs only where `CI` is set, which is that same runner.** A developer machine, whatever its
+operating system, skips the comparison instead of failing on rasterisation; the axe, keyboard,
+motion, and target-size checks in the same specs still run. Set `OALO_COMPARE_SCREEN_BASELINES=true`
+to compare anyway (a Linux machine with the runner's fonts is the only place that is useful).
 
-Playwright appends the platform to a baseline's name, so a Windows baseline and a Linux baseline
-are different files and never silently compare against each other. Text rasterises differently on
-each platform, so a Windows baseline will not pass on Linux however small the tolerance is.
+### Regenerating
 
-To regenerate on the runner:
+`.github/workflows/screen-baselines.yml` runs both suites on the runner in write mode and hands the
+pictures back as two artifacts. Nothing in the workflow commits.
 
-```
-pnpm test:browser --update-snapshots
-```
+1. Run it: `gh workflow run screen-baselines.yml --ref <branch>` (it also runs once on any push to
+   a non-main branch that changes the workflow file itself).
+2. Wait for both jobs: `gh run watch <run-id>`.
+3. Download into place:
+   `gh run download <run-id> -n screen-baselines-chromium -D tests/visual/screens/chromium` and
+   `gh run download <run-id> -n screen-baselines-review -D tests/visual/screens/review`.
+4. Read the diff of every picture that changed against the rubric, then commit them with the
+   `Baseline change:` line the pull request template asks for.
 
-Run it on a `ubuntu-24.04` job, commit only the `-linux.png` files it writes, and delete the
-`-win32.png` files in the same commit. A macOS or Windows developer machine compares
-informationally and must never commit a baseline.
+### Capturing without touching a baseline
+
+`OALO_SCREEN_SNAPSHOT_DIR=<directory outside the repository>` with
+`OALO_UPDATE_SCREEN_BASELINES=all` writes every picture both suites take into that directory
+instead of here, on any platform. This is how the D9 sign-off in
+`docs/operations/evidence-packs/design-quality-signoff.md` gets a real set of screenshots of the
+final tree: `pnpm test:browser` for the synthetic screens and `pnpm test:db` for the account screens
+and the guided setup, with both variables set. The pictures stay outside git.
 
 ## Changing a baseline
 

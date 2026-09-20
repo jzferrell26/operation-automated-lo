@@ -3,7 +3,7 @@
 > **Status:** In Work (moved from backlog at gauntlet raid start, 2026-09-19)
 > **Priority:** P0. All four sub-features come from the product owner's own words on 2026-09-19, mid-raid, and the review URL is not usable by a real loan officer until they ship.
 > **Effort:** XL (> 3d engineering across four sub-PRDs, plus the operator asks for email sending and initial passwords)
-> **Schema changes:** Additive (006a adds three tables and twelve `security definer` functions, widens two check constraints on `platform.first_party_sessions`, and drops one function; 006c adds `platform.user_preferences`)
+> **Schema changes:** Additive (006a adds three tables and thirteen `security definer` functions, amended 2026-09-19 from D1's original twelve, see 006a's Amendments; widens two check constraints on `platform.first_party_sessions`, and drops one function; 006c adds `platform.user_preferences`)
 > **Close-out:** `security-guardian` then `quality-guardian` on the final tree, never reversed, and again after any later change to auth, session, token, rate-limit, or preferences code
 
 ---
@@ -50,7 +50,7 @@ This PRD does not authorize production traffic, HighLevel OAuth or the signed-co
 
 | Sub-PRD | Scope | Owner requirement | Status |
 |---|---|---|---|
-| [`prd-006a-first-party-sign-in-and-guided-experience-email-password-auth`](./prd-006a-first-party-sign-in-and-guided-experience-email-password-auth.md) | Email and password sign-in, self-serve sign-up behind `OALO_SELF_SERVE_SIGNUP`, forgot-password and reset by emailed link, email verification, sign-out, change-password; credential, token, and rate-limit tables with twelve definer functions; scrypt hashing and a password policy; lockout and rate limits; a Resend email port with an honest not-configured state; seeding extended for initial passwords; removal of the PRD-005b D4 persona path | 1 (and the five-minute rule's first two minutes) | Draft |
+| [`prd-006a-first-party-sign-in-and-guided-experience-email-password-auth`](./prd-006a-first-party-sign-in-and-guided-experience-email-password-auth.md) | Email and password sign-in, self-serve sign-up behind `OALO_SELF_SERVE_SIGNUP`, forgot-password and reset by emailed link, email verification, sign-out, change-password; credential, token, and rate-limit tables with thirteen definer functions (amended from twelve, see 006a's Amendments); scrypt hashing and a password policy; lockout and rate limits; a Resend email port with an honest not-configured state; seeding extended for initial passwords; removal of the PRD-005b D4 persona path | 1 (and the five-minute rule's first two minutes) | Draft |
 | [`prd-006b-first-party-sign-in-and-guided-experience-user-language`](./prd-006b-first-party-sign-in-and-guided-experience-user-language.md) | The user-language contract (audience, tone, forbidden and preferred vocabulary, honesty in user language), a line-level copy inventory, exact strings for the auth pages and emails, error codes as sentences, a source guard and a rendered-output guard, updated pinned tests, corrected public docs, and a writing review | 2 | Draft |
 | [`prd-006c-first-party-sign-in-and-guided-experience-guided-setup`](./prd-006c-first-party-sign-in-and-guided-experience-guided-setup.md) | An in-house guided setup on the design system with a `data-tour` anchor registry, seven steps with per-step budgets from account creation to a saved and approved (or handed off) first Open House Boost, server-side progress and a small profile in `platform.user_preferences`, auto-start, resume, skip, reminder, restart, completion, keyboard and screen-reader behaviour, mobile behaviour, and a timed browser run in review mode over local TLS with a 300-second ceiling | 3 (and the five-minute rule) | Draft |
 | [`prd-006d-first-party-sign-in-and-guided-experience-design-quality-bar`](./prd-006d-first-party-sign-in-and-guided-experience-design-quality-bar.md) | A ten-axis scored rubric with the bar at the top score on every axis for every screen, frame, theme, and state; the missing primitives (fields, password field, link, sheet and dialog, stepper, badge, live region); repair of font, token, breakpoint, and reduced-motion drift; axe at all four frames; token-derived contrast tests; Playwright screenshot baselines; the orchestrator's sign-off from real screenshots; and the rule that no UI ships without the review | 4 | Draft |
@@ -123,7 +123,7 @@ For the ledger's reconciliation. Nothing here changes a status in PRD-005; the o
 
 ## Data model changes
 
-Additive, owned by 006a: `platform.user_credentials`, `platform.credential_tokens`, `platform.auth_rate_limits`, all with RLS forced and no runtime grants, and twelve `security definer` functions; two check constraints on `platform.first_party_sessions` widened (`issued_by` gains `password_sign_in` and `password_reset`; `revocation_reason` gains `password_changed`); `platform.resolve_review_persona` dropped. Additive, owned by 006c: `platform.user_preferences` with the standard tenant policies and `select, insert, update` for `app_runtime`. No existing column, index, or policy changes shape.
+Additive, owned by 006a: `platform.user_credentials`, `platform.credential_tokens`, `platform.auth_rate_limits`, all with RLS forced and no runtime grants, and thirteen `security definer` functions (amended 2026-09-19 from twelve, see 006a's Amendments); two check constraints on `platform.first_party_sessions` widened (`issued_by` gains `password_sign_in` and `password_reset`; `revocation_reason` gains `password_changed`); `platform.resolve_review_persona` dropped. Additive, owned by 006c: `platform.user_preferences` with the standard tenant policies and `select, insert, update` for `app_runtime`. No existing column, index, or policy changes shape.
 
 ## API changes
 
@@ -161,3 +161,7 @@ Additive, owned by 006a: `platform.user_credentials`, `platform.credential_token
 - [UX/UI source of truth](../../../knowledge/private/ux-ui/README.md)
 - [What Automated LO does today](../../../knowledge/public/overview/what-is-automated-lo.md) and the [Open House Boost FAQ](../../../knowledge/public/faqs/open-house-boost-faq.md)
 - [Agent terrain map](../../../../.cursor/rules/core/the-map.mdc)
+
+## Amendments
+
+Dated amendments recording where a shipped decision differs from this PRD set's drafted text live in the sub-PRDs the decision touches, not here: 006a carries three (the hashing algorithm, the definer function list, and the reset landing address), 006c carries one (the review server's environment name), and 006d carries one (where the screenshot comparison runs). See each sub-PRD's own "## Amendments" section, all dated 2026-09-19.

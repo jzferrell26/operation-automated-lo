@@ -103,7 +103,14 @@ export function AppShell({
       </aside>
 
       <div className={styles.workspace}>
-        <header className={styles.topbar}>
+        {/*
+          PRD-006c D7, "the panel never obscures the focused element or the shell's sticky
+          header". The attribute is the shell saying which of its own elements is pinned to the
+          block start, so anything that scrolls the page can keep clear of it without reading this
+          file's class names. The guided setup's placement model takes the measurement as
+          `Viewport.blockStart`; the shell itself knows nothing about the walkthrough.
+        */}
+        <header className={styles.topbar} data-shell-sticky-header="true">
           <div className={styles.mobileMenu}>
             <IconButton
               aria-controls={DRAWER_ID}

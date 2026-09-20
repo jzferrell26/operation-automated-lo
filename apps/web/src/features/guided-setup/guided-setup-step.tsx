@@ -12,6 +12,7 @@ import { anchorSelector, type GuidedSetupAnchorId } from "./anchor-registry.js";
 import { GuidedSetupProgressTrack } from "./guided-setup-progress.js";
 import type { GuidedSetupProgress } from "./model/progress.js";
 import {
+  panelEndRoom,
   resolveAnchorScroll,
   resolvePanelPlacement,
   type PanelPlacement,
@@ -86,6 +87,19 @@ const FOCUSABLE_WITHIN_ANCHOR = "input, select, textarea, button, a[href]";
 const SHEET_SELECTOR = '[data-overlay-kind="sheet"]';
 
 /**
+ * PRD-006c D7, Wave 7r. The room the open panel asks the page for, published for the shell.
+ *
+ * The walkthrough cannot reach into the shell's layout and the shell knows nothing about the
+ * walkthrough, which is the arrangement `app-shell.tsx` keeps deliberately: it takes the chip and
+ * the help menu as a slot rather than importing them. So the number crosses as a custom property
+ * on the document element, which `app-shell.module.css` reads into the main landmark's end
+ * padding. It is set only while a step is open and removed on cleanup, so a page with no
+ * walkthrough on it, or one whose walkthrough has been dismissed or completed, falls back to the
+ * `0px` in the stylesheet's own `var()` and nothing about its layout moves.
+ */
+const PANEL_ROOM_PROPERTY = "--guided-setup-panel-room";
+
+/**
  * PRD-006d's F-23. How long a dismissal may take before the panel explains itself.
  *
  * It is not a motion duration and does not come from the motion buckets: nothing moves. It is the
@@ -101,6 +115,22 @@ function focusFirstControl(element: HTMLElement): void {
     ? element
     : element.querySelector<HTMLElement>(FOCUSABLE_WITHIN_ANCHOR);
   focusable?.focus();
+}
+
+/**
+ * D7. How much of the viewport's block start the shell's sticky header is holding.
+ *
+ * The element is found by the attribute the shell puts on its own topbar rather than by a class
+ * name or a tag, so a screen without that chrome, such as a server render or a test harness,
+ * simply answers zero. A header that is not actually pinned is not in the way, so its position is
+ * read before its height is believed.
+ */
+function stickyHeaderInset(): number {
+  const header = document.querySelector<HTMLElement>("[data-shell-sticky-header]");
+  if (header === null) return 0;
+  const { position } = window.getComputedStyle(header);
+  if (position !== "sticky" && position !== "fixed") return 0;
+  return header.getBoundingClientRect().height;
 }
 
 function rectOf(element: Element): Rect {
@@ -155,6 +185,37 @@ export function GuidedSetupStep({
     const next = rectOf(panel);
     setPanelSize((current) => (sameSize(current, next) ? current : next));
   }, []);
+
+  /**
+   * D7. The page gains room at its end for the panel, so the scroll below has somewhere to go.
+   *
+   * **It is declared before the effect that scrolls, and that is the whole point.** React runs
+   * passive effects in declaration order within a commit, and `window.scrollBy` is clamped to the
+   * document's height at the instant it runs. An effect that added the room after the scroll would
+   * hand the scroll a page that was still too short, which is the defect this is here to fix.
+   * `panelEndRoom` answers the stylesheet's cap whether or not the panel has been measured, so the
+   * room is already at full size on the first commit of a step and never narrows afterwards.
+   *
+   * The resize listener is the step's own, separate from the one `attach` installs, because three
+   * of the seven steps render their form inside the panel and never attach to a page element at
+   * all, and the room is a fact about the frame rather than about an element.
+   */
+  useEffect(() => {
+    const root = document.documentElement;
+    function apply(): void {
+      const room = panelEndRoom(panelSize, {
+        height: window.innerHeight,
+        width: window.innerWidth,
+      });
+      root.style.setProperty(PANEL_ROOM_PROPERTY, `${String(Math.round(room))}px`);
+    }
+    apply();
+    window.addEventListener("resize", apply);
+    return () => {
+      window.removeEventListener("resize", apply);
+      root.style.removeProperty(PANEL_ROOM_PROPERTY);
+    };
+  }, [panelSize]);
 
   /**
    * Measuring, highlighting, and scrolling are one effect because they are one fact about one
@@ -218,6 +279,7 @@ export function GuidedSetupStep({
       // D7. The element is brought into the space the panel is not using before anything is
       // measured, so the numbers the panel is placed from are the ones the user will see.
       const delta = resolveAnchorScroll(rectOf(element), panelSize, {
+        blockStart: stickyHeaderInset(),
         height: window.innerHeight,
         width: window.innerWidth,
       });

@@ -107,10 +107,20 @@ async function assertTheStepPointsAtSomething(page: Page, where: string): Promis
 }
 
 /**
- * D7's real promise: the panel never covers the field the user is being asked to fill in. The
- * check is against the first control inside the anchored element rather than the whole group,
- * because a group can be taller than the space above a bottom sheet and the part that has to stay
- * visible is the control, not the legend above it.
+ * D7's real promise: the panel never covers the thing the user is being asked to use. The check is
+ * against the first control inside the anchored element rather than the whole group, because a
+ * group can be taller than the space above a bottom sheet and the part that has to stay visible is
+ * the control, not the legend above it.
+ *
+ * Two assertions, because a rectangle test alone is not the promise. The rectangles say the sheet
+ * is not on top of the control; `document.elementFromPoint` at the control's centre says the tap a
+ * person makes there reaches the control rather than the walkthrough's own layer. Wave 7p measured
+ * exactly that difference: a click that resolved to the submit button, found it visible, enabled
+ * and stable, and was intercepted by the panel's footer inside `[data-guided-setup-layer]`.
+ *
+ * Wave 7r runs this at every step that points at a page element, in every cell, rather than at the
+ * two D7 names. The two it was excused at, step 5's result block and step 6's approve control, are
+ * the ones the defect was found on, and a check that skips the steps it fails on is not a check.
  */
 async function assertPanelClearOfTheField(page: Page, where: string): Promise<void> {
   const highlighted = page.locator("[data-guided-setup-highlight='true']").first();
@@ -119,6 +129,8 @@ async function assertPanelClearOfTheField(page: Page, where: string): Promise<vo
   const target = (await control.count()) > 0 ? control : highlighted;
   const panelBox = await page.getByRole("dialog").boundingBox();
   const targetBox = await target.boundingBox();
+  expect(panelBox, `${where}: the panel has a box`).not.toBeNull();
+  expect(targetBox, `${where}: the element the panel points at has a box`).not.toBeNull();
   if (panelBox === null || targetBox === null) return;
   const overlaps =
     panelBox.x < targetBox.x + targetBox.width &&
@@ -126,6 +138,19 @@ async function assertPanelClearOfTheField(page: Page, where: string): Promise<vo
     panelBox.y < targetBox.y + targetBox.height &&
     panelBox.y + panelBox.height > targetBox.y;
   expect(overlaps, `${where}: the panel covers the field it is pointing at`).toBe(false);
+
+  const atTheCentre = await target.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+    if (hit === null) return "nothing";
+    if (element.contains(hit) || hit.contains(element)) return "the element";
+    const layer = hit.closest("[data-guided-setup-layer]");
+    if (layer !== null) return "the walkthrough's own layer";
+    return `${hit.tagName.toLowerCase()}.${hit.className.toString().slice(0, 40)}`;
+  });
+  expect(atTheCentre, `${where}: a tap at the centre of the element does not reach it`).toBe(
+    "the element",
+  );
 }
 
 /**
@@ -184,22 +209,16 @@ type Checkpoint = Readonly<{
   /**
    * Whether the step points at something on the page. Steps 2, 3, and 7 render inside the panel,
    * so there is nothing on the page to highlight and nothing for the panel to cover.
+   *
+   * Every step for which this is true gets the whole D7 contract: it points at something, the
+   * sheet is clear of it, and a tap at its centre reaches it. Until Wave 7r steps 5 and 6 were
+   * excused from the clearance half, because at 390 the result block and the approve control sit
+   * at the end of a long page that is already at its maximum scroll and nothing could lift them
+   * above a sheet pinned to the block end. That is the defect 006C-AC-013 was reopened on, and it
+   * is fixed in `model/panel-placement.ts` and `app-shell.module.css`: the page now gains room at
+   * its end under the docked sheet. There is nothing left to excuse.
    */
   pointsAtPage: boolean;
-  /**
-   * Whether the panel must also be clear of what it is pointing at.
-   *
-   * D7's promise is about the field the person is being asked to fill in, which is what steps 1
-   * and 4 point at. Steps 5 and 6 point at a result block and an approval control on a page the
-   * person has arrived at to read and decide, and at 390 both sit at the end of a long page that
-   * is already scrolled to its bottom, so nothing can lift them above a sheet pinned to the
-   * bottom edge. Measured on 2026-09-20: "Light 390x844 6. Approve, or hand it to an approver"
-   * overlapped, and the same page at 1180 did not. The control is still reachable, because D6
-   * hands focus to whatever the panel points at, so the walkthrough is operable; what is missing
-   * is room at the end of the page, which belongs with the panel placement and the stylesheet that
-   * caps the sheet. It is reported rather than asserted here.
-   */
-  panelMustBeClear: boolean;
   advance: () => Promise<void>;
 }>;
 
@@ -208,7 +227,6 @@ async function walkAndAssert(page: Page, where: string): Promise<void> {
     {
       step: "1. Welcome",
       pointsAtPage: true,
-      panelMustBeClear: true,
       advance: async () => {
         await page.getByRole("button", { name: "Let's go" }).click();
       },
@@ -216,7 +234,6 @@ async function walkAndAssert(page: Page, where: string): Promise<void> {
     {
       step: "2. Your details",
       pointsAtPage: false,
-      panelMustBeClear: false,
       advance: async () => {
         await continueToPanel(page, "Your Realtor partner");
       },
@@ -224,7 +241,6 @@ async function walkAndAssert(page: Page, where: string): Promise<void> {
     {
       step: "3. Your Realtor partner",
       pointsAtPage: false,
-      panelMustBeClear: false,
       advance: async () => {
         // Emptied first: on the second cell this account's profile already holds the name, and
         // typing into a prefilled field appends.
@@ -237,7 +253,6 @@ async function walkAndAssert(page: Page, where: string): Promise<void> {
     {
       step: "4. Create the Open House Boost",
       pointsAtPage: true,
-      panelMustBeClear: true,
       advance: async () => {
         // The panel's own focus promise, asserted on the step that can break it, before the
         // draft is filled in.
@@ -251,7 +266,6 @@ async function walkAndAssert(page: Page, where: string): Promise<void> {
     {
       step: "5. Read the result",
       pointsAtPage: true,
-      panelMustBeClear: false,
       advance: async () => {
         await continueToPanel(page, "Approve, or hand it to an approver");
       },
@@ -259,7 +273,6 @@ async function walkAndAssert(page: Page, where: string): Promise<void> {
     {
       step: "6. Approve, or hand it to an approver",
       pointsAtPage: true,
-      panelMustBeClear: false,
       advance: async () => {
         await continueToPanel(page, "What happens next");
       },
@@ -268,7 +281,6 @@ async function walkAndAssert(page: Page, where: string): Promise<void> {
       // The last step's anchor is inside the panel, so there is nothing on the page to point at.
       step: "7. What happens next",
       pointsAtPage: false,
-      panelMustBeClear: false,
       advance: async () => {
         await page.getByRole("button", { name: "Done" }).click();
         await expect(page.getByRole("dialog")).toBeHidden();
@@ -295,11 +307,7 @@ async function walkAndAssert(page: Page, where: string): Promise<void> {
     await assertAxeClean(page, label);
     await assertNoMotion(page, label);
     await assertTargetSizes(page, label);
-    if (checkpoint.panelMustBeClear) {
-      await assertPanelClearOfTheField(page, label);
-    } else if (checkpoint.pointsAtPage) {
-      await assertTheStepPointsAtSomething(page, label);
-    }
+    if (checkpoint.pointsAtPage) await assertPanelClearOfTheField(page, label);
     await checkpoint.advance();
   }
 }
@@ -321,6 +329,14 @@ test("every step is accessible in both themes at the mobile and embedded frames"
    * this walked then. Carrying every cell through the three saved-campaign steps adds one campaign
    * per cell: about seventy typed characters at 200 ms plus the checks, which is roughly 25 s a
    * cell and 100 s in total, so the budget goes to 420 s rather than 300.
+   *
+   * Wave 7r measured the whole thing for the first time, because until the page was given room at
+   * its end this test could not reach the end of a cell. Measured on 2026-09-20 in the review
+   * composition on the same workstation: 138 s for all four cells, all seven steps, with the
+   * clearance and hit-test assertions now running at every step that points at the page and the
+   * campaign saved through a pointer press rather than the keyboard. The budget stays at 420 s:
+   * it is three times the measured duration, which is the room the 30 s step-arrival allowance
+   * needs if a cold pool makes two or three saves take it.
    */
   test.setTimeout(420_000);
   const guard = await guardLocalOrigin(page);

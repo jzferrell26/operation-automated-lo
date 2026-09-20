@@ -5,7 +5,9 @@ import {
   PANEL_GAP,
   PANEL_MAX_BLOCK_SIZE,
   PANEL_MAX_VIEWPORT_SHARE,
+  SIDE_ANCHOR_MIN_WIDTH,
   VIEWPORT_MARGIN,
+  panelEndRoom,
   panelBlockSize,
   resolveAnchorScroll,
   resolvePanelPlacement,
@@ -182,6 +184,135 @@ describe("panel placement", () => {
     expect(resolveAnchorScroll(rect(16, -120, 358, 64), PANEL, MOBILE)).toBe(
       -120 - VIEWPORT_MARGIN,
     );
+  });
+
+  /**
+   * PRD-006c D7, Wave 7r, and 006C-AC-013's reopened half.
+   *
+   * The room the page is given at its end while a step is open. The walkthrough can only ask the
+   * page to scroll, so an element within the panel's own block size of the page's end cannot be
+   * lifted clear of it. These are the numbers of that room at the four frames the brief names and
+   * at the frame just below the bottom-sheet boundary, each built from the same block size the
+   * scroll is built from.
+   */
+  it("asks the page for the room the panel can occupy at the viewport's end", () => {
+    const sheet: Size = { height: 300, width: 390 };
+
+    // Below the boundary the sheet is docked and capped at 40 percent of the viewport, which at
+    // 844 is 337.6, so the cap rather than this measurement is what the room is built from.
+    expect(panelEndRoom(sheet, MOBILE), "390x844").toBeCloseTo(
+      MOBILE.height * BOTTOM_SHEET_VIEWPORT_SHARE + PANEL_GAP + VIEWPORT_MARGIN,
+      5,
+    );
+    const justBelowTheBoundary = { height: 1024, width: SIDE_ANCHOR_MIN_WIDTH - 0.02 } as const;
+    expect(panelEndRoom(sheet, justBelowTheBoundary), "767.98x1024").toBeCloseTo(
+      justBelowTheBoundary.height * BOTTOM_SHEET_VIEWPORT_SHARE + PANEL_GAP + VIEWPORT_MARGIN,
+      5,
+    );
+
+    // At and above it the panel is the wide-frame one, capped at min(28rem, 60vh).
+    for (const viewport of [TABLET, EMBEDDED, DESKTOP]) {
+      expect(panelEndRoom(sheet, viewport), `${String(viewport.width)}`).toBe(
+        panelBlockSize(sheet, viewport) + PANEL_GAP + VIEWPORT_MARGIN,
+      );
+    }
+    expect(panelEndRoom(sheet, DESKTOP), "1440x900").toBe(
+      PANEL_MAX_BLOCK_SIZE + PANEL_GAP + VIEWPORT_MARGIN,
+    );
+  });
+
+  /**
+   * The room is at its full size before anything has been measured, and never narrows.
+   *
+   * The scroll runs on the commit that attaches a step, which is a commit on which the panel has
+   * not been measured yet. Room that arrived small and grew afterwards would be room the scroll
+   * could not use; room that arrived large and shrank would shorten the document, and the browser
+   * would clamp the scroll back down and slide the control under the panel again.
+   */
+  it("asks for the same room measured or not, and never for less", () => {
+    for (const viewport of [MOBILE, TABLET, EMBEDDED, DESKTOP]) {
+      const unmeasured = panelEndRoom(undefined, viewport);
+      for (const panel of [
+        { height: 0, width: 384 },
+        { height: 120, width: 384 },
+        { height: 300, width: 384 },
+      ] as const) {
+        expect(
+          panelEndRoom(panel, viewport),
+          `${String(viewport.width)} with a panel of ${String(panel.height)}`,
+        ).toBe(unmeasured);
+      }
+    }
+  });
+
+  /**
+   * The room is enough for the scroll the model asks for, which is the whole reason it exists.
+   *
+   * The page starts at its maximum scroll with the last control at the end of it, above whatever
+   * trailing space the page already has: the shell's own content padding, `--space-4` at the
+   * mobile frame and `--space-6` above it. The room is what lets `resolveAnchorScroll`'s answer be
+   * obeyed rather than clamped, so the assertion is that the answer fits inside it.
+   *
+   * The wide frames are in here because the browser put them there. Measured on 2026-09-20 at
+   * 1180, on the campaign page's approve control: "the panel covers the field it is pointing at".
+   * The element is wide, so the panel goes below it, and the page had no scroll left to give.
+   */
+  it("gives the last control on a page enough room to rise clear of the panel", () => {
+    for (const { viewport, trailing } of [
+      { viewport: MOBILE, trailing: 16 },
+      { viewport: TABLET, trailing: 24 },
+      { viewport: EMBEDDED, trailing: 24 },
+      { viewport: DESKTOP, trailing: 24 },
+    ]) {
+      // Wide enough that the panel has to go below it rather than beside it at every frame.
+      const control = rect(16, viewport.height - trailing - 48, viewport.width - 32, 48);
+      for (const panel of [undefined, { height: 300, width: 384 } as Size]) {
+        const where = `${String(viewport.width)} ${panel === undefined ? "unmeasured" : "measured"}`;
+        const delta = resolveAnchorScroll(control, panel, viewport);
+        const room = panelEndRoom(panel, viewport);
+        expect(
+          delta,
+          `${where}: the last control is under the panel and has to rise`,
+        ).toBeGreaterThan(0);
+        expect(delta, `${where}: the scroll fits in the room`).toBeLessThanOrEqual(room);
+      }
+    }
+  });
+
+  /**
+   * PRD-006c D7, "the panel never obscures the focused element or the shell's sticky header".
+   *
+   * The space an element has is between the shell's sticky topbar and the panel, not between the
+   * top of the viewport and the panel. Measured on 2026-09-20 in the review browser run, once the
+   * clearance check started asking whether a tap at the element's centre reaches it: "Dark
+   * 1180x900 1. Welcome: a tap at the centre of the element does not reach it ... Received:
+   * header.app-shell-module__topbar". The overview's quick actions are taller than that space, so
+   * the scroll keeps their top, and the top had been going to the margin rather than below the
+   * topbar.
+   */
+  it("keeps an element clear of the shell's sticky header, not only of the viewport edge", () => {
+    const stickyHeader = 72;
+    const withHeader = { ...EMBEDDED, blockStart: stickyHeader } as const;
+    const ceiling = EMBEDDED.height - PANEL.height - PANEL_GAP - VIEWPORT_MARGIN;
+
+    // Taller than the space between the header and the panel, so its top is what is kept.
+    const tall = rect(96, 400, 1000, ceiling);
+    expect(tall.height, "the case is an element taller than the space it has").toBeGreaterThan(
+      ceiling - stickyHeader - VIEWPORT_MARGIN,
+    );
+    expect(tall.top - resolveAnchorScroll(tall, PANEL, withHeader)).toBe(
+      stickyHeader + VIEWPORT_MARGIN,
+    );
+
+    // An element already above the header is pulled back below it rather than to the margin.
+    const high = rect(96, 20, 1000, 64);
+    expect(high.top - resolveAnchorScroll(high, PANEL, withHeader)).toBe(
+      stickyHeader + VIEWPORT_MARGIN,
+    );
+
+    // With no header declared the arithmetic is what it was, which is what keeps every other case
+    // here and every caller that does not know about a shell answering the same as before.
+    expect(resolveAnchorScroll(tall, PANEL, EMBEDDED)).toBe(tall.top - VIEWPORT_MARGIN);
   });
 
   it("scrolls a wide-frame element above a panel that had to go below it", () => {

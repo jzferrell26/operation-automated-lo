@@ -221,8 +221,29 @@
   color: var(--st-warning-fg);
 }
 
+/* PRD-006c D7, Wave 7r. Room at the end of the page for the guided setup's
+ * panel, at every frame.
+ *
+ * The walkthrough can only ask the page to scroll, so an element within the
+ * panel's own block size of the page's end cannot be lifted clear of it and the
+ * panel covers the thing it is pointing at. Measured in the review run on
+ * 2026-09-20 at 390 on the create screen's "Save and run the checks" and at 1180
+ * on the campaign page's approve control, which is why this rule is not confined
+ * to the mobile frame. The number is the panel's block size plus the gap and the
+ * margin, published by `guided-setup-step.tsx` from
+ * `model/panel-placement.ts`'s `panelEndRoom`, so the page and the placement
+ * cannot drift apart.
+ *
+ * The fallback is what keeps this inert: with no step open the property is not
+ * set, the padding is the one above it, and nothing moves.
+ *
+ * `padding-block-end` follows the `padding` shorthand rather than replacing it,
+ * because the other three sides are unchanged and the later declaration is the
+ * one that wins for the block end.
+ */
 .content {
   padding: var(--space-6);
+  padding-block-end: calc(var(--space-6) + var(--guided-setup-panel-room, 0px));
 }
 
 /* PRD-006d 006D-AC-003. The drawer is the `Dialog` primitive at its
@@ -322,8 +343,12 @@
     margin-inline-start: calc(var(--space-4) + var(--space-2));
   }
 
+  /* The mobile padding, carrying the same room rule as the frame above. Below
+   * 767.98px the panel is a bottom sheet pinned to the block end, which is the
+   * frame where this was first measured. */
   .content {
     padding: var(--space-4);
+    padding-block-end: calc(var(--space-4) + var(--guided-setup-panel-room, 0px));
   }
 }
 

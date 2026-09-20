@@ -82,6 +82,40 @@ the tablet frame, which drew a bottom sheet while the model anchored the panel
 beside the element it points at. `app-shell.module.css` already drew its mobile
 boundary at 767.98px for the same reason.
 
+## An open panel gives the page room at its end
+
+Design brief section 14: "Sticky actions never cover fields, errors, or safe-area
+insets." The guided setup's placement model can only ask the page to scroll, and
+a page already at its maximum scroll has nothing left to give, so an element
+within the panel's own block size of the page's end cannot rise clear of it.
+Measured twice in the review browser run on 2026-09-20: at 390 the create
+screen's "Save and run the checks" sat under the docked sheet and a tap there
+reached the sheet's footer, and at 1180 the campaign page's approve control was
+covered by the panel that had to go below it.
+
+The rule, added 2026-09-20: while a guided-setup step is open, the document gains
+room at its end equal to the block size the panel is placed against at that
+frame, plus the gap and the viewport margin the scroll's own ceiling subtracts.
+It applies at every frame, because the defect is the end of a page rather than
+the mobile sheet.
+
+- The number is `panelEndRoom` in
+  `apps/web/src/features/guided-setup/model/panel-placement.ts`, computed from
+  the same block size the scroll is computed from, so the two cannot drift. It
+  depends only on the frame and the panel, never on the anchored element, so it
+  is knowable on the first render of a step, which is the render the scroll runs
+  on.
+- It crosses to the layout as the custom property `--guided-setup-panel-room`
+  on the document element, published by `guided-setup-step.tsx` while a step is
+  open and removed on cleanup. `app-shell.module.css` adds it to the main
+  landmark's end padding at both its frames.
+- With no step open the property is absent, the stylesheet's `var()` falls back
+  to `0px`, and nothing moves. The room never narrows while a step is open,
+  because a document that shortened would let the browser clamp the scroll back
+  down and slide the control under the panel again.
+- The sticky footer is inside the panel and is part of the block size this
+  measures, so the room is not added twice.
+
 ## The footer stays visible
 
 A sheet is capped in the block axis and scrolls inside itself. Its footer is

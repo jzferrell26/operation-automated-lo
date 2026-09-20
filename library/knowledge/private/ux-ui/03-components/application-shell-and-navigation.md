@@ -60,6 +60,29 @@ act on the session live, so the sign-out control had ended up as the first child
   shell to make one button work, and the control still cannot be pressed from another site.
 - A shell with no session renders no account control, and says so in the page instead.
 
+### The topbar says that it is sticky
+
+Recorded 2026-09-20 by Wave 7r, closing the reopened 006C-AC-013. The topbar is
+`position: sticky` at the block start on every frame, so it holds the first
+several rows of the viewport, and anything that scrolls the page has to leave
+that space alone: PRD-006c D7 asks that the guided-setup panel never obscure the
+focused element or the shell's sticky header. The walkthrough had been scrolling
+an anchored element to the 16px viewport margin, which put the first control
+inside a tall element underneath the topbar. Measured in the review browser run:
+"Dark 1180x900 1. Welcome: a tap at the centre of the element does not reach it
+... Received: header.app-shell-module__topbar".
+
+- The topbar carries `data-shell-sticky-header="true"`. It is the shell naming
+  its own pinned element, so anything that scrolls the page can measure it
+  without reading this file's class names, and a surface without the chrome
+  simply finds nothing.
+- The guided setup reads it into its placement model as `Viewport.blockStart`
+  (`apps/web/src/features/guided-setup/model/panel-placement.ts`). The model
+  itself knows nothing about the shell; the attribute is what crosses.
+- Nothing in the shell imports the walkthrough or is aware of it, which is the
+  same arrangement the "Finish setup" chip and the help menu keep: the shell
+  takes them as a slot.
+
 ### Theme control
 
 - Light, Dark, and System form one keyboard-accessible segmented control.

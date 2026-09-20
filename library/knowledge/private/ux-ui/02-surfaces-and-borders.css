@@ -31,6 +31,17 @@
  *
  * Adding a `.ui-*` class here without adding its product counterpart is a
  * finding, and so is the reverse.
+ *
+ * AUDITED 2026-09-20 by design-system-guardian, signing 006D-AC-005. Each of
+ * the ten mappings above was checked against the file it names: every named
+ * counterpart exists, every named motion bucket appears in the file it points
+ * at, and no `.ui-*` class in this file has a consumer anywhere in `apps/` or
+ * `packages/`, which is what "reference only" claims. The annotation holds.
+ *
+ * `.ui-focusable` below still reads `--focus-color`, and its meaning is
+ * unchanged, but what that token resolves from changed on 2026-09-20: the ring
+ * is now its own value per theme instead of the tenant accent. See rubric delta
+ * D-001 and brief section 18.
  */
 
 .ui-canvas {

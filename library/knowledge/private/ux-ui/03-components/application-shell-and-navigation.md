@@ -26,6 +26,8 @@ Present Operation Automated LO as one platform with connected modules. The shell
 
 - Tablet uses a collapsible rail.
 - Mobile uses a top bar and modal navigation drawer.
+
+Ruled 2026-09-20 by `design-system-guardian`, closing rubric delta D-008 and matching brief section 14: the 1440, 1180, and 768 frames carry one rail and one toggle, not three rail designs. It opens expanded at all three, it collapses to the compact rail at all three, and its collapsed state is not required to persist across a reload. At 768 the expanded rail is 272px and leaves a 496px content column, which is accepted. Forcing the compact rail and hiding the toggle at a constrained frame is a defect against this line.
 - Drawer focus is trapped, Escape closes it, background scroll is locked, and focus returns to the trigger.
 - Touch targets are at least 44px by 44px.
 

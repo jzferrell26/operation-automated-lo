@@ -158,6 +158,8 @@ Status never depends on color alone. Every status pairs color with text and a gl
 
 Tenant branding may override only allowlisted semantic accents. Overrides must define valid Light and Dark values and pass contrast validation.
 
+The focus ring is not one of those accents. Ruled 2026-09-20 with rubric delta D-001: `--focus-color` is its own token per theme, and no tenant value reaches it. The allowlist covers the action fill and the foreground that sits on it, which is what tenant contrast validation measures.
+
 ## 10. Typography
 
 - Interface font: Geist, with system sans-serif fallback
@@ -245,6 +247,14 @@ Required reference widths:
 
 Desktop uses the full navigation sidebar. Embedded layouts use a compact icon rail when necessary. Tablet uses a collapsible navigation rail. Mobile uses a top bar and accessible drawer.
 
+Ruled 2026-09-20 by `design-system-guardian`, closing rubric delta D-008, because "collapsible" left the 1180 and 768 frames open to two readings and the code had carried both:
+
+- The 1440, 1180, and 768 frames all carry the same rail and the same toggle. They are not three rail designs; they are one rail a person can collapse.
+- The rail opens expanded at every one of them. The compact rail is a choice a person makes, never the state they have to escape from.
+- The consequence, stated rather than discovered: at 768 an expanded 17rem rail is 272px and leaves a 496px content column, and collapsing it to the 5rem compact rail returns the column to 688px. A 496px column still satisfies every rule below, so the cost is accepted.
+- The collapsed choice is not required to persist across a reload.
+- A fixed compact rail with no toggle at 768 or 1180 is a defect against this section, not an optimization.
+
 Responsive rules:
 
 - Right-side panels move below primary content when width is constrained.
@@ -309,6 +319,7 @@ Customer usage is expressed as included campaign generations, regenerations, and
 
 - Meet WCAG AA contrast in Light and Dark themes.
 - Preserve visible keyboard focus with a 2px ring and 3px offset.
+- The focus ring has its own color token per theme and never follows the tenant accent. Ruled 2026-09-20 by `design-system-guardian`, closing rubric delta D-001: the ring resolved from `--ac-primary`, and the Dark default accent measured below the 3.0 non-text floor on five of the ten surfaces a ring can land on. A ring is an accessibility affordance, not a brand surface. It is measured against every surface token in both themes by `apps/web/src/theme/token-contrast.unit.test.ts`, and a tenant accent that fails that sweep is not the ring's problem to absorb.
 - Ensure focus is not obscured by sticky headers, drawers, or footers.
 - Do not require drag-only interaction.
 - Provide accessible names for icon-only controls.

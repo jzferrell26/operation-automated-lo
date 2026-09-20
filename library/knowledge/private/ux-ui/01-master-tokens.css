@@ -1,7 +1,45 @@
 /* Operation Automated LO approved semantic baseline.
  *
- * RECONCILED 2026-09-19 (PRD-006d, 006D-AC-005) by ux-ui-guardian, signed under
- * the design-system-guardian authority this batch carries.
+ * RECONCILED 2026-09-19 (PRD-006d, 006D-AC-005) by ux-ui-guardian.
+ *
+ * SIGNED 2026-09-20 by design-system-guardian, the owner named in README.md's
+ * Ownership section, after auditing the reconciliation rather than accepting
+ * it. What was checked, and what the check found:
+ *
+ *   1. Every custom property in this file was compared with
+ *      `packages/ui/src/tokens.css` property by property, per selector, not by
+ *      reading the note above. `:root` carries 69 properties on each side and
+ *      they agree on all 69. `[data-theme="dark"]` carries 31 on each side and
+ *      they agree on all 31. The `prefers-reduced-motion` block carries 3 on
+ *      each side and they agree. The only selector present on one side alone is
+ *      the `prefers-color-scheme` block below, which is deliberate and is
+ *      explained further down.
+ *   2. Every ratio quoted in the reconciliation note below was recomputed with
+ *      the same luminance function `token-contrast.unit.test.ts` uses. All
+ *      eleven reproduce to the stated two decimals. So do D-001's 2.90 and
+ *      3.20 and D-002's 1.27 and 1.94 in `06-review-rubric.md`.
+ *   3. `02-surfaces-and-borders.css`'s reference-only annotation was checked
+ *      against the product: each of its ten mapped `.ui-*` classes has the
+ *      counterpart it names, each named motion bucket appears in the file it
+ *      points at, and no `.ui-*` class has a consumer anywhere in `apps/` or
+ *      `packages/`, which is what the annotation claims.
+ *   4. `README.md`'s artifact table describes both files accurately.
+ *
+ * One defect was found and fixed in the same pass: the `prefers-color-scheme`
+ * block below carried 25 of the 31 Dark overrides. It was missing
+ * `--sf-overlay`, `--tx-on-nav`, `--shadow-rest`, `--shadow-card`, and
+ * `--shadow-raised`, all of which differ between the themes, plus
+ * `--tx-on-action`, which does not. The block's whole reason for existing is
+ * that this file reads correctly on its own, and with five live overrides
+ * missing it did not: an operating-system Dark reader got the Light scrim and
+ * the Light shadow tiers. The block is now complete. No product token moved for
+ * this, so no measured pair changed.
+ *
+ * Also changed on 2026-09-20, in both files, closing rubric delta D-001:
+ * `--focus-color` is now a dedicated literal per theme instead of
+ * `var(--ac-primary)`. The ruling and the measurements are in
+ * `06-review-rubric.md` section 5 and beside the token in
+ * `packages/ui/src/tokens.css`.
  *
  * This file and the shipped `packages/ui/src/tokens.css` had drifted apart. The
  * shipped side had been re-tuned for measured WCAG AA contrast; this side still
@@ -57,14 +95,14 @@
  * `data-theme`, so the shipped file does not need the media query. This file
  * keeps it so the token layer reads correctly on its own.
  *
- * Open delta, not fixed here, owner `design-system-guardian`:
- *   --ac-primary in Dark is 3.20:1 on --sf-card and 2.90:1 on --sf-sunken. It
- *   is safe as a fill behind --tx-on-action, and it is never used as text, but
- *   it is also --focus-color, so the focus ring on a Dark sunken surface is
- *   below the 3.0 non-text floor. The fix is a Dark focus token that does not
- *   follow the tenant accent; it is out of PRD-006d's file scope because the
- *   rendered value comes from the tenant accent catalog in
- *   `apps/web/src/theme/tenant-accent.ts`. Recorded in `06-review-rubric.md`.
+ * The delta this file used to carry open, now closed (D-001, 2026-09-20):
+ *   --ac-primary in Dark is 3.20:1 on --sf-card and 2.90:1 on --sf-sunken, and
+ *   the audit found it is also below 3.0 on --st-neutral-bg (2.82),
+ *   --st-success-bg (2.92), --st-warning-bg (2.93), and --st-info-bg (2.99):
+ *   five of the ten surfaces a ring can land on, not the one that was recorded.
+ *   --ac-primary itself is unchanged and still correct, because it is only ever
+ *   a fill behind --tx-on-action and is never text. What was wrong was that
+ *   --focus-color followed it. It no longer does.
  */
 
 :root {
@@ -149,7 +187,7 @@
   --motion-slow: 240ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 
-  --focus-color: var(--ac-primary);
+  --focus-color: #2f6fed;
   --focus-width: 2px;
   --focus-offset: 3px;
 }
@@ -190,11 +228,16 @@
   --st-uncertain-fg: #b9acf5;
   --st-uncertain-bg: #241d3d;
 
+  --focus-color: #8bb0ff;
+
   --shadow-rest: 0 1px 2px rgb(0 0 0 / 24%);
   --shadow-card: 0 1px 2px rgb(0 0 0 / 24%), 0 12px 28px -18px rgb(0 0 0 / 70%);
   --shadow-raised: 0 2px 6px rgb(0 0 0 / 30%), 0 18px 36px -20px rgb(0 0 0 / 84%);
 }
 
+/* Completed 2026-09-20 by the 006D-AC-005 audit. This block must carry every
+ * override `[data-theme="dark"]` carries, or this file stops reading correctly
+ * on its own, which is the only reason it exists. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
@@ -203,9 +246,12 @@
     --sf-card: #1b1e25;
     --sf-sunken: #22262f;
     --sf-nav: #0b1122;
+    --sf-overlay: rgb(0 0 0 / 68%);
     --tx-strong: #e8eaef;
     --tx-body: #b0b7c4;
     --tx-faint: #a6adbb;
+    --tx-on-action: #ffffff;
+    --tx-on-nav: #e8eaef;
     --bd-hairline: #343946;
     --bd-input: #454c5c;
     --ac-primary: #3566d6;
@@ -224,6 +270,10 @@
     --st-neutral-bg: #242833;
     --st-uncertain-fg: #b9acf5;
     --st-uncertain-bg: #241d3d;
+    --focus-color: #8bb0ff;
+    --shadow-rest: 0 1px 2px rgb(0 0 0 / 24%);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 24%), 0 12px 28px -18px rgb(0 0 0 / 70%);
+    --shadow-raised: 0 2px 6px rgb(0 0 0 / 30%), 0 18px 36px -20px rgb(0 0 0 / 84%);
   }
 }
 

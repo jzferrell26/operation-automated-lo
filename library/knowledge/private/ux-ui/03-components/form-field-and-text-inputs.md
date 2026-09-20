@@ -96,6 +96,22 @@ Reduced motion sets every transition on the control and the reveal affix to 0ms.
 - Announcing a submission result is the `LiveRegion`'s job, not the field's. The
   field connects; the region announces. Doing both would announce twice.
 
+Ruled 2026-09-20 by `design-system-guardian`, recording rubric delta D-002
+against this specification because this is where the rule it depends on lives.
+`--bd-input` on `--sf-card` is 1.27:1 in Light and 1.94:1 in Dark, far below the
+3.0 of SC 1.4.11. That is accepted, and it is accepted for one reason only: the
+control is identified by its own persistent visible label, so the boundary is
+not the information a person needs to find the control. The acceptance therefore
+rests entirely on the first line of this section, and on `label` being a
+required prop of `FormField` rather than an optional one. A placeholder-only
+field, an unlabelled field, or a `label` made optional turns an accepted ratio
+into a live defect, and D-002 reopens the same day.
+
+A raw `<select>` deferred under D-004 inherits this contract: it is wrapped in
+`FormField` with a label, and it uses the shared select block in
+`apps/web/src/features/reporting/components/reporting.module.css`. A local
+select style is a finding.
+
 ## Frames
 
 One column at every frame. The field fills its container, so the frame rules in

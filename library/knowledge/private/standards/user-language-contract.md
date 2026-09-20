@@ -63,7 +63,7 @@ Most terms are banned outright and matched case-insensitively on a word boundary
 | finding, rule code | what to fix (with the plain explanation first) |
 | provider publication remains disabled | This campaign won't run as an ad yet. HighLevel and Meta aren't connected. |
 | not connected (kept), no live observation | not connected yet, not live yet |
-| synthetic data, demo fixtures | not live data (on the connected-account workspace), sample data (local demo only) |
+| synthetic data, demo fixtures | not live data (on the deployed workspace, before anything is connected), sample data (local demo only) |
 | review surface | this workspace (with the not-connected notice) |
 | correlation ID, exception code | support reference |
 | session, sign-in session | you're signed in, sign out |

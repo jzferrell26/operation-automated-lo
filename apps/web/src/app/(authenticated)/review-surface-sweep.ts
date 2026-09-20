@@ -12,7 +12,11 @@
  * added next to it.
  */
 
-import { FORBIDDEN_IDENTIFIER_PATTERNS, FORBIDDEN_TERMS } from "../../copy/forbidden-vocabulary.js";
+import {
+  FORBIDDEN_IDENTIFIER_PATTERNS,
+  FORBIDDEN_TERMS,
+  forbiddenTermPattern,
+} from "../../copy/forbidden-vocabulary.js";
 
 /** Normalized fixture path: array indices collapse to `[*]` so one allowance covers one field. */
 export type FixtureString = Readonly<{ path: string; value: string }>;
@@ -32,6 +36,11 @@ export type ReviewSurfaceAllowance = Readonly<{
  * `substring` is the fixture sweep's rule: a fixture narrative string is a leak wherever it turns
  * up. `word` and `pattern` belong to the user-language contract, which bans a vocabulary and a set
  * of shapes rather than a set of values, so they match on a word boundary or by regular expression.
+ *
+ * `word` is `forbiddenTermPattern` from the copy module, the same matcher the source guard uses.
+ * This file used to build its own, without the inflections, which made the rendered guard strictly
+ * weaker on the same term list: "Demo fixtures only." and "These providers are not connected"
+ * failed the source guard and passed here.
  */
 export type ForbiddenReviewMatch = "substring" | "word" | "pattern";
 
@@ -220,17 +229,12 @@ export function reviewSurfaceText(container: HTMLElement): string {
   return fragments.join("\n");
 }
 
-function buildWordPattern(term: string): RegExp {
-  const escaped = term.replaceAll(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-  return new RegExp(`(?<![\\w-])${escaped}(?![\\w-])`, "iu");
-}
-
 function matchesSurface(surface: string, entry: ForbiddenReviewString): boolean {
   switch (entry.match ?? "substring") {
     case "substring":
       return surface.includes(entry.value);
     case "word":
-      return buildWordPattern(entry.value).test(surface);
+      return forbiddenTermPattern(entry.value).test(surface);
     case "pattern":
       return new RegExp(entry.value, "iu").test(surface);
   }

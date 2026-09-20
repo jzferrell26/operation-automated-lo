@@ -309,7 +309,16 @@ describe("human campaign approval command", () => {
     } satisfies ApprovalDecision;
     const repository = new MemoryApprovalRepository();
     repository.evidence = { ...evidence, state: "approved", existingApproval: existing };
-    const result = await executeHumanCampaignApproval(command(), approver, repository);
+    const result = await executeHumanCampaignApproval(
+      command({
+        expectedCampaignVersionRef: evidence.version.campaignVersionRef,
+        expectedManifestHash: evidence.version.manifestHash,
+        expectedPreflightResultHash: evidence.preflight.resultHash,
+        expectedRowVersion: 1,
+      }),
+      approver,
+      repository,
+    );
     expect(result).toEqual({
       kind: "committed",
       decision: existing,

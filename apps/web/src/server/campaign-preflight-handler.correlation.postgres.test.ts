@@ -87,8 +87,10 @@ describe("campaign preflight handler correlation matrix (real Postgres)", () => 
       }
 
       for (const table of [COMMAND_TABLE, AUDIT_TABLE]) {
-        for (const stored of await storedCorrelationIds(pool, table, location.locationId)) {
-          expect(CorrelationReferenceSchema.safeParse(stored).success).toBe(true);
+        const stored = await storedCorrelationIds(pool, table, location.locationId);
+        expect(stored.length).toBeGreaterThan(0);
+        for (const reference of stored) {
+          expect(CorrelationReferenceSchema.safeParse(reference).success).toBe(true);
         }
       }
     },

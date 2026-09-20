@@ -99,7 +99,7 @@ describe("authenticated brand route", () => {
     expect(canonicalProfile.fields.every((field) => field.value === "Not saved yet")).toBe(true);
     expect(canonicalProfile.requiredFields.every((field) => field.state === "missing")).toBe(true);
     expect(container.querySelectorAll("[data-profile-field-state='confirmed']")).toHaveLength(0);
-    expect(container.textContent).toContain("Your workspace");
+    expect(container.textContent).toContain("your workspace");
     for (const identity of ["Alex Morgan", "Prairie Home Lending", "NMLS 0000000"]) {
       expect(container.textContent).not.toContain(identity);
     }

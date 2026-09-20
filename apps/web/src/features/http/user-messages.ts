@@ -92,7 +92,7 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
     whatToDo: "Try again, or reset your password.",
   },
   AUTH_RATE_LIMITED: {
-    what: "There have been too many attempts.",
+    what: "Too many attempts.",
     whatToDo: "Wait a few minutes and try again.",
   },
   AUTH_EMAIL_ALREADY_REGISTERED: {

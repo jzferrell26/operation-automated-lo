@@ -259,7 +259,7 @@ describe("review surface honesty invariant", () => {
     const { container } = await renderReviewOverview();
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Overview");
-    expect(container.textContent).toContain("Your workspace");
+    expect(container.textContent).toContain("your workspace");
     expect(container.textContent).toContain("HighLevel, Meta, and Stripe aren't connected.");
     expect(container.textContent).toContain(
       "Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do.",

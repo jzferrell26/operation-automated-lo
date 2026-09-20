@@ -1,0 +1,90 @@
+# Writing review: batch prose and user-facing copy
+
+Reviewer: `technical-writing-craft-guardian`. Date: 2026-09-19. Branch: `claude/completion-review-2026-09-19`, reviewed at `12bffc8` (the merge of that branch onto `c140f11`).
+
+This review covers three ledger rows: 005D-AC-013 (the operator runbook and terrain rule diffs), 006B-AC-016 (every user-facing string PRD-006b's batch changed or added), and 006C-AC-019 (the guided-setup step copy). It is not the security audit or the QA report; those run after this one, in that order.
+
+Armed with `technical-writing-craft-weapon/SKILL.md` and its guides on Diataxis (`00-diataxis.md`), the reader lens (`04-reader-lens.md`), and voice and tone (`03-voice-and-tone.md`). Read against `library/knowledge/private/standards/user-language-contract.md`, PRD-006b D1 through D4 and D10, and PRD-006c D3.
+
+## What was reviewed, and how
+
+**005D-AC-013.** The diffs of `library/knowledge/private/operations/production-tonight-operator-runbook.md` (the runbook; the brief's `docs/operations/operator-runbook*` glob does not match a file in this repository, the runbook lives under `library/knowledge/private/operations/`), `.cursor/rules/core/the-map.mdc`, `library/knowledge/private/product/project-map.md`, and `docs/operations/evidence-packs/reviewable-preview-smoke.md`, each taken with `git diff c140f11..HEAD -- <file>`. Reader lens: an operator or agent with no prior context for this repository, reading only what each diff adds.
+
+**006B-AC-016.** Every string in `apps/web/src/copy/auth-messages.ts`, `apps/web/src/copy/guided-setup-messages.ts`, `apps/web/src/copy/user-language.ts`, `apps/web/src/features/http/user-messages.ts`, `apps/web/src/server/email/email-templates.ts`, and the D4 rewiring in `apps/web/src/server/authenticated-workspace-data.ts`, checked word for word against D10 (the auth pages and emails), D3 (preferred vocabulary), and D4 (the honesty table). Then traced forward into every consuming component under `apps/web/src/app/(public)/`, `apps/web/src/app/(authenticated)/settings/account/`, and `apps/web/src/features/auth/`, to confirm what actually renders, not only what the copy module says. Reader lens: a mortgage loan officer who has never seen this codebase.
+
+**006C-AC-019.** `apps/web/src/copy/guided-setup-messages.ts` against PRD-006c D3's seven steps, word for word where D3 quotes literal text, and against D1 to D4 elsewhere; then every component under `apps/web/src/features/guided-setup/`, including `steps/*.tsx` and `step-model.ts`, for strings the copy module does not own.
+
+## Findings
+
+### F-01. `AUTH_RATE_LIMITED`'s sentence drifted from D10's exact words
+
+- **Severity:** Blocker. **Status:** Fixed.
+- **Where:** `apps/web/src/features/http/user-messages.ts:94-97` (before the fix).
+- **What was there:** `what: "There have been too many attempts."`, which every sign-in, sign-up, and reset form renders through `userMessageSentence` (`apps/web/src/features/auth/components/use-auth-submit.ts:46`), producing "There have been too many attempts. Wait a few minutes and try again."
+- **What it must be:** D10's exact sign-in rate-limited line, "Too many attempts. Wait a few minutes and try again." The same sentence already exists, unused, as `SIGN_IN.rateLimitedError` in `apps/web/src/copy/auth-messages.ts:25`, and this file's own comment says every auth sentence here is "PRD-006b D10's, split at the sentence boundary into the pair" (line 26), so the drift contradicts the module's own stated intent.
+- **Fixed:** `what` changed to `"Too many attempts."`, so the composed sentence now matches D10 and `SIGN_IN.rateLimitedError` exactly. `pnpm test:unit` still passes; no test pinned the old wording.
+- **Recorded, not fixed:** `SIGN_IN.genericError` and `SIGN_IN.rateLimitedError` are otherwise unused (only `AUTH_CREDENTIALS_REJECTED` and `AUTH_RATE_LIMITED` actually reach the screen, through the error-code path). Nothing asserts the two stay in agreement. Proposal for the PRD-006a owner: a unit test asserting `userMessageSentence("AUTH_RATE_LIMITED") === SIGN_IN.rateLimitedError` (and the equivalent for `AUTH_CREDENTIALS_REJECTED`/`genericError`), so this class of drift fails a gate instead of waiting for a reader to notice.
+
+### F-02. The not-connected workspace name broke mid-sentence in two places
+
+- **Severity:** Blocker. **Status:** Fixed.
+- **Where:** `apps/web/src/server/authenticated-workspace-data.ts:114` (before the fix): `REVIEW_LOCATION_DISPLAY_NAME = WORKSPACE_EYEBROW` (`"Your workspace"`, capitalized for its own use as a standalone eyebrow label).
+- **What was there:** That constant feeds `session.location.displayName`, which two screens embed mid-sentence: `apps/web/src/features/onboarding/components/onboarding-screen.tsx:34`, `<h1>Get {session.location.displayName} ready</h1>`, rendering **"Get Your workspace ready"**; and `apps/web/src/features/brand/components/brand-profile-screen.tsx:35`, "Fill these in once and every Open House Boost for {profile.activeLocation.displayName} uses them.", rendering **"...every Open House Boost for Your workspace uses them."** Both are reachable by any visitor to `/onboarding` or `/brand` when `OALO_REVIEW_SURFACE=authorized` and no real session exists yet. A loan officer reading either sentence sees what looks like a typo: a capital letter stranded in the middle of a sentence.
+- **What it must be:** the same fact, worded so it reads correctly wherever it is embedded. D4's own row for this constant does not give an exact string (it says "Replaced by the verified names from PRD-006a"), so the module has latitude in the interim wording; the requirement is that whatever is chosen reads as English in every place it is used.
+- **Fixed:** `REVIEW_LOCATION_DISPLAY_NAME` is now its own literal, `"your workspace"`, lowercase, with a comment explaining why (it is embedded mid-sentence in at least two screens). The now-unused `WORKSPACE_EYEBROW` import was removed from `authenticated-workspace-data.ts`. The two pinned tests that expected the old capitalized text, `apps/web/src/app/(authenticated)/overview/overview-review-surface.integration.test.tsx:262` and `apps/web/src/app/(authenticated)/brand/brand-review-surface.integration.test.tsx:102`, were updated to expect `"your workspace"`. Confirmed by re-tracing every render site of `session.location.displayName` and `profile.activeLocation.displayName` before and after the change: the shell topbar's own eyebrow and name (`app-shell.tsx:160,391`) are unaffected, because in review mode the layout supplies a real or signed-out session there, never this constant. `pnpm test:integration` passes with both updated assertions.
+
+### F-03. `RESET_PASSWORD.successNotice` is written but never shown
+
+- **Severity:** Blocker. **Status:** Recorded, not fixed (outside copy-only authority; needs PRD-006a owner).
+- **Where:** `apps/web/src/copy/auth-messages.ts:75`; the gap is in `apps/web/src/features/auth/components/reset-password-form.tsx:29-39` and `apps/web/src/server/password-authentication-handler.ts:1027-1032`.
+- **What was there:** D10 requires: "Success: the user lands in the workspace with the notice 'Your password is saved. You're signed in.'" The string exists, verbatim, as `RESET_PASSWORD.successNotice`. Nothing renders it. `handleResetPassword` returns `{ next: OVERVIEW_PATH }` with no signal that a reset just happened, and `ResetPasswordForm.handleSubmit` only calls `followNext(payload?.next)`, an unconditional redirect. No component reads `successNotice`, and no test asserts it appears (confirmed: it is grep-only-in-its-own-definition across `apps/web/src`).
+- **Why this is a Blocker and not a Suggestion:** the person who just reset their password lands in the workspace with no confirmation their password changed or that they are now signed in. That is the honesty and trust gap D10 exists to close, not a wording nicety.
+- **Why I did not fix it myself:** the fix is a behavior change (the route must signal the fresh reset, and a page must read that signal and show the notice before or as it renders), not a copy edit. My authority for this review is limited to copy modules and the string constants in the auth and guided-setup components; wiring a redirect signal into a route handler and a server-rendered page is outside that.
+- **Proposed fix, concrete enough to hand to engineering:** the codebase already has this exact pattern for `SIGN_IN.signedOutNotice`: `sign-in/page.tsx` reads `parameters["signedOut"] === "1"` from the query string and the form conditionally renders the notice. The same shape closes this gap: `handleResetPassword` returns `next: \`${OVERVIEW_PATH}?passwordReset=1\`` instead of the bare path, and the authenticated layout or the overview page reads that flag once and renders `RESET_PASSWORD.successNotice` (re-exported through `apps/web/src/features/auth/strings.js` as it already is) before clearing it from the URL.
+
+## Suggestions (non-blocking)
+
+- **S-01.** `apps/web/src/app/(public)/sign-in/choose/page.tsx`'s lead, `"Sign in again and we'll ask you which one."`, is an inline literal, not sourced from `auth-messages.ts`. The words are in voice and honest; moving it into `CHOOSE_WORKSPACE` would keep the stated single-source-of-truth discipline (`features/auth/strings.ts`'s own docstring: "Nothing in the auth feature may declare a user-visible sentence").
+- **S-02.** `apps/web/src/features/auth/components/sign-up-form.tsx:60-63`: the "Sign in" and "Reset your password" link labels next to the existing-account notice are inline literals rather than copy-module exports. Same non-blocking observation as S-01.
+- **S-03.** `apps/web/src/features/guided-setup/steps/step-model.ts:120-128`, `CAMPAIGN_FIELD_LABELS`, defines seven user-facing strings ("The address and the state", "What the ad says", and so on) outside `guided-setup-messages.ts`, contradicting that file's own comment ("No string in this feature is written twice"). The words themselves match D5's fieldset legends where D5 gives them and are plain and accurate elsewhere; moving the map into the copy module would close the architectural inconsistency.
+- **S-04.** `apps/web/src/features/guided-setup/guided-setup-progress.tsx:34`, `label="Guided setup progress"`. No visible string in this batch ever says "guided setup" to the user (the user-facing words are "Setup", "Finish setup"); this screen-reader-only label is the one place the internal feature name leaks into an accessible name. Not a forbidden term, not confusing on its own, but a small terminology drift worth closing to "Setup progress" for consistency.
+- **S-05.** `docs/operations/evidence-packs/reviewable-preview-smoke.md`'s new checklist line compresses PRD-005e's fifth operator ask ("Be present for the proof... allow the screenshots listed in 005E-AC-010") to "presence for the seven-point proof". The count is accurate (005E-AC-005 through 005E-AC-011 are seven proof points) and the line links to the full ask, so this is not misleading, just slightly stiff phrasing; "be present for the seven-point proof" would read more naturally.
+- **S-06.** `library/knowledge/private/product/project-map.md` describes completion review finding C1 as composing "authentication ports from a static local synthetic default"; `.cursor/rules/core/the-map.mdc` (after F-04's fix, below) now reads "compose a static local synthetic default for authentication". Same fact, close but not identical wording across the two documents an agent is told to read together. Not blocking; a future pass could make the two sentences identical.
+
+### F-04. `the-map.mdc`'s new C1 line named "synthetic ports" without ever defining the term
+
+- **Severity:** Blocker. **Status:** Fixed.
+- **Where:** `.cursor/rules/core/the-map.mdc:14` (before the fix).
+- **What was there:** "The exported campaign routes and read pages still default to the synthetic ports outside synthetic mode." "Ports" appears exactly once in the file, undefined; read cold, it is at least as likely to be misread as network ports (this repository's synthetic server runs on `127.0.0.1:3100`, a real, literal port) as it is to be understood as the hexagonal-architecture sense the authoritative source (`prd-005-authenticated-review-runtime-index.md:13`, "compose their authentication ports from a static local synthetic default, and outside synthetic mode that default denies everyone") actually means. The file's own stated purpose is to let an agent "resume without inventing progress"; an ambiguous security-relevant claim in that file is exactly the kind of gap that produces invented progress.
+- **What it must be:** the same fact PRD-005's own index states, said so a cold reader cannot mistake it for a claim about network ports, and so the fail-closed behavior (the default denies every request) is not left to the sentence's last clause to imply.
+- **Fixed:** reworded to "still compose a static local synthetic default for authentication outside synthetic mode, and that default denies every request", tracking the PRD-005 index's own wording (see S-06 for the resulting near-duplicate phrasing across the two documents, recorded as a Suggestion, not re-opened as a Blocker).
+
+## Verdicts
+
+- **005D-AC-013:** no blocking finding open. F-04 was the one Blocker in this row's scope and is fixed. The runbook, `project-map.md`, and `reviewable-preview-smoke.md` diffs were read in full against the same reader lens and contain no other finding above Suggestion (S-05, S-06).
+- **006B-AC-016:** **one blocking finding remains open: F-03.** F-01 and F-02 were Blockers and are fixed, proven by `pnpm test:unit` and `pnpm test:integration` passing with the updated assertions. F-03 is a real, confirmed gap against D10's exact requirement for the reset-password success state, verified by tracing the route response, the form's redirect call, and a repository-wide search that finds no renderer and no test for `RESET_PASSWORD.successNotice`. It is a behavior gap, not a wording gap, so it is outside this review's fix authority; it is recorded here with a concrete proposed fix for the PRD-006a owner. This row should not be closed as "zero blocking findings" until F-03 is fixed or the PRD owner accepts it as a tracked follow-up with its own acceptance criterion.
+- **006C-AC-019:** no blocking finding open. Every quoted string in PRD-006c D3 (steps 1, 4, 5, 6, 7) matches `guided-setup-messages.ts` verbatim; steps 2 and 3, which D3 does not quote literally, read plainly and in voice. `ResultStep`'s visible duplication of `readyBody` (once as the panel's `aria-describedby` description, once as the step's own paragraph) was investigated and found to be a deliberate, tested design (`guided-setup-steps.integration.test.tsx:166-167` pins exactly two occurrences, one of them the panel's accessible description required by D6), not a copy defect, so it is not recorded as a finding. S-03 and S-04 are the only observations in this row's scope, both non-blocking.
+
+## Gates run
+
+All from this worktree at the commit above, with the Node 24.18.0 and psql-shim toolchain prepended to `PATH`, after `pnpm install --frozen-lockfile --offline`:
+
+| Command | Result |
+|---|---|
+| `pnpm format:check` | Pass |
+| `pnpm lint` | Pass |
+| `pnpm typecheck` | Pass (16/16 packages) |
+| `pnpm test:unit` | Pass, 827/827 tests, 81 files |
+| `pnpm test:integration` | Pass, 124/124 tests, 21 files |
+| `pnpm test:components` | Pass, 37/37 tests, 4 files |
+
+`pnpm test:db` and `pnpm test:browser` were not run, per this lane's instructions (another lane owns Docker and port 3100).
+
+## Files changed by this review
+
+- `apps/web/src/features/http/user-messages.ts` (F-01)
+- `apps/web/src/server/authenticated-workspace-data.ts` (F-02)
+- `apps/web/src/app/(authenticated)/overview/overview-review-surface.integration.test.tsx` (F-02, pinned assertion)
+- `apps/web/src/app/(authenticated)/brand/brand-review-surface.integration.test.tsx` (F-02, pinned assertion)
+- `.cursor/rules/core/the-map.mdc` (F-04)
+- This file (new).

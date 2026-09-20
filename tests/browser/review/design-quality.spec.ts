@@ -2,14 +2,16 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   REVIEW_FRAMES,
+  captureNamedState,
   expectAxeClean,
   expectKeyboardReachesEveryControl,
   expectNoHorizontalOverflow,
   expectTargetsAreLargeEnough,
   expectThemeResolved,
   screenshotName,
+  settleForScreenshot,
   useStoredTheme,
-  type ReviewTheme,
+  type ReviewFrame,
 } from "../helpers/design-quality.js";
 import {
   expectNoExternalRequests,
@@ -18,6 +20,7 @@ import {
   seededCredentials,
   signInExisting,
 } from "./helpers/guided-setup-journey.js";
+import { chooseThemeFromTheHeader, REVIEW_THEMES } from "./helpers/review-session.js";
 
 /**
  * PRD-006d 006D-AC-007 through 006D-AC-012, for the screens only a real session reaches.
@@ -51,31 +54,55 @@ const ACCOUNT_SCREENS = Object.freeze([
   { screen: "verify-email", path: "/verify-email?token=review-placeholder-token" },
 ] as const);
 
-const THEMES = ["light", "dark"] as const satisfies readonly ReviewTheme[];
-
-async function settle(page: Page): Promise<void> {
-  await page.evaluate(async () => {
-    window.scrollTo(0, 0);
-    await document.fonts.ready;
-  });
-  await page.waitForLoadState("networkidle");
-}
+/**
+ * PRD-006d D3's sign-up state is the one named state this suite does not take, and the reason is
+ * arithmetic rather than design.
+ *
+ * `handlePasswordSignUp` spends one `sign_up_ip` attempt on every submission before it parses the
+ * body (`apps/web/src/server/password-authentication-handler.ts:713`), the limit is ten an hour per
+ * address (the same file, line 86), and PRD-006c's specs already spend exactly ten in one run: four
+ * in `guided-setup.accessibility.spec.ts`, three in `guided-setup.tablet-anchoring.spec.ts`, two in
+ * `guided-setup.resume.spec.ts`, and one in `guided-setup.timed.spec.ts`. Adding two here was
+ * measured on 2026-09-19: the run's last two sign-ups were refused with "There have been too many
+ * attempts" and PRD-006c's tablet-anchoring and timed specs failed on a sign-up that never
+ * returned. A review suite that spends the product's rate-limit budget breaks the specs sharing the
+ * run with it, which is the lesson this file's header already records.
+ *
+ * So the address-already-has-an-account notice stays a manual row in
+ * `docs/operations/evidence-packs/design-quality-signoff.md`. It is reachable, and a set of its
+ * eight pictures was taken on 2026-09-19; it is simply not reachable on every run.
+ */
 
 /**
- * Inside a session the theme is chosen the way a person chooses it, from the control in the
- * header, because that is the only way to change it without reloading the page and losing the
- * session's place in the walkthrough.
+ * PRD-006d D3's named states on the public account screens.
+ *
+ * A token that was never issued is the product's own expired-link case: the reset and verification
+ * routes answer the same way for a token that has aged out, a token that was already spent, and a
+ * token that never existed, because telling those apart would say something about an account to
+ * somebody holding a guess.
  */
-async function chooseThemeFromTheHeader(page: Page, theme: ReviewTheme): Promise<void> {
-  await page.getByRole("radio", { name: theme === "light" ? "Light" : "Dark" }).click();
-  await expectThemeResolved(page, theme);
-  // The segmented control moves its fill over `--motion-base`; sampling before it settles reads a
-  // blended pair that exists for a moment and is not a token.
-  await page.waitForTimeout(400);
+const NEVER_ISSUED_TOKEN = "never-issued-review-token";
+
+/**
+ * A password that passes the policy, so every refusal below comes from the thing under review
+ * rather than from the password.
+ *
+ * `handleResetPassword` evaluates the policy before it consumes the token
+ * (`apps/web/src/server/password-authentication-handler.ts:987-1002`), so a weak phrase here would
+ * photograph a password-policy message and call it an expired link. It shares no word with the
+ * seeded people, whose names all begin "Review", nor with the gate's own seeded password.
+ */
+const THROWAWAY_NEW_PASSWORD = "copper meadow signal verse";
+
+/** One of the rubric's four frames, by name, for a state the product only has at some of them. */
+function frameNamed(name: string): ReviewFrame {
+  const found = REVIEW_FRAMES.find((candidate) => candidate.name === name);
+  if (found === undefined) throw new Error(`${name} is not one of the rubric's frames`);
+  return found;
 }
 
 for (const { screen, path } of ACCOUNT_SCREENS) {
-  for (const theme of THEMES) {
+  for (const theme of REVIEW_THEMES) {
     for (const frame of REVIEW_FRAMES) {
       test(`${screen} at ${frame.name} in ${theme} meets the design quality bar`, async ({
         page,
@@ -85,7 +112,7 @@ for (const { screen, path } of ACCOUNT_SCREENS) {
         await page.setViewportSize({ width: frame.width, height: frame.height });
         await page.goto(path);
         await expectThemeResolved(page, theme);
-        await settle(page);
+        await settleForScreenshot(page);
 
         await expectAxeClean(page);
         await expectNoHorizontalOverflow(page);
@@ -108,7 +135,7 @@ for (const { screen, path } of ACCOUNT_SCREENS) {
     await useStoredTheme(page, "dark");
     await page.setViewportSize({ width: 1180, height: 900 });
     await page.goto(path);
-    await settle(page);
+    await settleForScreenshot(page);
 
     await expectKeyboardReachesEveryControl(page);
     expectNoExternalRequests(guard);
@@ -169,12 +196,12 @@ test("change-password meets the design quality bar at every frame in both themes
   await restartGuidedSetup(page);
   await page.getByRole("button", { name: "Not now" }).click();
 
-  for (const theme of THEMES) {
+  for (const theme of REVIEW_THEMES) {
     await page.goto("/settings/account");
     await chooseThemeFromTheHeader(page, theme);
     for (const frame of REVIEW_FRAMES) {
       await page.setViewportSize({ width: frame.width, height: frame.height });
-      await settle(page);
+      await settleForScreenshot(page);
 
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
@@ -203,14 +230,14 @@ test("the guided setup meets the bar at 1440 and 768, in both themes", async ({ 
   await page.setViewportSize({ width: 1440, height: 900 });
   await signInExisting(page, creatorEmail, password);
 
-  for (const theme of THEMES) {
+  for (const theme of REVIEW_THEMES) {
     await chooseThemeFromTheHeader(page, theme);
     for (const frame of REVIEW_FRAMES.filter((candidate) =>
       ["1440", "768"].includes(candidate.name),
     )) {
       await page.setViewportSize({ width: frame.width, height: frame.height });
       await restartGuidedSetup(page);
-      await settle(page);
+      await settleForScreenshot(page);
 
       await expectAxeClean(page);
       await expectTargetsAreLargeEnough(page);
@@ -220,7 +247,7 @@ test("the guided setup meets the bar at 1440 and 768, in both themes", async ({ 
 
       await page.getByRole("button", { name: "Let's go" }).click();
       await expect(page.getByRole("dialog", { name: "Your details" })).toBeVisible();
-      await settle(page);
+      await settleForScreenshot(page);
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
       await expect(page).toHaveScreenshot(
@@ -256,4 +283,184 @@ test("the guided setup meets the bar at 1440 and 768, in both themes", async ({ 
 test("the email preview route is not served in review mode", async ({ page }) => {
   await page.goto("/email-preview");
   await expect(page.locator("iframe[data-email-preview]")).toHaveCount(0);
+});
+
+/**
+ * PRD-006d D3's named states on the six public account screens, each reached the way a person
+ * reaches it: a query the product itself navigates to, or a submission with the real server
+ * answering.
+ *
+ * `hasControls` is false on the two states that replace the whole form with a sentence. The
+ * keyboard walk is not run on those because there is nothing left on the page to walk, which is
+ * itself the finding recorded against them in the review; running a check that can only fail would
+ * hide the finding inside a red suite instead of naming it.
+ */
+type PublicNamedState = Readonly<{
+  screen: string;
+  state: string;
+  path: string;
+  hasControls?: boolean;
+  reach?: (page: Page) => Promise<void>;
+}>;
+
+const PUBLIC_NAMED_STATES: readonly PublicNamedState[] = Object.freeze([
+  {
+    screen: "sign-in",
+    state: "signed-out",
+    // `handleSignOut` answers 303 to exactly this address
+    // (`apps/web/src/server/password-authentication-handler.ts:1128-1160`), so the query is the
+    // product's own way into the state rather than a test's invention.
+    path: "/sign-in?signedOut=1",
+  },
+  {
+    screen: "sign-in",
+    state: "refused",
+    path: "/sign-in",
+    reach: async (page) => {
+      await page.getByLabel("Email").fill("nobody@oalo.invalid");
+      await page.getByLabel("Password", { exact: true }).fill("not the right password");
+      await page.getByRole("button", { name: "Sign in", exact: true }).click();
+      await expect(page.locator("form").getByRole("alert")).toContainText(
+        "That email and password don't match.",
+      );
+    },
+  },
+  {
+    screen: "forgot-password",
+    state: "confirmation",
+    path: "/forgot-password",
+    hasControls: false,
+    reach: async (page) => {
+      await page.getByLabel("Email").fill("nobody@oalo.invalid");
+      await page.getByRole("button", { name: "Send reset link" }).click();
+      await expect(page.getByRole("status")).toContainText("reset link is on its way");
+    },
+  },
+  {
+    screen: "reset-password",
+    state: "link-expired",
+    path: `/reset-password?token=${NEVER_ISSUED_TOKEN}`,
+    reach: async (page) => {
+      await page.getByLabel("New password", { exact: true }).fill(THROWAWAY_NEW_PASSWORD);
+      await page.getByLabel("Confirm new password").fill(THROWAWAY_NEW_PASSWORD);
+      await page.getByRole("button", { name: "Save new password" }).click();
+      await expect(page.locator("form").getByRole("alert")).toContainText(
+        "This reset link has expired or was already used.",
+      );
+    },
+  },
+  {
+    screen: "verify-email",
+    state: "link-expired",
+    path: `/verify-email?token=${NEVER_ISSUED_TOKEN}`,
+    reach: async (page) => {
+      await page.getByRole("button", { name: "Confirm", exact: true }).click();
+      await expect(page.locator("form").getByRole("alert")).toContainText("This link has expired.");
+    },
+  },
+]);
+
+for (const named of PUBLIC_NAMED_STATES) {
+  for (const theme of REVIEW_THEMES) {
+    test(`${named.screen} in its ${named.state} state meets the bar at every frame in ${theme}`, async ({
+      page,
+    }) => {
+      test.setTimeout(180_000);
+      const guard = await guardLocalOrigin(page);
+      await useStoredTheme(page, theme);
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto(named.path);
+      await expectThemeResolved(page, theme);
+      await settleForScreenshot(page);
+      await named.reach?.(page);
+
+      await captureNamedState(page, {
+        screen: named.screen,
+        state: named.state,
+        theme,
+      });
+
+      if (named.hasControls ?? true) {
+        // The same frame the default states' keyboard walk uses, so the two are comparable.
+        await page.setViewportSize({ width: 1180, height: 900 });
+        await settleForScreenshot(page);
+        await expectKeyboardReachesEveryControl(page);
+      }
+      expectNoExternalRequests(guard);
+    });
+  }
+}
+
+/**
+ * PRD-006d D3's shell states that only a session reaches, inside one signed-in session.
+ *
+ * One sign-in rather than five. The rate limits this run shares are the reason the file already
+ * walks the frames and themes in place rather than signing in per cell, and a shell state is no
+ * different: the rail, the drawer, the chip, and the help menu are all React state on a page the
+ * session is already on.
+ *
+ * Two of the frames PRD-006d asks for are not frames the product has these states at, and the suite
+ * says so by capturing the frames the product does have:
+ *
+ * - The collapse control is `display: none` from 1180 down
+ *   (`apps/web/src/features/shell/components/app-shell.module.css:263-276`), because the tablet
+ *   range already renders the rail compact from the media query. A collapsed rail is therefore a
+ *   1440 state, and 1180 and 768 have the tablet rail instead, which is its own row in the rubric.
+ * - The drawer trigger is `display: none` above 767.98px (the same file, lines 283-302), which
+ *   PRD-006d D5 deliberately moved so the 768 frame keeps the compact rail. A mobile drawer is
+ *   therefore a 390 state.
+ */
+test("the shell's named states meet the bar", async ({ page }) => {
+  test.setTimeout(300_000);
+  const guard = await guardLocalOrigin(page);
+  const { creatorEmail, password } = seededCredentials();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await signInExisting(page, creatorEmail, password);
+  await restartGuidedSetup(page);
+  // PRD-006c D5. Putting the walkthrough aside is what places the "Finish setup" chip in the
+  // header, inside its seven-day window, so the chip is reached by the control a person uses.
+  await page.getByRole("button", { name: "Not now" }).click();
+  await expect(page.getByRole("button", { name: "Finish setup" })).toBeVisible();
+
+  for (const theme of REVIEW_THEMES) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/overview");
+    await chooseThemeFromTheHeader(page, theme);
+
+    await captureNamedState(page, { screen: "shell", state: "finish-setup-chip", theme });
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole("button", { name: "Help", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Show me around again" })).toBeVisible();
+    await captureNamedState(page, { screen: "shell", state: "help-menu-open", theme });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("button", { name: "Show me around again" })).toBeHidden();
+
+    await page.getByRole("button", { name: "Collapse navigation" }).click();
+    await captureNamedState(page, {
+      screen: "shell",
+      state: "collapsed-rail",
+      theme,
+      frames: [frameNamed("1440")],
+    });
+    await page.getByRole("button", { name: "Expand navigation" }).click();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole("button", { name: "Open navigation" }).click();
+    await expect(page.getByRole("dialog", { name: "Workspace navigation" })).toBeVisible();
+    await captureNamedState(page, {
+      screen: "shell",
+      state: "mobile-drawer",
+      theme,
+      frames: [frameNamed("390")],
+      // The drawer is a fixed overlay over a scroll-locked body; the frame it covers is the
+      // picture, and a full-page capture of a locked body is the page behind it.
+      fullPage: false,
+    });
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog", { name: "Workspace navigation" })).toBeHidden();
+  }
+
+  expectNoExternalRequests(guard);
 });

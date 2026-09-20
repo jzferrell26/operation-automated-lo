@@ -1,6 +1,20 @@
+import { join } from "node:path";
+
 import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = "http://127.0.0.1:3100";
+
+/**
+ * PRD-006d D3. The synthetic suite now saves a campaign, so the synthetic server writes its
+ * filesystem store somewhere.
+ *
+ * Left alone it lands at `apps/web/.oalo/local-campaign-store.json`, because `next start` runs from
+ * the application directory (`apps/web/src/server/local-campaign-store.ts:83`). That path is
+ * ignored by git and not by Prettier, so `pnpm format:check` fails on a file no person wrote.
+ * Pointing it into `test-results/`, which both ignore, keeps a run's leavings out of the source
+ * tree entirely.
+ */
+const localCampaignStore = join(import.meta.dirname, "test-results", "local-campaign-store.json");
 
 /**
  * PRD-006c D9. The review browser run's own base address.
@@ -89,6 +103,7 @@ export default defineConfig({
         webServer: {
           command:
             "pnpm --filter @oalo/web... build && pnpm --filter @oalo/web exec next start --hostname 127.0.0.1 --port 3100",
+          env: { OALO_LOCAL_CAMPAIGN_STORE: localCampaignStore },
           reuseExistingServer: false,
           timeout: 180_000,
           url: `${baseURL}/overview`,

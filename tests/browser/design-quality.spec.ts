@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   REVIEW_FRAMES,
+  captureNamedState,
   expectAxeClean,
   expectKeyboardReachesEveryControl,
   expectNoHorizontalOverflow,
@@ -9,9 +10,15 @@ import {
   expectThemeResolved,
   expectZeroMotionUnderReducedMotion,
   screenshotName,
+  settleForScreenshot,
   useStoredTheme,
   type ReviewTheme,
 } from "./helpers/design-quality.js";
+import {
+  FINISHED_OPEN_HOUSE,
+  READY_OPEN_HOUSE,
+  fillTheOpenHouseDraft,
+} from "./helpers/open-house-draft.js";
 
 /**
  * PRD-006d 006D-AC-007 through 006D-AC-014, for the screens synthetic mode serves.
@@ -73,18 +80,6 @@ async function blockAnythingOffOrigin(page: Page): Promise<readonly string[]> {
   return externalRequests;
 }
 
-/**
- * Settle the page before a screenshot: fonts resolved, no network in flight, and the scroll
- * position at the top so the same pixels are captured every run.
- */
-async function settle(page: Page): Promise<void> {
-  await page.evaluate(async () => {
-    window.scrollTo(0, 0);
-    await document.fonts.ready;
-  });
-  await page.waitForLoadState("networkidle");
-}
-
 for (const { screen, path } of SYNTHETIC_SCREENS) {
   for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
     for (const frame of REVIEW_FRAMES) {
@@ -96,7 +91,7 @@ for (const { screen, path } of SYNTHETIC_SCREENS) {
         await page.setViewportSize({ width: frame.width, height: frame.height });
         await page.goto(path);
         await expectThemeResolved(page, theme);
-        await settle(page);
+        await settleForScreenshot(page);
 
         // Axes 4 and 9.
         await expectAxeClean(page, axeOptionsFor(screen));
@@ -122,7 +117,7 @@ for (const { screen, path } of SYNTHETIC_SCREENS) {
     await useStoredTheme(page, "light");
     await page.setViewportSize({ width: 1180, height: 900 });
     await page.goto(path);
-    await settle(page);
+    await settleForScreenshot(page);
 
     // Axis 6.
     await expectZeroMotionUnderReducedMotion(page);
@@ -138,7 +133,7 @@ for (const { screen, path } of SYNTHETIC_SCREENS) {
     await useStoredTheme(page, "dark");
     await page.setViewportSize({ width: 1180, height: 900 });
     await page.goto(path);
-    await settle(page);
+    await settleForScreenshot(page);
 
     // 006D-AC-009.
     await expectKeyboardReachesEveryControl(page);
@@ -156,7 +151,7 @@ test("a form result on the create screen is visible at 390 without scrolling", a
   await useStoredTheme(page, "light");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/marketing/campaigns/new");
-  await settle(page);
+  await settleForScreenshot(page);
 
   const firstField = page.getByLabel("Property address");
   await firstField.scrollIntoViewIfNeeded();
@@ -180,7 +175,7 @@ test("the email preview renders both account emails at the mail-client width", a
   await useStoredTheme(page, "light");
   await page.setViewportSize({ width: 1180, height: 900 });
   await page.goto("/email-preview");
-  await settle(page);
+  await settleForScreenshot(page);
 
   const frames = page.locator("iframe[data-email-preview]");
   await expect(frames).toHaveCount(2);
@@ -217,3 +212,136 @@ test("no screen links to the demo route", async ({ page }) => {
     expect(demoLinks, `${path} links to the demo route`).toEqual([]);
   }
 });
+
+/**
+ * PRD-006d D3's named states on the create screen and on a campaign a person has actually saved.
+ *
+ * The draft itself, and the two open-house windows that separate a ready campaign from one that
+ * needs changes, live in `helpers/open-house-draft.ts`, so the review suite reaches the same
+ * campaign by the same route.
+ */
+
+for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
+  /**
+   * The saving state is the one state a person only ever sees while a request is still travelling,
+   * so it is held by slowing the request rather than by pretending to make one: the real route is
+   * called, its answer is simply not delivered until the pictures are taken. The button carries the
+   * label change the brief asks for, which is why the label is asserted before anything is captured.
+   */
+  test(`the create screen's saving state meets the bar at every frame in ${theme}`, async ({
+    page,
+  }) => {
+    test.setTimeout(240_000);
+    const externalRequests = await blockAnythingOffOrigin(page);
+    await useStoredTheme(page, theme);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/marketing/campaigns/new");
+    await expectThemeResolved(page, theme);
+    await settleForScreenshot(page);
+    await fillTheOpenHouseDraft(page, READY_OPEN_HOUSE);
+
+    let deliverTheAnswer: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => {
+      deliverTheAnswer = resolve;
+    });
+    await page.route("**/api/campaigns/preflight", async (route) => {
+      await held;
+      await route.continue();
+    });
+
+    await page.getByRole("button", { name: "Save and run the checks" }).click();
+    const saving = page.getByRole("button", { name: "Running the checks" });
+    await expect(saving).toBeVisible();
+    await expect(saving).toBeDisabled();
+
+    try {
+      await captureNamedState(page, {
+        screen: "campaign-create",
+        state: "saving",
+        theme,
+        // The request in flight is the state, so there is no idle network to wait for.
+        idleNetwork: false,
+      });
+    } finally {
+      deliverTheAnswer();
+    }
+    await expect(page.getByRole("heading", { name: "Ready for approval" })).toBeVisible();
+
+    expect(externalRequests).toEqual([]);
+  });
+
+  /**
+   * The ready result, and then the campaign's own page as the person who wrote it sees it.
+   *
+   * Synthetic mode's principal holds `campaign_creator`
+   * (`apps/web/src/server/authenticated-principal.ts:210-224`), and `campaignMayBeApprovedBy`
+   * (`packages/application/src/campaign-workspace-read.ts:110-119`) needs an approval role, so the
+   * campaign screen this reaches is exactly the permission-restricted one: the state a creator is
+   * always in, with the hand-off control instead of an approve control.
+   */
+  test(`a ready campaign and its permission-restricted detail meet the bar in ${theme}`, async ({
+    page,
+  }) => {
+    test.setTimeout(240_000);
+    const externalRequests = await blockAnythingOffOrigin(page);
+    await useStoredTheme(page, theme);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/marketing/campaigns/new");
+    await expectThemeResolved(page, theme);
+    await settleForScreenshot(page);
+    await fillTheOpenHouseDraft(page, READY_OPEN_HOUSE);
+    await page.getByRole("button", { name: "Save and run the checks" }).click();
+    await expect(page.getByRole("heading", { name: "Ready for approval" })).toBeVisible();
+
+    await captureNamedState(page, {
+      screen: "campaign-create",
+      state: "ready-for-approval",
+      theme,
+    });
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole("link", { name: "Open campaign" }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await settleForScreenshot(page);
+    await expect(page.getByRole("button", { name: "Approve this version" })).toBeDisabled();
+
+    await captureNamedState(page, {
+      screen: "campaign-detail",
+      state: "permission-restricted",
+      theme,
+    });
+
+    await page.setViewportSize({ width: 1180, height: 900 });
+    await settleForScreenshot(page);
+    await expectKeyboardReachesEveryControl(page);
+
+    expect(externalRequests).toEqual([]);
+  });
+
+  test(`a campaign that needs changes meets the bar at every frame in ${theme}`, async ({
+    page,
+  }) => {
+    test.setTimeout(240_000);
+    const externalRequests = await blockAnythingOffOrigin(page);
+    await useStoredTheme(page, theme);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/marketing/campaigns/new");
+    await expectThemeResolved(page, theme);
+    await settleForScreenshot(page);
+    await fillTheOpenHouseDraft(page, FINISHED_OPEN_HOUSE);
+    await page.getByRole("button", { name: "Save and run the checks" }).click();
+    await expect(page.getByRole("heading", { name: "Needs changes" })).toBeVisible();
+
+    await captureNamedState(page, {
+      screen: "campaign-create",
+      state: "needs-changes",
+      theme,
+    });
+
+    await page.setViewportSize({ width: 1180, height: 900 });
+    await settleForScreenshot(page);
+    await expectKeyboardReachesEveryControl(page);
+
+    expect(externalRequests).toEqual([]);
+  });
+}

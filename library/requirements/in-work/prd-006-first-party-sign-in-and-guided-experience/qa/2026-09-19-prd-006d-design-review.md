@@ -70,7 +70,8 @@ it must be, and the axis it failed. Each is fixed.
   second implementation of the field specification, and `auth-form.module.css:32-56` restyled the
   control, the label, and the helper text.
 - **What it must be:** `TextField`, `PasswordField`, and `FormField`, per
-  `03-components/form-field-and-text-inputs.md` and `03-components/password-field.md`.
+  `03-components/form-field-and-text-inputs.md`, which is also where the `PasswordField`
+  specification lives.
 - **Axes:** 1, 3, 5, 9, 10. Score before: 1.
 - **Fixed:** `auth-field.tsx` is deleted. Every account field is a primitive; the password fields
   gained the specified reveal control, which they did not have before; the requirement marker and
@@ -350,11 +351,15 @@ mode" condition actually true.
   and state, and instructions for reaching each surface. The orchestrator fills it in from real
   screenshots and signs it. Reported OPEN.
 - **Rubric open delta D-001**, with `design-system-guardian`.
-- **The Windows-generated baselines.** Every picture under `tests/visual/screens/` was generated in
-  this lane's Chromium on Windows and carries the `-win32` platform suffix. They must be
-  regenerated on the `ubuntu-24.04` runner before they gate anything;
-  `tests/visual/screens/README.md` says exactly how, and Playwright will never silently compare a
-  Windows baseline against a Linux run because the platform is part of the filename.
+- **The platform rule.** Baseline filenames carry no platform suffix: `snapshotPathTemplate` in
+  `playwright.config.ts` is `tests/visual/screens/{projectName}/{arg}{ext}`, so nothing in the
+  filename distinguishes a Windows-drawn picture from a Linux-drawn one. What actually gates the
+  comparison is the `CI` environment variable: `compareBaselines` in `playwright.config.ts` is
+  true only when `CI` is set or `OALO_COMPARE_SCREEN_BASELINES=true` is passed explicitly, and
+  every committed baseline is drawn by the `ubuntu-24.04` runner in
+  `.github/workflows/screen-baselines.yml`. A developer machine, on any operating system, skips
+  the comparison instead of failing on rasterisation; `tests/visual/screens/README.md` §Platform
+  says the same and gives the regeneration steps.
 
 ---
 

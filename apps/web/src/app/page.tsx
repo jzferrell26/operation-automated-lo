@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
  * a plain local landing rather than as an internal status report: no phase, no environment variable
  * name, and no claim that anything is connected.
  *
- * PRD-006d, axis 4: the background comes from `--sf-canvas` through `globals.css`, not from the
- * literal hex in `phaseZeroUiTokens`, which is a bootstrap constant and not a semantic token.
+ * PRD-006d, axis 4: the background comes from `--sf-canvas` through `globals.css`, a semantic
+ * token, not a literal hex value.
  */
 export default function HomePage() {
   if (canRenderReviewSurface()) {

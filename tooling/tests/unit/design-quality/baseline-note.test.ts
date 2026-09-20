@@ -2,7 +2,12 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("node:child_process", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:child_process")>();
+  return { ...actual, execFileSync: vi.fn(actual.execFileSync) };
+});
 
 /**
  * PRD-006d 006D-AC-013. A screen baseline never moves without somebody saying why.
@@ -27,24 +32,25 @@ const BASELINE_DIRECTORY = "tests/visual/screens/";
 const NOTE_MARKER = "Baseline change:";
 const TEMPLATE_PATH = ".github/pull_request_template.md";
 
-/** The files this branch changes against its merge base, or an empty list outside a pull request. */
-function changedFiles(): readonly string[] {
+/**
+ * The files this branch changes against its merge base, or an empty list outside a pull request.
+ *
+ * `GITHUB_BASE_REF` is only ever set inside a pull request, so once it is set the base MUST be
+ * resolvable; a checkout that cannot resolve `origin/${GITHUB_BASE_REF}` (for example a shallow
+ * checkout with no `fetch-depth: 0`) is a broken gate, not an empty diff, and this throws instead
+ * of returning `[]` so the guard fails loudly rather than passing with nothing to say.
+ */
+export function changedFiles(): readonly string[] {
   const base = process.env["GITHUB_BASE_REF"];
   if (base === undefined || base === "") return [];
-  try {
-    const output = execFileSync("git", ["diff", "--name-only", `origin/${base}...HEAD`], {
-      cwd: repositoryRoot,
-      encoding: "utf8",
-    });
-    return output
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line !== "");
-  } catch {
-    // No merge base to compare against. The template assertion below still runs, so the rule is
-    // never silently switched off; it simply has nothing branch-specific to say.
-    return [];
-  }
+  const output = execFileSync("git", ["diff", "--name-only", `origin/${base}...HEAD`], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+  });
+  return output
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
 }
 
 /** The text that follows the marker in the pull request body, trimmed. */
@@ -62,6 +68,23 @@ function baselineNote(body: string): string {
 }
 
 describe("the screen baseline note", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.mocked(execFileSync).mockRestore();
+  });
+
+  it("fails loudly, rather than passing, when GITHUB_BASE_REF is set and the base cannot be resolved", () => {
+    vi.stubEnv("GITHUB_BASE_REF", "main");
+    const gitError = new Error(
+      "fatal: ambiguous argument 'origin/main...HEAD': unknown revision or path not in the working tree.",
+    );
+    vi.mocked(execFileSync).mockImplementation(() => {
+      throw gitError;
+    });
+
+    expect(() => changedFiles()).toThrow(gitError);
+  });
+
   it("is asked for by the pull request template, so nobody has to remember the rule", () => {
     const template = readFileSync(join(repositoryRoot, TEMPLATE_PATH), "utf8");
     expect(template).toContain(NOTE_MARKER);

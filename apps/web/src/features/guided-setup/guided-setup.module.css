@@ -50,6 +50,15 @@
   min-inline-size: 0;
 }
 
+/* PRD-006d F-23. The sentence the panel shows while a dismissal is still being
+ * saved. Secondary type step, body colour, no surface of its own: it is an aside
+ * inside the panel, not a second status card. */
+.pendingNote {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
 .starterNote {
   display: inline-flex;
   align-items: center;

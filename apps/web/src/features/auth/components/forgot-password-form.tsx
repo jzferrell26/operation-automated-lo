@@ -29,7 +29,25 @@ export function ForgotPasswordForm(): ReactNode {
     if (payload !== undefined) setSent(true);
   }
 
-  if (sent) return <AuthNotice>{FORGOT_PASSWORD.confirmation}</AuthNotice>;
+  /**
+   * PRD-006d 006D-AC-011 and the named-state review's F-20.
+   *
+   * The confirmation used to replace the whole form, leaving a screen with a sentence on it and
+   * no control at all: nothing to press, nothing to tab to, and no way onward for somebody who
+   * has just been told to go and read their email. Rubric axis 5 asks every state to be operable
+   * and axis 9 asks the state to say what to do next. The page's own sign-in link stays, below the
+   * notice, in the same footer row and the same D10 words it already used.
+   */
+  if (sent) {
+    return (
+      <div className={styles.form}>
+        <AuthNotice>{FORGOT_PASSWORD.confirmation}</AuthNotice>
+        <p className={styles.footer}>
+          <Link href="/sign-in">{SIGN_IN.submitLabel}</Link>
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>

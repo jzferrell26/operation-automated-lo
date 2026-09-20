@@ -156,6 +156,10 @@
   margin-inline-start: 5rem;
 }
 
+/* Design brief section 14. The row wraps when it runs out of room rather than
+ * pushing the page sideways, which matters at the tablet and embedded frames now
+ * that they carry the full rail (F-19) and at 390 where the mobile block already
+ * relied on it. With room it never wraps, so the wide frames are unchanged. */
 .topbar {
   position: sticky;
   inset-block-start: 0;
@@ -163,6 +167,7 @@
   display: flex;
   min-block-size: 4.5rem;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: var(--space-4);
   padding: var(--space-3) var(--space-6);
@@ -188,6 +193,17 @@
 
 .themeControl {
   flex: none;
+}
+
+/* `03-components/application-shell-and-navigation.md`, the account control beside the theme
+ * control. It carries a plain form post, so the form itself must not introduce a block of its own
+ * between the topbar's flex row and the control. */
+.accountControls {
+  flex: none;
+}
+
+.accountControls form {
+  display: flex;
 }
 
 .syntheticDisclosure {
@@ -255,31 +271,19 @@
   font-size: var(--text-section-size);
 }
 
-/* Design brief section 14. The 768px tablet frame is a reference width that the
- * tablet rules own, so the compact rail range includes it and the mobile drawer
- * range stops just below it. Before PRD-006d the boundary was `min-width: 769px`
+/* Design brief section 14 and `03-components/application-shell-and-navigation.md`
+ * line 26: "Tablet uses a collapsible rail." Between 768 and 1180 this file used
+ * to force the rail to 5rem and hide `.railToggle`, which is a compact rail, not
+ * a collapsible one: the toggle was unreachable and the two states the brief
+ * names could not be told apart. There is now no rule here at all for that range.
+ * It inherits the desktop rail above, so the same toggle collapses the same rail
+ * to the same 5rem compact width at 1440, 1180, and 768, and the toggle's label
+ * describes what the rail is actually doing at every one of them.
+ *
+ * The 768px frame belongs to the rail, not to the drawer: the mobile range below
+ * stops just under it. Before PRD-006d the boundary was `min-width: 769px`
  * against `max-width: 768px`, which handed the tablet frame the mobile drawer.
  */
-@media (max-width: 1180px) and (min-width: 768px) {
-  .desktopSidebar {
-    inline-size: 5rem;
-  }
-
-  .desktopSidebar .brand strong,
-  .desktopSidebar .navigationLink > span,
-  .desktopSidebar .subnavToggle,
-  .desktopSidebar .subnavigation,
-  .desktopSidebar .railToggle,
-  .desktopSidebar .identity div {
-    display: none;
-  }
-
-  .workspace,
-  .desktopSidebar[data-collapsed="true"] + .workspace {
-    margin-inline-start: 5rem;
-  }
-}
-
 @media (max-width: 767.98px) {
   .desktopSidebar {
     display: none;

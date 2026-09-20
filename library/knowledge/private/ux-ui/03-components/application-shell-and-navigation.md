@@ -42,6 +42,22 @@ Present Operation Automated LO as one platform with connected modules. The shell
 - Plan-restricted and planned modules are visually and semantically distinct. Planned means unavailable, not a disabled operational tool.
 - Provider-degraded navigation retains the last safe known state and routes to status details; it must not initiate another uncertain provider write.
 
+### Account control
+
+Recorded 2026-09-20 by the PRD-006d named-state review, finding F-21. The folder named the
+identity area and the embedded "accessible account control" but never said where the controls that
+act on the session live, so the sign-out control had ended up as the first child of the page.
+
+- The shell owns the session's own controls. Sign out lives in the topbar's account area, beside
+  the theme control, at every frame. It never lives inside a page.
+- The page's main landmark opens with the page's own title. A control above a page heading is a
+  hierarchy defect (brief section 4 and rubric axis 1), whoever put it there.
+- The control is the `Button` primitive at its 44 by 44 target with the shared focus ring, and its
+  label comes from the copy module (PRD-006b D10's sign-out row, "Sign out").
+- It is a plain form post with a hidden session-bound field. No client script is loaded into the
+  shell to make one button work, and the control still cannot be pressed from another site.
+- A shell with no session renders no account control, and says so in the page instead.
+
 ### Theme control
 
 - Light, Dark, and System form one keyboard-accessible segmented control.

@@ -84,7 +84,8 @@ with a finding reference. A row is signed only when all eight are `pass` on all 
 | Guided setup step 1 | welcome | review | | | | | | | | |
 | Guided setup step 2 | your details | review | | | | | | | | |
 | Guided setup step 3 | your Realtor partner | review | | | | | | | | |
-| Guided setup step 4 | create the campaign | review | | | | | | | | |
+| Guided setup step 4 | create the campaign, first field | review | | | | | | | | |
+| Guided setup step 4 | create the campaign, last field | review | | | | | | | | |
 | Guided setup step 5 | read the result, ready | review | | | | | | | | |
 | Guided setup step 5 | read the result, needs changes | review | | | | | | | | |
 | Guided setup step 6 | approve | review | | | | | | | | |
@@ -123,25 +124,48 @@ server and the `Server` column says so.
 | Campaign detail, ready / approved / already decided | Synthetic mode's principal holds `campaign_creator` (`apps/web/src/server/authenticated-principal.ts:210-224`), and `campaignMayBeApprovedBy` (`packages/application/src/campaign-workspace-read.ts:110-119`) needs an approval role. A synthetic deployment can therefore never render an approvable or an approved campaign. The seeded approver can. Campaign detail's permission-restricted state stays synthetic, because that is exactly what a creator sees. |
 | Shell, collapsed rail and mobile drawer | Both are states of the signed-in shell that a person reaches with a control, and the review server is where a real session exists. |
 
+### What the review run spends, per run
+
+The review project shares one client address with the product's own rate limits, so how many
+sign-ups it spends is part of its coverage. Since the named-state review's F-22:
+
+| Spec | Sign-up submissions | Note |
+| --- | --- | --- |
+| `guided-setup.accessibility.spec.ts` | 1 | Was four, one per frame and theme. One account now walks all four cells, put back to step 1 from the help menu between them. |
+| `guided-setup.tablet-anchoring.spec.ts` | 1 | Was three, one per frame. One account now walks all three. |
+| `guided-setup.resume.spec.ts` | 2 | Unchanged. The two cases are two different account lifetimes: one dismissed and restarted, one completed. |
+| `guided-setup.timed.spec.ts` | 1 | Unchanged. The run measures account creation, so it has to create one. |
+| `guided-setup.walkthrough-captures.spec.ts` | 1 | Step 6's approve branch needs a workspace owner, and a self-serve account is the only owner this composition can make. The hand-off branch spends none: the seeded creator gives it. |
+| `design-quality.spec.ts`, the sign-up refusal | 2 | One submission per theme, each refused. Neither creates an account. |
+| **Total** | **8 of 10** | Six accounts created and two refusals. The limit is ten an hour per client address (`apps/web/src/server/password-authentication-handler.ts:118`), counted before the body is parsed (the same file, line 771). The gate drops and recreates the disposable database on every run, so the budget is per run rather than per hour of wall clock. |
+
+Measured on 2026-09-20 against the seeded review database: the review project is **82 passed, 0
+failed, 12.8 minutes**, with the eight submissions above and none refused.
+
 ### Frames a state does not have
 
 Two of these rows are scored at fewer than four frames, because the product does not have the state
-at the others. This is the brief's tablet rule, not a gap.
+at the others. This is the brief's own frame rule, not a gap.
 
 | Row | Frames | Why |
 | --- | --- | --- |
-| Shell, collapsed rail | 1440 only | The collapse control is `display: none` from 1180 down (`apps/web/src/features/shell/components/app-shell.module.css:263-276`), because the tablet range renders the rail compact from the media query instead. 1180 and 768 are the "tablet rail" row. |
-| Shell, mobile drawer | 390 only | The drawer trigger is `display: none` above 767.98px (the same file, lines 283-302), which PRD-006d D5 moved deliberately so the 768 frame keeps the compact rail. |
+| Shell, collapsed rail | 1440, 1180, 768 | The rail exists at three frames and the toggle reaches all three, which is what design brief section 14 and `03-components/application-shell-and-navigation.md:26` mean by a collapsible tablet rail. Until F-19 it was a 1440 state only, because the stylesheet hid the toggle from 1180 down and forced the rail compact there. At 390 there is no rail to collapse: it is replaced by the drawer, which is the row below. |
+| Shell, mobile drawer | 390 only | The drawer trigger is `display: none` above 767.98px (`apps/web/src/features/shell/components/app-shell.module.css`, the mobile block), which PRD-006d D5 moved deliberately so the 768 frame keeps the rail. |
 
 ### Rows no automated suite can take, which the orchestrator stages by hand
 
+Three rows left this table on 2026-09-20. Campaign detail's ready and approved states were
+blocked by a control that failed the target-size check, and F-18 moved that control onto the
+`Button` primitive, so `tests/browser/review/review-campaign-decision.spec.ts` now takes both with
+every check at full strength. Sign up's address-already-has-an-account state was blocked by
+arithmetic, and F-22 made room for it, so `tests/browser/review/design-quality.spec.ts` takes it
+once per theme.
+
 | Row | Why the suite cannot reach it |
 | --- | --- |
-| Campaign detail, approved | Reachable, and blocked by a defect on the screen rather than by the picture. Between the decision and the next load the screen still carries "Send back for changes" (`apps/web/src/features/campaigns/components/campaign-approval-controls.tsx:95-104`), a raw `<button>` with `.hint` from `open-house-draft-builder.module.css` that renders 152 by 21 against the brief's 44 by 44 (design brief section 14; WCAG 2.2 SC 2.5.8). Measured on 2026-09-19. Capturing it would have meant a red gate or a weakened target-size check, so the suite takes the already-decided state and leaves this one to the batch that moves the control onto the `Button` primitive, whose `Button.module.css:2` already sets `min-block-size: 44px`. |
-| Campaign detail, ready | The same control, in the same state, before anybody decides. |
-| Sign up, address already has an account | Reachable, but not on every run. Each submission spends one `sign_up_ip` attempt before the body is parsed (`apps/web/src/server/password-authentication-handler.ts:713`), the limit is ten an hour per address (the same file, line 86), and PRD-006c's four specs already spend exactly ten in one review run. Adding two was measured on 2026-09-19: the run's last two sign-ups were refused with "There have been too many attempts" and two PRD-006c specs failed. A set of the eight pictures was taken that day; stage it on a deployment of its own, or on a morning when nothing else is signing up. |
 | Verify email, confirmed | Confirming needs an `email_verification` token, and `scheduleVerificationEmail` issues one only when a sending domain is configured (`apps/web/src/server/password-authentication-handler.ts:812-816`). The review composition leaves `OALO_RESEND_API_KEY` and `OALO_EMAIL_FROM` absent on purpose (`tooling/scripts/database/review-browser-run.mjs:48-51`), so no token exists for a browser to spend. Stage it on a deployment with a sending domain. |
-| Unverified email notice | The sentence exists in `apps/web/src/copy/auth-messages.ts:84` as `VERIFY_EMAIL.unverifiedNotice` and nothing renders it. There is no such notice on the shell to photograph. |
+| Unverified email notice | `UnverifiedEmailNotice` renders it, and only for `unverified` (`apps/web/src/features/auth/components/unverified-email-notice.tsx:38`). 006A-AC-021 is explicit that a deployment with no sending domain shows no verification notice, and the review composition leaves the email variables absent on purpose (`tooling/scripts/database/review-browser-run.mjs:48-51`), so every session in the run carries `not_applicable` and there is no notice on the shell to photograph. Stage it on a deployment with a sending domain. |
+| Guided setup step 5, needs changes | The walkthrough's own journey saves a campaign the checks pass, because that is the path the budget in PRD-006c D3 is written against. The needs-changes branch of step 5 needs a campaign the checks refuse, which the synthetic suite already photographs on the create screen (`create--needs-changes`) but which no journey in the review run produces. Stage it by giving the walkthrough an open house that has already finished, which is the product's own blocking finding. |
 | Route error boundary | Nothing a browser can do makes a synthetic server component throw, and `(authenticated)/error.tsx` only renders when one does. |
 | Route loading boundary | `loading.tsx` is a streaming fallback. The shell's navigation is plain `<a href>` (`apps/web/src/features/shell/components/app-shell.tsx:346-360`) and the only `useRouter().push` in the product is the guided setup's (`apps/web/src/features/guided-setup/guided-setup-provider.tsx:226`), so a synthetic navigation is always a document load and the fallback is never on screen long enough to photograph. |
 

@@ -3,6 +3,7 @@ import { expect, test, type Browser } from "@playwright/test";
 import {
   NEW_ACCOUNT_NAME,
   NEW_ACCOUNT_PASSWORD,
+  continueToPanel,
   expectNoExternalRequests,
   freshEmail,
   guardLocalOrigin,
@@ -37,8 +38,7 @@ test("progress survives a closed browser, a dismissal, and a restart", async ({ 
   await signUpFreshAccount(first.page, email);
   await first.page.getByRole("button", { name: "Let's go" }).click();
   await expect(first.page.getByRole("dialog", { name: "Your details" })).toBeVisible();
-  await first.page.getByRole("button", { name: "Continue" }).click();
-  await expect(first.page.getByRole("dialog", { name: "Your Realtor partner" })).toBeVisible();
+  await continueToPanel(first.page, "Your Realtor partner");
   expectNoExternalRequests(first.guard);
   await first.context.close();
 

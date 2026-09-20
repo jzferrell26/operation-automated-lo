@@ -2,9 +2,11 @@ import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import {
+  continueToPanel,
   expectNoExternalRequests,
   freshEmail,
   guardLocalOrigin,
+  restartGuidedSetup,
   signUpFreshAccount,
   typeIntoLabel,
 } from "./helpers/guided-setup-journey.js";
@@ -16,6 +18,15 @@ import {
  * zero animations and zero non-zero transitions under `prefers-reduced-motion: reduce`, and every
  * control at least 44 by 44. The steps are walked once per cell rather than screenshotted from one
  * pass, because a panel that is fine at 1180 and broken at 390 is exactly the defect this catches.
+ *
+ * **One account, four cells.** PRD-006d's named-state review, F-22: this file used to create a
+ * fresh account per cell, which is four of the product's ten sign-ups an hour
+ * (`apps/web/src/server/password-authentication-handler.ts:118`) spent by one spec, and the four
+ * specs together spent the whole budget, so nothing else in the run could reach a sign-up state at
+ * all. The matrix is about the panel at four sizes, not about four people: the account is created
+ * once and "Show me around again" puts the same person back at step 1 between cells, which is the
+ * control a real person uses and the one `restartGuidedSetup` already exercises elsewhere. Every
+ * assertion is the one it was, run the same number of times.
  */
 
 const FRAMES = [
@@ -125,15 +136,18 @@ async function walkAndAssert(page: Page, where: string): Promise<void> {
       step: "2. Your details",
       pointsAtPage: false,
       advance: async () => {
-        await page.getByRole("button", { name: "Continue" }).click();
+        await continueToPanel(page, "Your Realtor partner");
       },
     },
     {
       step: "3. Your Realtor partner",
       pointsAtPage: false,
       advance: async () => {
+        // Emptied first: on the second cell this account's profile already holds the name, and
+        // typing into a prefilled field appends.
+        await page.getByLabel("Realtor's name").fill("");
         await typeIntoLabel(page, "Realtor's name", "Priya Nadeem");
-        await page.getByRole("button", { name: "Continue" }).click();
+        await continueToPanel(page, "Create the Open House Boost");
         await page.waitForURL("**/marketing/campaigns/new");
       },
     },
@@ -143,6 +157,14 @@ async function walkAndAssert(page: Page, where: string): Promise<void> {
   for (const checkpoint of checkpoints) {
     const label = `${where} ${checkpoint.step}`;
     await expect(page.getByRole("dialog")).toBeVisible();
+    /**
+     * A step that changes route hands axe a document the new route has not finished describing
+     * yet, and axe reports "Documents must have a `title` element" against a transition rather
+     * than against a screen. Measured on 2026-09-20 at step 4, which is the step that moves the
+     * user to the create screen. The route sets the title, so waiting for one is waiting for the
+     * screen this checkpoint is about.
+     */
+    await expect(page, label).toHaveTitle(/\S/u);
     await assertAxeClean(page, label);
     await assertNoMotion(page, label);
     await assertTargetSizes(page, label);
@@ -151,18 +173,30 @@ async function walkAndAssert(page: Page, where: string): Promise<void> {
   }
 }
 
-for (const frame of FRAMES) {
-  for (const theme of THEMES) {
-    test(`every step is accessible and still under ${theme} at ${String(frame.width)}x${String(frame.height)}`, async ({
-      page,
-    }) => {
-      const guard = await guardLocalOrigin(page);
-      await page.emulateMedia({ reducedMotion: "reduce" });
+test("every step is accessible in both themes at the mobile and embedded frames", async ({
+  page,
+}) => {
+  // Four walks of the first four steps, with deliberate typing, in one test rather than four. The
+  // work is the same work; only the three sign-ups it used to spend are gone.
+  test.setTimeout(900_000);
+  const guard = await guardLocalOrigin(page);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize(FRAMES[0]);
+  await signUpFreshAccount(page, freshEmail());
+
+  let first = true;
+  for (const frame of FRAMES) {
+    for (const theme of THEMES) {
       await page.setViewportSize(frame);
-      await signUpFreshAccount(page, freshEmail());
+      // The account arrives at step 1 already. Every cell after the first finds the walkthrough
+      // wherever the previous cell left it, so the same person starts it again the way a person
+      // would.
+      if (!first) await restartGuidedSetup(page);
+      first = false;
       await chooseTheme(page, theme);
       await walkAndAssert(page, `${theme} ${String(frame.width)}x${String(frame.height)}`);
-      expectNoExternalRequests(guard);
-    });
+    }
   }
-}
+
+  expectNoExternalRequests(guard);
+});

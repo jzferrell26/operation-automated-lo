@@ -36,6 +36,12 @@ export interface GuidedSetupContextValue {
   readonly profile: SetupProfile | undefined;
   readonly canApprove: boolean;
   readonly showFinishChip: boolean;
+  /**
+   * True from the moment "Not now" is pressed until the new position has been saved. PRD-006d's
+   * F-23: the dismissal is a write, and the next page load reads it back, so the panel stays open
+   * and the control stays disabled until the write has landed.
+   */
+  readonly dismissPending: boolean;
   goToStep(step: number): void;
   saveProfile(profile: SetupProfile): Promise<void>;
   dismissSetup(): void;

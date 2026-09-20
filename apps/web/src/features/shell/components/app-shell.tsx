@@ -23,6 +23,16 @@ import {
 import styles from "./app-shell.module.css";
 
 type AppShellProps = Readonly<{
+  /**
+   * `03-components/application-shell-and-navigation.md`: the shell's own account area, beside the
+   * theme control in the topbar. The signed-in layout puts the sign-out form here. Until the
+   * PRD-006d named-state review's F-21 that form was the first child of `<main>`, so every page in
+   * the workspace opened with a control instead of its own heading, which is rubric axis 1. The
+   * shell takes it as a slot for the same reason it takes `headerControls`: the form carries a
+   * server-rendered field, and the shell stays a client component that knows nothing about
+   * sessions.
+   */
+  accountControls?: ReactNode;
   children: ReactNode;
   /**
    * PRD-006c D5. The guided setup's two ways back in: the "Finish setup" chip and the help menu.
@@ -42,6 +52,7 @@ const focusableSelector = [
 ].join(",");
 
 export function AppShell({
+  accountControls,
   children,
   headerControls,
   navigation,
@@ -164,6 +175,9 @@ export function AppShell({
           <div className={styles.themeControl} aria-label="Theme settings">
             <ThemeControl />
           </div>
+          {accountControls === undefined ? null : (
+            <div className={styles.accountControls}>{accountControls}</div>
+          )}
         </header>
 
         <aside

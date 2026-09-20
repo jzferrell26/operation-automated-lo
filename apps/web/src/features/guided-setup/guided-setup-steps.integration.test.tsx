@@ -36,11 +36,17 @@ type ProviderOptions = Readonly<{
   enabled?: boolean;
   profile?: typeof SAMPLE_PROFILE | undefined;
   progress?: ReturnType<typeof initialGuidedSetupProgress>;
+  /**
+   * A `fetch` that answers differently from the recording one: held open, answering out of order,
+   * refusing. The two F-23 cases supply their own; everything else uses the recorder and reads
+   * `calls` from the returned view.
+   */
+  fetch?: typeof globalThis.fetch;
 }>;
 
 function renderSetup(options: ProviderOptions = {}) {
   const recorder = recordingSetupFetch();
-  vi.stubGlobal("fetch", recorder.fetch);
+  vi.stubGlobal("fetch", options.fetch ?? recorder.fetch);
   const view = render(
     <GuidedSetupProvider
       canApprove={options.canApprove ?? true}
@@ -205,10 +211,125 @@ describe("guided setup steps", () => {
       "Priya Nadeem",
     );
     await user.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    // F-23. The panel closes once its write has landed, so this waits for the close rather than
+    // reading the instant after the key.
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
     expect(calls.findLast((call) => call.path === "/api/setup/progress")?.body).toMatchObject({
       progress: { status: "dismissed", currentStep: 3 },
     });
+  });
+
+  /**
+   * PRD-006d's named-state review, F-23. The dismissal settles before the panel closes.
+   *
+   * "Not now" used to close the panel and post the new position afterwards. A navigation that
+   * overtook that post read the old position, reopened the walkthrough on the step it was on, and
+   * carried the page away from wherever the person was going: measured on 2026-09-20, when the
+   * change-password review spec spent its whole timeout on somebody else's step 5. Wave 7e waited
+   * for the response in the test layer, which made the suite green and left the product racing.
+   *
+   * The write is held open here so the window between the press and the answer can be looked at.
+   * Inside it: the panel is still on screen, "Not now" is disabled so the same dismissal cannot be
+   * posted twice, and after a beat the panel says why it is still there. Releasing the write closes
+   * the panel.
+   */
+  it("keeps the panel open, and Not now disabled, until the dismissal has been saved", async () => {
+    const user = userEvent.setup();
+    const calls: { path: string; body: unknown }[] = [];
+    let releaseWrite: (() => void) | undefined;
+    const held = new Promise<void>((resolve) => {
+      releaseWrite = resolve;
+    });
+    const fetchStub = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input);
+      const body: unknown = JSON.parse(String(init?.body ?? "{}"));
+      calls.push({ path, body });
+      if (path === "/api/setup/progress") await held;
+      return new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as typeof globalThis.fetch;
+
+    renderSetup({ fetch: fetchStub, profile: SAMPLE_PROFILE, progress: progressAt(3) });
+
+    const dismissControl = screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.dismiss });
+    await user.click(dismissControl);
+
+    expect(screen.getByRole("dialog", { name: /.+/u })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.dismiss })).toBeDisabled();
+    expect(calls.findLast((call) => call.path === "/api/setup/progress")?.body).toMatchObject({
+      progress: { status: "dismissed", currentStep: 3 },
+    });
+    await waitFor(() => {
+      expect(screen.getByText(GUIDED_SETUP_CONTROLS.dismissPending)).toBeInTheDocument();
+    });
+
+    releaseWrite?.();
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    // One press, one write. The disabled control is what makes that true.
+    expect(calls.filter((call) => call.path === "/api/setup/progress")).toHaveLength(1);
+  });
+
+  /**
+   * F-23's second half. A reply from a write that has been overtaken says nothing about where the
+   * person is now.
+   *
+   * Two progress writes overlap whenever somebody presses Continue before the previous write has
+   * answered, which "Show me around again" followed by Continue does every time. Each reply
+   * carries the progress the server held when it ran, the replies are not ordered, and the older
+   * one used to arrive last and move the panel back to the step it had already left. Measured on
+   * 2026-09-20 in the review browser run: a step 2 Continue saved the profile, advanced, and was
+   * then pulled back to step 2 by the restart's own reply, where it stayed. Both writes answered
+   * 200, so it read as a step that would not advance rather than as an error.
+   *
+   * The first write is held open here and released after the second has answered, which is the
+   * order that used to lose. The panel must be on the step the newest write named.
+   */
+  it("ignores a progress reply that a newer write has overtaken", async () => {
+    const user = userEvent.setup();
+    let releaseFirst: (() => void) | undefined;
+    const held = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    let progressWrites = 0;
+    const fetchStub = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input);
+      const body: unknown = JSON.parse(String(init?.body ?? "{}"));
+      if (path === "/api/setup/progress") {
+        progressWrites += 1;
+        // The first write answers last, and answers with the step it was told, which by then is
+        // the old one.
+        if (progressWrites === 1) await held;
+      }
+      return new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as typeof globalThis.fetch;
+
+    renderSetup({ fetch: fetchStub, profile: SAMPLE_PROFILE, progress: progressAt(1) });
+
+    // The first write: the welcome step's own move to step 2, held open.
+    await user.click(screen.getByRole("button", { name: GUIDED_SETUP_STEPS.welcome.primaryLabel }));
+    expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.yourDetails.title);
+
+    // The second write, which answers first: step 2's Continue on to step 3.
+    await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+    await waitFor(() => {
+      expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.realtorPartner.title);
+    });
+
+    releaseFirst?.();
+    await waitFor(() => {
+      expect(progressWrites).toBeGreaterThanOrEqual(2);
+    });
+    // The overtaken reply named step 2. The panel is still on step 3.
+    expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.realtorPartner.title);
   });
 
   it("never opens for a setup that is finished, and never opens when it is turned off", () => {

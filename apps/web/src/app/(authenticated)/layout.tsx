@@ -107,29 +107,41 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
     ? await readSetupPreferencesForRequest(request, process.env)
     : undefined;
 
+  /**
+   * PRD-006d's named-state review, F-21. The sign-out control belongs to the shell's account area,
+   * not to the page.
+   *
+   * `03-components/application-shell-and-navigation.md` puts identity and its controls in the rail
+   * and the topbar's account control, and rubric axis 1 asks that the eye land on the page's own
+   * title. Until 2026-09-20 this form was the first child of `<main>`, so every workspace page
+   * opened with a button above its own heading. It is the same plain form post it always was: a
+   * hidden field, no client script, the label from the copy module, and the 44px target the
+   * `Button` primitive carries.
+   *
+   * A form post cannot set x-csrf-token, so the session-bound token travels as a field and the
+   * sign-out route promotes it to the header before the 005a mutation gate sees it. The value is
+   * the same HMAC the meta element carries; the cookie never reaches the document either way.
+   */
+  const signOutControl = (
+    <form action={SIGN_OUT_PATH} method="post">
+      {shell.csrfToken === undefined ? null : (
+        <input name="csrfToken" type="hidden" value={shell.csrfToken} />
+      )}
+      <Button type="submit" variant="secondary">
+        {SIGN_OUT_LABEL}
+      </Button>
+    </form>
+  );
+
   const shellBody = (
     <AppShell
+      accountControls={shell.authenticated ? signOutControl : undefined}
       headerControls={shell.authenticated ? <GuidedSetupShellControls /> : undefined}
       navigation={projectNavigationForSession(workspace.ui.navigation, session)}
       session={session}
       workspaceMode={workspace.mode}
     >
-      {shell.authenticated ? (
-        <form action={SIGN_OUT_PATH} method="post">
-          {/*
-            A form post cannot set x-csrf-token, so the session-bound token travels as a field and
-            the sign-out route promotes it to the header before the 005a mutation gate sees it.
-            The value is the same HMAC the meta element carries; the cookie never reaches the
-            document either way.
-          */}
-          {shell.csrfToken === undefined ? null : (
-            <input name="csrfToken" type="hidden" value={shell.csrfToken} />
-          )}
-          <Button type="submit" variant="secondary">
-            {SIGN_OUT_LABEL}
-          </Button>
-        </form>
-      ) : (
+      {shell.authenticated ? null : (
         <p>
           {SIGNED_OUT_HEADING}{" "}
           <Link href={SIGN_IN_PATH} variant="action">

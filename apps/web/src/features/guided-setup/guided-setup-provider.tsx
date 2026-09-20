@@ -105,6 +105,7 @@ export function GuidedSetupProvider({
   const [profile, setProfile] = useState<SetupProfile | undefined>(initialProfile);
   const [open, setOpen] = useState<boolean>(() => enabled && shouldAutoStart(initialProgress));
   const [campaign, setCampaign] = useState<SavedCampaignReport | undefined>(undefined);
+  const [dismissPending, setDismissPending] = useState(false);
   const [fieldIndex, setFieldIndex] = useState(0);
   const [values, setValues] = useState<Readonly<Record<string, string>>>(() =>
     valuesFrom(
@@ -126,8 +127,28 @@ export function GuidedSetupProvider({
    */
   const progressRef = useRef(progress);
   progressRef.current = progress;
+  /** F-23. One dismissal at a time, whether it came from the control or from Escape. */
+  const dismissInFlight = useRef(false);
+  /** F-23. Which progress write is the newest, so an older reply cannot answer for it. */
+  const progressWriteToken = useRef(0);
 
   const persistProgress = useCallback(async (next: GuidedSetupProgress): Promise<void> => {
+    /**
+     * PRD-006d's named-state review, F-23. Only the newest write may reconcile.
+     *
+     * Two writes can be in flight at once: "Show me around again" posts step 1 and the person
+     * presses Continue before that post has answered. Each reply carries the progress the server
+     * held when it ran, and the replies are not ordered, so the older one used to arrive last and
+     * put the walkthrough back on the step it had already left. Measured on 2026-09-20: a spec
+     * pressed Continue on step 2, the profile saved and the step advanced, and the restart's own
+     * reply then moved the panel back to step 2, where it stayed. Both writes answered 200, which
+     * is why it read as a hang rather than an error.
+     *
+     * The token is compared after the await. A reply that is not the newest is still a successful
+     * write; it simply has nothing left to say about where the person is now.
+     */
+    const token = progressWriteToken.current + 1;
+    progressWriteToken.current = token;
     setProgress(next);
     try {
       const response = await postInternalJson("/api/setup/progress", { progress: next });
@@ -138,6 +159,7 @@ export function GuidedSetupProvider({
       const payload: unknown = await response.json();
       const stored = (payload as { progress?: unknown }).progress;
       if (stored === undefined) return;
+      if (token !== progressWriteToken.current) return;
       const reconciled = parseStoredProgress(stored);
       // Only replace the value when the server actually disagrees. An identical object would be a
       // new identity for no reason, and identities are what the rest of the tree re-renders on.
@@ -170,9 +192,35 @@ export function GuidedSetupProvider({
     }
   }, []);
 
+  /**
+   * PRD-006d's named-state review, F-23. The dismissal settles before the panel closes.
+   *
+   * "Not now" used to close the panel and post the new position afterwards. A navigation that
+   * overtook that post read the old position, reopened the walkthrough on the step it was on, and
+   * carried the page away from wherever the person was going. Wave 7e worked around it in the test
+   * layer by waiting for the response; the race is the product's, so it is closed here: the write
+   * is awaited, the panel stays open while it travels, and "Not now" is disabled meanwhile so the
+   * dismissal cannot be posted twice.
+   *
+   * A failed write still closes the panel. `persistProgress` never rejects: it reports and returns,
+   * because a walkthrough that refused to go away when somebody asked it to would be a worse
+   * product than one that occasionally forgets where it was.
+   */
   const dismissSetup = useCallback(() => {
-    setOpen(false);
-    void persistProgress(dismiss(progressRef.current, new Date()));
+    // The disabled control covers the footer's own button. Escape is the other way in, and the
+    // `Sheet` does not know a dismissal is in flight, so the second press is refused here.
+    if (dismissInFlight.current) return;
+    dismissInFlight.current = true;
+    setDismissPending(true);
+    void (async () => {
+      try {
+        await persistProgress(dismiss(progressRef.current, new Date()));
+      } finally {
+        dismissInFlight.current = false;
+        setDismissPending(false);
+        setOpen(false);
+      }
+    })();
   }, [persistProgress]);
 
   const resumeSetup = useCallback(() => {
@@ -236,6 +284,7 @@ export function GuidedSetupProvider({
     () => ({
       canApprove,
       completeSetup,
+      dismissPending,
       dismissSetup,
       enabled,
       goToStep,
@@ -251,6 +300,7 @@ export function GuidedSetupProvider({
     [
       canApprove,
       completeSetup,
+      dismissPending,
       dismissSetup,
       enabled,
       goToStep,
@@ -278,6 +328,7 @@ export function GuidedSetupProvider({
         <CurrentStep
           campaign={campaign}
           canApprove={canApprove}
+          dismissPending={dismissPending}
           fieldIndex={fieldIndex}
           onComplete={completeSetup}
           onDismiss={dismissSetup}
@@ -308,6 +359,7 @@ function valuesFrom(profile: SetupProfile): Readonly<Record<string, string>> {
 type CurrentStepProps = Readonly<{
   campaign: SavedCampaignReport | undefined;
   canApprove: boolean;
+  dismissPending: boolean;
   fieldIndex: number;
   onComplete: () => void;
   onDismiss: () => void;
@@ -325,10 +377,11 @@ type CurrentStepProps = Readonly<{
  * forget a prop the panel needs.
  */
 function CurrentStep(props: CurrentStepProps) {
-  const { campaign, canApprove, onComplete, onDismiss, onStep, progress } = props;
+  const { campaign, canApprove, dismissPending, onComplete, onDismiss, onStep, progress } = props;
   const definition = stepDefinition(progress.currentStep);
   const shared = {
     anchor: definition.anchor,
+    dismissPending,
     onDismiss,
     position: definition.position,
     progress,
@@ -447,6 +500,7 @@ function renderProfileStep(
       anchor={definition.anchor}
       body={step.body}
       continueDisabled={!profileFieldsAreValid(step.fields, props.values)}
+      dismissPending={props.dismissPending}
       onContinue={() => {
         // The save is awaited before the step moves, because the step after this one renders on
         // the server from the profile this one just wrote. Firing both at once worked on a fast

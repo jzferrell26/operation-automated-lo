@@ -170,10 +170,12 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
         shellBody
       ) : (
         <GuidedSetupProvider
+          campaignAwaitingDecision={preferences.awaitingDecision}
           canApprove={APPROVER_CAPABLE_ROLE_LABELS.has(session.user.roleLabel)}
           enabled
           initialProfile={preferences.profile}
           initialProgress={preferences.progress}
+          savedCampaign={preferences.campaign}
           serverNowIso={new Date().toISOString()}
           sessionDisplayName={session.user.displayName}
           sessionWorkspaceName={session.location.displayName}

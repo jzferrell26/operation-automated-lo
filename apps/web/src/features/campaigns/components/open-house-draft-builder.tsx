@@ -120,6 +120,8 @@ export function OpenHouseDraftBuilder({
       guidedSetup?.reportCampaignSaved({
         campaignRef: saved.campaignRef,
         detailHref: saved.detailHref,
+        // The same fact step 5 reads from the server when it reads this campaign again tomorrow.
+        ready: !saved.blocking,
         findings: saved.findings,
       });
     } catch {

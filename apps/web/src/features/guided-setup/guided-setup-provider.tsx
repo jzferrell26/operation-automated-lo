@@ -12,6 +12,7 @@ import {
   type SavedCampaignReport,
 } from "./guided-setup-context.js";
 import { GuidedSetupStep } from "./guided-setup-step.js";
+import type { SetupCampaignResult } from "./model/campaign-result.js";
 import {
   advanceTo,
   complete,
@@ -50,9 +51,11 @@ import { CAMPAIGN_FIELD_SEQUENCE, stepDefinition } from "./steps/step-model.js";
  * server, per person and per workspace, so signing in on another machine resumes in the same place
  * and a shared computer never leaks one person's journey to the next.
  *
- * A failed write is deliberately not fatal. The step still moves: the walkthrough is a guide, and
- * losing a saved position is a smaller harm than a modal error in the middle of someone's first
- * five minutes. The next successful write brings the stored value back into step.
+ * A failed write keeps the step where it is and says so. Until 2026-09-20 it moved the step anyway
+ * and wrote a line to the console, so a person whose details had not saved was shown the next step
+ * and told nothing; the following morning their name was gone and nothing had ever said why. The
+ * panel now holds its place, reads PRD-006b D7's generic sentence out through its own status
+ * region, and offers the same Continue as the retry.
  */
 
 export type GuidedSetupProviderProps = Readonly<{
@@ -62,6 +65,19 @@ export type GuidedSetupProviderProps = Readonly<{
   enabled: boolean;
   initialProfile: SetupProfile | undefined;
   initialProgress: GuidedSetupProgress;
+  /**
+   * PRD-006c D3 step 5. The server's reading of the campaign the stored progress names.
+   *
+   * It is a prop rather than something the panel fetches because the layout already reads progress
+   * on the server, and the two facts belong to the same render: a step that said "ready" from one
+   * render and "needs changes" from the next would be the defect this closes, in a smaller window.
+   */
+  savedCampaign?: SetupCampaignResult | undefined;
+  /**
+   * PRD-006c D5. The campaign waiting for this person's decision, when they can approve and have
+   * none of their own. The walkthrough hands them to it instead of asking them to create one.
+   */
+  campaignAwaitingDecision?: SetupCampaignResult | undefined;
   /**
    * The instant the server rendered this page, so the seven-day chip window is decided once, on
    * one clock. Reading `Date.now()` during render would let the server and the browser disagree
@@ -76,25 +92,26 @@ export type GuidedSetupProviderProps = Readonly<{
 const CAMPAIGN_DETAIL_PREFIX = "/marketing/campaigns/";
 
 /**
- * A failed save moves the step anyway and says so in the console.
+ * What a failed save leaves in the console, beside what it says on the screen.
  *
- * The recovery is deliberate: a walkthrough that stopped to report a failed bookkeeping write
- * would interrupt somebody's first five minutes over something that costs them, at worst, their
- * place in a seven-step guide. What it must not be is silent, because a workspace whose writes are
- * all failing would otherwise look like a walkthrough that simply never remembers anyone. The
+ * The screen gets PRD-006b D7's generic sentence, which is all a loan officer can act on. The
+ * console gets the shape of the failure, because a workspace whose writes are all failing would
+ * otherwise be indistinguishable from a walkthrough that simply never remembers anyone. The
  * message names what failed and nothing about the person.
  */
 function reportSaveFailure(what: "profile" | "progress", cause: unknown): void {
   const detail = cause instanceof Error ? cause.message : String(cause);
-  console.warn(`guided-setup: the ${what} write did not land (${detail}); the step moved anyway.`);
+  console.warn(`guided-setup: the ${what} write did not land (${detail}); the step stayed put.`);
 }
 
 export function GuidedSetupProvider({
   canApprove,
   children,
   enabled,
+  campaignAwaitingDecision,
   initialProfile,
   initialProgress,
+  savedCampaign,
   serverNowIso,
   sessionDisplayName,
   sessionWorkspaceName,
@@ -106,6 +123,12 @@ export function GuidedSetupProvider({
   const [open, setOpen] = useState<boolean>(() => enabled && shouldAutoStart(initialProgress));
   const [campaign, setCampaign] = useState<SavedCampaignReport | undefined>(undefined);
   const [dismissPending, setDismissPending] = useState(false);
+  /**
+   * PRD-006d D7, through 006D-AC-011. True from a failed profile or progress write until the next
+   * attempt. It is what the panel reads its sentence out of, and it is cleared when a write is
+   * tried again rather than when one succeeds, so the region says nothing while the retry travels.
+   */
+  const [writeFailed, setWriteFailed] = useState(false);
   const [fieldIndex, setFieldIndex] = useState(0);
   const [values, setValues] = useState<Readonly<Record<string, string>>>(() =>
     valuesFrom(
@@ -134,6 +157,9 @@ export function GuidedSetupProvider({
    */
   const openRef = useRef(open);
   openRef.current = open;
+  /** The latest saved profile, so a failed write can put the previous one back. */
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
   /** F-23. One dismissal at a time, whether it came from the control or from Escape. */
   const dismissInFlight = useRef(false);
   /** F-23. Which progress write is the newest, so an older reply cannot answer for it. */
@@ -153,7 +179,7 @@ export function GuidedSetupProvider({
     setOpen(true);
   }, []);
 
-  const persistProgress = useCallback(async (next: GuidedSetupProgress): Promise<void> => {
+  const persistProgress = useCallback(async (next: GuidedSetupProgress): Promise<boolean> => {
     /**
      * PRD-006d's named-state review, F-23. Only the newest write may reconcile.
      *
@@ -167,28 +193,41 @@ export function GuidedSetupProvider({
      *
      * The token is compared after the await. A reply that is not the newest is still a successful
      * write; it simply has nothing left to say about where the person is now.
+     *
+     * 006D-AC-011. A write that does not land puts the stored value back where it was and answers
+     * false. The caller is what decides whether that matters: a step that was about to advance
+     * stays where it is, and a dismissal closes anyway, because a walkthrough that refused to go
+     * away when somebody asked it to would be worse than one that forgets where it was.
      */
     const token = progressWriteToken.current + 1;
     progressWriteToken.current = token;
+    const previous = progressRef.current;
+    setWriteFailed(false);
     setProgress(next);
+    const failed = (cause: unknown): boolean => {
+      reportSaveFailure("progress", cause);
+      if (token === progressWriteToken.current) setProgress(previous);
+      setWriteFailed(true);
+      return false;
+    };
     try {
       const response = await postInternalJson("/api/setup/progress", { progress: next });
       if (!response.ok) {
-        reportSaveFailure("progress", `the server answered ${String(response.status)}`);
-        return;
+        return failed(`the server answered ${String(response.status)}`);
       }
       const payload: unknown = await response.json();
       const stored = (payload as { progress?: unknown }).progress;
-      if (stored === undefined) return;
-      if (token !== progressWriteToken.current) return;
+      if (stored === undefined) return true;
+      if (token !== progressWriteToken.current) return true;
       const reconciled = parseStoredProgress(stored);
       // Only replace the value when the server actually disagrees. An identical object would be a
       // new identity for no reason, and identities are what the rest of the tree re-renders on.
       setProgress((current) =>
         JSON.stringify(current) === JSON.stringify(reconciled) ? current : reconciled,
       );
+      return true;
     } catch (error) {
-      reportSaveFailure("progress", error);
+      return failed(error);
     }
   }, []);
 
@@ -201,15 +240,31 @@ export function GuidedSetupProvider({
     [openWalkthrough, persistProgress],
   );
 
-  const saveProfile = useCallback(async (next: SetupProfile): Promise<void> => {
+  /**
+   * 006D-AC-011. Answers whether the profile landed.
+   *
+   * The typed values stay on screen either way: they are the person's own text and losing them
+   * would be a second failure on top of the first. What a false answer buys is that the step does
+   * not move, so nobody is carried past a form whose contents were never saved.
+   */
+  const saveProfile = useCallback(async (next: SetupProfile): Promise<boolean> => {
+    const previous = profileRef.current;
+    setWriteFailed(false);
     setProfile(next);
+    const failed = (cause: unknown): boolean => {
+      reportSaveFailure("profile", cause);
+      setProfile(previous);
+      setWriteFailed(true);
+      return false;
+    };
     try {
       const response = await postInternalJson("/api/setup/profile", { profile: next });
       if (!response.ok) {
-        reportSaveFailure("profile", `the server answered ${String(response.status)}`);
+        return failed(`the server answered ${String(response.status)}`);
       }
+      return true;
     } catch (error) {
-      reportSaveFailure("profile", error);
+      return failed(error);
     }
   }, []);
 
@@ -297,15 +352,44 @@ export function GuidedSetupProvider({
   );
 
   /**
-   * On a resume in a new browser context the saved campaign reference is all that survives, so the
-   * detail address is rebuilt from it. The findings are not: they belong to the page, which is
-   * where the user is about to read them.
+   * PRD-006c D3 step 5 and D5. Which campaign steps 5 and 6 are about, and what is known about it.
+   *
+   * The server's reading wins whenever it is about the same campaign the browser is holding, which
+   * is the whole point: the in-session report is a snapshot of one save, and after a resume in a
+   * new context there is no report at all. A report that names a different campaign is newer than
+   * the server's, because it was created after this page was rendered, so it wins instead.
+   *
+   * With nothing of their own, somebody who can approve is given the campaign that is waiting for
+   * a decision. That is D5's "the approver's journey at step 6 approves the creator's campaign if
+   * one exists", and it is the only branch in which step 4 is not this person's work.
+   */
+  const ownCampaign: SetupCampaignResult | undefined =
+    campaign === undefined
+      ? savedCampaign
+      : savedCampaign?.campaignRef === campaign.campaignRef
+        ? savedCampaign
+        : campaign;
+  const waitingCampaign: SetupCampaignResult | undefined =
+    ownCampaign === undefined && progress.campaignRef === undefined && canApprove
+      ? campaignAwaitingDecision
+      : undefined;
+  const stepCampaign = ownCampaign ?? waitingCampaign;
+  /**
+   * On a resume the stored reference is all that survives when the campaign itself could not be
+   * read, so the detail address is still rebuilt from it: the step says it does not know what the
+   * checks found, and still takes the person to the page that does.
    */
   const campaignHref =
-    campaign?.detailHref ??
+    stepCampaign?.detailHref ??
     (progress.campaignRef === undefined
       ? undefined
       : `${CAMPAIGN_DETAIL_PREFIX}${progress.campaignRef}`);
+  /**
+   * D5. Step 4 is "Create the Open House Boost", and an approver whose colleague has already
+   * created one does not need to create a second. Their step 3 hands them straight to the result,
+   * which marks step 4 complete, because somebody did do it: the creator.
+   */
+  const stepAfterTheRealtor = waitingCampaign === undefined ? 4 : 5;
 
   /**
    * D5's auto-start navigation. The sheet opens at `currentStep`; if that step's work is on
@@ -316,6 +400,7 @@ export function GuidedSetupProvider({
     if (!enabled || !open) return;
     const definition = stepDefinition(progress.currentStep);
     const target = definition.route === "campaign" ? campaignHref : (definition.route ?? undefined);
+
     if (target === undefined || pathname === target || requestedRoute.current === target) return;
     requestedRoute.current = target;
     router.push(target);
@@ -373,7 +458,7 @@ export function GuidedSetupProvider({
       */}
       {enabled && open ? (
         <CurrentStep
-          campaign={campaign}
+          campaign={stepCampaign}
           canApprove={canApprove}
           dismissPending={dismissPending}
           fieldIndex={fieldIndex}
@@ -384,7 +469,9 @@ export function GuidedSetupProvider({
           onStep={goToStep}
           progress={progress}
           setValues={setValues}
+          stepAfterTheRealtor={stepAfterTheRealtor}
           values={values}
+          writeFailed={writeFailed}
         />
       ) : null}
       {children}
@@ -404,18 +491,21 @@ function valuesFrom(profile: SetupProfile): Readonly<Record<string, string>> {
 }
 
 type CurrentStepProps = Readonly<{
-  campaign: SavedCampaignReport | undefined;
+  campaign: SetupCampaignResult | undefined;
   canApprove: boolean;
   dismissPending: boolean;
   fieldIndex: number;
   onComplete: () => void;
   onDismiss: () => void;
   onFieldIndexChange: (index: number) => void;
-  onSaveProfile: (profile: SetupProfile) => Promise<void>;
+  onSaveProfile: (profile: SetupProfile) => Promise<boolean>;
   onStep: (step: number) => void;
   progress: GuidedSetupProgress;
   setValues: (values: Readonly<Record<string, string>>) => void;
+  /** D5. 4 for everybody whose own campaign this is, 5 for an approver who has one waiting. */
+  stepAfterTheRealtor: number;
   values: Readonly<Record<string, string>>;
+  writeFailed: boolean;
 }>;
 
 /**
@@ -433,8 +523,8 @@ function CurrentStep(props: CurrentStepProps) {
     position: definition.position,
     progress,
     title: definition.title,
+    writeFailed: props.writeFailed,
   } as const;
-  const findings = campaign?.findings ?? [];
 
   switch (progress.currentStep) {
     case 1:
@@ -460,7 +550,7 @@ function CurrentStep(props: CurrentStepProps) {
         anchor: GUIDED_SETUP_ANCHORS.setupRealtorForm,
         body: GUIDED_SETUP_STEPS.realtorPartner.body,
         fields: REALTOR_PARTNER_FIELDS,
-        nextStep: 4,
+        nextStep: props.stepAfterTheRealtor,
       });
     case 4:
       return (
@@ -468,6 +558,9 @@ function CurrentStep(props: CurrentStepProps) {
           {...shared}
           anchor={CAMPAIGN_FIELD_SEQUENCE[props.fieldIndex] ?? definition.anchor}
           body={GUIDED_SETUP_STEPS.createCampaign.body}
+          // The one Continue that moves the highlight without moving the step, so the one that
+          // hands focus to the field it moved on to.
+          continueStaysOnThisStep
           onContinue={() => {
             // The last entry is the submit control, so Continue stops moving and simply hands
             // focus to it. Step 4 finishes when the checks run, not when the panel says so.
@@ -480,19 +573,18 @@ function CurrentStep(props: CurrentStepProps) {
         </GuidedSetupStep>
       );
     case 5:
+      // The three answers are the campaign's, not this session's. `undefined` is the honest one:
+      // the campaign could not be read, so the step says neither that it is ready nor that it
+      // needs changes, and points at the page that knows.
       return (
         <GuidedSetupStep
           {...shared}
-          body={
-            findings.length > 0
-              ? GUIDED_SETUP_STEPS.readTheResult.needsChangesBody
-              : GUIDED_SETUP_STEPS.readTheResult.readyBody
-          }
+          body={resultBody(campaign)}
           onContinue={() => {
             onStep(6);
           }}
         >
-          <ResultStep findings={findings} />
+          <ResultStep result={campaign} />
         </GuidedSetupStep>
       );
     case 6:
@@ -531,6 +623,13 @@ function CurrentStep(props: CurrentStepProps) {
   }
 }
 
+function resultBody(campaign: SetupCampaignResult | undefined): string {
+  if (campaign === undefined) return GUIDED_SETUP_STEPS.readTheResult.unknownBody;
+  return campaign.ready
+    ? GUIDED_SETUP_STEPS.readTheResult.readyBody
+    : GUIDED_SETUP_STEPS.readTheResult.needsChangesBody;
+}
+
 function renderProfileStep(
   props: CurrentStepProps,
   step: Readonly<{
@@ -553,15 +652,20 @@ function renderProfileStep(
         // the server from the profile this one just wrote. Firing both at once worked on a fast
         // machine and left the create screen's Realtor field empty on a slow one, which is the
         // kind of defect that only ever shows up in front of somebody.
+        //
+        // 006D-AC-011. A save that did not land keeps the step here, and the panel says so. The
+        // same Continue is the retry, which is why nothing is disabled on the way out.
         void (async () => {
-          await props.onSaveProfile(profileFromValues(props.values));
-          props.onStep(step.nextStep);
+          if (await props.onSaveProfile(profileFromValues(props.values))) {
+            props.onStep(step.nextStep);
+          }
         })();
       }}
       onDismiss={props.onDismiss}
       position={definition.position}
       progress={props.progress}
       title={definition.title}
+      writeFailed={props.writeFailed}
     >
       <ProfileFieldsStep
         anchor={step.anchor}

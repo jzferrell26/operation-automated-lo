@@ -1,4 +1,8 @@
-import type { AuthenticatedPrincipal } from "@oalo/application";
+import {
+  principalHasCampaignApprovalRole,
+  type AuthenticatedPrincipal,
+  type CampaignWorkspaceProjection,
+} from "@oalo/application";
 import {
   createPrincipalBoundTenantContextAuthority,
   defineSqlContract,
@@ -7,6 +11,7 @@ import {
 } from "@oalo/db";
 import { ZodError, z } from "zod";
 
+import type { SetupCampaignResult } from "../features/guided-setup/model/campaign-result.js";
 import {
   GUIDED_SETUP_PREFERENCE_KEY,
   GuidedSetupProgressSchema,
@@ -27,6 +32,7 @@ import {
 } from "./authenticated-principal.js";
 import { campaignCommandAuthErrorResponse, jsonCommandError } from "./campaign-command-http.js";
 import { campaignDatabasePool } from "./campaign-persistence-runtime.js";
+import { listWorkspaceCampaigns, loadWorkspaceCampaign } from "./campaign-workspace-reads.js";
 import { correlationReferenceForRequest, withCorrelationHeaders } from "./correlation-boundary.js";
 import { authenticatedWorkspaceMode } from "./authenticated-workspace-data.js";
 import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
@@ -51,7 +57,116 @@ import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js"
 export type SetupPreferences = Readonly<{
   progress: GuidedSetupProgress;
   profile: SetupProfile | undefined;
+  /**
+   * PRD-006c D3 step 5. The stored campaign's own check result, read from the database rather than
+   * remembered from the browser session that created it.
+   *
+   * `undefined` means the campaign named by `progress.campaignRef` could not be read: there is no
+   * such reference, the row is gone, or this person may no longer see it. Step 5 then says it does
+   * not know, which is the only honest third answer.
+   */
+  campaign: SetupCampaignResult | undefined;
+  /**
+   * PRD-006c D5. For somebody who can approve and has no campaign of their own: the newest
+   * campaign in their workspace that is waiting for a decision.
+   *
+   * D5 says the approver's journey at step 6 approves the creator's campaign if one exists. This
+   * is that campaign, chosen by the same rule the approve control itself is drawn by, so the
+   * walkthrough can never point at something the approval command would refuse.
+   */
+  awaitingDecision: SetupCampaignResult | undefined;
 }>;
+
+function emptySetupPreferences(): SetupPreferences {
+  return {
+    progress: initialGuidedSetupProgress(),
+    profile: undefined,
+    campaign: undefined,
+    awaitingDecision: undefined,
+  };
+}
+
+/**
+ * The walkthrough's view of one campaign.
+ *
+ * Four facts cross the boundary: which campaign, where it lives, whether the checks let it
+ * through, and what they found in the words a person reads. The rule codes the workspace
+ * projection carries stay on the server, because PRD-006b D5 puts a code inside the campaign
+ * page's collapsed support region and the walkthrough panel is not that region.
+ */
+function campaignResultFrom(campaign: CampaignWorkspaceProjection): SetupCampaignResult {
+  return Object.freeze({
+    campaignRef: campaign.campaignRef,
+    detailHref: campaign.detailHref,
+    ready: !campaign.preflight.blocking,
+    findings: Object.freeze(
+      campaign.preflight.findings.map((finding) =>
+        Object.freeze({ description: finding.description, remediation: finding.remediation }),
+      ),
+    ),
+  });
+}
+
+/**
+ * A campaign read that cannot fail the page.
+ *
+ * The layout performs these before it renders the workspace shell, so a campaign that has been
+ * removed, or a reference that no longer resolves, must cost the user their step-5 sentence and
+ * nothing more. The step that receives `undefined` says it does not know.
+ */
+async function readCampaignResult(
+  principal: Readonly<AuthenticatedPrincipal>,
+  campaignRef: string,
+  environment: unknown,
+): Promise<SetupCampaignResult | undefined> {
+  try {
+    const campaign = await loadWorkspaceCampaign(principal, campaignRef, environment);
+    return campaign === undefined ? undefined : campaignResultFrom(campaign);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * PRD-006c D5. Whether this render could use a campaign waiting for a decision.
+ *
+ * The question is asked once, on the server, for the whole visit: the walkthrough moves from step
+ * to step in the browser without the layout rendering again, so a gate on the step the person is
+ * on now would answer for a step they have already left. Measured on 2026-09-20: gating on
+ * `currentStep >= 3` left the seeded approver's step 3 leading to the create screen, because the
+ * page had been rendered while they were still on step 1.
+ *
+ * What is gated is the one case that can never use the answer: a walkthrough that is finished.
+ * That keeps the extra read off every page a settled workspace opens, which is most of them.
+ */
+function wantsCampaignAwaitingDecision(progress: GuidedSetupProgress): boolean {
+  return progress.status !== "completed";
+}
+
+/**
+ * PRD-006c D5. The newest campaign in this workspace that this person could approve right now.
+ *
+ * `canApprove` on the projection is the application layer's own answer to that question: the
+ * person holds an approving role, the campaign is awaiting approval, and the checks found nothing
+ * blocking. Asking it here rather than restating the rule is what keeps the walkthrough and the
+ * approval command from ever disagreeing about who may approve what. The role is checked first so
+ * that a creator, who is most people, never pays for the list.
+ */
+async function readCampaignAwaitingDecision(
+  principal: Readonly<AuthenticatedPrincipal>,
+  environment: unknown,
+): Promise<SetupCampaignResult | undefined> {
+  if (!principalHasCampaignApprovalRole(principal)) return undefined;
+  try {
+    const campaigns = await listWorkspaceCampaigns(principal, environment);
+    const newest = [...campaigns]
+      .filter((campaign) => campaign.canApprove)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
+    return newest === undefined ? undefined : campaignResultFrom(newest);
+  } catch {
+    return undefined;
+  }
+}
 
 type PreferenceRow = Readonly<{ key: string; value: unknown }>;
 
@@ -122,12 +237,29 @@ export async function readSetupPreferences(
   );
   const progressRow = rows.find((row) => row.key === GUIDED_SETUP_PREFERENCE_KEY);
   const profileRow = rows.find((row) => row.key === SETUP_PROFILE_PREFERENCE_KEY);
+  const progress =
+    progressRow === undefined
+      ? initialGuidedSetupProgress()
+      : parseStoredProgress(progressRow.value);
+  // A finished walkthrough never opens itself again, so its campaign's result is nobody's
+  // question and the read is not worth making on every page that person opens.
+  const campaign =
+    progress.campaignRef === undefined || progress.status === "completed"
+      ? undefined
+      : await readCampaignResult(principal, progress.campaignRef, environment);
   return Object.freeze({
-    progress:
-      progressRow === undefined
-        ? initialGuidedSetupProgress()
-        : parseStoredProgress(progressRow.value),
+    progress,
     profile: profileRow === undefined ? undefined : parseStoredProfile(profileRow.value),
+    campaign,
+    // Only for somebody with nothing of their own to read, and only once the walkthrough is far
+    // enough along to use it. A person who created a campaign in this walkthrough is looking at
+    // that one, and a second candidate would be a second answer to a question they have already
+    // settled; a person on the welcome step, or one who has finished, is not being handed anything
+    // and should not pay for the list on every page they open.
+    awaitingDecision:
+      campaign === undefined && wantsCampaignAwaitingDecision(progress)
+        ? await readCampaignAwaitingDecision(principal, environment)
+        : undefined,
   });
 }
 
@@ -276,13 +408,13 @@ export async function readSetupPreferencesForRequest(
   environment: unknown = process.env,
 ): Promise<SetupPreferences> {
   if (!isReviewWorkspace(environment)) {
-    return { progress: initialGuidedSetupProgress(), profile: undefined };
+    return emptySetupPreferences();
   }
   const ports = resolveRuntimeCampaignCommandPorts(environment);
   try {
     const principal = await resolveAuthenticatedReadPrincipal(request, environment, ports);
     return await readSetupPreferences(principal, environment);
   } catch {
-    return { progress: initialGuidedSetupProgress(), profile: undefined };
+    return emptySetupPreferences();
   }
 }

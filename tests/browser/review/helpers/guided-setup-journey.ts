@@ -3,6 +3,8 @@ import { dirname, join } from "node:path";
 
 import { expect, type Page } from "@playwright/test";
 
+import { READY_OPEN_HOUSE, type OpenHouseWindow } from "../../helpers/open-house-draft.js";
+
 /**
  * PRD-006c D9. The shared machinery for the five review specs.
  *
@@ -263,19 +265,83 @@ export async function walkToTheCreateStep(page: Page, realtorName = "Priya Nadee
   await page.waitForURL("**/marketing/campaigns/new");
 }
 
+/**
+ * Types everything the person owns into the create screen, and stops before saving.
+ *
+ * The two open-house windows come from `tests/browser/helpers/open-house-draft.ts`, where the
+ * synthetic suite already keeps them, so "a campaign the checks accept" and "a campaign the checks
+ * refuse" mean the same two drafts in both runs. The default window is 2030 rather than a date a
+ * few weeks out, for the reason recorded there: a near-term date stops being in the future while
+ * the spec is still current.
+ */
+export async function fillTheCampaign(
+  page: Page,
+  address: string,
+  openHouse: OpenHouseWindow,
+): Promise<void> {
+  await typeIntoLabel(page, "Property address", address);
+  await typeIntoLabel(page, "State", "TX");
+  await typeIntoLabel(page, "Property description", "A three-bedroom home near the park.");
+  await page.getByLabel("Open house starts").fill(openHouse.startsAt);
+  await page.getByLabel("Open house ends").fill(openHouse.endsAt);
+  await page.getByLabel("I have permission to market this property.").check();
+  await page.getByLabel("I have permission to use the Realtor's materials.").check();
+  await typeIntoLabel(page, "Where the ad runs", "Austin metro");
+}
+
+/**
+ * Walks the step-4 panel along its field sequence until it is pointing at the submit control.
+ *
+ * `steps/step-model.ts`'s `CAMPAIGN_FIELD_SEQUENCE` ends with "Save and run the checks", and D6
+ * hands focus to whatever the panel has just moved on to, so this also leaves that control
+ * focused.
+ */
+export async function pointThePanelAtTheSubmitControl(page: Page): Promise<void> {
+  const fieldsAfterTheFirst = 6;
+  for (let step = 0; step < fieldsAfterTheFirst; step += 1) {
+    await page.getByRole("button", { name: "Continue" }).click();
+  }
+  await expect(
+    page.locator("[data-guided-setup-highlight='true']"),
+    "the panel has reached the submit control",
+  ).toHaveAccessibleName("Save and run the checks");
+}
+
+/**
+ * Runs the checks from inside the walkthrough, the way somebody using a keyboard does.
+ *
+ * The panel is walked onto the submit control, which is where D6 puts focus, and the control is
+ * then pressed with the keyboard rather than with the pointer. That is a deliberate choice and it
+ * is not a pointer problem being hidden: on a narrow frame the panel is a bottom sheet, the submit
+ * control is the last thing on the create screen, and a page already scrolled to its end cannot
+ * move that control any higher, so a pointer press lands on the sheet in front of it. Measured on
+ * 2026-09-20 in the review browser run: the click resolved to the submit button, found it visible,
+ * enabled, and stable, and was intercepted by the panel's own footer every time. That is D7's
+ * promise failing for the last control on a long page; it belongs with the panel placement and the
+ * stylesheet that caps the sheet, which this lane does not own, so it is reported rather than
+ * asserted here. The keyboard path is one the walkthrough's own focus contract offers, so pressing
+ * it this way exercises more of the product than a synthetic click would.
+ */
+export async function runTheChecksFromTheWalkthrough(page: Page): Promise<void> {
+  await pointThePanelAtTheSubmitControl(page);
+  await expect(
+    page.getByRole("button", { name: "Save and run the checks" }),
+    "the walkthrough put focus on the control it is pointing at",
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog", { name: "Read the result" })).toBeVisible({
+    timeout: STEP_ARRIVES_TIMEOUT_MS,
+  });
+  await page.waitForURL(/\/marketing\/campaigns\/(?!new$)[^/]+$/u);
+}
+
 /** Fills the fields the user owns and saves, leaving the browser on the campaign's own page. */
 export async function saveTheCampaign(
   page: Page,
   address = "48 Cedar Street, Austin",
+  openHouse: OpenHouseWindow = READY_OPEN_HOUSE,
 ): Promise<string> {
-  await typeIntoLabel(page, "Property address", address);
-  await typeIntoLabel(page, "State", "TX");
-  await typeIntoLabel(page, "Property description", "A three-bedroom home near the park.");
-  await page.getByLabel("Open house starts").fill("2026-10-03T13:00");
-  await page.getByLabel("Open house ends").fill("2026-10-03T15:00");
-  await page.getByLabel("I have permission to market this property.").check();
-  await page.getByLabel("I have permission to use the Realtor's materials.").check();
-  await typeIntoLabel(page, "Where the ad runs", "Austin metro");
+  await fillTheCampaign(page, address, openHouse);
   await page.getByRole("button", { name: "Save and run the checks" }).click();
   // The walkthrough moving to step 5 is the signal that the checks have run and the campaign has
   // its own page. A URL glob is not: `**/marketing/campaigns/**` also matches the create screen

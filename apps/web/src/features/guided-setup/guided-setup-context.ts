@@ -2,20 +2,19 @@
 
 import { createContext, useContext } from "react";
 
+import type { SetupCampaignResult } from "./model/campaign-result.js";
 import type { GuidedSetupProgress } from "./model/progress.js";
 import type { SetupProfile } from "./model/profile.js";
-import type { CampaignFinding } from "./steps/result-step.js";
 
 /**
- * What the campaign create screen hands back when the checks have run: the reference the setup
- * stores, the address step 5 reads the result on, and what the checks found so step 5 can explain
- * each one without fetching it again.
+ * What the campaign create screen hands back when the checks have run.
+ *
+ * It is `SetupCampaignResult` and not a shape of its own, because step 5 renders either this or
+ * the server's reading of the same campaign and two shapes would be two ways for the same step to
+ * be wrong. The create screen may pass findings that also carry a severity and a rule code; the
+ * panel reads neither.
  */
-export type SavedCampaignReport = Readonly<{
-  campaignRef: string;
-  detailHref: string;
-  findings: readonly CampaignFinding[];
-}>;
+export type SavedCampaignReport = SetupCampaignResult;
 
 /**
  * PRD-006c D5. What a step, the shell, and the campaign screens can ask of the guided setup.
@@ -43,7 +42,8 @@ export interface GuidedSetupContextValue {
    */
   readonly dismissPending: boolean;
   goToStep(step: number): void;
-  saveProfile(profile: SetupProfile): Promise<void>;
+  /** Answers whether the write landed, so the step that asked can stay put when it did not. */
+  saveProfile(profile: SetupProfile): Promise<boolean>;
   dismissSetup(): void;
   resumeSetup(): void;
   restartSetup(): void;

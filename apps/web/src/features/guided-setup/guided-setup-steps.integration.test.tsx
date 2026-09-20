@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -13,12 +13,19 @@ import { OpenHouseDraftBuilder } from "../campaigns/components/open-house-draft-
 import { GuidedSetupShellControls } from "./guided-setup-progress.js";
 import { GuidedSetupProvider } from "./guided-setup-provider.js";
 import { complete, dismiss, initialGuidedSetupProgress } from "./model/progress.js";
+import { CAMPAIGN_FIELD_SEQUENCE } from "./steps/step-model.js";
+import { GUIDED_SETUP_ANCHORS, anchorSelector } from "./anchor-registry.js";
+import { userMessageSentence } from "../http/user-messages.js";
+import type { SetupCampaignResult } from "./model/campaign-result.js";
 import {
+  blockedCampaignResult,
   heldProgressWriteFetch,
+  NEEDS_CHANGES_PREFLIGHT_RESPONSE,
   progressAt,
   READY_PREFLIGHT_RESPONSE,
   recordingSetupFetch,
   SAMPLE_PROFILE,
+  savedCampaignResult,
 } from "./guided-setup.test-support.js";
 
 const push = vi.fn();
@@ -52,6 +59,10 @@ type ProviderOptions = Readonly<{
   enabled?: boolean;
   profile?: typeof SAMPLE_PROFILE | undefined;
   progress?: ReturnType<typeof initialGuidedSetupProgress>;
+  /** The server's reading of the campaign the stored progress names, as the layout supplies it. */
+  savedCampaign?: SetupCampaignResult | undefined;
+  /** PRD-006c D5's other campaign: one waiting for this person's decision. */
+  campaignAwaitingDecision?: SetupCampaignResult | undefined;
   /**
    * A `fetch` that answers differently from the recording one: held open, answering out of order,
    * refusing. The two F-23 cases supply their own; everything else uses the recorder and reads
@@ -65,10 +76,12 @@ function renderSetup(options: ProviderOptions = {}) {
   vi.stubGlobal("fetch", options.fetch ?? recorder.fetch);
   const view = render(
     <GuidedSetupProvider
+      campaignAwaitingDecision={options.campaignAwaitingDecision}
       canApprove={options.canApprove ?? true}
       enabled={options.enabled ?? true}
       initialProfile={options.profile}
       initialProgress={options.progress ?? initialGuidedSetupProgress()}
+      savedCampaign={options.savedCampaign}
       serverNowIso={SERVER_NOW}
       sessionDisplayName="Dana Reyes"
       sessionWorkspaceName="Northgate Lending"
@@ -123,9 +136,17 @@ describe("guided setup steps", () => {
     expect(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.dismiss })).toBeInTheDocument();
   });
 
+  /**
+   * D6 and 006C-AC-010. The attribute is present and false, not absent.
+   *
+   * It used to be absent, which is also what a dialog whose author forgot looks like. Saying
+   * `false` is the panel claiming its own behaviour: the page behind it stays reachable, Tab
+   * leaves, and nothing locks the background scroll, because the person has to type into the
+   * field the panel is pointing at.
+   */
   it("is a non-modal dialog, so the page underneath stays reachable", () => {
     renderSetup();
-    expect(panel()).not.toHaveAttribute("aria-modal");
+    expect(panel()).toHaveAttribute("aria-modal", "false");
     expect(document.body.style.overflow).not.toBe("hidden");
   });
 
@@ -145,6 +166,32 @@ describe("guided setup steps", () => {
     renderSetup();
     await waitFor(() => {
       expect(document.activeElement).toHaveTextContent(GUIDED_SETUP_STEPS.welcome.title);
+    });
+  });
+
+  /**
+   * D6's two focus movements, where they meet. A Continue that opens the next step is a step
+   * opening, so focus goes to that step's heading.
+   *
+   * Until 2026-09-20 it was treated as the other movement: "Let's go" pointed at the overview's
+   * quick actions, so pressing it put focus on a link in the page behind the panel while a screen
+   * reader was being told about step 2. The review accessibility walk is what found it.
+   */
+  it("moves focus to the new step's title when Continue opens the next step", async () => {
+    const user = userEvent.setup();
+    renderSetup({
+      children: (
+        <main>
+          <div data-tour={GUIDED_SETUP_ANCHORS.setupWelcome}>
+            <button type="button">Create an Open House Boost</button>
+          </div>
+        </main>
+      ),
+    });
+    await user.click(screen.getByRole("button", { name: GUIDED_SETUP_STEPS.welcome.primaryLabel }));
+
+    await waitFor(() => {
+      expect(document.activeElement).toHaveTextContent(GUIDED_SETUP_STEPS.yourDetails.title);
     });
   });
 
@@ -204,11 +251,110 @@ describe("guided setup steps", () => {
   });
 
   it("says so at the result step when the checks found nothing to fix", () => {
-    renderSetup({ progress: progressAt(5) });
+    renderSetup({
+      progress: progressAt(5, { campaignRef: READY_PREFLIGHT_RESPONSE.campaignRef }),
+      savedCampaign: savedCampaignResult(),
+    });
     // The sentence is both the panel's description and its body, which is the point: a user who
     // reads only the heading and a user who reads only the body are told the same thing.
     expect(screen.getAllByText(GUIDED_SETUP_STEPS.readTheResult.readyBody).length).toBe(2);
     expect(panel()).toHaveAccessibleDescription(GUIDED_SETUP_STEPS.readTheResult.readyBody);
+  });
+
+  /**
+   * 006C-AC-006's other branch of step 5, which nothing rendered until 2026-09-20.
+   *
+   * Every finding is said twice over: what it means, then what to do about it. The rule's own code
+   * is in neither sentence, because PRD-006b D5 puts a code inside the campaign page's collapsed
+   * support region and this panel is not that region.
+   */
+  it("explains each finding at the result step when the checks found something to fix", () => {
+    const blocked = NEEDS_CHANGES_PREFLIGHT_RESPONSE.findings[0];
+    renderSetup({
+      progress: progressAt(5, { campaignRef: READY_PREFLIGHT_RESPONSE.campaignRef }),
+      savedCampaign: blockedCampaignResult(),
+    });
+    expect(panel()).toHaveAccessibleDescription(GUIDED_SETUP_STEPS.readTheResult.needsChangesBody);
+    expect(screen.getByText(blocked?.description ?? "")).toBeInTheDocument();
+    expect(screen.getByText(blocked?.remediation ?? "")).toBeInTheDocument();
+    expect(panel().textContent ?? "").not.toContain(blocked?.ruleCode ?? "");
+  });
+
+  /**
+   * The defect this pins, found by the PRD-006c verifier on 2026-09-20.
+   *
+   * Step 5 read its result from `reportCampaignSaved`, which only the browser session that pressed
+   * "Save and run the checks" ever receives. Somebody who signed in the next morning resumed onto
+   * step 5 with no report at all, so the findings were empty and the panel chose the ready
+   * sentence: a campaign the checks had blocked was described as saved and ready for approval.
+   * The result is the server's now, and a resumed step 5 says what the checks actually decided.
+   */
+  it("tells a resumed step 5 that a blocked campaign needs changes", () => {
+    renderSetup({
+      progress: progressAt(5, { campaignRef: READY_PREFLIGHT_RESPONSE.campaignRef }),
+      savedCampaign: blockedCampaignResult(),
+    });
+    expect(screen.queryByText(GUIDED_SETUP_STEPS.readTheResult.readyBody)).not.toBeInTheDocument();
+    expect(screen.getByText(GUIDED_SETUP_STEPS.readTheResult.needsChangesBody)).toBeInTheDocument();
+  });
+
+  /** The third answer: the campaign could not be read, so the step claims neither outcome. */
+  it("says nothing definitive at step 5 when the campaign could not be read", () => {
+    renderSetup({ progress: progressAt(5, { campaignRef: READY_PREFLIGHT_RESPONSE.campaignRef }) });
+    expect(screen.queryByText(GUIDED_SETUP_STEPS.readTheResult.readyBody)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(GUIDED_SETUP_STEPS.readTheResult.needsChangesBody),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByText(GUIDED_SETUP_STEPS.readTheResult.unknownBody).length).toBe(2);
+  });
+
+  /**
+   * PRD-006c D5's approver, and 006C-AC-016. A person who can approve and has no campaign of
+   * their own is handed the one that is waiting for a decision.
+   *
+   * Step 4 is "Create the Open House Boost", and their colleague has already done it, so step 3
+   * hands them to the result instead of asking for a second campaign. Step 4 is marked complete,
+   * which is true: somebody did it.
+   */
+  it("takes an approver with a campaign waiting for them from step 3 to the result", async () => {
+    const user = userEvent.setup();
+    const { calls } = renderSetup({
+      campaignAwaitingDecision: savedCampaignResult(),
+      canApprove: true,
+      profile: SAMPLE_PROFILE,
+      progress: progressAt(3),
+    });
+    await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+
+    await waitFor(() => {
+      expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.readTheResult.title);
+    });
+    expect(calls.findLast((call) => call.path === "/api/setup/progress")?.body).toMatchObject({
+      progress: { currentStep: 5, completedSteps: [1, 2, 3, 4] },
+    });
+    // The campaign it is about is the colleague's, so that is where the walkthrough goes.
+    await waitFor(() => {
+      expect(push).toHaveBeenCalledWith(READY_PREFLIGHT_RESPONSE.detailHref);
+    });
+  });
+
+  /** The creator's own path is untouched: step 3 still leads to the create screen. */
+  it("still sends a creator from step 3 to the create screen", async () => {
+    const user = userEvent.setup();
+    const { calls } = renderSetup({
+      campaignAwaitingDecision: savedCampaignResult(),
+      canApprove: false,
+      profile: SAMPLE_PROFILE,
+      progress: progressAt(3),
+    });
+    await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+
+    await waitFor(() => {
+      expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.createCampaign.title);
+    });
+    expect(calls.findLast((call) => call.path === "/api/setup/progress")?.body).toMatchObject({
+      progress: { currentStep: 4 },
+    });
   });
 
   it("offers approval to an approver and the hand-off words to everyone else", () => {
@@ -544,6 +690,133 @@ describe("guided setup steps", () => {
     expect(
       screen.getByRole("button", { name: GUIDED_SETUP_STEPS.welcome.primaryLabel }),
     ).toBeInTheDocument();
+  });
+
+  /**
+   * D6 and 006C-AC-010, the second focus movement. Continue hands focus to the element the panel
+   * has just moved on to, not the one the person has finished with.
+   *
+   * Step 4 is the only step whose Continue changes which element is highlighted without changing
+   * the step, so it is the case that can go backwards. It did not have a test until 2026-09-20:
+   * the focus return was written and nothing held it.
+   */
+  it("hands focus to the newly highlighted field when step 4 continues", async () => {
+    const user = userEvent.setup();
+    renderSetup({
+      children: <OpenHouseDraftBuilder profile={SAMPLE_PROFILE} />,
+      profile: SAMPLE_PROFILE,
+      progress: progressAt(4),
+    });
+
+    await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+
+    const moved = CAMPAIGN_FIELD_SEQUENCE[1];
+    await waitFor(() => {
+      const highlighted = document.querySelector(anchorSelector(moved ?? "setup.welcome"));
+      expect(highlighted).toHaveAttribute("data-guided-setup-highlight", "true");
+      expect(highlighted?.querySelector("input, select, textarea, button, a[href]")).toBe(
+        document.activeElement,
+      );
+    });
+  });
+
+  /**
+   * 006D-AC-011, through PRD-006b D7. A write that did not land is said out loud.
+   *
+   * The step used to move anyway and write a line to the console: somebody whose details had not
+   * saved was shown the next step, told nothing, and found their name missing the next morning.
+   * The panel now stays where it is, says PRD-006b D7's generic sentence in its own status region,
+   * and the same Continue is the retry.
+   */
+  it("holds the step and says so when a write does not land, then advances on the retry", async () => {
+    const user = userEvent.setup();
+    let profileWrites = 0;
+    const fetchStub = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input);
+      const body: unknown = JSON.parse(String(init?.body ?? "{}"));
+      if (path === "/api/setup/profile") {
+        profileWrites += 1;
+        if (profileWrites === 1) {
+          return new Response(JSON.stringify({ error: "SETUP_PREFERENCE_FAILED" }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+      return new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as typeof globalThis.fetch;
+
+    renderSetup({ fetch: fetchStub, profile: SAMPLE_PROFILE, progress: progressAt(2) });
+    await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+
+    // The step is where it was, the typed values are where they were, and the panel says why.
+    expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.yourDetails.title);
+    expect(screen.getByLabelText(GUIDED_SETUP_STEPS.yourDetails.nameLabel)).toHaveValue(
+      SAMPLE_PROFILE.displayName,
+    );
+    const notice = await screen.findByText(userMessageSentence(undefined));
+    expect(notice.closest("[role='status']")).not.toBeNull();
+
+    await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+    await waitFor(() => {
+      expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.realtorPartner.title);
+    });
+    expect(screen.queryByText(userMessageSentence(undefined))).not.toBeInTheDocument();
+  });
+
+  /**
+   * The defect `guided-setup.accessibility.spec.ts` found on 2026-09-20, at the welcome step.
+   *
+   * The step had a measured placement and the element it named carried no ring: the observer that
+   * finds the anchored element used to disconnect itself the moment it succeeded, so a screen that
+   * re-rendered and replaced that element took the ring, the measurement, and the listeners with
+   * it, and nothing put them back. The step went on claiming to point at something for as long as
+   * it was open.
+   */
+  it("follows the anchored element when the page replaces it", async () => {
+    function Replaceable() {
+      const [generation, setGeneration] = useState(0);
+      return (
+        <main>
+          <div data-tour={GUIDED_SETUP_ANCHORS.setupWelcome} key={generation}>
+            <button type="button">Create an Open House Boost</button>
+          </div>
+          <button
+            onClick={() => {
+              setGeneration((current) => current + 1);
+            }}
+            type="button"
+          >
+            Re-render the page
+          </button>
+        </main>
+      );
+    }
+
+    const user = userEvent.setup();
+    renderSetup({ children: <Replaceable /> });
+
+    const selector = anchorSelector(GUIDED_SETUP_ANCHORS.setupWelcome);
+    await waitFor(() => {
+      expect(document.querySelector(selector)).toHaveAttribute(
+        "data-guided-setup-highlight",
+        "true",
+      );
+    });
+    const first = document.querySelector(selector);
+
+    await user.click(screen.getByRole("button", { name: "Re-render the page" }));
+
+    await waitFor(() => {
+      const replaced = document.querySelector(selector);
+      expect(replaced).not.toBe(first);
+      expect(replaced).toHaveAttribute("data-guided-setup-highlight", "true");
+    });
+    // Exactly one ring: the element that went away did not keep it.
+    expect(document.querySelectorAll("[data-guided-setup-highlight='true']")).toHaveLength(1);
   });
 
   it("never reaches browser storage", async () => {

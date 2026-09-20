@@ -6,6 +6,7 @@ import {
   OPEN_HOUSE_DRAFT_INPUT,
 } from "../../server/campaign-command-test-support.js";
 import { compileOpenHouseDraft } from "../../server/open-house-draft.js";
+import type { SetupCampaignResult } from "./model/campaign-result.js";
 import { initialGuidedSetupProgress, type GuidedSetupProgress } from "./model/progress.js";
 import type { SetupProfile } from "./model/profile.js";
 
@@ -154,3 +155,52 @@ export const READY_PREFLIGHT_RESPONSE = Object.freeze({
   persistenceKind: "postgres",
   providerPublicationAuthorized: false,
 });
+
+/**
+ * The same campaign after the checks refused it.
+ *
+ * The finding is the product's own: an open house whose dates have already passed is what
+ * `packages/domain/src/campaign-foundation.ts` reports as expired or out of order, and it is the
+ * one a person is most likely to produce by hand. The rule code stays here because the create
+ * screen's answer carries one; nothing the walkthrough panel renders ever reads it.
+ */
+export const NEEDS_CHANGES_PREFLIGHT_RESPONSE = Object.freeze({
+  ...READY_PREFLIGHT_RESPONSE,
+  state: "preflight_failed",
+  blocking: true,
+  findings: Object.freeze([
+    Object.freeze({
+      severity: "blocking" as const,
+      ruleCode: "OPEN_HOUSE_DATES_INVALID",
+      description: "The open-house dates are expired or out of order.",
+      remediation: "Choose a future start time and an end time after the start.",
+    }),
+  ]),
+});
+
+/** The server's reading of a campaign, as the layout hands it to the provider. */
+export function savedCampaignResult(
+  overrides: Partial<SetupCampaignResult> = {},
+): SetupCampaignResult {
+  return {
+    campaignRef: READY_PREFLIGHT_RESPONSE.campaignRef,
+    detailHref: READY_PREFLIGHT_RESPONSE.detailHref,
+    ready: true,
+    findings: [],
+    ...overrides,
+  };
+}
+
+/** The same campaign as the checks left it when they refused it. */
+export function blockedCampaignResult(
+  overrides: Partial<SetupCampaignResult> = {},
+): SetupCampaignResult {
+  return savedCampaignResult({
+    ready: false,
+    findings: NEEDS_CHANGES_PREFLIGHT_RESPONSE.findings.map((finding) => ({
+      description: finding.description,
+      remediation: finding.remediation,
+    })),
+    ...overrides,
+  });
+}

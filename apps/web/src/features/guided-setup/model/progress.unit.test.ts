@@ -57,6 +57,17 @@ describe("guided setup progress", () => {
     expect(isStepComplete(progress, 3)).toBe(false);
   });
 
+  /**
+   * PRD-006c D5's approver. Their step 3 leads to step 5, because the campaign step 4 asks for
+   * already exists and their colleague made it, so both steps behind them are complete.
+   */
+  it("credits every step passed when the walkthrough moves more than one step", () => {
+    const progress = advanceTo(advanceTo(begin(initialGuidedSetupProgress()), 2), 3);
+    const jumped = advanceTo(progress, 5);
+    expect(jumped.currentStep).toBe(5);
+    expect(jumped.completedSteps).toEqual([1, 2, 3, 4]);
+  });
+
   it("never advances past the seventh step or before the first", () => {
     const progress = begin(initialGuidedSetupProgress());
     expect(advanceTo(progress, 99).currentStep).toBe(7);

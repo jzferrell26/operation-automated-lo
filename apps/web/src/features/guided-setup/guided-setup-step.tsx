@@ -7,6 +7,7 @@ import {
   GUIDED_SETUP_CONTROLS,
   guidedSetupStepAnnouncement,
 } from "../../copy/guided-setup-messages.js";
+import { userMessageSentence } from "../http/user-messages.js";
 import { anchorSelector, type GuidedSetupAnchorId } from "./anchor-registry.js";
 import { GuidedSetupProgressTrack } from "./guided-setup-progress.js";
 import type { GuidedSetupProgress } from "./model/progress.js";
@@ -25,10 +26,12 @@ import styles from "./guided-setup.module.css";
  *
  * Four decisions shape this component, all of them from D6.
  *
- * - **It does not trap focus.** `aria-modal` is absent, background scroll is never locked, and Tab
- *   leaves the panel for the page. The user has to type into the field the panel is pointing at,
- *   so a trap would make the walkthrough unusable with a keyboard. That is why it is a `Sheet` and
- *   not a `Dialog`: the two primitives differ in exactly this.
+ * - **It does not trap focus.** `aria-modal` is `"false"`, background scroll is never locked, and
+ *   Tab leaves the panel for the page. The user has to type into the field the panel is pointing
+ *   at, so a trap would make the walkthrough unusable with a keyboard. That is why it is a `Sheet`
+ *   and not a `Dialog`: the two primitives differ in exactly this. D6 and 006C-AC-010 ask for the
+ *   attribute to be present and false rather than absent, because absent is also what a dialog
+ *   whose author forgot looks like.
  * - **Focus moves to the title on open and to the anchored element on continue.** The title is the
  *   sentence that explains what just changed; the anchored element is where the work happens next.
  * - **The highlight is a focus ring, not a scrim.** A dimming overlay changes the contrast of every
@@ -49,6 +52,18 @@ export type GuidedSetupStepProps = Readonly<{
   continueDisabled?: boolean;
   continueLabel?: string;
   /**
+   * D6. True only for a Continue that moves the highlight without moving the step, which is step
+   * 4's walk along the create screen's fields.
+   *
+   * D6 asks for two focus movements and they meet here: focus goes to a step's own heading when
+   * that step opens, and back to the highlighted element when Continue is pressed. A Continue that
+   * opens the next step is the first case, not the second. Until 2026-09-20 it was treated as the
+   * second, so pressing "Let's go" on the welcome step put focus on a link in the page behind the
+   * panel rather than on the heading of the step that had just appeared, and the announcement a
+   * screen reader had just heard named a step the user was no longer in.
+   */
+  continueStaysOnThisStep?: boolean;
+  /**
    * PRD-006d's F-23. True while the dismissal's write is still travelling. The panel stays open,
    * "Not now" is disabled so it cannot be posted twice, and after a beat the panel says why it is
    * still there.
@@ -59,6 +74,12 @@ export type GuidedSetupStepProps = Readonly<{
   position: number;
   progress: GuidedSetupProgress;
   title: string;
+  /**
+   * 006D-AC-011. True when the write this step just made did not land. The panel stays on the
+   * step and reads PRD-006b D7's generic sentence out through its own status region; Continue is
+   * the retry, so nothing here is disabled.
+   */
+  writeFailed?: boolean;
 }>;
 
 const FOCUSABLE_WITHIN_ANCHOR = "input, select, textarea, button, a[href]";
@@ -111,12 +132,14 @@ export function GuidedSetupStep({
   children,
   continueDisabled = false,
   continueLabel = GUIDED_SETUP_CONTROLS.continueLabel,
+  continueStaysOnThisStep = false,
   dismissPending = false,
   onContinue,
   onDismiss,
   position,
   progress,
   title,
+  writeFailed = false,
 }: GuidedSetupStepProps) {
   const [anchorRect, setAnchorRect] = useState<Rect | undefined>(undefined);
   const [panelSize, setPanelSize] = useState<Size | undefined>(undefined);
@@ -143,6 +166,15 @@ export function GuidedSetupStep({
    * have mounted, so a single `querySelector` finds nothing and the step points at nothing for as
    * long as it is open. The observer is what closes that window: it waits for the element to
    * arrive and then does exactly what the immediate path does.
+   *
+   * **The observer keeps watching after it has found one.** The page underneath the panel is not
+   * this component's to hold still: a re-render of the screen the step points at can replace the
+   * element, and the ring, the measurement, and the listeners all belonged to the node that went
+   * away. Measured on 2026-09-20 in the review browser run, on the welcome step at 1180x900: the
+   * panel had a measured placement and the element carried no ring, so
+   * `guided-setup.accessibility.spec.ts` failed waiting fifteen seconds for a highlight that had
+   * existed and been thrown away with its node. Staying connected costs one `querySelector` per
+   * batch of added or removed nodes, and buys a step that keeps pointing at what it named.
    */
   useEffect(() => {
     if (anchor === PANEL_ANCHORED) {
@@ -154,7 +186,16 @@ export function GuidedSetupStep({
     let attached: HTMLElement | undefined;
     let update = () => undefined as void;
 
+    /** Lets go of whatever the step was pointing at, ring, listeners, and all. */
+    function detach(): void {
+      attached?.removeAttribute("data-guided-setup-highlight");
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+      attached = undefined;
+    }
+
     function attach(element: HTMLElement): void {
+      detach();
       attached = element;
       element.setAttribute("data-guided-setup-highlight", "true");
       update = () => {
@@ -181,7 +222,6 @@ export function GuidedSetupStep({
     function attachIfPresent(): boolean {
       const found = document.querySelector(anchorSelector(pageAnchor));
       if (!(found instanceof HTMLElement) || found === attached) return false;
-      observer.disconnect();
       window.cancelAnimationFrame(frame);
       attach(found);
       return true;
@@ -190,25 +230,21 @@ export function GuidedSetupStep({
     const observer = new MutationObserver(() => {
       attachIfPresent();
     });
-    // The observer catches an element that arrives with a later render. This catches one that is
-    // already on its way in the same commit, where a mutation may already have been recorded
-    // before the observer started listening. Between them there is no window in which the step
-    // silently points at nothing.
+    // The observer catches an element that arrives with a later render, or one that replaces the
+    // element this step is already pointing at. The frame catches one that is already on its way
+    // in the same commit, where a mutation may have been recorded before the observer started
+    // listening. Between them there is no window in which the step silently points at nothing.
     const frame = window.requestAnimationFrame(() => {
       attachIfPresent();
     });
 
-    if (!attachIfPresent()) {
-      setAnchorRect(undefined);
-      observer.observe(document.body, { childList: true, subtree: true });
-    }
+    observer.observe(document.body, { childList: true, subtree: true });
+    if (!attachIfPresent()) setAnchorRect(undefined);
 
     return () => {
       observer.disconnect();
       window.cancelAnimationFrame(frame);
-      attached?.removeAttribute("data-guided-setup-highlight");
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
+      detach();
     };
     // `panelSize` is deliberately absent: it is an output of this effect, and depending on it
     // would scroll the page again every time the panel's height settled.
@@ -238,16 +274,20 @@ export function GuidedSetupStep({
   }, [dismissPending]);
 
   /**
-   * D6. Continue hands focus back to the highlighted element.
+   * D6. Continue hands focus back to the highlighted element, when the step is staying put.
    *
-   * Which element that is has to be decided after the step has moved, not before. Step 4's
+   * Which element that is has to be decided after the highlight has moved, not before. Step 4's
    * Continue advances the panel to the next field, and focusing the one the user just finished
    * would send them backwards every time they pressed it. So the request is recorded, `attach`
    * honours it when the new element arrives, and the frame afterwards handles the case where the
    * element did not change and no attach was going to happen.
+   *
+   * A Continue that opens the next step hands nothing back. The step that arrives puts focus on
+   * its own heading, which is D6's other movement and the one that matters more: the person has
+   * just been given a new sentence to read.
    */
   function continueAndReturnFocus() {
-    if (anchor === PANEL_ANCHORED) {
+    if (anchor === PANEL_ANCHORED || !continueStaysOnThisStep) {
       onContinue();
       return;
     }
@@ -335,6 +375,22 @@ export function GuidedSetupStep({
             message={dismissIsSlow ? GUIDED_SETUP_CONTROLS.dismissPending : undefined}
             urgency="status"
             visible={dismissIsSlow}
+          />
+        ) : null}
+        {/*
+          006D-AC-011. A write that did not land, in PRD-006b D7's words.
+
+          Status urgency rather than alert: the step is still here, the typing is still here, and
+          the same Continue will try again, so this is something to be told rather than something
+          to be interrupted for. It is visible as well as announced, because the person who cannot
+          hear it is the person about to press Continue and wonder why nothing moved.
+        */}
+        {writeFailed ? (
+          <LiveRegion
+            className={styles.pendingNote}
+            message={userMessageSentence(undefined)}
+            urgency="status"
+            visible
           />
         ) : null}
       </Sheet>

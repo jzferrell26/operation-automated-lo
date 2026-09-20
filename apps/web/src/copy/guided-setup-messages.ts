@@ -79,6 +79,18 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
     readyBody: "Your campaign is saved and ready for approval. Nothing has been published or sent.",
     needsChangesBody:
       "Your campaign is saved, and the checks found things to fix first. Each one says what it means and how to fix it.",
+    /**
+     * What step 5 says when the campaign it was going to talk about could not be read.
+     *
+     * The step has three answers, not two. Until 2026-09-20 it had two: a campaign whose check
+     * result was not in this browser's memory, which is every campaign after a person signs in
+     * again, was described with the ready sentence, so somebody whose checks had blocked their
+     * campaign was told it was ready for approval. An honest walkthrough says it does not know and
+     * sends the person to the place that does, which is the campaign's own page underneath the
+     * panel.
+     */
+    unknownBody:
+      "We couldn't read the result for this campaign just now. Open the campaign to see where it stands.",
   }),
   approveOrHandOff: Object.freeze({
     position: 6,

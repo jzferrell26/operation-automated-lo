@@ -47,7 +47,7 @@ describe("dismissable layer focus policy", () => {
   it("never hides the page from assistive technology, so nothing survives a close", () => {
     expect(overlaySource).not.toMatch(/aria-hidden\s*[=:]/u);
     expect(overlaySource).not.toContain("setAttribute");
-    expect(overlaySource).toContain('aria-modal={modal ? "true" : undefined}');
+    expect(overlaySource).toContain('aria-modal={modal ? "true" : "false"}');
     expect(overlaySource).toContain("openerRef.current?.focus()");
     expect(overlaySource).toContain('event.key === "Escape"');
   });
@@ -98,7 +98,9 @@ describe("Sheet", () => {
     const markup = renderToStaticMarkup(createElement(Sheet, { ...layerContent, open: true }));
 
     expect(markup).toContain('role="dialog"');
-    expect(markup).not.toContain("aria-modal");
+    // PRD-006c D6. Present and false, not absent: a reader has to be able to tell a panel
+    // that means to leave the page reachable from one whose author said nothing.
+    expect(markup).toContain('aria-modal="false"');
     expect(markup).toContain('data-overlay-kind="sheet"');
     expect(markup).toContain('data-anchor="inline-end"');
   });

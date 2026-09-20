@@ -62,10 +62,25 @@ export function parseStoredProgress(value: unknown): GuidedSetupProgress {
   return parsed.success ? parsed.data : initialGuidedSetupProgress();
 }
 
+/**
+ * Everything between where the person is and where they are going becomes complete.
+ *
+ * For every ordinary Continue that is exactly one step, which is what this used to say. D5's
+ * approver is the case that needed more: somebody who can approve and whose colleague has already
+ * created the campaign goes from step 3 straight to step 5, and step 4 is genuinely done, by the
+ * creator. Crediting only `step - 1` left step 3 showing as unfinished in the panel's own progress
+ * track, on a step the person had just pressed Continue on.
+ */
 function withStep(progress: GuidedSetupProgress, step: number): GuidedSetupProgress {
-  const completed = progress.completedSteps.includes(step - 1)
-    ? progress.completedSteps
-    : [...progress.completedSteps, step - 1].filter((entry) => entry >= 1);
+  const gained: number[] = [];
+  for (
+    let position = Math.min(progress.currentStep, step - 1);
+    position <= step - 1;
+    position += 1
+  ) {
+    if (position >= 1) gained.push(position);
+  }
+  const completed = new Set([...progress.completedSteps, ...gained]);
   return {
     ...progress,
     status: "in_progress",

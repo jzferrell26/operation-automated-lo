@@ -7,6 +7,7 @@ import {
   expectNoExternalRequests,
   freshEmail,
   guardLocalOrigin,
+  pointThePanelAtTheSubmitControl,
   restartGuidedSetup,
   saveTheCampaign,
   seededCredentials,
@@ -128,17 +129,10 @@ test("the guided setup's steps 3 through 7 meet the bar on the approver's path",
   // panel sits beside the top of the form, not over the controls further down it.
   await fillTheOpenHouseDraft(page, READY_OPEN_HOUSE);
 
-  const fieldsAfterTheFirst = 6;
-  for (let step = 0; step < fieldsAfterTheFirst; step += 1) {
-    await page.getByRole("button", { name: "Continue" }).click();
-  }
   // The last entry in the sequence is the submit control itself, and the highlight attribute goes
-  // on the anchored element, so this is the picture's own claim: the panel is pointing at "Save
-  // and run the checks" rather than at a field somewhere behind it.
-  await expect(
-    page.locator("[data-guided-setup-highlight='true']"),
-    "the panel has reached the submit control",
-  ).toHaveAccessibleName("Save and run the checks");
+  // on the anchored element, so the helper's assertion is the picture's own claim: the panel is
+  // pointing at "Save and run the checks" rather than at a field somewhere behind it.
+  await pointThePanelAtTheSubmitControl(page);
   await captureStep(page, "step-4-create-the-campaign-last-field");
 
   await page.getByRole("button", { name: "Save and run the checks" }).click();

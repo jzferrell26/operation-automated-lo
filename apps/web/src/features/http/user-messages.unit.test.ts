@@ -40,18 +40,6 @@ const NOT_SHOWN_TO_A_USER: readonly Readonly<{ code: string; because: string }>[
     code: "RELEASE_MANIFEST_INVALID",
     because: "A readiness answer for a monitor, never a screen.",
   },
-  {
-    code: "INVALID_REVIEW_SIGN_IN",
-    because: "The PRD-005b sign-in route that PRD-006a replaces; its copy is PRD-006a's.",
-  },
-  {
-    code: "REVIEW_SESSION_REFUSED",
-    because: "The PRD-005b sign-in route that PRD-006a replaces; its copy is PRD-006a's.",
-  },
-  {
-    code: "REVIEW_SESSION_UNCONFIGURED",
-    because: "The PRD-005b sign-in route that PRD-006a replaces; its copy is PRD-006a's.",
-  },
 ];
 
 const ERROR_CODE = /\b(?:error|code)\b\s*[:,]\s*"(?<code>[A-Z][A-Z0-9_]{4,})"/gu;

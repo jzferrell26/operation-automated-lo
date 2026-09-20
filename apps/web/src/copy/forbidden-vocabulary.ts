@@ -11,8 +11,10 @@
  * was the geographic "region" in ad targeting, and the product says "area" there instead, so no
  * exception is needed.
  *
- * Terms match case-insensitively on a word boundary, so "Synthetic", "synthetically", and
- * "SYNTHETIC" all fail while "regional" does not accidentally pass a ban on "region".
+ * Terms match case-insensitively on a word boundary, so "Synthetic", "synthetically",
+ * "SYNTHETIC", and the "synthetic" inside "non-synthetic" all fail, while "regional" does not
+ * accidentally pass a ban on "region". `forbiddenTermPattern` below is that rule, exported so the
+ * source guard and the rendered guard cannot answer the same question differently.
  */
 
 /** Single words and phrases that may never appear in anything a user reads. */
@@ -124,15 +126,70 @@ export const FORBIDDEN_DASHES: readonly Readonly<{ name: string; character: stri
   ]);
 
 /**
- * One term, matched case-insensitively on a word boundary, with the plural allowed.
+ * The endings that turn a banned term into the same banned word in another tense or number.
  *
- * PRD-006b D2 bans each term "in any case, tense, or compound", and "fixtures" is the same word as
- * "fixture" to the person reading it. The suffix is limited to `s` and `es` so that banning
- * "region" does not also ban "regional", which would be a different claim.
+ * PRD-006b D2 bans each term "in any case, tense, or compound", and "fixtures", "persisting", and
+ * "compiled" are the same words as "fixture", "persist", and "compile" to the person reading them.
+ * The list stops at the regular endings: an irregular form such as "stubbing" doubles a consonant
+ * and is not reachable by adding letters to the term, so it is not claimed here.
  */
-function termPattern(term: string): RegExp {
-  const escaped = term.replaceAll(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-  return new RegExp(`(?<![\\w-])${escaped}(?:es|s)?(?![\\w-])`, "iu");
+const TERM_SUFFIXES = "(?:ers|ing|ed|es|er|s)?";
+
+/**
+ * The same endings for a term that already ends in a silent `e`, which English drops before them:
+ * "compile" becomes "compiling", "freeze" becomes "freezing". The bare plural is not repeated here,
+ * because "compiles" is the term itself plus `s` and the first branch already has it.
+ */
+const SILENT_E_SUFFIXES = "(?:ers|ing|ed|er)";
+
+/**
+ * Terms banned only in the form the contract names, plus the plural.
+ *
+ * D2 bans "route (as a noun for a page)". Its verb forms are not that noun: this product has a
+ * "Routing" health area and a `/settings/routing` page, because routing is what HighLevel calls
+ * sending a lead to the right person, and a loan officer reads that word as the feature's name.
+ * Banning it would be a different claim from the one the contract makes, in the same way that
+ * banning "regional" would be a different claim from banning "region".
+ *
+ * One entry is not a pattern. A second one needs the same argument made in the same place: the
+ * inflection has a user-facing sense in this product, stated, not merely inconvenient.
+ */
+const EXACT_FORM_ONLY: readonly string[] = ["route"];
+
+function escapeForPattern(term: string): string {
+  return term.replaceAll(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+}
+
+/**
+ * One banned term, matched case-insensitively, in any of its common English inflections and on
+ * either side of a hyphenated compound.
+ *
+ * The boundaries are `\w` rather than `[\w-]`, which is what makes the compound case work: the
+ * "provider" in "provider-backed" and the "synthetic" in "non-synthetic" are the banned words with
+ * a hyphen beside them, and a guard that let a hyphen hide them would be weaker than its own claim.
+ * Anchoring on `\w` alone still keeps the false positive this module has always cared about out:
+ * "regional" is not a ban on "region", because the `a` that follows is a word character and no
+ * suffix above spells `al`. The same goes for "subregion" on the left.
+ *
+ * Exported because the source guard (`tooling/tests/unit/user-language/forbidden-vocabulary.test.ts`)
+ * and the rendered guard (`apps/web/src/app/(authenticated)/review-surface-sweep.ts`) must ask the
+ * same question of the same term list. They used to carry separate matchers, and the rendered one
+ * was the weaker of the two, so a sentence the source guard rejected could still reach a screen.
+ */
+export function forbiddenTermPattern(term: string): RegExp {
+  const escaped = escapeForPattern(term);
+
+  if (EXACT_FORM_ONLY.includes(term)) {
+    return new RegExp(`(?<!\\w)${escaped}(?:es|s)?(?!\\w)`, "iu");
+  }
+
+  const branches = [`${escaped}${TERM_SUFFIXES}`];
+
+  if (term.endsWith("e")) {
+    branches.push(`${escapeForPattern(term.slice(0, -1))}${SILENT_E_SUFFIXES}`);
+  }
+
+  return new RegExp(`(?<!\\w)(?:${branches.join("|")})(?!\\w)`, "iu");
 }
 
 export type VocabularyHit = Readonly<{ kind: "term" | "identifier" | "dash"; detail: string }>;
@@ -142,7 +199,7 @@ export function findVocabularyHits(text: string): readonly VocabularyHit[] {
   const hits: VocabularyHit[] = [];
 
   for (const term of FORBIDDEN_TERMS) {
-    if (termPattern(term).test(text)) {
+    if (forbiddenTermPattern(term).test(text)) {
       hits.push({ kind: "term", detail: term });
     }
   }

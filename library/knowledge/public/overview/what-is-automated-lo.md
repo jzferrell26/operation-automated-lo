@@ -20,7 +20,7 @@ Automated LO is a HighLevel app for loan officers that turns one open house into
 
 Automated LO installs into your HighLevel location and adds one focused workflow: **Open House Boost.**
 
-You tell it about the open house and the property. It assembles a campaign version from your brand, compliance, and partner settings. That version is immutable: once created, it is a fixed record with its own identity, not a document that quietly changes under you. Before anything is treated as final, a named person with approval authority has to approve that exact version, and the approval is stored with it.
+You tell it about the open house and the property. It assembles a campaign version from your brand, compliance, and partner settings. Once that version is created, it is fixed: it keeps its own number and does not quietly change under you. Before anything is treated as final, a named person with approval authority has to approve that exact version, and the approval is stored with it.
 
 ## What you can do in this release
 

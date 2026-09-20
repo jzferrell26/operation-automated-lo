@@ -66,11 +66,6 @@ const EXCLUDED: readonly Readonly<{ path: string; because: string }>[] = [
     because: "The demo route, which only a developer's own machine ever renders.",
   },
   {
-    path: "apps/web/src/app/public",
-    because:
-      "The public campaign page renders demo artwork only and PRD-004 defers the real one; its copy belongs to the release that ships it.",
-  },
-  {
     path: "apps/web/src/features/brand/model/synthetic-brand-profile.ts",
     because:
       "Demo fixture data that happens to sit beside a feature. A connected-account workspace replaces every value in it, and the PRD-006b Non-Goals leave fixture prose alone.",
@@ -336,6 +331,12 @@ describe("user-language guard, source level", () => {
     expect(files.has("apps/web/src/features/shell/components/app-shell.tsx")).toBe(true);
     expect(files.has("packages/ui/src/components/metric.tsx")).toBe(true);
     expect(files.has("apps/web/src/copy/auth-messages.ts")).toBe(true);
+    /**
+     * The unauthenticated page under `apps/web/src/app/public`. D6's exclusion list does not name
+     * it, and it used to be excluded anyway, which let two operator sentences sit on the one URL
+     * in the product that needs no sign-in to read.
+     */
+    expect(files.has("apps/web/src/app/public/synthetic-open-house-v3/page.tsx")).toBe(true);
   });
 
   it("states a reason for every path it does not read", () => {
@@ -384,6 +385,61 @@ describe("user-language guard, source level", () => {
       "d.tsx:4 dash",
       "e.tsx:5 identifier",
     ]);
+  });
+
+  /**
+   * D2 bans each term "in any case, tense, or compound". Every probe below used to pass the guard:
+   * "persisting" and "compiling" because the suffix list stopped at `s` and `es`, and
+   * "provider-backed" because the trailing hyphen sat inside the old word boundary.
+   */
+  it("catches a banned term in another tense and inside a hyphenated compound", () => {
+    expect(
+      report([
+        { file: "g.tsx", line: 1, text: "Your draft is persisting now and compiling." },
+        { file: "g.tsx", line: 2, text: "This page shows provider-backed results." },
+        { file: "g.tsx", line: 3, text: "We are freezing this version for you." },
+        { file: "g.tsx", line: 4, text: "Ask a non-operator to look at it." },
+      ]).map((entry) => entry.split(" ").slice(0, 3).join(" ")),
+    ).toEqual([
+      'g.tsx:1 term "persist"',
+      'g.tsx:1 term "compile"',
+      'g.tsx:2 term "provider"',
+      'g.tsx:3 term "freeze"',
+      'g.tsx:4 term "operator"',
+    ]);
+  });
+
+  /**
+   * The matcher's own limit, kept under test so widening it again cannot quietly ban a word the
+   * contract never banned. "Regional" is the case the copy module's comment has always cited;
+   * "subregion" is the same claim on the other side of the word.
+   */
+  it("does not report a longer word that merely starts or ends with a banned term", () => {
+    expect(
+      report([
+        { file: "h.tsx", line: 1, text: "We can target a regional audience for you." },
+        { file: "h.tsx", line: 2, text: "A subregion of that area works too." },
+      ]),
+    ).toEqual([]);
+  });
+
+  /**
+   * The one term the widening deliberately skips. "Routing" is what HighLevel calls sending a lead
+   * to the right person, so it is the name of something the user has, while D2 bans "route" as a
+   * noun for a page. Both halves are pinned so neither can move without the other being considered.
+   */
+  it("bans the page noun without banning the lead-routing the user knows", () => {
+    expect(
+      report([
+        { file: "i.tsx", line: 1, text: "Routing is not connected yet." },
+        { file: "i.tsx", line: 2, text: "Open your routing settings." },
+      ]),
+    ).toEqual([]);
+    expect(
+      report([{ file: "i.tsx", line: 3, text: "Go back to the route you came from." }]).map(
+        (entry) => entry.split(" ").slice(0, 3).join(" "),
+      ),
+    ).toEqual(['i.tsx:3 term "route"']);
   });
 
   it("passes a sentence written in the contract's own voice", () => {

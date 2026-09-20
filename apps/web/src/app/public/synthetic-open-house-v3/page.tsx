@@ -6,14 +6,17 @@ import { loadSyntheticReporting } from "../../../features/reporting/model/synthe
 import { canRenderSyntheticDemo } from "../../../server/authenticated-workspace-data.js";
 
 /**
+ * The one unauthenticated page in the product, and the only one whose reader is a passer-by.
+ *
  * The authenticated review routes collapse onto `ReviewNotConnectedScreen` because a Marketplace
- * reviewer is looking at them and the product stays legible when its regions are named. This route
- * has no such reader. It is unauthenticated, and it is not a product surface at all: it is one
- * published artifact for one property. Naming its regions would describe a marketing page that was
- * published for a listing that does not exist, on a URL any crawler can reach. Nothing has been
- * published on a deployment with no provider link, so the honest response is the one a real
- * deployment gives for an unpublished slug, and the one the sibling campaign route already gives
- * for an unknown reference: the artifact is not there.
+ * reviewer is looking at them. This page has no such reader: it stands in for the page an approved
+ * campaign would publish for one property, and it renders only where `canRenderSyntheticDemo` is
+ * true, which is a local or preview build. Everywhere else it answers 404, which is what a real
+ * deployment answers for a listing it never published.
+ *
+ * PRD-006b D6 scans this file like every other screen, so the words below are written for whoever
+ * lands on the URL rather than for whoever built it: they say what the page is, in plain words, and
+ * that none of it is live.
  */
 export default function SyntheticPublicArtifactPage() {
   if (!canRenderSyntheticDemo()) {
@@ -24,17 +27,17 @@ export default function SyntheticPublicArtifactPage() {
   const approved = reporting.campaign.artifacts.find((artifact) => artifact.status === "approved");
 
   if (!approved) {
-    return <p>No approved synthetic artifact is available.</p>;
+    return <p>This is a sample open house page. There is nothing to show on it.</p>;
   }
 
   return (
     <section aria-labelledby="public-artifact-title">
-      <p>Synthetic public artifact, no provider-backed behavior</p>
+      <p>A sample open house page. Nothing on it is live, and nothing here was published.</p>
       <Card padding="lg">
         <h1 id="public-artifact-title">{approved.previewTitle}</h1>
         <p>{approved.previewSummary}</p>
         <p>
-          {reporting.campaign.propertyLabel}, approved artifact version {approved.version}
+          {reporting.campaign.propertyLabel}, sample version {approved.version}
         </p>
       </Card>
     </section>

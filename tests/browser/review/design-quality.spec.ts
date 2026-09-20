@@ -244,7 +244,7 @@ test("the workspace after a saved password meets the design quality bar", async 
   await restartGuidedSetup(page);
   await page.getByRole("button", { name: "Not now" }).click();
 
-  for (const theme of THEMES) {
+  for (const theme of REVIEW_THEMES) {
     await page.goto("/overview?passwordReset=1");
     await chooseThemeFromTheHeader(page, theme);
 
@@ -256,7 +256,7 @@ test("the workspace after a saved password meets the design quality bar", async 
 
     for (const frame of REVIEW_FRAMES) {
       await page.setViewportSize({ width: frame.width, height: frame.height });
-      await settle(page);
+      await settleForScreenshot(page);
 
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
@@ -272,12 +272,12 @@ test("the workspace after a saved password meets the design quality bar", async 
   // get runs here too, on the screen carrying it.
   await page.setViewportSize({ width: 1180, height: 900 });
   await page.goto("/overview?passwordReset=1");
-  await settle(page);
+  await settleForScreenshot(page);
   await expectKeyboardReachesEveryControl(page);
 
   // It lives in the query, so the next navigation is a workspace with nothing left to say.
   await page.goto("/overview");
-  await settle(page);
+  await settleForScreenshot(page);
   await expect(
     page.locator("[data-live-urgency='status']").filter({
       hasText: RESET_SAVED_NOTICE,

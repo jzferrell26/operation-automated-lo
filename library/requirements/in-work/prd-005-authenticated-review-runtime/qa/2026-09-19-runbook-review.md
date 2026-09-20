@@ -1,0 +1,54 @@
+# Runbook review: review-session seeding
+
+**Reviewer:** runbook-writing-guardian
+**Date:** 2026-09-19
+**Commit reviewed:** 12bffc8 (worktree `wf_de27bc76-72c-1`, fast-forwarded from `c140f11` to `claude/completion-review-2026-09-19`)
+**Closes:** 005B-AC-018, 006A-AC-030
+
+## Scope
+
+Reviewed against the no-implied-context audit protocol and the exact-command discipline (`ai-tools/skills/runbook-writing-weapon/guides/02-no-implied-context-audit.md`, `03-escalation-path-architecture.md`, `04-rollback-procedures.md`, `05-runbook-as-test.md`, `07-done-checklist.md`).
+
+Files reviewed, in the order the brief named:
+
+1. `docs/operations/review-session-seeding.md` (primary)
+2. `docs/operations/retention-and-deletion.md`
+3. `docs/operations/export.md`
+4. `docs/production-environments.md`
+
+Cross-checked against the real implementation, not against the prose alone: `tooling/scripts/database/seed-review-location.mjs`, `tooling/scripts/database/run-real-database-tests.mjs`, `tooling/tests/database/seed-review-location.test.ts`, `packages/auth/src/password-policy.ts`, `packages/auth/src/password-hash.ts`, `apps/web/src/server/password-authentication-handler.ts`, `apps/web/src/server/authenticated-workspace-data.ts`, `apps/web/src/features/auth/auth-page-gate.ts`, `docs/operations/review-surface.md`, and the migrations under `supabase/migrations/`. Every flag, error string, password-policy number, rate-limit number, and lockout number quoted in the runbook was checked against the source that produces it, not assumed.
+
+## Findings
+
+| # | File:line | Severity | Status | Finding |
+|---|---|---|---|---|
+| 1 | `docs/operations/review-session-seeding.md:1` | Critical (Principle 5, checklist T1/T2) | Fixed | No `TEST STATUS` header. The page had a "Testing this runbook" section describing a quarterly exercise cadence, but nothing at the top declared whether that exercise has ever happened. The script itself is exercised non-interactively by `pnpm test:db`, but this page's interactive TTY prompts, Vercel steps, and browser sign-in have not been walked by an operator. Added a `TEST STATUS: UNTESTED` blockquote at the top naming exactly what is and is not covered by the automated gate, per the Guardian's critical directive to mark untested runbooks prominently. |
+| 2 | `docs/operations/review-session-seeding.md:137,142,144,158` (pre-fix line numbers) | Critical (checklist C2) | Fixed | Four navigation instructions used relative paths (`/sign-in`, `/overview`, `/sign-up`, `/settings/account`) with no host. `docs/operations/review-surface.md` documents a real, currently-true host for the review deployment (`https://operation-automated-lo-web.vercel.app`), so this is a live absolute-URL violation, not an unavoidable one. Rewrote all four to the full URL, and added a note in "Before you start" pointing at `review-surface.md` for the case where the operator's review deployment is a preview URL instead (an open question PRD-005e has not closed), so the fix does not silently go stale if that question resolves the other way. |
+| 3 | `docs/operations/review-session-seeding.md:135` (pre-fix, "Step 6: sign in") | High (checklist R1, Principle 4) | Fixed | No Rollback / undo section for the two state-changing steps in this page (Step 3's seeded rows and credential rows; Step 5's Vercel variables), and no explicit irreversibility acknowledgment in its place. Added an "Undoing this" section: seeded rows have no delete path by design, so the acknowledged undo is discarding the disposable database the procedure was run against; a credential's prior hash is unrecoverable by design, so the acknowledged undo is resetting it via Step 3, not restoring it; Vercel variables are undone by removing them and redeploying, which is the mirror of Step 5's own instructions. Nothing here adds a script flag or a command the seeding script does not implement. |
+| 4 | `docs/operations/review-session-seeding.md:17-25` (pre-fix, "Before you start") | High (checklist C8) | Fixed | Step 5 requires changing Vercel environment variables, but no prerequisite item said the operator needs access to that Vercel project before starting. Added item 6, naming the actual project (`operation-automated-lo-web`, team `jonathan-ferrell`) as documented in `review-surface.md`, rather than a generic "you'll need access" placeholder. |
+| 5 | `docs/operations/review-session-seeding.md:7` | High by the generic checklist (E2, E3); recorded as a non-blocking, documented exception here | Recorded, not fixed | The escalation line names one tier ("post in the engineering channel") with no named Slack channel, PagerDuty schedule, or backup contact method, and no second or third tier. `guides/03-escalation-path-architecture.md` scores a single, unnamed tier as a HIGH-severity gap. I did not fabricate a channel name or an escalation tier: this repository has no PagerDuty/OpsGenie, and no named Slack channel appears anywhere in `docs/operations/*` (checked; the other operational runbooks in this repo escalate to role-based owners the same way, e.g. `docs/operations/alert-response.md`'s "escalate to the storage owner"). Inventing organizational structure that does not exist would fail worse than the gap it closes, and stands outside this Guardian's scope (infrastructure/tooling decisions route to `devops-guardian` per the paired command brief). Recommendation: once this project names a real on-call channel or escalation tier, thread it through this line and the equivalent line in every other `docs/operations/*` page, not just this one. |
+| 6 | `docs/operations/review-session-seeding.md` (whole page) | Medium (checklist C7) | Recorded, not fixed | No per-step time estimates (e.g. "(~2 minutes)"). This is an operator-run setup procedure, not a during-incident break-fix runbook where an engineer is timing an escalation window against the clock, so the medium-severity item is recorded rather than fixed. |
+| 7 | `docs/operations/review-session-seeding.md`, `docs/operations/retention-and-deletion.md`, `docs/operations/export.md` | Informational (checklist P1/P3) | Not applicable | No Postmortem History section. No incident has touched this procedure yet; nothing to link. |
+| 8 | `docs/operations/retention-and-deletion.md`, `docs/operations/export.md` | n/a | No blocking finding; verified accurate | Both already carry the "Personal data stores (PRD-006a D1)" section naming `platform.user_credentials` and `platform.credential_tokens`, per 006A-AC-030. Checked both table definitions against `supabase/migrations/20260919140000_password_credentials.sql`: the columns, the token purposes, and the hash-only storage claim for `credential_tokens` are all accurate. No change needed. |
+| 9 | `docs/production-environments.md` | n/a | No blocking finding; verified accurate | Lists the three new names (`OALO_RESEND_API_KEY`, `OALO_EMAIL_FROM`, `OALO_SELF_SERVE_SIGNUP`) and states the three removed names (`OALO_REVIEW_SIGNIN_SECRET`, `OALO_REVIEW_LOCATION_ID`, `OALO_REVIEW_OUTSIDER_LOCATION_ID`) are gone, matching `tooling/tests/unit/delivery-observability/public-env-guard.test.ts`'s current allowlist cases. No change needed. |
+
+## What was checked and confirmed accurate, not just plausible
+
+- Every script flag named in the runbook (`--review-database-url`, `--confirm-database`, `--set-password`, `--password-stdin`, `--creator-email`, `--approver-email`, `--outsider-email`, `--expect-unchanged`) exists in `parseSeedArguments` in `seed-review-location.mjs`; no flag is invented, and no flag the script requires is missing from the runbook.
+- Every quoted refusal string in the "If the script refuses" table matches the literal `throw new SeedReviewLocationError(...)` text in the script, field for field.
+- The password policy numbers (12 to 128 characters, no name or local-part fragment, denylist) match `packages/auth/src/password-policy.ts` and `password-hash.ts` exactly.
+- The sign-in rate limit ("twenty sign-in attempts... in fifteen minutes") matches `AUTH_RATE_LIMITS.sign_in_ip` (`attemptLimit: 20, windowSeconds: 900`) in `authenticated-workspace-data.ts`.
+- The lockout claim ("ten wrong passwords... fifteen minutes") matches the same file's own comment: "the per-account lockout (ten failures, fifteen minutes)".
+- The 404-on-sign-in claim traces to `assertAuthPageIsServed` to `assertAuthSurface` to `authenticatedWorkspaceMode`, which requires `OALO_REVIEW_SURFACE=authorized` to return `"review"` mode; any other mode 404s. The runbook's fix ("Set `OALO_REVIEW_SURFACE=authorized`") is the actual and only fix.
+- Step 1's build command omits `--filter=@oalo/contracts...`, present in the equivalent line of `run-real-database-tests.mjs`. Checked `packages/db/package.json` and `packages/auth/package.json`: both depend on `@oalo/contracts`, and `turbo.json`'s `build` task carries `"dependsOn": ["^build"]`, so Turborepo builds `@oalo/contracts` first regardless of the filter's own dependency-vs-dependent direction. The omission does not break the command; not a finding.
+
+## Row verdicts
+
+- **005B-AC-018**: no blocking finding open. `docs/operations/review-session-seeding.md` documents the procedure end to end for an operator with no repository context: which login to use, the exact command with every flag the script accepts, every guard the script enforces (quoted verbatim and verified against the source), what to paste into which Vercel variable, and what never goes in git. Reviewed against the no-implied-context rule; the four blocking gaps found (TEST STATUS header, absolute URLs, rollback/undo section, Vercel-access prerequisite) are fixed in this commit.
+- **006A-AC-030**: no blocking finding open. `docs/operations/review-session-seeding.md` is rewritten per D8 (the credential half is documented: the interactive prompt, `--password-stdin`, the Vercel variables, password recovery until email is configured) and reviewed by `runbook-writing-guardian` with the fixes above. `docs/production-environments.md` lists the three new names and states the three removed ones are gone. `docs/operations/retention-and-deletion.md` and `docs/operations/export.md` already name `platform.user_credentials` and `platform.credential_tokens` as PII stores, verified accurate against the migration.
+
+## Gates run on the fixed tree
+
+- `pnpm format:check`: pass.
+- `pnpm lint`: pass.
+- `pnpm test:unit`: 827/827 passed on the second run (827 tests, exit 0). The first run showed one failure, a 5000ms test timeout in `tooling/tests/unit/user-language/forbidden-vocabulary.test.ts` unrelated to this change: that test scans only `apps/web/src/app`, `apps/web/src/copy`, `apps/web/src/features`, `apps/web/src/server/email`, and `packages/ui/src/components`, none of which this review touched; the failure was a cold-import timing flake (import phase took 92.97s on the first, cold run versus 46.57s on the second), not a content regression from this review.

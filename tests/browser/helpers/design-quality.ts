@@ -1,5 +1,5 @@
 import { AxeBuilder } from "@axe-core/playwright";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
  * PRD-006d D7 and D8. The four checks every screen in the rubric's section 4 gets, at every frame,
@@ -17,6 +17,8 @@ export const REVIEW_FRAMES = Object.freeze([
   { name: "768", width: 768, height: 1024 },
   { name: "390", width: 390, height: 844 },
 ] as const);
+
+export type ReviewFrame = (typeof REVIEW_FRAMES)[number];
 
 export type ReviewTheme = "light" | "dark";
 
@@ -137,6 +139,19 @@ export async function expectKeyboardReachesEveryControl(
   const seen: string[] = [];
   const ringless: string[] = [];
 
+  /**
+   * A walk may start anywhere, so it is allowed to pass out of the document once.
+   *
+   * On a page that was only loaded, focus is on the body and the first Tab lands on the first
+   * control. On a page reached through an interaction, the last thing that interaction did was
+   * click a control, and when that control is the page's last focus stop, which a submit button
+   * usually is, the next Tab leaves the document. Without this the walk would report that nothing
+   * on the page takes focus, which would be a statement about where the walk began rather than
+   * about the page. One pass out, then the following Tab re-enters at the first control; a second
+   * one, or one after anything has been seen, ends the walk as before.
+   */
+  let wrapped = false;
+
   for (let stop = 0; stop < options.stops; stop += 1) {
     await page.keyboard.press("Tab");
     const focused = await page.evaluate(() => {
@@ -180,7 +195,11 @@ export async function expectKeyboardReachesEveryControl(
         ].join(", "),
       };
     });
-    if (focused === undefined) break;
+    if (focused === undefined) {
+      if (seen.length > 0 || wrapped) break;
+      wrapped = true;
+      continue;
+    }
     const key = `${focused.tag}:${focused.name}`;
     if (seen.includes(key) && seen[0] === key) break;
     seen.push(key);
@@ -233,4 +252,69 @@ export function screenshotName(
   state = "default",
 ): string {
   return `${screen}--${state}--${frame}--${theme}.png`;
+}
+
+/**
+ * Settle the page before a screenshot: fonts resolved, no network in flight, and the scroll
+ * position at the top so the same pixels are captured every run.
+ *
+ * `idleNetwork` is false for exactly one kind of state: one a person only ever sees while a request
+ * is still travelling, such as the create screen's saving state. There the request in flight is the
+ * state, so waiting for the network to go quiet would wait for the state to end.
+ */
+export async function settleForScreenshot(
+  page: Page,
+  options: Readonly<{ idleNetwork?: boolean }> = {},
+): Promise<void> {
+  await page.evaluate(async () => {
+    window.scrollTo(0, 0);
+    await document.fonts.ready;
+  });
+  if (options.idleNetwork ?? true) await page.waitForLoadState("networkidle");
+}
+
+/**
+ * PRD-006d D3 and D8. One named state, captured at every frame the rubric scores it at, with the
+ * same four machine checks the default states already get at every cell.
+ *
+ * The page arrives already in the state and already in the theme, and only the viewport moves
+ * between cells. That is deliberate on two counts. A named state on these screens lives in React
+ * state on the page, so a reload would lose it and a resize keeps it; and reaching it once per theme
+ * rather than once per cell is what keeps a review suite from spending the sign-up, sign-in, and
+ * password-reset budgets that the specs sharing the run need.
+ */
+export async function captureNamedState(
+  page: Page,
+  input: Readonly<{
+    screen: string;
+    state: string;
+    theme: ReviewTheme;
+    /** Defaults to all four frames. A state the product only has at some of them names those. */
+    frames?: readonly ReviewFrame[];
+    fullPage?: boolean;
+    idleNetwork?: boolean;
+    /**
+     * Regions whose content is a fact about this run rather than about the design: a decision's
+     * timestamp, for instance. Painted over so the picture still fails on a spacing token, a colour
+     * role, or a type step, and never fails because the clock moved.
+     */
+    mask?: readonly Locator[];
+    axe?: Readonly<{ exclude?: readonly string[]; disableRules?: readonly string[] }>;
+  }>,
+): Promise<void> {
+  for (const frame of input.frames ?? REVIEW_FRAMES) {
+    await page.setViewportSize({ width: frame.width, height: frame.height });
+    await settleForScreenshot(page, { idleNetwork: input.idleNetwork ?? true });
+
+    await expectAxeClean(page, input.axe ?? {});
+    await expectNoHorizontalOverflow(page);
+    await expectTargetsAreLargeEnough(page);
+    await expect(page).toHaveScreenshot(
+      screenshotName(input.screen, frame.name, input.theme, input.state),
+      {
+        fullPage: input.fullPage ?? true,
+        ...(input.mask === undefined ? {} : { mask: [...input.mask] }),
+      },
+    );
+  }
 }

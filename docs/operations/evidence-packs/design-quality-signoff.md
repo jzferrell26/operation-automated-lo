@@ -54,13 +54,14 @@ with a finding reference. A row is signed only when all eight are `pass` on all 
 | Reset password | link expired | review | | | | | | | | |
 | Verify email | default | review | | | | | | | | |
 | Verify email | confirmed | review | | | | | | | | |
+| Verify email | link expired | review | | | | | | | | |
 | Change password | default | review | | | | | | | | |
 | Change password | saved | review | | | | | | | | |
 | Shell | rail | synthetic | | | | | | | | |
-| Shell | collapsed rail | synthetic | | | | | | | | |
+| Shell | collapsed rail | review | | | | | | | | |
 | Shell | tablet rail | synthetic | | | | | | | | |
 | Shell | topbar | synthetic | | | | | | | | |
-| Shell | mobile drawer | synthetic | | | | | | | | |
+| Shell | mobile drawer | review | | | | | | | | |
 | Shell | not-connected banner | review | | | | | | | | |
 | Shell | "Finish setup" chip | review | | | | | | | | |
 | Shell | help menu | review | | | | | | | | |
@@ -72,10 +73,10 @@ with a finding reference. A row is signed only when all eight are `pass` on all 
 | Create | saving | synthetic | | | | | | | | |
 | Create | ready for approval | synthetic | | | | | | | | |
 | Create | needs changes | synthetic | | | | | | | | |
-| Campaign detail | ready | synthetic | | | | | | | | |
+| Campaign detail | ready | review | | | | | | | | |
 | Campaign detail | permission-restricted | synthetic | | | | | | | | |
-| Campaign detail | approved | synthetic | | | | | | | | |
-| Campaign detail | already decided | synthetic | | | | | | | | |
+| Campaign detail | approved | review | | | | | | | | |
+| Campaign detail | already decided | review | | | | | | | | |
 | Reports | not connected | synthetic | | | | | | | | |
 | Onboarding | default | synthetic | | | | | | | | |
 | Settings and connections | default | synthetic | | | | | | | | |
@@ -98,6 +99,51 @@ with a finding reference. A row is signed only when all eight are `pass` on all 
 The two email rows are scored on axes 1, 3, 4, and 10 only, per the rubric's section 4: an email
 has no states, no motion, and no responsive frames of its own. The frame columns record the frame
 the surrounding preview page was at.
+
+## Where each row's picture comes from
+
+The two screenshot suites capture one picture per row, frame, and theme, named
+`<screen>--<state>--<frame>--<theme>.png` with the state as this table's state word in lower case
+with hyphens. `tests/visual/screens/README.md` says how to take a set without touching a baseline.
+A row whose picture the suites take is a row the orchestrator can check against
+`tests/visual/screens/` rather than re-stage by hand.
+
+One picture carries a painted-over region. On campaign detail's already-decided row the moment the
+decision was recorded is blanked, because it is a fact about the run rather than about the design
+and a baseline that changed with the clock would fail every time. It is the only such region in
+either suite, and the loud colour is Playwright's own, chosen so nobody reads it as a surface.
+
+### Rows whose server column changed
+
+Four states are not states a synthetic deployment has, so the suites take them from the review
+server and the `Server` column says so.
+
+| Row | Why it is a review row |
+| --- | --- |
+| Campaign detail, ready / approved / already decided | Synthetic mode's principal holds `campaign_creator` (`apps/web/src/server/authenticated-principal.ts:210-224`), and `campaignMayBeApprovedBy` (`packages/application/src/campaign-workspace-read.ts:110-119`) needs an approval role. A synthetic deployment can therefore never render an approvable or an approved campaign. The seeded approver can. Campaign detail's permission-restricted state stays synthetic, because that is exactly what a creator sees. |
+| Shell, collapsed rail and mobile drawer | Both are states of the signed-in shell that a person reaches with a control, and the review server is where a real session exists. |
+
+### Frames a state does not have
+
+Two of these rows are scored at fewer than four frames, because the product does not have the state
+at the others. This is the brief's tablet rule, not a gap.
+
+| Row | Frames | Why |
+| --- | --- | --- |
+| Shell, collapsed rail | 1440 only | The collapse control is `display: none` from 1180 down (`apps/web/src/features/shell/components/app-shell.module.css:263-276`), because the tablet range renders the rail compact from the media query instead. 1180 and 768 are the "tablet rail" row. |
+| Shell, mobile drawer | 390 only | The drawer trigger is `display: none` above 767.98px (the same file, lines 283-302), which PRD-006d D5 moved deliberately so the 768 frame keeps the compact rail. |
+
+### Rows no automated suite can take, which the orchestrator stages by hand
+
+| Row | Why the suite cannot reach it |
+| --- | --- |
+| Campaign detail, approved | Reachable, and blocked by a defect on the screen rather than by the picture. Between the decision and the next load the screen still carries "Send back for changes" (`apps/web/src/features/campaigns/components/campaign-approval-controls.tsx:95-104`), a raw `<button>` with `.hint` from `open-house-draft-builder.module.css` that renders 152 by 21 against the brief's 44 by 44 (design brief section 14; WCAG 2.2 SC 2.5.8). Measured on 2026-09-19. Capturing it would have meant a red gate or a weakened target-size check, so the suite takes the already-decided state and leaves this one to the batch that moves the control onto the `Button` primitive, whose `Button.module.css:2` already sets `min-block-size: 44px`. |
+| Campaign detail, ready | The same control, in the same state, before anybody decides. |
+| Sign up, address already has an account | Reachable, but not on every run. Each submission spends one `sign_up_ip` attempt before the body is parsed (`apps/web/src/server/password-authentication-handler.ts:713`), the limit is ten an hour per address (the same file, line 86), and PRD-006c's four specs already spend exactly ten in one review run. Adding two was measured on 2026-09-19: the run's last two sign-ups were refused with "There have been too many attempts" and two PRD-006c specs failed. A set of the eight pictures was taken that day; stage it on a deployment of its own, or on a morning when nothing else is signing up. |
+| Verify email, confirmed | Confirming needs an `email_verification` token, and `scheduleVerificationEmail` issues one only when a sending domain is configured (`apps/web/src/server/password-authentication-handler.ts:812-816`). The review composition leaves `OALO_RESEND_API_KEY` and `OALO_EMAIL_FROM` absent on purpose (`tooling/scripts/database/review-browser-run.mjs:48-51`), so no token exists for a browser to spend. Stage it on a deployment with a sending domain. |
+| Unverified email notice | The sentence exists in `apps/web/src/copy/auth-messages.ts:84` as `VERIFY_EMAIL.unverifiedNotice` and nothing renders it. There is no such notice on the shell to photograph. |
+| Route error boundary | Nothing a browser can do makes a synthetic server component throw, and `(authenticated)/error.tsx` only renders when one does. |
+| Route loading boundary | `loading.tsx` is a streaming fallback. The shell's navigation is plain `<a href>` (`apps/web/src/features/shell/components/app-shell.tsx:346-360`) and the only `useRouter().push` in the product is the guided setup's (`apps/web/src/features/guided-setup/guided-setup-provider.tsx:226`), so a synthetic navigation is always a document load and the fallback is never on screen long enough to photograph. |
 
 ## Out of scope, recorded rather than fixed
 

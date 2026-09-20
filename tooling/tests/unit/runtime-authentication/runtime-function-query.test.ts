@@ -57,7 +57,7 @@ function createPool(behaviour: { failOn?: string } = {}) {
 }
 
 describe("context-free runtime function helper", () => {
-  it("recognises exactly the twenty-three allowlisted contract names (006A-AC-003)", () => {
+  it("recognises exactly the twenty-four allowlisted contract names (006A-AC-003)", () => {
     expect([...RUNTIME_FUNCTION_CONTRACT_NAMES]).toEqual([
       "runtime.location-is-active.v1",
       "runtime.actor-is-active.v1",
@@ -82,6 +82,7 @@ describe("context-free runtime function helper", () => {
       "runtime.mark-email-verified.v1",
       "runtime.record-email-delivery.v1",
       "runtime.consume-auth-rate-limit.v1",
+      "runtime.unverified-email-display-for-user.v1",
     ]);
     // PRD-006a D9 drops the persona resolver with the route that called it.
     expect(isRuntimeFunctionContractName("runtime.resolve-review-persona.v1")).toBe(false);

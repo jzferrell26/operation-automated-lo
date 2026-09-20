@@ -75,13 +75,25 @@ export const RESET_PASSWORD = Object.freeze({
   successNotice: "Your password is saved. You're signed in.",
 });
 
+/**
+ * D10's unverified-notice row is one sentence with a control inside it: "Confirm your email so you
+ * can reset your password later. Resend the link." The shell says the first half and offers the
+ * second half as the control, so the two parts are declared once here and the whole sentence is
+ * composed from them rather than typed a second time. Editing either part moves `unverifiedNotice`
+ * with it, so the requirement's literal and the words on screen cannot drift apart.
+ */
+const UNVERIFIED_NOTICE_BODY = "Confirm your email so you can reset your password later.";
+const UNVERIFIED_RESEND_LABEL = "Resend the link.";
+
 export const VERIFY_EMAIL = Object.freeze({
   title: "Confirm your email",
   body: "Click confirm and you're done.",
   submitLabel: "Confirm",
   successNotice: "Thanks, your email is confirmed.",
   expiredError: "This link has expired. We'll send a new one when you sign in.",
-  unverifiedNotice: "Confirm your email so you can reset your password later. Resend the link.",
+  unverifiedNotice: `${UNVERIFIED_NOTICE_BODY} ${UNVERIFIED_RESEND_LABEL}`,
+  unverifiedNoticeBody: UNVERIFIED_NOTICE_BODY,
+  unverifiedResendLabel: UNVERIFIED_RESEND_LABEL,
 });
 
 export const CHANGE_PASSWORD = Object.freeze({

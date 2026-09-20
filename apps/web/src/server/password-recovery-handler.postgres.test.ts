@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
   countCredentialTokens,
+  grantReviewBinding,
   newestCredentialTokenLifetimeSeconds,
   readAuditEventsForCorrelation,
   readFirstPartySessionsForUser,
@@ -10,7 +11,6 @@ import {
   readUserIdForEmail,
 } from "../../../../packages/db/test/route-seeding-bridge.js";
 import {
-  applyRouteEnvironment,
   createRouteTestPool,
   seedActor,
   seedLocation,
@@ -18,6 +18,7 @@ import {
   type SeededLocation,
 } from "./campaign-route-postgres-support.js";
 import {
+  SIGN_IN_CHOICE_AFTER_PASSWORD_RESET_PATH,
   flushAuthBackgroundWork,
   handleForgotPassword,
   handlePasswordSignIn,
@@ -29,11 +30,18 @@ import {
 import {
   authEnvironment,
   authRequest,
+  countFetchAttemptsDuring,
+  createClientAddressAllocator,
   createFetchRecorder,
+  installRouteEnvironment,
+  resetLinkTokenFrom,
+  refusalForSpentVerificationToken,
   resetRateLimitKey,
   seedCredential,
   sessionCookieFrom,
   signUpEnabledEnvironment,
+  verificationLinkTokenFrom,
+  type RouteEnvironmentSwapper,
 } from "./password-authentication-support.js";
 import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
 
@@ -56,39 +64,23 @@ const RESEND_KEY = "re_a_throwaway_key_for_the_proofs";
 
 let pool: PostgresDatabasePool;
 let environment: RoutePostgresEnvironment;
-let restoreEnvironment: () => void;
+let deployment: RouteEnvironmentSwapper;
 let location: SeededLocation;
+/** PRD-006b D10. The second workspace the multi-binding reset case needs. */
+let secondLocation: SeededLocation;
 let resetUserId: string;
 let verifyUserId: string;
 let limitUserId: string;
 
-let addressCounter = 0;
-function nextClientAddress(): string {
-  addressCounter += 1;
-  return `192.0.2.${String(addressCounter)}`;
-}
-
-/** Runs one case under a different composition and puts the suite's own back afterwards. */
-async function withEnvironment(
-  next: RoutePostgresEnvironment,
-  work: () => Promise<void>,
-): Promise<void> {
-  restoreEnvironment();
-  const restoreSwapped = applyRouteEnvironment(next);
-  try {
-    await work();
-  } finally {
-    restoreSwapped();
-    restoreEnvironment = applyRouteEnvironment(environment);
-  }
-}
+const nextClientAddress = createClientAddressAllocator("192.0.2");
 
 beforeAll(async () => {
   environment = authEnvironment();
-  restoreEnvironment = applyRouteEnvironment(environment);
+  deployment = installRouteEnvironment(environment);
   pool = createRouteTestPool();
 
   location = await seedLocation(pool, "Recovery workspace");
+  secondLocation = await seedLocation(pool, "Recovery second workspace");
   resetUserId = (
     await seedActor(pool, location, {
       displayName: "Reset person",
@@ -123,7 +115,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await pool.close();
-  restoreEnvironment();
+  deployment.restore();
 });
 
 /**
@@ -145,19 +137,30 @@ function forgot(email: string, clientAddress: string): Promise<Response> {
   );
 }
 
-/** The reset link the fake provider was handed, and the token inside it. */
-function tokenFromSentMessage(body: string): string {
-  const parsed = JSON.parse(body) as { text: string };
-  const match = /reset-password\?token=([A-Za-z0-9_%-]+)/u.exec(parsed.text);
-  if (match?.[1] === undefined) throw new Error("No reset link was in the message");
-  return decodeURIComponent(match[1]);
-}
-
-function verificationTokenFromSentMessage(body: string): string {
-  const parsed = JSON.parse(body) as { text: string };
-  const match = /verify-email\?token=([A-Za-z0-9_%-]+)/u.exec(parsed.text);
-  if (match?.[1] === undefined) throw new Error("No confirmation link was in the message");
-  return decodeURIComponent(match[1]);
+/**
+ * A live reset link for the suite's own address, minted the way a person gets one: ask for it on a
+ * deployment that can send, and read the token out of the message the fake provider was handed.
+ */
+async function freshResetToken(): Promise<string> {
+  const recorder = createFetchRecorder();
+  let token = "";
+  await deployment.swap(
+    authEnvironment({
+      OALO_RESEND_API_KEY: RESEND_KEY,
+      OALO_EMAIL_FROM: "no-reply@oalo.invalid",
+    }),
+    async () => {
+      const restoreFetch = recorder.install();
+      try {
+        await forgot(RESET_EMAIL, nextClientAddress());
+        await flushAuthBackgroundWork();
+        token = resetLinkTokenFrom(String(recorder.calls.at(-1)?.init.body));
+      } finally {
+        restoreFetch();
+      }
+    },
+  );
+  return token;
 }
 
 describe("POST /api/auth/forgot-password (006A-AC-017)", () => {
@@ -173,7 +176,7 @@ describe("POST /api/auth/forgot-password (006A-AC-017)", () => {
     expect(knownBody).toBe('{"state":"sent"}');
 
     const recorder = createFetchRecorder();
-    await withEnvironment(
+    await deployment.swap(
       authEnvironment({
         OALO_RESEND_API_KEY: RESEND_KEY,
         OALO_EMAIL_FROM: "no-reply@oalo.invalid",
@@ -244,7 +247,7 @@ describe("POST /api/auth/forgot-password (006A-AC-017)", () => {
 
   it("sends one message and records the provider id when the domain is configured", async () => {
     const recorder = createFetchRecorder();
-    await withEnvironment(
+    await deployment.swap(
       authEnvironment({
         OALO_RESEND_API_KEY: RESEND_KEY,
         OALO_EMAIL_FROM: "no-reply@oalo.invalid",
@@ -276,7 +279,7 @@ describe("POST /api/auth/forgot-password (006A-AC-017)", () => {
           expect(delivery?.subjectId).toBe("resend-message-id-0001");
 
           // 006A-AC-019 and 031. The URL token is in the message and nowhere else.
-          const token = tokenFromSentMessage(String(recorder.calls[0]?.init.body));
+          const token = resetLinkTokenFrom(String(recorder.calls[0]?.init.body));
           expect(JSON.stringify(events)).not.toContain(token);
           expect(await response.clone().text()).not.toContain(token);
           expect(response.headers.get("set-cookie") ?? "").not.toContain(token);
@@ -312,24 +315,7 @@ describe("POST /api/auth/forgot-password (006A-AC-017)", () => {
 
 describe("POST /api/auth/reset-password (006A-AC-018)", () => {
   it("consumes the token once, revokes every session, and signs the person in", async () => {
-    const recorder = createFetchRecorder();
-    let token = "";
-    await withEnvironment(
-      authEnvironment({
-        OALO_RESEND_API_KEY: RESEND_KEY,
-        OALO_EMAIL_FROM: "no-reply@oalo.invalid",
-      }),
-      async () => {
-        const restoreFetch = recorder.install();
-        try {
-          await forgot(RESET_EMAIL, nextClientAddress());
-          await flushAuthBackgroundWork();
-          token = tokenFromSentMessage(String(recorder.calls.at(-1)?.init.body));
-        } finally {
-          restoreFetch();
-        }
-      },
-    );
+    const token = await freshResetToken();
 
     // A session that exists before the reset must not survive it.
     const before = await handlePasswordSignIn(
@@ -403,6 +389,43 @@ describe("POST /api/auth/reset-password (006A-AC-018)", () => {
     expect(((await replayed.json()) as { error: string }).error).toBe("AUTH_RESET_LINK_EXPIRED");
   });
 
+  /**
+   * PRD-006b D10 and Wave 7g's recorded follow-up. A person with bindings at more than one
+   * workspace picks one before landing anywhere, so the reset names the choose path with the same
+   * fixed flag on it; `password-authentication-handler.postgres.test.ts` proves the other half,
+   * that a choice carrying the flag lands in the workspace that says the password is saved.
+   *
+   * The address is parsed rather than matched as a string, so the path and the flag are each
+   * asserted for what they are.
+   */
+  it("sends a person with several workspaces to the choice step, flagged (PRD-006b D10)", async () => {
+    await grantReviewBinding(pool, secondLocation.locationId, resetUserId, "location_admin");
+    const token = await freshResetToken();
+
+    const response = await handleResetPassword(
+      authRequest(
+        "/api/auth/reset-password",
+        { token, password: NEW_PASSWORD, confirmPassword: NEW_PASSWORD },
+        { clientAddress: nextClientAddress() },
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    // No session yet: the workspace is not decided, so nothing may be issued for one.
+    expect(sessionCookieFrom(response)).toBeUndefined();
+    const payload = (await response.json()) as {
+      next: string;
+      choiceToken: string;
+      workspaces: readonly { workspaceName: string }[];
+    };
+    expect(payload.next).toBe(SIGN_IN_CHOICE_AFTER_PASSWORD_RESET_PATH);
+    const choice = new URL(payload.next, "https://oalo.local");
+    expect(choice.pathname).toBe("/sign-in/choose");
+    expect(choice.searchParams.get("passwordReset")).toBe("1");
+    expect(payload.workspaces).toHaveLength(2);
+    expect(payload.choiceToken).toBeDefined();
+  });
+
   it("refuses a malformed token with the same generic failure (006A-AC-018)", async () => {
     const response = await handleResetPassword(
       authRequest(
@@ -434,7 +457,7 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
   });
 
   it("creates the account, signs the person in, and discloses a duplicate on purpose", async () => {
-    await withEnvironment(signUpEnabledEnvironment(), async () => {
+    await deployment.swap(signUpEnabledEnvironment(), async () => {
       const response = await handlePasswordSignUp(
         authRequest(
           "/api/auth/sign-up",
@@ -470,7 +493,7 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
   });
 
   it("refuses a weak password with its reason and an identity field with 400", async () => {
-    await withEnvironment(signUpEnabledEnvironment(), async () => {
+    await deployment.swap(signUpEnabledEnvironment(), async () => {
       const weak = await handlePasswordSignUp(
         authRequest(
           "/api/auth/sign-up",
@@ -500,7 +523,7 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
   });
 
   it("refuses the eleventh sign-up from one client address in an hour (006A-AC-015)", async () => {
-    await withEnvironment(signUpEnabledEnvironment(), async () => {
+    await deployment.swap(signUpEnabledEnvironment(), async () => {
       const address = nextClientAddress();
       for (let attempt = 0; attempt < 10; attempt += 1) {
         const allowed = await handlePasswordSignUp(
@@ -533,7 +556,7 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
     const address = "verify-signup@oalo.invalid";
 
     // With no sending domain, no verification token exists at all.
-    await withEnvironment(signUpEnabledEnvironment(), async () => {
+    await deployment.swap(signUpEnabledEnvironment(), async () => {
       const response = await handlePasswordSignUp(
         authRequest(
           "/api/auth/sign-up",
@@ -550,7 +573,7 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
     });
 
     // With one configured, sign-up issues one twenty-four-hour token and sends one message.
-    await withEnvironment(
+    await deployment.swap(
       signUpEnabledEnvironment({
         OALO_RESEND_API_KEY: RESEND_KEY,
         OALO_EMAIL_FROM: "no-reply@oalo.invalid",
@@ -585,7 +608,7 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
           const sent = recorder.calls.at(-1);
           const body = JSON.parse(String(sent?.init.body)) as Record<string, string>;
           expect(body["subject"]).toBe("Confirm your email for Automated LO");
-          const token = verificationTokenFromSentMessage(String(sent?.init.body));
+          const token = verificationLinkTokenFrom(String(sent?.init.body));
 
           const confirmed = await handleVerifyEmail(
             authRequest(
@@ -602,17 +625,9 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
           const events = await readAuditEventsForCorrelation(pool, correlationRef);
           expect(events.map((event) => event.action)).toContain("auth.email-verified");
 
-          const replayed = await handleVerifyEmail(
-            authRequest(
-              "/api/auth/verify-email",
-              { token },
-              { clientAddress: nextClientAddress() },
-            ),
-          );
-          expect(replayed.status).toBe(400);
-          expect(((await replayed.json()) as { error: string }).error).toBe(
-            "AUTH_VERIFICATION_LINK_EXPIRED",
-          );
+          expect(
+            await refusalForSpentVerificationToken(handleVerifyEmail, token, nextClientAddress()),
+          ).toEqual({ status: 400, error: "AUTH_VERIFICATION_LINK_EXPIRED" });
         } finally {
           restoreFetch();
         }
@@ -638,14 +653,8 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
 
 describe("no sending domain means no network request (006A-AC-025)", () => {
   it("makes no fetch during sign-up, forgot-password, or reset", async () => {
-    const original = globalThis.fetch;
-    let called = 0;
-    globalThis.fetch = (async () => {
-      called += 1;
-      throw new Error("No auth path may reach the network with no email variables set");
-    }) as typeof globalThis.fetch;
-    try {
-      await withEnvironment(signUpEnabledEnvironment(), async () => {
+    const attempts = await countFetchAttemptsDuring(async () => {
+      await deployment.swap(signUpEnabledEnvironment(), async () => {
         await handlePasswordSignUp(
           authRequest(
             "/api/auth/sign-up",
@@ -663,10 +672,8 @@ describe("no sending domain means no network request (006A-AC-025)", () => {
         );
         await flushAuthBackgroundWork();
       });
+    });
 
-      expect(called).toBe(0);
-    } finally {
-      globalThis.fetch = original;
-    }
+    expect(attempts).toBe(0);
   });
 });

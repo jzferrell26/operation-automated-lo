@@ -13,6 +13,10 @@ import {
   emailDeliverySubject,
   type TransactionalEmailMessage,
 } from "../../apps/web/src/server/email/transactional-email.js";
+import {
+  flushAuthBackgroundWork,
+  handleResendVerificationEmail,
+} from "../../apps/web/src/server/password-authentication-handler.js";
 import { resolveRuntimeAuthenticationComposition } from "../../apps/web/src/server/runtime-authentication.js";
 
 /**
@@ -51,6 +55,10 @@ const BASE_ENVIRONMENT = Object.freeze({
 });
 
 const RESEND_KEY = "re_a_throwaway_key_for_the_proofs";
+
+/** The origin and host `BASE_ENVIRONMENT` declares, so a request under it passes the origin gate. */
+const REVIEW_ORIGIN = BASE_ENVIRONMENT.OALO_APP_URL;
+const REVIEW_HOST = new URL(REVIEW_ORIGIN).host;
 
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx"]);
 const IGNORED_DIRECTORIES = new Set([".next", ".turbo", "coverage", "dist", "node_modules"]);
@@ -202,6 +210,54 @@ describe("email composition (006A-AC-024 and 025)", () => {
     expect(composition.mode).toBe("synthetic");
     expect(composition.ports.transactionalEmail).toBeUndefined();
     expect(composition.ports.credentials).toBeUndefined();
+  });
+});
+
+/**
+ * PRD-006b D10's resend control, held to the same rule as the three flows above.
+ *
+ * It is the one auth route a person can press over and over, so a deployment with no sending
+ * domain that quietly acquired a way to post to a provider would acquire it here first. This is
+ * the structural half of the proof: the route exists, the composition it runs under has no
+ * configured adapter, and a request that reaches it makes no network call on any path it can take
+ * without a database. The branch where a message would actually be sent needs a real session, so
+ * it is proved with one, against a disposable PostgreSQL, in
+ * `apps/web/src/server/verification-resend-handler.postgres.test.ts`.
+ */
+describe("the resend control with no email variables set (006A-AC-025)", () => {
+  it("issues no network request and runs under an adapter that cannot send", async () => {
+    const original = globalThis.fetch;
+    let called = 0;
+    globalThis.fetch = (async () => {
+      called += 1;
+      throw new Error("The resend route must not reach the network with no email variables set");
+    }) as typeof globalThis.fetch;
+    try {
+      const response = await handleResendVerificationEmail(
+        new Request(`${REVIEW_ORIGIN}/api/auth/resend-verification`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/x-www-form-urlencoded",
+            origin: REVIEW_ORIGIN,
+            host: REVIEW_HOST,
+          },
+          body: new URLSearchParams({ csrfToken: "not-a-real-token" }).toString(),
+        }),
+        BASE_ENVIRONMENT,
+      );
+      await flushAuthBackgroundWork();
+
+      // No session cookie, so the route refuses before it reads a row. What this case is about is
+      // that nothing went out on the way to refusing.
+      expect(response.status).toBe(401);
+      expect(called).toBe(0);
+      expect(
+        resolveRuntimeAuthenticationComposition(BASE_ENVIRONMENT).ports.transactionalEmail
+          ?.configured,
+      ).toBe(false);
+    } finally {
+      globalThis.fetch = original;
+    }
   });
 });
 

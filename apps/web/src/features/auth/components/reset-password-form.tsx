@@ -6,7 +6,8 @@ import type { FormEvent, ReactNode } from "react";
 import { RESET_PASSWORD } from "../strings.js";
 import { AuthProblem } from "./auth-feedback.js";
 import styles from "./auth-form.module.css";
-import { followNext, useAuthSubmit } from "./use-auth-submit.js";
+import { useAuthSubmit } from "./use-auth-submit.js";
+import { useWorkspaceChoice, type WorkspaceChoiceResponse } from "./workspace-choice-form.js";
 
 /**
  * PRD-006a D5 and 006A-AC-018. Choose a new password with the link from the email.
@@ -19,24 +20,36 @@ import { followNext, useAuthSubmit } from "./use-auth-submit.js";
  * another email.
  */
 
-interface ResetResponse {
-  readonly next?: string;
+interface ResetResponse extends WorkspaceChoiceResponse {
   readonly error?: string;
 }
 
 export function ResetPasswordForm({ token }: Readonly<{ token: string }>): ReactNode {
   const { problem, submitting, submit } = useAuthSubmit<ResetResponse>();
+  /**
+   * PRD-006a D5 and PRD-006b D10. A person with bindings at more than one workspace answers the
+   * choice here rather than being sent to a page that would have to ask them to sign in again with
+   * the password they have only just chosen. The five-minute single-use token and the closed list
+   * live in this state for the life of the page and are never written to browser storage.
+   *
+   * `passwordReset` is the flag the reset route put on the choose path it named, read back out and
+   * sent with the choice, so the workspace this ends in still says the password is saved.
+   */
+  const choice = useWorkspaceChoice(problem, submitting, submit);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const payload = await submit("/api/auth/reset-password", {
-      token,
-      password: String(form.get("password") ?? ""),
-      confirmPassword: String(form.get("confirmPassword") ?? ""),
-    });
-    followNext(payload?.next);
+    choice.accept(
+      await submit("/api/auth/reset-password", {
+        token,
+        password: String(form.get("password") ?? ""),
+        confirmPassword: String(form.get("confirmPassword") ?? ""),
+      }),
+    );
   }
+
+  if (choice.step !== null) return choice.step;
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>

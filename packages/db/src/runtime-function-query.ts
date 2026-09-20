@@ -24,7 +24,7 @@ import { DatabaseContextError, shouldAssumeRuntimeRole } from "./transaction-con
  * from arguments it validates itself, and it is audited; the caller supplies parameters and never
  * SQL.
  *
- * PRD-006a widened this list by thirteen names and removed one. The inventory of what each new
+ * PRD-006a widened this list by fourteen names and removed one. The inventory of what each new
  * caller is, so a reviewer does not have to search for them:
  *
  * - `lookup-password-credential`, `record-password-sign-in-failure`,
@@ -42,7 +42,13 @@ import { DatabaseContextError, shouldAssumeRuntimeRole } from "./transaction-con
  * - `mark-email-verified`: the verify-email confirmation.
  * - `record-email-delivery`: the audit row an email send leaves behind, written after the
  *   provider answers. 006A-AC-017 counts those rows; nothing else can write them.
- * - `consume-auth-rate-limit`: every pre-session route, before it does anything else.
+ * - `consume-auth-rate-limit`: every pre-session route, before it does anything else, and the
+ *   shell's resend control, which is counted per person rather than per client address.
+ * - `unverified-email-display-for-user`: the shell's resend control, which holds a verified
+ *   session and needs the address the confirmation message goes to. It is the narrowest read that
+ *   pays for itself: it answers null for a person with no credential, a person who is not active,
+ *   and a person whose email is already confirmed, so it can state nothing at all about a
+ *   confirmed account and the only address it can ever return belongs to the session's own person.
  * - `resolve-review-persona` is gone: PRD-006a D9 drops the function with the persona selector
  *   that was its only caller.
  *
@@ -74,6 +80,7 @@ export const RUNTIME_FUNCTION_CONTRACT_NAMES = Object.freeze([
   "runtime.mark-email-verified.v1",
   "runtime.record-email-delivery.v1",
   "runtime.consume-auth-rate-limit.v1",
+  "runtime.unverified-email-display-for-user.v1",
 ] as const);
 
 export type RuntimeFunctionContractName = (typeof RUNTIME_FUNCTION_CONTRACT_NAMES)[number];

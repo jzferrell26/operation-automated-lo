@@ -601,6 +601,57 @@ describe("choosing a workspace (006A-AC-016)", () => {
     expect(replayed.status).toBe(401);
   });
 
+  /**
+   * PRD-006b D10 and Wave 7g's recorded follow-up. A completed reset says "Your password is
+   * saved. You're signed in." in the workspace, and a person with bindings at more than one
+   * workspace answers a question before they reach one. Without this the confirmation is lost for
+   * exactly the people who have the most workspaces to lose it in.
+   *
+   * Both values are asserted in one case, against the same choice step, so the flag can only pass
+   * by being carried and can never pass by being always on.
+   */
+  it("carries the reset flag to the workspace, and only when the request brought it", async () => {
+    async function chooseWith(
+      extra: Readonly<Record<string, string>>,
+    ): Promise<Readonly<{ next: string }>> {
+      const address = nextClientAddress();
+      const signedIn = await signIn(
+        { email: MULTI_EMAIL, password: PASSWORD },
+        { clientAddress: address },
+      );
+      const offered = (await signedIn.json()) as { choiceToken: string };
+      const chosen = await handleChooseWorkspace(
+        authRequest(
+          "/api/auth/choose",
+          { choiceToken: offered.choiceToken, workspaceIndex: 0, ...extra },
+          { clientAddress: address },
+        ),
+      );
+      expect(chosen.status).toBe(200);
+      return (await chosen.json()) as { next: string };
+    }
+
+    expect(await chooseWith({})).toEqual({ next: "/overview" });
+    expect(await chooseWith({ passwordReset: "1" })).toEqual({ next: "/overview?passwordReset=1" });
+
+    // The schema accepts one literal, so no other value can reach the composition at all.
+    const address = nextClientAddress();
+    const signedIn = await signIn(
+      { email: MULTI_EMAIL, password: PASSWORD },
+      { clientAddress: address },
+    );
+    const offered = (await signedIn.json()) as { choiceToken: string };
+    const forged = await handleChooseWorkspace(
+      authRequest(
+        "/api/auth/choose",
+        { choiceToken: offered.choiceToken, workspaceIndex: 0, passwordReset: "yes" },
+        { clientAddress: address },
+      ),
+    );
+    expect(forged.status).toBe(400);
+    expect(((await forged.json()) as { error: string }).error).toBe("INVALID_AUTH_REQUEST");
+  });
+
   it("never shows the choice step to a person with one workspace", async () => {
     const response = await signIn(
       { email: CREATOR_EMAIL, password: PASSWORD },

@@ -67,7 +67,7 @@ flowchart TD
 | `library-guardian`                          | PRD-004d real-Postgres command gate      | **Complete** (PR #65, `c140f11`, CI run `35058370796`); `library-guardian` now owns PRD-005d (handoff reconciliation)                                                                                                  |
 | `library-guardian`                          | PRD-004e listing content + demo script   | Listing copy, FAQ, shot list, Loom script, claim audit **authored in-repo**; capture and submit remain `GGL-B09`                                                                                                       |
 | `release-deploy-guardian` + operator        | Production tonight operator path         | Follow the [operator runbook](./library/knowledge/private/operations/production-tonight-operator-runbook.md); it sequences [reviewable-preview-smoke.md](./docs/operations/evidence-packs/reviewable-preview-smoke.md) |
-| `security-guardian` then `quality-guardian` | Go-live code closeout (PR #61)           | `GGL-001`–`GGL-007`, `GGL-010` VERIFIED on `main`; no deferred G2 flips (`GGL-B10`)                                                                                                                                    |
+| `security-guardian` then `quality-guardian` | Go-live code closeout (PR #61)           | `GGL-001` to `GGL-007`, `GGL-010` VERIFIED on `main`; no deferred G2 flips (`GGL-B10`)                                                                                                                                 |
 
 **Boundary:** PRD-003/004 are reviewable go-live only. G2/G3/G5/G6/G7 evidence and production authorization remain governed by Waves 1-7 below. Do not flip deferred G2 ACs without sanitized fixtures.
 

@@ -11,6 +11,10 @@ import {
 import { OverviewScreen } from "./overview-screen.js";
 import { ProjectedSafeAction } from "./projected-safe-action.js";
 
+// Under a loaded integration run this file's renders can exceed the 5s project default; give it
+// real headroom here rather than raising the default for every other suite.
+vi.setConfig({ testTimeout: 20000 });
+
 describe("Platform Overview", () => {
   afterEach(() => {
     vi.unstubAllGlobals();

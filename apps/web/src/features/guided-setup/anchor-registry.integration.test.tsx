@@ -15,7 +15,7 @@ import {
   type GuidedSetupAnchorId,
 } from "./anchor-registry.js";
 import { GuidedSetupProvider } from "./guided-setup-provider.js";
-import { campaignProjection, progressAt } from "./guided-setup-test-support.js";
+import { campaignProjection, progressAt } from "./guided-setup.test-support.js";
 
 vi.mock("next/navigation.js", () => ({
   usePathname: () => "/overview",

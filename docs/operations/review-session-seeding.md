@@ -85,7 +85,7 @@ Expected output, with your own ids and counts:
 
 ```
 [seed-review] database: DBNAME
-[seed-review] rows inserted this run: 4
+[seed-review] rows inserted this run: 10
 [seed-review] review location id: 4f6a1c2e-0000-4000-8000-000000000001
 [seed-review] outsider location id: 4f6a1c2e-0000-4000-8000-000000000002
 [seed-review] review creator user id: 4f6a1c2e-0000-4000-8000-000000000011

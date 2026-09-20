@@ -66,11 +66,6 @@ const EXCLUDED: readonly Readonly<{ path: string; because: string }>[] = [
     because: "The demo route, which only a developer's own machine ever renders.",
   },
   {
-    path: "apps/web/src/app/review",
-    because:
-      "The sign-in page PRD-005b built and PRD-006a replaces. Its strings are PRD-006a's to write.",
-  },
-  {
     path: "apps/web/src/app/public",
     because:
       "The public campaign page renders demo artwork only and PRD-004 defers the real one; its copy belongs to the release that ships it.",

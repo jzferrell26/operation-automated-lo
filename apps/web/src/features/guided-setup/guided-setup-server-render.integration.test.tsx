@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { GUIDED_SETUP_STEPS } from "../../copy/guided-setup-messages.js";
 import { GuidedSetupProvider } from "./guided-setup-provider.js";
 import { complete, dismiss, initialGuidedSetupProgress } from "./model/progress.js";
-import { progressAt } from "./guided-setup-test-support.js";
+import { progressAt } from "./guided-setup.test-support.js";
 
 vi.mock("next/navigation.js", () => ({
   usePathname: () => "/overview",

@@ -6,6 +6,10 @@ import { loadSyntheticReporting } from "../model/synthetic-reporting.js";
 import { CampaignDetailScreen } from "./campaign-detail-screen.js";
 import { ReportsScreen } from "./reports-screen.js";
 
+// Under a loaded integration run this file's renders can exceed the 5s project default; give it
+// real headroom here rather than raising the default for every other suite.
+vi.setConfig({ testTimeout: 20000 });
+
 describe("synthetic reporting screens", () => {
   it("previews immutable artifact versions and stages a duplicate without changing history", async () => {
     const user = userEvent.setup();

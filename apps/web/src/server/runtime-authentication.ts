@@ -186,6 +186,11 @@ function parseAllowedOrigins(environment: RuntimeAuthenticationEnvironment): rea
   return Object.freeze([...entries]);
 }
 
+/** True when every byte in `bytes` is identical, e.g. a secret decoded from an all-`A` placeholder. */
+function isConstantByteSequence(bytes: Uint8Array): boolean {
+  return bytes.length > 0 && bytes.every((byte) => byte === bytes[0]);
+}
+
 function parseCsrfServerSecret(environment: RuntimeAuthenticationEnvironment): Uint8Array {
   const raw = requiredValue(environment, "OALO_CSRF_SERVER_SECRET");
   if (!/^[A-Za-z0-9_-]{43,512}$/u.test(raw)) {
@@ -195,7 +200,11 @@ function parseCsrfServerSecret(environment: RuntimeAuthenticationEnvironment): U
   if (decoded.byteLength < 32) {
     throw new RuntimeAuthenticationConfigurationError("OALO_CSRF_SERVER_SECRET");
   }
-  return new Uint8Array(decoded);
+  const decodedBytes = new Uint8Array(decoded);
+  if (isConstantByteSequence(decodedBytes)) {
+    throw new RuntimeAuthenticationConfigurationError("OALO_CSRF_SERVER_SECRET");
+  }
+  return decodedBytes;
 }
 
 function parseMutationGate(environment: RuntimeAuthenticationEnvironment): BrowserMutationGate {
@@ -399,7 +408,7 @@ function fingerprintOf(environment: RuntimeAuthenticationEnvironment): string {
     environment.OALO_REVIEW_SURFACE ?? "",
     environment.OALO_DATABASE_SSL_MODE ?? "",
     ...RUNTIME_AUTHENTICATION_VARIABLES.map((variable) => rawValue(environment, variable) ?? ""),
-  ].join(" ");
+  ].join("\0");
 }
 
 /**

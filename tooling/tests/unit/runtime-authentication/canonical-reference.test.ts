@@ -4,6 +4,7 @@ import {
   CANONICAL_REFERENCE_KINDS,
   CanonicalReferenceError,
   CanonicalReferenceSchema,
+  OpaqueReferenceSchema,
   SafeTenantReferenceSchema,
   formatActorRef,
   formatInstallationRef,
@@ -25,14 +26,6 @@ const LOCATION_ID = "0c9a5b1e-4d2f-4a7b-9c3d-1e2f3a4b5c6d";
 const ACTOR_ID = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d";
 const INSTALLATION_ID = "2b3c4d5e-6f70-4b8c-9d0e-1f2a3b4c5d6e";
 const SESSION_ID = "3c4d5e6f-7081-4c9d-8e0f-2a3b4c5d6e7f";
-
-/** The opaque pattern `freezeAuthenticatedPrincipal` enforces, restated from the principal contract. */
-const PRINCIPAL_OPAQUE_PATTERN = /^[a-z][a-z0-9]*(?:_[A-Za-z0-9]+)+$/u;
-
-/** `OpaqueReferenceSchema` in `campaign-foundation.ts`, which is not exported from the index. */
-function satisfiesOpaqueReference(value: string): boolean {
-  return value.length >= 8 && value.length <= 128 && PRINCIPAL_OPAQUE_PATTERN.test(value);
-}
 
 describe("canonical reference format", () => {
   it.each(CANONICAL_REFERENCE_KINDS)("round trips a %s reference through its UUID", (kind) => {
@@ -62,7 +55,7 @@ describe("canonical reference format", () => {
     const reference = codec.format(uuid);
 
     expect(SafeTenantReferenceSchema.safeParse(reference).success).toBe(true);
-    expect(satisfiesOpaqueReference(reference)).toBe(true);
+    expect(OpaqueReferenceSchema.safeParse(reference).success).toBe(true);
     expect(CanonicalReferenceSchema.safeParse(reference).success).toBe(true);
     expect(reference.length).toBeGreaterThanOrEqual(38);
     expect(reference.length).toBeLessThanOrEqual(45);

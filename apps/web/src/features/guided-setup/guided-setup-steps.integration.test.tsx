@@ -11,7 +11,7 @@ import { NOT_CONNECTED_SOURCE } from "../../copy/user-language.js";
 import { GuidedSetupShellControls } from "./guided-setup-progress.js";
 import { GuidedSetupProvider } from "./guided-setup-provider.js";
 import { complete, dismiss, initialGuidedSetupProgress } from "./model/progress.js";
-import { progressAt, recordingSetupFetch, SAMPLE_PROFILE } from "./guided-setup-test-support.js";
+import { progressAt, recordingSetupFetch, SAMPLE_PROFILE } from "./guided-setup.test-support.js";
 
 const push = vi.fn();
 

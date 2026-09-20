@@ -211,6 +211,9 @@ describe("runtime authentication composition", () => {
     ["OALO_ALLOWED_ORIGINS", "https://review.operation-automated-lo.test/app"],
     ["OALO_ALLOWED_ORIGINS", "*"],
     ["OALO_CSRF_SERVER_SECRET", "too-short"],
+    // A well-formed but degenerate secret: 43 base64url characters decoding to 32 identical
+    // bytes. It passes the length and charset checks but must still be refused.
+    ["OALO_CSRF_SERVER_SECRET", "A".repeat(43)],
     ["OALO_DATABASE_URL", "mysql://runtime@127.0.0.1/oalo"],
   ])("denies every request when %s is invalid", (variable, value) => {
     const composition = resolveRuntimeAuthenticationComposition({

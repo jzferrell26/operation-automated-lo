@@ -30,7 +30,7 @@ An agent (also called a subagent) is a focused AI persona with a narrow job, its
 
 In this repo, agents are called **Guardians**. Each Guardian owns exactly one domain (Git, auth, databases, SEO, payments, and so on) and is paired with exactly one **Weapon** (a skill, see [SKILLS.md](./SKILLS.md)). The Guardian is the persona and the judgment. The Weapon is the procedural arsenal it reads from. Routing across the whole roster is handled by a skill called `dungeon-master`, which keeps an index of every Guardian, its trigger phrases, and when NOT to use it.
 
-The agents live in [`.cursor/agents/`](./.cursor/agents/) (and a mirror in [`.claude/agents/`](./.claude/agents/)).
+The agents live in [`.cursor/agents/`](./.cursor/agents/). No `.claude/agents/` mirror exists in git, per the note above.
 
 ## Anatomy of an agent file
 

@@ -92,6 +92,7 @@ export {
   resolveTabTarget,
 } from "./components/overlay.js";
 export type {
+  DialogPlacement,
   DialogProps,
   DialogSize,
   OverlayAnchor,

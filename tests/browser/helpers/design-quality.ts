@@ -123,21 +123,69 @@ export async function expectTargetsAreLargeEnough(page: Page): Promise<void> {
   expect(undersized).toEqual([]);
 }
 
+/** Everything the browser's own sequential navigation can land on. */
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled]):not([type='hidden'])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "summary",
+  "iframe",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
 /**
- * PRD-006d 006D-AC-009. The keyboard reaches every interactive element in reading order, and the
- * ring the brief specifies is the ring that appears.
+ * The tags whose ring a stylesheet in this document cannot paint, each named with the entry in
+ * `library/knowledge/private/ux-ui/06-review-rubric.md` section 5 that records why.
  *
- * It tabs through the page and, at each stop, reads the focused element's own outline. The ring is
- * 2px at a 3px offset and comes from `--focus-color`; an element that takes focus and draws no
- * outline at all is the failure this catches, because that is the one a person using a keyboard
- * cannot recover from.
+ * It is a list of names rather than a fallback rule on purpose. Until 2026-09-20 this check
+ * accepted a ring on the control, on its parent, or on its label, which meant any control whose
+ * own ring had gone missing passed as long as something near it drew one. A named exception has to
+ * be argued for once and is then visible to the next reviewer; a fallback rule quietly covers
+ * every defect of that shape forever.
+ */
+const RING_LIVES_ON_A_DOCUMENTED_WRAPPER: readonly Readonly<{ tag: string; because: string }>[] = [
+  {
+    tag: "iframe",
+    because:
+      "Rubric section 5, D-007. While focus is inside the framed document the frame element matches neither `:focus` nor `:focus-within`, so the ring a person sees is the framed document's own. The email preview's bordered viewport carries `:focus-within` instead, and the email itself is not this product's to style.",
+  },
+];
+
+/**
+ * PRD-006d 006D-AC-009 and design brief section 18. The keyboard reaches every interactive element
+ * in reading order, and the ring the brief specifies is the ring that appears, on the control.
+ *
+ * It tabs through the page and, at each stop, measures the focused element's own outline against
+ * the three tokens the brief names: `--focus-width` at 2px, `--focus-offset` at 3px, and
+ * `--focus-color`. The colour is resolved out of the element's own cascade rather than written
+ * here as a literal, so a tenant accent, a theme, or a token change moves the expectation with the
+ * product instead of leaving a stale number in a test.
+ *
+ * It then applies SC 2.4.11, the other half of 006D-AC-009's "never obscured", in the words the
+ * brief's own axis 7 uses: no sticky or fixed surface covers the focused control. A ring drawn
+ * correctly under a sticky header is a ring nobody sees.
+ *
+ * The stop budget is the page's own count of focusable elements, plus room for the one allowed
+ * pass out of the document and for the stop that closes the cycle. It used to be a flat 24, which
+ * silently stopped walking partway down any screen with more controls than that: the create screen
+ * alone has more, so the fields below the fourteenth were never reached by this check at all.
  */
 export async function expectKeyboardReachesEveryControl(
   page: Page,
-  options: Readonly<{ stops: number }> = { stops: 24 },
+  options: Readonly<{ stops?: number }> = {},
 ): Promise<void> {
+  const budget =
+    options.stops ??
+    (await page.evaluate(
+      (selector) => document.querySelectorAll(selector).length + 2,
+      FOCUSABLE_SELECTOR,
+    ));
+  const wrapperTags = RING_LIVES_ON_A_DOCUMENTED_WRAPPER.map((entry) => entry.tag);
   const seen: string[] = [];
   const ringless: string[] = [];
+  const obscured: string[] = [];
 
   /**
    * A walk may start anywhere, so it is allowed to pass out of the document once.
@@ -152,25 +200,124 @@ export async function expectKeyboardReachesEveryControl(
    */
   let wrapped = false;
 
-  for (let stop = 0; stop < options.stops; stop += 1) {
+  for (let stop = 0; stop < budget; stop += 1) {
     await page.keyboard.press("Tab");
     const focused = await page.evaluate(() => {
       const element = document.activeElement;
       if (element === null || element === document.body) return undefined;
-      const drawsRing = (candidate: Element | null): boolean => {
-        if (candidate === null) return false;
-        const style = getComputedStyle(candidate);
-        return style.outlineStyle !== "none" && style.outlineWidth !== "0px";
-      };
+      const style = getComputedStyle(element);
       /**
-       * A ring on the control itself, on its label, or on the element that wraps it all count:
-       * what SC 2.4.7 asks is that the person can see where focus is, not which node paints it.
-       * Anything further away than that is not a ring a person would connect to the control.
+       * Read before anything is added to the document. `getComputedStyle` returns a live view, so
+       * a probe inserted first could be observed here through a `:last-child` or `:nth-child`
+       * rule somewhere on the page. Copying the four values out first makes that impossible.
        */
-      const labels =
-        element instanceof HTMLInputElement ? [...(element.labels ?? [])] : ([] as Element[]);
-      const ringed =
-        drawsRing(element) || drawsRing(element.parentElement) || labels.some(drawsRing);
+      const ring = {
+        color: style.outlineColor,
+        offset: style.outlineOffset,
+        style: style.outlineStyle,
+        width: style.outlineWidth,
+      };
+
+      /**
+       * `--focus-color` resolved where the control sits, by asking the engine to paint it. Reading
+       * the custom property back gives the declaration, `var(--ac-primary)`, while the outline
+       * computes to a colour, so the two can only be compared by resolving one of them. The probe
+       * is never rendered and is removed immediately, so it changes no layout and no picture.
+       */
+      const probe = document.createElement("span");
+      probe.style.display = "none";
+      probe.style.color = "var(--focus-color)";
+      (element.parentElement ?? document.body).append(probe);
+      const expectedColor = getComputedStyle(probe).color;
+      probe.remove();
+
+      const wrong: string[] = [];
+      if (ring.style === "none") wrong.push("outline-style is none");
+      if (ring.width !== "2px") wrong.push(`outline-width is ${ring.width}, not 2px`);
+      if (ring.offset !== "3px") wrong.push(`outline-offset is ${ring.offset}, not 3px`);
+      if (ring.color !== expectedColor) {
+        wrong.push(`outline-color is ${ring.color}, not --focus-color (${expectedColor})`);
+      }
+
+      /**
+       * SC 2.4.11. The control has to be the thing on top where its own ring is drawn, so the
+       * page is asked what is painted at five points on it.
+       *
+       * The centre and the four edge midpoints, not the four corners. Measured on 2026-09-20: a
+       * corner reported every rounded control on every screen as covered by its own parent, 26 of
+       * them on the overview alone, because the product's controls carry `--radius-control` and
+       * the pixel in the very corner of the bounding box is outside the rounded shape and belongs
+       * to whatever is behind it. That is a fact about `border-radius`, not about anything a
+       * person cannot see. An edge midpoint is inside the shape at any radius, and a surface that
+       * covers a control covers at least one of these five points.
+       *
+       * A point outside the viewport answers with nothing, which is the browser's own scrolling
+       * rather than a defect, so it is skipped.
+       */
+      const rect = element.getBoundingClientRect();
+      const covering: string[] = [];
+      if (rect.width > 0 && rect.height > 0) {
+        const midX = rect.left + rect.width / 2;
+        const midY = rect.top + rect.height / 2;
+        const samples: readonly (readonly [number, number])[] = [
+          [midX, midY],
+          [midX, rect.top + 1],
+          [midX, rect.bottom - 1],
+          [rect.left + 1, midY],
+          [rect.right - 1, midY],
+        ];
+        /**
+         * The layer a covering element belongs to, or null when it belongs to the page's own
+         * flow.
+         *
+         * Design brief section 14 and rubric axis 7 name the thing this check is for: "a sticky
+         * surface never covers a field, an error, or a focus ring". A positioned layer is what
+         * can arrive over content that was laid out without it: the rail, the sticky topbar, the
+         * guided setup's panel, a modal scrim.
+         *
+         * An element in the page's own flow that overlaps a control is a different animal, and
+         * on this product it is usually a specified part of the control. Measured on 2026-09-20:
+         * the password field's reveal control sits inside the field's inline end
+         * (`03-components/form-field-and-text-inputs.md`, "a reveal control at the inline end"),
+         * so it is on top of the input's own box by design, on every account screen. It covers
+         * the input's padding, never the input's ring, which `--focus-offset` draws outside the
+         * border box. Reporting it would be reporting the specification.
+         */
+        const positionedLayerOver = (candidate: Element): string | null => {
+          for (
+            let node: Element | null = candidate;
+            node !== null && node !== document.body;
+            node = node.parentElement
+          ) {
+            const position = getComputedStyle(node).position;
+            if (position === "fixed" || position === "sticky") {
+              return `${node.tagName.toLowerCase()}.${node.className.toString().slice(0, 40)} (${position})`;
+            }
+          }
+          return null;
+        };
+
+        for (const [x, y] of samples) {
+          if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) continue;
+          const onTop = document.elementFromPoint(x, y);
+          if (onTop === null || onTop === element || element.contains(onTop)) continue;
+          const layer = positionedLayerOver(onTop);
+          if (layer === null) continue;
+          const over = onTop.getBoundingClientRect();
+          covering.push(
+            [
+              `${onTop.tagName.toLowerCase()}.${onTop.className.toString().slice(0, 40)}`,
+              `in ${layer}`,
+              `at (${String(Math.round(x))}, ${String(Math.round(y))})`,
+              `control ${String(Math.round(rect.left))},${String(Math.round(rect.top))}`,
+              `${String(Math.round(rect.width))}x${String(Math.round(rect.height))}`,
+              `over ${String(Math.round(over.left))},${String(Math.round(over.top))}`,
+              `${String(Math.round(over.width))}x${String(Math.round(over.height))}`,
+            ].join(" "),
+          );
+        }
+      }
+
       return {
         tag: element.tagName.toLowerCase(),
         name:
@@ -179,7 +326,8 @@ export async function expectKeyboardReachesEveryControl(
           element.textContent?.trim().slice(0, 40) ??
           "unnamed",
         classes: element.className.toString().slice(0, 60),
-        ringed,
+        wrong,
+        covering: [...new Set(covering)],
         /**
          * Reported on failure, because the answer is almost never "somebody forgot a rule": it is
          * that the control matches neither `:focus` nor `:focus-visible`, which is what a date
@@ -187,7 +335,7 @@ export async function expectKeyboardReachesEveryControl(
          * colour.
          */
         diagnostic: [
-          `outline ${getComputedStyle(element).outlineStyle} ${getComputedStyle(element).outlineWidth}`,
+          `outline ${ring.style} ${ring.width} at ${ring.offset}`,
           `type=${element.getAttribute("type") ?? "none"}`,
           `focus=${String(element.matches(":focus"))}`,
           `focus-visible=${String(element.matches(":focus-visible"))}`,
@@ -203,25 +351,62 @@ export async function expectKeyboardReachesEveryControl(
     const key = `${focused.tag}:${focused.name}`;
     if (seen.includes(key) && seen[0] === key) break;
     seen.push(key);
-    /**
-     * A frame is the one focus stop whose ring no stylesheet in this document can paint. While
-     * focus is inside the framed document the frame element matches neither `:focus` nor
-     * `:focus-within`, so the ring the person sees is the framed document's own. On the email
-     * preview that document is the email, which this product renders but does not style, and
-     * should not: adding a stylesheet to a transactional email so a preview looks tidy would
-     * change what people receive. The frame is still a reachable stop, which the rest of this
-     * check proves.
-     */
-    if (focused.tag === "iframe") continue;
-    if (!focused.ringed) {
+    // The named exceptions, each argued once in `RING_LIVES_ON_A_DOCUMENTED_WRAPPER` above. The
+    // stop is still walked and still counted; only its ring is somebody else's to paint.
+    if (wrapperTags.includes(focused.tag)) continue;
+    if (focused.wrong.length > 0) {
       ringless.push(
-        `${key} (class "${focused.classes}", ${focused.diagnostic}) takes focus with no visible ring`,
+        `${key} (class "${focused.classes}", ${focused.diagnostic}): ${focused.wrong.join("; ")}`,
       );
+    }
+    if (focused.covering.length > 0) {
+      obscured.push(`${key} is covered by ${focused.covering.join(", ")}`);
     }
   }
 
   expect(seen.length, "nothing on the page takes keyboard focus").toBeGreaterThan(0);
   expect(ringless).toEqual([]);
+  expect(obscured, "SC 2.4.11: a focused control is behind something else").toEqual([]);
+}
+
+/**
+ * PRD-006c D7, "the footer stays visible", and PRD-006d's reopened row 2.
+ *
+ * The step-1 guided-setup panel's footer controls were below the fold at 1440: the placement
+ * clamped against a panel measurement that was one render behind, and the sheet scrolled its own
+ * footer out of its capped box. Both are fixed, in
+ * `apps/web/src/features/guided-setup/model/panel-placement.ts` and in the primitive's stylesheet.
+ * This is what says so from the outside, wherever a panel is on screen.
+ *
+ * It measures the controls rather than the panel. A panel whose box is inside the viewport but
+ * whose Continue control has scrolled out of it is the same dead end for the person using it, and
+ * only the control's own rectangle tells the two apart.
+ */
+export async function expectPanelFooterIsOnScreen(
+  page: Page,
+  frame: Readonly<{ width: number; height: number }>,
+  controlNames: readonly string[] = ["Continue", "Not now"],
+): Promise<void> {
+  const dialog = page.getByRole("dialog");
+  for (const name of controlNames) {
+    const control = dialog.getByRole("button", { name, exact: true });
+    if ((await control.count()) === 0) continue;
+    const box = await control.first().boundingBox();
+    expect(box, `at ${String(frame.width)} "${name}" has a box`).not.toBeNull();
+    const measured = box as NonNullable<typeof box>;
+    expect(
+      measured.y,
+      `at ${String(frame.width)} "${name}" starts inside the viewport`,
+    ).toBeGreaterThanOrEqual(0);
+    expect(
+      measured.y + measured.height,
+      `at ${String(frame.width)} "${name}" ends inside the viewport`,
+    ).toBeLessThanOrEqual(frame.height);
+    expect(
+      measured.x + measured.width,
+      `at ${String(frame.width)} "${name}" ends inside the frame`,
+    ).toBeLessThanOrEqual(frame.width);
+  }
 }
 
 /**
@@ -287,6 +472,33 @@ export async function settleForScreenshot(
     [...document.querySelectorAll('link[rel="stylesheet"]')].every(
       (node) => (node as HTMLLinkElement).sheet !== null,
     ),
+  );
+  /**
+   * Every transition the last change started has finished.
+   *
+   * Measured on 2026-09-20 by the stricter keyboard walk. `app-shell.module.css` transitions
+   * `.workspace`'s `margin-inline-start` over `--motion-base`, which is what makes the rail's
+   * collapse control feel like a rail collapsing. A viewport change across the mobile boundary
+   * moves the same margin, so for 180ms after a resize the content column is still sliding out
+   * from under the fixed rail, and anything measured in that window is measured against a layout
+   * the page is on its way out of: the walk reported the create screen's "Open campaign" link and
+   * its support summary as covered by a navigation item, two pixels of overlap that exist only
+   * while the margin is in flight.
+   *
+   * Transitions only, never animations. `Button.module.css`'s spinner runs `infinite` while a
+   * safe action is saving, so waiting for every animation to stop would wait for a state whose
+   * whole point is that it has not finished yet.
+   *
+   * The screenshots were never exposed to this: `toHaveScreenshot` is configured with
+   * `animations: "disabled"`, which finishes transitions before it captures. Only the checks
+   * around it were, which is the same shape of gap as the rest of this batch.
+   */
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every(
+        (animation) => !(animation instanceof CSSTransition) || animation.playState !== "running",
+      ),
   );
   await page.evaluate(async (keep) => {
     if (!keep) window.scrollTo(0, 0);

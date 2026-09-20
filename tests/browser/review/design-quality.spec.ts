@@ -7,8 +7,10 @@ import {
   expectAxeClean,
   expectKeyboardReachesEveryControl,
   expectNoHorizontalOverflow,
+  expectPanelFooterIsOnScreen,
   expectTargetsAreLargeEnough,
   expectThemeResolved,
+  expectZeroMotionUnderReducedMotion,
   screenshotName,
   settleForScreenshot,
   useStoredTheme,
@@ -200,6 +202,33 @@ for (const { screen, path } of ACCOUNT_SCREENS) {
 }
 
 /**
+ * 006D-AC-006 on the account screens.
+ *
+ * Until 2026-09-20 the reduced-motion assertion ran on the nine synthetic screens
+ * (`tests/browser/design-quality.spec.ts`) and on the guided-setup layer, and on none of the seven
+ * account screens. 006D-AC-006 says "the browser suite's zero-motion assertion passes on every
+ * screen in D3", and the account screens are the half of D3 that only a real session reaches, so
+ * the claim was true of the suite that could make it and untested on the suite that could not.
+ *
+ * It is the shared helper, at the same frame the synthetic half uses, so the two halves assert the
+ * same thing. `change-password` lives inside the signed-in shell and is covered by its own case
+ * below, which has the session these do not need.
+ */
+for (const { screen, path } of ACCOUNT_SCREENS) {
+  test(`${screen} runs no animation and no transition under reduced motion`, async ({ page }) => {
+    const guard = await guardLocalOrigin(page);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await useStoredTheme(page, "light");
+    await page.setViewportSize({ width: 1180, height: 900 });
+    await page.goto(path);
+    await settleForScreenshot(page);
+
+    await expectZeroMotionUnderReducedMotion(page);
+    expectNoExternalRequests(guard);
+  });
+}
+
+/**
  * 006D-AC-011 on the account screens. A refused sign-in says what happened in a region that
  * announces, and at 390 the sentence is above the first field, so it is on screen without
  * scrolling. The credentials are deliberately wrong; the server's answer is the same sentence for
@@ -371,6 +400,13 @@ test("the guided setup meets the bar at 1440 and 768, in both themes", async ({ 
 
       await expectAxeClean(page);
       await expectTargetsAreLargeEnough(page);
+      /**
+       * PRD-006d's reopened row 2. The committed step-1 baseline at 1440 showed the panel's
+       * footer controls below the fold, and nothing here said so: a screenshot that is only
+       * compared on the runner cannot be the assertion for a layout defect on every platform.
+       * The controls are measured before the picture is taken, at both frames.
+       */
+      await expectPanelFooterIsOnScreen(page, frame, ["Let's go", "Not now"]);
       await expect(page).toHaveScreenshot(
         screenshotName("guided-setup", frame.name, theme, "step-1-welcome"),
       );
@@ -380,6 +416,7 @@ test("the guided setup meets the bar at 1440 and 768, in both themes", async ({ 
       await settleForScreenshot(page);
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
+      await expectPanelFooterIsOnScreen(page, frame);
       await expect(page).toHaveScreenshot(
         screenshotName("guided-setup", frame.name, theme, "step-2-your-details"),
       );
@@ -413,6 +450,36 @@ test("the guided setup meets the bar at 1440 and 768, in both themes", async ({ 
 test("the email preview route is not served in review mode", async ({ page }) => {
   await page.goto("/email-preview");
   await expect(page.locator("iframe[data-email-preview]")).toHaveCount(0);
+});
+
+/**
+ * The boundary page's gate, from the side that must not serve it.
+ *
+ * It carries no real value, so serving it would leak nothing. It is asserted anyway, for the same
+ * reason F-10 gated the demo route: a sentence in a PRD saying a page is not served on a
+ * connected-account deployment is a hope until something on that deployment checks. The page is
+ * gated on `canRenderSyntheticDemo()`, exactly as the email preview is, and this is the half of
+ * that claim the other suite cannot make.
+ *
+ * What is asserted is the not-found page and the absence of all three surfaces, not the status
+ * line. Measured on 2026-09-20: this address answers 200 carrying the not-found page, where
+ * `/email-preview` answers a real 404. The difference is the route group, not the gate. The
+ * boundary page lives under `(authenticated)` so that the shell around it is the product's own
+ * shell, that layout reads a session before it renders, and by the time the page calls
+ * `notFound()` the response has already begun streaming, so the status is committed. Asserting
+ * 404 here would be asserting a property of the framework's streaming rather than of the gate,
+ * and it would push the next person to move the page out of the shell to satisfy it, which is
+ * the one thing that would make its pictures worth less.
+ */
+test("the boundary review page is not served in review mode", async ({ page }) => {
+  await page.goto("/design-surfaces");
+
+  await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "We couldn't load your workspace" })).toHaveCount(
+    0,
+  );
+  await expect(page.getByRole("heading", { name: "Loading your workspace" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Resend the link." })).toHaveCount(0);
 });
 
 /**

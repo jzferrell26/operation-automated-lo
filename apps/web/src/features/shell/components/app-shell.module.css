@@ -225,50 +225,44 @@
   padding: var(--space-6);
 }
 
+/* PRD-006d 006D-AC-003. The drawer is the `Dialog` primitive at its
+ * `inline-start` placement, so the layer, the scrim, the trap, the scroll lock
+ * and the close control are all the primitive's. This wrapper is nothing but
+ * the frame gate: the drawer is the mobile frame's rail, so above that frame it
+ * is not drawn at all, and at it the wrapper contributes no box of its own and
+ * lets the primitive's fixed scrim position itself.
+ */
 .drawerLayer {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
   display: none;
 }
 
-.drawerBackdrop {
-  position: absolute;
-  inset: 0;
-  inline-size: 100%;
-  block-size: 100%;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: var(--sf-overlay);
-  box-shadow: none;
-  color: transparent;
-}
-
-.drawer {
-  position: relative;
+/* The drawer's own surface, overriding the centred card the panel is by default.
+ * `03-components/application-shell-and-navigation.md`: the drawer carries the
+ * navigation surface, `--sf-nav`, and its text is `--tx-on-nav`. The attribute
+ * is in the selector so this wins over the primitive's own `.panel` rule without
+ * depending on which stylesheet a bundler emits first.
+ */
+.drawer[data-overlay-kind="dialog"] {
   display: flex;
   block-size: 100%;
   inline-size: min(22rem, 88vw);
+  max-block-size: 100%;
   flex-direction: column;
   gap: var(--space-4);
-  overflow-y: auto;
   padding: var(--space-4);
+  border: 0;
+  border-radius: 0;
   background: var(--sf-nav);
   color: var(--tx-on-nav);
-  box-shadow: var(--shadow-raised);
 }
 
-.drawerHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.drawerHeader h2 {
-  margin: 0;
-  font-size: var(--text-section-size);
+/* The panel's title is `--tx-strong`, which is a colour for a card. On the
+ * navigation surface it has to be `--tx-on-nav`, or the drawer's heading fails
+ * the contrast axis in one theme. Same for the close control's glyph, which
+ * inherits.
+ */
+.drawer[data-overlay-kind="dialog"] h2 {
+  color: var(--tx-on-nav);
 }
 
 /* Design brief section 14 and `03-components/application-shell-and-navigation.md`
@@ -300,9 +294,12 @@
     padding: var(--space-3) var(--space-4);
   }
 
-  .mobileMenu,
-  .drawerLayer {
+  .mobileMenu {
     display: block;
+  }
+
+  .drawerLayer {
+    display: contents;
   }
 
   .locationContext {

@@ -13,6 +13,13 @@ agreement that it was fine.
 
 ## What was reviewed, and how
 
+> **Corrected 2026-09-20** by the reopened-row review at the end of this file. The sentence below
+> said "every screen in the rubric's section 4", and three of them were not looked at: the route
+> error boundary, the route loading boundary, and the unverified-email notice. They are the
+> rubric's "Boundaries" entry and its guided-setup entry's last line, they were in no review and no
+> suite, and the claim was made for them anyway. F-28 covers them now. Read the sentence as "every
+> screen in the rubric's section 4 except the two boundaries and the unverified-email notice".
+
 Every screen in the rubric's section 4, at 1440, 1180, 768, and 390, in Light and Dark, in its
 named states.
 
@@ -316,6 +323,14 @@ scored 3, and they are written down so the next reviewer does not re-open them.
 
 ## Scores after the fixes
 
+> **Corrected 2026-09-20** by the reopened-row review at the end of this file. The claim below was
+> made about screens this review had not opened. Three screens in the rubric's section 4 were
+> unscored, not scored 3: the route error boundary, the route loading boundary, and the
+> unverified-email notice (F-28). Four more scores were 3 on evidence that did not support them:
+> the mobile drawer (F-24), the panel at 768 (F-25), the panel at 1440 (F-26), and the focus ring
+> on every screen (F-29), because the check that held the ring asked whether any outline existed
+> rather than whether it was the brief's. Each is scored in the addendum.
+
 Every axis is 3 for every screen in the rubric's section 4, at 1440, 1180, 768, and 390, in Light
 and Dark, in every named state, with two things recorded rather than scored:
 
@@ -596,3 +611,334 @@ review added. The driver that did it lives outside the repository and is not a g
   comparison runs only on the `ubuntu-24.04` runner. `.github/workflows/screen-baselines.yml`
   regenerates them, and its review job's timeout is now 75 minutes, because the suite is 11 to 12
   minutes quiet and up to 23 contended and this review added nine states to it.
+
+---
+
+# Findings F-24 to F-30, the reopened rows
+
+Reviewer: `ux-ui-guardian`. Date: 2026-09-20. Branch: `claude/completion-review-2026-09-19`,
+reviewed from `3dbe91e` forward.
+
+An independent verifier re-graded every PRD-006d row against the green gate on `972bd3f` and
+reopened ten of seventeen. Seven of those ten are this lane's; the guided-setup provider's half
+belongs to the React lane and the token half to `design-system-guardian`. Each one below is in the
+rubric's section 3 form, each is fixed, and each carries the gate that would have caught it.
+
+The pattern across all seven is one thing, said seven ways: a gate that asks a weaker question than
+its criterion does reads as green and proves nothing. A scan that reads tags and not roles. A check
+that accepts any outline rather than the brief's. A walk that stops at 24 stops on a screen with
+more controls than that. A disjunction that a bottom sheet satisfies as happily as an anchored
+panel. A test named for a form result that never produced one. None of them were wrong about what
+they measured; they were wrong about what they were taken to mean.
+
+## F-24. The mobile drawer was a hand-built modal dialog
+
+- **Screen, frame, theme, state:** the shell, 390, both themes, the mobile-drawer state.
+- **Where:** `apps/web/src/features/shell/components/app-shell.tsx:219-226` (before the fix) was a
+  plain element carrying the dialog role and the modal flag, with its own focus trap, Escape
+  handler, scroll lock, and focus return at lines 70-110.
+- **What it must be:** `Dialog`, per PRD-006d D4 line 88, which names "the drawer's trap in
+  `app-shell.tsx`" as the behaviour the primitive was added to generalise, and
+  `03-components/sheet-and-dialog.md`: "It does not build a layer out of a positioned `<div>` and
+  it does not repeat a focus trap."
+- **Axes:** 5, 10. Score before: 1.
+- **Fixed:** the drawer is `Dialog` at a new `placement="inline-start"`, the drawer variant, added
+  to the primitive and specified in `03-components/sheet-and-dialog.md`. The inline trap, the
+  Escape handler, the scroll lock, the focus return, and the hand-built backdrop control are all
+  deleted; the layer, the scrim, and the close control are the primitive's. The wrapper that
+  remains carries nothing but the frame gate: `display: none` above 767.98px and `display: contents`
+  at the mobile frame, which is also what keeps a drawer opened at 390 from reappearing over a
+  tablet layout after a resize.
+- **Why the two were not one contract.** The trap here decided the wrap itself; the primitive's is
+  `resolveTabTarget`, a pure function with its own test. Two implementations of one contract is how
+  the two drift, and the drawer's was the one nothing could read without a browser.
+- **Gate:** `tooling/tests/unit/design-quality/hand-built-layers.test.ts` reads the ARIA spelling
+  and the scroll lock rather than the tag, so `role="dialog"`, `role="alertdialog"`, `aria-modal=`,
+  and `document.body.style.overflow` under `apps/web/src/app` and `apps/web/src/features` are all
+  failures. Run against the tree before the fix it reports five offences in this one component:
+  `role="dialog"` at line 226, `aria-modal=` at 223, and the scroll lock at 80, 81, and 118.
+- **What did not change:** every existing drawer assertion. The 390 mobile-drawer capture, the
+  focus-trap wrap, the scroll lock and its restoration, Escape, and focus return to the trigger are
+  asserted by `tests/browser/ui-foundation-ux.spec.ts:190-215` and
+  `app-shell.integration.test.tsx:86-105` exactly as before.
+
+## F-25. The tablet frame's panel disagreed with the arithmetic that placed it
+
+- **Screen, frame, theme, state:** the guided setup, 768, both themes, every anchored step.
+- **Where:** `apps/web/src/features/guided-setup/model/panel-placement.ts:45` treats 768 as wide
+  (`viewport.width < 768` is the mobile branch), while
+  `apps/web/src/features/guided-setup/guided-setup.module.css:152` and
+  `packages/ui/src/components/overlay.module.css:101` both broke at `max-width: 768px`. At exactly
+  768, the tablet frame the rubric scores, the stylesheet drew a bottom sheet across the whole width
+  while the model placed the panel beside or below the element it points at.
+- **What it must be:** `767.98px`, so the stylesheets and `SIDE_ANCHOR_MIN_WIDTH` agree.
+  `app-shell.module.css` already drew its mobile boundary there, for this reason, recorded in its
+  own comment.
+- **Axes:** 7, 10. Score before: 1.
+- **Fixed:** both stylesheets, with the reason beside each, and `03-components/sheet-and-dialog.md`
+  now states the boundary and why it is not 768.
+- **Gate:** `tests/browser/review/guided-setup.tablet-anchoring.spec.ts:62-127`. The old
+  `expectAnchoredBesideOrBelow` accepted "beside the element or below it", and a bottom sheet is
+  below the element, so it could not tell the two presentations apart. It now reads the placement
+  the model chose from `data-placement`, requires the geometry to match that placement including the
+  inline-end case's right edge, and asserts the two things a bottom sheet fails: the panel is
+  narrower than the frame and inset from the inline-start edge.
+- **The committed 768 baselines pin the broken layout** and must be redrawn on the `ubuntu-24.04`
+  runner with this change. That is the note 006D-AC-013 asks for: the intended visual change is the
+  guided-setup panel at 768 becoming an anchored panel instead of a bottom sheet.
+
+## F-26. The panel's footer controls were below the fold at 1440
+
+- **Screen, frame, theme, state:** the guided setup, step 1, 1440, both themes.
+- **Where:** two causes, both fixed. `panel-placement.ts:56` clamped the panel's top against
+  `panel.height`, and the panel is measured after it renders (`guided-setup-step.tsx:219`), so the
+  render that first places a step is placed against the previous step's measurement, which is always
+  of something smaller. And `packages/ui/src/components/overlay.module.css` let the whole sheet
+  scroll, so a panel with more content than its `min(28rem, 60vh)` cap scrolled its own Continue
+  control out of its box.
+- **What it must be:** PRD-006c D7, "The scroll is inside the panel, the footer stays visible", and
+  rubric axis 7, "a sticky surface never covers a field, an error, or a focus ring". A walkthrough
+  whose Continue control is off the screen is a walkthrough nobody can finish.
+- **Axes:** 5, 7. Score before: 1.
+- **Fixed:** `panelBlockSize` places against the stylesheet's own cap, which is a height the panel
+  can never exceed and is therefore always safe to place against, falling back to the measurement
+  only if the cap somehow did not apply; and `.sheet .footer` is `position: sticky` at the end of
+  the scroll box, carrying the panel surface.
+- **Gate:** `expectPanelFooterIsOnScreen` in `tests/browser/helpers/design-quality.ts`, which
+  measures the controls rather than the panel, because a panel whose box is on screen and whose
+  Continue control has scrolled out of it is the same dead end. It runs at 390, 768, and 1180 in
+  `guided-setup.tablet-anchoring.spec.ts` and at 1440 and 768 on both step 1 and step 2 in
+  `tests/browser/review/design-quality.spec.ts`. Three new cases in `panel-placement.unit.test.ts`
+  hold the arithmetic, including the stale measurement directly.
+- **What the first fix broke, and how the gate said so.** Placing against the cap made
+  `resolvePanelPlacement` and `resolveAnchorScroll` disagree, and the two have to agree: the scroll
+  runs once when a step attaches, the placement is computed on every render after it, and if the
+  scroll leaves the element where the placement will not put the panel, the clamp pulls the panel
+  up past the element's end and the panel covers the thing it is pointing at. The scroll's
+  wide-frame branch still fell back to the bottom sheet's 40 percent share when no measurement
+  existed yet, which is the state every step attaches in, while the clamp used the wide-frame cap.
+  Measured in the review run on 2026-09-20 at 1180 on the welcome step, whose element is the
+  overview's quick actions: `guided-setup.accessibility.spec.ts` reported "Light 1180x900
+  1. Welcome: the panel covers the field it is pointing at". On a wide frame the cap is the answer
+  whether or not a measurement exists, so an unmeasured panel now asks `panelBlockSize` for it
+  too, and a new case in `panel-placement.unit.test.ts` walks an unmeasured panel, a measured one,
+  and a short one through all three wide frames and requires the panel to start below the element
+  the scroll just moved. This is the finding the review's own new gate produced against the review's
+  own new fix, which is the point of having one.
+
+## F-27. The reduced-motion assertion skipped the seven account screens
+
+- **Screen, frame, theme, state:** sign in, choose workspace, sign up, forgot password, reset
+  password, verify email; 1180, Light, under `prefers-reduced-motion: reduce`.
+- **Where:** `tests/browser/design-quality.spec.ts:113-126` ran
+  `expectZeroMotionUnderReducedMotion` over the nine screens synthetic mode serves, and
+  `tests/browser/review/design-quality.spec.ts` ran it over none. The account screens are 404 in
+  synthetic mode, so the suite that could make the claim never saw them.
+- **What it must be:** 006D-AC-006, "the browser suite's zero-motion assertion passes on every
+  screen in D3". Every screen means the half only a session reaches too.
+- **Axes:** 6. Score before: the axis was unmeasured on seven screens, which under D1 is not a 3.
+- **Fixed:** a reduced-motion pass over `ACCOUNT_SCREENS` in the review suite, the shared helper at
+  the same frame the synthetic half uses, so the two halves assert the same thing.
+
+## F-28. The two route boundaries and the unverified-email notice were in no review and no suite
+
+- **Screen, frame, theme, state:** the route error boundary, the route loading boundary, and the
+  unverified-email notice; all four frames, both themes.
+- **Where:** they are in PRD-006d D3 and in the rubric's section 4 under "Boundaries" and the
+  guided-setup entry. `apps/web/src/app/(authenticated)/error.tsx`, `loading.tsx`, their onboarding
+  and overview siblings, `apps/web/src/features/shell/components/route-boundary.tsx`, and
+  `apps/web/src/features/auth/components/unverified-email-notice.tsx` render them, and nothing in
+  either browser suite had ever opened one. The record above claimed every screen in section 4 at
+  every frame in both themes; that claim covered three screens nobody had looked at.
+- **What it must be:** a screen a suite can reach, for the reason F-22 gave about the sign-up
+  refusal: a state no suite can reach is a state nothing holds in place.
+- **Axes:** 5, 9, and the review's own honesty. Score before: unscored.
+- **Fixed:** `apps/web/src/app/(authenticated)/design-surfaces/page.tsx`, gated on
+  `canRenderSyntheticDemo()` exactly as the email preview is, inside the signed-in group so the
+  shell around it is the real shell rather than a second composition of one. It renders the error
+  state, the loading state, and the shell's unverified notice with its resend control, from
+  placeholder values only, with a fixed support reference so the picture does not move between runs.
+  Its words are in `apps/web/src/copy/design-surfaces.ts`, per PRD-006b D6.
+- **Gate:** it is a screen in `SYNTHETIC_SCREENS`, so it gets axe, the keyboard walk, the motion
+  check, the target-size check, and a committed picture at all four frames in both themes, like any
+  other. The three surfaces are also asserted by name rather than only photographed, because a
+  baseline is compared only on the runner that drew it. Both sides of the gate are asserted: the
+  review suite proves the not-found page is what arrives there and that none of the three
+  surfaces is on it. The status line is 200 rather than 404, which is the route group and not the
+  gate: the shell's layout reads a session before it renders, so the response has begun streaming
+  by the time the page calls `notFound()`. `/email-preview` has no such layout and answers a real
+  404. Asserting the status here would be asserting a property of the framework's streaming, and
+  it would push the next person to move the page out of the shell, which is the one change that
+  would make its pictures worth less.
+
+### The three new surfaces, scored
+
+At 1440, 1180, 768, and 390, in Light and Dark.
+
+| Screen | State | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Route error boundary | failed to load | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| Route loading boundary | loading | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| Shell, unverified notice | unverified, with resend | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+
+What the scores rest on, in the D6 form, so they are checkable rather than asserted:
+
+- **Axis 1.** The error state leads with `ErrorState`'s own `<h2>` and carries a single `Button` at
+  `variant="secondary"`; there is no competing control. The notice carries one control, the resend
+  control, at `size="sm"`, so it does not read as a page-level action
+  (`03-components/button-and-safe-action.md`).
+- **Axis 3.** Every step comes from `primitives.css`; the support reference is `oalo-data-text`, so
+  it is in `--font-data`, which brief section 10 line 168 requires of a reference.
+- **Axis 4.** No literal anywhere: `apps/web/src/theme/delivered-semantic-surfaces.unit.test.ts`
+  fails one in a delivered stylesheet, and the page adds no stylesheet of its own. The error state
+  carries a glyph as well as the critical role, so the status does not depend on colour alone
+  (brief section 9).
+- **Axis 5.** The error state's one control and the notice's one control are both primitives with
+  the 44px target. The loading state has no control by design and carries `aria-busy`.
+- **Axis 6.** No stylesheet of its own, so there is nothing to declare and nothing to forget; the
+  reduced-motion pass over the screen proves it computes no animation and no transition.
+- **Axis 9.** This axis is the page's subject: three `AsyncState` variants and one `LiveRegion`,
+  none of them hand-built, each saying what happened and what to do next.
+- **Axis 10.** No canvas covers a boundary. They read as siblings of `Onboarding.dc.html`'s cards,
+  which is the nearest canvas, and they follow
+  `03-components/async-empty-error-permission-state.md`.
+
+## F-29. The keyboard walk accepted any outline, capped at 24 stops, and never asked what was on top
+
+- **Screen, frame, theme, state:** every screen in the rubric's section 4, at the frame each walk
+  runs at, both themes.
+- **Where:** `tests/browser/helpers/design-quality.ts`. `drawsRing` at lines 161-173 accepted any
+  outline that was not `none` or `0px`, on the control, its parent, or its label; the walk capped at
+  24 stops (line 137); nothing asserted SC 2.4.11.
+- **What it must be:** brief section 18, "the 2 px ring with 3 px offset", and 006D-AC-009, "the
+  focus ring is 2 px with a 3 px offset and never obscured".
+- **Axes:** 5. Score before: 2 on every screen. Not 1: the rings were mostly right. The defect is
+  that the gate could not say so, and on one control it was wrong.
+- **Fixed, three ways.**
+  1. The walk measures `outline-width` at 2px, `outline-offset` at 3px, and `outline-color` against
+     `--focus-color`, on the control itself. The colour is resolved out of the element's own cascade
+     by asking the engine to paint it into an unrendered probe, never written here as a literal, so
+     a theme, a tenant accent, or `design-system-guardian`'s D-001 ruling moves the expectation with
+     the product. The parent-and-label fallback is gone; the one tag whose ring a stylesheet in this
+     document cannot paint is named in `RING_LIVES_ON_A_DOCUMENTED_WRAPPER` with its citation, which
+     is rubric section 5, D-007, the email preview's frame.
+  2. The stop budget is the page's own count of focusable elements plus two. The flat 24 silently
+     stopped walking partway down any screen with more controls than that, and the create screen
+     alone has more: every field below the fourteenth had never been walked by this check.
+  3. A hit test at each corner of the focused control's box: the top-most element there has to be
+     the control or something inside it (SC 2.4.11).
+- **The real ring defect the stricter walk found.** The collapsed support region's `<summary>` is a
+  keyboard focus stop on campaign detail, reports, onboarding, and every boundary that quotes a
+  support reference, and no rule in this product painted its ring. Measured by source scan on
+  2026-09-20: `summary` appears in no selector in any stylesheet under `apps/` or `packages/`, so
+  the ring a person saw was Chromium's own `outline: auto`, at the user agent's width, offset, and
+  colour rather than the brief's. It passed the old walk because an outline existed, which is the
+  whole of what the old walk asked. **The finding, in the D6 form:** the support summary on
+  campaign detail, all
+  four frames, both themes, keyboard focus;
+  `apps/web/src/features/shell/components/support-details.tsx:23` and
+  `packages/ui/src/components/onboarding-checklist.tsx:147`; the outline is the user agent's; it
+  must be `var(--focus-width) solid var(--focus-color)` at `var(--focus-offset)`; axis 5, score
+  before 1. **Fixed** in `packages/ui/src/components/primitives.css` as one rule on
+  `[data-support-details] > summary`, rather than one per screen.
+- **Two things the stricter walk reported that are not defects, with what they are instead.** Both
+  are written down because the next reviewer will meet them.
+
+  **A rounded corner is not an obstruction.** The first shape of the SC 2.4.11 test sampled the
+  four corners of the focused control's box and reported 26 controls on the overview alone as
+  covered by their own parent. Every one was true and meaningless: the product's controls carry
+  `--radius-control`, so the pixel in the very corner of the bounding box is outside the rounded
+  shape and belongs to whatever is behind it. The test samples the centre and the four edge
+  midpoints instead, which are inside the shape at any radius, and a surface that covers a control
+  still covers at least one of them.
+
+  **The rail's margin is in flight for 180ms after a frame change.**
+  `app-shell.module.css:149-153` transitions `.workspace`'s `margin-inline-start` over
+  `--motion-base`, which is what makes the collapse control feel like a rail collapsing. A viewport
+  change across the mobile boundary moves the same margin, so for 180ms the content column is still
+  sliding out from under the fixed rail. Measured 2026-09-20: the create screen's "Open campaign"
+  link at 254,753 overlapped a navigation item ending at 256, by two pixels, and its support
+  summary at 243,674 likewise. That is the transition doing what it was written to do, not a screen
+  that covers its own controls, and under `prefers-reduced-motion` it does not happen at all
+  (`app-shell.module.css`'s reduced-motion block sets both durations to 0ms). What was wrong was
+  the measurement: `settleForScreenshot` waited for stylesheets, fonts, and the network, and not
+  for the layout. It now waits for every running CSS transition to finish, transitions only,
+  because `Button.module.css`'s spinner runs `infinite` while a safe action is saving and waiting
+  for that would be waiting for a state whose point is that it has not finished. The pictures were
+  never exposed to this: `toHaveScreenshot` is configured with `animations: "disabled"`, which
+  finishes transitions before it captures. Only the checks around it were, which is the same shape
+  of gap as everything else in this batch.
+
+## F-30. The create screen's save failure was a card below fourteen fields
+
+- **Screen, frame, theme, state:** create, all four frames, both themes, the save-failed state, 390
+  especially.
+- **Where:** `apps/web/src/features/campaigns/components/open-house-draft-builder.tsx:295-306`
+  (before the fix) rendered the failure as a plain `Card` after the form: connected to no field,
+  announced to nobody, and at 390 roughly a screen and a half below the control that produced it.
+  `INVALID_CAMPAIGN_DRAFT` ends "Look over the fields marked below and try again." and nothing was
+  marked.
+- **What it must be:** 006D-AC-011, "connected to its field through `aria-describedby`, announced
+  through the `LiveRegion`, and visible without scrolling at 390", and the shape the account screens
+  have used since Wave 7b (`auth-feedback.tsx`, `AuthProblem`).
+- **Axes:** 5, 9. Score before: 1.
+- **Fixed:** the failure renders through `LiveRegion` at `alert` urgency above the first field, on
+  the same critical surface the account screens use; the route's own issues name the controls, and
+  each named control carries the product's one sentence through the field wrapper's
+  `aria-describedby` and `aria-invalid`; and the region takes focus when a refusal arrives, which is
+  what brings it on screen at 390 from a control at the bottom of a fourteen-field form and leaves a
+  keyboard user one Tab from the first field rather than fourteen Shift Tabs. It is not in the tab
+  order, so the keyboard walk gains no stop. The support reference stays inside the collapsed
+  region, so no code reaches a status line (PRD-006b D7). The new sentence is
+  `CAMPAIGN_FIELD_NEEDS_A_LOOK` in `apps/web/src/copy/user-language.ts`.
+- **Gate:** the test in `tests/browser/design-quality.spec.ts` that was named for a form result at
+  390 and never produced one is rewritten to produce one, from the real server: a one-letter state
+  passes the control's own `maxLength` and the browser's required check and fails the draft schema's
+  two-letter rule, so the refusal is the product's and it comes back naming the control. It then
+  measures the four things the criterion asks for: the message announces at `assertive`, it is above
+  the first field, it starts and ends inside the 390 frame, and the named control is `aria-invalid`
+  and described by an element carrying the sentence.
+
+## Axis 4, re-scored against `design-system-guardian`'s D-001 ruling
+
+D-001 was recorded rather than fixed by the review above, and D1 says there is no accepted at 2.
+`design-system-guardian` ruled and closed it on 2026-09-20 (commit `0126276`, rubric section 5 and
+the ruling below that table): `--focus-color` is a dedicated literal per theme and no longer follows
+the tenant accent, because an accessibility affordance was inheriting a brand value.
+
+The audit found it worse than this review recorded. The ring was below SC 1.4.11's 3.0 not on one
+Dark surface but on five of the ten a ring can land on: `--st-info-bg` 2.99, `--st-warning-bg` 2.93,
+`--st-success-bg` 2.92, `--sf-sunken` 2.90, `--st-neutral-bg` 2.82. That is every form well and four
+of the six status surfaces.
+
+**Re-scored.** Axis 4 on every screen in the rubric's section 4, at every frame, in Dark: 1 before
+the ruling, 3 after it. The worst Dark pair is now 6.84 and the worst Light pair 3.90, both above
+the 3.0 floor, measured by the twenty-pair sweep `apps/web/src/theme/token-contrast.unit.test.ts`
+gained in the same change, which also fails if `--focus-color` is ever pointed back at a `var()`.
+The 3 this review recorded for axis 4 in Dark was wrong on the day it was written; it is right now
+for a different reason, which is that the value changed.
+
+Nothing in this lane touched a token. The ring measurement in F-29 resolves `--focus-color` from the
+element's own cascade rather than from a literal, so it measures whichever value is in the tree and
+needed no change when the ruling landed.
+
+## What now holds these in place
+
+| Row | Gate |
+| --- | --- |
+| 006D-AC-003, hand-built layers | `tooling/tests/unit/design-quality/hand-built-layers.test.ts` reads the dialog role, `aria-modal`, and the background scroll lock across every screen file, so a layer that spells its role instead of its tag is caught. |
+| 006C-AC-013, placement | `guided-setup.tablet-anchoring.spec.ts` asserts the placement the model chose, the geometry that placement implies, and the two things a bottom sheet fails, at 768 and 1180. `panel-placement.unit.test.ts` holds the arithmetic, including the stale measurement. |
+| 006D-AC-006 | The reduced-motion pass now covers the seven account screens as well as the nine synthetic ones. |
+| 006D-AC-007 and 006D-AC-008 | The boundary page is a screen in the synthetic matrix: axe, keyboard, motion, target size, and a picture at four frames in both themes, plus a 404 assertion from the review side. |
+| 006D-AC-009 | The walk measures the brief's three tokens on the control, budgets its stops from the page, and hit-tests the focused control's corners for SC 2.4.11. |
+| 006D-AC-011 | The create screen's failure is produced from the real server and measured: announced, positioned, and connected. |
+
+## Still open after this lane
+
+- **006D-AC-015**, the orchestrator's sign-off, unchanged.
+- **The baselines.** Three groups of pictures move with this lane and must be redrawn on the
+  `ubuntu-24.04` runner before they gate anything: the guided-setup panel at 768, which stops being
+  a bottom sheet (F-25); the guided-setup panel wherever the sticky footer changes it (F-26); and
+  the whole `design-surfaces` set, which is new (F-28). The mobile-drawer capture may move where the
+  primitive's surface differs from the hand-built one (F-24). This paragraph is the 006D-AC-013 note
+  for all four.

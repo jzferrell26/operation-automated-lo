@@ -30,8 +30,14 @@ screens and the guided-setup steps) comes from `snapshotPathTemplate` in `playwr
 ## Where they run
 
 - **Synthetic screens** (overview, campaigns, create, campaign detail, reports, onboarding,
-  settings and connections, brand, email preview): `pnpm test:browser`, which `pnpm verify:offline`
-  runs.
+  settings and connections, brand, email preview, and the boundary page): `pnpm test:browser`,
+  which `pnpm verify:offline` runs.
+
+  The boundary page, `design-surfaces`, is one picture holding three of the rubric's screens: the
+  route error boundary, the route loading boundary, and the unverified-email notice. None of the
+  three can be navigated to, so PRD-006d's reopened-row review (F-28) renders all three from
+  placeholder values inside the real shell, on a page gated the way the email preview is. Read its
+  picture as three rows of the sign-off table rather than one.
 - **Account screens and the seven guided-setup steps**: the `review` project inside `pnpm test:db`,
   which starts the disposable database, the seeded people, and the TLS terminator that the
   `__Host-` session cookie requires.

@@ -91,6 +91,28 @@ describe("Dialog", () => {
 
     expect(withFooter).toContain("Confirm pause");
   });
+
+  /**
+   * PRD-006d's reopened row 1, F-24. The drawer placement the application shell's mobile drawer
+   * moved onto, so that the layer it used to build by hand is the primitive and its focus
+   * contract is the primitive's. `03-components/sheet-and-dialog.md` specifies it.
+   *
+   * The attribute is on both the scrim and the panel: the scrim needs it to lay the panel against
+   * the inline-start edge, and the panel needs it so a calling screen can override the card
+   * surface with the navigation surface without depending on stylesheet order.
+   */
+  it("carries the drawer placement on both the scrim and the panel, and centres by default", () => {
+    const drawer = renderToStaticMarkup(
+      createElement(Dialog, { ...layerContent, open: true, placement: "inline-start" }),
+    );
+    const centred = renderToStaticMarkup(createElement(Dialog, { ...layerContent, open: true }));
+
+    expect(drawer.match(/data-dialog-placement="inline-start"/gu)).toHaveLength(2);
+    // The modal contract is unchanged by the placement: it is a layout variant, nothing more.
+    expect(drawer).toContain('aria-modal="true"');
+    expect(drawer).toContain('role="dialog"');
+    expect(centred.match(/data-dialog-placement="center"/gu)).toHaveLength(2);
+  });
 });
 
 describe("Sheet", () => {

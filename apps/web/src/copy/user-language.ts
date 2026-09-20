@@ -165,6 +165,17 @@ export const SUPPORT_DETAILS_LABELS = Object.freeze({
 export const CHECK_RESULT_READY = "Ready for approval";
 export const CHECK_RESULT_NEEDS_CHANGES = "Needs changes";
 
+/**
+ * PRD-006d 006D-AC-011. What a field says when a save comes back naming it.
+ *
+ * The status line above the form already says what happened and what to do
+ * ("Look over the fields marked below and try again."), so the field's own job
+ * is to be the mark. One short sentence, connected to the control through the
+ * field wrapper's `aria-describedby`, so a screen reader meets it on the field
+ * rather than having to go looking for it.
+ */
+export const CAMPAIGN_FIELD_NEEDS_A_LOOK = "This one needs another look.";
+
 /** What a campaign can and cannot do once it is saved and approved. */
 export const CAMPAIGN_NOT_AN_AD_YET =
   "This campaign won't run as an ad yet. HighLevel and Meta aren't connected.";

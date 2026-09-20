@@ -11,6 +11,18 @@ export type OverlayAnchor = "inline-end" | "block-end";
 export type DialogSize = "sm" | "md";
 
 /**
+ * Where a modal layer sits in the viewport.
+ *
+ * `center` is the confirmation surface `03-components/sheet-and-dialog.md` describes and is the
+ * default. `inline-start` is the navigation drawer: the same modal contract, filling the block
+ * axis against the inline-start edge instead of floating as a card. It exists because PRD-006d D4
+ * line 88 names "the drawer's trap in `app-shell.tsx`" as behaviour `Dialog` was to generalise,
+ * and a drawer that had to keep its own trap in order to keep its own shape would have
+ * generalised nothing.
+ */
+export type DialogPlacement = "center" | "inline-start";
+
+/**
  * The elements a dismissable layer may move focus between. Keeping one selector
  * here is what makes the `Dialog` trap and the `Sheet` entry point agree.
  */
@@ -136,6 +148,7 @@ type LayerBaseProps = Omit<HTMLAttributes<HTMLDivElement>, "children" | "role" |
 
 export type DialogProps = LayerBaseProps &
   Readonly<{
+    placement?: DialogPlacement | undefined;
     size?: DialogSize | undefined;
     urgent?: boolean | undefined;
   }>;
@@ -148,6 +161,8 @@ export type SheetProps = LayerBaseProps &
 type LayerProps = LayerBaseProps &
   Readonly<{
     modal: boolean;
+    /** Attributes for the scrim a modal layer draws, so its own layout can be selected in CSS. */
+    overlayData?: Readonly<Record<string, string>> | undefined;
     panelClassName: string | undefined;
     panelData: Readonly<Record<string, string>>;
     role: "dialog" | "alertdialog";
@@ -163,6 +178,7 @@ function Layer({
   modal,
   onClose,
   open,
+  overlayData,
   panelClassName,
   panelData,
   role,
@@ -209,7 +225,7 @@ function Layer({
   );
 
   return modal ? (
-    <div className={styles.overlay} data-overlay-kind="dialog">
+    <div {...overlayData} className={styles.overlay} data-overlay-kind="dialog">
       {panel}
     </div>
   ) : (
@@ -219,16 +235,31 @@ function Layer({
 
 /**
  * The modal layer. It generalises the confirmation behaviour that `SafeAction`
- * implements inline: focus moves in, Escape closes, focus returns to the
- * opener, and the background cannot be reached with Tab while it is open.
+ * implements inline, and the application shell's navigation drawer: focus moves
+ * in, Escape closes, focus returns to the opener, and the background cannot be
+ * reached with Tab while it is open.
+ *
+ * `placement="inline-start"` is the drawer. Only the layout differs; the focus
+ * contract, the scroll lock, and `aria-modal` are the same contract every modal
+ * layer in this product gets, which is the point of moving the shell onto it.
  */
-export function Dialog({ size = "md", urgent = false, ...dialogProps }: DialogProps) {
+export function Dialog({
+  placement = "center",
+  size = "md",
+  urgent = false,
+  ...dialogProps
+}: DialogProps) {
   return (
     <Layer
       {...dialogProps}
       modal
+      overlayData={{ "data-dialog-placement": placement }}
       panelClassName={styles.panel}
-      panelData={{ "data-overlay-kind": "dialog", "data-panel-size": size }}
+      panelData={{
+        "data-dialog-placement": placement,
+        "data-overlay-kind": "dialog",
+        "data-panel-size": size,
+      }}
       role={urgent ? "alertdialog" : "dialog"}
     />
   );

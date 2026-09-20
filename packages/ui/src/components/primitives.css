@@ -241,6 +241,25 @@
   line-height: var(--leading-normal);
 }
 
+/* Design brief section 9 and PRD-006d 006D-AC-011. The one surface a refusal
+ * wears, wherever a form is refused.
+ *
+ * Only a visible region at `alert` urgency: a hidden announcer has nothing to
+ * paint, and a `status` region is a confirmation, which is the information role
+ * rather than the critical one. The account screens stated these same
+ * declarations locally; the create screen's failure joined them on 2026-09-20
+ * (F-30), and two screens saying the same thing two ways is the consistency bug
+ * this layer exists to prevent.
+ */
+.oalo-live-region[data-live-urgency="alert"]:not(.oalo-visually-hidden) {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--st-critical-bg);
+  color: var(--st-critical-fg);
+}
+
 .oalo-visually-hidden {
   position: absolute;
   inline-size: 1px;
@@ -306,6 +325,22 @@
 }
 
 .oalo-state-actions :where(button, a, [role="button"]):focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+
+/* Design brief section 18 and PRD-006d 006D-AC-009. The collapsed support region's
+ * own control.
+ *
+ * A `<summary>` is a keyboard focus stop, and until 2026-09-20 no rule in this
+ * product painted its ring, so the one a person saw was Chromium's `outline: auto`
+ * at the user-agent's own width, offset, and colour. It passed the keyboard walk
+ * only because that walk asked whether any outline existed rather than whether it
+ * was the brief's. It appears on campaign detail, reports, onboarding, and every
+ * boundary that quotes a support reference, so it is one rule here rather than one
+ * per screen.
+ */
+[data-support-details] > summary:focus-visible {
   outline: var(--focus-width) solid var(--focus-color);
   outline-offset: var(--focus-offset);
 }

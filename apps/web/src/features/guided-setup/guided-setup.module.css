@@ -148,8 +148,14 @@
  * whose height is capped at 40 percent of the viewport, so the field the user
  * is typing into stays visible above it (D7). The primitive's own mobile rule
  * caps at 80vh; this narrows it for the walkthrough only.
+ *
+ * The boundary is 767.98px so that it agrees with `model/panel-placement.ts`,
+ * where `SIDE_ANCHOR_MIN_WIDTH` is 768 and the mobile branch is
+ * `viewport.width < 768`. With `max-width: 768px` the two disagreed at exactly
+ * 768, the tablet frame the rubric scores: the stylesheet drew a bottom sheet
+ * while the model placed the panel beside the element it points at.
  */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   /* The inline style the wide frames use is not applied below 768, so these
    * rules are the whole placement: a bottom sheet across the full width, capped
    * at 40 percent of the viewport so the field being edited stays above it.

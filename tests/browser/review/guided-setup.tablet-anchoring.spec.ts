@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { expectPanelFooterIsOnScreen } from "../helpers/design-quality.js";
 import {
   expectNoExternalRequests,
   freshEmail,
@@ -58,14 +59,62 @@ async function boxes(page: Page) {
   };
 }
 
-/** The claim that holds at 768 and above: beside the element, or below it, never over it. */
-async function expectAnchoredBesideOrBelow(page: Page, width: number): Promise<void> {
+/**
+ * The claim that holds at 768 and above, asserted against the placement the model actually chose
+ * rather than against a disjunction that either branch satisfies.
+ *
+ * PRD-006d's reopened row 2. `expectAnchoredBesideOrBelow` used to accept "beside the element or
+ * below it", and a bottom sheet is below the element, so the check could not tell the anchored
+ * panel apart from the mobile presentation. That mattered at exactly one frame: 768 is the tablet
+ * frame design brief section 14 names, `model/panel-placement.ts` treats it as wide
+ * (`viewport.width < 768` is the mobile branch), and `guided-setup.module.css` capped the bottom
+ * sheet with `max-width: 768px`, so at that one width the stylesheet drew a bottom sheet while the
+ * model placed the panel beside or below the element. Both stylesheets now break at 767.98px, and
+ * these assertions are what keeps them there.
+ *
+ * Three things are checked at every wide frame: the panel reports a computed placement rather than
+ * its resting corner; the geometry matches the placement it reports, including the inline-end
+ * case's right edge staying inside the viewport; and the panel is a panel rather than a sheet
+ * across the whole width.
+ */
+async function expectAnchoredToTheElement(page: Page, width: number): Promise<void> {
   const { field, panel } = await boxes(page);
-  const beside = panel.x >= field.x + field.width - 1;
-  const below = panel.y >= field.y + field.height - 1;
-  expect(beside || below, `at ${String(width)} the panel is beside the element or below it`).toBe(
-    true,
-  );
+  const dialog = page.getByRole("dialog");
+  const placement = await dialog.getAttribute("data-placement");
+
+  expect(
+    placement,
+    `at ${String(width)} the panel is placed against the element rather than resting`,
+  ).toMatch(/^(?:inline-end|block-end)$/u);
+
+  if (placement === "inline-end") {
+    expect(panel.x, `at ${String(width)} the panel sits beside the element`).toBeGreaterThanOrEqual(
+      field.x + field.width - 1,
+    );
+    expect(
+      panel.x + panel.width,
+      `at ${String(width)} the panel's inline-end edge is inside the viewport`,
+    ).toBeLessThanOrEqual(width);
+  } else {
+    expect(panel.y, `at ${String(width)} the panel sits below the element`).toBeGreaterThanOrEqual(
+      field.y + field.height - 1,
+    );
+  }
+
+  /**
+   * A bottom sheet spans the frame and starts at its inline-start edge. At 768 and above the
+   * panel is `inline-size: min(100vw - var(--space-8), 24rem)` and placed, so neither is true of
+   * it. This is the assertion the beside-or-below disjunction could not make: a sheet across the
+   * bottom satisfies "below the element" perfectly.
+   */
+  expect(
+    panel.width,
+    `at ${String(width)} the panel is not a full-width bottom sheet`,
+  ).toBeLessThan(width);
+  expect(
+    panel.x,
+    `at ${String(width)} the panel is inset from the inline-start edge`,
+  ).toBeGreaterThan(0);
 
   // The sticky header is the one surface a panel must never sit under, because the brief's focus
   // ring has to stay visible and the header scrolls with the page.
@@ -110,13 +159,15 @@ test("the panel anchors correctly at the mobile, tablet, and embedded frames", a
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+  await expectPanelFooterIsOnScreen(page, MOBILE);
 
   for (const frame of [TABLET, DESKTOP] as const) {
     await page.setViewportSize(frame);
     await restartGuidedSetup(page);
     await walkToTheCreateStep(page);
 
-    await expectAnchoredBesideOrBelow(page, frame.width);
+    await expectAnchoredToTheElement(page, frame.width);
+    await expectPanelFooterIsOnScreen(page, frame);
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
       `at ${String(frame.width)} the document does not scroll sideways`,

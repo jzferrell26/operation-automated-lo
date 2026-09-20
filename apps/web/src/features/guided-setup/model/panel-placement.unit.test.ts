@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   BOTTOM_SHEET_VIEWPORT_SHARE,
   PANEL_GAP,
+  PANEL_MAX_BLOCK_SIZE,
+  PANEL_MAX_VIEWPORT_SHARE,
   VIEWPORT_MARGIN,
+  panelBlockSize,
   resolveAnchorScroll,
   resolvePanelPlacement,
   type Rect,
@@ -73,6 +76,76 @@ describe("panel placement", () => {
           (placement?.top ?? 0) + PANEL.height,
           `${String(viewport.width)} bottom`,
         ).toBeLessThanOrEqual(viewport.height - VIEWPORT_MARGIN);
+      }
+    }
+  });
+
+  /**
+   * PRD-006d's reopened row 2. The step-1 panel's footer controls were below the fold at 1440.
+   *
+   * The panel is measured after it renders, so the render that first places a step is placed
+   * against the previous step's measurement, and that measurement is always of something smaller
+   * than what is about to be drawn. Clamping against it let the panel start low enough that its
+   * own capped height ran past the end of the viewport, taking Continue and "Not now" with it.
+   *
+   * These two cases are the arithmetic of that. The stale one is the regression; the honest one
+   * proves the fix did not simply push every panel to the top of the screen.
+   */
+  it("keeps a panel on screen when the measurement is a render behind", () => {
+    const stale: Size = { height: 120, width: 384 };
+    const anchor = rect(120, 760, 320, 64);
+    const placement = resolvePanelPlacement(anchor, stale, DESKTOP);
+    expect(placement?.side).toBe("inline-end");
+    expect(
+      (placement?.top ?? 0) + panelBlockSize(stale, DESKTOP),
+      "the panel the browser will actually draw ends inside the viewport",
+    ).toBeLessThanOrEqual(DESKTOP.height - VIEWPORT_MARGIN);
+  });
+
+  it("still follows a high element down the page", () => {
+    const anchor = rect(120, 200, 320, 64);
+    expect(resolvePanelPlacement(anchor, PANEL, DESKTOP)?.top).toBe(anchor.top);
+  });
+
+  it("places against the stylesheet's cap, never against a smaller measurement", () => {
+    expect(panelBlockSize({ height: 120, width: 384 }, DESKTOP)).toBe(
+      Math.min(PANEL_MAX_BLOCK_SIZE, DESKTOP.height * PANEL_MAX_VIEWPORT_SHARE),
+    );
+    // A short viewport caps by share rather than by the absolute value.
+    expect(panelBlockSize({ height: 120, width: 384 }, { height: 600, width: 1440 })).toBe(360);
+    // A panel the cap somehow did not reach is still placed against what it measures.
+    expect(panelBlockSize({ height: 700, width: 384 }, DESKTOP)).toBe(700);
+  });
+
+  /**
+   * The scroll and the clamp have to answer with the same block size, measured or not.
+   *
+   * The scroll runs once, when a step attaches; the placement is computed on every render after
+   * it. When the two disagreed the scroll left the element where the placement would not put the
+   * panel, the clamp pulled the panel up past the element's end, and the panel covered the thing
+   * it was pointing at. Measured in the review run on 2026-09-20 at 1180 on the welcome step,
+   * whose element is the overview's quick actions, and reported by
+   * `guided-setup.accessibility.spec.ts` as "the panel covers the field it is pointing at". The
+   * case is an unmeasured panel on a wide frame, which is the state every step attaches in.
+   */
+  it("scrolls an element clear of where the panel will actually land, measured or not", () => {
+    // Low enough that the panel has to go below it and the clamp has something to do.
+    const anchor = rect(96, 520, 1000, 180);
+
+    for (const panel of [undefined, PANEL, { height: 120, width: 384 } as Size]) {
+      for (const viewport of [DESKTOP, EMBEDDED, TABLET]) {
+        const delta = resolveAnchorScroll(anchor, panel, viewport);
+        const scrolled = rect(anchor.left, anchor.top - delta, anchor.width, anchor.height);
+        const placement = resolvePanelPlacement(
+          scrolled,
+          panel ?? { height: 0, width: 384 },
+          viewport,
+        );
+        expect(placement?.side, `${String(viewport.width)} side`).toBe("block-end");
+        expect(
+          placement?.top,
+          `${String(viewport.width)} with ${panel === undefined ? "no" : "a"} measurement: the panel starts below the element`,
+        ).toBeGreaterThanOrEqual(scrolled.top + scrolled.height);
       }
     }
   });

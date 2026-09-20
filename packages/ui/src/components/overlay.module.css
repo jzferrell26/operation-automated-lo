@@ -34,6 +34,18 @@
   inline-size: min(100%, 28rem);
 }
 
+/* Design brief section 14 and `03-components/sheet-and-dialog.md`. The drawer
+ * placement: the same modal layer, filling the block axis against the
+ * inline-start edge rather than floating as a centred card. The application
+ * shell's navigation drawer is the only surface that asks for it, and it asks
+ * because PRD-006d D4 line 88 makes `Dialog` the owner of its focus contract.
+ */
+.overlay[data-dialog-placement="inline-start"] {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+}
+
 .header {
   display: flex;
   align-items: flex-start;
@@ -68,6 +80,23 @@
   gap: var(--space-2);
 }
 
+/* PRD-006c D7, "the footer stays visible", and rubric axis 7, "a sticky surface
+ * never covers a field, an error, or a focus ring".
+ *
+ * A sheet is capped in the block axis and scrolls inside itself, so a panel with
+ * more content than cap scrolled its own footer out of sight and the walkthrough's
+ * Continue control was below the fold at the desktop frame. The footer is the last
+ * row of that scroll box, so pinning it to the box's end keeps it on screen while
+ * everything above it scrolls behind. It carries the panel's own surface, so the
+ * body never shows through it, and the space above it separates the two.
+ */
+.sheet .footer {
+  position: sticky;
+  inset-block-end: 0;
+  padding-block-start: var(--space-3);
+  background: var(--sf-card);
+}
+
 /* Sheet: a non-modal panel anchored beside the control that opened it. */
 .sheet {
   position: absolute;
@@ -98,8 +127,16 @@
 
 /* Design brief section 14: the sheet becomes a bottom sheet on mobile and the
  * sticky surface never covers a field, an error, or the safe-area inset.
+ *
+ * The boundary is 767.98px, not 768px. 768 is the tablet frame the brief names
+ * in section 14, and `model/panel-placement.ts`'s `SIDE_ANCHOR_MIN_WIDTH` treats
+ * it as wide (`viewport.width < 768` is the mobile branch). At exactly 768 a
+ * `max-width: 768px` rule made this a bottom sheet while the model anchored the
+ * panel beside the element, so the two disagreed on the one frame the rubric
+ * scores tablet at. `app-shell.module.css` already draws its mobile boundary at
+ * 767.98px for the same reason.
  */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .sheet {
     position: fixed;
     inset: auto 0 0;

@@ -20,6 +20,31 @@ export const PANEL_GAP = 12;
 export const VIEWPORT_MARGIN = 16;
 /** D7's cap on the bottom sheet, matched to the stylesheet so the two cannot drift. */
 export const BOTTOM_SHEET_VIEWPORT_SHARE = 0.4;
+/**
+ * D7's cap on the wide-frame panel, `min(28rem, 60vh)`, matched to
+ * `guided-setup.module.css` so the two cannot drift. 28rem at the product's 16px root is 448px.
+ */
+export const PANEL_MAX_BLOCK_SIZE = 448;
+export const PANEL_MAX_VIEWPORT_SHARE = 0.6;
+
+/**
+ * The block size the panel is placed against.
+ *
+ * Not simply the measured height. The panel is measured after it renders, so on the render that
+ * first places a step the measurement still belongs to the step before it, and a measurement that
+ * is one render behind is always a measurement of something smaller than what is about to be
+ * drawn. Clamping against it put the step-1 panel's footer controls below the fold at 1440, which
+ * is the defect PRD-006d's reopened row 2 names: a walkthrough whose Continue control is off the
+ * screen is a walkthrough nobody can finish.
+ *
+ * The stylesheet caps the panel, so the cap is a height the panel can never exceed and is
+ * therefore always safe to place against. The measured height is used only when it is somehow
+ * larger, which would mean the cap had not applied.
+ */
+export function panelBlockSize(panel: Size, viewport: Viewport): number {
+  const cap = Math.min(PANEL_MAX_BLOCK_SIZE, viewport.height * PANEL_MAX_VIEWPORT_SHARE);
+  return Math.max(panel.height, cap);
+}
 
 export type Rect = Readonly<{ top: number; left: number; width: number; height: number }>;
 export type Size = Readonly<{ width: number; height: number }>;
@@ -49,11 +74,12 @@ export function resolvePanelPlacement(
   const side = fitsBeside ? "inline-end" : "block-end";
   const left = fitsBeside ? beside : anchor.left;
   const top = fitsBeside ? anchor.top : anchor.top + anchor.height + PANEL_GAP;
+  const blockSize = panelBlockSize(panel, viewport);
 
   return {
     left: clamp(left, VIEWPORT_MARGIN, viewport.width - panel.width - VIEWPORT_MARGIN),
     side,
-    top: clamp(top, VIEWPORT_MARGIN, viewport.height - panel.height - VIEWPORT_MARGIN),
+    top: clamp(top, VIEWPORT_MARGIN, viewport.height - blockSize - VIEWPORT_MARGIN),
   };
 }
 
@@ -64,6 +90,17 @@ export function resolvePanelPlacement(
  * every other case the panel is below the element or across the bottom of the screen, so the
  * element has to end up above it. When the element is taller than the space that leaves, its top
  * is what stays visible: something has to go, and the first field is worth more than the last.
+ *
+ * **This has to use the same block size `resolvePanelPlacement` clamps against, measured or not.**
+ * The scroll runs once, when the step attaches, and the placement is computed on every render
+ * afterwards. If the two disagree, the scroll leaves the element where the placement will not put
+ * the panel, the clamp pulls the panel up past the element's end, and the panel covers the thing
+ * it is pointing at. Measured on 2026-09-20 in the review run: at 1180 on the welcome step, whose
+ * element is the overview's quick actions, the scroll used the bottom sheet's share because the
+ * panel had not been measured yet while the clamp used the wide-frame cap, and
+ * `guided-setup.accessibility.spec.ts` reported "the panel covers the field it is pointing at".
+ * On a wide frame the cap is the answer whether or not a measurement exists, so an unmeasured
+ * panel asks `panelBlockSize` for it rather than falling back to the mobile share.
  */
 export function resolveAnchorScroll(
   anchor: Rect,
@@ -76,7 +113,7 @@ export function resolveAnchorScroll(
   const panelHeight =
     viewport.width < SIDE_ANCHOR_MIN_WIDTH
       ? viewport.height * BOTTOM_SHEET_VIEWPORT_SHARE
-      : (panel?.height ?? viewport.height * BOTTOM_SHEET_VIEWPORT_SHARE);
+      : panelBlockSize(panel ?? { height: 0, width: 0 }, viewport);
   const ceiling = viewport.height - panelHeight - PANEL_GAP - VIEWPORT_MARGIN;
 
   if (anchor.height > ceiling - VIEWPORT_MARGIN) return anchor.top - VIEWPORT_MARGIN;

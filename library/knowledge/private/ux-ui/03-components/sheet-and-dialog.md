@@ -44,7 +44,51 @@ trap. Both layers are one implementation, so their focus behaviour cannot drift.
 | The page behind | Unreachable. Tab cycles inside the panel. Background scroll is locked. A scrim at `--sf-overlay` covers the canvas. | Fully operable. Tab leaves the panel normally. Scroll is not locked. No scrim. |
 | Use for | A consequential confirmation, a decision that must be made before anything else, a destructive action. `urgent` switches the role to `alertdialog`. | The guided-setup panel anchored to the control it explains, and any side panel that annotates the work rather than blocking it. |
 | Surface | `--sf-card` on `--bd-hairline` at `--radius-panel` with `--shadow-raised`, `padding: var(--space-6)`, `inline-size: min(100%, 44rem)`, or `min(100%, 28rem)` at `size="sm"`. | The same surface at `padding: var(--space-5)` and `inline-size: min(100vw - var(--space-8), 24rem)`. |
-| Frames | Centred at every frame, capped at `calc(100vh - var(--space-8))` with its own scroll. | Anchored beside (`inline-end`) or below (`block-end`) its `SheetAnchor` above 768px. At 768px and below it becomes a bottom sheet: fixed to the inline edges and the block end, up to `80vh`, with `env(safe-area-inset-bottom)` added to its end padding so it never covers the safe-area inset. |
+| Frames | Centred at every frame, capped at `calc(100vh - var(--space-8))` with its own scroll, unless `placement="inline-start"` puts it against the inline-start edge (see below). | Anchored beside (`inline-end`) or below (`block-end`) its `SheetAnchor` at 768px and above. Below 768px it becomes a bottom sheet: fixed to the inline edges and the block end, up to `80vh`, with `env(safe-area-inset-bottom)` added to its end padding so it never covers the safe-area inset. |
+
+## `placement`, and the navigation drawer
+
+`Dialog` takes `placement`, either `center` (the default, the confirmation
+surface the table describes) or `inline-start`.
+
+`inline-start` is the drawer: the identical modal contract, laid out against the
+inline-start edge and filling the block axis rather than floating as a centred
+card. The scrim sets `align-items: stretch`, `justify-content: flex-start`, and
+no padding; the panel's own surface, radius, and inline size are the calling
+screen's to override, because a drawer carries the navigation surface
+(`--sf-nav` and `--tx-on-nav`, per
+[application shell and navigation](application-shell-and-navigation.md)) rather
+than the card surface.
+
+It exists for one reason. PRD-006d D4 line 88 names "the drawer's trap in
+`app-shell.tsx`" as behaviour `Dialog` was to generalise, and 006D-AC-003
+forbids a hand-built dialog on any screen. A drawer that had to keep its own
+trap in order to keep its own shape would have generalised nothing, so the
+shape is a variant of the primitive and the trap is the primitive's.
+
+The application shell is the only caller. Its wrapper carries the frame gate:
+the drawer is the mobile frame's rail, so it is `display: none` above 767.98px
+and `display: contents` at and below it, which is also what keeps a layer opened
+at 390 from reappearing over a tablet layout after a resize.
+
+## The bottom-sheet boundary is 767.98px
+
+`Sheet`'s mobile rule and the guided setup's 40vh cap both break at 767.98px,
+not at 768px. 768 is the tablet frame design brief section 14 names, and
+`apps/web/src/features/guided-setup/model/panel-placement.ts` treats it as wide:
+`SIDE_ANCHOR_MIN_WIDTH` is 768 and the mobile branch is `viewport.width < 768`.
+With `max-width: 768px` the stylesheet and the arithmetic disagreed at exactly
+the tablet frame, which drew a bottom sheet while the model anchored the panel
+beside the element it points at. `app-shell.module.css` already drew its mobile
+boundary at 767.98px for the same reason.
+
+## The footer stays visible
+
+A sheet is capped in the block axis and scrolls inside itself. Its footer is
+`position: sticky` at the end of that scroll box, carrying the panel surface, so
+a panel with more content than cap never scrolls its own Continue control out of
+sight. PRD-006c D7 states the behaviour; before 2026-09-20 nothing implemented
+it.
 
 `Dialog` generalises the `alertdialog` that `SafeAction` renders inline for a
 confirmation, and the drawer trap in the application shell. A new screen uses

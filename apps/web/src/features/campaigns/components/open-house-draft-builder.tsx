@@ -1,9 +1,10 @@
 "use client";
 
-import { Button, Card, Icon, Link, TextArea, TextField } from "@oalo/ui";
-import { useState, type FormEvent } from "react";
+import { Button, Card, Icon, Link, LiveRegion, TextArea, TextField } from "@oalo/ui";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import {
+  CAMPAIGN_FIELD_NEEDS_A_LOOK,
   CHECK_RESULT_NEEDS_CHANGES,
   CHECK_RESULT_READY,
   SUPPORT_DETAILS_LABELS,
@@ -46,6 +47,29 @@ type PreflightResponse = Readonly<{
 }>;
 
 /**
+ * PRD-006d 006D-AC-011. The controls a refusal named, keyed by the control's own `name`.
+ *
+ * The route hands back the schema's issues, each with a path whose first segment is the field. The
+ * words on screen are this product's one sentence, never the schema's message: a refusal a person
+ * reads must say what to do, and "String must contain at least 3 character(s)" says what a library
+ * thinks. Anything the route sends that is not a list of issues with a leading string segment
+ * produces no marks at all, and the status line above the form still says what happened.
+ */
+export function fieldsTheRouteNamed(issues: unknown): Readonly<Record<string, string>> {
+  if (!Array.isArray(issues)) return {};
+  const named: Record<string, string> = {};
+  for (const issue of issues) {
+    if (typeof issue !== "object" || issue === null) continue;
+    const path = (issue as { path?: unknown }).path;
+    if (!Array.isArray(path)) continue;
+    const field = path[0];
+    if (typeof field !== "string" || field === "") continue;
+    named[field] = CAMPAIGN_FIELD_NEEDS_A_LOOK;
+  }
+  return named;
+}
+
+/**
  * PRD-006c D3's prefill rule. The demo defaults this screen shipped with are gone.
  *
  * Every field is now either derived from the profile the guided setup collected, or empty with a
@@ -66,6 +90,22 @@ export function OpenHouseDraftBuilder({
    * us no code to map, which renders the generic sentence plus the support reference.
    */
   const [errorCode, setErrorCode] = useState<string | null | undefined>(null);
+  /**
+   * PRD-006d 006D-AC-011. Which controls the route named, so the mark is on the field rather than
+   * only in a sentence telling somebody to look for it.
+   *
+   * The draft route answers a schema refusal with the issues themselves
+   * (`apps/web/src/server/campaign-preflight-handler.ts:17`), and every issue's first path segment
+   * is the control's own `name`, because the schema keys and the form's field names are one list.
+   * Nothing the route wrote reaches the screen: the sentence a person reads is this product's.
+   */
+  const [fieldErrors, setFieldErrors] = useState<Readonly<Record<string, string>>>({});
+  /**
+   * Counts refusals rather than recording one, because two refusals in a row carry the same code
+   * and the second still has to move a person's attention back to the top of a fourteen-field form.
+   */
+  const [refusals, setRefusals] = useState(0);
+  const problemRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const guidedSetup = useGuidedSetup();
   /**
@@ -76,10 +116,24 @@ export function OpenHouseDraftBuilder({
    */
   const prefill = campaignDraftPrefill(guidedSetup?.profile ?? profile);
 
+  /**
+   * 006D-AC-011, the half a component test cannot show: the message has to be on screen without
+   * scrolling on the frame it occurs in, and the control that produced it is at the bottom of a
+   * fourteen-field form. Moving focus to the message is what brings it into view and what puts a
+   * keyboard user one Tab away from the first field rather than fourteen Shift Tabs away.
+   *
+   * The region is not in the tab order, so the keyboard walk gains no stop from it.
+   */
+  useEffect(() => {
+    if (refusals === 0) return;
+    problemRef.current?.focus();
+  }, [refusals]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
     setErrorCode(null);
+    setFieldErrors({});
     setResult(null);
     const form = new FormData(event.currentTarget);
 
@@ -108,8 +162,10 @@ export function OpenHouseDraftBuilder({
          * The route answers with a code. PRD-006b D7 says a code never reaches a status line, so
          * the code is mapped to sentences here and kept only for the support region below.
          */
-        const record = payload as { error?: string };
+        const record = payload as { error?: string; issues?: unknown };
         setErrorCode(record.error);
+        setFieldErrors(fieldsTheRouteNamed(record.issues));
+        setRefusals((count) => count + 1);
         return;
       }
       setErrorCode(null);
@@ -124,6 +180,7 @@ export function OpenHouseDraftBuilder({
       });
     } catch {
       setErrorCode(undefined);
+      setRefusals((count) => count + 1);
     } finally {
       setSubmitting(false);
     }
@@ -151,12 +208,46 @@ export function OpenHouseDraftBuilder({
       </Card>
 
       <form className={styles.form} onSubmit={handleSubmit}>
+        {/*
+          PRD-006d 006D-AC-011 and rubric axis 9. A failed save says what happened and what to do
+          next, above the first field, through the product's announcer.
+
+          Until 2026-09-20 it was a plain card below fourteen fields: unconnected, unannounced, and
+          off the screen at 390 from where the control that produced it sits. The account screens
+          had said the same kind of thing the right way since Wave 7b, which is the whole argument
+          for it being one primitive rather than a pattern each screen remembers separately.
+
+          `alert` urgency, not `status`: this is a refusal to understand, and the register the auth
+          forms use for exactly that. It brings its own surface with it, from `primitives.css`, so
+          this screen states no rule of its own for it. The support reference stays inside the
+          collapsed region, so no code reaches a status line (PRD-006b D7).
+        */}
+        {errorCode === null ? null : (
+          <LiveRegion
+            ref={problemRef}
+            message={
+              <>
+                <strong>We couldn&apos;t save this yet</strong>
+                <span>{userMessageSentence(errorCode)}</span>
+                {isMappedErrorCode(errorCode) ? null : (
+                  <SupportDetails
+                    rows={[[SUPPORT_DETAILS_LABELS.supportReference, errorCode ?? "Not recorded"]]}
+                  />
+                )}
+              </>
+            }
+            tabIndex={-1}
+            urgency="alert"
+            visible
+          />
+        )}
         <fieldset className={styles.fieldset}>
           <legend>The property and the open house</legend>
           <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateAddress}>
             <TextField
               defaultValue=""
               label="Property address"
+              error={fieldErrors["address"]}
               name="address"
               placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.address}
               requirement="required"
@@ -165,6 +256,7 @@ export function OpenHouseDraftBuilder({
               defaultValue=""
               label="State"
               maxLength={2}
+              error={fieldErrors["stateCode"]}
               name="stateCode"
               placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.stateCode}
               requirement="required"
@@ -172,6 +264,7 @@ export function OpenHouseDraftBuilder({
             <TextArea
               defaultValue=""
               label="Property description"
+              error={fieldErrors["propertyDescription"]}
               name="propertyDescription"
               placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.propertyDescription}
               requirement="required"
@@ -180,6 +273,7 @@ export function OpenHouseDraftBuilder({
           <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateDates}>
             <TextField
               label="Open house starts"
+              error={fieldErrors["openHouseStartsAt"]}
               name="openHouseStartsAt"
               requirement="required"
               tone="data"
@@ -187,6 +281,7 @@ export function OpenHouseDraftBuilder({
             />
             <TextField
               label="Open house ends"
+              error={fieldErrors["openHouseEndsAt"]}
               name="openHouseEndsAt"
               requirement="required"
               tone="data"
@@ -197,6 +292,7 @@ export function OpenHouseDraftBuilder({
             <TextField
               defaultValue={prefill.realtorDisplayName}
               label="Realtor name"
+              error={fieldErrors["realtorDisplayName"]}
               name="realtorDisplayName"
               placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.realtorDisplayName}
               requirement="required"
@@ -224,25 +320,35 @@ export function OpenHouseDraftBuilder({
             <TextField
               defaultValue={prefill.headline}
               label="Headline"
+              error={fieldErrors["headline"]}
               name="headline"
               requirement="required"
             />
-            <TextArea defaultValue={prefill.body} label="Body" name="body" requirement="required" />
+            <TextArea
+              defaultValue={prefill.body}
+              label="Body"
+              error={fieldErrors["body"]}
+              name="body"
+              requirement="required"
+            />
             <TextField
               defaultValue={prefill.callToAction}
               label="Call to action"
+              error={fieldErrors["callToAction"]}
               name="callToAction"
               requirement="required"
             />
             <TextArea
               defaultValue={prefill.disclosureText}
               label="Disclosure"
+              error={fieldErrors["disclosureText"]}
               name="disclosureText"
               requirement="required"
             />
             <TextArea
               defaultValue={prefill.consentText}
               label="Lead consent"
+              error={fieldErrors["consentText"]}
               name="consentText"
               requirement="required"
             />
@@ -255,6 +361,7 @@ export function OpenHouseDraftBuilder({
             <TextField
               defaultValue={prefill.region}
               label="Where the ad runs"
+              error={fieldErrors["region"]}
               name="region"
               placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.region}
               requirement="required"
@@ -263,6 +370,7 @@ export function OpenHouseDraftBuilder({
               defaultValue={prefill.dailyBudgetDollars}
               label="Daily budget ($)"
               min="5"
+              error={fieldErrors["dailyBudgetDollars"]}
               name="dailyBudgetDollars"
               requirement="required"
               step="1"
@@ -273,6 +381,7 @@ export function OpenHouseDraftBuilder({
               defaultValue={prefill.totalBudgetDollars}
               label="Total budget ($)"
               min="5"
+              error={fieldErrors["totalBudgetDollars"]}
               name="totalBudgetDollars"
               requirement="required"
               step="1"
@@ -294,17 +403,6 @@ export function OpenHouseDraftBuilder({
         </Button>
       </form>
 
-      {errorCode === null ? null : (
-        <Card padding="md">
-          <strong>We couldn&apos;t save this yet</strong>
-          <p>{userMessageSentence(errorCode)}</p>
-          {isMappedErrorCode(errorCode) ? null : (
-            <SupportDetails
-              rows={[[SUPPORT_DETAILS_LABELS.supportReference, errorCode ?? "Not recorded"]]}
-            />
-          )}
-        </Card>
-      )}
       {result ? <CampaignCheckResult result={result} /> : null}
     </div>
   );

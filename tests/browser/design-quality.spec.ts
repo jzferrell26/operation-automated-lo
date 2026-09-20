@@ -50,6 +50,16 @@ const SYNTHETIC_SCREENS = Object.freeze([
   { screen: "settings-connections", path: "/settings/connections" },
   { screen: "brand", path: "/brand" },
   { screen: "email-preview", path: "/email-preview" },
+  /**
+   * The rubric's section 4 "Boundaries" entry, plus the unverified-email notice.
+   *
+   * Three states nothing in either suite had ever looked at, because each of them appears only
+   * when something fails, when something is slow, or when an address has not been confirmed. They
+   * are in D3 and in the rubric and were in no review and no gate until 2026-09-20. The page is
+   * gated the way the email preview is, on `canRenderSyntheticDemo()`, and the review suite
+   * asserts the other side of that gate.
+   */
+  { screen: "design-surfaces", path: "/design-surfaces" },
 ] as const);
 
 /**
@@ -142,28 +152,77 @@ for (const { screen, path } of SYNTHETIC_SCREENS) {
 }
 
 /**
- * 006D-AC-011, the part a component test cannot show: at 390 the message is on screen without
- * scrolling, because a person filling a form on a phone never sees a message that needs a scroll
- * to find.
+ * 006D-AC-011 on the create screen, which until 2026-09-20 nothing checked.
+ *
+ * The test that stood here was named for a form result and never produced one: it focused the
+ * first field and measured the field. Meanwhile the screen's save failure was a plain card below
+ * fourteen fields, unconnected to any of them and announced to nobody, which is three of the four
+ * things 006D-AC-011 asks for missing at once.
+ *
+ * So the failure is produced, from the real server, and then measured. A two-letter state is the
+ * shortest honest way in: the control's `maxLength` caps it at two characters and the browser's
+ * own required check passes on one, so the refusal comes from the draft schema
+ * (`apps/web/src/server/open-house-draft.ts:18-24`) rather than from a stubbed answer, and it
+ * comes back naming the control it is about.
+ *
+ * Four claims, the four the criterion makes: the message announces, it is above the first field,
+ * it is on screen at 390 without scrolling, and the control the refusal named carries it through
+ * `aria-describedby`.
  */
-test("a form result on the create screen is visible at 390 without scrolling", async ({ page }) => {
+test("a failed save on the create screen is announced, connected, and on screen at 390", async ({
+  page,
+}) => {
   await blockAnythingOffOrigin(page);
   await useStoredTheme(page, "light");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/marketing/campaigns/new");
   await settleForScreenshot(page);
 
-  const firstField = page.getByLabel("Property address");
-  await firstField.scrollIntoViewIfNeeded();
-  await firstField.focus();
+  await fillTheOpenHouseDraft(page, READY_OPEN_HOUSE);
+  const state = page.getByLabel("State", { exact: true });
+  await state.fill("T");
+  await page.getByRole("button", { name: "Save and run the checks" }).click();
 
-  // The browser's own validation message anchors to the field, and the field is in view when it
-  // has focus. What the suite proves here is the stronger thing: the field, its label, and the
-  // space its error occupies all fit the frame without a sideways scroll at any point.
+  // Scoped to the form: Next renders its own route announcer as an empty `role="alert"` at the end
+  // of the body, and an unscoped query finds that instead of the message.
+  const problem = page.locator("form").getByRole("alert");
+  await expect(problem).toBeVisible();
+  await expect(problem).toHaveAttribute("aria-live", "assertive");
+  await expect(problem).toContainText("Look over the fields marked below and try again.");
+
+  const problemBox = await problem.boundingBox();
+  const firstFieldBox = await page.getByLabel("Property address").boundingBox();
+  expect(problemBox?.y ?? -1, "the message is on screen at 390").toBeGreaterThanOrEqual(0);
+  expect(
+    (problemBox?.y ?? 0) + (problemBox?.height ?? 0),
+    "the message ends inside the frame at 390",
+  ).toBeLessThanOrEqual(844);
+  expect(problemBox?.y ?? 0, "the message is above the first field").toBeLessThan(
+    firstFieldBox?.y ?? 0,
+  );
+
+  /**
+   * The control the refusal named carries it, rather than the person being told to go looking.
+   *
+   * The ids are resolved with `getElementById` rather than turned into a selector. React's
+   * `useId` emits ids with characters that are not valid in a CSS identifier, so `#${id}` is a
+   * selector that throws rather than a check that fails, which would read as a broken test instead
+   * of a broken screen.
+   */
+  await expect(state).toHaveAttribute("aria-invalid", "true");
+  const describedText = await state.evaluate((control) =>
+    (control.getAttribute("aria-describedby") ?? "")
+      .split(" ")
+      .filter((id) => id !== "")
+      .map((id) => document.getElementById(id)?.textContent?.trim() ?? "")
+      .join(" | "),
+  );
+  expect(describedText, "the state control is described by its inline error").toContain(
+    "This one needs another look.",
+  );
+
   await expectNoHorizontalOverflow(page);
-  const box = await firstField.boundingBox();
-  expect(box?.width ?? 0).toBeLessThanOrEqual(390);
-  expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  await expectAxeClean(page);
 });
 
 /**
@@ -193,6 +252,35 @@ test("the email preview renders both account emails at the mail-client width", a
   // Each email document on its own terms: its language, its title, its link's name, and its
   // contrast, with only the two page-structure rules that do not apply to an email switched off.
   await expectAxeClean(page, { disableRules: PAGE_STRUCTURE_RULES });
+});
+
+/**
+ * The boundary page's own contract, from the side that serves it.
+ *
+ * The three surfaces are asserted by name rather than only photographed, because a baseline is
+ * only compared on the runner that drew it and this is a claim that has to hold everywhere. The
+ * resend control is asserted too: the unverified notice without it is a sentence telling somebody
+ * to look in an inbox with no way to make the message arrive again.
+ */
+test("the boundary page renders the error state, the loading state, and the unverified notice", async ({
+  page,
+}) => {
+  await blockAnythingOffOrigin(page);
+  await useStoredTheme(page, "light");
+  await page.setViewportSize({ width: 1180, height: 900 });
+  await page.goto("/design-surfaces");
+  await settleForScreenshot(page);
+
+  await expect(
+    page.getByRole("heading", { name: "We couldn't load your workspace" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Loading your workspace" })).toBeVisible();
+  await expect(page.locator("[aria-busy='true']")).toHaveCount(1);
+  await expect(
+    page.getByText("Confirm your email so you can reset your password later."),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Resend the link." })).toBeVisible();
 });
 
 /** 006D-AC-018. Nothing a person can reach in the product links to the demo route. */

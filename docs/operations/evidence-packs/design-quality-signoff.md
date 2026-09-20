@@ -91,15 +91,20 @@ with a finding reference. A row is signed only when all eight are `pass` on all 
 | Guided setup step 6 | approve | review | | | | | | | | |
 | Guided setup step 6 | hand off | review | | | | | | | | |
 | Guided setup step 7 | what happens next | review | | | | | | | | |
-| Unverified email notice | default | review | | | | | | | | |
-| Route error boundary | default | synthetic | | | | | | | | |
-| Route loading boundary | default | synthetic | | | | | | | | |
+| Unverified email notice | unverified, with resend | synthetic | | | | | | | | |
+| Route error boundary | failed to load | synthetic | | | | | | | | |
+| Route loading boundary | loading | synthetic | | | | | | | | |
 | Email preview | reset password, 600px | synthetic | | | | | | | | |
 | Email preview | confirm email, 600px | synthetic | | | | | | | | |
 
 The two email rows are scored on axes 1, 3, 4, and 10 only, per the rubric's section 4: an email
 has no states, no motion, and no responsive frames of its own. The frame columns record the frame
 the surrounding preview page was at.
+
+The three rows above them, the two route boundaries and the unverified-email notice, share one
+picture each frame and theme: `design-surfaces--default--<frame>--<theme>.png`. They are three
+screens in the rubric and one page in the product, because none of the three can be navigated to
+and each is scored on its own axes. PRD-006d's reopened-row review, F-28, says why the page exists.
 
 ## Where each row's picture comes from
 
@@ -161,7 +166,22 @@ every check at full strength. Sign up's address-already-has-an-account state was
 arithmetic, and F-22 made room for it, so `tests/browser/review/design-quality.spec.ts` takes it
 once per theme.
 
-| Row | Why the suite cannot reach it |
+**Three more left it later the same day**, by the PRD-006d reopened-row review's F-28: the route
+error boundary, the route loading boundary, and the unverified-email notice. Each of the three
+reasons below was true, and each was a reason about how a state arrives rather than about the state
+itself, which is why they went unreviewed for a batch. `/design-surfaces` renders all three from
+placeholder values inside the real shell, gated on `canRenderSyntheticDemo()` like the email
+preview, so `tests/browser/design-quality.spec.ts` now takes them at all four frames in both themes
+with axe, the keyboard walk, the motion check, and the target-size check, and
+`tests/browser/review/design-quality.spec.ts` proves the address answers 404 on a connected-account
+deployment.
+
+The orchestrator still stages the unverified notice on a deployment with a sending domain if it
+wants the shell's own live instance of it rather than the boundary page's, because only a real
+`unverified` session produces one. What the boundary page removes is the case where nobody had
+looked at the surface at all.
+
+| Row | Why the suite could not reach it before 2026-09-20 |
 | --- | --- |
 | Verify email, confirmed | Confirming needs an `email_verification` token, and `scheduleVerificationEmail` issues one only when a sending domain is configured (`apps/web/src/server/password-authentication-handler.ts:812-816`). The review composition leaves `OALO_RESEND_API_KEY` and `OALO_EMAIL_FROM` absent on purpose (`tooling/scripts/database/review-browser-run.mjs:48-51`), so no token exists for a browser to spend. Stage it on a deployment with a sending domain. |
 | Unverified email notice | `UnverifiedEmailNotice` renders it, and only for `unverified` (`apps/web/src/features/auth/components/unverified-email-notice.tsx:38`). 006A-AC-021 is explicit that a deployment with no sending domain shows no verification notice, and the review composition leaves the email variables absent on purpose (`tooling/scripts/database/review-browser-run.mjs:48-51`), so every session in the run carries `not_applicable` and there is no notice on the shell to photograph. Stage it on a deployment with a sending domain. |

@@ -57,6 +57,14 @@ describe("delivered dashboard semantic theme surface contract", () => {
     const reporting = readSource("apps/web/src/features/reporting/components/reporting.module.css");
     const safeAction = readSource("packages/ui/src/components/Button.module.css");
     const shell = readSource("apps/web/src/features/shell/components/app-shell.module.css");
+    /**
+     * PRD-006d's reopened row 1, F-24. The shell's mobile drawer used to draw its own scrim, so
+     * `--sf-overlay` was asserted in the shell's stylesheet. The drawer is now the `Dialog`
+     * primitive at its `inline-start` placement, so the scrim is the primitive's and the token is
+     * asserted where it lives. The claim is the same claim: a modal layer dims the canvas with the
+     * semantic overlay token rather than with a literal.
+     */
+    const overlay = readSource("packages/ui/src/components/overlay.module.css");
     const deliveredTsx = [
       ...collectFiles("apps/web/src/features", ".tsx"),
       ...collectFiles("packages/ui/src/components", ".tsx"),
@@ -73,7 +81,10 @@ describe("delivered dashboard semantic theme surface contract", () => {
     expect(deliveredTsx).toContain('role="dialog"');
     expect(safeAction).toContain(".confirmation");
     expect(safeAction).toContain("var(--shadow-raised)");
-    expect(shell).toContain("var(--sf-overlay)");
+    expect(overlay).toContain("var(--sf-overlay)");
+    expect(overlay).toContain('[data-dialog-placement="inline-start"]');
+    // The drawer still carries the navigation surface, which is the shell's to state.
+    expect(shell).toContain("var(--sf-nav)");
     expect(deliveredTsx).not.toMatch(/role="tooltip"|data-chart|<Chart/u);
   });
 });

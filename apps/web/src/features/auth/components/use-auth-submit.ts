@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { postInternalJson } from "../../http/internal-api.js";
-import { authErrorSentence } from "../strings.js";
+import { userMessageSentence } from "../strings.js";
 
 /**
  * PRD-006a D5. The one submit every auth form makes.
@@ -43,14 +43,14 @@ export function useAuthSubmit<Payload extends AuthResponsePayload>(): AuthSubmit
       const response = await postInternalJson(path, body);
       const payload = (await response.json()) as Payload;
       if (!response.ok) {
-        setProblem(authErrorSentence(payload.error));
+        setProblem(userMessageSentence(payload.error));
         return undefined;
       }
       return payload;
     } catch {
       // A network failure and an unreadable body say the same thing to the person: something went
       // wrong on our side. Neither reveals anything about the account.
-      setProblem(authErrorSentence(undefined));
+      setProblem(userMessageSentence(undefined));
       return undefined;
     } finally {
       setSubmitting(false);

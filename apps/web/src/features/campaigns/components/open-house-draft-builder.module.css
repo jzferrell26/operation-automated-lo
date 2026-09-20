@@ -41,9 +41,14 @@
   display: grid;
   gap: var(--space-5);
 }
-.form fieldset {
+/* PRD-006d 006D-AC-003. Every control in this form is a `TextField` or a `TextArea` from
+ * `@oalo/ui`, so this module lays groups out and never styles a control. The descendant
+ * `.form input` and `.form textarea` rules that used to live here are gone: they were a second
+ * implementation of the field specification and would now override the primitive's own boundary,
+ * fill, focus ring, and 44px target. Layout here, appearance in the primitive.
+ */
+.fieldset {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-4);
   margin: 0;
   padding: var(--space-5);
@@ -55,41 +60,36 @@
   padding-inline: var(--space-2);
   font-weight: var(--weight-semibold);
 }
-.form label {
+/* Brief section 14: two columns from the tablet frame up, one column below it. */
+.group {
   display: grid;
-  gap: var(--space-2);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+/* Brief section 18: the 44 by 44 target is the whole row, which is what a person taps. Sizing the
+ * native control itself to 44 square draws a grey block the size of a button. */
+.check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--target-min-size);
   color: var(--tx-strong);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-regular);
 }
-.form input,
-.form textarea {
-  inline-size: 100%;
-  padding: var(--space-3);
-  border: 1px solid var(--bd-input);
-  border-radius: var(--radius-control);
-  background: var(--sf-input);
-  color: var(--tx-strong);
-  font: inherit;
+.check input {
+  block-size: var(--space-4);
+  inline-size: var(--space-4);
+  accent-color: var(--ac-primary);
 }
-.form textarea {
-  min-block-size: 7rem;
-  resize: vertical;
-}
-.form input:focus-visible,
-.form textarea:focus-visible {
+/* Brief section 18 and PRD-006d 006D-AC-009. The two permission checkboxes are the only controls
+ * on this screen that are not a primitive, so they state the shared ring themselves. */
+.check input:focus-visible {
   outline: var(--focus-width) solid var(--focus-color);
   outline-offset: var(--focus-offset);
 }
-.check {
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  font-weight: var(--weight-regular) !important;
-}
-.check input {
-  inline-size: auto;
-}
 .hint {
-  grid-column: 1 / -1;
   margin: 0;
 }
 .review {
@@ -132,7 +132,7 @@
   overflow-wrap: anywhere;
 }
 @media (max-width: 768px) {
-  .form fieldset,
+  .group,
   .summaryGrid,
   .findings {
     grid-template-columns: 1fr;

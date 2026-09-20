@@ -1,4 +1,4 @@
-import { Card, Stack } from "@oalo/ui";
+import { Card, Link, Stack } from "@oalo/ui";
 
 import type { DeepReadonly } from "../../ui-foundation/model/synthetic-ui.js";
 import { loadReportingAcceptanceProjection } from "../model/reporting-acceptance.js";
@@ -73,12 +73,12 @@ export function ReportsScreen({ reporting }: ReportsScreenProps) {
                   {location.campaigns} campaigns, {location.exceptions} things that went wrong
                 </p>
                 <div className={styles.inlineLinks}>
-                  <a className="oalo-action-link" href={location.campaignHref}>
+                  <Link href={location.campaignHref} variant="action">
                     Open the campaign
-                  </a>
-                  <a className="oalo-action-link" href={location.exceptionHref}>
+                  </Link>
+                  <Link href={location.exceptionHref} variant="action">
                     See what went wrong
-                  </a>
+                  </Link>
                 </div>
               </Card>
             ) : (

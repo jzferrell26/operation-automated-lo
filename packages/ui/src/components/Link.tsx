@@ -62,7 +62,12 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
           <span className={styles.glyph}>
             <Icon decorative name="external-link" size="sm" />
           </span>
-          <span className="oalo-visually-hidden">{newTabLabel}</span>
+          {/* The comma matters. The accessible name computation trims each part and joins them
+              with nothing between, so without a punctuation mark a screen reader says "Open the
+              approved pageopens in a new tab". A leading space does not survive the trim; a comma
+              does, and it is also how the sentence should be read aloud. Found by the PRD-006d
+              review of the campaign detail screen. */}
+          <span className="oalo-visually-hidden">{`, ${newTabLabel}`}</span>
         </>
       ) : null}
     </a>

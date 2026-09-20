@@ -182,7 +182,9 @@ export function AppShell({
             tone={workspaceMode === "review" ? "warning" : "info"}
           />
           <span>{session.safety.disclosure}</span>
-          <strong>{workspaceMode === "review" ? NOT_CONNECTED_HEADLINE : "Local demo"}</strong>
+          <strong>
+            {workspaceMode === "review" ? NOT_CONNECTED_HEADLINE : "Nothing is connected."}
+          </strong>
         </aside>
 
         <main className={styles.content} id="main-content">

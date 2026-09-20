@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { assertAuthPageIsServed } from "../../../features/auth/auth-page-gate.js";
 import { AuthPanel } from "../../../features/auth/components/auth-panel.js";
 import { ResetPasswordForm } from "../../../features/auth/components/reset-password-form.js";
-import { RESET_PASSWORD_COPY } from "../../../features/auth/strings.js";
+import { RESET_PASSWORD } from "../../../features/auth/strings.js";
 
 export const dynamic = "force-dynamic";
 
@@ -32,9 +32,9 @@ export default async function ResetPasswordPage({
   const parameters = await searchParams;
   const token = tokenFrom(parameters["token"]);
   return (
-    <AuthPanel title={RESET_PASSWORD_COPY.title}>
+    <AuthPanel title={RESET_PASSWORD.title}>
       {token.length === 0 ? (
-        <p>{RESET_PASSWORD_COPY.linkExpired}</p>
+        <p>{RESET_PASSWORD.expiredError}</p>
       ) : (
         <ResetPasswordForm token={token} />
       )}

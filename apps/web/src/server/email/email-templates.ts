@@ -1,4 +1,4 @@
-import { RESET_EMAIL_COPY, VERIFICATION_EMAIL_COPY } from "../../features/auth/strings.js";
+import { RESET_PASSWORD_EMAIL, VERIFY_EMAIL_EMAIL } from "../../features/auth/strings.js";
 import type { TransactionalEmailMessage } from "./transactional-email.js";
 
 /**
@@ -18,9 +18,16 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-function renderHtml(body: string, link: string, linkLabel: string): string {
+/**
+ * The document carries a language and a title. Both are free, both help a screen reader in a mail
+ * client, and both are what an accessibility check asks of any document, including the one the
+ * preview route renders in a frame (PRD-006d 006D-AC-014).
+ */
+function renderHtml(subject: string, body: string, link: string, linkLabel: string): string {
   return [
-    "<!doctype html><html><body>",
+    '<!doctype html><html lang="en"><head>',
+    `<title>${escapeHtml(subject)}</title>`,
+    "</head><body>",
     `<p>${escapeHtml(body)}</p>`,
     `<p><a href="${escapeHtml(link)}">${escapeHtml(linkLabel)}</a></p>`,
     `<p>${escapeHtml(link)}</p>`,
@@ -38,12 +45,12 @@ export function buildPasswordResetEmail(input: {
   readonly link: string;
   readonly idempotencyKey: string;
 }): TransactionalEmailMessage {
-  const body = RESET_EMAIL_COPY.body(input.name);
+  const body = RESET_PASSWORD_EMAIL.body(input.name);
   return Object.freeze({
     to: input.to,
-    subject: RESET_EMAIL_COPY.subject,
+    subject: RESET_PASSWORD_EMAIL.subject,
     text: renderText(body, input.link),
-    html: renderHtml(body, input.link, "Choose a new password"),
+    html: renderHtml(RESET_PASSWORD_EMAIL.subject, body, input.link, "Choose a new password"),
     idempotencyKey: input.idempotencyKey,
   });
 }
@@ -54,12 +61,12 @@ export function buildEmailVerificationEmail(input: {
   readonly link: string;
   readonly idempotencyKey: string;
 }): TransactionalEmailMessage {
-  const body = VERIFICATION_EMAIL_COPY.body(input.name);
+  const body = VERIFY_EMAIL_EMAIL.body(input.name);
   return Object.freeze({
     to: input.to,
-    subject: VERIFICATION_EMAIL_COPY.subject,
+    subject: VERIFY_EMAIL_EMAIL.subject,
     text: renderText(body, input.link),
-    html: renderHtml(body, input.link, "Confirm your email"),
+    html: renderHtml(VERIFY_EMAIL_EMAIL.subject, body, input.link, "Confirm your email"),
     idempotencyKey: input.idempotencyKey,
   });
 }

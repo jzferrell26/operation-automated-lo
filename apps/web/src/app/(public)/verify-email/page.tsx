@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { assertAuthPageIsServed } from "../../../features/auth/auth-page-gate.js";
 import { AuthPanel } from "../../../features/auth/components/auth-panel.js";
 import { VerifyEmailForm } from "../../../features/auth/components/verify-email-form.js";
-import { VERIFY_EMAIL_COPY } from "../../../features/auth/strings.js";
+import { VERIFY_EMAIL } from "../../../features/auth/strings.js";
 
 export const dynamic = "force-dynamic";
 
@@ -25,8 +25,8 @@ export default async function VerifyEmailPage({
   const parameters = await searchParams;
   const token = tokenFrom(parameters["token"]);
   return (
-    <AuthPanel title={VERIFY_EMAIL_COPY.title}>
-      {token.length === 0 ? <p>{VERIFY_EMAIL_COPY.expired}</p> : <VerifyEmailForm token={token} />}
+    <AuthPanel title={VERIFY_EMAIL.title}>
+      {token.length === 0 ? <p>{VERIFY_EMAIL.expiredError}</p> : <VerifyEmailForm token={token} />}
     </AuthPanel>
   );
 }

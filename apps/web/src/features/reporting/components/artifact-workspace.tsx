@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Stack } from "@oalo/ui";
+import { Button, Card, Link, Stack } from "@oalo/ui";
 import { useState } from "react";
 
 import type { DeepReadonly } from "../../ui-foundation/model/synthetic-ui.js";
@@ -61,14 +61,9 @@ export function ArtifactWorkspace({ campaign }: ArtifactWorkspaceProps) {
       </Card>
 
       <div className={styles.artifactActions}>
-        <a
-          className="oalo-action-link"
-          href={approvedArtifact.publicHref}
-          rel="noreferrer"
-          target="_blank"
-        >
+        <Link external href={approvedArtifact.publicHref} variant="action">
           Open the approved page
-        </a>
+        </Link>
         <Button onClick={() => setDraftSourceVersion(selectedArtifact.version)} variant="secondary">
           Start a new draft from this
         </Button>
@@ -113,13 +108,13 @@ export function ArtifactWorkspace({ campaign }: ArtifactWorkspaceProps) {
                   </dd>
                 </div>
               </dl>
-              <a
-                className="oalo-action-link"
+              <Link
                 download={creative.downloadFileName}
                 href={creative.downloadHref}
+                variant="action"
               >
                 Download {creative.label}
-              </a>
+              </Link>
             </Card>
           ))}
         </div>

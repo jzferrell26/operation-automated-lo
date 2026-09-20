@@ -1,7 +1,7 @@
 import { headers } from "next/headers.js";
 import { redirect } from "next/navigation.js";
 
-import { Card } from "@oalo/ui";
+import { Card, Link } from "@oalo/ui";
 
 import styles from "../../../../features/campaigns/components/open-house-draft-builder.module.css";
 import { readWorkspaceCampaignsForRequest } from "../../../../server/campaign-workspace-reads.js";
@@ -28,9 +28,9 @@ export default async function CampaignListPage() {
         <Card padding="md">
           <strong>No campaigns yet.</strong>
           <p>Create your first Open House Boost. It&apos;s saved as you go.</p>
-          <a className="oalo-action-link" href="/marketing/campaigns/new">
+          <Link href="/marketing/campaigns/new" variant="action">
             Create an Open House Boost
-          </a>
+          </Link>
         </Card>
       ) : (
         <div className={styles.findings}>
@@ -40,9 +40,9 @@ export default async function CampaignListPage() {
               <h2>{campaign.headline}</h2>
               <p>{campaign.propertyAddress}</p>
               <p>{campaign.nextActions.find((action) => action.available)?.label}</p>
-              <a className="oalo-action-link" href={campaign.detailHref}>
+              <Link href={campaign.detailHref} variant="action">
                 Open campaign
-              </a>
+              </Link>
             </Card>
           ))}
         </div>

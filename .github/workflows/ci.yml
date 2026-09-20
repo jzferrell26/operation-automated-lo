@@ -60,6 +60,12 @@ jobs:
 
       - name: Run the non-database verification gate
         run: pnpm verify:offline
+        env:
+          # PRD-006d 006D-AC-013. `baseline-note.test.ts` reads the pull request body here so that a
+          # branch that moves a screen baseline without saying why fails the gate. It is empty on a
+          # push to a branch with no pull request, which is the case the test treats as "nothing
+          # branch-specific to check".
+          PR_BODY: ${{ github.event.pull_request.body }}
 
   database:
     name: Real PostgreSQL migrations and pgTAP

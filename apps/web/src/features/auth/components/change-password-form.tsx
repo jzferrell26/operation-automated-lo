@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@oalo/ui";
+import { Button, PasswordField } from "@oalo/ui";
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import { CHANGE_PASSWORD_COPY } from "../strings.js";
-import { AuthField, AuthNotice, AuthProblem } from "./auth-field.js";
+import { CHANGE_PASSWORD } from "../strings.js";
+import { AuthNotice, AuthProblem } from "./auth-feedback.js";
 import styles from "./auth-form.module.css";
 import { useAuthSubmit } from "./use-auth-submit.js";
 
@@ -36,29 +36,29 @@ export function ChangePasswordForm(): ReactNode {
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
       {problem === null ? null : <AuthProblem>{problem}</AuthProblem>}
-      {changed ? <AuthNotice>{CHANGE_PASSWORD_COPY.success}</AuthNotice> : null}
-      <AuthField
+      {changed ? <AuthNotice>{CHANGE_PASSWORD.successNotice}</AuthNotice> : null}
+      <PasswordField
         autoComplete="current-password"
-        label={CHANGE_PASSWORD_COPY.currentPasswordLabel}
+        label={CHANGE_PASSWORD.currentPasswordLabel}
         name="currentPassword"
-        type="password"
+        requirement="required"
       />
-      <AuthField
+      <PasswordField
         autoComplete="new-password"
-        label={CHANGE_PASSWORD_COPY.newPasswordLabel}
+        label={CHANGE_PASSWORD.newPasswordLabel}
         minLength={12}
         name="newPassword"
-        type="password"
+        requirement="required"
       />
-      <AuthField
+      <PasswordField
         autoComplete="new-password"
-        label={CHANGE_PASSWORD_COPY.confirmPasswordLabel}
+        label={CHANGE_PASSWORD.confirmPasswordLabel}
         minLength={12}
         name="confirmPassword"
-        type="password"
+        requirement="required"
       />
       <Button disabled={submitting} type="submit">
-        {CHANGE_PASSWORD_COPY.submitLabel}
+        {CHANGE_PASSWORD.submitLabel}
       </Button>
     </form>
   );

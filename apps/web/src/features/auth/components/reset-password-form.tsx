@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@oalo/ui";
+import { Button, PasswordField } from "@oalo/ui";
 import type { FormEvent, ReactNode } from "react";
 
-import { RESET_PASSWORD_COPY } from "../strings.js";
-import { AuthField, AuthProblem } from "./auth-field.js";
+import { RESET_PASSWORD } from "../strings.js";
+import { AuthProblem } from "./auth-feedback.js";
 import styles from "./auth-form.module.css";
 import { followNext, useAuthSubmit } from "./use-auth-submit.js";
 
@@ -41,22 +41,22 @@ export function ResetPasswordForm({ token }: Readonly<{ token: string }>): React
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
       {problem === null ? null : <AuthProblem>{problem}</AuthProblem>}
-      <AuthField
+      <PasswordField
         autoComplete="new-password"
-        label={RESET_PASSWORD_COPY.newPasswordLabel}
+        label={RESET_PASSWORD.newPasswordLabel}
         minLength={12}
         name="password"
-        type="password"
+        requirement="required"
       />
-      <AuthField
+      <PasswordField
         autoComplete="new-password"
-        label={RESET_PASSWORD_COPY.confirmPasswordLabel}
+        label={RESET_PASSWORD.confirmPasswordLabel}
         minLength={12}
         name="confirmPassword"
-        type="password"
+        requirement="required"
       />
       <Button disabled={submitting} type="submit">
-        {RESET_PASSWORD_COPY.submitLabel}
+        {RESET_PASSWORD.submitLabel}
       </Button>
     </form>
   );

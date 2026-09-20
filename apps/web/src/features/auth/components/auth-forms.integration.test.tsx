@@ -5,13 +5,14 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import {
-  CHANGE_PASSWORD_COPY,
-  FORGOT_PASSWORD_COPY,
-  RESET_PASSWORD_COPY,
-  SIGN_IN_COPY,
-  SIGN_UP_COPY,
-  VERIFY_EMAIL_COPY,
+  CHANGE_PASSWORD,
+  FORGOT_PASSWORD,
+  RESET_PASSWORD,
+  SIGN_IN,
+  SIGN_UP,
+  VERIFY_EMAIL,
 } from "../strings.js";
+import { AuthNotice, AuthProblem } from "./auth-feedback.js";
 import { ChangePasswordForm } from "./change-password-form.js";
 import { ForgotPasswordForm } from "./forgot-password-form.js";
 import { ResetPasswordForm } from "./reset-password-form.js";
@@ -38,15 +39,22 @@ import { VerifyEmailForm } from "./verify-email-form.js";
 /**
  * The input a field renders, found by the name the form posts under, with its visible label
  * checked against the copy module. Querying by label text alone would be ambiguous: "New password"
- * is a prefix of "Confirm new password", and a field with helper text carries that text inside its
- * label element too.
+ * is a prefix of "Confirm new password".
+ *
+ * PRD-006d 006D-AC-003 moved these fields onto `TextField` and `PasswordField`, so the label is no
+ * longer the input's ancestor: `FormField` owns the identifier and points the label at it with
+ * `htmlFor`. Reading `input.labels` therefore proves the stronger thing, that the label is
+ * programmatically associated rather than merely nearby.
  */
 function fieldFor(name: string, label: string): HTMLInputElement {
-  const input = document.getElementById(name);
+  const input = document.querySelector(`input[name="${name}"]`);
   if (!(input instanceof HTMLInputElement)) {
     throw new Error(`No input is rendered for ${name}`);
   }
-  expect(input.closest("label")?.textContent ?? "").toContain(label);
+  const associated = [...(input.labels ?? [])]
+    .map((element) => element.textContent ?? "")
+    .join(" ");
+  expect(associated).toContain(label);
   return input;
 }
 
@@ -54,7 +62,7 @@ describe("the sign-in form", () => {
   it("shows a visible forgot-password link that reaches the forgot-password page", () => {
     render(<SignInForm signUpEnabled={false} signedOut={false} />);
 
-    const link = screen.getByRole("link", { name: SIGN_IN_COPY.forgotLink });
+    const link = screen.getByRole("link", { name: SIGN_IN.forgotLink });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute("href", "/forgot-password");
   });
@@ -62,8 +70,8 @@ describe("the sign-in form", () => {
   it("carries the autocomplete values a password manager fills from", () => {
     render(<SignInForm signUpEnabled={false} signedOut={false} />);
 
-    expect(fieldFor("email", SIGN_IN_COPY.emailLabel)).toHaveAttribute("autocomplete", "email");
-    expect(fieldFor("password", SIGN_IN_COPY.passwordLabel)).toHaveAttribute(
+    expect(fieldFor("email", SIGN_IN.emailLabel)).toHaveAttribute("autocomplete", "email");
+    expect(fieldFor("password", SIGN_IN.passwordLabel)).toHaveAttribute(
       "autocomplete",
       "current-password",
     );
@@ -72,18 +80,18 @@ describe("the sign-in form", () => {
   it("says what the sign-in is and is not, and offers the keep-me-signed-in choice", () => {
     render(<SignInForm signUpEnabled={false} signedOut={false} />);
 
-    expect(screen.getByText(SIGN_IN_COPY.honesty)).toBeInTheDocument();
-    expect(screen.getByLabelText(SIGN_IN_COPY.rememberLabel)).not.toBeChecked();
-    expect(screen.getByRole("button", { name: SIGN_IN_COPY.submitLabel })).toBeInTheDocument();
+    expect(screen.getByText(SIGN_IN.highLevelNote)).toBeInTheDocument();
+    expect(screen.getByLabelText(SIGN_IN.rememberLabel)).not.toBeChecked();
+    expect(screen.getByRole("button", { name: SIGN_IN.submitLabel })).toBeInTheDocument();
   });
 
   it("offers a way to create an account only when sign-up is served", () => {
     const { unmount } = render(<SignInForm signUpEnabled={false} signedOut={false} />);
-    expect(screen.queryByRole("link", { name: SIGN_IN_COPY.signUpFooter })).toBeNull();
+    expect(screen.queryByRole("link", { name: SIGN_IN.signUpPrompt })).toBeNull();
     unmount();
 
     render(<SignInForm signUpEnabled signedOut={false} />);
-    expect(screen.getByRole("link", { name: SIGN_IN_COPY.signUpFooter })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: SIGN_IN.signUpPrompt })).toHaveAttribute(
       "href",
       "/sign-up",
     );
@@ -92,7 +100,7 @@ describe("the sign-in form", () => {
   it("says so after a sign-out", () => {
     render(<SignInForm signUpEnabled={false} signedOut />);
 
-    expect(screen.getByText(SIGN_IN_COPY.signedOutNotice)).toBeInTheDocument();
+    expect(screen.getByText(SIGN_IN.signedOutNotice)).toBeInTheDocument();
   });
 });
 
@@ -100,14 +108,14 @@ describe("the sign-up form", () => {
   it("asks for a name, an address, and a new password, and says how long it must be", () => {
     render(<SignUpForm />);
 
-    expect(fieldFor("name", SIGN_UP_COPY.nameLabel)).toHaveAttribute("autocomplete", "name");
-    expect(fieldFor("email", SIGN_UP_COPY.emailLabel)).toHaveAttribute("autocomplete", "email");
-    expect(fieldFor("password", SIGN_UP_COPY.passwordLabel)).toHaveAttribute(
+    expect(fieldFor("name", SIGN_UP.nameLabel)).toHaveAttribute("autocomplete", "name");
+    expect(fieldFor("email", SIGN_UP.emailLabel)).toHaveAttribute("autocomplete", "email");
+    expect(fieldFor("password", SIGN_UP.passwordLabel)).toHaveAttribute(
       "autocomplete",
       "new-password",
     );
-    expect(screen.getByText(SIGN_UP_COPY.passwordHelper)).toBeInTheDocument();
-    expect(fieldFor("companyName", SIGN_UP_COPY.companyLabel)).not.toBeRequired();
+    expect(screen.getByText(SIGN_UP.passwordHelp)).toBeInTheDocument();
+    expect(fieldFor("companyName", SIGN_UP.companyLabel)).not.toBeRequired();
   });
 });
 
@@ -115,23 +123,18 @@ describe("the forgot-password, reset, verify, and change-password forms", () => 
   it("asks for an address and nothing else", () => {
     render(<ForgotPasswordForm />);
 
-    expect(fieldFor("email", FORGOT_PASSWORD_COPY.emailLabel)).toHaveAttribute(
-      "autocomplete",
-      "email",
-    );
-    expect(
-      screen.getByRole("button", { name: FORGOT_PASSWORD_COPY.submitLabel }),
-    ).toBeInTheDocument();
+    expect(fieldFor("email", FORGOT_PASSWORD.emailLabel)).toHaveAttribute("autocomplete", "email");
+    expect(screen.getByRole("button", { name: FORGOT_PASSWORD.submitLabel })).toBeInTheDocument();
   });
 
   it("asks for the new password twice, because a typo here costs another email", () => {
     render(<ResetPasswordForm token="a-token" />);
 
-    expect(fieldFor("password", RESET_PASSWORD_COPY.newPasswordLabel)).toHaveAttribute(
+    expect(fieldFor("password", RESET_PASSWORD.newPasswordLabel)).toHaveAttribute(
       "autocomplete",
       "new-password",
     );
-    expect(fieldFor("confirmPassword", RESET_PASSWORD_COPY.confirmPasswordLabel)).toHaveAttribute(
+    expect(fieldFor("confirmPassword", RESET_PASSWORD.confirmPasswordLabel)).toHaveAttribute(
       "autocomplete",
       "new-password",
     );
@@ -146,24 +149,66 @@ describe("the forgot-password, reset, verify, and change-password forms", () => 
   it("confirms an address with one button", () => {
     render(<VerifyEmailForm token="a-token" />);
 
-    expect(screen.getByText(VERIFY_EMAIL_COPY.body)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: VERIFY_EMAIL_COPY.submitLabel })).toBeInTheDocument();
+    expect(screen.getByText(VERIFY_EMAIL.body)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: VERIFY_EMAIL.submitLabel })).toBeInTheDocument();
   });
 
   it("asks for the current password before a new one", () => {
     render(<ChangePasswordForm />);
 
-    expect(fieldFor("currentPassword", CHANGE_PASSWORD_COPY.currentPasswordLabel)).toHaveAttribute(
+    expect(fieldFor("currentPassword", CHANGE_PASSWORD.currentPasswordLabel)).toHaveAttribute(
       "autocomplete",
       "current-password",
     );
-    expect(fieldFor("newPassword", CHANGE_PASSWORD_COPY.newPasswordLabel)).toHaveAttribute(
+    expect(fieldFor("newPassword", CHANGE_PASSWORD.newPasswordLabel)).toHaveAttribute(
       "autocomplete",
       "new-password",
     );
-    expect(fieldFor("confirmPassword", CHANGE_PASSWORD_COPY.confirmPasswordLabel)).toHaveAttribute(
+    expect(fieldFor("confirmPassword", CHANGE_PASSWORD.confirmPasswordLabel)).toHaveAttribute(
       "autocomplete",
       "new-password",
+    );
+  });
+});
+
+describe("what a person is told when something is wrong", () => {
+  it("connects a field's own instruction to the field, not merely near it", () => {
+    render(<SignUpForm />);
+
+    const password = fieldFor("password", SIGN_UP.passwordLabel);
+    const describedBy = password.getAttribute("aria-describedby") ?? "";
+    expect(describedBy).not.toEqual("");
+    const described = describedBy
+      .split(" ")
+      .map((id) => document.getElementById(id)?.textContent ?? "")
+      .join(" ");
+    expect(described).toContain(SIGN_UP.passwordHelp);
+  });
+
+  it("announces a refusal, and puts it above the fields so it is on screen at 390", () => {
+    const { container } = render(<AuthProblem>{SIGN_IN.genericError}</AuthProblem>);
+
+    const region = screen.getByRole("alert");
+    expect(region).toHaveAttribute("aria-live", "assertive");
+    expect(region).toHaveTextContent(SIGN_IN.genericError);
+    expect(container.firstElementChild).toBe(region);
+  });
+
+  it("announces a confirmation without interrupting", () => {
+    render(<AuthNotice>{CHANGE_PASSWORD.successNotice}</AuthNotice>);
+
+    const region = screen.getByRole("status");
+    expect(region).toHaveAttribute("aria-live", "polite");
+    expect(region).toHaveTextContent(CHANGE_PASSWORD.successNotice);
+  });
+
+  it("puts the refusal before the first field in every form that can refuse", () => {
+    render(<SignInForm signUpEnabled={false} signedOut />);
+
+    const notice = screen.getByText(SIGN_IN.signedOutNotice);
+    const firstField = fieldFor("email", SIGN_IN.emailLabel);
+    expect(notice.compareDocumentPosition(firstField) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
     );
   });
 });

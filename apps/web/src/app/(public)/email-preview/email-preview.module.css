@@ -1,0 +1,89 @@
+/* PRD-006d 006D-AC-014. The frame around the two account emails.
+ *
+ * Only the page around the email is styled here. Inside the frame the email is on its own, which
+ * is the point of the frame: a reviewer sees what a mail client would show, not what this
+ * stylesheet would prefer.
+ */
+.page {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: var(--space-6);
+  padding-block: var(--space-7);
+  padding-inline: var(--space-4);
+  color: var(--tx-strong);
+}
+/* Layout comes from the `Stack` primitive; this module states only the two type steps the heading
+ * needs, so it is not a third copy of a page header's typography. */
+.header {
+  inline-size: 100%;
+  max-inline-size: 38rem;
+}
+.title {
+  margin: 0;
+  font-size: var(--text-page-size);
+  line-height: var(--leading-tight);
+}
+.lead {
+  margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+.email {
+  display: grid;
+  inline-size: 100%;
+  max-inline-size: 38rem;
+  gap: var(--space-3);
+}
+.meta {
+  display: grid;
+  gap: var(--space-1);
+}
+.meta h2 {
+  margin: 0;
+  font-size: var(--text-card-size);
+  line-height: var(--leading-tight);
+}
+.meta p {
+  margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+/* 600px is the width a mail client gives a message, so that is the width it is reviewed at. It is
+ * the one fixed measure on this page, and it belongs to the email medium, not to this product. */
+.viewport {
+  /* The 600px belongs to the email, not to this page's chrome, so the width is measured inside
+   * the boundary. With the global border-box reset the frame would be 598 wide and the review
+   * would be of an email nobody will ever receive. */
+  box-sizing: content-box;
+  inline-size: min(600px, 100%);
+  max-block-size: 30rem;
+  overflow: auto;
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-control);
+  background: var(--sf-card);
+}
+/* Brief section 18 and 006D-AC-009: the frame is a keyboard focus stop, and Chromium draws its own
+ * ring on it. A parent document cannot author that ring, because the frame element matches neither
+ * `:focus` nor `:focus-within` while focus is inside the framed document. The ring a person then
+ * sees inside the frame is the email's own, which this product does not style, and should not. */
+.viewport:focus-within {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+.frame {
+  display: block;
+  inline-size: 100%;
+  block-size: 18rem;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .page * {
+    animation: none;
+    transition-duration: 0ms;
+  }
+}

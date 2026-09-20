@@ -14,11 +14,22 @@ export function guidedSetupStepAnnouncement(position: number, title: string): st
   return `Step ${position} of ${GUIDED_SETUP_TOTAL_STEPS}: ${title}`;
 }
 
-/** The two controls every step carries. "Not now" saves progress; it never loses typed text. */
+/**
+ * The controls every step carries. "Not now" saves progress; it never loses typed text.
+ *
+ * `closeStep` is the accessible name on the panel's own close control, and PRD-006d ruled that it
+ * stays rather than being folded into "Not now". They are two different promises: "Not now" ends
+ * the walkthrough and is the footer's visible words, while the close control puts this one panel
+ * away and leaves the walkthrough where it is. Giving both the same name would tell a screen-reader
+ * user that the two do the same thing, which is the kind of small lie that makes a walkthrough
+ * untrustworthy. It lives here because every string a person reads or hears lives in a copy module
+ * (PRD-006b D6).
+ */
 export const GUIDED_SETUP_CONTROLS = Object.freeze({
   dismiss: "Not now",
   continueLabel: "Continue",
   back: "Back",
+  closeStep: "Close this step",
   finishChip: "Finish setup",
   restart: "Show me around again",
 });

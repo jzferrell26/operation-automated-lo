@@ -261,15 +261,37 @@ export function screenshotName(
  * `idleNetwork` is false for exactly one kind of state: one a person only ever sees while a request
  * is still travelling, such as the create screen's saving state. There the request in flight is the
  * state, so waiting for the network to go quiet would wait for the state to end.
+ *
+ * `keepScroll` is true for exactly one kind of state too: one whose subject is a panel pointing at
+ * an element somewhere down the page. The guided setup scrolls the page itself so the step's own
+ * element sits clear of its panel (`model/panel-placement.ts`), and scrolling back to the top would
+ * photograph a walkthrough pointing at something outside the picture. The position is the product's
+ * own arithmetic from the same viewport, so it is as repeatable as the top of the page is.
  */
 export async function settleForScreenshot(
   page: Page,
-  options: Readonly<{ idleNetwork?: boolean }> = {},
+  options: Readonly<{ idleNetwork?: boolean; keepScroll?: boolean }> = {},
 ): Promise<void> {
-  await page.evaluate(async () => {
-    window.scrollTo(0, 0);
+  const keepScroll = options.keepScroll ?? false;
+  /**
+   * Every stylesheet the route inserted has been applied.
+   *
+   * A `<link rel="stylesheet">` whose `sheet` is still null has been fetched but not yet applied,
+   * and an element styled by it is measured with its author styles missing. Measured on
+   * 2026-09-20: one cell of the account matrix, verify-email at 390 in Light, reported the footer's
+   * sign-in link at 46 by 18 while the other seven cells of the same markup reported 44 by 44,
+   * because `Link.module.css` had not applied and `min-block-size` does not apply to an inline box.
+   * Network idle does not cover this: the request has finished, the sheet has not.
+   */
+  await page.waitForFunction(() =>
+    [...document.querySelectorAll('link[rel="stylesheet"]')].every(
+      (node) => (node as HTMLLinkElement).sheet !== null,
+    ),
+  );
+  await page.evaluate(async (keep) => {
+    if (!keep) window.scrollTo(0, 0);
     await document.fonts.ready;
-  });
+  }, keepScroll);
   if (options.idleNetwork ?? true) await page.waitForLoadState("networkidle");
 }
 
@@ -293,6 +315,8 @@ export async function captureNamedState(
     frames?: readonly ReviewFrame[];
     fullPage?: boolean;
     idleNetwork?: boolean;
+    /** See `settleForScreenshot`: true for a panel that points at something down the page. */
+    keepScroll?: boolean;
     /**
      * Regions whose content is a fact about this run rather than about the design: a decision's
      * timestamp, for instance. Painted over so the picture still fails on a spacing token, a colour
@@ -304,7 +328,10 @@ export async function captureNamedState(
 ): Promise<void> {
   for (const frame of input.frames ?? REVIEW_FRAMES) {
     await page.setViewportSize({ width: frame.width, height: frame.height });
-    await settleForScreenshot(page, { idleNetwork: input.idleNetwork ?? true });
+    await settleForScreenshot(page, {
+      idleNetwork: input.idleNetwork ?? true,
+      keepScroll: input.keepScroll ?? false,
+    });
 
     await expectAxeClean(page, input.axe ?? {});
     await expectNoHorizontalOverflow(page);

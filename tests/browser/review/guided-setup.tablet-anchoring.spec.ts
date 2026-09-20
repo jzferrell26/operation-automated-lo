@@ -4,6 +4,7 @@ import {
   expectNoExternalRequests,
   freshEmail,
   guardLocalOrigin,
+  restartGuidedSetup,
   signUpFreshAccount,
   walkToTheCreateStep,
 } from "./helpers/guided-setup-journey.js";
@@ -21,16 +22,20 @@ import {
  *
  * A panel that covers the field is the single failure that makes a walkthrough useless, and it is
  * a failure that only appears at one width, which is why it gets a spec of its own.
+ *
+ * **One account, three frames.** PRD-006d's named-state review, F-22: this file used to create a
+ * fresh account per frame, three of the product's ten sign-ups an hour
+ * (`apps/web/src/server/password-authentication-handler.ts:118`), and between this file and the
+ * other three the review run spent the whole budget on itself. What the spec is about is where the
+ * panel lands at three widths, not three people. The account is created once, and "Show me around
+ * again" walks the same person back to step 4 for each frame. Every assertion below is the one it
+ * was, asserted at the same three widths, and each carries its frame in the failure message so a
+ * failure still says which width broke.
  */
 
 const MOBILE = { width: 390, height: 844 } as const;
 const TABLET = { width: 768, height: 1024 } as const;
 const DESKTOP = { width: 1180, height: 900 } as const;
-
-async function startAtTheCreateStep(page: Page): Promise<void> {
-  await signUpFreshAccount(page, freshEmail());
-  await walkToTheCreateStep(page);
-}
 
 /**
  * The panel, and the first control inside the element it is pointing at. The control rather than
@@ -53,12 +58,34 @@ async function boxes(page: Page) {
   };
 }
 
-test("at the mobile frame the panel is a capped bottom sheet clear of the field", async ({
-  page,
-}) => {
+/** The claim that holds at 768 and above: beside the element, or below it, never over it. */
+async function expectAnchoredBesideOrBelow(page: Page, width: number): Promise<void> {
+  const { field, panel } = await boxes(page);
+  const beside = panel.x >= field.x + field.width - 1;
+  const below = panel.y >= field.y + field.height - 1;
+  expect(beside || below, `at ${String(width)} the panel is beside the element or below it`).toBe(
+    true,
+  );
+
+  // The sticky header is the one surface a panel must never sit under, because the brief's focus
+  // ring has to stay visible and the header scrolls with the page.
+  const header = await page.getByRole("banner").boundingBox();
+  if (header !== null) {
+    expect(
+      panel.y,
+      `at ${String(width)} the panel clears the sticky header`,
+    ).toBeGreaterThanOrEqual(header.y + header.height - 1);
+  }
+}
+
+test("the panel anchors correctly at the mobile, tablet, and embedded frames", async ({ page }) => {
+  // Three walks to step 4 with deliberate typing, in one test rather than three.
+  test.setTimeout(900_000);
   const guard = await guardLocalOrigin(page);
+
   await page.setViewportSize(MOBILE);
-  await startAtTheCreateStep(page);
+  await signUpFreshAccount(page, freshEmail());
+  await walkToTheCreateStep(page);
 
   const { field, panel } = await boxes(page);
   expect(
@@ -73,33 +100,18 @@ test("at the mobile frame the panel is a capped bottom sheet clear of the field"
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
-  expectNoExternalRequests(guard);
-});
 
-for (const frame of [TABLET, DESKTOP] as const) {
-  test(`at ${String(frame.width)} the panel anchors beside or below the element, never over it`, async ({
-    page,
-  }) => {
-    const guard = await guardLocalOrigin(page);
+  for (const frame of [TABLET, DESKTOP] as const) {
     await page.setViewportSize(frame);
-    await startAtTheCreateStep(page);
+    await restartGuidedSetup(page);
+    await walkToTheCreateStep(page);
 
-    const { field, panel } = await boxes(page);
-    const beside = panel.x >= field.x + field.width - 1;
-    const below = panel.y >= field.y + field.height - 1;
-    expect(beside || below, "the panel is beside the element or below it").toBe(true);
-
-    // The sticky header is the one surface a panel must never sit under, because the brief's focus
-    // ring has to stay visible and the header scrolls with the page.
-    const header = await page.getByRole("banner").boundingBox();
-    if (header !== null) {
-      expect(panel.y, "the panel clears the sticky header").toBeGreaterThanOrEqual(
-        header.y + header.height - 1,
-      );
-    }
+    await expectAnchoredBesideOrBelow(page, frame.width);
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      `at ${String(frame.width)} the document does not scroll sideways`,
     ).toBe(true);
-    expectNoExternalRequests(guard);
-  });
-}
+  }
+
+  expectNoExternalRequests(guard);
+});

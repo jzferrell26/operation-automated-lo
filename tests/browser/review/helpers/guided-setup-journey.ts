@@ -202,18 +202,59 @@ export async function restartGuidedSetup(page: Page): Promise<void> {
   await expect(
     page.getByRole("dialog", { name: "Let's set up your first Open House Boost" }),
   ).toBeVisible();
+  /**
+   * Step 1's route is `/overview`, so a restart from anywhere else is also a navigation, and the
+   * panel is visible before that navigation has landed. A spec that carried on here would be
+   * acting on the page the restart is leaving.
+   *
+   * Measured on 2026-09-20, when one spec walked "Let's go" into a page that was still arriving and
+   * its Continue never advanced, and another ran axe during the transition and was told the
+   * document has no title. Both were specs that had just started reusing one account across cells,
+   * which is what made a restart mid-spec common enough to see. Waiting for the address and for a
+   * title the route has set is waiting for the page the restart meant.
+   */
+  await page.waitForURL("**/overview");
+  await expect(page).toHaveTitle(/\S/u);
 }
 
-/** Steps 1 through 3, ending on the create screen with step 4 open. */
+/**
+ * How long a step may take to arrive after Continue.
+ *
+ * Steps 2 and 3 save the profile before they move, because the step after them renders from what
+ * they just wrote (`guided-setup-provider.tsx`, `renderProfileStep`), and step 3 also changes
+ * route. On a cold connection pool the first of those writes takes longer than Playwright's
+ * five-second default, and on 2026-09-20 three specs failed waiting five seconds for a step that
+ * did arrive. The wait is on the panel a person is waiting for rather than on the request behind
+ * it: a network event can be missed, and a panel that never appears is the failure worth reporting
+ * either way.
+ */
+const STEP_ARRIVES_TIMEOUT_MS = 30_000;
+
+/** Presses Continue and waits for the step it leads to, by the name the panel carries. */
+export async function continueToPanel(page: Page, title: string): Promise<void> {
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("dialog", { name: title })).toBeVisible({
+    timeout: STEP_ARRIVES_TIMEOUT_MS,
+  });
+}
+
+/**
+ * Steps 1 through 3, ending on the create screen with step 4 open.
+ *
+ * The Realtor field is emptied before it is typed into. A person walking the setup a second time
+ * finds it holding what they saved the first time, and typing appends, so a spec that reuses one
+ * account across cells would build "Priya NadeemPriya Nadeem" and photograph it. Clearing first is
+ * what a person does to a prefilled field they want to change, and it makes the value the same on
+ * every pass.
+ */
 export async function walkToTheCreateStep(page: Page, realtorName = "Priya Nadeem"): Promise<void> {
   await page.getByRole("button", { name: "Let's go" }).click();
   await expect(page.getByRole("dialog", { name: "Your details" })).toBeVisible();
-  await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("dialog", { name: "Your Realtor partner" })).toBeVisible();
+  await continueToPanel(page, "Your Realtor partner");
+  await page.getByLabel("Realtor's name").fill("");
   await typeIntoLabel(page, "Realtor's name", realtorName);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await continueToPanel(page, "Create the Open House Boost");
   await page.waitForURL("**/marketing/campaigns/new");
-  await expect(page.getByRole("dialog", { name: "Create the Open House Boost" })).toBeVisible();
 }
 
 /** Fills the fields the user owns and saves, leaving the browser on the campaign's own page. */

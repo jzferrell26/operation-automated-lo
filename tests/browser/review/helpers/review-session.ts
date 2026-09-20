@@ -30,6 +30,12 @@ export async function putTheWalkthroughAside(page: Page): Promise<void> {
    * change-password spec spent its whole timeout on somebody else's step 5 because of exactly this
    * race, and passed on the runs where the post happened to land first. Waiting for the answer is
    * what makes it land first every time.
+   *
+   * The race itself is closed in the product as of PRD-006d's named-state review, F-23: the panel
+   * now stays open until its own write has landed. This wait stays anyway. It costs nothing, it is
+   * what makes this helper's promise ("the walkthrough is aside and stored") true rather than
+   * likely, and a test that stopped asserting the thing the product now guarantees would stop
+   * noticing if the guarantee were ever taken back.
    */
   const saved = page.waitForResponse(
     (response) =>

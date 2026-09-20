@@ -83,7 +83,11 @@ jobs:
   review:
     name: Account screens and guided setup (review project)
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    # The review suite is 11 to 12 minutes on a quiet runner and up to 23 when the Docker host is
+    # contended, and PRD-006d's named-state review added five guided-setup steps and four
+    # campaign-detail and sign-up states to it; 75 leaves room for the slow case instead of
+    # cancelling a run that was going to pass.
+    timeout-minutes: 75
     permissions:
       contents: read
     env:

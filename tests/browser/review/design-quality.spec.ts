@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { SIGN_UP } from "../../../apps/web/src/copy/auth-messages.js";
 import {
   REVIEW_FRAMES,
   captureNamedState,
@@ -20,7 +21,11 @@ import {
   seededCredentials,
   signInExisting,
 } from "./helpers/guided-setup-journey.js";
-import { chooseThemeFromTheHeader, REVIEW_THEMES } from "./helpers/review-session.js";
+import {
+  chooseThemeFromTheHeader,
+  putTheWalkthroughAside,
+  REVIEW_THEMES,
+} from "./helpers/review-session.js";
 
 /**
  * PRD-006d 006D-AC-007 through 006D-AC-012, for the screens only a real session reaches.
@@ -31,14 +36,15 @@ import { chooseThemeFromTheHeader, REVIEW_THEMES } from "./helpers/review-sessio
  * terminator the `__Host-` session cookie requires. It is the same rubric and the same helpers as
  * `tests/browser/design-quality.spec.ts`; only the server differs.
  *
- * **This file creates no account and signs in three times.** That is a deliberate shape, not a
- * shortcut. The first version of it created a fresh account per frame and theme and signed in once
- * per cell, and the run's own rate limiter did exactly what it is there for: the last sign-up in
- * the run was refused with "There have been too many attempts", and the failure landed on PRD-006c's
+ * **This file creates no account.** That is a deliberate shape, not a shortcut. The first version
+ * of it created a fresh account per frame and theme and signed in once per cell, and the run's own
+ * rate limiter did exactly what it is there for: the last sign-up in the run was refused with
+ * "There have been too many attempts", and the failure landed on PRD-006c's
  * `guided-setup.tablet-anchoring` spec rather than here. A review suite that spends the product's
  * rate-limit budget is a review suite that breaks the specs sharing the run with it. So the
  * session-bound screens are walked inside one signed-in session each, looping the frames and
- * themes in place.
+ * themes in place. The two sign-up submissions below are refusals against an address that already
+ * has an account, so they create nothing either.
  *
  * Every screen here shows seeded review data. No baseline under `tests/visual/screens/review/`
  * contains a real name, a real address, or a token.
@@ -55,23 +61,74 @@ const ACCOUNT_SCREENS = Object.freeze([
 ] as const);
 
 /**
- * PRD-006d D3's sign-up state is the one named state this suite does not take, and the reason is
- * arithmetic rather than design.
+ * PRD-006d D3's sign-up refusal state, and the arithmetic that used to keep it out of the suite.
  *
  * `handlePasswordSignUp` spends one `sign_up_ip` attempt on every submission before it parses the
- * body (`apps/web/src/server/password-authentication-handler.ts:713`), the limit is ten an hour per
- * address (the same file, line 86), and PRD-006c's specs already spend exactly ten in one run: four
- * in `guided-setup.accessibility.spec.ts`, three in `guided-setup.tablet-anchoring.spec.ts`, two in
- * `guided-setup.resume.spec.ts`, and one in `guided-setup.timed.spec.ts`. Adding two here was
- * measured on 2026-09-19: the run's last two sign-ups were refused with "There have been too many
- * attempts" and PRD-006c's tablet-anchoring and timed specs failed on a sign-up that never
- * returned. A review suite that spends the product's rate-limit budget breaks the specs sharing the
- * run with it, which is the lesson this file's header already records.
+ * body (`apps/web/src/server/password-authentication-handler.ts:771`), and the limit is ten an
+ * hour per address (the same file, line 118). Until 2026-09-20 PRD-006c's four specs spent exactly
+ * ten of them in one run: four in `guided-setup.accessibility.spec.ts`, three in
+ * `guided-setup.tablet-anchoring.spec.ts`, two in `guided-setup.resume.spec.ts`, and one in
+ * `guided-setup.timed.spec.ts`. Adding two here was measured on 2026-09-19: the run's last two
+ * sign-ups were refused with "There have been too many attempts" and two PRD-006c specs failed on
+ * a sign-up that never returned.
  *
- * So the address-already-has-an-account notice stays a manual row in
- * `docs/operations/evidence-packs/design-quality-signoff.md`. It is reachable, and a set of its
- * eight pictures was taken on 2026-09-19; it is simply not reachable on every run.
+ * F-22 made room rather than arguing about it. The accessibility matrix now walks one account
+ * instead of four and the anchoring spec one instead of three, so those four specs spend five;
+ * `guided-setup.walkthrough-captures.spec.ts` spends one more for the workspace owner that step
+ * 6's approve branch needs, and the two submissions below bring a run to eight of ten. The state
+ * is in the suite on every run instead of being a hand-staged row in the sign-off document.
+ *
+ * One submission per theme, because a public account screen carries no theme control and the theme
+ * is chosen before the page loads. The refusal is React state on the page, so it survives the four
+ * resizes and all four frames come from that one submission.
  */
+const EXISTING_ADDRESS_NAME = "Review Sign Up";
+/** Passes the policy, so the refusal on screen is the one under review. */
+const EXISTING_ADDRESS_PASSWORD = "amber harbour rope ladder";
+
+for (const theme of REVIEW_THEMES) {
+  test(`sign-up tells an address that already has an account, in ${theme}`, async ({ page }) => {
+    test.setTimeout(180_000);
+    const guard = await guardLocalOrigin(page);
+    const { creatorEmail } = seededCredentials();
+    await useStoredTheme(page, theme);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/sign-up");
+    await expectThemeResolved(page, theme);
+    await settleForScreenshot(page);
+
+    await page.getByLabel("Your name").fill(EXISTING_ADDRESS_NAME);
+    await page.getByLabel("Email").fill(creatorEmail);
+    await page.getByLabel("Password", { exact: true }).fill(EXISTING_ADDRESS_PASSWORD);
+    await page.getByRole("button", { name: "Create account" }).click();
+
+    /*
+     * PRD-006b D10's sign-up row, word for word. It arrives as a `status`, not an `alert`: the
+     * sign-up form answers a duplicate address with `AuthNotice`
+     * (`apps/web/src/features/auth/components/sign-up-form.tsx:55-63`), which is the polite
+     * urgency, because the sentence is a thing to do next rather than a refusal to understand.
+     * Scoped to the form for the reason the refused sign-in case records.
+     */
+    const notice = page.locator("form").getByRole("status");
+    await expect(notice).toContainText(SIGN_UP.existingAccountError);
+    // The state's whole point is the two ways forward it offers, so they are asserted, not assumed.
+    await expect(notice.getByRole("link", { name: "Sign in" })).toBeVisible();
+    await expect(notice.getByRole("link", { name: "Reset your password" })).toBeVisible();
+
+    await captureNamedState(page, {
+      screen: "sign-up",
+      state: "address-already-has-an-account",
+      theme,
+    });
+
+    // The refusal must not cost the screen its keyboard path, so the same walk the default states
+    // get runs on it, at the same frame.
+    await page.setViewportSize({ width: 1180, height: 900 });
+    await settleForScreenshot(page);
+    await expectKeyboardReachesEveryControl(page);
+    expectNoExternalRequests(guard);
+  });
+}
 
 /**
  * PRD-006d D3's named states on the public account screens.
@@ -192,9 +249,10 @@ test("change-password meets the design quality bar at every frame in both themes
   await page.setViewportSize({ width: 1440, height: 900 });
   await signInExisting(page, creatorEmail, password);
   // The seeded person's progress lives on the server and survives the run, so the walkthrough is
-  // put back to a known place and then dismissed before anything is measured.
+  // put back to a known place and then dismissed before anything is measured. The helper waits for
+  // the dismissal's own write, which F-23 now also makes the product wait for.
   await restartGuidedSetup(page);
-  await page.getByRole("button", { name: "Not now" }).click();
+  await putTheWalkthroughAside(page);
 
   for (const theme of REVIEW_THEMES) {
     await page.goto("/settings/account");
@@ -242,7 +300,7 @@ test("the workspace after a saved password meets the design quality bar", async 
   // The seeded person's progress lives on the server, so the walkthrough is put back to a known
   // place and dismissed before anything is measured, exactly as the change-password case does.
   await restartGuidedSetup(page);
-  await page.getByRole("button", { name: "Not now" }).click();
+  await putTheWalkthroughAside(page);
 
   for (const theme of REVIEW_THEMES) {
     await page.goto("/overview?passwordReset=1");
@@ -326,7 +384,7 @@ test("the guided setup meets the bar at 1440 and 768, in both themes", async ({ 
         screenshotName("guided-setup", frame.name, theme, "step-2-your-details"),
       );
 
-      await page.getByRole("button", { name: "Not now" }).click();
+      await putTheWalkthroughAside(page);
     }
   }
 
@@ -362,16 +420,16 @@ test("the email preview route is not served in review mode", async ({ page }) =>
  * reaches it: a query the product itself navigates to, or a submission with the real server
  * answering.
  *
- * `hasControls` is false on the two states that replace the whole form with a sentence. The
- * keyboard walk is not run on those because there is nothing left on the page to walk, which is
- * itself the finding recorded against them in the review; running a check that can only fail would
- * hide the finding inside a red suite instead of naming it.
+ * Every one of them is walked with the keyboard. Until 2026-09-20 the forgot-password confirmation
+ * was exempted by a `hasControls: false` flag, because the state replaced the whole form with a
+ * sentence and there was nothing left on the page to walk. That exemption was the finding, not a
+ * property of the state: F-20 put the page's own sign-in link back under the notice, so the state
+ * is operable and the walk runs on it like every other.
  */
 type PublicNamedState = Readonly<{
   screen: string;
   state: string;
   path: string;
-  hasControls?: boolean;
   reach?: (page: Page) => Promise<void>;
 }>;
 
@@ -401,7 +459,6 @@ const PUBLIC_NAMED_STATES: readonly PublicNamedState[] = Object.freeze([
     screen: "forgot-password",
     state: "confirmation",
     path: "/forgot-password",
-    hasControls: false,
     reach: async (page) => {
       await page.getByLabel("Email").fill("nobody@oalo.invalid");
       await page.getByRole("button", { name: "Send reset link" }).click();
@@ -452,12 +509,10 @@ for (const named of PUBLIC_NAMED_STATES) {
         theme,
       });
 
-      if (named.hasControls ?? true) {
-        // The same frame the default states' keyboard walk uses, so the two are comparable.
-        await page.setViewportSize({ width: 1180, height: 900 });
-        await settleForScreenshot(page);
-        await expectKeyboardReachesEveryControl(page);
-      }
+      // The same frame the default states' keyboard walk uses, so the two are comparable.
+      await page.setViewportSize({ width: 1180, height: 900 });
+      await settleForScreenshot(page);
+      await expectKeyboardReachesEveryControl(page);
       expectNoExternalRequests(guard);
     });
   }
@@ -471,16 +526,17 @@ for (const named of PUBLIC_NAMED_STATES) {
  * different: the rail, the drawer, the chip, and the help menu are all React state on a page the
  * session is already on.
  *
- * Two of the frames PRD-006d asks for are not frames the product has these states at, and the suite
- * says so by capturing the frames the product does have:
+ * The collapsed rail is captured at 1440, 1180, and 768. Until F-19 it was a 1440 state only,
+ * because the stylesheet hid the collapse control between 768 and 1180 and forced the rail compact
+ * there; design brief section 14 and `03-components/application-shell-and-navigation.md:26` both
+ * say the tablet uses a collapsible rail, so the toggle now works at all three and the same
+ * compact rail is the collapsed state at each. 390 is not one of them and is not meant to be: at
+ * that width the rail is replaced by the drawer, whose trigger is `display: none` above 767.98px
+ * (`apps/web/src/features/shell/components/app-shell.module.css`, the mobile block), so the mobile
+ * drawer is a 390 state and the collapsed rail is not.
  *
- * - The collapse control is `display: none` from 1180 down
- *   (`apps/web/src/features/shell/components/app-shell.module.css:263-276`), because the tablet
- *   range already renders the rail compact from the media query. A collapsed rail is therefore a
- *   1440 state, and 1180 and 768 have the tablet rail instead, which is its own row in the rubric.
- * - The drawer trigger is `display: none` above 767.98px (the same file, lines 283-302), which
- *   PRD-006d D5 deliberately moved so the 768 frame keeps the compact rail. A mobile drawer is
- *   therefore a 390 state.
+ * It also holds F-21's shape in place: the sign-out control belongs to the shell's account area in
+ * the topbar, and `<main>` opens with the page's own heading rather than with a control.
  */
 test("the shell's named states meet the bar", async ({ page }) => {
   test.setTimeout(300_000);
@@ -491,8 +547,46 @@ test("the shell's named states meet the bar", async ({ page }) => {
   await restartGuidedSetup(page);
   // PRD-006c D5. Putting the walkthrough aside is what places the "Finish setup" chip in the
   // header, inside its seven-day window, so the chip is reached by the control a person uses.
-  await page.getByRole("button", { name: "Not now" }).click();
+  await putTheWalkthroughAside(page);
   await expect(page.getByRole("button", { name: "Finish setup" })).toBeVisible();
+
+  /**
+   * F-21. The sign-out control is the shell's, not the page's.
+   *
+   * `03-components/application-shell-and-navigation.md` puts identity and its controls in the rail
+   * and the topbar's account control. Until 2026-09-20 the signed-in layout rendered the sign-out
+   * form as the first child of `<main>`, so every workspace page opened with a button above its
+   * own heading, which rubric axis 1 forbids. Two assertions hold that: the control is inside the
+   * banner, and the first thing inside `<main>` that a person meets is the page's heading.
+   */
+  const signOut = page.getByRole("button", { name: "Sign out" });
+  await expect(signOut).toBeVisible();
+  await expect(page.getByRole("banner").getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("button", { name: "Sign out" })).toHaveCount(0);
+  const headingBeforeControl = await page.evaluate(() => {
+    const main = document.querySelector("main");
+    if (main === null) return "there is no main landmark";
+    const first = main.querySelector("h1, h2, button, a[href], input, select, textarea");
+    return first === null ? "main holds nothing" : first.tagName.toLowerCase();
+  });
+  expect(headingBeforeControl, "the page's own heading opens the main landmark").toMatch(
+    /^h[12]$/u,
+  );
+
+  /**
+   * F-19. "Tablet uses a collapsible rail" is a claim about a control a person can reach, so this
+   * asserts the control rather than the width. The stylesheet used to hide it from 1180 down, and
+   * the tablet rail could not be collapsed at all; the pictures below are of a state that was
+   * unreachable at two of the three frames that have a rail.
+   */
+  for (const frame of [frameNamed("1440"), frameNamed("1180"), frameNamed("768")]) {
+    await page.setViewportSize({ width: frame.width, height: frame.height });
+    await expect(
+      page.getByRole("button", { name: "Collapse navigation" }),
+      `the rail toggle is reachable at ${frame.name}`,
+    ).toBeVisible();
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
 
   for (const theme of REVIEW_THEMES) {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -509,13 +603,16 @@ test("the shell's named states meet the bar", async ({ page }) => {
     await page.keyboard.press("Escape");
     await expect(page.getByRole("button", { name: "Show me around again" })).toBeHidden();
 
+    // F-19. The same toggle, the same collapsed rail, at all three frames that have a rail. The
+    // state is React state on the shell, so it survives the resizes inside the capture.
     await page.getByRole("button", { name: "Collapse navigation" }).click();
     await captureNamedState(page, {
       screen: "shell",
       state: "collapsed-rail",
       theme,
-      frames: [frameNamed("1440")],
+      frames: [frameNamed("1440"), frameNamed("1180"), frameNamed("768")],
     });
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.getByRole("button", { name: "Expand navigation" }).click();
 
     await page.setViewportSize({ width: 390, height: 844 });

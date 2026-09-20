@@ -27,6 +27,15 @@ export function guidedSetupStepAnnouncement(position: number, title: string): st
  */
 export const GUIDED_SETUP_CONTROLS = Object.freeze({
   dismiss: "Not now",
+  /**
+   * What the panel says while "Not now" is still being saved, and only when the save takes longer
+   * than a moment. PRD-006d's named-state review, F-23: the panel used to close the instant the
+   * control was pressed and post afterwards, so a page load that overtook the post read the old
+   * position and opened the walkthrough again. The panel now waits for the answer, which means
+   * there is a wait to explain, and the button specification asks that a control which is waiting
+   * say so rather than simply refusing to respond.
+   */
+  dismissPending: "Saving where you got to.",
   continueLabel: "Continue",
   back: "Back",
   closeStep: "Close this step",

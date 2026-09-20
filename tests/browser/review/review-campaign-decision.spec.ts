@@ -9,7 +9,11 @@ import {
   seededCredentials,
   signInExisting,
 } from "./helpers/guided-setup-journey.js";
-import { chooseThemeFromTheHeader, REVIEW_THEMES } from "./helpers/review-session.js";
+import {
+  chooseThemeFromTheHeader,
+  putTheWalkthroughAside,
+  REVIEW_THEMES,
+} from "./helpers/review-session.js";
 
 /**
  * PRD-006d D3's campaign-detail decision state, in a file of its own so that it runs last.
@@ -44,7 +48,9 @@ import { chooseThemeFromTheHeader, REVIEW_THEMES } from "./helpers/review-sessio
  * a sign-up is not, for the reason recorded above the public states.
  */
 test("the campaign detail's already-decided state meets the bar", async ({ browser }) => {
-  test.setTimeout(420_000);
+  // Three named states, two themes, four frames each, with axe at every cell. F-18 added two of
+  // the three, so the budget moved with them.
+  test.setTimeout(900_000);
   const { approverEmail, creatorEmail, password } = seededCredentials();
 
   const creatorContext = await browser.newContext();
@@ -63,7 +69,7 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
    * what the change-password test above already does, and the run has proven it safe.
    */
   await restartGuidedSetup(creatorPage);
-  await creatorPage.getByRole("button", { name: "Not now" }).click();
+  await putTheWalkthroughAside(creatorPage);
   await creatorPage.goto("/marketing/campaigns/new");
   await fillTheOpenHouseDraft(creatorPage, READY_OPEN_HOUSE);
   await creatorPage.getByRole("button", { name: "Save and run the checks" }).click();
@@ -82,26 +88,47 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
   // The approver's own walkthrough is in the way of the link they were sent, so they put it aside
   // first, exactly as a person would.
   await restartGuidedSetup(page);
-  await page.getByRole("button", { name: "Not now" }).click();
+  await putTheWalkthroughAside(page);
   await page.goto(campaignUrl);
 
+  /**
+   * PRD-006d D3's two remaining campaign-detail states, which F-18 unblocked.
+   *
+   * Until 2026-09-20 neither could be photographed. While the page still holds the version it
+   * arrived with, the screen carries "Send back for changes", and that control was a raw
+   * `<button>` wearing `.hint` from `open-house-draft-builder.module.css` instead of the `Button`
+   * primitive: 152 by 21, measured by `expectTargetsAreLargeEnough` on 2026-09-19, against the 44
+   * by 44 design brief section 14 and WCAG 2.2 SC 2.5.8 ask for. Capturing either state would have
+   * meant a red gate or a weakened target-size check. The control is now the primitive, so both
+   * states are taken here with every check at full strength.
+   *
+   * `ready` is what an approver sees before they decide, so it is taken first, in both themes,
+   * while the decision is still ahead of them.
+   */
+  for (const theme of REVIEW_THEMES) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(campaignUrl);
+    await chooseThemeFromTheHeader(page, theme);
+    await expect(page.getByRole("button", { name: "Approve this version" })).toBeEnabled();
+    await captureNamedState(page, { screen: "campaign-detail", state: "ready", theme });
+  }
+
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByRole("button", { name: "Approve this version" }).click();
   await page.getByRole("button", { name: "Yes, approve" }).click();
   await expect(page.getByText("Approved.", { exact: false }).first()).toBeVisible();
 
   /**
-   * The state between the decision and the next load is not captured here, and the reason is a
-   * defect rather than a choice.
-   *
-   * While the page still holds the version it arrived with, the screen keeps the "Send back for
-   * changes" control (`campaign-approval-controls.tsx:95-104`). It is a raw `<button>` carrying
-   * `.hint` from `open-house-draft-builder.module.css` instead of the `Button` primitive, and it
-   * renders 152 by 21, measured by `expectTargetsAreLargeEnough` on 2026-09-19. Design brief
-   * section 14 and WCAG 2.2 SC 2.5.8 ask for 44 by 44, and `Button.module.css:2` already gives
-   * every `Button` `min-block-size: 44px`. Capturing that state would mean either a red gate or a
-   * weakened target-size check, so it is reported as a finding and left to the batch that fixes the
-   * control. Nothing here was loosened to get a picture.
+   * `approved` is the moment after the decision and before the next load: the page still holds the
+   * version it arrived with, and the only thing that has changed is what the screen says back. The
+   * theme is chosen from the header rather than by reloading, because a reload is exactly the
+   * thing this state is defined as being before.
    */
+  for (const theme of REVIEW_THEMES) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await chooseThemeFromTheHeader(page, theme);
+    await captureNamedState(page, { screen: "campaign-detail", state: "approved", theme });
+  }
 
   for (const theme of REVIEW_THEMES) {
     await page.setViewportSize({ width: 1440, height: 900 });

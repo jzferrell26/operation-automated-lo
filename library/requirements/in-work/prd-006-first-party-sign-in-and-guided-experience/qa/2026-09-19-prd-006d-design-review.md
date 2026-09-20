@@ -355,3 +355,244 @@ mode" condition actually true.
   regenerated on the `ubuntu-24.04` runner before they gate anything;
   `tests/visual/screens/README.md` says exactly how, and Playwright will never silently compare a
   Windows baseline against a Linux run because the platform is part of the filename.
+
+---
+
+# Findings F-18 to F-23 and their re-scores
+
+Reviewer: `ux-ui-guardian`. Date: 2026-09-20. Branch: `claude/completion-review-2026-09-19`,
+reviewed from `0218cfa` forward.
+
+Wave 7e photographed fifteen states nobody had photographed before and, in doing so, found five
+defects the scored review above had not seen, because they only render in those states. A sixth is
+the race Wave 7e worked around in the test layer. All six are fixed here, in the section 3 form,
+each with the gate that would have caught it.
+
+## F-18. The approval card's paired action was not a control the system governs
+
+- **Screen, frame, theme, state:** campaign detail, all four frames, both themes, the ready state
+  and the moment after a decision.
+- **Where:** `apps/web/src/features/campaigns/components/campaign-approval-controls.tsx:95-104`
+  (before the fix) rendered "Send back for changes" as a bare HTML button element carrying `.hint`
+  from `open-house-draft-builder.module.css`. It measured 152 by 21, recorded by
+  `expectTargetsAreLargeEnough` on 2026-09-19.
+- **What it must be:** `Button` with `variant="secondary"`, per
+  `03-components/button-and-safe-action.md`: "Feature code imports `Button` and `SafeAction` from
+  `@oalo/ui`. It does not consume a raw button primitive", and "`secondary` supports a paired
+  action". The primitive carries the 44 by 44 target brief section 14 and WCAG 2.2 SC 2.5.8 ask
+  for; `Button.module.css` already sets `min-block-size: 44px`.
+- **Axes:** 5, 7, 10. Score before: 1.
+- **Fixed:** it is the primitive, with the disabled reason adjacent in the `SafeAction`'s own
+  progress label while a decision is saving. `.hint` stays in the draft builder's module, because
+  three paragraph call sites still use it; only this control stopped borrowing it.
+- **Gate:** `tooling/tests/unit/design-quality/governed-controls.test.ts` now reads `<button>` as
+  well as `<input>`, `<textarea>`, `<a>`, and `<dialog>`, with no exception at all. Run against the
+  tree before the fix, it failed on this exact line.
+- **What it unblocked:** campaign detail's ready and approved states, both now captured at all four
+  frames in both themes by `tests/browser/review/review-campaign-decision.spec.ts`, with axe,
+  overflow, and target size at full strength.
+
+## F-19. The tablet rail was compact, not collapsible
+
+- **Screen, frame, theme, state:** the shell, 1180 and 768, both themes, the collapsed-rail state.
+- **Where:** `apps/web/src/features/shell/components/app-shell.module.css:263-281` (before the fix)
+  forced `.desktopSidebar` to `5rem` between 768 and 1180 and set `display: none` on `.railToggle`,
+  so the control did not exist at either frame.
+- **What it must be:** design brief section 14, "Tablet uses a collapsible navigation rail", and
+  `03-components/application-shell-and-navigation.md:26`, "Tablet uses a collapsible rail". A rail
+  a person cannot collapse is a compact rail.
+- **Axes:** 5, 7. Score before: 1.
+- **Fixed:** the tablet block is gone. 768 and 1180 inherit the desktop rail, so the same toggle
+  collapses the same rail to the same 5rem compact width at all three frames, and the toggle's
+  label describes what the rail is doing at each of them. 390 keeps the drawer.
+- **Gate:** `tests/browser/review/design-quality.spec.ts` asserts the toggle is visible at 1440,
+  1180, and 768, and the collapsed-rail capture now runs at all three.
+- **Recorded for `design-system-guardian`:** rubric section 5 entry **D-008**. The alternative
+  reading, a fixed compact rail at the embedded and tablet frames with no toggle, is defensible
+  under section 14's "embedded layouts use a compact icon rail when necessary" and would keep the
+  768 content column at 688px instead of 496px. The brief says collapsible, so collapsible is what
+  shipped; choosing the other reading is a change to the specification and is owned there.
+
+## F-20. Two confirmation states had no control and no way onward
+
+- **Screen, frame, theme, state:** forgot password in its confirmation state and verify email in
+  its confirmed state, all four frames, both themes.
+- **Where:** `apps/web/src/features/auth/components/forgot-password-form.tsx:32` and
+  `verify-email-form.tsx:28` (before the fix) returned an `AuthNotice` in place of the whole form.
+  `tests/browser/review/design-quality.spec.ts` carried a `hasControls: false` flag that skipped
+  the keyboard walk on the first of them by name.
+- **What it must be:** rubric axis 5 asks every state to be operable, and axis 9 asks the state to
+  say what to do next. `03-components/link.md` gives the primitive, and PRD-006b D10 gives the
+  words the account screens already use.
+- **Axes:** 5, 9. Score before: 1.
+- **Fixed:** both states keep the page's own sign-in link below the notice, in the same footer row
+  and the same D10 words. Verify email had no such link at all, in either state, so it has one in
+  both. No string was invented: `SIGN_IN.submitLabel` is what forgot password already used.
+- **Gate:** the `hasControls` flag is deleted, so `expectKeyboardReachesEveryControl` runs on every
+  public named state including these. The flag was the finding, not a property of the state.
+
+## F-21. Every workspace page opened with a control instead of its own heading
+
+- **Screen, frame, theme, state:** every signed-in screen, all four frames, both themes, every
+  state.
+- **Where:** `apps/web/src/app/(authenticated)/layout.tsx:116-131` (before the fix) rendered the
+  sign-out form as the first child of `<main>`, above each page's own `h1`.
+- **What it must be:** `03-components/application-shell-and-navigation.md` puts identity and its
+  controls in the rail and the topbar's account control, and rubric axis 1 asks that the eye land
+  where the screen spec says, which is the page title.
+- **Axes:** 1, 10. Score before: 1.
+- **Fixed:** the shell gained an `accountControls` slot beside the theme control in the topbar, the
+  same shape `headerControls` already had, and the layout passes the form into it. It is the same
+  plain form post: the hidden session-bound field, no client script, "Sign out" from the copy
+  module, and the `Button` primitive's 44px target. The signed-out branch still renders its
+  sentence and its link in the page.
+- **Gate:** `tests/browser/review/design-quality.spec.ts` asserts the control is inside the banner,
+  absent from the main landmark, and that the first thing inside the main landmark is a heading.
+
+## F-22. The review run spent the product's whole sign-up budget on itself
+
+- **Screen, frame, theme, state:** sign up, all four frames, both themes, the
+  address-already-has-an-account state, which no run could reach.
+- **Where:** four sign-ups in `tests/browser/review/guided-setup.accessibility.spec.ts`, three in
+  `guided-setup.tablet-anchoring.spec.ts`, two in `guided-setup.resume.spec.ts`, one in
+  `guided-setup.timed.spec.ts`. The limit is ten an hour per client address
+  (`apps/web/src/server/password-authentication-handler.ts:118`), spent before the body is parsed
+  (the same file, line 771).
+- **What it must be:** rubric section 4 lists sign up's named states, and a state no suite can
+  reach is a state nothing holds in place.
+- **Axes:** 5, 9. Score before: 1, for a state with no picture.
+- **Fixed:** the accessibility matrix is about the panel at four sizes, not about four people, so
+  one account now walks all four cells with "Show me around again" between them; the anchoring spec
+  does the same across its three frames. Those four specs spend five submissions instead of ten.
+  Nothing was removed, loosened, or made conditional: each cell runs the same axe, reduced-motion,
+  target-size, and anchoring checks it ran before, the same number of times.
+- **Added:** the sign-up refusal state, one submission per theme, with all four frames taken from
+  that one result and the keyboard walk run on it. A run now spends eight of ten: six accounts
+  created and two refusals. The count is in the sign-off document's coverage table.
+
+## F-23. The dismissal was a write the product did not wait for
+
+- **Screen, frame, theme, state:** the guided-setup panel, every step, all four frames, both
+  themes, the dismissed state.
+- **Where:** `apps/web/src/features/guided-setup/guided-setup-provider.tsx:173-176` (before the
+  fix) set `open` to false and posted the new progress afterwards. A navigation that overtook the
+  post read the old progress, reopened the walkthrough on the step it was on, and carried the page
+  somewhere else. Wave 7e waited for the response in
+  `tests/browser/review/helpers/review-session.ts`, which made the suite green and left the product
+  racing.
+- **What it must be:** rubric axis 5, a loading state that keeps its label and prevents a duplicate
+  submission, and `03-components/button-and-safe-action.md`, "Loading retains the label for
+  assistive technology, prevents duplicate submission, and announces progress".
+- **Axes:** 5. Score before: 1.
+- **Fixed:** `dismissSetup` awaits the write; the panel stays open while it travels; "Not now" is
+  disabled meanwhile so the same dismissal cannot be posted twice; and after a beat the panel says
+  "Saving where you got to." through a `LiveRegion` at status urgency, which exists from the press
+  and is empty until then, so what a screen reader meets is a change rather than a region that
+  appears already speaking. A failed write still closes the panel: a walkthrough that refused to go
+  away when somebody asked it to would be the worse product.
+- **Gate:** an integration test in `guided-setup-steps.integration.test.tsx` holds the write open
+  and asserts that the panel is still there, the control is disabled, the sentence arrives, and
+  exactly one write is posted for one press. The test-layer wait stays where Wave 7e put it.
+
+### F-23, second half. An overtaken reply could move the walkthrough backwards
+
+Found while proving the first half, by running the review browser suite itself.
+
+- **Screen, frame, theme, state:** the guided-setup panel, every step, every frame, both themes.
+- **Where:** `apps/web/src/features/guided-setup/guided-setup-provider.tsx`, `persistProgress`. It
+  reconciled the panel's position with whatever a progress write answered, whenever that answer
+  arrived. Two writes overlap whenever somebody presses Continue before the previous write has
+  answered, which "Show me around again" followed by Continue does every time. Each reply carries
+  the progress the server held when it ran, the replies are not ordered, and the older one arriving
+  last put the panel back on the step it had already left.
+- **What it must be:** rubric axis 5. A step that has moved has moved; nothing that happened before
+  it may undo it.
+- **Axes:** 5. Score before: 1. It is the defect underneath Wave 7e's "intermittent" run.
+- **Measured:** 2026-09-20, in the review browser run. `guided-setup.tablet-anchoring.spec.ts`
+  pressed Continue on step 2, the profile saved, the step advanced to 3, and the restart's own
+  reply then moved the panel back to step 2, where it stayed for the whole thirty-second wait. Both
+  writes answered 200, which is why it read as a step that would not advance rather than as an
+  error. The trace's network log is what told them apart.
+- **Fixed:** each progress write takes a token; a reply is applied only when its token is still the
+  newest. An overtaken write still succeeds, it simply no longer speaks for where the person is.
+- **Gate:** a second integration test in the same file holds the first write open, releases it
+  after the second has answered, and asserts the panel is on the step the newest write named. With
+  the token comparison removed the test fails, which is how it was checked.
+
+## What was captured that had never been captured
+
+Every one at all four frames in both themes, through the real journey, with the axe, overflow, and
+target-size helpers every other named state gets. No progress row was written directly.
+
+| Screen | State | Spec |
+| --- | --- | --- |
+| campaign detail | ready | `review-campaign-decision.spec.ts` |
+| campaign detail | approved, before reload | `review-campaign-decision.spec.ts` |
+| sign up | address already has an account | `review/design-quality.spec.ts` |
+| shell | collapsed rail, at 1180 and 768 | `review/design-quality.spec.ts` |
+| guided setup | step 3, your Realtor partner | `guided-setup.walkthrough-captures.spec.ts` |
+| guided setup | step 4, first field and last field | `guided-setup.walkthrough-captures.spec.ts` |
+| guided setup | step 5, read the result | `guided-setup.walkthrough-captures.spec.ts` |
+| guided setup | step 6, both branches | `guided-setup.walkthrough-captures.spec.ts` |
+| guided setup | step 7, what happens next | `guided-setup.walkthrough-captures.spec.ts` |
+
+## The re-scores
+
+Every screen and state touched or added above, scored again on the ten axes at 1440, 1180, 768, and
+390, in Light and Dark. The bar is 3 on every axis.
+
+| Screen | State | Before | After |
+| --- | --- | --- | --- |
+| Campaign detail | ready | 5, 7, and 10 at 1 | 3 on all ten |
+| Campaign detail | approved, before reload | 5, 7, and 10 at 1 | 3 on all ten |
+| Campaign detail | already decided | 3 on all ten | 3 on all ten, unchanged |
+| Shell | collapsed rail at 1440 | 3 on all ten | 3 on all ten, unchanged |
+| Shell | collapsed rail at 1180 and 768 | 5 and 7 at 1; the state was unreachable | 3 on all ten |
+| Shell | rail and topbar, every frame | 1 at 1; the page opened with a control | 3 on all ten |
+| Forgot password | confirmation | 5 and 9 at 1 | 3 on all ten |
+| Verify email | default | 5 at 2; no way onward but the browser's own | 3 on all ten |
+| Verify email | confirmed | 5 and 9 at 1 | 3 on all ten, from the same component; the state itself stays unreachable in the review run for the reason the sign-off records |
+| Sign up | address already has an account | 5 and 9 at 1; no picture | 3 on all ten |
+| Guided setup | steps 3, 4, 5, 6 both branches, 7 | 5 at 2, the dismissal raced; the rest scored by eye with no picture | 3 on all ten |
+
+Two things stay recorded rather than scored, as before: rubric open delta **D-001**, the Dark focus
+ring's contrast on a sunken surface, and **D-004**, the two deferred select controls. **D-008**
+joins them, for the tablet rail's specification reading, owned by `design-system-guardian`.
+
+## Two things found while running the gate, neither of them this lane's
+
+Recorded here because this lane met them, with the file and the line, so the orchestrator can route
+them rather than rediscover them.
+
+1. **The database gate could not start.** `supabase/migrations/20260919180000_first_party_session_role_check.sql`
+   put a bare `CASE` inside a PL/pgSQL `IF` condition. PL/pgSQL reads an `IF` condition by scanning
+   for the next `THEN` at parenthesis depth zero, so the condition ended at the `CASE`'s own first
+   `WHEN ... THEN` and the migration was refused with "syntax error at end of input (SQLSTATE
+   42601)", the caret under that `when`. It is the Wave 3c cross-check (commit `2462def`,
+   PRD-005b D4), and it had never been applied, because the gate has not run since it landed.
+   **Fixed here**, because nothing else in the gate can run until it applies: the `CASE` is
+   parenthesised and the reason is written beside it. The check itself is unchanged, word for word,
+   and it now actually exists in the database.
+2. **The gate is still red, on a row this lane does not own.**
+   `apps/web/src/server/campaign-preflight-handler.correlation.postgres.test.ts` fails all seven
+   cases at line 91: the preflight route answers 200 and then neither `campaign.commands` nor
+   `audit.events` holds a row for the location. Seven of the eight route-level PostgreSQL files
+   pass. This is one of the PRD-005 rows the ledger already lists as waiting on the database gate,
+   and the gate stops at the first failed integration step, so the review browser suite never runs
+   behind it. **Not fixed here**, and not guessed at: it is a persistence contract, not a design
+   one.
+
+The review browser suite was therefore run against the same provisioned database with that one
+step skipped, and it is green: **82 passed, 0 failed, 12.8 minutes**, including every state this
+review added. The driver that did it lives outside the repository and is not a gate.
+
+## What the orchestrator still owns
+
+- **006D-AC-015**, the sign-off itself. Its coverage tables now name every state the two suites
+  take, the four that still need staging by hand, and what a run spends against the sign-up limit.
+- **The preflight correlation row above**, with whoever owns PRD-005c. `pnpm test:db` cannot be
+  green until it is, and the review browser suite cannot run inside the gate until it is.
+- **The baselines.** Every picture added here was drawn on Windows or skipped entirely, and the
+  comparison runs only on the `ubuntu-24.04` runner. `.github/workflows/screen-baselines.yml`
+  regenerates them, and its review job's timeout is now 75 minutes, because the suite is 11 to 12
+  minutes quiet and up to 23 contended and this review added nine states to it.

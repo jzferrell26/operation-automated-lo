@@ -48,6 +48,12 @@ export type GuidedSetupStepProps = Readonly<{
   children?: ReactNode;
   continueDisabled?: boolean;
   continueLabel?: string;
+  /**
+   * PRD-006d's F-23. True while the dismissal's write is still travelling. The panel stays open,
+   * "Not now" is disabled so it cannot be posted twice, and after a beat the panel says why it is
+   * still there.
+   */
+  dismissPending?: boolean;
   onContinue: () => void;
   onDismiss: () => void;
   position: number;
@@ -57,6 +63,16 @@ export type GuidedSetupStepProps = Readonly<{
 
 const FOCUSABLE_WITHIN_ANCHOR = "input, select, textarea, button, a[href]";
 const SHEET_SELECTOR = '[data-overlay-kind="sheet"]';
+
+/**
+ * PRD-006d's F-23. How long a dismissal may take before the panel explains itself.
+ *
+ * It is not a motion duration and does not come from the motion buckets: nothing moves. It is the
+ * length of a pause a person reads as "that worked" rather than "that is broken". Saying it on
+ * every dismissal would be noise, because the write usually answers inside this window and the
+ * panel simply closes; saying nothing at all would leave a disabled button and no reason.
+ */
+const DISMISS_ANNOUNCE_AFTER_MS = 400;
 
 /** The element itself when it is a control, otherwise the first control inside it. */
 function focusFirstControl(element: HTMLElement): void {
@@ -95,6 +111,7 @@ export function GuidedSetupStep({
   children,
   continueDisabled = false,
   continueLabel = GUIDED_SETUP_CONTROLS.continueLabel,
+  dismissPending = false,
   onContinue,
   onDismiss,
   position,
@@ -103,6 +120,7 @@ export function GuidedSetupStep({
 }: GuidedSetupStepProps) {
   const [anchorRect, setAnchorRect] = useState<Rect | undefined>(undefined);
   const [panelSize, setPanelSize] = useState<Size | undefined>(undefined);
+  const [dismissIsSlow, setDismissIsSlow] = useState(false);
   const layerRef = useRef<HTMLDivElement | null>(null);
   const titleRef = useRef<HTMLSpanElement | null>(null);
   /** Set by Continue, consumed by whichever of `attach` or the frame after it runs first. */
@@ -205,6 +223,20 @@ export function GuidedSetupStep({
     titleRef.current?.focus();
   }, [position]);
 
+  /** F-23. The panel only says it is saving once the save has taken longer than a beat. */
+  useEffect(() => {
+    if (!dismissPending) {
+      setDismissIsSlow(false);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setDismissIsSlow(true);
+    }, DISMISS_ANNOUNCE_AFTER_MS);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [dismissPending]);
+
   /**
    * D6. Continue hands focus back to the highlighted element.
    *
@@ -252,7 +284,12 @@ export function GuidedSetupStep({
             <Button disabled={continueDisabled} onClick={continueAndReturnFocus}>
               {continueLabel}
             </Button>
-            <Button onClick={onDismiss} variant="secondary">
+            {/*
+              F-23. Disabled only while the dismissal's write is travelling, so the same press
+              cannot be posted twice and the panel cannot be closed out from under its own write.
+              The reason sits adjacent, in the region below, as the button specification asks.
+            */}
+            <Button disabled={dismissPending} onClick={onDismiss} variant="secondary">
               {GUIDED_SETUP_CONTROLS.dismiss}
             </Button>
           </>
@@ -285,6 +322,21 @@ export function GuidedSetupStep({
           rather than a region appearing, which is the case that goes unannounced.
         */}
         <LiveRegion message={guidedSetupStepAnnouncement(position, title)} urgency="status" />
+        {/*
+          F-23's own region. It exists for as long as a dismissal is travelling and it arrives
+          empty: the case a screen reader misses is a region that appears already carrying its
+          message, so the element is in the document from the moment the control is pressed and
+          gains its sentence a beat later, which is a change the region announces. Outside a
+          dismissal the panel has exactly one status region, the step announcement above.
+        */}
+        {dismissPending ? (
+          <LiveRegion
+            className={styles.pendingNote}
+            message={dismissIsSlow ? GUIDED_SETUP_CONTROLS.dismissPending : undefined}
+            urgency="status"
+            visible={dismissIsSlow}
+          />
+        ) : null}
       </Sheet>
     </div>
   );

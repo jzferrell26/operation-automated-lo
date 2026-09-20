@@ -99,8 +99,16 @@ begin
     -- this pairing is written in TypeScript; this CASE is its mirror. A binding
     -- role the map leaves unmapped yields null, and `is distinct from` makes
     -- that a mismatch rather than a null the whole condition swallows.
-    or issue_first_party_session.session_role is distinct from case
-        issue_first_party_session.binding_role
+    --
+    -- The parentheses around the CASE are load-bearing, not style. PL/pgSQL
+    -- reads an IF condition by scanning for the next THEN at parenthesis depth
+    -- zero, so an unparenthesised CASE ends the condition at its own first
+    -- WHEN ... THEN. Without them this migration refuses to apply at all:
+    -- "ERROR: syntax error at end of input (SQLSTATE 42601)", with the caret
+    -- under the CASE's first `when`, measured on 2026-09-20 on the first
+    -- database gate run after this file landed.
+    or issue_first_party_session.session_role is distinct from (
+      case issue_first_party_session.binding_role
         when 'location_admin' then 'location_admin'
         when 'creator' then 'campaign_creator'
         when 'approver' then 'campaign_approver'
@@ -108,6 +116,7 @@ begin
         when 'analyst' then 'viewer'
         else null
       end
+    )
     or not platform.location_is_active(issue_first_party_session.location_id)
     or not platform.actor_is_active(issue_first_party_session.user_id)
   then

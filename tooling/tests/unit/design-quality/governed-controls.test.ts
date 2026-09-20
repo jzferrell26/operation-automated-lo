@@ -24,7 +24,8 @@ import { describe, expect, it } from "vitest";
  *   a separate assertion below proves, so its label and identifiers are still governed.
  *
  * Nothing else is allowed, and a new screen is covered the moment it exists rather than when
- * somebody remembers to add it to a list.
+ * somebody remembers to add it to a list. `<button>` joined the list on 2026-09-20, with no
+ * exception at all: see the note beside its pattern.
  */
 
 const repositoryRoot = resolve(import.meta.dirname, "../../../..");
@@ -45,6 +46,15 @@ const RAW_ELEMENT_PATTERNS: readonly Readonly<{ pattern: RegExp; instead: string
   { pattern: /<textarea(?![\w-])/gu, instead: "TextArea" },
   { pattern: /<a(?=[\s>])/gu, instead: "Link" },
   { pattern: /<dialog(?![\w-])/gu, instead: "Dialog or Sheet" },
+  /**
+   * Added by the PRD-006d named-state review, finding F-18. The campaign approval card rendered
+   * "Send back for changes" as a raw `<button>` wearing `.hint` from another screen's module, and
+   * it measured 152 by 21 where `03-components/button-and-safe-action.md` asks for a 44 by 44
+   * target from the `Button` primitive. Nothing caught it, because this scan read four elements
+   * and a button was not one of them. It is now, with no exception: every control on every screen
+   * under the scanned roots comes from `Button`, `SafeAction`, or `IconButton`.
+   */
+  { pattern: /<button(?![\w-])/gu, instead: "Button, SafeAction, or IconButton" },
 ];
 
 /** The `<input>` kinds that have no primitive and render no field of their own. */
@@ -98,7 +108,7 @@ describe("the governed-control scan", () => {
     expect(files.length).toBeGreaterThan(20);
   });
 
-  it("finds no raw input, textarea, anchor, or hand-built dialog on any screen", async () => {
+  it("finds no raw input, textarea, anchor, button, or hand-built dialog on any screen", async () => {
     const offenders: string[] = [];
 
     for (const file of await scannedFiles()) {

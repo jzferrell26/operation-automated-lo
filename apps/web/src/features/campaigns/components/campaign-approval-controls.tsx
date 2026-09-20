@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, SafeAction, type SafeActionDecision } from "@oalo/ui";
+import { Button, Card, SafeAction, type SafeActionDecision } from "@oalo/ui";
 import { useState } from "react";
 
 import {
@@ -12,7 +12,6 @@ import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
 import { CampaignHandOff } from "./campaign-hand-off.js";
 import { userMessageSentence } from "../../http/user-messages.js";
 import { postInternalJson } from "../../http/internal-api.js";
-import styles from "./open-house-draft-builder.module.css";
 
 export type CampaignApprovalControlsProps = Readonly<{
   /** Where this campaign lives, so a user who cannot approve can hand the address to someone who can. */
@@ -93,14 +92,28 @@ export function CampaignApprovalControls({
         onConfirm={() => submit("approved")}
       />
       {canApprove && alreadyDecided === undefined && !blocking && state === "awaiting_approval" ? (
-        <button
-          className={styles.hint}
+        /*
+         * `03-components/button-and-safe-action.md`: "Feature code imports `Button` and
+         * `SafeAction` from `@oalo/ui`. It does not consume a raw button primitive", and
+         * "`secondary` supports a paired action". This is the paired action beside the approve
+         * control, so it is the secondary variant and it inherits the primitive's 44px target,
+         * shared focus ring, and motion bucket. It was a bare HTML button element borrowing
+         * `.hint` from the draft builder's module, which drew it 152 by 21 against 44 by 44 (design
+         * brief section 14, WCAG 2.2 SC 2.5.8) and blocked two named states from being
+         * photographed. The disabled reason sits adjacent, as the button specification requires:
+         * while a decision is saving, the `SafeAction` above carries "Saving your decision" as its
+         * own progress label.
+         */
+        <Button
           disabled={busy}
+          onClick={() => {
+            void submit("rejected");
+          }}
           type="button"
-          onClick={() => void submit("rejected")}
+          variant="secondary"
         >
           Send back for changes
-        </button>
+        </Button>
       ) : null}
       {canApprove ? null : <CampaignHandOff campaignHref={campaignHref} />}
       <p role="status">{status ?? "Nobody has approved this version yet."}</p>

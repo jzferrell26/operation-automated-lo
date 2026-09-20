@@ -108,32 +108,51 @@ test("first paint applies the stored Dark theme before hydration", async ({ page
   await assertGuardClean(guard);
 });
 
-test("UIF-009 supports CSS compact and explicit collapsed navigation", async ({ page }) => {
+/**
+ * UIF-009, rewritten by PRD-006d's named-state review, F-19.
+ *
+ * It used to assert that 1180 rendered an 80px rail from a media query with no `data-collapsed`
+ * attribute, and that only 1440 had a control. That is a compact rail, not a collapsible one, and
+ * design brief section 14 and `03-components/application-shell-and-navigation.md:26` both say the
+ * tablet uses a collapsible navigation rail. The stylesheet's tablet block is gone, so the same
+ * control collapses the same rail to the same 80px compact width at 1440, 1180, and 768.
+ *
+ * Every assertion the old test made about the compact rail is still made here, at every frame that
+ * has one: nine links, each with an accessible name and a tooltip while the labels are hidden.
+ * What changed is how the compact rail is reached, which is the defect.
+ */
+test("UIF-009 collapses the rail to the compact icon rail at every frame that has one", async ({
+  page,
+}) => {
   const guard = await guardSyntheticLocalPage(page);
-  await page.setViewportSize({ width: 1180, height: 900 });
-  await page.goto("/overview");
-
   const sidebar = page.getByLabel("Primary workspace");
-  await expect(sidebar).not.toHaveAttribute("data-collapsed", "true");
-  expect((await sidebar.boundingBox())?.width).toBe(80);
   const compactLinks = page
     .getByRole("navigation", { name: "Product navigation" })
     .getByRole("link");
-  await expect(compactLinks).toHaveCount(9);
-  for (const link of await compactLinks.all()) {
-    await expect(link).toHaveAttribute("aria-label", /\S/u);
-    await expect(link).toHaveAttribute("title", /\S/u);
+
+  for (const width of [1440, 1180, 768] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/overview");
+
+    await expect(sidebar, `the rail opens expanded at ${String(width)}`).not.toHaveAttribute(
+      "data-collapsed",
+      "true",
+    );
+    await expect(compactLinks).toHaveCount(9);
+
+    await page.getByRole("button", { name: "Collapse navigation" }).click();
+    await expect(sidebar).toHaveAttribute("data-collapsed", "true");
+    await expect.poll(async () => Math.round((await sidebar.boundingBox())?.width ?? 0)).toBe(80);
+    // The labels are gone, so the name and the tooltip are the only things identifying each item.
+    for (const link of await compactLinks.all()) {
+      await expect(link).toHaveAttribute("aria-label", /\S/u);
+      await expect(link).toHaveAttribute("title", /\S/u);
+    }
+
+    await page.getByRole("button", { name: "Expand navigation" }).click();
+    await expect(sidebar).not.toHaveAttribute("data-collapsed", "true");
   }
 
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.reload();
-  await page.getByRole("button", { name: "Collapse navigation" }).click();
-  await expect(sidebar).toHaveAttribute("data-collapsed", "true");
-  await expect.poll(async () => Math.round((await sidebar.boundingBox())?.width ?? 0)).toBe(80);
-  for (const link of await compactLinks.all()) {
-    await expect(link).toHaveAttribute("aria-label", /\S/u);
-    await expect(link).toHaveAttribute("title", /\S/u);
-  }
   await assertGuardClean(guard);
 });
 
@@ -293,11 +312,20 @@ test("the 768 tablet frame uses the collapsible rail and single-column content",
     await page.goto(`/${route}`);
 
     // Design brief section 14: tablet uses a collapsible navigation rail, not
-    // the mobile top bar and drawer.
+    // the mobile top bar and drawer. F-19: collapsible means the control is
+    // here and it works, so the 80px compact rail is asserted as what this
+    // frame collapses to rather than as what the stylesheet forces on it.
     const sidebar = page.getByLabel("Primary workspace");
     await expect(sidebar).toBeVisible();
-    expect((await sidebar.boundingBox())?.width).toBe(80);
     await expect(page.getByRole("button", { name: "Open navigation" })).toBeHidden();
+    await page.getByRole("button", { name: "Collapse navigation" }).click();
+    await expect.poll(async () => Math.round((await sidebar.boundingBox())?.width ?? 0)).toBe(80);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      "the collapsed tablet rail does not scroll the page sideways",
+    ).toBe(true);
+    await page.getByRole("button", { name: "Expand navigation" }).click();
+    await expect(sidebar).not.toHaveAttribute("data-collapsed", "true");
 
     // Section 14: no horizontal overflow, and a constrained width puts the
     // page into a single column.

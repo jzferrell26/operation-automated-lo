@@ -10,7 +10,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 ## Current tip
 
 - `main` tip (as of 2026-09-16): `c140f11` (PR #65), preceded by `daa498e` (PR #64) and `86ef97d` (PR #63), after `deeb3e2` (PR #62 production-tonight docs), `f4b79f7` (PR #61 locally provable go-live code), `011c53c` (PR #60 PRD-004 docs), `6d5982f` (PR #59 map/ledger sync), `26051b3` (PR #58 PRD-003d).
-- Go-live raid ledger: [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md) rows `GGL-001` through `GGL-010` (VERIFIED) and `GGL-B01` through `GGL-B15` (blocked or accepted); `GGL-B16` CLOSED (CI run `35058370796` at `dab2ec6`, PR #65).
+- Go-live raid ledger: [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md) rows `GGL-001` through `GGL-010` (VERIFIED) and `GGL-B01` through `GGL-B15` (blocked or accepted); `GGL-B16` CLOSED (CI run `35058370796` at `dab2ec6`, PR #65, with PR #66 closed and unmerged).
 - Completion review finding C1 (2026-09-19): runtime request authentication is not composed on `main` at `c140f11`. The exported campaign routes and read pages still compose a static local synthetic default for authentication outside synthetic mode, and that default denies every request. Owned by [PRD-005](../../../library/requirements/in-work/prd-005-authenticated-review-runtime/prd-005-authenticated-review-runtime-index.md) (005a, 005b, in progress on branch `claude/completion-review-2026-09-19`, unmerged); the review URL denies every request without a real session until those sub-PRDs merge.
 - Batch ledger: [`NEXT_BATCH_LEDGER.md`](../../../NEXT_BATCH_LEDGER.md)
 - AC ledger: [`PRODUCTION_EXECUTION_LEDGER.md`](../../../PRODUCTION_EXECUTION_LEDGER.md)
@@ -33,7 +33,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 - PRD-003c human approval on `main` (`71c371d`, PR #57).
 - PRD-003d workspace reads on `main` (`26051b3`, PR #58).
 - Labeled review dashboard on `main` (`6f64201`, PR #53).
-- PRD-004a in-repo code on `main` (`f4b79f7`, PR #61): honest review surfaces (`OALO_REVIEW_SURFACE=authorized`), public-env secret guard, provider default-off proof. `GGL-001`/`GGL-002` VERIFIED in review mode only. `GGL-008` and `GGL-009` VERIFIED in the canonical `pnpm test:db` gate (CI run `35058370796`, PR #65, `c140f11`).
+- PRD-004a in-repo code on `main` (`f4b79f7`, PR #61): honest review surfaces (`OALO_REVIEW_SURFACE=authorized`), public-env secret guard, provider default-off proof. `GGL-001`/`GGL-002` VERIFIED in review mode only. `GGL-008` and `GGL-009` VERIFIED in the canonical `pnpm test:db` gate (CI run `35058370796`, PR #65, with PR #66 closed and unmerged, `c140f11`).
 - Production-tonight requirements authoring (2026-09-16): **PRD-004d** owns `GGL-B16`; **PRD-004e** holds authored listing content (customer-facing scope statement, FAQ, paste-ready fields, six-frame shot list, Loom script, claim audit); operator runbook + coverage report added. Every parked `GGL-B*` row now has an owning requirement document. Documentation only: no AC status changed.
 - PRD-004d real-Postgres command gate is Complete (2026-09-16): route R5 adopted, `GGL-008` and `GGL-009` VERIFIED, CI run `35058370796` at `dab2ec6`, merged as PR #65 (`c140f11`). PR #66 is a closed, unmerged alternate approach to the same gate; it is not reopened.
 
@@ -51,7 +51,7 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 | Honest `/overview` on review URL | **Requires** server-only `OALO_REVIEW_SURFACE=authorized` | Without it, default preview still shows labeled synthetic demo metrics (`GGL-001`/`GGL-002` not met) |
 | Marketplace portal inspect | **Unsigned-in** (`GGL-B04`–`B06`) | Developer Portal + Test Link (004b) |
 | Marketplace listing (`GGL-B09`) | **Content authored** (PRD-004e); capture + submit blocked | Screenshots and Loom need the review URL in review mode; 3 operator values still missing (support email, publisher name, pricing) |
-| Real-Postgres CI gate (`GGL-B16`) | **CLOSED** (CI run `35058370796` at `dab2ec6`, PR #65, `c140f11`) | Route R5 adopted; `GGL-008` and `GGL-009` VERIFIED in the canonical `pnpm test:db` gate. See [PRD-004d](../../../library/requirements/in-work/prd-004-reviewable-go-live/prd-004d-reviewable-go-live-postgres-command-gate.md) |
+| Real-Postgres CI gate (`GGL-B16`) | **CLOSED** (CI run `35058370796` at `dab2ec6`, PR #65, with PR #66 closed and unmerged, `c140f11`) | Route R5 adopted; `GGL-008` and `GGL-009` VERIFIED in the canonical `pnpm test:db` gate. See [PRD-004d](../../../library/requirements/in-work/prd-004-reviewable-go-live/prd-004d-reviewable-go-live-postgres-command-gate.md) |
 | Runtime request authentication (completion review C1) | **Not composed** on `main` at `c140f11`; in progress on branch `claude/completion-review-2026-09-19` (unmerged) | Owned by [PRD-005](../../../library/requirements/in-work/prd-005-authenticated-review-runtime/prd-005-authenticated-review-runtime-index.md) (005a, 005b); the review URL denies every request without a real session until they merge |
 | App Test operator access + controlled location | Operator-led | Live OAuth/session matrix capture |
 | Env isolation + KMS (Wave 2) | Parked | `001J-AC-026`, `001J-AC-029` |

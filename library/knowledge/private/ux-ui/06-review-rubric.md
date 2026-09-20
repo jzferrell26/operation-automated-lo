@@ -98,14 +98,159 @@ acceptance; it is a debt with an address.
 
 | # | Delta | Measurement | Owner | Fix |
 |---|---|---|---|---|
-| D-001 | The focus ring is below the non-text floor on a Dark sunken surface. `--focus-color` is `var(--ac-primary)`, and the rendered Dark `--ac-primary` is `#3566d6`. | 2.90:1 against `--sf-sunken` `#22262f`; 3.20:1 against `--sf-card`. WCAG 2.2 SC 1.4.11 needs 3.0. | `design-system-guardian` | A Dark focus token that does not follow the tenant accent. The rendered value comes from the tenant accent catalog in `apps/web/src/theme/tenant-accent.ts`, which PRD-006d's primitives slice may not edit, so the fix needs its own change. |
-| D-002 | The control boundary is well below the non-text floor. `--bd-input` on `--sf-card`. | 1.27:1 in Light, 1.94:1 in Dark. | `design-system-guardian` | Not a defect on its own: every governed field carries a persistent visible label and a description, so the boundary is never the only thing identifying the control, and SC 1.4.11 is met by the label. It becomes a defect the moment a screen ships a placeholder-only field, which the field specification forbids. Revisit if the palette is ever re-tuned. |
+| ~~D-001~~ | ~~The focus ring is below the non-text floor on a Dark sunken surface. `--focus-color` is `var(--ac-primary)`, and the rendered Dark `--ac-primary` is `#3566d6`.~~ **Ruled and closed 2026-09-20** by `design-system-guardian`; see the ruling below this table. | The audit found it worse than recorded: below 3.0 on five of the ten surfaces a ring can land on, not one. | Closed | `--focus-color` is a dedicated literal per theme and no longer follows the tenant accent. `apps/web/src/theme/token-contrast.unit.test.ts` now measures the ring against all ten surfaces in both themes and fails any re-coupling. |
+| D-002 | The control boundary is well below the non-text floor. `--bd-input` on `--sf-card`. | 1.27:1 in Light, 1.94:1 in Dark. Both reproduced by the 2026-09-20 audit. | Ruled 2026-09-20, recorded, not a debt | Confirmed as written, with the invariant that holds it now named: see the ruling below this table. |
 | ~~D-003~~ | ~~`.oalo-action-link` still exists in `apps/web/src/app/globals.css`, and 17 raw `<a className="oalo-action-link">` call sites across 9 files still use it.~~ **Closed 2026-09-19** by the PRD-006d review, finding F-01 through F-13's F-02. | Source scan on 2026-09-19. | Closed | Every call site is `<Link variant="action">`; the class is deleted; `tooling/tests/unit/design-quality/governed-controls.test.ts` fails the build if either returns. |
-| D-004 | `Select` and `Tabs` have no primitive, so three reporting controls still render a raw `<select>`. Since 2026-09-19 each one is wrapped in `FormField`, so its label and identifiers are governed and an inline error would connect; only the control's own appearance is still local. | `apps/web/src/features/reporting/components/**`. | Deferred by PRD-006d D4 | Nothing in PRD-006 needs them. Add them before the first screen that does. |
+| D-004 | `Select` and `Tabs` have no primitive, so three reporting controls still render a raw `<select>`. Since 2026-09-19 each one is wrapped in `FormField`, so its label and identifiers are governed and an inline error would connect; only the control's own appearance is still local. | `apps/web/src/features/reporting/components/**`. All three sites re-read on 2026-09-20. | Ruled 2026-09-20, deferral confirmed | The deferral stands and now has an end condition and an interim contract: see the ruling below this table. |
 | D-006 | The Dark focus ring on a date, time, or datetime control is drawn by `:focus-within` rather than `:focus-visible`, because Chromium matches neither `:focus` nor `:focus-visible` on the outer control while a keyboard is in one of its shadow sub-fields. | Measured by `tests/browser/design-quality.spec.ts` on 2026-09-19. | Recorded, not a debt | This is a platform fact, not a drift. It is written down here and in `03-components/form-field-and-text-inputs.md` so that a future reviewer does not "simplify" the selector back to `:focus-visible` and silently remove the ring. |
 | D-007 | A frame's focus ring cannot be painted by the parent document. The email preview's frame is a keyboard focus stop, and the ring a person sees inside it is the framed document's own. | Measured by `tests/browser/design-quality.spec.ts` on 2026-09-19. | Recorded, not a debt | The alternative, `tabindex="-1"` on the frame, was tried and is a WCAG failure: the email contains a link, and axe's `frame-focusable-content` catches it. The bordered viewport around the frame carries `:focus-within`, and the keyboard check states the exception. |
 | D-005 | The `/demo` route carries a private nine-token palette, 76 hex values, a `backdrop-filter`, and no Dark block. | `apps/web/src/components/demo/founding-offer-demo.module.css`. | Recorded, not fixed | Out of scope by PRD-006d Non-Goals. It never renders in review mode. Nothing in review mode links to it. |
-| D-008 | The tablet and embedded frames now open with the full 17rem rail and collapse to the 5rem compact rail, because brief section 14 and `03-components/application-shell-and-navigation.md:26` both say the tablet uses a *collapsible* rail and the stylesheet used to force it compact with the toggle hidden. The alternative the code carried, a fixed compact rail at 768 and 1180 with no toggle at all, is a defensible reading of section 14's "embedded layouts use a compact icon rail when necessary" and would keep 496px of content at 768 from becoming 272px of rail. It is a change to the specification, not to a screen, so it is recorded here rather than chosen quietly. | `apps/web/src/features/shell/components/app-shell.module.css`, the tablet block, removed by the PRD-006d named-state review's F-19 on 2026-09-20. | `design-system-guardian` | Either confirm the collapsible rail as shipped and say so in section 14, or rule that the embedded and tablet frames carry a fixed compact rail and say that instead. Whichever it is, the two documents and the stylesheet must agree; today they do, on the collapsible reading. |
+| ~~D-008~~ | ~~The tablet and embedded frames now open with the full 17rem rail and collapse to the 5rem compact rail.~~ **Ruled and closed 2026-09-20** by `design-system-guardian`: the collapsible rail as shipped is confirmed, and brief section 14 now states it with its content-column consequence. | `apps/web/src/features/shell/components/app-shell.module.css`, the tablet block, removed by the PRD-006d named-state review's F-19 on 2026-09-20. | Closed | Brief section 14 and `03-components/application-shell-and-navigation.md` now say what the stylesheet does, including the 496px column the expanded rail leaves at 768. See the ruling below this table. |
+
+### The rulings of 2026-09-20
+
+Recorded by `design-system-guardian`, the owner README.md names for system-level
+change to this folder. Each ruling states what was measured, what was decided,
+and what changed because of it. A delta above that points here is closed or
+confirmed by the ruling with its number.
+
+#### D-001, ruled: the focus ring stops following the tenant accent
+
+The recorded measurement was right and incomplete. `--ac-primary` in Dark is
+`#3566d6`, and against the ten surfaces a ring can actually land on it measures:
+
+| Surface | Ratio | |
+|---|---|---|
+| `--sf-nav` `#0b1122` | 3.60 | passes |
+| `--sf-canvas` `#14161b` | 3.47 | passes |
+| `--st-critical-bg` `#2f1715` | 3.21 | passes |
+| `--sf-card` `#1b1e25` | 3.20 | passes |
+| `--st-uncertain-bg` `#241d3d` | 3.05 | passes |
+| `--st-info-bg` `#16233f` | 2.99 | **fails** |
+| `--st-warning-bg` `#2d2413` | 2.93 | **fails** |
+| `--st-success-bg` `#132a20` | 2.92 | **fails** |
+| `--sf-sunken` `#22262f` | 2.90 | **fails** |
+| `--st-neutral-bg` `#242833` | 2.82 | **fails** |
+
+Five failures, not one. The ring is below SC 1.4.11's 3.0 on every form well and
+on four of the six status surfaces, which is most of the places a Dark keyboard
+user spends time.
+
+The cause is not the accent. `--ac-primary` is only ever a fill behind
+`--tx-on-action`, it is never text, and at that job it is correct in both
+themes. The cause is that `--focus-color` was `var(--ac-primary)`, so an
+accessibility affordance inherited a brand value. `validateTenantAccent` in
+`apps/web/src/theme/tenant-accent.ts` could never have caught this: it measures
+`onAction` against `action` and never measures `action` against a surface, so
+every future catalog entry could have repeated the failure silently.
+
+**Ruled.** `--focus-color` is a dedicated literal per theme and no tenant accent
+moves it. The ring is not a brand surface. Brief section 18 fixes its width and
+its offset and says nothing about its hue, and section 9's tenant allowance
+covers allowlisted semantic accents, which the ring is not.
+
+- Light `--focus-color: #2f6fed`. This is the Light default accent's own value,
+  so the default tenant renders exactly as before. Worst pair 3.90, on
+  `--sf-nav`.
+- Dark `--focus-color: #8bb0ff`. Worst pair 6.84, on `--st-neutral-bg`. It is
+  the Dark informational blue, so it is not a new hue in the palette, but it is
+  written as a literal rather than `var(--st-info-fg)` so that re-tuning the
+  status role cannot move the ring.
+
+Both values are in `packages/ui/src/tokens.css` and mirrored in
+`01-master-tokens.css`, including its `prefers-color-scheme` block. No existing
+measured pair moved: `--ac-primary` is unchanged in both themes.
+`apps/web/src/theme/token-contrast.unit.test.ts` gained a sweep of the ring
+against all ten surfaces in both themes, twenty assertions, plus one that fails
+if `--focus-color` is ever pointed back at a `var()` or overridden in the tenant
+blocks of `apps/web/src/app/globals.css`.
+
+The one visible consequence: the `oalo-teal` tenant's ring was `#087f5b` in
+Light and `#5ee0aa` in Dark. Both passed, but they are now the shared ring. That
+is the intended effect of the ruling, not a regression.
+
+#### D-002, ruled: confirmed, and the invariant that holds it is now named
+
+Both measurements reproduce: `--bd-input` on `--sf-card` is 1.27:1 in Light and
+1.94:1 in Dark. The reading in the entry is correct. SC 1.4.11 asks for 3.0 on
+the visual information *required to identify* a component, and where a control
+carries its own persistent visible label, the boundary is not that information.
+
+The entry stated the conclusion without naming what holds it, which is how a
+sound ruling rots into an assumption. It is held by exactly two things, and this
+ruling names them so that relaxing either one reopens the entry:
+
+1. `FormField`'s `label` prop is required, not optional
+   (`packages/ui/src/components/FormField.tsx:76`). A governed field cannot be
+   constructed without a label.
+2. `tooling/tests/unit/design-quality/governed-controls.test.ts` fails the build
+   on a raw `<input>` or `<textarea>`, so a field cannot reach a screen without
+   going through `FormField`.
+
+**Ruled.** Confirmed, recorded, not a debt. `--bd-input` is not re-tuned.
+Raising it to 3.0 against the card would put a heavy line around every field at
+rest, which brief section 8's crisp operational workspace and section 4's "calm
+under pressure" both argue against, and it would move every committed
+screenshot to fix a ratio that is not the one a person relies on. If either
+invariant above is ever weakened, this entry reopens as a defect, not as a
+discussion.
+
+#### D-004, ruled: the deferral stands, with an end condition and an interim contract
+
+All three sites were re-read on 2026-09-20 and the entry's description is
+accurate: `reporting-acceptance-surface.tsx:178`,
+`reporting-acceptance-surface.tsx:399`, and `support-time-entry.tsx:43` each
+render a native `<select>` inside `FormField` with a required label, so the
+label, the identifiers, and any future inline error are governed the same way as
+every other field. Their appearance comes from one shared block,
+`reporting.module.css:320-338`, which carries its own `:focus-visible` ring from
+the focus tokens, not a local one.
+
+**Ruled.** The deferral is confirmed. Nothing in PRD-006 needs either primitive,
+and specifying a `Select` or a `Tabs` contract today would mean inventing an API
+with no call site to check it against, which is how a primitive ends up wrong in
+its first real use.
+
+The deferral now ends on a condition rather than on someone remembering it:
+
+- **`Select` is built** at the first control the native element cannot express:
+  a multiple selection, an option set that is filtered or loaded
+  asynchronously, or an option that needs more than a text label.
+- **`Tabs` is built** at the first screen that needs a tab set. None exists
+  today.
+- **Until then**, every new `<select>` is wrapped in `FormField` and styled by
+  the shared block above. A local select style is a finding, because it is the
+  thing that makes the eventual primitive expensive to adopt.
+
+#### D-008, ruled: the tablet rail is collapsible, and section 14 now says so
+
+Brief section 14 and `03-components/application-shell-and-navigation.md:26` both
+say the tablet uses a collapsible rail, and since F-19 the stylesheet agrees:
+there is no tablet rule at all between 768 and 1180, so those frames inherit the
+desktop rail and its toggle.
+
+**Ruled.** The collapsible rail as shipped is confirmed, and the consequence the
+entry asked to have stated out loud is now in brief section 14 rather than only
+here. At 768 the rail opens expanded at 17rem, which is 272px, and leaves a
+496px content column; collapsing it to the 5rem compact rail returns the column
+to 688px. That column still satisfies every section 14 rule for a constrained
+frame: forms are one column, side panels have already moved below, and tables
+have already become labelled cards or scrollable regions. So the cost is real
+and it is affordable, which is why the collapsible reading wins over a fixed
+compact rail.
+
+Two things follow from the ruling and are stated so a later reviewer does not
+re-litigate them:
+
+- The rail opens **expanded at every frame**. `app-shell.tsx:63` holds it in
+  `useState(false)`, so a person meets the navigation with its labels readable
+  and chooses the compact rail; the compact rail is never the default that a
+  person has to escape from.
+- The choice does **not** persist across a reload, and this brief does not
+  require it to. A rail that reopens the way every other person's rail opens is
+  predictable, and persistence would need a storage decision this system has not
+  made. If a future screen makes the re-collapse tedious, that is a new
+  requirement with an owner, not a defect against this ruling.
 
 ## 6. What the automated gates already prove, so a reviewer does not re-check it
 
@@ -116,7 +261,7 @@ A reviewer scores what a machine cannot. These run on every change:
 | 1, 2, 3, 8, 10 | `tests/browser/design-quality.spec.ts` and `tests/browser/review/design-quality.spec.ts` compare a committed screenshot of every screen, at every frame, in both themes, against `tests/visual/screens/`, at `maxDiffPixelRatio: 0.001` with animations disabled. A spacing token, a colour role, or a type step moving is a failure with a picture. |
 | 5, on a control that is not a primitive | The same two suites walk each page with the keyboard and fail any focus stop that draws no visible ring on itself, its label, or its wrapper. |
 | 006D-AC-003, governed controls | `tooling/tests/unit/design-quality/governed-controls.test.ts` reads every file under `apps/web/src/app` and `apps/web/src/features` and fails on a raw `<input>`, `<textarea>`, `<a>`, `<button>`, or `<dialog>`. Its exceptions are named with a reason each, never blanket; `<button>` has none. The button rule was added on 2026-09-20 by the named-state review's F-18, which found the one control the scan's four elements had let through. |
-| 4, colour and contrast | `apps/web/src/theme/token-contrast.unit.test.ts` measures every rendered text-on-surface pair in both themes on `pnpm test:unit`. `apps/web/src/theme/delivered-semantic-surfaces.unit.test.ts` fails any raw color literal in a delivered stylesheet. |
+| 4, colour and contrast | `apps/web/src/theme/token-contrast.unit.test.ts` measures every rendered text-on-surface pair in both themes on `pnpm test:unit`. Since the D-001 ruling on 2026-09-20 it also measures `--focus-color` against all ten surfaces a ring can land on, in both themes, and fails if the ring is ever re-coupled to the tenant accent. `apps/web/src/theme/delivered-semantic-surfaces.unit.test.ts` fails any raw color literal in a delivered stylesheet. |
 | 5, states | The component tests in the `components` vitest project render every state of every primitive and assert its accessibility contract. |
 | 6, motion | The browser suite asserts zero computed animation and zero transition duration under `prefers-reduced-motion`, and every feature CSS module now carries its own reduced-motion block. |
 | 7, responsiveness | The browser suite runs the matrix at 1180, 768, and 390, asserts no horizontal overflow, and fails any visible interactive element under 44 by 44. |

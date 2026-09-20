@@ -43,8 +43,28 @@
   --st-uncertain-fg: #5d4fc1;
   --st-uncertain-bg: #f3ecff;
 
-  /* Focus */
-  --focus-color: var(--ac-primary);
+  /* Focus.
+   *
+   * `--focus-color` is a dedicated literal, not `var(--ac-primary)`. Ruled by
+   * `design-system-guardian` on 2026-09-20 closing rubric delta D-001: the ring
+   * used to follow the tenant accent, and the Dark default accent `#3566d6`
+   * measured below the SC 1.4.11 non-text floor of 3.0 on five of the ten
+   * surfaces the ring can land on (2.90 sunken, 2.82 neutral, 2.92 success,
+   * 2.93 warning, 2.99 info). `validateTenantAccent` never caught it because it
+   * only measures `onAction` against `action`, never `action` against a surface.
+   *
+   * The ring is an accessibility affordance, not a brand surface: brief section
+   * 18 fixes its width and offset and says nothing about its hue, and section
+   * 9's tenant allowance covers semantic accents, which the ring is not. So no
+   * tenant accent moves it any more.
+   *
+   * Light `#2f6fed` is the Light default accent's own value, so the default
+   * tenant is unchanged; it measures 3.90 at worst across the ten Light
+   * surfaces. Dark `#8bb0ff` measures 6.84 at worst across the ten Dark ones.
+   * `apps/web/src/theme/token-contrast.unit.test.ts` pins every one of those
+   * twenty pairs and fails if this token is ever re-coupled to the accent.
+   */
+  --focus-color: #2f6fed;
   --focus-width: 2px;
   --focus-offset: 3px;
 
@@ -137,6 +157,11 @@
   --st-neutral-bg: #242833;
   --st-uncertain-fg: #b9acf5;
   --st-uncertain-bg: #241d3d;
+
+  /* D-001. The Dark ring. `#8bb0ff` is the Dark informational blue, written as
+   * a literal rather than `var(--st-info-fg)` so that re-tuning the status role
+   * cannot move the focus ring. Worst pair 6.84 on `--st-neutral-bg`. */
+  --focus-color: #8bb0ff;
 
   --shadow-rest: 0 1px 2px rgb(0 0 0 / 24%);
   --shadow-card: 0 1px 2px rgb(0 0 0 / 24%), 0 12px 28px -18px rgb(0 0 0 / 70%);

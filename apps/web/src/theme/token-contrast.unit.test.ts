@@ -90,6 +90,31 @@ const uiComponentPairs: ReadonlyArray<readonly [string, string]> = [
   ["--ac-secondary", "--sf-card"],
 ];
 
+/**
+ * Every surface a focus ring can land on. The ring is drawn at
+ * `--focus-offset`, so it sits on whatever is behind the focused element, not
+ * on the element itself: a card, the canvas, a form well, the navigation rail,
+ * or a status surface that carries a focusable control.
+ *
+ * `design-system-guardian` ruled rubric delta D-001 on 2026-09-20. Until then
+ * `--focus-color` was `var(--ac-primary)`, so the ring followed the tenant
+ * accent, and the Dark default accent fell below SC 1.4.11's 3.0 on five of
+ * these ten surfaces. The ring is now its own token per theme, and this sweep
+ * is what keeps it that way.
+ */
+const focusRingSurfaces: ReadonlyArray<string> = [
+  "--sf-canvas",
+  "--sf-card",
+  "--sf-sunken",
+  "--sf-nav",
+  "--st-success-bg",
+  "--st-warning-bg",
+  "--st-critical-bg",
+  "--st-info-bg",
+  "--st-neutral-bg",
+  "--st-uncertain-bg",
+];
+
 function ratioFor(
   tokens: ReadonlyMap<string, string>,
   foreground: string,
@@ -132,7 +157,38 @@ describe("semantic token contrast", () => {
         ).toBeGreaterThanOrEqual(UI_COMPONENT_MINIMUM);
       });
     }
+
+    for (const surface of focusRingSurfaces) {
+      it(`${theme.name}: the focus ring stays visible on ${surface}`, () => {
+        const ratio = ratioFor(theme.tokens, "--focus-color", surface);
+        expect(
+          Number(ratio.toFixed(2)),
+          `the focus ring on ${surface} in ${theme.name} is ${ratio.toFixed(2)}:1`,
+        ).toBeGreaterThanOrEqual(UI_COMPONENT_MINIMUM);
+      });
+    }
   }
+
+  /**
+   * The sweep above only measures what it can read, and it reads hex literals.
+   * If `--focus-color` were pointed back at `--ac-primary`, the token would
+   * vanish from the parsed map, the sweep would fail on a missing token rather
+   * than on a ratio, and a tenant accent could move the ring again. This states
+   * the rule directly so the failure names the actual mistake.
+   */
+  it("keeps the focus ring off the tenant-overridable accent", () => {
+    for (const theme of themes) {
+      const ring = theme.tokens.get("--focus-color");
+      expect(ring, `${theme.name} must define --focus-color as its own value`).toMatch(
+        /^#[0-9a-f]{6}$/u,
+      );
+    }
+
+    expect(tokenSource).not.toContain("--focus-color: var(");
+
+    const tenantOverrides = readFileSync(resolve("apps/web/src/app/globals.css"), "utf8");
+    expect(tenantOverrides).not.toContain("--focus-color:");
+  });
 
   it("keeps the link foreground off the primary action token", () => {
     // `--ac-primary` is a 3.20:1 foreground on the Dark card surface, so it can

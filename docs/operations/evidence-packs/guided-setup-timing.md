@@ -7,6 +7,11 @@ The numbers are user time under PRD-006c D9's model: every value typed one chara
 200 ms, a 4-second reading pause before acting on each screen, and the real
 server round trips. They are not machine time, and they are not a benchmark.
 
+The measurements below belong to the commit named in "Measured against commit", and only that
+commit; they are regenerated, overwriting these numbers, the next time
+`guided-setup.timed.spec.ts` runs with `OALO_REGENERATE_UI_EVIDENCE=true` set, which the
+orchestrator does on the final tree before sign-off.
+
 - Date: 2026-09-19
 - Measured against commit: 3ce9e261138058d99ecb7e5145cd79772def3c7b, plus the working tree this file was written from
 - Ceiling: 300 s, from account creation to the last step's Done

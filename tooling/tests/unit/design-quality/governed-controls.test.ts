@@ -20,8 +20,9 @@ import { describe, expect, it } from "vitest";
  *   as an open delta in `06-review-rubric.md` section 5, not hidden here.
  * - `<input type="hidden">`. It renders nothing, so there is nothing to style and no label to
  *   connect. The cross-site token field in the signed-in layout is the only one.
- * - `<select>`. PRD-006d D4 defers `Select`; every remaining one is wrapped in `FormField`, which
- *   a separate assertion below proves, so its label and identifiers are still governed.
+ * - `<select>`. PRD-006d D4 defers `Select`; every remaining one is structurally nested inside an
+ *   open `<FormField>` ... `</FormField>` pair, which a separate assertion below proves per
+ *   occurrence, so its label and identifiers are still governed.
  *
  * Nothing else is allowed, and a new screen is covered the moment it exists rather than when
  * somebody remembers to add it to a list. `<button>` joined the list on 2026-09-20, with no
@@ -32,14 +33,6 @@ const repositoryRoot = resolve(import.meta.dirname, "../../../..");
 
 /** Everything that can paint a control on a screen a signed-in person reaches. */
 const SCANNED_ROOTS: readonly string[] = ["apps/web/src/app", "apps/web/src/features"];
-
-const EXCLUDED: readonly Readonly<{ path: string; because: string }>[] = [
-  {
-    path: "apps/web/src/components/demo",
-    because:
-      "The founding-offer demo route. PRD-006d Non-Goals put it out of scope and 006D-AC-018 records its drift instead; nothing in review mode links to it.",
-  },
-];
 
 const RAW_ELEMENT_PATTERNS: readonly Readonly<{ pattern: RegExp; instead: string }>[] = [
   { pattern: /<input(?![\w-])/gu, instead: "TextField, PasswordField, or FormField" },
@@ -68,12 +61,15 @@ const ALLOWED_INPUT_TYPES: readonly string[] = ["checkbox", "radio", "hidden"];
  * drawer presentation, a selected state, a subordinate state, and a status word, none of which
  * `Link` has or should grow. Putting `Link` under it would mean two class layers competing for the
  * same boundary and focus ring, which is the consistency bug this scan exists to prevent. The
- * allowance is by file and element, not a blanket exemption, so a plain link added to that file is
- * still caught.
+ * allowance is by file AND element: `marker` is the `className` the shell's navigation item
+ * renders, so a second, plain `<a>` added to the same file (with no `styles.navigationLink`
+ * className) is still caught, not waved through just because it shares a file with the one that
+ * is allowed.
  */
-const ALLOWED_ANCHORS: readonly Readonly<{ path: string; because: string }>[] = [
+const ALLOWED_ANCHORS: readonly Readonly<{ because: string; marker: RegExp; path: string }>[] = [
   {
     path: "apps/web/src/features/shell/components/app-shell.tsx",
+    marker: /className=\{styles\.navigationLink\}/u,
     because:
       "The navigation item is a specified shell component, not an inline or action link; see 03-components/application-shell-and-navigation.md.",
   },
@@ -88,8 +84,6 @@ async function scannedFiles(): Promise<readonly string[]> {
       if (extname(entry.name) !== ".tsx") continue;
       if (entry.name.includes(".test.")) continue;
       const file = join(entry.parentPath, entry.name);
-      const repositoryPath = relative(repositoryRoot, file).replaceAll("\\", "/");
-      if (EXCLUDED.some((excluded) => repositoryPath.startsWith(excluded.path))) continue;
       files.push(file);
     }
   }
@@ -100,6 +94,76 @@ async function scannedFiles(): Promise<readonly string[]> {
 function openingTagAt(source: string, index: number): string {
   const end = source.indexOf(">", index);
   return end === -1 ? source.slice(index) : source.slice(index, end + 1);
+}
+
+/** Every raw-element offense `source` (at `repositoryPath`) contains, empty when it is clean. */
+function findRawElementOffenders(source: string, repositoryPath: string): readonly string[] {
+  const offenders: string[] = [];
+
+  for (const { pattern, instead } of RAW_ELEMENT_PATTERNS) {
+    for (const match of source.matchAll(pattern)) {
+      const index = match.index;
+      const tag = openingTagAt(source, index);
+      const typeMatch = /\stype="([a-z-]+)"/u.exec(tag);
+      if (
+        match[0].startsWith("<input") &&
+        typeMatch !== null &&
+        ALLOWED_INPUT_TYPES.includes(typeMatch[1] ?? "")
+      ) {
+        continue;
+      }
+      if (
+        match[0].startsWith("<a") &&
+        ALLOWED_ANCHORS.some(
+          (allowed) => allowed.path === repositoryPath && allowed.marker.test(tag),
+        )
+      ) {
+        continue;
+      }
+      const line = source.slice(0, index).split("\n").length;
+      offenders.push(`${repositoryPath}:${line} renders ${match[0]}>; use ${instead}`);
+    }
+  }
+
+  return offenders;
+}
+
+/**
+ * Whether the position `index` in `source` sits inside an open `<FormField>` ... `</FormField>`
+ * pair, tracked as a simple open/close depth count over every marker before `index`. This is a
+ * per-occurrence structural check, not "does `FormField` appear anywhere in the file": a `select`
+ * before the file's only `FormField`, or after it has closed, reads as depth 0 and is unwrapped.
+ */
+function isNestedInFormField(source: string, index: number): boolean {
+  const markers = [
+    ...[...source.matchAll(/<FormField(?![\w-])/gu)].map((match) => ({
+      index: match.index,
+      delta: 1,
+    })),
+    ...[...source.matchAll(/<\/FormField>/gu)].map((match) => ({
+      index: match.index,
+      delta: -1,
+    })),
+  ].sort((a, b) => a.index - b.index);
+
+  let depth = 0;
+  for (const marker of markers) {
+    if (marker.index >= index) break;
+    depth += marker.delta;
+  }
+  return depth > 0;
+}
+
+/** Every `<select>` in `source` (at `repositoryPath`) that is not nested inside a `FormField`. */
+function findUnwrappedSelects(source: string, repositoryPath: string): readonly string[] {
+  const unwrapped: string[] = [];
+  for (const match of source.matchAll(/<select(?![\w-])/gu)) {
+    const index = match.index;
+    if (isNestedInFormField(source, index)) continue;
+    const line = source.slice(0, index).split("\n").length;
+    unwrapped.push(`${repositoryPath}:${line} renders a select outside FormField`);
+  }
+  return unwrapped;
 }
 
 describe("the governed-control scan", () => {
@@ -114,32 +178,23 @@ describe("the governed-control scan", () => {
     for (const file of await scannedFiles()) {
       const source = await readFile(file, "utf8");
       const repositoryPath = relative(repositoryRoot, file).replaceAll("\\", "/");
-
-      for (const { pattern, instead } of RAW_ELEMENT_PATTERNS) {
-        for (const match of source.matchAll(pattern)) {
-          const index = match.index;
-          const tag = openingTagAt(source, index);
-          const typeMatch = /\stype="([a-z-]+)"/u.exec(tag);
-          if (
-            match[0].startsWith("<input") &&
-            typeMatch !== null &&
-            ALLOWED_INPUT_TYPES.includes(typeMatch[1] ?? "")
-          ) {
-            continue;
-          }
-          if (
-            match[0].startsWith("<a") &&
-            ALLOWED_ANCHORS.some((allowed) => allowed.path === repositoryPath)
-          ) {
-            continue;
-          }
-          const line = source.slice(0, index).split("\n").length;
-          offenders.push(`${repositoryPath}:${line} renders ${match[0]}>; use ${instead}`);
-        }
-      }
+      offenders.push(...findRawElementOffenders(source, repositoryPath));
     }
 
     expect(offenders).toEqual([]);
+  });
+
+  it("catches a second, plain anchor added to the shell file the navigation item is allowed in", () => {
+    const repositoryPath = "apps/web/src/features/shell/components/app-shell.tsx";
+    const source = [
+      '<a aria-current="page" className={styles.navigationLink} href="/overview">Overview</a>',
+      '<a href="/help">Help</a>',
+    ].join("\n");
+
+    const offenders = findRawElementOffenders(source, repositoryPath);
+
+    expect(offenders).toHaveLength(1);
+    expect(offenders[0]).toContain(":2 renders <a");
   });
 
   it("wraps every remaining select in FormField, because Select is deferred and not forgotten", async () => {
@@ -148,15 +203,25 @@ describe("the governed-control scan", () => {
     for (const file of await scannedFiles()) {
       const source = await readFile(file, "utf8");
       const repositoryPath = relative(repositoryRoot, file).replaceAll("\\", "/");
-      const selects = [...source.matchAll(/<select(?![\w-])/gu)];
-      if (selects.length === 0) continue;
-      if (!/\bFormField\b/u.test(source)) {
-        const line = source.slice(0, selects[0]?.index ?? 0).split("\n").length;
-        unwrapped.push(`${repositoryPath}:${line} renders a select outside FormField`);
-      }
+      unwrapped.push(...findUnwrappedSelects(source, repositoryPath));
     }
 
     expect(unwrapped).toEqual([]);
+  });
+
+  it("fails a bare second select that sits outside every FormField, not just an unmentioned file", () => {
+    const repositoryPath = "apps/web/src/features/example/example-surface.tsx";
+    const source = [
+      '<FormField label="Region">',
+      "  <select {...regionControl} />",
+      "</FormField>",
+      "<select {...unwrappedControl} />",
+    ].join("\n");
+
+    const unwrapped = findUnwrappedSelects(source, repositoryPath);
+
+    expect(unwrapped).toHaveLength(1);
+    expect(unwrapped[0]).toContain(":4 renders a select outside FormField");
   });
 
   it("has deleted the hand-rolled action link, so no new screen can reach for it", async () => {

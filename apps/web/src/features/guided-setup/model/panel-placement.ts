@@ -48,7 +48,26 @@ export function panelBlockSize(panel: Size, viewport: Viewport): number {
 
 export type Rect = Readonly<{ top: number; left: number; width: number; height: number }>;
 export type Size = Readonly<{ width: number; height: number }>;
-export type Viewport = Readonly<{ width: number; height: number }>;
+export type Viewport = Readonly<{
+  width: number;
+  height: number;
+  /**
+   * PRD-006c D7, "the panel never obscures the focused element or the shell's sticky header".
+   *
+   * The block-start space the shell's sticky topbar occupies, which the anchored element has to
+   * end up below. It is optional and defaults to zero, because the arithmetic here is about a
+   * viewport rather than about one product's shell, and every case that does not involve the
+   * workspace chrome answers the same as before.
+   *
+   * Measured on 2026-09-20 in the review browser run, once Wave 7r asked whether a tap at the
+   * centre of the anchored element reaches it: "Dark 1180x900 1. Welcome: a tap at the centre of
+   * the element does not reach it ... Received: header.app-shell-module__topbar". The overview's
+   * quick actions are taller than the space above the panel, so the scroll keeps their top rather
+   * than their end, and with the floor at `VIEWPORT_MARGIN` that top went under the sticky
+   * topbar, taking the first control inside it with it.
+   */
+  blockStart?: number;
+}>;
 
 export type PanelPlacement = Readonly<{
   top: number;
@@ -112,13 +131,93 @@ export function resolveAnchorScroll(
 
   const panelHeight =
     viewport.width < SIDE_ANCHOR_MIN_WIDTH
-      ? viewport.height * BOTTOM_SHEET_VIEWPORT_SHARE
+      ? dockedSheetBlockSize(panel, viewport)
       : panelBlockSize(panel ?? { height: 0, width: 0 }, viewport);
   const ceiling = viewport.height - panelHeight - PANEL_GAP - VIEWPORT_MARGIN;
+  /**
+   * The lowest the element's top may go. The panel owns the end of the viewport and the shell's
+   * sticky topbar owns the start of it, so the space the element has is between them. Before the
+   * floor took the topbar into account, an element taller than that space had its top put at the
+   * margin, which is underneath the topbar, and the first control inside it was unreachable.
+   */
+  const floor = (viewport.blockStart ?? 0) + VIEWPORT_MARGIN;
 
-  if (anchor.height > ceiling - VIEWPORT_MARGIN) return anchor.top - VIEWPORT_MARGIN;
-  if (anchor.top < VIEWPORT_MARGIN) return anchor.top - VIEWPORT_MARGIN;
+  if (anchor.height > ceiling - floor) return anchor.top - floor;
+  if (anchor.top < floor) return anchor.top - floor;
   return anchor.top + anchor.height > ceiling ? anchor.top + anchor.height - ceiling : 0;
+}
+
+/**
+ * The block size the docked bottom sheet is placed against, on the frames where the stylesheet
+ * owns the placement.
+ *
+ * The same doctrine as `panelBlockSize`, for the same reason: the stylesheet caps the sheet at
+ * `BOTTOM_SHEET_VIEWPORT_SHARE` of the viewport, so the cap is a height the sheet can never exceed
+ * and is therefore always safe to place against, measured or not. A measurement is used only when
+ * it is somehow larger, which would mean the cap had not applied.
+ *
+ * It is its own function so that the scroll above and the room below cannot answer with two
+ * different numbers. Wave 7q recorded what that costs on the wide frames: the scroll left the
+ * element where the placement would not put the panel, and the panel covered the thing it was
+ * pointing at.
+ */
+export function dockedSheetBlockSize(panel: Size | undefined, viewport: Viewport): number {
+  return Math.max(panel?.height ?? 0, viewport.height * BOTTOM_SHEET_VIEWPORT_SHARE);
+}
+
+/**
+ * PRD-006c D7, Wave 7r. How much room the document needs at its end while a step is open, so that
+ * `resolveAnchorScroll` can actually be obeyed.
+ *
+ * **The rule.** While a guided-setup step is open, the document gains room at its end equal to the
+ * block size the panel is placed against at this frame, plus the gap and the margin the scroll's
+ * own ceiling subtracts. It is exactly the space the panel can occupy at the viewport's block end,
+ * reserved once, at the end of the page.
+ *
+ * **Why it is needed.** `resolveAnchorScroll` can only ask the page to scroll, and a page already
+ * at its maximum scroll has nothing left to give. An element within this distance of the page's
+ * end therefore cannot be lifted clear of the panel, however correct the arithmetic is. Measured
+ * twice in the review browser run on 2026-09-20. Wave 7p, at 390: the pointer press on the create
+ * screen's "Save and run the checks" resolved to the button, found it visible, enabled, and
+ * stable, and was intercepted by the panel's footer inside `[data-guided-setup-layer]` on every
+ * attempt, and "Light 390x844 6. Approve, or hand it to an approver" overlapped the approve
+ * control. Wave 7r, at 1180, once the clearance assertion was put at every step rather than at two
+ * of them: "Light 1180x900 6. Approve, or hand it to an approver: the panel covers the field it is
+ * pointing at". The campaign page's approve control sits above a support block and the page's own
+ * end padding, some 330px short of where the scroll wants it, and there was no scroll left to
+ * give. The defect is not the mobile sheet; it is the end of a page, and it reaches every frame
+ * where the panel has to go below the element rather than beside it.
+ *
+ * **Why it is not narrowed to the frames below `SIDE_ANCHOR_MIN_WIDTH`.** That was the first shape
+ * of this fix and the browser refused it, in the sentence quoted above. Narrowing it instead to
+ * the placements whose side is `block-end` would make the room depend on the anchored element,
+ * which changes on every scroll event the step listens to, and the room has to be in place before
+ * the scroll runs rather than one commit behind it. A number that depends only on the frame and
+ * the panel is knowable on the first render of a step and cannot drift; the cost is end padding on
+ * a page whose panel happened to fit beside its element, for as long as one step is open.
+ *
+ * **Why the gap and the margin are in it.** The ceiling the scroll aims for is
+ * `viewport.height - panel - PANEL_GAP - VIEWPORT_MARGIN`, so room that covered only the panel
+ * would still leave the last control those two apart from clear. With them included, the room is
+ * the whole distance between where the last control can already reach and where the scroll wants
+ * it, less whatever trailing space the page already has, which is the invariant
+ * `panel-placement.unit.test.ts` asserts.
+ *
+ * **Why it does not shrink.** Both branches answer the stylesheet's cap whether or not the panel
+ * has been measured, so the room is at full size from the first render of a step. Room that
+ * narrowed once the panel was measured would shorten the document, the browser would clamp the
+ * scroll back down, and the control would slide under the panel again after the scroll had already
+ * cleared it.
+ *
+ * Nothing here counts the sticky footer twice: the footer is inside the panel and is part of the
+ * block size this measures, and the room is added once, at the end of the document.
+ */
+export function panelEndRoom(panel: Size | undefined, viewport: Viewport): number {
+  const blockSize =
+    viewport.width < SIDE_ANCHOR_MIN_WIDTH
+      ? dockedSheetBlockSize(panel, viewport)
+      : panelBlockSize(panel ?? { height: 0, width: 0 }, viewport);
+  return blockSize + PANEL_GAP + VIEWPORT_MARGIN;
 }
 
 function clamp(value: number, lowest: number, highest: number): number {

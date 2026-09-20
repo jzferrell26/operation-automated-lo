@@ -308,19 +308,19 @@ export async function pointThePanelAtTheSubmitControl(page: Page): Promise<void>
 }
 
 /**
- * Runs the checks from inside the walkthrough, the way somebody using a keyboard does.
+ * Runs the checks from inside the walkthrough, with the pointer, the way somebody on a phone does.
  *
  * The panel is walked onto the submit control, which is where D6 puts focus, and the control is
- * then pressed with the keyboard rather than with the pointer. That is a deliberate choice and it
- * is not a pointer problem being hidden: on a narrow frame the panel is a bottom sheet, the submit
- * control is the last thing on the create screen, and a page already scrolled to its end cannot
- * move that control any higher, so a pointer press lands on the sheet in front of it. Measured on
- * 2026-09-20 in the review browser run: the click resolved to the submit button, found it visible,
- * enabled, and stable, and was intercepted by the panel's own footer every time. That is D7's
- * promise failing for the last control on a long page; it belongs with the panel placement and the
- * stylesheet that caps the sheet, which this lane does not own, so it is reported rather than
- * asserted here. The keyboard path is one the walkthrough's own focus contract offers, so pressing
- * it this way exercises more of the product than a synthetic click would.
+ * then tapped. Both halves matter: the focus assertion is D6's promise and the click is D7's.
+ *
+ * Wave 7p pressed Enter here instead, and said why: on a narrow frame the sheet is docked across
+ * the block end, the submit control is the last thing on the create screen, and a page already at
+ * its maximum scroll could not lift it any higher, so the press was intercepted by the panel's own
+ * footer every time. That was a workaround for a real defect rather than a test of the product: a
+ * person on a phone has to be able to tap the control the panel is pointing at. Wave 7r gave the
+ * page room at its end under the docked sheet
+ * (`apps/web/src/features/guided-setup/model/panel-placement.ts`, `dockedSheetRoom`), so the
+ * pointer path is the product's again and this asserts it rather than avoiding it.
  */
 export async function runTheChecksFromTheWalkthrough(page: Page): Promise<void> {
   await pointThePanelAtTheSubmitControl(page);
@@ -328,7 +328,7 @@ export async function runTheChecksFromTheWalkthrough(page: Page): Promise<void> 
     page.getByRole("button", { name: "Save and run the checks" }),
     "the walkthrough put focus on the control it is pointing at",
   ).toBeFocused();
-  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "Save and run the checks" }).click();
   await expect(page.getByRole("dialog", { name: "Read the result" })).toBeVisible({
     timeout: STEP_ARRIVES_TIMEOUT_MS,
   });

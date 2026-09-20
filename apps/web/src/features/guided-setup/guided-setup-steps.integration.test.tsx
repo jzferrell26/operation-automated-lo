@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -10,6 +10,7 @@ import {
 } from "../../copy/guided-setup-messages.js";
 import { CHECK_RESULT_READY, NOT_CONNECTED_SOURCE } from "../../copy/user-language.js";
 import { OpenHouseDraftBuilder } from "../campaigns/components/open-house-draft-builder.js";
+import { GUIDED_SETUP_ANCHORS } from "./anchor-registry.js";
 import { GuidedSetupShellControls } from "./guided-setup-progress.js";
 import { GuidedSetupProvider } from "./guided-setup-provider.js";
 import { complete, dismiss, initialGuidedSetupProgress } from "./model/progress.js";
@@ -105,6 +106,37 @@ function saveTheOpenHouseDraft(): void {
   fireEvent.click(screen.getByLabelText("I have permission to market this property."));
   fireEvent.click(screen.getByLabelText("I have permission to use the Realtor's materials."));
   fireEvent.click(screen.getByRole("button", { name: "Save and run the checks" }));
+}
+
+/**
+ * A page whose anchored element can be rebuilt on demand.
+ *
+ * A screen that remounts the card or the field a step points at hands the walkthrough a different
+ * DOM node carrying the same `data-tour` id. That is a thing screens do: a card whose data
+ * arrived, a group behind a `key` that changed, a route that rendered its fallback and then its
+ * content. The generation attribute is how the case below tells the replacement from the original.
+ */
+function RebuildableQuickActions() {
+  const [generation, setGeneration] = useState(0);
+  return (
+    <main>
+      <button
+        onClick={() => {
+          setGeneration((current) => current + 1);
+        }}
+        type="button"
+      >
+        Rebuild the quick actions
+      </button>
+      <div
+        data-generation={String(generation)}
+        data-tour={GUIDED_SETUP_ANCHORS.setupWelcome}
+        key={generation}
+      >
+        <a href="/marketing/campaigns/new">Create an Open House Boost</a>
+      </div>
+    </main>
+  );
 }
 
 afterEach(() => {
@@ -544,6 +576,42 @@ describe("guided setup steps", () => {
     expect(
       screen.getByRole("button", { name: GUIDED_SETUP_STEPS.welcome.primaryLabel }),
     ).toBeInTheDocument();
+  });
+
+  /**
+   * Wave 7n. The ring follows an anchored element the page rebuilt under it.
+   *
+   * The attach effect used to stop watching the moment it had attached: it disconnected its own
+   * observer inside `attachIfPresent`. So a screen that remounted the element a step points at
+   * left the ring on a node that was no longer in the document, nothing put it on the replacement,
+   * and the step pointed at nothing for as long as it stayed open. Nothing on the page said so,
+   * because the old node still carried the attribute; it simply was not in the document any more,
+   * which is why `[data-guided-setup-highlight='true']` matched nothing.
+   *
+   * That is what `guided-setup.accessibility.spec.ts` was failing on intermittently: the ring was
+   * missing at step 1 in one cell and at step 4 in another, and which cell it was moved between
+   * runs, because which render replaced the element did.
+   *
+   * The observer now runs for as long as the step is open and re-queries only when the element it
+   * attached to has left the document, so a replacement is picked up and costs one attribute
+   * selector.
+   */
+  it("moves the highlight to the anchored element the page rebuilt under it", async () => {
+    const user = userEvent.setup();
+    renderSetup({ children: <RebuildableQuickActions /> });
+
+    const highlighted = () => document.querySelector("[data-guided-setup-highlight='true']");
+    await waitFor(() => {
+      expect(highlighted()).toHaveAttribute("data-generation", "0");
+    });
+
+    await user.click(screen.getByRole("button", { name: "Rebuild the quick actions" }));
+
+    await waitFor(() => {
+      expect(highlighted()).toHaveAttribute("data-generation", "1");
+    });
+    // Exactly one element carries it, so the ring never splits between the old node and the new.
+    expect(document.querySelectorAll("[data-guided-setup-highlight='true']")).toHaveLength(1);
   });
 
   it("never reaches browser storage", async () => {

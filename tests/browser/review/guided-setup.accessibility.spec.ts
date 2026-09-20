@@ -94,7 +94,11 @@ async function assertPanelClearOfTheField(page: Page, where: string): Promise<vo
   // Every step that names a page element must end up pointing at it. The allowance is generous
   // because the element can arrive with a later render on a cold server; what is not allowed is
   // the step never finding it.
-  await expect(highlighted).toBeVisible({ timeout: 15_000 });
+  //
+  // Wave 7m named the cell in the failure. Four cells run the same assertions, so "the ring is
+  // missing" without a theme and a frame beside it costs a run to find out which one; on
+  // 2026-09-20 it took a rerun to learn that a failure of this line was "Light 390x844" at step 4.
+  await expect(highlighted, where).toBeVisible({ timeout: 15_000 });
   const control = highlighted.locator("input, select, textarea, button, a[href]").first();
   const target = (await control.count()) > 0 ? control : highlighted;
   const panelBox = await page.getByRole("dialog").boundingBox();
@@ -178,7 +182,17 @@ test("every step is accessible in both themes at the mobile and embedded frames"
 }) => {
   // Four walks of the first four steps, with deliberate typing, in one test rather than four. The
   // work is the same work; only the three sign-ups it used to spend are gone.
-  test.setTimeout(900_000);
+  /**
+   * Wave 7m. A budget, not a place to hang.
+   *
+   * 900 seconds was three times what the whole review suite takes, so a test that stopped
+   * making progress sat there until the retries were spent: on 2026-09-20 one detached click
+   * in `review-campaign-decision.spec.ts` cost 45 minutes of a 57.7-minute run. Every budget
+   * here is now the measured duration with room on top. Measured on 2026-09-20 against the
+   * review composition with the processor throttled 4x, which is slower than the `ubuntu-24.04`
+   * runner's own numbers for the same tests: 90 s here, 54.8 s on the runner.
+   */
+  test.setTimeout(300_000);
   const guard = await guardLocalOrigin(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize(FRAMES[0]);

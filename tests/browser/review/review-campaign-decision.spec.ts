@@ -13,6 +13,7 @@ import {
   chooseThemeFromTheHeader,
   putTheWalkthroughAside,
   REVIEW_THEMES,
+  waitForTheSavedResultToSettle,
 } from "./helpers/review-session.js";
 
 /**
@@ -50,7 +51,16 @@ import {
 test("the campaign detail's already-decided state meets the bar", async ({ browser }) => {
   // Three named states, two themes, four frames each, with axe at every cell. F-18 added two of
   // the three, so the budget moved with them.
-  test.setTimeout(900_000);
+  /**
+   * Wave 7m. A budget, not a place to hang.
+   *
+   * 900 seconds was three times what the whole review suite takes, so this test's detached click
+   * sat there until the retries were spent: 45 minutes of a 57.7-minute run on 2026-09-20. The
+   * budget is now the measured duration with room on top. Measured on 2026-09-20 against the
+   * review composition with the processor throttled 4x, which is slower than the `ubuntu-24.04`
+   * runner: 84 s.
+   */
+  test.setTimeout(300_000);
   const { approverEmail, creatorEmail, password } = seededCredentials();
 
   const creatorContext = await browser.newContext();
@@ -74,6 +84,10 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
   await fillTheOpenHouseDraft(creatorPage, READY_OPEN_HOUSE);
   await creatorPage.getByRole("button", { name: "Save and run the checks" }).click();
   await expect(creatorPage.getByRole("heading", { name: "Ready for approval" })).toBeVisible();
+  // The heading says the checks have run; this says the result has finished arriving. A person
+  // reads what came back before pressing the link on it, and a click that starts while the block
+  // is still settling is a click that can be overtaken by the next render.
+  await waitForTheSavedResultToSettle(creatorPage);
   await creatorPage.getByRole("link", { name: "Open campaign" }).click();
   await creatorPage.waitForURL(/\/marketing\/campaigns\/(?!new$)[^/]+$/u);
   const campaignUrl = creatorPage.url();

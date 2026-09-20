@@ -88,7 +88,17 @@ test("the guided setup's steps 3 through 7 meet the bar on the approver's path",
   page,
 }) => {
   // One journey of seven steps with deliberate typing, forty screenshots, and two themes.
-  test.setTimeout(900_000);
+  /**
+   * Wave 7m. A budget, not a place to hang.
+   *
+   * 900 seconds was three times what the whole review suite takes, so a test that stopped
+   * making progress sat there until the retries were spent: on 2026-09-20 one detached click
+   * in `review-campaign-decision.spec.ts` cost 45 minutes of a 57.7-minute run. Every budget
+   * here is now the measured duration with room on top. Measured on 2026-09-20 against the
+   * review composition with the processor throttled 4x, which is slower than the `ubuntu-24.04`
+   * runner's own numbers for the same tests: 132 s here, 90 s on the runner.
+   */
+  test.setTimeout(300_000);
   const guard = await guardLocalOrigin(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await signUpFreshAccount(page, freshEmail());
@@ -157,7 +167,17 @@ test("the guided setup's steps 3 through 7 meet the bar on the approver's path",
 });
 
 test("the guided setup's step 6 meets the bar on the hand-off path", async ({ page }) => {
-  test.setTimeout(900_000);
+  /**
+   * Wave 7m. A budget, not a place to hang.
+   *
+   * 900 seconds was three times what the whole review suite takes, so a test that stopped
+   * making progress sat there until the retries were spent: on 2026-09-20 one detached click
+   * in `review-campaign-decision.spec.ts` cost 45 minutes of a 57.7-minute run. Every budget
+   * here is now the measured duration with room on top. Measured on 2026-09-20 against the
+   * review composition with the processor throttled 4x, which is slower than the `ubuntu-24.04`
+   * runner's own numbers for the same tests: 53.7 s here, 41.4 s on the runner.
+   */
+  test.setTimeout(240_000);
   const guard = await guardLocalOrigin(page);
   const { creatorEmail, password } = seededCredentials();
   await page.setViewportSize({ width: 1440, height: 900 });

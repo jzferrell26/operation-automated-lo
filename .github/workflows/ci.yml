@@ -71,11 +71,15 @@ jobs:
     name: Real PostgreSQL migrations and pgTAP
     runs-on: ubuntu-24.04
     # PRD-006c D9 added the review browser run to `pnpm test:db`: a web build, a real `next start`
-    # in review mode behind a TLS terminator, and the five `review` Playwright specs. The timed
-    # spec alone spends its budget on deliberate typing and reading pauses, and the accessibility
-    # matrix walks the steps four times. 45 minutes is the measured duration with headroom for a
-    # cold pnpm store; it is a ceiling, not a target.
-    timeout-minutes: 45
+    # in review mode behind a TLS terminator, and the `review` Playwright specs. The timed spec
+    # alone spends its budget on deliberate typing and reading pauses, and the accessibility
+    # matrix walks the steps four times.
+    #
+    # Wave 7m measured the two halves on 2026-09-20: the review suite is 12 to 13 minutes on the
+    # runner when nothing hangs, and the database half about 8, which is 21 with the build and the
+    # install on top of it. One retry of the longest spec's 300-second budget adds 5 more. 45 left
+    # nothing for a slow Docker host on top of that; 60 does.
+    timeout-minutes: 60
     permissions:
       contents: read
     env:
@@ -120,6 +124,18 @@ jobs:
 
       - name: Run the canonical real database verification
         run: pnpm test:db
+
+      # Wave 7m. Playwright keeps a trace for every failed test (`playwright.config.ts`,
+      # `trace: "retain-on-failure"`). Without this they die with the runner, which is why the
+      # 2026-09-20 review flake had to be reproduced on a workstation before it could be read.
+      - name: Hand back the traces of anything that failed
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: database-failure-traces
+          path: test-results/browser
+          if-no-files-found: ignore
+          retention-days: 7
 
   release-contract:
     name: Release and recovery contract

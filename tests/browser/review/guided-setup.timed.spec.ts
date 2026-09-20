@@ -11,6 +11,7 @@ import {
   freshEmail,
   guardLocalOrigin,
   readLikeAPerson,
+  STEP_ARRIVES_TIMEOUT_MS,
   shouldWriteEvidence,
   typeIntoLabel,
   writeTimingEvidence,
@@ -49,9 +50,19 @@ function headCommit(): string {
   }
 }
 
+/**
+ * The panel a step arrives on.
+ *
+ * The wait is `STEP_ARRIVES_TIMEOUT_MS`, not Playwright's five seconds, and it does not soften
+ * what this spec measures: the clock is marked after the panel is on screen, so a step that really
+ * took too long still fails its own budget below, which is the failure worth reading. What the
+ * longer wait removes is the other failure, where a save that had not answered inside five seconds
+ * was reported as a panel that did not exist. Measured on 2026-09-20: step 4's submit was still
+ * reading "Running the checks" when this assertion gave up.
+ */
 async function panelTitled(page: Page, title: string) {
   const panel = page.getByRole("dialog", { name: title });
-  await expect(panel).toBeVisible();
+  await expect(panel).toBeVisible({ timeout: STEP_ARRIVES_TIMEOUT_MS });
   return panel;
 }
 

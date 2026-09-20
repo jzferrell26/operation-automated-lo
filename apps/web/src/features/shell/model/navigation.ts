@@ -16,12 +16,29 @@ export type ProjectedNavigationItem = DeepReadonly<NavigationItem>;
  * holds only what the shell paints, so a fixture field cannot leak into a principal-derived render
  * by being spread in.
  */
+/**
+ * PRD-006a 006A-AC-021 and PRD-006b D10. Whether the shell has anything to say about this
+ * person's email address.
+ *
+ * Three states, not a boolean, because "we have not asked" is a different fact from "no". A
+ * deployment with no sending domain never sent a confirmation message and must never ask anyone to
+ * look for one; a session that is not a password sign-in has no credential to confirm. Both are
+ * `not_applicable`, and the notice renders for `unverified` alone.
+ */
+export type EmailVerificationView = "verified" | "unverified" | "not_applicable";
+
 export interface WorkspaceSessionView {
   readonly safety: {
     readonly dataMode: "synthetic";
     readonly writesEnabled: false;
     readonly disclosure: string;
   };
+  /**
+   * Optional so the synthetic fixture's session keeps satisfying this shape structurally, exactly
+   * as it did before this field existed. Absent means `not_applicable`: the fixture is a demo and
+   * has no email address to confirm. Review mode always states one of the three.
+   */
+  readonly emailVerification?: EmailVerificationView | undefined;
   readonly user: {
     readonly displayName: string;
     readonly roleLabel: string;

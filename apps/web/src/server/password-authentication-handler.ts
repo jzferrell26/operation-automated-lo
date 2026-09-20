@@ -88,6 +88,20 @@ export const PASSWORD_RESET_NOTICE_PARAMETER = "passwordReset";
 export const PASSWORD_RESET_NOTICE_VALUE = "1";
 export const OVERVIEW_AFTER_PASSWORD_RESET_PATH = `${OVERVIEW_PATH}?${PASSWORD_RESET_NOTICE_PARAMETER}=${PASSWORD_RESET_NOTICE_VALUE}`;
 
+/**
+ * PRD-006b D10 again, for the person whose reset does not end in the workspace on the first hop.
+ *
+ * A person with bindings at more than one workspace answers a question before they land anywhere,
+ * so the fact that a reset just happened has to survive the choice step or the confirmation is
+ * lost for exactly the people with the most workspaces to lose it in. The same fixed pair travels
+ * on the choose path, the choose request carries it back as the literal `"1"` its schema accepts,
+ * and the choose response composes the workspace path from these constants again.
+ *
+ * Nothing the browser supplies is echoed: the only thing it can say is that one literal, and the
+ * only thing that literal can produce is `OVERVIEW_AFTER_PASSWORD_RESET_PATH`.
+ */
+export const SIGN_IN_CHOICE_AFTER_PASSWORD_RESET_PATH = `${SIGN_IN_CHOICE_PATH}?${PASSWORD_RESET_NOTICE_PARAMETER}=${PASSWORD_RESET_NOTICE_VALUE}`;
+
 /** PRD-005b's default, carried forward unchanged, and D5's opt-in extension. */
 export const DEFAULT_SESSION_LIFETIME_SECONDS = 43_200;
 export const EXTENDED_SESSION_LIFETIME_SECONDS = 2_592_000;
@@ -106,6 +120,13 @@ export const AUTH_RATE_LIMITS: Readonly<
   forgot_email: Object.freeze({ attemptLimit: 5, windowSeconds: 3_600 }),
   reset_ip: Object.freeze({ attemptLimit: 10, windowSeconds: 3_600 }),
   verify_ip: Object.freeze({ attemptLimit: 20, windowSeconds: 3_600 }),
+  // The resend control, counted per person rather than per client address. Five an hour is the
+  // same budget D4 gives forgot-password per email, and for the same reason: it is enough for
+  // somebody whose first message went to spam and few enough that the control cannot be turned
+  // into a way to post mail at one address. The request already carries a verified session, so
+  // the person is known exactly and an address-keyed window would make one office share one
+  // budget.
+  resend_verification_user: Object.freeze({ attemptLimit: 5, windowSeconds: 3_600 }),
 });
 
 const AuthSurfaceEnvironmentSchema = z
@@ -184,8 +205,18 @@ export const SignInRequestSchema = z
   })
   .strict();
 
+/**
+ * PRD-006b D10. `passwordReset` is the one flag the choose step carries forward, and it is typed
+ * as the literal the reset route wrote rather than as a string or a boolean, so the only value the
+ * schema accepts is the only value that means anything. Anything else is a 400 from `.strict()`
+ * or from the literal, and neither can produce a path.
+ */
 export const ChooseWorkspaceRequestSchema = z
-  .object({ choiceToken: TokenSchema, workspaceIndex: z.number().int().min(0).max(99) })
+  .object({
+    choiceToken: TokenSchema,
+    workspaceIndex: z.number().int().min(0).max(99),
+    passwordReset: z.literal(PASSWORD_RESET_NOTICE_VALUE).optional(),
+  })
   .strict();
 
 export const SignUpRequestSchema = z
@@ -508,6 +539,12 @@ async function offerWorkspaceChoice(
   context: AuthContext,
   userId: string,
   bindings: readonly Readonly<SignInBinding>[],
+  /**
+   * PRD-006b D10. Which choose path to name: the plain one after a sign-in, and the one carrying
+   * the reset flag after a completed reset, so the confirmation survives the extra step. It is one
+   * of these two module constants and never a value from the request.
+   */
+  next: string = SIGN_IN_CHOICE_PATH,
 ): Promise<Response> {
   const token = (context.dependencies.randomUrlToken ?? defaultRandomSecret)();
   await context.credentials.issueToken({
@@ -518,7 +555,7 @@ async function offerWorkspaceChoice(
     correlationRef: context.correlation.correlationRef,
   });
   return jsonResponse(200, {
-    next: SIGN_IN_CHOICE_PATH,
+    next,
     choiceToken: token,
     workspaces: workspaceChoices(bindings),
   });
@@ -682,10 +719,13 @@ export async function handleChooseWorkspace(
       lifetimeSeconds: DEFAULT_SESSION_LIFETIME_SECONDS,
       issuedBy: "password_sign_in",
     });
-    return withCorrelationHeaders(
-      jsonResponse(200, { next: OVERVIEW_PATH }, session.cookie),
-      context.correlation,
-    );
+    // PRD-006b D10. The workspace, and the reset flag with it when, and only when, the request
+    // carried the exact pair the reset route wrote onto the choose path.
+    const next =
+      parsed.data.passwordReset === PASSWORD_RESET_NOTICE_VALUE
+        ? OVERVIEW_AFTER_PASSWORD_RESET_PATH
+        : OVERVIEW_PATH;
+    return withCorrelationHeaders(jsonResponse(200, { next }, session.cookie), context.correlation);
   } catch (error) {
     return refusalResponse(error, context.correlation);
   }
@@ -828,37 +868,75 @@ async function sendAndAudit(
   });
 }
 
+/**
+ * One confirmation message: a fresh twenty-four-hour token, one send, one audit row.
+ *
+ * `issue_credential_token` supersedes the person's earlier `email_verification` tokens, so however
+ * many times this runs exactly one link is live, and the newest message is the one that works.
+ * The URL token appears in the message and nowhere else.
+ *
+ * Sign-up and the shell's resend control both call it, with different actions, because the audit
+ * trail should be able to tell one automatic send at sign-up apart from a person who has now asked
+ * four times because nothing is arriving.
+ */
+async function issueAndSendVerificationEmail(
+  context: AuthContext,
+  input: Readonly<{
+    userId: string;
+    to: string;
+    name: string;
+    action: EmailDeliveryAction;
+    port: TransactionalEmailPort;
+    origin: string;
+  }>,
+): Promise<void> {
+  const token = (context.dependencies.randomUrlToken ?? defaultRandomSecret)();
+  const tokenId = await context.credentials.issueToken({
+    userId: input.userId,
+    purpose: "email_verification",
+    tokenHash: sha256Hex(token),
+    lifetimeSeconds: EMAIL_VERIFICATION_TOKEN_LIFETIME_SECONDS,
+    correlationRef: context.correlation.correlationRef,
+  });
+  await sendAndAudit(context, {
+    port: input.port,
+    message: buildEmailVerificationEmail({
+      to: input.to,
+      name: input.name,
+      link: `${input.origin}${VERIFY_EMAIL_PATH}?token=${encodeURIComponent(token)}`,
+      idempotencyKey: tokenId,
+    }),
+    userId: input.userId,
+    action: input.action,
+  });
+}
+
+/** The sending domain and the application origin, or `undefined` when this deployment has neither. */
+function configuredEmailDelivery(
+  context: AuthContext,
+): Readonly<{ port: TransactionalEmailPort; origin: string }> | undefined {
+  const port = context.ports.transactionalEmail;
+  const origin = applicationOrigin(context.environment);
+  if (port === undefined || !port.configured || origin === undefined) return undefined;
+  return Object.freeze({ port, origin });
+}
+
 function scheduleVerificationEmail(
   context: AuthContext,
   input: Readonly<{ userId: string; to: string; name: string }>,
 ): void {
-  const port = context.ports.transactionalEmail;
-  const origin = applicationOrigin(context.environment);
   // 006A-AC-021. No sending domain means no verification token, no attempted send, and no notice
   // in the shell, so the product never asks a person to check an inbox nothing was sent to.
-  if (port === undefined || !port.configured || origin === undefined) return;
+  const delivery = configuredEmailDelivery(context);
+  if (delivery === undefined) return;
   const schedule = context.dependencies.afterResponse ?? detachBackgroundWork;
-  schedule(async () => {
-    const token = (context.dependencies.randomUrlToken ?? defaultRandomSecret)();
-    const tokenId = await context.credentials.issueToken({
-      userId: input.userId,
-      purpose: "email_verification",
-      tokenHash: sha256Hex(token),
-      lifetimeSeconds: EMAIL_VERIFICATION_TOKEN_LIFETIME_SECONDS,
-      correlationRef: context.correlation.correlationRef,
-    });
-    await sendAndAudit(context, {
-      port,
-      message: buildEmailVerificationEmail({
-        to: input.to,
-        name: input.name,
-        link: `${origin}${VERIFY_EMAIL_PATH}?token=${encodeURIComponent(token)}`,
-        idempotencyKey: tokenId,
-      }),
-      userId: input.userId,
+  schedule(() =>
+    issueAndSendVerificationEmail(context, {
+      ...input,
       action: "auth.verification-email",
-    });
-  });
+      ...delivery,
+    }),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1033,8 +1111,15 @@ export async function handleResetPassword(
       return withCorrelationHeaders(jsonResponse(200, { next: SIGN_IN_PATH }), context.correlation);
     }
     if (bindings.length > 1) {
+      // PRD-006b D10. The choice step, carrying the reset flag, so the person who has to pick a
+      // workspace still reads "Your password is saved. You're signed in." when they land in one.
       return withCorrelationHeaders(
-        await offerWorkspaceChoice(context, consumed.userId, bindings),
+        await offerWorkspaceChoice(
+          context,
+          consumed.userId,
+          bindings,
+          SIGN_IN_CHOICE_AFTER_PASSWORD_RESET_PATH,
+        ),
         context.correlation,
       );
     }
@@ -1096,6 +1181,132 @@ export async function handleVerifyEmail(
     return withCorrelationHeaders(jsonResponse(200, { state: "confirmed" }), context.correlation);
   } catch (error) {
     return refusalResponse(error, context.correlation);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Resend the confirmation message
+// ---------------------------------------------------------------------------
+
+/**
+ * The subject an `auth.verification-resent` row carries when no message was attempted. D1's
+ * delivery-subject vocabulary was `not_configured`, `provider_error`, and the provider's message
+ * id; this is the fourth, and it is what an operator reads when somebody pressed the control on an
+ * account that was already confirmed.
+ */
+export const ALREADY_VERIFIED_DELIVERY_SUBJECT = "already_verified";
+
+/**
+ * PRD-006a D5 and 006A-AC-021, and PRD-006b D10's unverified notice. `POST /api/auth/resend-verification`.
+ *
+ * This is the other half of the shell notice "Confirm your email so you can reset your password
+ * later. Resend the link." The notice is only painted for a person whose email is unconfirmed on a
+ * deployment that can actually send, so the control exists only where pressing it can do something;
+ * the route still checks both facts itself rather than trusting that, because a route may not
+ * assume the page that reached it is the page that was rendered.
+ *
+ * The gate is the full authenticated-mutation gate: the session cookie, the origin, the host, the
+ * session-bound CSRF token, and the role version, all of it through `resolveAuthenticatedPrincipal`
+ * exactly as sign-out is. The control is a form, so the token arrives as a field and is promoted
+ * to the header first, which means it is checked by the same code and not by a weaker copy.
+ *
+ * The person is named by the verified session and never by the request: the only identifier that
+ * reaches the database is `principal.actorId`, and the address the message goes to is read from the
+ * credential row under that id. Nothing in the body can point the send somewhere else, because the
+ * body has one optional field in it and that field is the CSRF token.
+ *
+ * The answer is one fixed 303 back to the workspace whatever happened: sent, already confirmed, or
+ * no sending domain on this deployment. It carries no body at all, so there is nothing in it to
+ * tell those three apart, and it is what a form post needs, so the control works with no client
+ * script. The single exception is the rate limit, which answers 429 the way every other limited
+ * route in this module does.
+ */
+export async function handleResendVerificationEmail(
+  request: Request,
+  environment: unknown = process.env,
+  ports: CampaignCommandPorts = resolveRuntimeCampaignCommandPorts(environment),
+  dependencies: AuthHandlerDependencies = {},
+): Promise<Response> {
+  let parsedEnvironment: AuthSurfaceEnvironment;
+  try {
+    parsedEnvironment = assertAuthSurface(environment);
+  } catch (error) {
+    return refusalResponse(error);
+  }
+  const correlation = correlationReferenceForRequest(request, "resendVerification");
+  try {
+    const credentials = requiredCredentialPort(ports);
+    const gate = ports.mutation;
+    if (gate === undefined) throw new UnauthenticatedPrincipalError();
+    const gated = await withPromotedCsrfHeader(request);
+    const principal = await resolveAuthenticatedPrincipal(gated, environment, ports);
+
+    const limit = AUTH_RATE_LIMITS.resend_verification_user;
+    const withinLimit = await credentials.consumeRateLimit({
+      scope: "resend_verification_user",
+      keyHash: rateLimitKeyHash(
+        gate.csrfServerSecret,
+        "resend_verification_user",
+        principal.actorId,
+      ),
+      attemptLimit: limit.attemptLimit,
+      windowSeconds: limit.windowSeconds,
+    });
+    if (!withinLimit) return withCorrelationHeaders(rateLimitedResponse(), correlation);
+
+    const context: AuthContext = Object.freeze({
+      environment: parsedEnvironment,
+      ports,
+      credentials,
+      correlation,
+      dependencies,
+    });
+    const schedule = dependencies.afterResponse ?? detachBackgroundWork;
+    const userId = principal.actorId;
+    const delivery = configuredEmailDelivery(context);
+    schedule(async () => {
+      // Read after the response, like the send itself, because neither the address nor the
+      // confirmed state changes what this route answers.
+      const to = await credentials.unverifiedEmailDisplayForUser(userId);
+      if (to === undefined) {
+        // Already confirmed, or a session whose person holds no password credential at all. Either
+        // way nothing is issued and nothing is sent, and the attempt is still recorded.
+        await credentials.recordEmailDelivery({
+          userId,
+          action: "auth.verification-resent",
+          result: "failed",
+          subjectId: ALREADY_VERIFIED_DELIVERY_SUBJECT,
+          correlationRef: correlation.correlationRef,
+        });
+        return;
+      }
+      if (delivery === undefined) {
+        // 006A-AC-025. No sending domain means no token, no network request, and a row that says
+        // so, rather than a link nobody will ever receive.
+        await credentials.recordEmailDelivery({
+          userId,
+          action: "auth.verification-resent",
+          result: "failed",
+          subjectId: "not_configured",
+          correlationRef: correlation.correlationRef,
+        });
+        return;
+      }
+      await issueAndSendVerificationEmail(context, {
+        userId,
+        to,
+        name: to.split("@")[0] ?? "there",
+        action: "auth.verification-resent",
+        ...delivery,
+      });
+    });
+
+    const headers = new Headers({ "cache-control": "no-store", location: OVERVIEW_PATH });
+    return withCorrelationHeaders(new Response(null, { status: 303, headers }), correlation);
+  } catch {
+    // Every refusal from here is one 401 with one body: a missing session, a wrong token, a stale
+    // role version, and a database that refused the counter all answer the same thing.
+    return withCorrelationHeaders(genericRefusal(), correlation);
   }
 }
 

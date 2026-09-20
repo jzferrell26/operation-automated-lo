@@ -29,6 +29,8 @@ export type CorrelationRouteName =
   | "forgotPassword"
   | "resetPassword"
   | "verifyEmail"
+  // PRD-006a D5. The shell's own ask for the confirmation message a second time.
+  | "resendVerification"
   | "changePassword"
   // PRD-006c D4. The guided setup's two preference writes.
   | "setupProgress"

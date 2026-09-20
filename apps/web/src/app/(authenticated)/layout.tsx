@@ -9,6 +9,7 @@ import {
   SIGNED_OUT_HEADING,
   SIGNED_OUT_PROMPT,
 } from "../../copy/user-language.js";
+import { UnverifiedEmailNotice } from "../../features/auth/components/unverified-email-notice.js";
 import { GuidedSetupProvider } from "../../features/guided-setup/guided-setup-provider.js";
 import { GuidedSetupShellControls } from "../../features/guided-setup/guided-setup-progress.js";
 import { AppShell } from "../../features/shell/components/app-shell.js";
@@ -136,6 +137,14 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
           </Link>
         </p>
       )}
+      {/*
+        PRD-006b D10 and 006A-AC-021. The unverified notice sits above the page's own content,
+        where Wave 7g put the saved-password notice, so it is read before the workspace rather
+        than found underneath it. It lives in the layout rather than on a page because it is true
+        of every page until the person confirms, and it is not read from the query for the same
+        reason: it clears itself when the address is confirmed, not on the next navigation.
+      */}
+      <UnverifiedEmailNotice csrfToken={shell.csrfToken} state={session.emailVerification} />
       {children}
     </AppShell>
   );

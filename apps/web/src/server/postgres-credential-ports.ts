@@ -82,6 +82,10 @@ interface IdRow {
   readonly id: string;
 }
 
+interface AddressRow {
+  readonly address: string | undefined;
+}
+
 interface LockRow {
   readonly lockedUntilEpochSeconds: number | undefined;
 }
@@ -96,6 +100,13 @@ function decodeFlag(row: unknown): FlagRow {
 
 function decodeId(row: unknown): IdRow {
   return Object.freeze({ id: requiredText(recordRow(row)["id"], "id") });
+}
+
+function decodeAddress(row: unknown): AddressRow {
+  const value = recordRow(row)["address"];
+  return Object.freeze({
+    address: typeof value === "string" && value.length > 0 ? value : undefined,
+  });
 }
 
 function decodeLock(row: unknown): LockRow {
@@ -180,6 +191,19 @@ select
 from platform.lookup_password_credential_for_user($1::uuid) as credential
   `.trim(),
   decode: decodeCredential,
+});
+
+/**
+ * PRD-006a D5 and D6. The address the resend control sends to, for as long as sending is still
+ * the right thing to do. `platform.unverified_email_display_for_user` answers null for a person
+ * with no credential, a person who is not active, and a person whose email is already confirmed,
+ * so nothing this contract can return is a fact about a confirmed account.
+ */
+export const unverifiedEmailDisplayForUserContract = defineSqlContract<AddressRow>({
+  name: "runtime.unverified-email-display-for-user.v1",
+  access: "read",
+  text: "select platform.unverified_email_display_for_user($1::uuid) as address",
+  decode: decodeAddress,
 });
 
 export const recordEmailDeliveryContract = defineSqlContract<FlagRow>({
@@ -320,6 +344,12 @@ export function createPostgresCredentialPort(pool: DatabasePool): CredentialPort
         values,
       );
       return rows[0];
+    },
+
+    async unverifiedEmailDisplayForUser(userId) {
+      const values: readonly SqlScalar[] = [userId];
+      const rows = await queryRuntimeFunction(pool, unverifiedEmailDisplayForUserContract, values);
+      return rows[0]?.address;
     },
 
     async listSignInBindings(userId) {

@@ -1,12 +1,13 @@
 "use client";
 
 import { Button, Link, PasswordField, TextField } from "@oalo/ui";
-import { useState, type FormEvent, type ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 
-import { CHOOSE_WORKSPACE, ROLE_LABELS, SIGN_IN, chooseWorkspaceOptionLabel } from "../strings.js";
+import { SIGN_IN } from "../strings.js";
 import { AuthProblem } from "./auth-feedback.js";
 import styles from "./auth-form.module.css";
-import { followNext, useAuthSubmit } from "./use-auth-submit.js";
+import { useAuthSubmit } from "./use-auth-submit.js";
+import { useWorkspaceChoice, type WorkspaceChoiceResponse } from "./workspace-choice-form.js";
 
 /**
  * PRD-006a D5 and 006A-AC-032. The sign-in form, and the workspace choice that follows it when a
@@ -27,30 +28,9 @@ import { followNext, useAuthSubmit } from "./use-auth-submit.js";
  * native control in a governed label is correct until one exists.
  */
 
-interface WorkspaceChoice {
-  readonly index: number;
-  readonly workspaceName: string;
-  readonly bindingRole: string;
-}
-
-interface SignInResponse {
-  readonly next?: string;
+interface SignInResponse extends WorkspaceChoiceResponse {
   readonly error?: string;
-  readonly choiceToken?: string;
-  readonly workspaces?: readonly WorkspaceChoice[];
 }
-
-/**
- * The label a person reads for each binding role. PRD-005a D2 maps the database roles to session
- * roles; PRD-006b's `ROLE_LABELS` maps those to words, and this is the composition of the two.
- */
-const BINDING_ROLE_LABELS: Readonly<Record<string, string>> = Object.freeze({
-  location_admin: ROLE_LABELS.location_admin,
-  creator: ROLE_LABELS.campaign_creator,
-  approver: ROLE_LABELS.campaign_approver,
-  publisher: ROLE_LABELS.campaign_publisher,
-  analyst: ROLE_LABELS.viewer,
-});
 
 export interface SignInFormProps {
   readonly signUpEnabled: boolean;
@@ -59,67 +39,21 @@ export interface SignInFormProps {
 
 export function SignInForm({ signUpEnabled, signedOut }: SignInFormProps): ReactNode {
   const { problem, submitting, submit } = useAuthSubmit<SignInResponse>();
-  const [choice, setChoice] = useState<Readonly<{
-    token: string;
-    workspaces: readonly WorkspaceChoice[];
-  }> | null>(null);
+  const choice = useWorkspaceChoice(problem, submitting, submit);
 
   async function handleSignIn(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const payload = await submit("/api/auth/sign-in", {
-      email: String(form.get("email") ?? ""),
-      password: String(form.get("password") ?? ""),
-      keepSignedIn: form.get("keepSignedIn") === "on",
-    });
-    if (payload === undefined) return;
-    if (payload.choiceToken !== undefined && payload.workspaces !== undefined) {
-      setChoice({ token: payload.choiceToken, workspaces: payload.workspaces });
-      return;
-    }
-    followNext(payload.next);
-  }
-
-  async function handleChoice(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    if (choice === null) return;
-    const form = new FormData(event.currentTarget);
-    const payload = await submit("/api/auth/choose", {
-      choiceToken: choice.token,
-      workspaceIndex: Number(form.get("workspaceIndex")),
-    });
-    followNext(payload?.next);
-  }
-
-  if (choice !== null) {
-    return (
-      <form className={styles.form} onSubmit={handleChoice}>
-        {problem === null ? null : <AuthProblem>{problem}</AuthProblem>}
-        <fieldset className={styles.choices}>
-          <legend className={styles.choicesLegend}>{CHOOSE_WORKSPACE.title}</legend>
-          {choice.workspaces.map((workspace) => (
-            <label className={styles.check} key={workspace.index}>
-              <input
-                defaultChecked={workspace.index === 0}
-                name="workspaceIndex"
-                type="radio"
-                value={workspace.index}
-              />
-              <span>
-                {chooseWorkspaceOptionLabel(
-                  workspace.workspaceName,
-                  BINDING_ROLE_LABELS[workspace.bindingRole] ?? "",
-                )}
-              </span>
-            </label>
-          ))}
-        </fieldset>
-        <Button disabled={submitting} type="submit">
-          {CHOOSE_WORKSPACE.submitLabel}
-        </Button>
-      </form>
+    choice.accept(
+      await submit("/api/auth/sign-in", {
+        email: String(form.get("email") ?? ""),
+        password: String(form.get("password") ?? ""),
+        keepSignedIn: form.get("keepSignedIn") === "on",
+      }),
     );
   }
+
+  if (choice.step !== null) return choice.step;
 
   return (
     <form className={styles.form} onSubmit={handleSignIn}>

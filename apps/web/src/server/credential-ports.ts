@@ -15,8 +15,22 @@ export type CredentialTokenPurpose = "password_reset" | "email_verification" | "
 
 export type PasswordChangeReason = "initial" | "reset" | "change";
 
+/**
+ * PRD-006a D4's scopes, plus one this batch adds.
+ *
+ * `resend_verification_user` is keyed by the person rather than by the client address, because the
+ * resend control is only reachable with a valid session: the request already names exactly one
+ * account, and an address-keyed window would let one office's shared address spend everybody's
+ * budget. The keyed-hash rule is unchanged, so the counter table still holds no identifier.
+ */
 export type AuthRateLimitScope =
-  "sign_in_ip" | "sign_up_ip" | "forgot_ip" | "forgot_email" | "reset_ip" | "verify_ip";
+  | "sign_in_ip"
+  | "sign_up_ip"
+  | "forgot_ip"
+  | "forgot_email"
+  | "reset_ip"
+  | "verify_ip"
+  | "resend_verification_user";
 
 export interface PasswordCredential {
   readonly userId: string;
@@ -52,7 +66,14 @@ export interface ConsumedCredentialToken {
   readonly tokenId: string;
 }
 
-export type EmailDeliveryAction = "auth.reset-email" | "auth.verification-email";
+/**
+ * PRD-006a D1's audit actions for a send. `auth.verification-resent` is the third: it is the same
+ * message as `auth.verification-email`, asked for a second time by the person themselves, and it
+ * is a separate action so an operator can tell a sign-up's one automatic send from a person who
+ * has now pressed the control four times because nothing is arriving.
+ */
+export type EmailDeliveryAction =
+  "auth.reset-email" | "auth.verification-email" | "auth.verification-resent";
 
 export interface CredentialPort {
   lookupCredential(emailNormalized: string): Promise<Readonly<PasswordCredential> | undefined>;
@@ -62,6 +83,16 @@ export interface CredentialPort {
    * oracle even with the result checked against the session.
    */
   lookupCredentialForUser(userId: string): Promise<Readonly<PasswordCredential> | undefined>;
+  /**
+   * The address a confirmation message would go to, and only while it is still worth sending one.
+   *
+   * The resend control has a verified session and no address in hand, and the address is the one
+   * thing the send needs that no other read on this boundary returns. It is a separate, narrower
+   * read rather than a column added to the credential lookup because the narrow one can answer
+   * nothing at all about a confirmed account: it returns `undefined` for a person with no
+   * credential, for a suspended person, and for anyone whose email is already confirmed.
+   */
+  unverifiedEmailDisplayForUser(userId: string): Promise<string | undefined>;
   listSignInBindings(userId: string): Promise<readonly Readonly<SignInBinding>[]>;
   /** Returns the instant the account is locked until, when this failure locked it. */
   recordSignInFailure(

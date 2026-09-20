@@ -6,7 +6,10 @@ import type { ApplicationRole } from "@oalo/contracts";
 import { createPostgresPool, type DatabasePool } from "@oalo/db";
 
 import { SIGNED_IN_SOURCE, ROLE_LABELS as USER_ROLE_LABELS } from "../copy/user-language.js";
-import type { WorkspaceSessionView } from "../features/shell/model/navigation.js";
+import type {
+  EmailVerificationView,
+  WorkspaceSessionView,
+} from "../features/shell/model/navigation.js";
 import type { Capability } from "../features/ui-foundation/model/synthetic-ui.js";
 import {
   createDefaultCampaignCommandPorts,
@@ -499,6 +502,13 @@ export const CSRF_META_NAME = "oalo-csrf-token";
 export const SIGN_IN_PATH = "/sign-in";
 export const SIGN_OUT_PATH = "/api/auth/sign-out";
 
+/**
+ * PRD-006b D10's unverified notice ends with a control, "Resend the link.", and this is where it
+ * posts. It sits beside the sign-out path because the two are the shell's only two mutations and
+ * both are plain forms carrying the session-bound token as a field.
+ */
+export const RESEND_VERIFICATION_PATH = "/api/auth/resend-verification";
+
 export interface RuntimeShellSession {
   readonly mode: RuntimeAuthenticationMode;
   readonly authenticated: boolean;
@@ -523,6 +533,39 @@ const UNAUTHENTICATED_SHELL: Readonly<Omit<RuntimeShellSession, "mode">> = Objec
  * the session carries: a reference states exactly what the session proves, and inventing a
  * friendly name would not.
  */
+/**
+ * PRD-006a 006A-AC-021. Whether this shell has anything to say about the person's email address.
+ *
+ * The lookup is by the person the verified session names, through the credential port, and never
+ * by an address the browser sent: a read keyed on caller-supplied text would be a credential
+ * oracle even with the answer checked against the session afterwards.
+ *
+ * A deployment with no sending domain is `not_applicable` before the read even happens, because
+ * 006A-AC-021 turns on not asking: nothing was sent, so nothing may ask anyone to look for it, and
+ * the control that would resend it can do nothing. A session with no credential row is
+ * `not_applicable` for the same kind of reason: there is no email address in play to confirm.
+ *
+ * A failed read is `not_applicable`, not `unverified`. The cost of the wrong answer is asymmetric:
+ * staying quiet when the database is unreachable costs nothing, and telling a person with a
+ * confirmed address to go and confirm it is the product being wrong about them.
+ */
+async function resolveEmailVerification(
+  ports: CampaignCommandPorts,
+  actorId: string,
+): Promise<EmailVerificationView> {
+  const email = ports.transactionalEmail;
+  if (email === undefined || !email.configured) return "not_applicable";
+  const credentials = ports.credentials;
+  if (credentials === undefined) return "not_applicable";
+  try {
+    const credential = await credentials.lookupCredentialForUser(actorId);
+    if (credential === undefined) return "not_applicable";
+    return credential.emailVerified ? "verified" : "unverified";
+  } catch {
+    return "not_applicable";
+  }
+}
+
 export async function resolveRuntimeShellSession(
   request: Request,
   input: unknown = process.env,
@@ -552,6 +595,7 @@ export async function resolveRuntimeShellSession(
     actorRef: principal.actorRef,
   });
   const session: WorkspaceSessionView = Object.freeze({
+    emailVerification: await resolveEmailVerification(ports, principal.actorId),
     safety: Object.freeze({
       dataMode: "synthetic" as const,
       writesEnabled: false as const,

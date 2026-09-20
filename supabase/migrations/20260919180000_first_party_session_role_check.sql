@@ -99,7 +99,9 @@ begin
     -- this pairing is written in TypeScript, and this CASE is its mirror. A binding
     -- role the map leaves unmapped yields null, and `is distinct from` makes
     -- that a mismatch rather than a null the whole condition swallows.
-    or issue_first_party_session.session_role is distinct from case
+    -- The parentheses matter: PL/pgSQL reads an if condition up to the first
+    -- THEN at parenthesis depth zero, so a bare CASE here would end the condition.
+    or issue_first_party_session.session_role is distinct from (case
         issue_first_party_session.binding_role
         when 'location_admin' then 'location_admin'
         when 'creator' then 'campaign_creator'
@@ -107,7 +109,7 @@ begin
         when 'publisher' then 'campaign_publisher'
         when 'analyst' then 'viewer'
         else null
-      end
+      end)
     or not platform.location_is_active(issue_first_party_session.location_id)
     or not platform.actor_is_active(issue_first_party_session.user_id)
   then

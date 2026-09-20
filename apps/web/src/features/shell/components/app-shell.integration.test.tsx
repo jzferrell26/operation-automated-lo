@@ -111,7 +111,8 @@ describe("authenticated application shell", () => {
     expect(screen.getAllByText("Prairie Home Lending").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Loan Officer").length).toBeGreaterThan(0);
     expect(screen.queryByRole("combobox", { name: /location/i })).not.toBeInTheDocument();
-    expect(screen.getByText("Local demo")).toBeInTheDocument();
+    expect(screen.getByText("Local demo with sample data.")).toBeInTheDocument();
+    expect(screen.getByText("Nothing is connected.")).toBeInTheDocument();
   });
 
   it("tells the user nothing is connected, in their own language", () => {

@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@oalo/ui";
+import { Button, Link, TextField } from "@oalo/ui";
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import { FORGOT_PASSWORD_COPY } from "../strings.js";
-import { AuthField, AuthNotice, AuthProblem } from "./auth-field.js";
+import { FORGOT_PASSWORD, SIGN_IN } from "../strings.js";
+import { AuthNotice, AuthProblem } from "./auth-feedback.js";
 import styles from "./auth-form.module.css";
 import { useAuthSubmit } from "./use-auth-submit.js";
 
@@ -29,24 +29,23 @@ export function ForgotPasswordForm(): ReactNode {
     if (payload !== undefined) setSent(true);
   }
 
-  if (sent) return <AuthNotice>{FORGOT_PASSWORD_COPY.confirmation}</AuthNotice>;
+  if (sent) return <AuthNotice>{FORGOT_PASSWORD.confirmation}</AuthNotice>;
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
       {problem === null ? null : <AuthProblem>{problem}</AuthProblem>}
-      <AuthField
+      <TextField
         autoComplete="email"
-        label={FORGOT_PASSWORD_COPY.emailLabel}
+        label={FORGOT_PASSWORD.emailLabel}
         name="email"
+        requirement="required"
         type="email"
       />
       <Button disabled={submitting} type="submit">
-        {FORGOT_PASSWORD_COPY.submitLabel}
+        {FORGOT_PASSWORD.submitLabel}
       </Button>
       <p className={styles.footer}>
-        <a className="oalo-action-link" href="/sign-in">
-          Sign in
-        </a>
+        <Link href="/sign-in">{SIGN_IN.submitLabel}</Link>
       </p>
     </form>
   );

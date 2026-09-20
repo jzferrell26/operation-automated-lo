@@ -58,6 +58,7 @@ unconnected inline error is not possible by construction.
 | Default | `--bd-input` boundary on `--sf-card`. |
 | Hover | Boundary moves to `--ac-primary` over `--motion-fast` with `--ease-standard`. |
 | Focus-visible | The shared ring: `var(--focus-width)` solid `var(--focus-color)` at `var(--focus-offset)`, plus the `--ac-primary` boundary. |
+| Focus, date and time controls | The same ring, on `:focus` rather than `:focus-visible`. A `date`, `datetime-local`, `month`, `time`, or `week` control is a group of sub-fields in the browser's own shadow tree, and Chromium does not match `:focus-visible` on the outer control when a keyboard lands on one of them, so the ring would never appear. These controls are never focused except deliberately, so there is no pointer-focus flash to avoid. Measured during the PRD-006d review; asserted by `tests/browser/design-quality.spec.ts`. |
 | Invalid | `aria-invalid="true"`, boundary `--st-critical-fg`, error text connected through `aria-describedby`. |
 | Read-only | `--sf-sunken` fill, `--tx-body` text, no hover boundary change. |
 | Disabled | `--sf-sunken` fill, `--tx-body` text, `--bd-hairline` boundary, `cursor: not-allowed`. The reason lives in the description, never in a tooltip alone. |

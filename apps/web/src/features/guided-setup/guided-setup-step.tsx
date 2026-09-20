@@ -243,7 +243,7 @@ export function GuidedSetupStep({
       <Sheet
         anchor={placement?.side ?? "block-end"}
         className={styles.panel}
-        closeLabel="Close this step"
+        closeLabel={GUIDED_SETUP_CONTROLS.closeStep}
         data-guided-setup-step={String(position)}
         data-placement={placement === undefined ? "resting" : placement.side}
         description={body}

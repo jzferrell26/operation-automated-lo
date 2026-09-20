@@ -12,10 +12,18 @@ describe("synthetic reporting screens", () => {
     const reporting = loadSyntheticReporting();
     render(<CampaignDetailScreen reporting={reporting} />);
 
-    expect(screen.getByRole("link", { name: "Open the approved page" })).toHaveAttribute(
-      "href",
-      "/public/synthetic-open-house-v3",
-    );
+    /**
+     * PRD-006d 006D-AC-003 moved this onto `Link`, whose `external` form says so in the
+     * accessible name and opens with `noopener noreferrer`. The name a screen reader hears is
+     * therefore longer than the visible words, on purpose: a link that changes window without
+     * warning is the thing the announcement exists to prevent.
+     */
+    const approvedPageLink = screen.getByRole("link", {
+      name: "Open the approved page, opens in a new tab",
+    });
+    expect(approvedPageLink).toHaveAttribute("href", "/public/synthetic-open-house-v3");
+    expect(approvedPageLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(approvedPageLink).toHaveAttribute("target", "_blank");
     expect(screen.getByText("3 versions, none of them edited after the fact")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Version 2" }));

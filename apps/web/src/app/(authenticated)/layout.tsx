@@ -1,4 +1,5 @@
 import { CAMPAIGN_APPROVAL_ROLES } from "@oalo/application";
+import { Button, Link } from "@oalo/ui";
 import { headers } from "next/headers.js";
 import type { ReactNode } from "react";
 
@@ -123,14 +124,16 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
           {shell.csrfToken === undefined ? null : (
             <input name="csrfToken" type="hidden" value={shell.csrfToken} />
           )}
-          <button type="submit">{SIGN_OUT_LABEL}</button>
+          <Button type="submit" variant="secondary">
+            {SIGN_OUT_LABEL}
+          </Button>
         </form>
       ) : (
         <p>
           {SIGNED_OUT_HEADING}{" "}
-          <a className="oalo-action-link" href={SIGN_IN_PATH}>
+          <Link href={SIGN_IN_PATH} variant="action">
             {SIGNED_OUT_PROMPT}
-          </a>
+          </Link>
         </p>
       )}
       {children}

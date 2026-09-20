@@ -27,31 +27,6 @@ body {
   color: var(--tx-strong);
 }
 
-/* Superseded by `<Link variant="action">` from `@oalo/ui` (PRD-006d, D4).
- * It stays here only until the raw `<a className="oalo-action-link">` call
- * sites listed in 006D-AC-003 are migrated to the primitive; it must not be
- * used by any new screen.
- */
-.oalo-action-link {
-  display: inline-flex;
-  min-block-size: 44px;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--bd-input);
-  border-radius: var(--radius-button);
-  background: var(--sf-card);
-  color: var(--tx-strong);
-  font-size: var(--text-body-size);
-  font-weight: var(--weight-medium);
-  text-decoration: none;
-}
-
-.oalo-action-link:focus-visible {
-  outline: var(--focus-width) solid var(--focus-color);
-  outline-offset: var(--focus-offset);
-}
-
 html[data-tenant-accent][data-theme="light"] {
   --ac-primary: var(--tenant-accent-light-action);
   --ac-primary-hover: var(--tenant-accent-light-action-hover);
@@ -72,11 +47,14 @@ body {
   margin: 0;
 }
 
+/* The bootstrap fallback for a `<main>` that brings no layout of its own. Every real screen's
+ * module overrides it. The padding is a spacing token rather than the `2rem` it carried from the
+ * scaffold, because brief section 11 allows no ad-hoc measure (PRD-006d axis 2). */
 main {
   display: grid;
   min-height: 100vh;
   place-items: center;
-  padding: 2rem;
+  padding: var(--space-6);
 }
 
 section {

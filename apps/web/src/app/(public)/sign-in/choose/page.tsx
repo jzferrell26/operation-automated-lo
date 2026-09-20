@@ -1,8 +1,9 @@
+import { Link } from "@oalo/ui";
 import type { Metadata } from "next";
 
 import { assertAuthPageIsServed } from "../../../../features/auth/auth-page-gate.js";
 import { AuthPanel } from "../../../../features/auth/components/auth-panel.js";
-import { CHOOSE_WORKSPACE_COPY, SIGN_IN_COPY } from "../../../../features/auth/strings.js";
+import { CHOOSE_WORKSPACE, SIGN_IN } from "../../../../features/auth/strings.js";
 
 export const dynamic = "force-dynamic";
 
@@ -24,14 +25,11 @@ export const metadata: Metadata = {
 export default async function ChooseWorkspacePage() {
   assertAuthPageIsServed();
   return (
-    <AuthPanel
-      lead="Sign in again and we'll ask you which one."
-      title={CHOOSE_WORKSPACE_COPY.title}
-    >
+    <AuthPanel lead="Sign in again and we'll ask you which one." title={CHOOSE_WORKSPACE.title}>
       <p>
-        <a className="oalo-action-link" href="/sign-in">
-          {SIGN_IN_COPY.title}
-        </a>
+        <Link href="/sign-in" variant="action">
+          {SIGN_IN.title}
+        </Link>
       </p>
     </AuthPanel>
   );

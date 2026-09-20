@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Stack } from "@oalo/ui";
+import { Button, Card, FormField, Link, Stack, TextField } from "@oalo/ui";
 import { useMemo, useState } from "react";
 
 import type { DeepReadonly } from "../../ui-foundation/model/synthetic-ui.js";
@@ -93,14 +93,12 @@ export function ReportingAcceptanceSurface({
         </div>
 
         <form className={styles.filterForm} onReset={() => setFilters(emptyFilters)}>
-          <label>
-            Search campaigns
-            <input
-              onChange={(event) => setFilter("query", event.target.value)}
-              type="search"
-              value={filters.query}
-            />
-          </label>
+          <TextField
+            label="Search campaigns"
+            onChange={(event) => setFilter("query", event.target.value)}
+            type="search"
+            value={filters.query}
+          />
           <FilterSelect
             label="Realtor"
             onChange={(value) => setFilter("realtor", value)}
@@ -175,19 +173,23 @@ export function ReportingAcceptanceSurface({
       <section aria-labelledby="blueprint-learning-title" className={styles.portfolio}>
         <h2 id="blueprint-learning-title">Privacy-safe blueprint learning</h2>
         <Card padding="md">
-          <label className={styles.fieldControl}>
-            Group blueprint results by
-            <select
-              onChange={(event) => setBlueprintDimension(event.target.value as BlueprintDimension)}
-              value={blueprintDimension}
-            >
-              {blueprintDimensionOptions.map((option) => (
-                <option key={option.key} value={option.key}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <FormField className={styles.fieldControl} label="Group blueprint results by">
+            {(control) => (
+              <select
+                {...control}
+                onChange={(event) =>
+                  setBlueprintDimension(event.target.value as BlueprintDimension)
+                }
+                value={blueprintDimension}
+              >
+                {blueprintDimensionOptions.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </FormField>
           <p>
             Sample {projection.blueprintLearning.sampleSize}, minimum sample{" "}
             {projection.blueprintLearning.minimumSampleSize}, minimum privacy buckets{" "}
@@ -289,9 +291,9 @@ export function ReportingAcceptanceSurface({
           <p>Approved artifacts:</p>
           <div className={styles.inlineLinks}>
             {projection.realtor.approvedArtifacts.map((artifact) => (
-              <a className="oalo-action-link" href={artifact.href} key={artifact.label}>
+              <Link href={artifact.href} variant="action" key={artifact.label}>
                 Open {artifact.label}
-              </a>
+              </Link>
             ))}
           </div>
           <p>Read-only sharing controls:</p>
@@ -366,9 +368,9 @@ function CampaignReportingCard({
       <div className={styles.inlineLinks}>
         {campaign.targets.map((target) =>
           target.state === "authorized" ? (
-            <a className="oalo-action-link" href={target.href} key={target.label}>
+            <Link href={target.href} variant="action" key={target.label}>
               Open {target.label}, {target.authority}
-            </a>
+            </Link>
           ) : (
             <span key={target.label}>
               {target.label}: unavailable, {target.reason}
@@ -392,17 +394,18 @@ function FilterSelect({
   value: string;
 }>) {
   return (
-    <label>
-      {label}
-      <select onChange={(event) => onChange(event.target.value)} value={value}>
-        <option value="">All</option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    </label>
+    <FormField label={label}>
+      {(control) => (
+        <select {...control} onChange={(event) => onChange(event.target.value)} value={value}>
+          <option value="">All</option>
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      )}
+    </FormField>
   );
 }
 
@@ -412,10 +415,13 @@ function DateFilter({
   value,
 }: Readonly<{ label: string; onChange: (value: string) => void; value: string }>) {
   return (
-    <label>
-      {label}
-      <input onChange={(event) => onChange(event.target.value)} type="date" value={value} />
-    </label>
+    <TextField
+      label={label}
+      onChange={(event) => onChange(event.target.value)}
+      tone="data"
+      type="date"
+      value={value}
+    />
   );
 }
 

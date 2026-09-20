@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@oalo/ui";
+import { Button, Link, PasswordField, TextField } from "@oalo/ui";
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import { SIGN_UP_COPY } from "../strings.js";
-import { AuthField, AuthNotice, AuthProblem } from "./auth-field.js";
+import { SIGN_UP } from "../strings.js";
+import { AuthNotice, AuthProblem } from "./auth-feedback.js";
 import styles from "./auth-form.module.css";
 import { followNext, useAuthSubmit } from "./use-auth-submit.js";
 
@@ -15,6 +15,9 @@ import { followNext, useAuthSubmit } from "./use-auth-submit.js";
  * an account. D5 makes that trade on purpose: a sign-up that pretends to succeed leaves a real
  * person with no account and no explanation. The page says so plainly and offers both ways
  * forward.
+ *
+ * PRD-006d 006D-AC-003: the four fields are primitives, so the password rule reaches the person as
+ * the field's own description rather than as a paragraph that nothing connects to the control.
  */
 
 interface SignUpResponse {
@@ -51,34 +54,45 @@ export function SignUpForm(): ReactNode {
       {problem === null ? null : <AuthProblem>{problem}</AuthProblem>}
       {existing ? (
         <AuthNotice>
-          {SIGN_UP_COPY.existingAccount}{" "}
-          <a className="oalo-action-link" href="/sign-in">
-            Sign in
-          </a>{" "}
-          <a className="oalo-action-link" href="/forgot-password">
-            Reset your password
-          </a>
+          <span className={styles.noticeBody}>{SIGN_UP.existingAccountError}</span>
+          <span className={styles.noticeActions}>
+            <Link href="/sign-in">Sign in</Link>
+            <Link href="/forgot-password">Reset your password</Link>
+          </span>
         </AuthNotice>
       ) : null}
-      <AuthField autoComplete="name" label={SIGN_UP_COPY.nameLabel} name="name" type="text" />
-      <AuthField autoComplete="email" label={SIGN_UP_COPY.emailLabel} name="email" type="email" />
-      <AuthField
+      <TextField
+        autoComplete="name"
+        label={SIGN_UP.nameLabel}
+        name="name"
+        requirement="required"
+        type="text"
+      />
+      <TextField
+        autoComplete="email"
+        label={SIGN_UP.emailLabel}
+        name="email"
+        requirement="required"
+        type="email"
+      />
+      <PasswordField
         autoComplete="new-password"
-        helper={SIGN_UP_COPY.passwordHelper}
-        label={SIGN_UP_COPY.passwordLabel}
+        description={SIGN_UP.passwordHelp}
+        label={SIGN_UP.passwordLabel}
         minLength={12}
         name="password"
-        type="password"
+        requirement="required"
       />
-      <AuthField
+      {/* The copy already carries "(optional)" (PRD-006b D10), so no requirement marker: the
+          field must not say the same word twice. */}
+      <TextField
         autoComplete="organization"
-        label={SIGN_UP_COPY.companyLabel}
+        label={SIGN_UP.companyLabel}
         name="companyName"
-        required={false}
         type="text"
       />
       <Button disabled={submitting} type="submit">
-        {SIGN_UP_COPY.submitLabel}
+        {SIGN_UP.submitLabel}
       </Button>
     </form>
   );

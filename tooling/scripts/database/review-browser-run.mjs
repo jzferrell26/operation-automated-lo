@@ -258,20 +258,36 @@ export async function runReviewBrowserSuite(options) {
 
     await waitForApplication(`http://${HOST}:${String(REVIEW_HTTP_PORT)}/sign-in`);
     await waitForTerminator(REVIEW_HTTPS_PORT);
-    await runToCompletion(node, [playwrightCli, "test", "--project", "review"], {
-      cwd: repositoryRoot,
-      env: {
-        OALO_REVIEW_BROWSER_RUN: "true",
-        OALO_REVIEW_APP_URL: REVIEW_APP_URL,
-        OALO_TEST_SEEDED_CREATOR_EMAIL: options.seededCredentials.creatorEmail,
-        OALO_TEST_SEEDED_APPROVER_EMAIL: options.seededCredentials.approverEmail,
-        OALO_TEST_SEEDED_PASSWORD: options.seededCredentials.password,
-        ...(process.env.OALO_REGENERATE_UI_EVIDENCE === undefined
-          ? {}
-          : { OALO_REGENERATE_UI_EVIDENCE: process.env.OALO_REGENERATE_UI_EVIDENCE }),
+    /**
+     * PRD-006d D8. A baseline is written only when somebody asks for it by name, on their own
+     * machine, and never by the gate: a run that quietly writes the picture it was supposed to
+     * compare against proves nothing. Continuous integration never sets this.
+     */
+    const baselineMode = process.env.OALO_UPDATE_SCREEN_BASELINES;
+    const updateBaselines =
+      baselineMode === "true"
+        ? ["--update-snapshots=missing"]
+        : ["all", "changed", "missing"].includes(baselineMode ?? "")
+          ? [`--update-snapshots=${baselineMode ?? ""}`]
+          : [];
+    await runToCompletion(
+      node,
+      [playwrightCli, "test", "--project", "review", ...updateBaselines],
+      {
+        cwd: repositoryRoot,
+        env: {
+          OALO_REVIEW_BROWSER_RUN: "true",
+          OALO_REVIEW_APP_URL: REVIEW_APP_URL,
+          OALO_TEST_SEEDED_CREATOR_EMAIL: options.seededCredentials.creatorEmail,
+          OALO_TEST_SEEDED_APPROVER_EMAIL: options.seededCredentials.approverEmail,
+          OALO_TEST_SEEDED_PASSWORD: options.seededCredentials.password,
+          ...(process.env.OALO_REGENERATE_UI_EVIDENCE === undefined
+            ? {}
+            : { OALO_REGENERATE_UI_EVIDENCE: process.env.OALO_REGENERATE_UI_EVIDENCE }),
+        },
+        label: "run the review browser suite",
       },
-      label: "run the review browser suite",
-    });
+    );
   } finally {
     await stopProcess(terminator);
     await stopProcess(server);

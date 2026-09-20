@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { assertAuthPageIsServed } from "../../../../features/auth/auth-page-gate.js";
 import { ChangePasswordForm } from "../../../../features/auth/components/change-password-form.js";
-import { CHANGE_PASSWORD_COPY } from "../../../../features/auth/strings.js";
+import { CHANGE_PASSWORD } from "../../../../features/auth/strings.js";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +21,7 @@ export default async function AccountSettingsPage() {
   assertAuthPageIsServed();
   return (
     <section>
-      <h1>{CHANGE_PASSWORD_COPY.title}</h1>
+      <h1>{CHANGE_PASSWORD.title}</h1>
       <ChangePasswordForm />
     </section>
   );

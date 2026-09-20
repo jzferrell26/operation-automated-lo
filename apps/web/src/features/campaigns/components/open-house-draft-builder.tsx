@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Icon } from "@oalo/ui";
+import { Button, Card, Icon, Link, TextArea, TextField } from "@oalo/ui";
 import { useState, type FormEvent } from "react";
 
 import {
@@ -151,127 +151,135 @@ export function OpenHouseDraftBuilder({
       </Card>
 
       <form className={styles.form} onSubmit={handleSubmit}>
-        <fieldset>
+        <fieldset className={styles.fieldset}>
           <legend>The property and the open house</legend>
-          <div data-tour={GUIDED_SETUP_ANCHORS.campaignCreateAddress}>
-            <label>
-              Property address
-              <input
-                name="address"
-                required
-                defaultValue=""
-                placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.address}
-              />
-            </label>
-            <label>
-              State
-              <input
-                name="stateCode"
-                required
-                maxLength={2}
-                defaultValue=""
-                placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.stateCode}
-              />
-            </label>
-            <label>
-              Property description
-              <textarea
-                name="propertyDescription"
-                required
-                defaultValue=""
-                placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.propertyDescription}
-              />
-            </label>
-          </div>
-          <div data-tour={GUIDED_SETUP_ANCHORS.campaignCreateDates}>
-            <label>
-              Open house starts
-              <input name="openHouseStartsAt" required type="datetime-local" />
-            </label>
-            <label>
-              Open house ends
-              <input name="openHouseEndsAt" required type="datetime-local" />
-            </label>
-          </div>
-          <label data-tour={GUIDED_SETUP_ANCHORS.campaignCreateRealtor}>
-            Realtor name
-            <input
-              name="realtorDisplayName"
-              required
-              defaultValue={prefill.realtorDisplayName}
-              placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.realtorDisplayName}
+          <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateAddress}>
+            <TextField
+              defaultValue=""
+              label="Property address"
+              name="address"
+              placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.address}
+              requirement="required"
             />
-          </label>
-          <div data-tour={GUIDED_SETUP_ANCHORS.campaignCreatePermissions}>
+            <TextField
+              defaultValue=""
+              label="State"
+              maxLength={2}
+              name="stateCode"
+              placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.stateCode}
+              requirement="required"
+            />
+            <TextArea
+              defaultValue=""
+              label="Property description"
+              name="propertyDescription"
+              placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.propertyDescription}
+              requirement="required"
+            />
+          </div>
+          <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateDates}>
+            <TextField
+              label="Open house starts"
+              name="openHouseStartsAt"
+              requirement="required"
+              tone="data"
+              type="datetime-local"
+            />
+            <TextField
+              label="Open house ends"
+              name="openHouseEndsAt"
+              requirement="required"
+              tone="data"
+              type="datetime-local"
+            />
+          </div>
+          <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateRealtor}>
+            <TextField
+              defaultValue={prefill.realtorDisplayName}
+              label="Realtor name"
+              name="realtorDisplayName"
+              placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.realtorDisplayName}
+              requirement="required"
+            />
+          </div>
+          <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreatePermissions}>
             <label className={styles.check}>
-              <input name="propertyPermissionConfirmed" type="checkbox" /> I have permission to
-              market this property.
+              <input name="propertyPermissionConfirmed" type="checkbox" />
+              <span>I have permission to market this property.</span>
             </label>
             <label className={styles.check}>
-              <input name="realtorPermissionConfirmed" type="checkbox" /> I have permission to use
-              the Realtor&apos;s materials.
+              <input name="realtorPermissionConfirmed" type="checkbox" />
+              <span>I have permission to use the Realtor&apos;s materials.</span>
             </label>
           </div>
         </fieldset>
 
-        <fieldset data-tour={GUIDED_SETUP_ANCHORS.campaignCreateHeadline}>
+        <fieldset
+          className={styles.fieldset}
+          data-tour={GUIDED_SETUP_ANCHORS.campaignCreateHeadline}
+        >
           <legend>What the ad says</legend>
           <p className={styles.hint}>{GUIDED_SETUP_STEPS.createCampaign.starterTextNote}</p>
-          <label>
-            Headline
-            <input name="headline" required defaultValue={prefill.headline} />
-          </label>
-          <label>
-            Body
-            <textarea name="body" required defaultValue={prefill.body} />
-          </label>
-          <label>
-            Call to action
-            <input name="callToAction" required defaultValue={prefill.callToAction} />
-          </label>
-          <label>
-            Disclosure
-            <textarea name="disclosureText" required defaultValue={prefill.disclosureText} />
-          </label>
-          <label>
-            Lead consent
-            <textarea name="consentText" required defaultValue={prefill.consentText} />
-          </label>
+          <div className={styles.group}>
+            <TextField
+              defaultValue={prefill.headline}
+              label="Headline"
+              name="headline"
+              requirement="required"
+            />
+            <TextArea defaultValue={prefill.body} label="Body" name="body" requirement="required" />
+            <TextField
+              defaultValue={prefill.callToAction}
+              label="Call to action"
+              name="callToAction"
+              requirement="required"
+            />
+            <TextArea
+              defaultValue={prefill.disclosureText}
+              label="Disclosure"
+              name="disclosureText"
+              requirement="required"
+            />
+            <TextArea
+              defaultValue={prefill.consentText}
+              label="Lead consent"
+              name="consentText"
+              requirement="required"
+            />
+          </div>
         </fieldset>
 
-        <fieldset data-tour={GUIDED_SETUP_ANCHORS.campaignCreateBudget}>
+        <fieldset className={styles.fieldset} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateBudget}>
           <legend>Budget and area</legend>
-          <label>
-            Where the ad runs
-            <input
-              name="region"
-              required
+          <div className={styles.group}>
+            <TextField
               defaultValue={prefill.region}
+              label="Where the ad runs"
+              name="region"
               placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.region}
+              requirement="required"
             />
-          </label>
-          <label>
-            Daily budget ($)
-            <input
-              name="dailyBudgetDollars"
-              required
-              type="number"
-              min="5"
-              step="1"
+            <TextField
               defaultValue={prefill.dailyBudgetDollars}
-            />
-          </label>
-          <label>
-            Total budget ($)
-            <input
-              name="totalBudgetDollars"
-              required
-              type="number"
+              label="Daily budget ($)"
               min="5"
+              name="dailyBudgetDollars"
+              requirement="required"
               step="1"
-              defaultValue={prefill.totalBudgetDollars}
+              tone="data"
+              type="number"
             />
-          </label>
+            <TextField
+              defaultValue={prefill.totalBudgetDollars}
+              label="Total budget ($)"
+              min="5"
+              name="totalBudgetDollars"
+              requirement="required"
+              step="1"
+              tone="data"
+              type="number"
+            />
+          </div>
           <p className={styles.hint}>
             Housing ads have their own rules. We apply them for you, every time.
           </p>
@@ -350,9 +358,9 @@ function CampaignCheckResult({ result }: Readonly<{ result: PreflightResponse }>
           ))
         )}
       </div>
-      <a className="oalo-action-link" href={result.detailHref}>
+      <Link href={result.detailHref} variant="action">
         Open campaign
-      </a>
+      </Link>
       <SupportDetails
         rows={[
           [SUPPORT_DETAILS_LABELS.versionId, result.campaignVersionRef],

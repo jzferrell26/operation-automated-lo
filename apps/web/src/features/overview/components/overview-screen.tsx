@@ -1,4 +1,4 @@
-import { Card, EmptyState, Icon, Metric, Stack, Surface } from "@oalo/ui";
+import { Card, EmptyState, Icon, Link, Metric, Stack, Surface } from "@oalo/ui";
 
 import {
   NOT_CONNECTED_NEXT_STEP,
@@ -105,12 +105,12 @@ export function OverviewScreen({
           </div>
         </div>
         <div className={styles.quickActions} data-tour={GUIDED_SETUP_ANCHORS.setupWelcome}>
-          <a className="oalo-action-link" href="/marketing/campaigns/new">
+          <Link href="/marketing/campaigns/new" variant="action">
             Create an Open House Boost
-          </a>
-          <a className="oalo-action-link" href="/settings/routing">
+          </Link>
+          <Link href="/settings/routing" variant="action">
             Fix the connection that needs attention first
-          </a>
+          </Link>
         </div>
       </section>
 
@@ -134,12 +134,12 @@ export function OverviewScreen({
           <ProjectedSafeAction label="Build property site" />
           <ProjectedSafeAction label="Generate PDF and creative" />
           <ProjectedSafeAction label="Add Realtor partner" />
-          <a className="oalo-action-link" href="/leads">
+          <Link href="/leads" variant="action">
             See your leads
-          </a>
-          <a className="oalo-action-link" href="/leads/pipeline">
+          </Link>
+          <Link href="/leads/pipeline" variant="action">
             Open your HighLevel pipeline
-          </a>
+          </Link>
         </div>
       </section>
 
@@ -181,9 +181,9 @@ export function OverviewScreen({
                 {campaign.nextActions.find((action) => action.available)?.label ??
                   "Open it and see where it stands."}
               </p>
-              <a className="oalo-action-link" href={campaign.detailHref}>
+              <Link href={campaign.detailHref} variant="action">
                 Open campaign
-              </a>
+              </Link>
             </Card>
           ))}
           {otherWork.map((item) => (

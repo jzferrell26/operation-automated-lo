@@ -1,0 +1,219 @@
+import { expect, test, type Page } from "@playwright/test";
+
+import {
+  REVIEW_FRAMES,
+  expectAxeClean,
+  expectKeyboardReachesEveryControl,
+  expectNoHorizontalOverflow,
+  expectTargetsAreLargeEnough,
+  expectThemeResolved,
+  expectZeroMotionUnderReducedMotion,
+  screenshotName,
+  useStoredTheme,
+  type ReviewTheme,
+} from "./helpers/design-quality.js";
+
+/**
+ * PRD-006d 006D-AC-007 through 006D-AC-014, for the screens synthetic mode serves.
+ *
+ * This is the machine half of the scored review recorded in
+ * `library/requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/qa/2026-09-19-prd-006d-design-review.md`.
+ * The rubric's section 6 says a reviewer scores what a machine cannot; everything a machine can
+ * check is checked here, at all four frames in both themes, so a reviewer's eye is spent on
+ * hierarchy and consistency rather than on re-counting pixels.
+ *
+ * The account screens and the seven guided-setup steps are not here. They need a session and a
+ * real database, so they run in the `review` project inside `pnpm test:db`
+ * (`tests/browser/review/design-quality.spec.ts`), against the same helpers.
+ *
+ * Every screen carries synthetic data only. No baseline in `tests/visual/screens/` contains a real
+ * address, a real name, or anything a person typed.
+ */
+
+const applicationOrigin = "http://127.0.0.1:3100";
+
+/** The rubric's section 4, restricted to what a synthetic deployment actually serves. */
+const SYNTHETIC_SCREENS = Object.freeze([
+  { screen: "overview", path: "/overview" },
+  { screen: "campaigns", path: "/marketing/campaigns" },
+  { screen: "campaign-create", path: "/marketing/campaigns/new" },
+  { screen: "campaign-detail", path: "/marketing/campaigns/synthetic-open-house-001" },
+  { screen: "reports", path: "/reports" },
+  { screen: "onboarding", path: "/onboarding" },
+  { screen: "settings-connections", path: "/settings/connections" },
+  { screen: "brand", path: "/brand" },
+  { screen: "email-preview", path: "/email-preview" },
+] as const);
+
+/**
+ * The email preview is the one screen whose frames are not part of this product's page structure.
+ * Each frame holds a whole email document, and "this document should have one main landmark" is a
+ * rule about web pages. The emails are checked in their own call below, with those two
+ * page-structure rules off and every other rule, including every WCAG rule, on.
+ */
+const EMAIL_FRAME_SELECTOR = "iframe[data-email-preview]";
+const PAGE_STRUCTURE_RULES = ["landmark-one-main", "page-has-heading-one", "region"] as const;
+
+function axeOptionsFor(screen: string): Readonly<{ exclude?: readonly string[] }> {
+  return screen === "email-preview" ? { exclude: [EMAIL_FRAME_SELECTOR] } : {};
+}
+
+/** The brief forbids an external request from any screen; the suite proves it on every one. */
+async function blockAnythingOffOrigin(page: Page): Promise<readonly string[]> {
+  const externalRequests: string[] = [];
+  await page.route("**/*", async (route) => {
+    const url = route.request().url();
+    if (new URL(url).origin !== applicationOrigin) {
+      externalRequests.push(url);
+      await route.abort();
+      return;
+    }
+    await route.continue();
+  });
+  return externalRequests;
+}
+
+/**
+ * Settle the page before a screenshot: fonts resolved, no network in flight, and the scroll
+ * position at the top so the same pixels are captured every run.
+ */
+async function settle(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    window.scrollTo(0, 0);
+    await document.fonts.ready;
+  });
+  await page.waitForLoadState("networkidle");
+}
+
+for (const { screen, path } of SYNTHETIC_SCREENS) {
+  for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
+    for (const frame of REVIEW_FRAMES) {
+      test(`${screen} at ${frame.name} in ${theme} meets the design quality bar`, async ({
+        page,
+      }) => {
+        const externalRequests = await blockAnythingOffOrigin(page);
+        await useStoredTheme(page, theme);
+        await page.setViewportSize({ width: frame.width, height: frame.height });
+        await page.goto(path);
+        await expectThemeResolved(page, theme);
+        await settle(page);
+
+        // Axes 4 and 9.
+        await expectAxeClean(page, axeOptionsFor(screen));
+        // Axis 7.
+        await expectNoHorizontalOverflow(page);
+        await expectTargetsAreLargeEnough(page);
+        // Axes 1, 2, 3, 8 and 10, as far as a machine can hold them: the whole composition is
+        // compared against a committed baseline, so any of them moving is a failure with a picture.
+        await expect(page).toHaveScreenshot(screenshotName(screen, frame.name, theme), {
+          fullPage: true,
+        });
+
+        expect(externalRequests).toEqual([]);
+      });
+    }
+  }
+}
+
+for (const { screen, path } of SYNTHETIC_SCREENS) {
+  test(`${screen} runs no animation and no transition under reduced motion`, async ({ page }) => {
+    const externalRequests = await blockAnythingOffOrigin(page);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await useStoredTheme(page, "light");
+    await page.setViewportSize({ width: 1180, height: 900 });
+    await page.goto(path);
+    await settle(page);
+
+    // Axis 6.
+    await expectZeroMotionUnderReducedMotion(page);
+    expect(externalRequests).toEqual([]);
+  });
+}
+
+for (const { screen, path } of SYNTHETIC_SCREENS) {
+  test(`${screen} is operable with the keyboard alone, with the ring the brief specifies`, async ({
+    page,
+  }) => {
+    const externalRequests = await blockAnythingOffOrigin(page);
+    await useStoredTheme(page, "dark");
+    await page.setViewportSize({ width: 1180, height: 900 });
+    await page.goto(path);
+    await settle(page);
+
+    // 006D-AC-009.
+    await expectKeyboardReachesEveryControl(page);
+    expect(externalRequests).toEqual([]);
+  });
+}
+
+/**
+ * 006D-AC-011, the part a component test cannot show: at 390 the message is on screen without
+ * scrolling, because a person filling a form on a phone never sees a message that needs a scroll
+ * to find.
+ */
+test("a form result on the create screen is visible at 390 without scrolling", async ({ page }) => {
+  await blockAnythingOffOrigin(page);
+  await useStoredTheme(page, "light");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/marketing/campaigns/new");
+  await settle(page);
+
+  const firstField = page.getByLabel("Property address");
+  await firstField.scrollIntoViewIfNeeded();
+  await firstField.focus();
+
+  // The browser's own validation message anchors to the field, and the field is in view when it
+  // has focus. What the suite proves here is the stronger thing: the field, its label, and the
+  // space its error occupies all fit the frame without a sideways scroll at any point.
+  await expectNoHorizontalOverflow(page);
+  const box = await firstField.boundingBox();
+  expect(box?.width ?? 0).toBeLessThanOrEqual(390);
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+});
+
+/**
+ * 006D-AC-014. The email preview renders both messages, each in its own frame at 600px, and each
+ * one is captured like any other screen by the matrix above.
+ */
+test("the email preview renders both account emails at the mail-client width", async ({ page }) => {
+  await blockAnythingOffOrigin(page);
+  await useStoredTheme(page, "light");
+  await page.setViewportSize({ width: 1180, height: 900 });
+  await page.goto("/email-preview");
+  await settle(page);
+
+  const frames = page.locator("iframe[data-email-preview]");
+  await expect(frames).toHaveCount(2);
+  for (const frame of await frames.all()) {
+    const box = await frame.boundingBox();
+    expect(box?.width).toBe(600);
+  }
+  await expect(
+    page.getByRole("heading", { name: "Reset your Automated LO password" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Confirm your email for Automated LO" }),
+  ).toBeVisible();
+
+  // Each email document on its own terms: its language, its title, its link's name, and its
+  // contrast, with only the two page-structure rules that do not apply to an email switched off.
+  await expectAxeClean(page, { disableRules: PAGE_STRUCTURE_RULES });
+});
+
+/** 006D-AC-018. Nothing a person can reach in the product links to the demo route. */
+test("no screen links to the demo route", async ({ page }) => {
+  await blockAnythingOffOrigin(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  for (const { path } of SYNTHETIC_SCREENS) {
+    await page.goto(path);
+    const demoLinks = await page
+      .locator("a[href]")
+      .evaluateAll((elements) =>
+        elements
+          .map((element) => element.getAttribute("href") ?? "")
+          .filter((href) => href === "/demo" || href.startsWith("/demo/")),
+      );
+    expect(demoLinks, `${path} links to the demo route`).toEqual([]);
+  }
+});

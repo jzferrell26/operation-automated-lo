@@ -106,6 +106,30 @@
   outline-offset: var(--focus-offset);
 }
 
+/* Design brief section 18, and the one place the brief's rule needs a second selector to hold.
+ *
+ * A date, time, or datetime control is a group of sub-fields inside the browser's own shadow tree.
+ * `document.activeElement` is the input, but the element that actually holds focus is a sub-field,
+ * so the input matches neither `:focus` nor `:focus-visible`: it matches `:focus-within`. Measured
+ * by `tests/browser/design-quality.spec.ts` during the PRD-006d review, where the open-house date
+ * fields and the report date filters took focus with no ring at all, which left a person tabbing
+ * through the form unable to see where they were in the control that is hardest to operate blind.
+ *
+ * `:focus-within` is therefore the only selector that works, and it is also honest: these controls
+ * are never focused except deliberately, so there is no pointer-focus flash to avoid, which is the
+ * only thing `:focus-visible` buys. */
+.control:is(
+    [type="date"],
+    [type="datetime-local"],
+    [type="month"],
+    [type="time"],
+    [type="week"]
+  ):focus-within {
+  border-color: var(--ac-primary);
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+
 .control[aria-invalid="true"] {
   border-color: var(--st-critical-fg);
 }

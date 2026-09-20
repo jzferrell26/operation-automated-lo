@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { assertAuthPageIsServed, signUpIsOffered } from "../../../features/auth/auth-page-gate.js";
 import { AuthPanel } from "../../../features/auth/components/auth-panel.js";
 import { SignInForm } from "../../../features/auth/components/sign-in-form.js";
-import { SIGN_IN_COPY } from "../../../features/auth/strings.js";
+import { SIGN_IN } from "../../../features/auth/strings.js";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,7 @@ export default async function SignInPage({
   assertAuthPageIsServed();
   const parameters = await searchParams;
   return (
-    <AuthPanel lead={SIGN_IN_COPY.lead} title={SIGN_IN_COPY.title}>
+    <AuthPanel lead={SIGN_IN.lead} title={SIGN_IN.title}>
       <SignInForm signUpEnabled={signUpIsOffered()} signedOut={parameters["signedOut"] === "1"} />
     </AuthPanel>
   );

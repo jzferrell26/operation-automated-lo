@@ -29,8 +29,25 @@ export default defineConfig({
   retries: process.env["CI"] ? 2 : 0,
   workers: 1,
   timeout: 30_000,
+  /**
+   * PRD-006d D8. Visual regression baselines live beside the browser suite, not beside the
+   * byte-level rendering goldens in `tests/visual/rendering/`, and `tests/visual/screens/README.md`
+   * says why the two are different things.
+   */
+  snapshotPathTemplate: "tests/visual/screens/{projectName}/{arg}{ext}",
   expect: {
     timeout: 5_000,
+    toHaveScreenshot: {
+      /**
+       * One pixel in a thousand. Tight enough that a spacing token, a colour role, or a type step
+       * moving is a failure, loose enough to survive sub-pixel text rasterisation on the same
+       * platform. Animations are frozen so a screenshot never catches a transition mid-flight.
+       */
+      maxDiffPixelRatio: 0.001,
+      animations: "disabled",
+      caret: "hide",
+      scale: "css",
+    },
   },
   use: {
     baseURL,

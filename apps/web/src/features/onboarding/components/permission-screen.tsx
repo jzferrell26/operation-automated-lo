@@ -1,4 +1,4 @@
-import { Card, Icon, Stack } from "@oalo/ui";
+import { Card, Icon, Link, Stack } from "@oalo/ui";
 
 import { ACCESS_GROUP_STATE_LABELS } from "../../../copy/user-language.js";
 import type { DeepReadonly, Onboarding } from "../../ui-foundation/model/synthetic-ui.js";
@@ -69,9 +69,9 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
         ))}
       </div>
 
-      <a className="oalo-action-link" href="/onboarding">
+      <Link href="/onboarding" variant="action">
         Back to setup
-      </a>
+      </Link>
     </div>
   );
 }

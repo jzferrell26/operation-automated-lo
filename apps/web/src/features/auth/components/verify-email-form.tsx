@@ -3,8 +3,8 @@
 import { Button } from "@oalo/ui";
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import { VERIFY_EMAIL_COPY } from "../strings.js";
-import { AuthNotice, AuthProblem } from "./auth-field.js";
+import { VERIFY_EMAIL } from "../strings.js";
+import { AuthNotice, AuthProblem } from "./auth-feedback.js";
 import styles from "./auth-form.module.css";
 import { useAuthSubmit } from "./use-auth-submit.js";
 
@@ -25,14 +25,14 @@ export function VerifyEmailForm({ token }: Readonly<{ token: string }>): ReactNo
     if (payload !== undefined) setConfirmed(true);
   }
 
-  if (confirmed) return <AuthNotice>{VERIFY_EMAIL_COPY.done}</AuthNotice>;
+  if (confirmed) return <AuthNotice>{VERIFY_EMAIL.successNotice}</AuthNotice>;
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
       {problem === null ? null : <AuthProblem>{problem}</AuthProblem>}
-      <p>{VERIFY_EMAIL_COPY.body}</p>
+      <p className={styles.body}>{VERIFY_EMAIL.body}</p>
       <Button disabled={submitting} type="submit">
-        {VERIFY_EMAIL_COPY.submitLabel}
+        {VERIFY_EMAIL.submitLabel}
       </Button>
     </form>
   );

@@ -1,4 +1,4 @@
-import { Card, Icon, OnboardingChecklist, type OnboardingChecklistItemModel } from "@oalo/ui";
+import { Card, Icon, Link, OnboardingChecklist, type OnboardingChecklistItemModel } from "@oalo/ui";
 
 import type {
   DeepReadonly,
@@ -112,14 +112,14 @@ function projectChecklistItem(
     </div>
   );
   const action = (
-    <a
-      className="oalo-action-link"
+    <Link
       data-tour={onboardingChecklistAnchor(item.id)}
       href={item.completionHref}
       tabIndex={locked ? -1 : undefined}
+      variant="action"
     >
       {item.state === "complete" ? "See what we checked" : "Open this step"}
-    </a>
+    </Link>
   );
 
   if (item.state === "complete") {

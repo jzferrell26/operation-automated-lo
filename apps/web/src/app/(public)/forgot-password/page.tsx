@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { assertAuthPageIsServed } from "../../../features/auth/auth-page-gate.js";
 import { AuthPanel } from "../../../features/auth/components/auth-panel.js";
 import { ForgotPasswordForm } from "../../../features/auth/components/forgot-password-form.js";
-import { FORGOT_PASSWORD_COPY } from "../../../features/auth/strings.js";
+import { FORGOT_PASSWORD } from "../../../features/auth/strings.js";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default async function ForgotPasswordPage() {
   assertAuthPageIsServed();
   return (
-    <AuthPanel lead={FORGOT_PASSWORD_COPY.lead} title={FORGOT_PASSWORD_COPY.title}>
+    <AuthPanel lead={FORGOT_PASSWORD.lead} title={FORGOT_PASSWORD.title}>
       <ForgotPasswordForm />
     </AuthPanel>
   );

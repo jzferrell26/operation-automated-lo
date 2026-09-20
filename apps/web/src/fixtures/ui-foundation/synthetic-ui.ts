@@ -7,8 +7,7 @@ export const rawSyntheticUiFixture: unknown = {
     safety: {
       dataMode: "synthetic",
       writesEnabled: false,
-      disclosure:
-        "Synthetic workspace. Provider reads, provider writes, and customer data are disabled.",
+      disclosure: "Local demo with sample data.",
     },
     accessMode: "embedded",
     user: {
@@ -127,8 +126,7 @@ export const rawSyntheticUiFixture: unknown = {
     safety: {
       dataMode: "synthetic",
       writesEnabled: false,
-      disclosure:
-        "Synthetic workspace. Provider reads, provider writes, and customer data are disabled.",
+      disclosure: "Local demo with sample data.",
     },
     heading: "Good morning, Alex",
     readiness: "attention_required",
@@ -452,8 +450,7 @@ export const rawSyntheticUiFixture: unknown = {
     safety: {
       dataMode: "synthetic",
       writesEnabled: false,
-      disclosure:
-        "Synthetic workspace. Provider reads, provider writes, and customer data are disabled.",
+      disclosure: "Local demo with sample data.",
     },
     guidance: {
       title: "Need a hand? Open the setup guide",

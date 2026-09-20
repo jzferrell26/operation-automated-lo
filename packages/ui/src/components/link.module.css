@@ -59,12 +59,19 @@
   flex: none;
 }
 
-/* Design brief section 14: a 44px target on the supported mobile experience. */
-@media (max-width: 390px) {
-  .inline {
-    display: inline-flex;
-    min-block-size: var(--target-min-size);
-  }
+/* Design brief section 14 and `03-components/application-shell-and-navigation.md:30`, "Touch
+ * targets are at least 44px by 44px", which carries no frame condition.
+ *
+ * This rule used to apply only below 390. The PRD-006d review measured the sign-in footer at 1440
+ * and found its two links 20px tall: under the brief's 44, and under WCAG 2.2 SC 2.5.8's 24 as
+ * well. A pointer target does not get smaller because the window got bigger, so the rule is
+ * unconditional. */
+.inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--target-min-size);
+  min-inline-size: var(--target-min-size);
 }
 
 @media (prefers-reduced-motion: reduce) {

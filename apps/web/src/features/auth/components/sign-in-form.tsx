@@ -1,15 +1,10 @@
 "use client";
 
-import { Button } from "@oalo/ui";
+import { Button, Link, PasswordField, TextField } from "@oalo/ui";
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import {
-  CHOOSE_WORKSPACE_COPY,
-  ROLE_LABELS_FOR_PEOPLE,
-  SIGN_IN_COPY,
-  workspaceOptionLabel,
-} from "../strings.js";
-import { AuthField, AuthProblem } from "./auth-field.js";
+import { CHOOSE_WORKSPACE, ROLE_LABELS, SIGN_IN, chooseWorkspaceOptionLabel } from "../strings.js";
+import { AuthProblem } from "./auth-feedback.js";
 import styles from "./auth-form.module.css";
 import { followNext, useAuthSubmit } from "./use-auth-submit.js";
 
@@ -24,6 +19,12 @@ import { followNext, useAuthSubmit } from "./use-auth-submit.js";
  * The workspaces come from the server and are chosen by position in the server's own list. This
  * form never sends a workspace name, a location, a role, or a binding, so there is nothing in the
  * request to forge.
+ *
+ * PRD-006d 006D-AC-003: every field is a `TextField` or a `PasswordField` and every destination is
+ * a `Link`, so the label, the description, the error wiring, and the focus ring all come from the
+ * primitives rather than from this file. The two boolean controls (keep me signed in, and the
+ * workspace radio group) stay native: PRD-006d D4 ships no checkbox or radio primitive, and a
+ * native control in a governed label is correct until one exists.
  */
 
 interface WorkspaceChoice {
@@ -41,14 +42,14 @@ interface SignInResponse {
 
 /**
  * The label a person reads for each binding role. PRD-005a D2 maps the database roles to session
- * roles; PRD-006b D3 maps those to words, and this is the composition of the two.
+ * roles; PRD-006b's `ROLE_LABELS` maps those to words, and this is the composition of the two.
  */
 const BINDING_ROLE_LABELS: Readonly<Record<string, string>> = Object.freeze({
-  location_admin: ROLE_LABELS_FOR_PEOPLE.location_admin,
-  creator: ROLE_LABELS_FOR_PEOPLE.campaign_creator,
-  approver: ROLE_LABELS_FOR_PEOPLE.campaign_approver,
-  publisher: ROLE_LABELS_FOR_PEOPLE.campaign_publisher,
-  analyst: ROLE_LABELS_FOR_PEOPLE.viewer,
+  location_admin: ROLE_LABELS.location_admin,
+  creator: ROLE_LABELS.campaign_creator,
+  approver: ROLE_LABELS.campaign_approver,
+  publisher: ROLE_LABELS.campaign_publisher,
+  analyst: ROLE_LABELS.viewer,
 });
 
 export interface SignInFormProps {
@@ -93,28 +94,28 @@ export function SignInForm({ signUpEnabled, signedOut }: SignInFormProps): React
   if (choice !== null) {
     return (
       <form className={styles.form} onSubmit={handleChoice}>
-        <h2>{CHOOSE_WORKSPACE_COPY.title}</h2>
         {problem === null ? null : <AuthProblem>{problem}</AuthProblem>}
-        <ul className={styles.choices}>
+        <fieldset className={styles.choices}>
+          <legend className={styles.choicesLegend}>{CHOOSE_WORKSPACE.title}</legend>
           {choice.workspaces.map((workspace) => (
-            <li key={workspace.index}>
-              <label className={styles.check}>
-                <input
-                  defaultChecked={workspace.index === 0}
-                  name="workspaceIndex"
-                  type="radio"
-                  value={workspace.index}
-                />
-                {workspaceOptionLabel(
+            <label className={styles.check} key={workspace.index}>
+              <input
+                defaultChecked={workspace.index === 0}
+                name="workspaceIndex"
+                type="radio"
+                value={workspace.index}
+              />
+              <span>
+                {chooseWorkspaceOptionLabel(
                   workspace.workspaceName,
                   BINDING_ROLE_LABELS[workspace.bindingRole] ?? "",
                 )}
-              </label>
-            </li>
+              </span>
+            </label>
           ))}
-        </ul>
+        </fieldset>
         <Button disabled={submitting} type="submit">
-          {CHOOSE_WORKSPACE_COPY.submitLabel}
+          {CHOOSE_WORKSPACE.submitLabel}
         </Button>
       </form>
     );
@@ -122,33 +123,33 @@ export function SignInForm({ signUpEnabled, signedOut }: SignInFormProps): React
 
   return (
     <form className={styles.form} onSubmit={handleSignIn}>
-      {signedOut ? <p className={styles.notice}>{SIGN_IN_COPY.signedOutNotice}</p> : null}
+      {signedOut ? <p className={styles.notice}>{SIGN_IN.signedOutNotice}</p> : null}
       {problem === null ? null : <AuthProblem>{problem}</AuthProblem>}
-      <AuthField autoComplete="email" label={SIGN_IN_COPY.emailLabel} name="email" type="email" />
-      <AuthField
+      <TextField
+        autoComplete="email"
+        label={SIGN_IN.emailLabel}
+        name="email"
+        requirement="required"
+        type="email"
+      />
+      <PasswordField
         autoComplete="current-password"
-        label={SIGN_IN_COPY.passwordLabel}
+        label={SIGN_IN.passwordLabel}
         name="password"
-        type="password"
+        requirement="required"
       />
       <label className={styles.check}>
         <input name="keepSignedIn" type="checkbox" />
-        {SIGN_IN_COPY.rememberLabel}
+        <span>{SIGN_IN.rememberLabel}</span>
       </label>
       <Button disabled={submitting} type="submit">
-        {SIGN_IN_COPY.submitLabel}
+        {SIGN_IN.submitLabel}
       </Button>
       <p className={styles.footer}>
-        <a className="oalo-action-link" href="/forgot-password">
-          {SIGN_IN_COPY.forgotLink}
-        </a>
-        {signUpEnabled ? (
-          <a className="oalo-action-link" href="/sign-up">
-            {SIGN_IN_COPY.signUpFooter}
-          </a>
-        ) : null}
+        <Link href="/forgot-password">{SIGN_IN.forgotLink}</Link>
+        {signUpEnabled ? <Link href="/sign-up">{SIGN_IN.signUpPrompt}</Link> : null}
       </p>
-      <p className={styles.honesty}>{SIGN_IN_COPY.honesty}</p>
+      <p className={styles.honesty}>{SIGN_IN.highLevelNote}</p>
     </form>
   );
 }

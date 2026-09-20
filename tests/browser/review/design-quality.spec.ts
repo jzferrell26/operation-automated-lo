@@ -28,10 +28,10 @@ import {
  * terminator the `__Host-` session cookie requires. It is the same rubric and the same helpers as
  * `tests/browser/design-quality.spec.ts`; only the server differs.
  *
- * **This file creates no account and signs in twice.** That is a deliberate shape, not a shortcut.
- * The first version of it created a fresh account per frame and theme and signed in once per cell,
- * and the run's own rate limiter did exactly what it is there for: the last sign-up in the run was
- * refused with "There have been too many attempts", and the failure landed on PRD-006c's
+ * **This file creates no account and signs in three times.** That is a deliberate shape, not a
+ * shortcut. The first version of it created a fresh account per frame and theme and signed in once
+ * per cell, and the run's own rate limiter did exactly what it is there for: the last sign-up in
+ * the run was refused with "There have been too many attempts", and the failure landed on PRD-006c's
  * `guided-setup.tablet-anchoring` spec rather than here. A review suite that spends the product's
  * rate-limit budget is a review suite that breaks the specs sharing the run with it. So the
  * session-bound screens are walked inside one signed-in session each, looping the frames and
@@ -184,6 +184,78 @@ test("change-password meets the design quality bar at every frame in both themes
       });
     }
   }
+
+  expectNoExternalRequests(guard);
+});
+
+/**
+ * PRD-006b D10's success state for the reset-password flow, and the writing review's F-03.
+ *
+ * D10 ends the reset row "Success: the user lands in the workspace with the notice 'Your password
+ * is saved. You're signed in.'" The screen a person reads it on is the workspace, so the picture
+ * is of the workspace, and it is filed under the flow it belongs to as the `saved-notice` state of
+ * `reset-password`.
+ *
+ * The state is reached by the address the reset route redirects to rather than by spending a real
+ * reset link. A real reset would rotate the seeded creator's password, and every other spec in this
+ * run signs in with it. What the route returns is proven where it is decided, at route level, in
+ * `password-recovery-handler.postgres.test.ts`.
+ *
+ * The screenshot is not the assertion. Baselines are compared only on the runner that drew them, so
+ * the notice itself is asserted here: present, visible, and announced without interrupting.
+ */
+const RESET_SAVED_NOTICE = "Your password is saved. You're signed in.";
+
+test("the workspace after a saved password meets the design quality bar", async ({ page }) => {
+  test.setTimeout(240_000);
+  const guard = await guardLocalOrigin(page);
+  const { creatorEmail, password } = seededCredentials();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await signInExisting(page, creatorEmail, password);
+  // The seeded person's progress lives on the server, so the walkthrough is put back to a known
+  // place and dismissed before anything is measured, exactly as the change-password case does.
+  await restartGuidedSetup(page);
+  await page.getByRole("button", { name: "Not now" }).click();
+
+  for (const theme of THEMES) {
+    await page.goto("/overview?passwordReset=1");
+    await chooseThemeFromTheHeader(page, theme);
+
+    const notice = page.locator("[data-live-urgency='status']").filter({
+      hasText: RESET_SAVED_NOTICE,
+    });
+    await expect(notice).toBeVisible();
+    await expect(notice).toHaveAttribute("aria-live", "polite");
+
+    for (const frame of REVIEW_FRAMES) {
+      await page.setViewportSize({ width: frame.width, height: frame.height });
+      await settle(page);
+
+      await expectAxeClean(page);
+      await expectNoHorizontalOverflow(page);
+      await expectTargetsAreLargeEnough(page);
+      await expect(page).toHaveScreenshot(
+        screenshotName("reset-password", frame.name, theme, "saved-notice"),
+        { fullPage: true },
+      );
+    }
+  }
+
+  // The notice must not cost the workspace its keyboard path, so the same walk the account screens
+  // get runs here too, on the screen carrying it.
+  await page.setViewportSize({ width: 1180, height: 900 });
+  await page.goto("/overview?passwordReset=1");
+  await settle(page);
+  await expectKeyboardReachesEveryControl(page);
+
+  // It lives in the query, so the next navigation is a workspace with nothing left to say.
+  await page.goto("/overview");
+  await settle(page);
+  await expect(
+    page.locator("[data-live-urgency='status']").filter({
+      hasText: RESET_SAVED_NOTICE,
+    }),
+  ).toHaveCount(0);
 
   expectNoExternalRequests(guard);
 });

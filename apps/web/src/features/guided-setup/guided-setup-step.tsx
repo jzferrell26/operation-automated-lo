@@ -143,6 +143,14 @@ export function GuidedSetupStep({
    * have mounted, so a single `querySelector` finds nothing and the step points at nothing for as
    * long as it is open. The observer is what closes that window: it waits for the element to
    * arrive and then does exactly what the immediate path does.
+   *
+   * Wave 7n. The observer keeps watching for as long as the step is open, rather than stopping the
+   * moment it has attached. An element that arrives once can also be replaced: a screen remounts
+   * the card or the field the step points at, and the ring stays on a node that is no longer in
+   * the document while the replacement carries nothing. The step then points at nothing, with
+   * nothing to say so, which is what `guided-setup.accessibility.spec.ts` was failing on at a cell
+   * that moved between runs. Re-querying costs one attribute selector and only happens once the
+   * element it attached to has actually left the document.
    */
   useEffect(() => {
     if (anchor === PANEL_ANCHORED) {
@@ -153,6 +161,23 @@ export function GuidedSetupStep({
 
     let attached: HTMLElement | undefined;
     let update = () => undefined as void;
+
+    /**
+     * Lets go of the element the ring is on, without touching the placement it was measured from.
+     *
+     * The rect is deliberately left alone. Between a remount and the render that replaces the
+     * element there is no anchor at all, and clearing it there would drop the panel back to its
+     * resting placement for a frame and then move it again, which is a jump a person would see for
+     * no reason. The panel stays where it is and the next attach re-measures.
+     */
+    function detach(): void {
+      if (attached === undefined) return;
+      attached.removeAttribute("data-guided-setup-highlight");
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+      attached = undefined;
+      update = () => undefined as void;
+    }
 
     function attach(element: HTMLElement): void {
       attached = element;
@@ -181,13 +206,16 @@ export function GuidedSetupStep({
     function attachIfPresent(): boolean {
       const found = document.querySelector(anchorSelector(pageAnchor));
       if (!(found instanceof HTMLElement) || found === attached) return false;
-      observer.disconnect();
-      window.cancelAnimationFrame(frame);
+      detach();
       attach(found);
       return true;
     }
 
     const observer = new MutationObserver(() => {
+      // The ring is already on an element the page still holds, so there is nothing to look for.
+      // The registry keeps one element per anchor id, so an element that is still in the document
+      // is still the element this step names.
+      if (attached !== undefined && attached.isConnected) return;
       attachIfPresent();
     });
     // The observer catches an element that arrives with a later render. This catches one that is
@@ -198,17 +226,13 @@ export function GuidedSetupStep({
       attachIfPresent();
     });
 
-    if (!attachIfPresent()) {
-      setAnchorRect(undefined);
-      observer.observe(document.body, { childList: true, subtree: true });
-    }
+    observer.observe(document.body, { childList: true, subtree: true });
+    if (!attachIfPresent()) setAnchorRect(undefined);
 
     return () => {
       observer.disconnect();
       window.cancelAnimationFrame(frame);
-      attached?.removeAttribute("data-guided-setup-highlight");
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
+      detach();
     };
     // `panelSize` is deliberately absent: it is an output of this effect, and depending on it
     // would scroll the page again every time the panel's height settled.

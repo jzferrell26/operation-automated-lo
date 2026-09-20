@@ -85,10 +85,128 @@ export async function expectNoHorizontalOverflow(page: Page): Promise<void> {
 }
 
 /**
+ * How long a page may still be arriving at its styles before a measurement gives up waiting.
+ *
+ * It is an allowance, not a pause: a page that is already styled clears this in two polls. The
+ * number is well inside the suite's own 30-second per-test ceiling, so a page that never styles
+ * itself fails with the list of reasons below rather than with a bare timeout.
+ */
+const STYLES_APPLIED_TIMEOUT_MS = 10_000;
+
+/**
+ * Wave 7n. The page is styled: every stylesheet it holds has applied, the set has stopped growing,
+ * and the design system has reached the controls that are about to be measured.
+ *
+ * Wave 7e already waited for every `link[rel="stylesheet"]` in the document to have a non-null
+ * `sheet`, which covers a sheet that has been fetched and not yet parsed. It does not cover a sheet
+ * that is not in the document yet: the wait passes over the links it can see, another arrives
+ * afterwards, and whatever ran in between measured a page with its author styles missing. Measured
+ * on 2026-09-20: `reset-password` at 1440 in dark reported "Show password" at 32 by 22 and its two
+ * password fields at 177 by 21, which are a browser's own sizes for a bare button and a bare input.
+ *
+ * Two facts about the product decide what this checks. The build splits the design system across
+ * chunks: `--target-min-size` is defined in one and read in two others
+ * (`apps/web/.next/static/chunks`, measured 2026-09-20). `field.module.css` gives a password
+ * field's reveal control `inline-size: var(--target-min-size)` and a text control
+ * `min-block-size: var(--target-min-size)`. So the token chunk arriving late leaves both rules with
+ * nothing to resolve and both fall back, and the field chunk arriving late removes the rules
+ * altogether; either one gives exactly the numbers above. The two checks below are those two cases:
+ * the token resolves on every control, and every control that carries a class has at least one
+ * class some loaded sheet defines. Measured on the five public account screens and on
+ * `/overview`, `/settings/account`, and `/onboarding` on 2026-09-20: no control anywhere carries a
+ * class that no sheet defines, so the second check is a fact about the styles arriving rather than
+ * about which classes a screen happens to use.
+ */
+export async function expectStylesHaveApplied(page: Page): Promise<void> {
+  await expect
+    .poll(
+      async () =>
+        await page.evaluate(() => {
+          const reasons: string[] = [];
+          const describe = (element: Element): string =>
+            `the ${element.tagName.toLowerCase()} named "${element.getAttribute("aria-label") ?? element.textContent?.trim().slice(0, 40) ?? "unnamed"}"`;
+
+          const links = [...document.querySelectorAll('link[rel="stylesheet"]')];
+          const pending = links.filter((node) => (node as HTMLLinkElement).sheet === null);
+          if (pending.length > 0) {
+            reasons.push(
+              `${String(pending.length)} of ${String(links.length)} stylesheet links have been fetched but not applied`,
+            );
+          }
+
+          // The count settles rather than being asserted outright: a sheet the route inserts after
+          // the first paint is a sheet nothing in the document points at yet, so the only honest
+          // signal that they have all arrived is that no more are arriving.
+          const counted = window as unknown as { oaloStyleSheetCount?: number };
+          const count = document.styleSheets.length;
+          if (counted.oaloStyleSheetCount !== count) {
+            counted.oaloStyleSheetCount = count;
+            reasons.push(
+              `the document holds ${String(count)} stylesheets and the set is still growing`,
+            );
+          }
+
+          const defined = new Set<string>();
+          const collect = (rules: CSSRuleList): void => {
+            for (const rule of rules) {
+              const nested = (rule as CSSGroupingRule).cssRules as CSSRuleList | undefined;
+              if (nested !== undefined) collect(nested);
+              const selector = (rule as CSSStyleRule).selectorText;
+              if (typeof selector !== "string") continue;
+              for (const match of selector.matchAll(/\.([A-Za-z0-9_-]+)/gu)) {
+                if (match[1] !== undefined) defined.add(match[1]);
+              }
+            }
+          };
+          for (const sheet of document.styleSheets) {
+            try {
+              collect(sheet.cssRules);
+            } catch {
+              // A sheet from another origin cannot be read. Neither suite serves one, and a sheet
+              // that cannot be read is still applied, so there is nothing to wait for.
+            }
+          }
+
+          const token = (element: Element): string =>
+            getComputedStyle(element).getPropertyValue("--target-min-size").trim();
+          if (token(document.documentElement) === "") {
+            reasons.push("the design system's --target-min-size does not resolve on the document");
+          }
+          for (const control of document.querySelectorAll(
+            "button, a[href], [role='button'], input",
+          )) {
+            if (token(control) === "") {
+              reasons.push(
+                `the design system's --target-min-size does not resolve on ${describe(control)}`,
+              );
+              break;
+            }
+            const classes = [...control.classList];
+            if (classes.length === 0 || classes.some((name) => defined.has(name))) continue;
+            reasons.push(
+              `no loaded stylesheet defines any class of ${describe(control)} (${classes.join(" ")})`,
+            );
+            break;
+          }
+          return reasons;
+        }),
+      {
+        message: "the page was still arriving at its styles",
+        timeout: STYLES_APPLIED_TIMEOUT_MS,
+      },
+    )
+    .toEqual([]);
+}
+
+/**
  * Rubric axis 7 and design brief section 18. Every visible interactive element is at least 44 by
  * 44. Reported with the element's accessible name so a failure says which control, not how many.
+ *
+ * Wave 7n. The wait is here rather than only in `settleForScreenshot`, so that every path that
+ * measures a target size gets it whether or not that path was about to take a picture.
  */
 export async function expectTargetsAreLargeEnough(page: Page): Promise<void> {
+  await expectStylesHaveApplied(page);
   const undersized = await page
     .locator("button:visible, a[href]:visible, [role='button']:visible, input:visible")
     .evaluateAll((elements) =>
@@ -274,7 +392,7 @@ export async function settleForScreenshot(
 ): Promise<void> {
   const keepScroll = options.keepScroll ?? false;
   /**
-   * Every stylesheet the route inserted has been applied.
+   * Every stylesheet the route needs has been applied.
    *
    * A `<link rel="stylesheet">` whose `sheet` is still null has been fetched but not yet applied,
    * and an element styled by it is measured with its author styles missing. Measured on
@@ -282,12 +400,12 @@ export async function settleForScreenshot(
    * sign-in link at 46 by 18 while the other seven cells of the same markup reported 44 by 44,
    * because `Link.module.css` had not applied and `min-block-size` does not apply to an inline box.
    * Network idle does not cover this: the request has finished, the sheet has not.
+   *
+   * Wave 7n moved that wait into `expectStylesHaveApplied`, which also covers the sheet that is not
+   * in the document yet. A picture taken before the styles apply is wrong in exactly the way a
+   * measurement taken then is, so both go through the one helper.
    */
-  await page.waitForFunction(() =>
-    [...document.querySelectorAll('link[rel="stylesheet"]')].every(
-      (node) => (node as HTMLLinkElement).sheet !== null,
-    ),
-  );
+  await expectStylesHaveApplied(page);
   await page.evaluate(async (keep) => {
     if (!keep) window.scrollTo(0, 0);
     await document.fonts.ready;

@@ -143,6 +143,12 @@ export interface AuthRequestOverrides {
   readonly origin?: string | undefined;
   readonly host?: string | undefined;
   readonly clientAddress?: string | undefined;
+  /**
+   * Sends no forwarded-address header at all, which is what a caller that reaches the origin
+   * without a proxy in front of it presents. `clientAddress` cannot express this, because an
+   * omitted one means "the suite's default address" and not "no address".
+   */
+  readonly withoutClientAddress?: boolean | undefined;
   readonly cookie?: string | undefined;
   readonly csrfToken?: string | undefined;
   /**
@@ -164,8 +170,10 @@ function authHeaders(contentType: string, overrides: AuthRequestOverrides): Reco
     "content-type": contentType,
     origin: overrides.origin ?? REVIEW_ORIGIN,
     host: overrides.host ?? REVIEW_HOST,
-    "x-forwarded-for": overrides.clientAddress ?? DEFAULT_CLIENT_ADDRESS,
   };
+  if (overrides.withoutClientAddress !== true) {
+    headers["x-forwarded-for"] = overrides.clientAddress ?? DEFAULT_CLIENT_ADDRESS;
+  }
   if (overrides.cookie !== undefined) headers["cookie"] = overrides.cookie;
   if (overrides.csrfToken !== undefined) headers["x-csrf-token"] = overrides.csrfToken;
   if (overrides.tracingId !== undefined) headers[TRACING_ID_HEADER] = overrides.tracingId;

@@ -2,6 +2,7 @@ import type { PostgresDatabasePool } from "@oalo/db";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  countAuditEventsForActor,
   countCredentialTokens,
   grantReviewBinding,
   newestCredentialTokenLifetimeSeconds,
@@ -316,6 +317,14 @@ describe("POST /api/auth/forgot-password (006A-AC-017)", () => {
 describe("POST /api/auth/reset-password (006A-AC-018)", () => {
   it("consumes the token once, revokes every session, and signs the person in", async () => {
     const token = await freshResetToken();
+    const resetCompletedBefore = await countAuditEventsForActor(pool, {
+      userId: resetUserId,
+      action: "auth.reset-completed",
+    });
+    const passwordChangedBefore = await countAuditEventsForActor(pool, {
+      userId: resetUserId,
+      action: "auth.password-changed",
+    });
 
     // A session that exists before the reset must not survive it.
     const before = await handlePasswordSignIn(
@@ -375,7 +384,29 @@ describe("POST /api/auth/reset-password (006A-AC-018)", () => {
 
     const correlationRef = response.headers.get("x-oalo-correlation-ref") ?? "";
     const events = await readAuditEventsForCorrelation(pool, correlationRef);
-    expect(events.map((event) => event.action)).toContain("auth.password-changed");
+    /**
+     * 006A-AC-018 and 031. D1's inventory gives a completed reset its own action, and until
+     * `supabase/migrations/20260919200000_reset_completed_audit.sql` nothing wrote it: a reset
+     * and an in-product password change left byte-identical trails, so an operator could not
+     * tell somebody who had proved control of an inbox from somebody who had typed their current
+     * password. Both actions are counted, and counted on both sides of the flow, because "one
+     * row" is a claim about what this request wrote and not about what the row count happened to
+     * be.
+     */
+    expect(events.filter((event) => event.action === "auth.reset-completed")).toHaveLength(1);
+    expect(events.filter((event) => event.action === "auth.password-changed")).toHaveLength(0);
+    expect(
+      await countAuditEventsForActor(pool, {
+        userId: resetUserId,
+        action: "auth.reset-completed",
+      }),
+    ).toBe(resetCompletedBefore + 1);
+    expect(
+      await countAuditEventsForActor(pool, {
+        userId: resetUserId,
+        action: "auth.password-changed",
+      }),
+    ).toBe(passwordChangedBefore);
 
     // The token is spent, so the same link cannot be used again.
     const replayed = await handleResetPassword(
@@ -521,6 +552,60 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
       expect(await readUserIdForEmail(pool, "dana-forged@oalo.invalid")).toBeUndefined();
     });
   });
+
+  /**
+   * 006A-AC-020 names four fields the sign-up request must not be able to carry, and only
+   * `locationId` was ever forged. Sign-up creates all five rows itself, so a request that could
+   * name a location, a person, a role, or an installation would be choosing what it joins or what
+   * it is worth on the way in. `.strict()` is what makes that impossible, one field at a time.
+   */
+  const FORGED_SIGN_UP_FIELDS = Object.freeze([
+    Object.freeze({
+      name: "locationId",
+      email: "forged-location@oalo.invalid",
+      field: () => ({ locationId: location.locationId }),
+    }),
+    Object.freeze({
+      name: "userId",
+      email: "forged-user@oalo.invalid",
+      field: () => ({ userId: resetUserId }),
+    }),
+    Object.freeze({
+      name: "role",
+      email: "forged-role@oalo.invalid",
+      field: () => ({ role: "location_admin" }),
+    }),
+    Object.freeze({
+      name: "installationId",
+      email: "forged-installation@oalo.invalid",
+      field: () => ({ installationId: location.installationId }),
+    }),
+  ]);
+
+  it.each(FORGED_SIGN_UP_FIELDS.map((forged) => [forged.name, forged] as const))(
+    "refuses a sign-up carrying a forged %s with 400 and creates nothing",
+    async (_name, forged) => {
+      await deployment.swap(signUpEnabledEnvironment(), async () => {
+        const response = await handlePasswordSignUp(
+          authRequest(
+            "/api/auth/sign-up",
+            {
+              name: "Dana Forged",
+              email: forged.email,
+              password: PASSWORD,
+              ...forged.field(),
+            },
+            { clientAddress: nextClientAddress() },
+          ),
+        );
+
+        expect(response.status).toBe(400);
+        expect(((await response.json()) as { error: string }).error).toBe("INVALID_AUTH_REQUEST");
+        expect(response.headers.get("set-cookie")).toBeNull();
+        expect(await readUserIdForEmail(pool, forged.email)).toBeUndefined();
+      });
+    },
+  );
 
   it("refuses the eleventh sign-up from one client address in an hour (006A-AC-015)", async () => {
     await deployment.swap(signUpEnabledEnvironment(), async () => {

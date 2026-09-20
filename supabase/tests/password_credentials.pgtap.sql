@@ -1,4 +1,5 @@
--- PRD-006a acceptance criteria 006A-AC-001 through 006A-AC-009.
+-- PRD-006a acceptance criteria 006A-AC-001 through 006A-AC-009, plus the
+-- function-level halves of 006A-AC-014, 006A-AC-018, and 006A-AC-031.
 --
 -- Style follows supabase/tests/first_party_sessions.pgtap.sql: fixed UUIDs,
 -- `set local role migration_owner` for seeding, pg_temp.capture_sqlstate for
@@ -13,7 +14,7 @@
 
 begin;
 
-select plan(109);
+select plan(126);
 
 create function pg_temp.assert_is(actual anyelement, expected anyelement, description text)
 returns text
@@ -83,6 +84,67 @@ begin
     from platform.record_password_sign_in_failure(target, correlation) as failure;
   end loop;
   return last_lock;
+end
+$function$;
+
+-- The owner read that lets a case state what a lockout did to the credential
+-- itself. `platform.user_credentials` is owner-only, and these cases run while
+-- the file holds app_runtime, so the read is a definer helper rather than a
+-- role swap in the middle of a sequence of attempts.
+create function pg_temp.credential_attempts(target uuid)
+returns integer
+language sql
+stable
+security definer
+as $function$
+  select credential.failed_attempt_count
+  from platform.user_credentials as credential
+  where credential.user_id = credential_attempts.target
+$function$;
+
+-- 006A-AC-014. Reads the lock and the counter, makes the attempts, and reads
+-- them again, so the comparison is sequenced rather than left to whichever side
+-- of an expression the planner reaches first. It answers true only when the
+-- lock was open to begin with and neither value moved.
+--
+-- Unlike fail_sign_in_repeatedly this one is definer, because the before and
+-- after reads are owner-only, so the attempts inside it run as the owner rather
+-- than as app_runtime. That is sound for this assertion and only this one:
+-- record_password_sign_in_failure does not branch on the caller's role, and
+-- `apps/web/src/server/password-authentication-handler.postgres.test.ts` proves
+-- the same behaviour through the app_runtime path at route level.
+create function pg_temp.lock_survives_attempts(target uuid, correlation text, attempts integer)
+returns boolean
+language plpgsql
+volatile
+security definer
+as $function$
+declare
+  before_lock timestamptz;
+  before_count integer;
+  after_lock timestamptz;
+  after_count integer;
+begin
+  select credential.locked_until, credential.failed_attempt_count
+    into before_lock, before_count
+  from platform.user_credentials as credential
+  where credential.user_id = lock_survives_attempts.target;
+
+  for attempt in 1..lock_survives_attempts.attempts loop
+    perform platform.record_password_sign_in_failure(
+      lock_survives_attempts.target, lock_survives_attempts.correlation
+    );
+  end loop;
+
+  select credential.locked_until, credential.failed_attempt_count
+    into after_lock, after_count
+  from platform.user_credentials as credential
+  where credential.user_id = lock_survives_attempts.target;
+
+  return before_lock is not null
+    and before_lock > pg_catalog.now()
+    and after_lock = before_lock
+    and after_count = before_count;
 end
 $function$;
 
@@ -877,6 +939,33 @@ select pg_temp.assert_is(
   'the lockout row is written once, not on every failure after it'
 );
 
+-- 006A-AC-014 and D4. The lockout is fifteen minutes from the tenth failure,
+-- not fifteen minutes from the last thing anybody posted at the address. Ten
+-- more attempts are made while the lock is open and the lock has to be the same
+-- instant afterwards, because a lock that moved would let whoever is making
+-- them decide when the real owner gets back in.
+select pg_temp.assert_ok(
+  pg_temp.lock_survives_attempts(
+    '00000000-0000-4000-8000-000000000b11', 'corr.failure.during-lock', 10
+  ),
+  'ten attempts during an open lock leave locked_until and the counter exactly as they were'
+);
+select pg_temp.assert_is(
+  pg_temp.credential_attempts('00000000-0000-4000-8000-000000000b11'),
+  10,
+  'the counter still reads the tenth failure that locked the account, not the twentieth attempt'
+);
+select pg_temp.assert_is(
+  pg_temp.audit_count('corr.failure.during-lock', 'auth.sign-in'),
+  10,
+  'every attempt during the lock is still recorded as a denied sign-in'
+);
+select pg_temp.assert_is(
+  pg_temp.audit_count('corr.failure.during-lock', 'auth.lockout'),
+  0,
+  'no attempt during the lock writes a second lockout row'
+);
+
 select platform.record_password_sign_in_success(
   '00000000-0000-4000-8000-000000000b11', 'corr.success.first'
 );
@@ -1082,6 +1171,20 @@ select pg_temp.assert_is(
   'setting a first password with no live session revokes nothing'
 );
 
+-- 006A-AC-018 and 031. D1's inventory gives a completed reset and an in-product
+-- change one action each, and gives a first password neither: nothing was reset
+-- and nothing was changed the first time a password is set.
+select pg_temp.assert_is(
+  pg_temp.audit_count('corr.password.initial', 'auth.reset-completed'),
+  0,
+  'a first password writes no reset-completed row'
+);
+select pg_temp.assert_is(
+  pg_temp.audit_count('corr.password.initial', 'auth.password-changed'),
+  0,
+  'a first password writes no password-changed row'
+);
+
 reset role;
 set local role migration_owner;
 select pg_temp.assert_is(
@@ -1148,6 +1251,29 @@ select pg_temp.assert_ok(
   'a third password sign-in issues a third session'
 );
 
+-- 006A-AC-014. The clause below says a password change clears the counter and
+-- the lock, and an assertion that a clean credential is still clean proves
+-- nothing about clearing. The credential is dirtied first, and the dirt is
+-- asserted, so what follows can only pass by being cleared.
+reset role;
+set local role migration_owner;
+update platform.user_credentials as credential
+set failed_attempt_count = 7,
+    locked_until = pg_catalog.now() + interval '15 minutes'
+where credential.user_id = '00000000-0000-4000-8000-000000000b16';
+select pg_temp.assert_ok(
+  (
+    select credential.failed_attempt_count = 7
+      and credential.locked_until is not null
+      and credential.locked_until > pg_catalog.now()
+    from platform.user_credentials as credential
+    where credential.user_id = '00000000-0000-4000-8000-000000000b16'
+  ),
+  'the credential is counted and locked before the change that must clear it'
+);
+reset role;
+set local role app_runtime;
+
 select pg_temp.assert_is(
   platform.set_password(
     '00000000-0000-4000-8000-000000000b16',
@@ -1173,6 +1299,11 @@ select pg_temp.assert_is(
   pg_temp.audit_count('corr.password.change', 'auth.password-changed'),
   1,
   'the password change writes one password-changed row'
+);
+select pg_temp.assert_is(
+  pg_temp.audit_count('corr.password.change', 'auth.reset-completed'),
+  0,
+  'the password change writes no reset-completed row'
 );
 
 reset role;
@@ -1217,6 +1348,24 @@ select pg_temp.assert_is(
   ),
   1,
   'a reset with no kept session revokes the one that is left'
+);
+-- 006A-AC-018 and 031. The completed reset is the row an operator reads to tell
+-- somebody who proved control of an inbox from somebody who typed their current
+-- password, so the two actions are asserted against each other and not alone.
+select pg_temp.assert_is(
+  pg_temp.audit_count('corr.password.reset', 'auth.reset-completed'),
+  1,
+  'a completed reset writes one reset-completed row'
+);
+select pg_temp.assert_is(
+  pg_temp.audit_count('corr.password.reset', 'auth.password-changed'),
+  0,
+  'a completed reset writes no password-changed row'
+);
+select pg_temp.assert_is(
+  pg_temp.audit_count('corr.password.reset', 'auth.sessions-revoked'),
+  1,
+  'a completed reset still writes its sessions-revoked summary row'
 );
 select pg_temp.assert_is(
   pg_temp.capture_sqlstate($sql$
@@ -1368,8 +1517,79 @@ select pg_temp.assert_is(
   'consume_auth_rate_limit refuses a scope outside the closed list'
 );
 
+-- 006A-AC-009, the clause the cases above do not reach: a window that has
+-- passed starts the next count at one rather than carrying the old one
+-- forward. A limiter that never rolled over would refuse a whole address
+-- permanently after its first twenty attempts.
+select pg_temp.assert_ok(
+  platform.consume_auth_rate_limit('reset_ip', pg_temp.token_hash('window-roll'), 2, 900)
+    and platform.consume_auth_rate_limit('reset_ip', pg_temp.token_hash('window-roll'), 2, 900),
+  'both attempts inside the first window are allowed'
+);
+select pg_temp.assert_is(
+  platform.consume_auth_rate_limit('reset_ip', pg_temp.token_hash('window-roll'), 2, 900),
+  false,
+  'the third attempt inside the first window is refused'
+);
+
 reset role;
 set local role migration_owner;
+-- The clock is fixed and cannot be moved from inside the test: the function
+-- keys its window on pg_catalog.now(), which is the transaction timestamp, and
+-- this whole file is one transaction, so pg_sleep would leave the window
+-- exactly where it was. Moving the exhausted counter back by one whole window
+-- is the same arithmetic seen from the other side, and it is exact rather than
+-- approximate: the next call computes a window the stored row is no longer in,
+-- which is precisely the state the clock would have produced.
+update platform.auth_rate_limits as limit_row
+set window_start = limit_row.window_start - interval '900 seconds'
+where limit_row.scope = 'reset_ip'
+  and limit_row.key_hash = pg_temp.token_hash('window-roll');
+reset role;
+set local role app_runtime;
+
+select pg_temp.assert_is(
+  platform.consume_auth_rate_limit('reset_ip', pg_temp.token_hash('window-roll'), 2, 900),
+  true,
+  'the first attempt in the next window is allowed again'
+);
+
+reset role;
+set local role migration_owner;
+select pg_temp.assert_is(
+  (
+    select limit_row.attempt_count
+    from platform.auth_rate_limits as limit_row
+    where limit_row.scope = 'reset_ip'
+      and limit_row.key_hash = pg_temp.token_hash('window-roll')
+    order by limit_row.window_start desc
+    limit 1
+  ),
+  1,
+  'the next window stores a count of one, not the exhausted window''s three'
+);
+reset role;
+set local role app_runtime;
+
+select pg_temp.assert_is(
+  platform.consume_auth_rate_limit('reset_ip', pg_temp.token_hash('window-roll'), 2, 900),
+  true,
+  'the next window spends its own budget rather than the exhausted one'
+);
+
+reset role;
+set local role migration_owner;
+select pg_temp.assert_is(
+  (
+    select pg_catalog.count(*)::integer
+    from platform.auth_rate_limits as limit_row
+    where limit_row.scope = 'reset_ip'
+      and limit_row.key_hash = pg_temp.token_hash('window-roll')
+  ),
+  2,
+  'the passed window keeps its own row rather than being counted on'
+);
+
 insert into platform.auth_rate_limits (scope, key_hash, window_start, attempt_count)
 values ('verify_ip', pg_temp.token_hash('stale-window'), pg_catalog.now() - interval '2 days', 5);
 reset role;

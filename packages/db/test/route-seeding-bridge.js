@@ -11,6 +11,7 @@
  */
 export {
   clearAuthRateLimitsForKey,
+  countAuditEventsForActor,
   countCredentialTokens,
   countLocationRows,
   expireReviewCredentialLock,

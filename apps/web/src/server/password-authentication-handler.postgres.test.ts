@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   expireReviewCredentialLock,
   grantReviewBinding,
+  countAuditEventsForActor,
   readAuditEventsForCorrelation,
   readAuthRateLimitRows,
   readFirstPartySessionsForUser,
@@ -31,16 +32,25 @@ import {
   type SeededLocation,
 } from "./campaign-route-postgres-support.js";
 import {
+  UNKNOWN_CLIENT_ADDRESS_BUCKET,
+  flushAuthBackgroundWork,
   handleChangePassword,
   handleChooseWorkspace,
+  handleForgotPassword,
   handlePasswordSignIn,
+  handlePasswordSignUp,
+  handleResendVerificationEmail,
+  handleResetPassword,
   handleSignOut,
+  handleVerifyEmail,
   rateLimitKeyHash,
 } from "./password-authentication-handler.js";
 import {
-  DEFAULT_CLIENT_ADDRESS,
   authEnvironment,
   authRequest,
+  createFetchRecorder,
+  resetLinkTokenFrom,
+  resetRateLimitKey,
   seedCredential,
   sessionCookieFrom,
 } from "./password-authentication-support.js";
@@ -67,6 +77,10 @@ const MULTI_EMAIL = "route-multi@oalo.invalid";
 const LOCKOUT_EMAIL = "route-lockout@oalo.invalid";
 const CHANGE_EMAIL = "route-change@oalo.invalid";
 const DENIED_EMAIL = "route-denied@oalo.invalid";
+const LOCK_EXTENSION_EMAIL = "route-lock-extension@oalo.invalid";
+const RESET_CLEARS_LOCK_EMAIL = "route-reset-clears-lock@oalo.invalid";
+const NEW_PASSWORD = "a brighter harbour lantern";
+const RESEND_KEY = "re_a_throwaway_key_for_the_proofs";
 
 let pool: PostgresDatabasePool;
 let environment: RoutePostgresEnvironment;
@@ -81,6 +95,8 @@ let multiId: string;
 let lockoutId: string;
 let changeId: string;
 let deniedId: string;
+let lockExtensionId: string;
+let resetClearsLockId: string;
 
 /** A different client address per proof, so a rate-limit window is never shared by accident. */
 let addressCounter = 0;
@@ -157,7 +173,35 @@ beforeAll(async () => {
   await seedCredential(pool, { userId: multiId, email: MULTI_EMAIL, password: PASSWORD });
   await seedCredential(pool, { userId: lockoutId, email: LOCKOUT_EMAIL, password: PASSWORD });
   await seedCredential(pool, { userId: changeId, email: CHANGE_EMAIL, password: PASSWORD });
+  // Two accounts of their own for the two lock proofs. A lock is per account, so a proof that
+  // reads `locked_until` on an account another case also fails against is reading a number two
+  // cases wrote.
+  lockExtensionId = (
+    await seedActor(pool, location, {
+      displayName: "Lock extension person",
+      bindingRole: "analyst",
+      sessionRole: "viewer",
+    })
+  ).actorId;
+  resetClearsLockId = (
+    await seedActor(pool, location, {
+      displayName: "Reset clears lock person",
+      bindingRole: "analyst",
+      sessionRole: "viewer",
+    })
+  ).actorId;
+
   await seedCredential(pool, { userId: deniedId, email: DENIED_EMAIL, password: PASSWORD });
+  await seedCredential(pool, {
+    userId: lockExtensionId,
+    email: LOCK_EXTENSION_EMAIL,
+    password: PASSWORD,
+  });
+  await seedCredential(pool, {
+    userId: resetClearsLockId,
+    email: RESET_CLEARS_LOCK_EMAIL,
+    password: PASSWORD,
+  });
 });
 
 afterAll(async () => {
@@ -173,9 +217,26 @@ afterAll(async () => {
 
 async function signIn(
   body: unknown,
-  overrides: Readonly<{ origin?: string; host?: string; clientAddress?: string }> = {},
+  overrides: Readonly<{
+    origin?: string;
+    host?: string;
+    clientAddress?: string;
+    withoutClientAddress?: boolean;
+    /** A pinned clock, for the proofs that have to stand at a named instant inside a lock. */
+    nowEpochSeconds?: number;
+  }> = {},
 ): Promise<Response> {
-  return handlePasswordSignIn(authRequest("/api/auth/sign-in", body, overrides));
+  const request = authRequest("/api/auth/sign-in", body, overrides);
+  if (overrides.nowEpochSeconds === undefined) return handlePasswordSignIn(request);
+  const pinned = overrides.nowEpochSeconds;
+  return handlePasswordSignIn(
+    request,
+    process.env,
+    resolveRuntimeCampaignCommandPorts(process.env),
+    {
+      nowEpochSeconds: () => pinned,
+    },
+  );
 }
 
 /**
@@ -199,6 +260,41 @@ async function expectSignInRefusedAfter(
   expect(after.status).toBe(401);
   expect(await after.text()).toBe('{"error":"AUTH_CREDENTIALS_REJECTED"}');
   expect(after.headers.get("set-cookie")).toBeNull();
+}
+
+/**
+ * The `action:result` pairs each of a run of attempts wrote, one sorted list per attempt.
+ *
+ * Reading every correlation reference rather than the last one is what lets a case say "exactly
+ * one": a row written early, or written twice, shows up as a mismatch on one of the others. The
+ * rows of a single attempt are written inside one transaction, so they share a `created_at` and
+ * the read's tie-break is a random uuid; what is pinned is therefore the set of rows, sorted, and
+ * not an order the database never promised.
+ */
+async function auditActionsPerAttempt(
+  correlationRefs: readonly string[],
+): Promise<readonly (readonly string[])[]> {
+  return Promise.all(
+    correlationRefs.map(async (reference) => {
+      const events = await readAuditEventsForCorrelation(pool, reference);
+      return events.map((event) => `${event.action}:${event.result}`).sort();
+    }),
+  );
+}
+
+/** Runs one case under a different deployment and puts this suite's own back afterwards. */
+async function underDeployment(
+  overrides: Readonly<Record<string, string>>,
+  work: () => Promise<void>,
+): Promise<void> {
+  restoreEnvironment();
+  const restoreOverridden = applyRouteEnvironment({ ...authEnvironment(), ...overrides });
+  try {
+    await work();
+  } finally {
+    restoreOverridden();
+    restoreEnvironment = applyRouteEnvironment(environment);
+  }
 }
 
 async function newestSessionRefFor(userId: string): Promise<string> {
@@ -491,19 +587,8 @@ describe("lockout (006A-AC-014)", () => {
     expect(locked?.failedAttemptCount).toBe(10);
 
     // 006A-AC-031. Every one of the ten failures writes its own denied row, and exactly one of
-    // them, the tenth, also writes the lockout row. Reading all ten correlation references rather
-    // than the last one is what makes that "exactly one": a lockout row written early, or written
-    // twice, shows up as a mismatch on one of the first nine.
-    //
-    // The two rows of the locking attempt are written inside one transaction, so they share a
-    // `created_at` and the read's tie-break is a random uuid. What is pinned is therefore the set
-    // of rows, sorted, and not an order the database never promised.
-    const eventsPerAttempt = await Promise.all(
-      correlationRefs.map(async (reference) => {
-        const events = await readAuditEventsForCorrelation(pool, reference);
-        return events.map((event) => `${event.action}:${event.result}`).sort();
-      }),
-    );
+    // them, the tenth, also writes the lockout row.
+    const eventsPerAttempt = await auditActionsPerAttempt(correlationRefs);
     expect(eventsPerAttempt).toEqual([
       ...Array.from({ length: 9 }, () => ["auth.sign-in:denied"]),
       ["auth.lockout:success", "auth.sign-in:denied"],
@@ -717,6 +802,46 @@ describe("choosing a workspace (006A-AC-016)", () => {
     expect(forged.status).toBe(400);
     expect(((await forged.json()) as { error: string }).error).toBe("INVALID_AUTH_REQUEST");
   });
+
+  /**
+   * 006A-AC-016 names three fields the choice request must not be able to carry, and only one of
+   * them was ever forged. The workspace is picked by index from the closed list the database
+   * returned for the person the token names, so a request that could name a location, a role, or
+   * a binding would be naming one the server never offered; `.strict()` is what makes that
+   * impossible, and a schema loses `.strict()` in one careless edit.
+   */
+  const FORGED_CHOICE_FIELDS = Object.freeze([
+    Object.freeze({ name: "locationId", field: () => ({ locationId: secondLocation.locationId }) }),
+    Object.freeze({ name: "role", field: () => ({ role: "location_admin" }) }),
+    Object.freeze({
+      name: "bindingId",
+      field: () => ({ bindingId: "00000000-0000-4000-8000-00000000c0de" }),
+    }),
+  ]);
+
+  it.each(FORGED_CHOICE_FIELDS.map((forged) => [forged.name, forged] as const))(
+    "refuses a choice carrying a forged %s with 400 and issues nothing",
+    async (_name, forged) => {
+      const address = nextClientAddress();
+      const offered = await signIn(
+        { email: MULTI_EMAIL, password: PASSWORD },
+        { clientAddress: address },
+      );
+      const payload = (await offered.json()) as { choiceToken: string };
+
+      const refused = await handleChooseWorkspace(
+        authRequest(
+          "/api/auth/choose",
+          { choiceToken: payload.choiceToken, workspaceIndex: 0, ...forged.field() },
+          { clientAddress: address },
+        ),
+      );
+
+      expect(refused.status).toBe(400);
+      expect(((await refused.json()) as { error: string }).error).toBe("INVALID_AUTH_REQUEST");
+      expect(refused.headers.get("set-cookie")).toBeNull();
+    },
+  );
 
   it("never shows the choice step to a person with one workspace", async () => {
     const response = await signIn(
@@ -934,56 +1059,339 @@ describe("the modes that do not serve a sign-in (006A-AC-026)", () => {
     ) as CampaignCommandPorts;
   }
 
-  it("answers 404 in synthetic mode before any database access", async () => {
-    restoreEnvironment();
-    const syntheticEnvironment = authEnvironment();
-    const restoreSynthetic = applyRouteEnvironment({
-      ...syntheticEnvironment,
-      OALO_REVIEW_SURFACE: "",
-    });
-    try {
-      const before = (await readFirstPartySessionsForUser(pool, creatorId)).length;
-
-      const response = await handlePasswordSignIn(
-        authRequest(
-          "/api/auth/sign-in",
-          { email: CREATOR_EMAIL, password: PASSWORD },
-          { clientAddress: DEFAULT_CLIENT_ADDRESS },
+  /**
+   * Every route D5 lists, not the one this file happened to start with. `auth-page-gate` covers
+   * the seven pages this way; a route that forgot the mode check while its neighbours kept it
+   * would have been the one thing neither suite looked at.
+   */
+  const AUTH_ROUTES = Object.freeze([
+    Object.freeze({
+      name: "/api/auth/sign-in",
+      call: (ports: CampaignCommandPorts) =>
+        handlePasswordSignIn(
+          authRequest("/api/auth/sign-in", { email: CREATOR_EMAIL, password: PASSWORD }),
+          process.env,
+          ports,
         ),
-        process.env,
-        unusablePorts(),
-      );
+    }),
+    Object.freeze({
+      name: "/api/auth/choose",
+      call: (ports: CampaignCommandPorts) =>
+        handleChooseWorkspace(
+          authRequest("/api/auth/choose", { choiceToken: "a".repeat(43), workspaceIndex: 0 }),
+          process.env,
+          ports,
+        ),
+    }),
+    Object.freeze({
+      name: "/api/auth/sign-up",
+      call: (ports: CampaignCommandPorts) =>
+        handlePasswordSignUp(
+          authRequest("/api/auth/sign-up", {
+            name: "Gate Probe",
+            email: "gate-probe@oalo.invalid",
+            password: PASSWORD,
+          }),
+          process.env,
+          ports,
+        ),
+    }),
+    Object.freeze({
+      name: "/api/auth/forgot-password",
+      call: (ports: CampaignCommandPorts) =>
+        handleForgotPassword(
+          authRequest("/api/auth/forgot-password", { email: CREATOR_EMAIL }),
+          process.env,
+          ports,
+        ),
+    }),
+    Object.freeze({
+      name: "/api/auth/reset-password",
+      call: (ports: CampaignCommandPorts) =>
+        handleResetPassword(
+          authRequest("/api/auth/reset-password", {
+            token: "b".repeat(43),
+            password: PASSWORD,
+            confirmPassword: PASSWORD,
+          }),
+          process.env,
+          ports,
+        ),
+    }),
+    Object.freeze({
+      name: "/api/auth/verify-email",
+      call: (ports: CampaignCommandPorts) =>
+        handleVerifyEmail(
+          authRequest("/api/auth/verify-email", { token: "c".repeat(43) }),
+          process.env,
+          ports,
+        ),
+    }),
+    Object.freeze({
+      name: "/api/auth/sign-out",
+      call: (ports: CampaignCommandPorts) =>
+        handleSignOut(authRequest("/api/auth/sign-out", {}), process.env, ports),
+    }),
+    Object.freeze({
+      name: "/api/auth/change-password",
+      call: (ports: CampaignCommandPorts) =>
+        handleChangePassword(
+          authRequest("/api/auth/change-password", {
+            currentPassword: PASSWORD,
+            password: NEW_PASSWORD,
+            confirmPassword: NEW_PASSWORD,
+          }),
+          process.env,
+          ports,
+        ),
+    }),
+    Object.freeze({
+      name: "/api/auth/resend-verification",
+      call: (ports: CampaignCommandPorts) =>
+        handleResendVerificationEmail(
+          authRequest("/api/auth/resend-verification", {}),
+          process.env,
+          ports,
+        ),
+    }),
+  ]);
 
-      expect(response.status).toBe(404);
-      expect(await response.json()).toEqual({ error: "NOT_FOUND" });
-      expect((await readFirstPartySessionsForUser(pool, creatorId)).length).toBe(before);
-    } finally {
-      restoreSynthetic();
-      restoreEnvironment = applyRouteEnvironment(environment);
+  const ROUTE_CASES = AUTH_ROUTES.map((route) => [route.name, route] as const);
+
+  it.each(ROUTE_CASES)(
+    "answers 404 for %s in synthetic mode, before any database access",
+    async (_name, route) => {
+      await underDeployment({ OALO_REVIEW_SURFACE: "" }, async () => {
+        const before = (await readFirstPartySessionsForUser(pool, creatorId)).length;
+
+        const response = await route.call(unusablePorts());
+
+        expect(response.status).toBe(404);
+        expect(await response.json()).toEqual({ error: "NOT_FOUND" });
+        expect((await readFirstPartySessionsForUser(pool, creatorId)).length).toBe(before);
+      });
+    },
+  );
+
+  it.each(ROUTE_CASES)(
+    "answers 404 for %s in production without the review flag, before any database access",
+    async (_name, route) => {
+      await underDeployment(
+        { OALO_ENVIRONMENT: "production", OALO_REVIEW_SURFACE: "" },
+        async () => {
+          const before = (await readFirstPartySessionsForUser(pool, creatorId)).length;
+
+          const response = await route.call(unusablePorts());
+
+          expect(response.status).toBe(404);
+          expect(await response.json()).toEqual({ error: "NOT_FOUND" });
+          expect((await readFirstPartySessionsForUser(pool, creatorId)).length).toBe(before);
+        },
+      );
+    },
+  );
+});
+
+describe("a lock nobody can extend (006A-AC-014)", () => {
+  /**
+   * D4 gives the lockout fifteen minutes from the tenth failure. If a refused attempt made while
+   * the lock is open pushed `locked_until` out again, anybody who knew an address could hold its
+   * owner out of the product for as long as they kept posting, at one request every fifteen
+   * minutes and with no password at all. So the lock has to be the same instant afterwards.
+   *
+   * Half the extra attempts carry the correct password, because the earlier shape recorded a
+   * failure for a correct password during a lock: the account's real owner, typing the right
+   * password and waiting, was extending their own lockout.
+   */
+  it("keeps locked_until at the instant the tenth failure set it", async () => {
+    const lockingAddress = nextClientAddress();
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const refused = await signIn(
+        { email: LOCK_EXTENSION_EMAIL, password: WRONG_PASSWORD_SAME_LENGTH },
+        { clientAddress: lockingAddress },
+      );
+      expect(refused.status).toBe(401);
     }
+
+    const locked = await readReviewCredential(pool, lockExtensionId);
+    expect(locked?.locked).toBe(true);
+    expect(locked?.failedAttemptCount).toBe(10);
+    const lockedUntil = locked?.lockedUntil;
+    expect(lockedUntil).toBeDefined();
+
+    // A second address, because twenty attempts from one would spend the whole sign-in window and
+    // the last of them would be refused by the rate limiter rather than by the lock.
+    const duringLockAddress = nextClientAddress();
+    const correlationRefs: string[] = [];
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const refused = await signIn(
+        {
+          email: LOCK_EXTENSION_EMAIL,
+          password: attempt % 2 === 0 ? PASSWORD : WRONG_PASSWORD_SAME_LENGTH,
+        },
+        { clientAddress: duringLockAddress },
+      );
+      expect(refused.status).toBe(401);
+      expect(await refused.text()).toBe('{"error":"AUTH_CREDENTIALS_REJECTED"}');
+      expect(refused.headers.get("set-cookie")).toBeNull();
+      correlationRefs.push(refused.headers.get("x-oalo-correlation-ref") ?? "");
+    }
+
+    const after = await readReviewCredential(pool, lockExtensionId);
+    expect(after?.lockedUntil).toBe(lockedUntil);
+    expect(after?.failedAttemptCount).toBe(10);
+
+    // 006A-AC-031. The attempts are still on the record, one denied row each, and not one of them
+    // writes a second lockout row: the lockout happened once, when the account locked.
+    const eventsPerAttempt = await auditActionsPerAttempt(correlationRefs);
+    expect(eventsPerAttempt).toEqual(Array.from({ length: 10 }, () => ["auth.sign-in:denied"]));
+
+    // The account comes back at the instant it always would have. The wall clock cannot be moved
+    // forward from here, so the expiry it kept is brought back to now, which is the same state
+    // the clock reaches on its own fifteen minutes after the tenth failure.
+    await expireReviewCredentialLock(pool, lockExtensionId);
+    const afterLock = await signIn(
+      { email: LOCK_EXTENSION_EMAIL, password: PASSWORD },
+      { clientAddress: nextClientAddress() },
+    );
+    expect(afterLock.status).toBe(200);
+    expect((await readReviewCredential(pool, lockExtensionId))?.failedAttemptCount).toBe(0);
   });
+});
 
-  it("answers 404 in production without the review flag, before any database access", async () => {
-    restoreEnvironment();
-    const restoreProduction = applyRouteEnvironment({
-      ...authEnvironment(),
-      OALO_ENVIRONMENT: "production",
-      OALO_REVIEW_SURFACE: "",
-    });
-    try {
-      const before = (await readFirstPartySessionsForUser(pool, creatorId)).length;
-
-      const response = await handlePasswordSignIn(
-        authRequest("/api/auth/sign-in", { email: CREATOR_EMAIL, password: PASSWORD }),
-        process.env,
-        unusablePorts(),
+describe("a completed reset clears the lock (006A-AC-014)", () => {
+  /**
+   * The clause reads "a successful sign-in or a completed reset clears the counter and the lock",
+   * and the only proof of the reset half moved the lock into the past with a direct write first,
+   * which is the clock lapsing rather than the reset clearing anything. Here the lock is never
+   * touched: the sign-ins stand at a pinned instant a minute before it was due to expire, so a
+   * reset that did not clear it would leave the last one refused.
+   */
+  it("signs the person in with their new password while the original lock is still open", async () => {
+    const lockingAddress = nextClientAddress();
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const refused = await signIn(
+        { email: RESET_CLEARS_LOCK_EMAIL, password: WRONG_PASSWORD_SAME_LENGTH },
+        { clientAddress: lockingAddress },
       );
-
-      expect(response.status).toBe(404);
-      expect((await readFirstPartySessionsForUser(pool, creatorId)).length).toBe(before);
-    } finally {
-      restoreProduction();
-      restoreEnvironment = applyRouteEnvironment(environment);
+      expect(refused.status).toBe(401);
     }
+    const locked = await readReviewCredential(pool, resetClearsLockId);
+    expect(locked?.locked).toBe(true);
+    const lockedUntil = locked?.lockedUntil ?? "";
+    expect(lockedUntil).not.toBe("");
+
+    const insideTheLock = Math.floor(Date.parse(lockedUntil) / 1000) - 60;
+    const duringLock = await signIn(
+      { email: RESET_CLEARS_LOCK_EMAIL, password: PASSWORD },
+      { clientAddress: nextClientAddress(), nowEpochSeconds: insideTheLock },
+    );
+    expect(duringLock.status).toBe(401);
+
+    // The link, minted the way a person gets one: asked for on a deployment that can send, and
+    // read out of the message the fake provider was handed. No token is inserted by hand.
+    const recorder = createFetchRecorder();
+    let token = "";
+    await underDeployment(
+      { OALO_RESEND_API_KEY: RESEND_KEY, OALO_EMAIL_FROM: "no-reply@oalo.invalid" },
+      async () => {
+        const restoreFetch = recorder.install();
+        try {
+          const asked = await handleForgotPassword(
+            authRequest(
+              "/api/auth/forgot-password",
+              { email: RESET_CLEARS_LOCK_EMAIL },
+              { clientAddress: nextClientAddress() },
+            ),
+          );
+          expect(asked.status).toBe(200);
+          await flushAuthBackgroundWork();
+          token = resetLinkTokenFrom(String(recorder.calls.at(-1)?.init.body));
+        } finally {
+          restoreFetch();
+        }
+      },
+    );
+    expect(token).not.toBe("");
+
+    const reset = await handleResetPassword(
+      authRequest(
+        "/api/auth/reset-password",
+        { token, password: NEW_PASSWORD, confirmPassword: NEW_PASSWORD },
+        { clientAddress: nextClientAddress() },
+      ),
+    );
+    expect(reset.status).toBe(200);
+
+    const cleared = await readReviewCredential(pool, resetClearsLockId);
+    expect(cleared?.locked).toBe(false);
+    expect(cleared?.lockedUntil).toBeUndefined();
+    expect(cleared?.failedAttemptCount).toBe(0);
+
+    // The same pinned instant as the refusal above, so the only thing that changed is the reset.
+    const afterReset = await signIn(
+      { email: RESET_CLEARS_LOCK_EMAIL, password: NEW_PASSWORD },
+      { clientAddress: nextClientAddress(), nowEpochSeconds: insideTheLock },
+    );
+    expect(afterReset.status).toBe(200);
+    expect(sessionCookieFrom(afterReset)).toBeDefined();
+
+    // 006A-AC-018 and 031. The completed reset names itself in the trail, and says nothing a
+    // password change would say, so the two are told apart by an operator reading it.
+    expect(
+      await countAuditEventsForActor(pool, {
+        userId: resetClearsLockId,
+        action: "auth.reset-completed",
+      }),
+    ).toBe(1);
+    expect(
+      await countAuditEventsForActor(pool, {
+        userId: resetClearsLockId,
+        action: "auth.password-changed",
+      }),
+    ).toBe(0);
+  });
+});
+
+describe("the per-address limit when no address is presented (D4)", () => {
+  /**
+   * `clientAddressFor` answers undefined when neither forwarded header is present, which used to
+   * mean the per-address limits were skipped. That made the limit optional, and optional at the
+   * caller's choice, because the caller decides which headers the request carries: whoever could
+   * reach the origin without a proxy in front of it had an unmetered channel, and the per-account
+   * lockout does not close it, since one password tried against a thousand addresses never
+   * reaches ten failures on any of them.
+   *
+   * The window now binds under one fixed bucket instead, which this proves the only way it can be
+   * proven: by spending it.
+   */
+  it("counts requests with no forwarded address in one bucket and refuses the twenty-first", async () => {
+    const gate = resolveRuntimeCampaignCommandPorts(environment).mutation;
+    if (gate === undefined) throw new Error("The composition must supply a browser mutation gate");
+    const keyHash = rateLimitKeyHash(
+      gate.csrfServerSecret,
+      "sign_in_ip",
+      UNKNOWN_CLIENT_ADDRESS_BUCKET,
+    );
+    // The bucket is one key for the whole deployment, so unlike every address in this file it is
+    // not fresh by construction. It is cleared here, and by nothing else.
+    await resetRateLimitKey(pool, keyHash);
+
+    const statuses: number[] = [];
+    for (let attempt = 0; attempt < 21; attempt += 1) {
+      const response = await signIn(
+        { email: "no-address-probe@oalo.invalid", password: PASSWORD },
+        { withoutClientAddress: true },
+      );
+      statuses.push(response.status);
+    }
+
+    expect(statuses.slice(0, 20).every((status) => status === 401)).toBe(true);
+    expect(statuses.indexOf(429)).toBe(20);
+
+    const stored = (await readAuthRateLimitRows(pool, "sign_in_ip")).filter(
+      (row) => row.keyHash === keyHash,
+    );
+    expect(stored.map((row) => row.attemptCount)).toEqual([21]);
   });
 });

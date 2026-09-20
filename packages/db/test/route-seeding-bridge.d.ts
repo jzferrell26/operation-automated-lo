@@ -87,6 +87,7 @@ export declare function readReviewCredential(
       passwordHash: string;
       failedAttemptCount: number;
       locked: boolean;
+      lockedUntil: string | undefined;
       emailVerified: boolean;
       rotated: boolean;
     }>
@@ -119,6 +120,11 @@ export declare function readAuditEventsForCorrelation(
     subjectId: string;
   }>[]
 >;
+
+export declare function countAuditEventsForActor(
+  pool: DatabasePool,
+  input: Readonly<{ userId: string; action: string }>,
+): Promise<number>;
 
 export declare function readFirstPartySessionsForUser(
   pool: DatabasePool,

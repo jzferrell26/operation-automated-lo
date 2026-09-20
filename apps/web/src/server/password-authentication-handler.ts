@@ -331,17 +331,25 @@ export function rateLimitKeyHash(
 let loggedMissingClientAddressHeader = false;
 
 /**
+ * D4. The one bucket every request with no recognised forwarded address is counted in.
+ *
+ * It opens with a NUL because a forwarded header is read verbatim and would otherwise be able to
+ * spell it. An HTTP header value cannot contain a NUL, and `Headers` refuses one outright, so no
+ * caller can put itself in this bucket on purpose and spend somebody else's window; the same byte
+ * is already the field separator inside `rateLimitKeyHash`, so the two namespaces stay apart at
+ * both ends.
+ */
+export const UNKNOWN_CLIENT_ADDRESS_BUCKET = "\u0000unknown-address";
+
+/**
  * D4, open question. The platform presents the client address in a forwarded header, and the
  * exact header on Vercel is the one thing about this rate limiter the author could not verify
  * against Vercel's own documentation: the agent that wrote it had no network access. Both
  * conventional spellings are read, most-specific first.
  *
- * When neither is present the address is unknown, and the honest answer is to skip the
- * per-address limits rather than collapse every caller into one bucket, which on a twenty-attempt
- * sign-in limit would be a deployment-wide outage after twenty sign-ins. The per-account lockout
- * (ten failures, fifteen minutes) and the per-email forgot-password limit both still apply, and
- * the absence is logged once per process, by header name and never by value, so it is visible
- * rather than silent.
+ * When neither is present the address is unknown. The absence is logged once per process, by
+ * header name and never by value, so a deployment that never presents one is visible rather than
+ * silent; `consumeAddressLimit` is what decides where an unknown address is counted.
  */
 export function clientAddressFor(request: Request): string | undefined {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -407,6 +415,27 @@ async function readJsonBody(request: Request): Promise<unknown> {
   }
 }
 
+/**
+ * D4. Every per-address limit passes through here, and a request that presents no recognised
+ * forwarded address is counted in one fixed bucket rather than waved through.
+ *
+ * The decision, and the trade it makes. Skipping the limit for such a request was the earlier
+ * behaviour, on the reasoning that one shared bucket is a deployment-wide outage after twenty
+ * sign-ins on a deployment whose platform never sets the header. That reasoning inverts the
+ * failure it is choosing between. A skipped limit is not a smaller outage: it is no limit at
+ * all, and it is selected by the caller, because the caller decides which headers the request
+ * carries. Anyone who could reach the origin without a proxy in front of it, or who could reach
+ * one that forwards the request unchanged, had an unmetered credential-stuffing channel, and the
+ * per-account lockout does not close it because spraying one password across many addresses
+ * never reaches ten failures on any single account.
+ *
+ * So the window binds either way, and the bucket is the honest name for what is known about the
+ * caller: nothing. On a correctly fronted deployment the bucket stays empty, because the platform
+ * sets the header on every request and no client can unset it. On a deployment that presents no
+ * address the bucket is shared, which is the outage the earlier comment describes, and that is
+ * the intended reading: a deployment that cannot tell its callers apart has to be fixed, and the
+ * one-per-process warning from `clientAddressFor` says which header is missing.
+ */
 async function consumeAddressLimit(
   request: Request,
   context: AuthContext,
@@ -414,8 +443,7 @@ async function consumeAddressLimit(
 ): Promise<void> {
   const gate = context.ports.mutation;
   if (gate === undefined) throw new UnauthenticatedPrincipalError();
-  const address = clientAddressFor(request);
-  if (address === undefined) return;
+  const address = clientAddressFor(request) ?? UNKNOWN_CLIENT_ADDRESS_BUCKET;
   const limit = AUTH_RATE_LIMITS[scope];
   const allowed = await context.credentials.consumeRateLimit({
     scope,
@@ -639,6 +667,17 @@ export async function handlePasswordSignIn(
     const locked =
       credential.lockedUntilEpochSeconds !== undefined &&
       credential.lockedUntilEpochSeconds > nowSeconds(dependencies);
+    /**
+     * D4. A correct password during an open lock is refused exactly like a wrong one, and the
+     * attempt is recorded either way, so the trail shows what was tried.
+     *
+     * Recording it must not extend the lock. `platform.record_password_sign_in_failure` is where
+     * that is enforced, because the counter and `locked_until` are writable through that definer
+     * and nowhere else: since `supabase/migrations/20260919200000_reset_completed_audit.sql` it
+     * writes the denied row and leaves both values alone while the lock is open. A guard here
+     * instead would be the weaker half of the pair, since it would protect only the callers that
+     * remembered to ask.
+     */
     if (!matched || locked) {
       await context.credentials.recordSignInFailure({
         userId: credential.userId,

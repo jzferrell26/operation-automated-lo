@@ -631,6 +631,8 @@ export async function readReviewCredential(pool, userId) {
         `select password_hash,
                 failed_attempt_count::text as failed_attempt_count,
                 (locked_until is not null and locked_until > now())::text as locked,
+                to_char(locked_until at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+                  as locked_until,
                 (email_verified_at is not null)::text as email_verified,
                 (password_rotated_at is not null)::text as rotated
          from platform.user_credentials where user_id = $1::uuid`,
@@ -643,6 +645,10 @@ export async function readReviewCredential(pool, userId) {
       passwordHash: row.password_hash,
       failedAttemptCount: Number(row.failed_attempt_count),
       locked: isTrue(row.locked),
+      // Formatted to microseconds by the database rather than through a Date, which rounds to
+      // milliseconds: a proof that a lock did not move has to compare the instant that was
+      // stored, not a value that two different instants can both round to.
+      lockedUntil: row.locked_until ?? undefined,
       emailVerified: isTrue(row.email_verified),
       rotated: isTrue(row.rotated),
     });
@@ -721,6 +727,27 @@ export async function readAuditEventsForCorrelation(pool, correlationId) {
         }),
       ),
     );
+  });
+}
+
+/**
+ * How many audit rows of one action a person has, across every correlation reference.
+ *
+ * `readAuditEventsForCorrelation` answers what one request wrote, which cannot say whether an
+ * action had ever been written before it. A criterion that reads "exactly one row" needs the
+ * count on both sides of the flow, and this is that count.
+ */
+export async function countAuditEventsForActor(pool, input) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.audit-count-by-actor-action",
+        `select count(*)::text as total
+         from audit.events where actor_id = $1::uuid and action = $2::text`,
+        [input.userId, input.action],
+      ),
+    );
+    return Number(result.rows[0]?.total ?? "0");
   });
 }
 

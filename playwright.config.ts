@@ -131,6 +131,18 @@ export default defineConfig({
             use: { ...devices["Desktop Chrome"], baseURL: reviewBaseURL, ignoreHTTPSErrors: true },
             // Sign-up, seven steps of deliberate typing, and two sign-ins do not fit in 30 seconds.
             timeout: 360_000,
+            /**
+             * Wave 7m. One retry here, not the two every other project gets.
+             *
+             * A flaky review test is expensive in a way a synthetic one is not: the tests are
+             * minutes long, they run one at a time, and a hang costs its whole budget before the
+             * next attempt starts. On 2026-09-20 a single detached click was attempted three times
+             * at 900 seconds each and took 45 minutes out of a 57.7-minute run, which is most of
+             * the job's ceiling spent proving the same thing three times. One retry still absorbs
+             * a genuine one-off, and it halves what a hang can cost. The budgets in the specs are
+             * the other half of the same decision.
+             */
+            ...(process.env["CI"] ? { retries: 1 } : {}),
           },
         ]
       : []),

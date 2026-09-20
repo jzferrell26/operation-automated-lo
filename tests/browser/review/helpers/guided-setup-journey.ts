@@ -227,8 +227,14 @@ export async function restartGuidedSetup(page: Page): Promise<void> {
  * did arrive. The wait is on the panel a person is waiting for rather than on the request behind
  * it: a network event can be missed, and a panel that never appears is the failure worth reporting
  * either way.
+ *
+ * Wave 7m exported it. `guided-setup.timed.spec.ts` was waiting Playwright's bare five seconds for
+ * the same panels and failed on 2026-09-20 on a loaded machine with the create screen's submit
+ * still reading "Running the checks": the save had not answered yet, so the step it leads to could
+ * not be there. One number for "a step is on its way" is what stops that being re-learned per
+ * spec.
  */
-const STEP_ARRIVES_TIMEOUT_MS = 30_000;
+export const STEP_ARRIVES_TIMEOUT_MS = 30_000;
 
 /** Presses Continue and waits for the step it leads to, by the name the panel carries. */
 export async function continueToPanel(page: Page, title: string): Promise<void> {

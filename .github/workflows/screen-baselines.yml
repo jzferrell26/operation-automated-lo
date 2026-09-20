@@ -72,7 +72,11 @@ jobs:
       - name: Draw every synthetic screen
         run: pnpm test:browser --update-snapshots=all
 
+      # Wave 7m. The pictures are handed back whether or not the drawing step passed. A run that
+      # drew eighty screens and failed on the eighty-first used to throw all eighty away, so the
+      # only way to see any of them was to fix the failure first and run the job again.
       - name: Hand back the pictures
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: screen-baselines-chromium
@@ -135,10 +139,25 @@ jobs:
       - name: Draw every account screen and guided-setup step
         run: pnpm test:db
 
+      # Wave 7m, as above: eighty-one review screens survive a single failed test.
       - name: Hand back the pictures
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: screen-baselines-review
           path: tests/visual/screens/review/*.png
           if-no-files-found: error
+          retention-days: 7
+
+      # Wave 7m. Playwright keeps a trace for every failed test (`playwright.config.ts`,
+      # `trace: "retain-on-failure"`), and until now those traces died with the runner. The
+      # 2026-09-20 flake was diagnosed from a trace taken on a workstation because the runner's
+      # three were unreachable. This is the cheap way to never be in that position again.
+      - name: Hand back the traces of anything that failed
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: review-failure-traces
+          path: test-results/browser
+          if-no-files-found: ignore
           retention-days: 7

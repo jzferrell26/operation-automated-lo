@@ -47,6 +47,68 @@ export async function putTheWalkthroughAside(page: Page): Promise<void> {
   await expect(page.getByRole("dialog")).toBeHidden();
 }
 
+/** The result block the create screen renders once the checks have run. */
+const SAVED_RESULT_SELECTOR = 'section[aria-labelledby="campaign-check-title"]';
+
+/**
+ * How long the result block may still be moving before this helper gives up waiting on it.
+ *
+ * Giving up is not failing. The control the spec is about to act on is what decides whether the
+ * screen is usable, and its own actionability check reports that better than a wait here could.
+ * This bound exists so that a screen which never settles is reported by the click rather than by a
+ * helper that sat in `page.evaluate` until the test's whole timeout was gone.
+ */
+const SETTLE_DEADLINE_MS = 10_000;
+
+/**
+ * Waits for the screen a save produced to stop moving before a spec presses anything on it.
+ *
+ * "Ready for approval" appearing says the checks have run. It does not say the page has finished
+ * rendering, and for a while it did not even say the page was staying: the walkthrough used to
+ * reopen itself on a save and route the browser to the campaign, which took the result block and
+ * its "Open campaign" link away about 200 ms after they appeared (`guided-setup-provider.tsx`,
+ * `reportCampaignSaved`). Playwright resolved the link, began its visible-enabled-stable check,
+ * and the element was detached underneath it; on the `ubuntu-24.04` runner that cost
+ * `review-campaign-decision.spec.ts` three 15-minute timeouts on 2026-09-20 while every local run
+ * won the same race.
+ *
+ * The product no longer does that. This wait stays anyway, for the reason the dismissal wait above
+ * stays: it costs a frame or two, it makes "the result is on screen and still" true rather than
+ * likely, and a person reading a result before pressing a link on it is exactly what it models.
+ */
+export async function waitForTheSavedResultToSettle(page: Page): Promise<void> {
+  await page.waitForLoadState("networkidle");
+  await page.evaluate(
+    async ([selector, deadlineText]) =>
+      await new Promise<void>((resolve) => {
+        const block = document.querySelector(String(selector));
+        if (block === null) {
+          resolve();
+          return;
+        }
+        const giveUpAt = Date.now() + Number(deadlineText);
+        let moved = false;
+        const observer = new MutationObserver(() => {
+          moved = true;
+        });
+        observer.observe(block, { attributes: true, childList: true, subtree: true });
+        // Two frames with nothing recorded between them is the same stillness Playwright's own
+        // actionability check looks for, asked for before the click rather than during it.
+        const settledOrNot = () => {
+          if (moved && Date.now() < giveUpAt) {
+            moved = false;
+            requestAnimationFrame(() => requestAnimationFrame(settledOrNot));
+            return;
+          }
+          observer.disconnect();
+          resolve();
+        };
+        requestAnimationFrame(() => requestAnimationFrame(settledOrNot));
+      }),
+    [SAVED_RESULT_SELECTOR, String(SETTLE_DEADLINE_MS)] as const,
+  );
+}
+
 /**
  * Inside a session the theme is chosen the way a person chooses it, from the control in the header,
  * because that is the only way to change it without reloading the page and losing the state the

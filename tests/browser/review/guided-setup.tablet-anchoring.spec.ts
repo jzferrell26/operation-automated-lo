@@ -80,7 +80,17 @@ async function expectAnchoredBesideOrBelow(page: Page, width: number): Promise<v
 
 test("the panel anchors correctly at the mobile, tablet, and embedded frames", async ({ page }) => {
   // Three walks to step 4 with deliberate typing, in one test rather than three.
-  test.setTimeout(900_000);
+  /**
+   * Wave 7m. A budget, not a place to hang.
+   *
+   * 900 seconds was three times what the whole review suite takes, so a test that stopped
+   * making progress sat there until the retries were spent: on 2026-09-20 one detached click
+   * in `review-campaign-decision.spec.ts` cost 45 minutes of a 57.7-minute run. Every budget
+   * here is now the measured duration with room on top. Measured on 2026-09-20 against the
+   * review composition with the processor throttled 4x, which is slower than the `ubuntu-24.04`
+   * runner's own numbers for the same tests: 36.2 s here, 28.6 s on the runner.
+   */
+  test.setTimeout(240_000);
   const guard = await guardLocalOrigin(page);
 
   await page.setViewportSize(MOBILE);

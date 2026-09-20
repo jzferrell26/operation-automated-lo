@@ -1,5 +1,6 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -7,11 +8,18 @@ import {
   GUIDED_SETUP_STEPS,
   GUIDED_SETUP_TOTAL_STEPS,
 } from "../../copy/guided-setup-messages.js";
-import { NOT_CONNECTED_SOURCE } from "../../copy/user-language.js";
+import { CHECK_RESULT_READY, NOT_CONNECTED_SOURCE } from "../../copy/user-language.js";
+import { OpenHouseDraftBuilder } from "../campaigns/components/open-house-draft-builder.js";
 import { GuidedSetupShellControls } from "./guided-setup-progress.js";
 import { GuidedSetupProvider } from "./guided-setup-provider.js";
 import { complete, dismiss, initialGuidedSetupProgress } from "./model/progress.js";
-import { progressAt, recordingSetupFetch, SAMPLE_PROFILE } from "./guided-setup.test-support.js";
+import {
+  heldProgressWriteFetch,
+  progressAt,
+  READY_PREFLIGHT_RESPONSE,
+  recordingSetupFetch,
+  SAMPLE_PROFILE,
+} from "./guided-setup.test-support.js";
 
 const push = vi.fn();
 
@@ -32,7 +40,15 @@ vi.mock("next/navigation.js", () => ({
 const SERVER_NOW = "2026-09-19T12:00:00.000Z";
 
 type ProviderOptions = Readonly<{
+  /** What a named address answers with, when echoing the posted body is not the right answer. */
+  answers?: Readonly<Record<string, unknown>>;
   canApprove?: boolean;
+  /**
+   * The page under the provider. `<main />` stands in for it almost everywhere, because almost
+   * every case here is about the panel. The two Wave 7m cases pass the real create screen, because
+   * what they are about is what the walkthrough does to the page beneath it.
+   */
+  children?: ReactNode;
   enabled?: boolean;
   profile?: typeof SAMPLE_PROFILE | undefined;
   progress?: ReturnType<typeof initialGuidedSetupProgress>;
@@ -45,7 +61,7 @@ type ProviderOptions = Readonly<{
 }>;
 
 function renderSetup(options: ProviderOptions = {}) {
-  const recorder = recordingSetupFetch();
+  const recorder = recordingSetupFetch(options.answers);
   vi.stubGlobal("fetch", options.fetch ?? recorder.fetch);
   const view = render(
     <GuidedSetupProvider
@@ -59,7 +75,7 @@ function renderSetup(options: ProviderOptions = {}) {
     >
       {/* The layout renders the shell controls beside the pages, so the harness does too. */}
       <GuidedSetupShellControls />
-      <main />
+      {options.children ?? <main />}
     </GuidedSetupProvider>,
   );
   return { ...view, calls: recorder.calls };
@@ -67,6 +83,28 @@ function renderSetup(options: ProviderOptions = {}) {
 
 function panel() {
   return screen.getByRole("dialog", { name: /.+/u });
+}
+
+/**
+ * What a person types into the create screen that the profile did not already fill, and then the
+ * press that runs the checks. The fields the walkthrough prefilled are left alone, because leaving
+ * them alone is what a person does with a value that is already right.
+ */
+function saveTheOpenHouseDraft(): void {
+  const typed: readonly (readonly [string, string])[] = [
+    ["Property address", "48 Cedar Street, Austin"],
+    ["Property description", "A three-bedroom home near the park."],
+    ["Open house starts", "2030-06-12T13:00"],
+    ["Open house ends", "2030-06-12T15:00"],
+    ["Where the ad runs", "Austin metro"],
+  ];
+  for (const [label, value] of typed) {
+    fireEvent.change(screen.getByLabelText(label), { target: { value } });
+  }
+  fireEvent.change(screen.getByLabelText("State", { exact: true }), { target: { value: "TX" } });
+  fireEvent.click(screen.getByLabelText("I have permission to market this property."));
+  fireEvent.click(screen.getByLabelText("I have permission to use the Realtor's materials."));
+  fireEvent.click(screen.getByRole("button", { name: "Save and run the checks" }));
 }
 
 afterEach(() => {
@@ -292,27 +330,9 @@ describe("guided setup steps", () => {
    */
   it("ignores a progress reply that a newer write has overtaken", async () => {
     const user = userEvent.setup();
-    let releaseFirst: (() => void) | undefined;
-    const held = new Promise<void>((resolve) => {
-      releaseFirst = resolve;
-    });
-    let progressWrites = 0;
-    const fetchStub = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      const path = String(input);
-      const body: unknown = JSON.parse(String(init?.body ?? "{}"));
-      if (path === "/api/setup/progress") {
-        progressWrites += 1;
-        // The first write answers last, and answers with the step it was told, which by then is
-        // the old one.
-        if (progressWrites === 1) await held;
-      }
-      return new Response(JSON.stringify(body), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      });
-    }) as typeof globalThis.fetch;
+    const writes = heldProgressWriteFetch();
 
-    renderSetup({ fetch: fetchStub, profile: SAMPLE_PROFILE, progress: progressAt(1) });
+    renderSetup({ fetch: writes.fetch, profile: SAMPLE_PROFILE, progress: progressAt(1) });
 
     // The first write: the welcome step's own move to step 2, held open.
     await user.click(screen.getByRole("button", { name: GUIDED_SETUP_STEPS.welcome.primaryLabel }));
@@ -324,9 +344,9 @@ describe("guided setup steps", () => {
       expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.realtorPartner.title);
     });
 
-    releaseFirst?.();
+    writes.release();
     await waitFor(() => {
-      expect(progressWrites).toBeGreaterThanOrEqual(2);
+      expect(writes.progressWrites()).toBeGreaterThanOrEqual(2);
     });
     // The overtaken reply named step 2. The panel is still on step 3.
     expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.realtorPartner.title);
@@ -422,6 +442,108 @@ describe("guided setup steps", () => {
     expect(field).toHaveFocus();
     expect(field).toHaveValue("Priya Nadeem");
     expect(panel()).toBeInTheDocument();
+  });
+
+  /**
+   * Wave 7m. Saving a campaign with the walkthrough put aside leaves the page where it is.
+   *
+   * Reporting a saved campaign used to open the panel whatever state it was in, and step 5's route
+   * is the campaign's own page, so the auto-start effect immediately pushed the browser there. The
+   * person was reading the result they had just saved and was taken off it; the "Open campaign"
+   * link they were about to press went with the page. Measured on 2026-09-20 in the review
+   * composition: the link was added 288 ms after the save and removed 204 ms later, unthrottled,
+   * and added at 467 ms and removed 201 ms later under 6x CPU throttling, with the navigation
+   * following each time. `review-campaign-decision.spec.ts` spent three 15-minute timeouts on the
+   * `ubuntu-24.04` runner trying to press it inside that window.
+   *
+   * The campaign is still remembered, so "Finish setup" resumes onto it. What is gone is the
+   * opening nobody asked for, and the navigation behind it.
+   */
+  it("leaves the result on screen when a campaign is saved with the walkthrough aside", async () => {
+    const { calls } = renderSetup({
+      answers: { "/api/campaigns/preflight": READY_PREFLIGHT_RESPONSE },
+      children: <OpenHouseDraftBuilder profile={SAMPLE_PROFILE} />,
+      profile: SAMPLE_PROFILE,
+      progress: dismiss(progressAt(4), new Date(SERVER_NOW)),
+    });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    saveTheOpenHouseDraft();
+    const link = await screen.findByRole("link", { name: "Open campaign" });
+    expect(link).toHaveAttribute("href", READY_PREFLIGHT_RESPONSE.detailHref);
+
+    // The bookkeeping write that follows the save, and its reply reconciling, are the renders the
+    // link has to survive. It is the same element afterwards: nothing remounted it.
+    await waitFor(() => {
+      expect(calls.findLast((call) => call.path === "/api/setup/progress")?.body).toMatchObject({
+        progress: { campaignRef: READY_PREFLIGHT_RESPONSE.campaignRef, status: "dismissed" },
+      });
+    });
+    expect(screen.getByRole("link", { name: "Open campaign" })).toBe(link);
+    expect(screen.getByRole("heading", { name: CHECK_RESULT_READY })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The other half of the same rule: a walkthrough somebody is actually walking still finishes step
+   * 4 when the checks run, and still takes them to the campaign it just saved. That is D3's step 5,
+   * and the case above must not have cost it.
+   */
+  it("moves an open walkthrough on to the result step and opens the campaign it saved", async () => {
+    renderSetup({
+      answers: { "/api/campaigns/preflight": READY_PREFLIGHT_RESPONSE },
+      children: <OpenHouseDraftBuilder profile={SAMPLE_PROFILE} />,
+      profile: SAMPLE_PROFILE,
+      progress: progressAt(4),
+    });
+
+    saveTheOpenHouseDraft();
+    await waitFor(() => {
+      expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.readTheResult.title);
+    });
+    await waitFor(() => {
+      expect(push).toHaveBeenCalledWith(READY_PREFLIGHT_RESPONSE.detailHref);
+    });
+  });
+
+  /**
+   * Wave 7m. A dismissal that answers after the walkthrough was asked for again closes nothing.
+   *
+   * F-23 made "Not now" wait for its write before closing the panel, which fixed one race and left
+   * another: the close now lands whenever the write answers, and by then the person may have
+   * pressed "Finish setup" or "Show me around again". The panel opened and then vanished a beat
+   * later, with no way back to it. Measured on 2026-09-20 with the dismissal's write held for
+   * 900 ms and the processor throttled 6x: the panel the restart had just opened was removed
+   * 1260 ms in, and `guided-setup.resume.spec.ts` timed out pressing "Let's go" on it.
+   *
+   * The write is held open here so the press and the answer can be put either side of the restart,
+   * which is the order that used to lose.
+   */
+  it("keeps a panel the person reopened while the dismissal's write was still travelling", async () => {
+    const user = userEvent.setup();
+    const writes = heldProgressWriteFetch();
+
+    renderSetup({ fetch: writes.fetch, profile: SAMPLE_PROFILE, progress: progressAt(3) });
+    await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.dismiss }));
+    // F-23. The panel is still on screen while the dismissal travels, which is the window this
+    // case lives in.
+    expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.realtorPartner.title);
+
+    await user.click(screen.getByRole("button", { name: "Help" }));
+    await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.restart }));
+    expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.welcome.title);
+
+    writes.release();
+    // The dismissal has finished: its control is live again. The panel it was pressed on is not
+    // the one on screen, so it closed nothing.
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.dismiss })).toBeEnabled();
+    });
+    expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.welcome.title);
+    expect(
+      screen.getByRole("button", { name: GUIDED_SETUP_STEPS.welcome.primaryLabel }),
+    ).toBeInTheDocument();
   });
 
   it("never reaches browser storage", async () => {

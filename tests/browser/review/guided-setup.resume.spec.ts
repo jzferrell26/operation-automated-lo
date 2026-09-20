@@ -68,6 +68,12 @@ test("progress survives a closed browser, a dismissal, and a restart", async ({ 
   await signInExisting(third.page, email, NEW_ACCOUNT_PASSWORD);
   await expect(third.page.getByRole("dialog", { name: "Your Realtor partner" })).toBeVisible();
   await third.page.getByRole("button", { name: "Not now" }).click();
+  // The panel goes away before the help menu is opened, which is both what a person sees and what
+  // makes the two presses separate acts. Pressing Help while the dismissal was still travelling
+  // used to end with the panel the restart opened being closed by the dismissal settling behind
+  // it, and the "Let's go" below timing out on an element that had been detached. That race is
+  // closed in the provider now; waiting here is what a person does either way.
+  await expect(third.page.getByRole("dialog")).toBeHidden();
   await third.page.getByRole("button", { name: "Help" }).click();
   await third.page.getByRole("button", { name: "Show me around again" }).click();
   await expect(

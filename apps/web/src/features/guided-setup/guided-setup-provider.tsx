@@ -127,10 +127,31 @@ export function GuidedSetupProvider({
    */
   const progressRef = useRef(progress);
   progressRef.current = progress;
+  /**
+   * Whether the panel is on screen, for the callbacks below to read without depending on it, for
+   * the same reason `progressRef` exists: a callback that changed identity on every open would be
+   * a new layer to the panel primitive.
+   */
+  const openRef = useRef(open);
+  openRef.current = open;
   /** F-23. One dismissal at a time, whether it came from the control or from Escape. */
   const dismissInFlight = useRef(false);
   /** F-23. Which progress write is the newest, so an older reply cannot answer for it. */
   const progressWriteToken = useRef(0);
+  /**
+   * Wave 7m. Which opening of the panel is the newest, so a settled dismissal cannot close one it
+   * never saw. Every deliberate opening bumps it; `dismissSetup` records the value it was pressed
+   * against and closes only if that is still the current one.
+   */
+  const openGeneration = useRef(0);
+
+  /**
+   * The one way the panel is opened, so no opening is missed by the generation count above.
+   */
+  const openWalkthrough = useCallback(() => {
+    openGeneration.current += 1;
+    setOpen(true);
+  }, []);
 
   const persistProgress = useCallback(async (next: GuidedSetupProgress): Promise<void> => {
     /**
@@ -173,11 +194,11 @@ export function GuidedSetupProvider({
 
   const goToStep = useCallback(
     (step: number) => {
-      setOpen(true);
+      openWalkthrough();
       setFieldIndex(0);
       void persistProgress(advanceTo(progressRef.current, step));
     },
-    [persistProgress],
+    [openWalkthrough, persistProgress],
   );
 
   const saveProfile = useCallback(async (next: SetupProfile): Promise<void> => {
@@ -205,12 +226,21 @@ export function GuidedSetupProvider({
    * A failed write still closes the panel. `persistProgress` never rejects: it reports and returns,
    * because a walkthrough that refused to go away when somebody asked it to would be a worse
    * product than one that occasionally forgets where it was.
+   *
+   * Wave 7m. Waiting for the write left a second race behind it: the close now happens whenever the
+   * write answers, and by then the person may have asked for the walkthrough again. "Not now",
+   * then "Finish setup" or "Show me around again" while the first write is still travelling, used
+   * to open the panel and then have it vanish a beat later with no way back. Measured on
+   * 2026-09-20 with the dismissal's write held for 900 ms: the panel a restart had just opened was
+   * removed 1260 ms in, and `guided-setup.resume.spec.ts` timed out pressing "Let's go" on it. So
+   * the dismissal closes only the opening it was pressed against.
    */
   const dismissSetup = useCallback(() => {
     // The disabled control covers the footer's own button. Escape is the other way in, and the
     // `Sheet` does not know a dismissal is in flight, so the second press is refused here.
     if (dismissInFlight.current) return;
     dismissInFlight.current = true;
+    const dismissedGeneration = openGeneration.current;
     setDismissPending(true);
     void (async () => {
       try {
@@ -218,33 +248,50 @@ export function GuidedSetupProvider({
       } finally {
         dismissInFlight.current = false;
         setDismissPending(false);
-        setOpen(false);
+        if (openGeneration.current === dismissedGeneration) setOpen(false);
       }
     })();
   }, [persistProgress]);
 
   const resumeSetup = useCallback(() => {
-    setOpen(true);
+    openWalkthrough();
     void persistProgress(resume(progressRef.current));
-  }, [persistProgress]);
+  }, [openWalkthrough, persistProgress]);
 
   const restartSetup = useCallback(() => {
-    setOpen(true);
+    openWalkthrough();
     setFieldIndex(0);
     setCampaign(undefined);
     void persistProgress(restart(progressRef.current));
-  }, [persistProgress]);
+  }, [openWalkthrough, persistProgress]);
 
   const completeSetup = useCallback(() => {
     setOpen(false);
     void persistProgress(complete(progressRef.current, new Date()));
   }, [persistProgress]);
 
+  /**
+   * Step 4 finishes when the checks run, which only the create screen knows, so the screen calls
+   * this and the walkthrough moves itself on to step 5.
+   *
+   * Wave 7m. It moves on only if the walkthrough is actually running. Opening the panel here used
+   * to reopen one the person had put aside, and step 5's route is the campaign's own page, so the
+   * auto-start effect below then carried them off the result they had just saved, about 200 ms
+   * after it appeared. Measured on 2026-09-20 on the create screen: the "Open campaign" link was
+   * added 288 ms after the save and removed 204 ms later, unthrottled, and 467 ms then 201 ms under
+   * 6x CPU throttling; `review-campaign-decision.spec.ts` spent three 15-minute timeouts on the
+   * runner trying to click it inside that window. The campaign is still remembered, so "Finish
+   * setup" resumes onto it, but nothing opens itself and nothing navigates.
+   */
   const reportCampaignSaved = useCallback(
     (report: SavedCampaignReport) => {
       setCampaign(report);
-      setOpen(true);
-      void persistProgress(advanceTo(withCampaign(progressRef.current, report.campaignRef), 5));
+      const saved = withCampaign(progressRef.current, report.campaignRef);
+      if (!openRef.current) {
+        void persistProgress(saved);
+        return;
+      }
+      void persistProgress(advanceTo(saved, 5));
     },
     [persistProgress],
   );

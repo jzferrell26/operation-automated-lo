@@ -25,7 +25,6 @@ import {
   NOT_CONNECTED_SOURCE,
   NOT_LIVE_METRIC_SOURCE,
   NOT_LIVE_YET,
-  WORKSPACE_EYEBROW,
 } from "../copy/user-language.js";
 import {
   loadSyntheticBrandProfile,
@@ -110,8 +109,12 @@ const REVIEW_BRAND_CONFIDENCE_LABEL = BRAND_SUGGESTION_CONFIDENCE;
  * The workspace and account names a not-connected deployment shows. PRD-006a replaces all three
  * with the signed-in user's real name, their workspace's name, and their role label (006A-AC-028);
  * until then they say what is true, which is that nothing is connected to this workspace.
+ *
+ * `REVIEW_LOCATION_DISPLAY_NAME` is deliberately lowercase, not `WORKSPACE_EYEBROW`: the onboarding
+ * heading reads "Get {this} ready" and the brand page reads "...every Open House Boost for {this}
+ * uses them", so it has to read correctly in the middle of a sentence, not only on its own line.
  */
-export const REVIEW_LOCATION_DISPLAY_NAME = WORKSPACE_EYEBROW;
+export const REVIEW_LOCATION_DISPLAY_NAME = "your workspace";
 export const REVIEW_USER_DISPLAY_NAME = "Your account";
 export const REVIEW_ROLE_LABEL = NOT_CONNECTED_HEADLINE;
 export const REVIEW_SPEND_METRIC_ID = "ad_spend";

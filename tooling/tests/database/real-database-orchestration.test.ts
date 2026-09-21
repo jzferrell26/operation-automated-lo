@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { spawn } from "node:child_process";
 
 import {
+  DATABASE_UNIT_TEST_LABEL,
   GATE_SEEDED_CREDENTIALS,
   SUPABASE_CLI_VERSION,
   TEST_DATABASE_NAME,
@@ -15,6 +16,7 @@ import {
   commandPlan,
   REVIEW_BROWSER_RUN_LABEL,
   WEB_POSTGRES_PROJECT,
+  discoverDatabaseUnitTestFiles,
   discoverIntegrationTestFiles,
   discoverMigrationFiles,
   discoverPgtapFiles,
@@ -59,26 +61,27 @@ describe("real database test orchestration", () => {
     const plan = await fixturePlan(repositoryRoot);
 
     expect(files).toEqual(["supabase/tests/a-first.pgtap.sql", "supabase/tests/z-last.pgtap.sql"]);
-    expect(plan.setup).toHaveLength(5);
+    expect(plan.setup).toHaveLength(6);
     expect(plan.tests).toHaveLength(2);
     expect([...plan.setup, ...plan.tests].every((step) => step.command === process.execPath)).toBe(
       true,
     );
     expect(plan.setup.map((step) => step.label)).toEqual([
       "build @oalo/db, @oalo/auth, and their workspace dependencies",
+      DATABASE_UNIT_TEST_LABEL,
       "run database orchestration contract tests",
       `verify Supabase CLI ${SUPABASE_CLI_VERSION}`,
       "start local Supabase",
       "recreate the local database and apply every migration",
     ]);
-    expect(plan.setup[1]?.args).toContain("--project");
+    expect(plan.setup[2]?.args).toContain("--project");
     // The harness reads the shared role map out of packages/auth/dist, and
     // @oalo/db is forbidden from depending on @oalo/auth, so the gate builds it
     // explicitly rather than relying on the dependency graph.
     expect(plan.setup[0]?.args).toContain("--filter=@oalo/auth...");
     expect(plan.setup[0]?.args).toContain("--filter=@oalo/db...");
     expect(
-      [...plan.setup.slice(2), ...plan.tests].every((step) =>
+      [...plan.setup.slice(3), ...plan.tests].every((step) =>
         step.args.includes(`supabase@${SUPABASE_CLI_VERSION}`),
       ),
     ).toBe(true);
@@ -210,6 +213,56 @@ describe("real PostgreSQL integration phase", () => {
 
     await expect(discoverIntegrationTestFiles(repositoryRoot)).rejects.toThrow(
       "No packages/db/test/*.integration.test.mjs files were found.",
+    );
+  });
+
+  /**
+   * 005C-AC-006, Wave 7s. The package's connectionless suites are a gate step of their own, and
+   * the discovery that feeds it has to subtract the integration half of the same directory: every
+   * `*.integration.test.mjs` name also ends with `.test.mjs`, and those files refuse to run
+   * without `OALO_TEST_DATABASE_URL`, which this step deliberately does not carry.
+   */
+  it("discovers the package unit suites without dragging the integration files in", async () => {
+    const repositoryRoot = await fixtureRepository({
+      databaseUnitTestFiles: ["z-transaction-context.test.mjs", "a-foundation-contracts.test.mjs"],
+      integrationTestFiles: ["campaign-command.integration.test.mjs"],
+    });
+
+    expect(await discoverDatabaseUnitTestFiles(repositoryRoot)).toEqual([
+      "packages/db/test/a-foundation-contracts.test.mjs",
+      "packages/db/test/z-transaction-context.test.mjs",
+    ]);
+  });
+
+  it("fails rather than silently passing when the package holds only integration files", async () => {
+    const repositoryRoot = await fixtureRepository({
+      databaseUnitTestFiles: [],
+      integrationTestFiles: ["only.integration.test.mjs"],
+    });
+
+    await expect(discoverDatabaseUnitTestFiles(repositoryRoot)).rejects.toThrow(
+      "No packages/db/test/*.test.mjs files were found.",
+    );
+  });
+
+  it("runs the package unit suites right after the build and without a database URL", async () => {
+    const repositoryRoot = await fixtureRepository({
+      databaseUnitTestFiles: ["transaction-context.test.mjs"],
+    });
+    const plan = await fixturePlan(repositoryRoot);
+    const unitStep = plan.setup.find((step) => step.label === DATABASE_UNIT_TEST_LABEL);
+
+    expect(plan.setup.indexOf(unitStep!)).toBe(1);
+    expect(unitStep?.command).toBe(process.execPath);
+    expect(unitStep?.args).toEqual([
+      "--test",
+      "--test-concurrency=1",
+      "packages/db/test/transaction-context.test.mjs",
+    ]);
+    expect(unitStep?.env).toBeUndefined();
+    // The step precedes every Supabase command, so it never waits on a container to run.
+    expect(plan.setup.indexOf(unitStep!)).toBeLessThan(
+      plan.setup.findIndex((step) => step.label === "start local Supabase"),
     );
   });
 
@@ -500,6 +553,7 @@ async function fixturePlan(repositoryRoot: string) {
   return commandPlan(
     {
       databasePort: resolveLocalDatabasePort(CONFIG_TOML),
+      databaseUnitTestFiles: await discoverDatabaseUnitTestFiles(repositoryRoot),
       integrationTestFiles: await discoverIntegrationTestFiles(repositoryRoot),
       migrationFiles: await discoverMigrationFiles(repositoryRoot),
       pgtapFiles: await discoverPgtapFiles(repositoryRoot),
@@ -510,11 +564,13 @@ async function fixturePlan(repositoryRoot: string) {
 }
 
 async function fixtureRepository({
+  databaseUnitTestFiles = ["only.test.mjs"],
   integrationTestFiles = ["only.integration.test.mjs"],
   migrationFiles = ["20260101_only.sql"],
   pgtapFiles = ["only.pgtap.sql"],
   webPostgresTestFiles = [],
 }: {
+  databaseUnitTestFiles?: string[];
   integrationTestFiles?: string[];
   migrationFiles?: string[];
   pgtapFiles?: string[];
@@ -522,8 +578,12 @@ async function fixtureRepository({
 }) {
   const repositoryRoot = await mkdtemp(join(tmpdir(), "oalo-db-orchestration-"));
   temporaryDirectories.push(repositoryRoot);
+  // The package's unit and integration suites share one directory, which is exactly why the two
+  // discoveries have to disagree about what belongs to each of them.
+  const databasePackageTestDirectory = join(repositoryRoot, "packages", "db", "test");
   const directories = {
-    integrationTestFiles: join(repositoryRoot, "packages", "db", "test"),
+    databaseUnitTestFiles: databasePackageTestDirectory,
+    integrationTestFiles: databasePackageTestDirectory,
     migrationFiles: join(repositoryRoot, "supabase", "migrations"),
     pgtapFiles: join(repositoryRoot, "supabase", "tests"),
   };
@@ -532,15 +592,15 @@ async function fixtureRepository({
   );
   await Promise.all([
     writeFile(join(repositoryRoot, "supabase", "config.toml"), CONFIG_TOML, "utf8"),
-    ...Object.entries({ integrationTestFiles, migrationFiles, pgtapFiles }).flatMap(
-      ([key, files]) =>
-        files.map((file) =>
-          writeFile(
-            join(directories[key as keyof typeof directories], file),
-            "select 1;\n",
-            "utf8",
-          ),
-        ),
+    ...Object.entries({
+      databaseUnitTestFiles,
+      integrationTestFiles,
+      migrationFiles,
+      pgtapFiles,
+    }).flatMap(([key, files]) =>
+      files.map((file) =>
+        writeFile(join(directories[key as keyof typeof directories], file), "select 1;\n", "utf8"),
+      ),
     ),
   ]);
   // The route-level suite is discovered recursively, so its fixture files are

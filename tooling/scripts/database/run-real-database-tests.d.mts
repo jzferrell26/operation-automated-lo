@@ -2,6 +2,8 @@ export const SUPABASE_CLI_VERSION: "2.109.1";
 export const TEST_DATABASE_NAME: string;
 export const TEST_DATABASE_NAME_PREFIX: "oalo_test_";
 export const WEB_POSTGRES_PROJECT: "web-postgres";
+/** 005C-AC-006. The plan step that runs `packages/db`'s connectionless `node:test` suites. */
+export const DATABASE_UNIT_TEST_LABEL: "run the @oalo/db package unit tests";
 /** PRD-006c D9. The plan step that runs the guided setup in a real browser. */
 export const REVIEW_BROWSER_RUN_LABEL: "run the review browser suite";
 
@@ -36,6 +38,7 @@ export interface DatabaseCommandDiscovery {
   readonly pgtapFiles: readonly string[];
   readonly migrationFiles: readonly string[];
   readonly integrationTestFiles: readonly string[];
+  readonly databaseUnitTestFiles: readonly string[];
   readonly webPostgresTestFiles?: readonly string[];
   readonly databasePort: number;
 }
@@ -53,6 +56,7 @@ export interface RunRealDatabaseTestsOptions {
 export function discoverPgtapFiles(repositoryRoot?: string): Promise<string[]>;
 export function discoverMigrationFiles(repositoryRoot?: string): Promise<string[]>;
 export function discoverIntegrationTestFiles(repositoryRoot?: string): Promise<string[]>;
+export function discoverDatabaseUnitTestFiles(repositoryRoot?: string): Promise<string[]>;
 export function discoverWebPostgresTestFiles(repositoryRoot?: string): Promise<string[]>;
 export function resolveLocalDatabasePort(configToml: string): number;
 export function readLocalDatabasePort(repositoryRoot?: string): Promise<number>;

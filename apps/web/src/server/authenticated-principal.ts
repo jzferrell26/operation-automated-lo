@@ -21,13 +21,29 @@ import {
 import { authenticatedWorkspaceMode } from "./authenticated-workspace-data.js";
 import type { CredentialPort } from "./credential-ports.js";
 import type { TransactionalEmailPort } from "./email/transactional-email.js";
+import {
+  createLocalSyntheticPrincipal,
+  LOCAL_SYNTHETIC_ACTOR_ID,
+  LOCAL_SYNTHETIC_ACTOR_REF,
+  LOCAL_SYNTHETIC_LOCATION_ID,
+  LOCAL_SYNTHETIC_LOCATION_REF,
+} from "./local-synthetic-principal.js";
 
-export const LOCAL_SYNTHETIC_LOCATION_ID = "00000000-0000-4000-8000-000000000801";
-export const LOCAL_SYNTHETIC_ACTOR_ID = "00000000-0000-4000-8000-000000000811";
-export const LOCAL_SYNTHETIC_LOCATION_REF = "location_localWorkspace001";
-export const LOCAL_SYNTHETIC_ACTOR_REF = "principal_localUser001";
-export const LOCAL_SYNTHETIC_INSTALLATION_REF = "installation_localWorkspace001";
-export const LOCAL_SYNTHETIC_SESSION_ID = "session_localSynthetic001";
+/**
+ * PRD-005a 005A-AC-015. The synthetic principal factory is imported rather than declared here, so
+ * that the one production call of it below crosses a module boundary a test can observe. See
+ * `local-synthetic-principal.ts` for why the seam has to be a real one. Everything that module
+ * exports is re-exported here, because this is where the rest of the tree already imports it from.
+ */
+export {
+  createLocalSyntheticPrincipal,
+  LOCAL_SYNTHETIC_ACTOR_ID,
+  LOCAL_SYNTHETIC_ACTOR_REF,
+  LOCAL_SYNTHETIC_INSTALLATION_REF,
+  LOCAL_SYNTHETIC_LOCATION_ID,
+  LOCAL_SYNTHETIC_LOCATION_REF,
+  LOCAL_SYNTHETIC_SESSION_ID,
+} from "./local-synthetic-principal.js";
 
 export class UnauthenticatedPrincipalError extends Error {
   public constructor() {
@@ -205,23 +221,6 @@ export function createStaticRoleBindingPort(
       return versions.get(`${input.locationRef}\0${input.actorRef}\0${input.role}`);
     },
   };
-}
-
-export function createLocalSyntheticPrincipal(
-  overrides: Partial<AuthenticatedPrincipal> = {},
-): Readonly<AuthenticatedPrincipal> {
-  return freezeAuthenticatedPrincipal({
-    actorRef: LOCAL_SYNTHETIC_ACTOR_REF,
-    actorId: LOCAL_SYNTHETIC_ACTOR_ID,
-    locationRef: LOCAL_SYNTHETIC_LOCATION_REF,
-    locationId: LOCAL_SYNTHETIC_LOCATION_ID,
-    installationRef: LOCAL_SYNTHETIC_INSTALLATION_REF,
-    role: "campaign_creator",
-    roleVersion: 1,
-    sessionId: LOCAL_SYNTHETIC_SESSION_ID,
-    authenticationMode: "local_synthetic",
-    ...overrides,
-  });
 }
 
 export function createDefaultCampaignCommandPorts(): CampaignCommandPorts {

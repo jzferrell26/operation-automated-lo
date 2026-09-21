@@ -310,6 +310,30 @@ describe("session display port (005A-AC-011)", () => {
     ).toBeUndefined();
     expect(contractRequests(pool)).toHaveLength(0);
   });
+
+  /**
+   * Both columns are `not null` in the schema, so a blank one is a seeding fault. The decode used
+   * to raise on it, which turned one badly seeded row into a rejected `resolveRuntimeShellSession`
+   * and a failed render of every page inside the authenticated layout. It now yields nothing, the
+   * same answer an inactive location or person yields, and the shell lands on the neutral
+   * fallback that names nobody.
+   */
+  it("yields nothing, rather than raising, for a row with a blank display name", async () => {
+    for (const row of [
+      { location_display_name: "", user_safe_display_name: "Review creator" },
+      { location_display_name: "Review location (not connected)", user_safe_display_name: null },
+      { location_display_name: null, user_safe_display_name: null },
+    ]) {
+      const pool = createRecordingPool({ "runtime.resolve-session-display.v1": [row] });
+
+      expect(
+        await createPostgresSessionDisplayPort(pool).resolve({
+          locationRef: formatLocationRef(LOCATION_ID),
+          actorRef: formatActorRef(ACTOR_ID),
+        }),
+      ).toBeUndefined();
+    }
+  });
 });
 
 describe("first-party session issuance port (PRD-005b D4, as PRD-006a D9 leaves it)", () => {

@@ -118,12 +118,27 @@ function decodeEpochSeconds(value: unknown, column: string): number {
   return Math.floor(milliseconds / 1000);
 }
 
-function decodeSessionDisplay(row: unknown): SessionDisplayNames {
+function optionalDisplayText(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? undefined : trimmed;
+}
+
+/**
+ * 005A-AC-011. A name the definer read cannot supply is `undefined`, never a raised decode.
+ *
+ * The two columns are `not null` in the schema, so a blank one is a seeding fault rather than a
+ * legitimate state; but the shell treats a missing name as a name it does not have, and raising
+ * here would turn one blank row into a failed render of every page inside the authenticated
+ * layout. Yielding nothing lands on the same neutral fallback an inactive row already lands on,
+ * and that fallback names nobody, so nothing is claimed either way.
+ */
+function decodeSessionDisplay(row: unknown): SessionDisplayNames | undefined {
   const record = recordRow(row);
-  return Object.freeze({
-    locationDisplayName: requiredText(record.location_display_name, "location_display_name"),
-    userDisplayName: requiredText(record.user_safe_display_name, "user_safe_display_name"),
-  });
+  const locationDisplayName = optionalDisplayText(record.location_display_name);
+  const userDisplayName = optionalDisplayText(record.user_safe_display_name);
+  if (locationDisplayName === undefined || userDisplayName === undefined) return undefined;
+  return Object.freeze({ locationDisplayName, userDisplayName });
 }
 
 function decodeIssuedSession(row: unknown): IssuedSessionRow {
@@ -216,7 +231,7 @@ export const firstPartySessionIsActiveContract = defineSqlContract<ActiveRow>({
   decode: decodeActive,
 });
 
-export const resolveSessionDisplayContract = defineSqlContract<SessionDisplayNames>({
+export const resolveSessionDisplayContract = defineSqlContract<SessionDisplayNames | undefined>({
   name: "runtime.resolve-session-display.v1",
   access: "read",
   text: `

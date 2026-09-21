@@ -457,6 +457,63 @@ describe("POST /api/auth/reset-password (006A-AC-018)", () => {
     expect(payload.choiceToken).toBeDefined();
   });
 
+  /**
+   * PRD-006a D3 and D5 at the same time.
+   *
+   * D3's personal-fragment rule was inert here for a structural reason: the reset request carries
+   * a token and nothing else, and consuming the token was the only way to learn whose it was, so
+   * the policy ran with no context and a person could set a password made of their own name. D5
+   * forbids the obvious fix, because a policy failure may not cost the person their link.
+   *
+   * The ordering the handler now uses is read identity, evaluate, then consume, and this case
+   * proves all three parts of it: the refusal happens, and the token that earned the refusal is
+   * still good afterwards, and a compliant password then spends it exactly once.
+   */
+  it("refuses a password carrying the person's own name or address, link intact (006A-AC-018)", async () => {
+    const token = await freshResetToken();
+    const tokensBefore = await countCredentialTokens(pool, {
+      userId: resetUserId,
+      purpose: "password_reset",
+      liveOnly: true,
+    });
+
+    async function reset(password: string): Promise<Response> {
+      return handleResetPassword(
+        authRequest(
+          "/api/auth/reset-password",
+          { token, password, confirmPassword: password },
+          { clientAddress: nextClientAddress() },
+        ),
+      );
+    }
+
+    // "Reset person" is the seeded display name; "recovery-reset" is the local part of the address.
+    const byName = await reset("the reset person waits");
+    expect(byName.status).toBe(400);
+    expect(((await byName.json()) as { error: string }).error).toBe("PASSWORD_LOOKS_PERSONAL");
+
+    const byAddress = await reset("recovery-reset and onward");
+    expect(byAddress.status).toBe(400);
+    expect(((await byAddress.json()) as { error: string }).error).toBe("PASSWORD_LOOKS_PERSONAL");
+
+    // D5. Neither refusal spent the link: the same live token count, and the same token works.
+    expect(
+      await countCredentialTokens(pool, {
+        userId: resetUserId,
+        purpose: "password_reset",
+        liveOnly: true,
+      }),
+    ).toBe(tokensBefore);
+
+    const accepted = await reset(NEW_PASSWORD);
+    expect(accepted.status).toBe(200);
+
+    // And it is spent exactly once, so nothing above made the link reusable either.
+    const replayed = await reset(NEW_PASSWORD);
+    expect(replayed.status).toBe(400);
+    expect(((await replayed.json()) as { error: string }).error).toBe("AUTH_RESET_LINK_EXPIRED");
+  });
+
   it("refuses a malformed token with the same generic failure (006A-AC-018)", async () => {
     const response = await handleResetPassword(
       authRequest(

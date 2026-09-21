@@ -5,7 +5,12 @@ import { createSessionBoundCsrfToken } from "@oalo/auth";
 import type { ApplicationRole } from "@oalo/contracts";
 import { createPostgresPool, type DatabasePool } from "@oalo/db";
 
-import { SIGNED_IN_SOURCE, ROLE_LABELS as USER_ROLE_LABELS } from "../copy/user-language.js";
+import {
+  SESSION_USER_FALLBACK,
+  SESSION_WORKSPACE_FALLBACK,
+  SIGNED_IN_SOURCE,
+  ROLE_LABELS as USER_ROLE_LABELS,
+} from "../copy/user-language.js";
 import type {
   EmailVerificationView,
   WorkspaceSessionView,
@@ -19,6 +24,7 @@ import {
   type EmbeddedSessionPort,
   type IdentityDirectory,
   type RoleBindingPort,
+  type SessionDisplayNames,
 } from "./authenticated-principal.js";
 import {
   authenticatedWorkspaceMode,
@@ -566,6 +572,35 @@ async function resolveEmailVerification(
   }
 }
 
+/**
+ * 005A-AC-011's failure direction, made real.
+ *
+ * The display read is the one call in the shell path that is a nicety rather than a decision: the
+ * session is already verified before it runs, and its only job is to turn two verified references
+ * into two names. A database hiccup on it therefore degrades to the fallback below instead of
+ * failing the whole authenticated layout, which is what awaiting it bare used to do: one transient
+ * failure on an optional read took down every page inside the shell for a person who was signed
+ * in and entitled to see them.
+ *
+ * Failing closed still means the same thing here as everywhere else, because the fallback claims
+ * nothing: it names no person, no workspace, and no reference, so a degraded read can never invent
+ * an identity. The port's own contract already answers `undefined` for an inactive location or
+ * person, and this catch adds the third case, an unreachable read, to the same answer.
+ */
+async function resolveSessionDisplayNames(
+  ports: CampaignCommandPorts,
+  principal: Readonly<AuthenticatedPrincipal>,
+): Promise<Readonly<SessionDisplayNames> | undefined> {
+  try {
+    return await ports.sessionDisplay?.resolve({
+      locationRef: principal.locationRef,
+      actorRef: principal.actorRef,
+    });
+  } catch {
+    return undefined;
+  }
+}
+
 export async function resolveRuntimeShellSession(
   request: Request,
   input: unknown = process.env,
@@ -590,10 +625,7 @@ export async function resolveRuntimeShellSession(
           serverSecret: gate.csrfServerSecret,
           sessionId: principal.sessionId,
         });
-  const display = await ports.sessionDisplay?.resolve({
-    locationRef: principal.locationRef,
-    actorRef: principal.actorRef,
-  });
+  const display = await resolveSessionDisplayNames(ports, principal);
   const session: WorkspaceSessionView = Object.freeze({
     emailVerification: await resolveEmailVerification(ports, principal.actorId),
     safety: Object.freeze({
@@ -602,12 +634,12 @@ export async function resolveRuntimeShellSession(
       disclosure: REVIEW_SURFACE_DISCLOSURE,
     }),
     user: Object.freeze({
-      displayName: display?.userDisplayName ?? principal.actorRef,
+      displayName: display?.userDisplayName ?? SESSION_USER_FALLBACK,
       roleLabel: ROLE_LABELS[principal.role],
       capabilities: CAPABILITIES_BY_ROLE[principal.role],
     }),
     location: Object.freeze({
-      displayName: display?.locationDisplayName ?? principal.locationRef,
+      displayName: display?.locationDisplayName ?? SESSION_WORKSPACE_FALLBACK,
       source: VERIFIED_SESSION_SOURCE,
     }),
   });

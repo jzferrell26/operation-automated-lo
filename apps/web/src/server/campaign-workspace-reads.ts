@@ -9,7 +9,6 @@ import {
   resolveAuthenticatedReadPrincipal,
   UnauthenticatedPrincipalError,
 } from "./authenticated-principal.js";
-import { AuthenticatedWorkspaceUnavailableError } from "./authenticated-workspace-data.js";
 import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
 import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
 
@@ -77,6 +76,14 @@ const UNAUTHENTICATED_READ: WorkspaceCampaignReadResult = Object.freeze({
 /**
  * Resolves the read principal through the runtime composition and reports whether the request was
  * authenticated at all, so a caller can render "not signed in" instead of "no campaigns".
+ *
+ * Only `UnauthenticatedPrincipalError` becomes an unauthenticated read.
+ * `AuthenticatedWorkspaceUnavailableError` propagates to the route error boundary, for the reason
+ * the comment above `loadOverviewCampaigns` gives and this function used to contradict: a
+ * deployment whose workspace mode cannot be classified is broken, not signed out. Catching it here
+ * sent an operator to a sign-in page to retype credentials that were never the problem, and hid a
+ * misconfigured host behind a screen that looks like ordinary product behaviour. Propagating it
+ * still fails closed, because no tenant row is read and none is rendered.
  */
 export async function readWorkspaceCampaignsForRequest(
   request: Request,
@@ -90,12 +97,7 @@ export async function readWorkspaceCampaignsForRequest(
       resolveRuntimeCampaignCommandPorts(environment),
     );
   } catch (error) {
-    if (
-      error instanceof UnauthenticatedPrincipalError ||
-      error instanceof AuthenticatedWorkspaceUnavailableError
-    ) {
-      return UNAUTHENTICATED_READ;
-    }
+    if (error instanceof UnauthenticatedPrincipalError) return UNAUTHENTICATED_READ;
     throw error;
   }
   return Object.freeze({
@@ -135,10 +137,7 @@ export async function readWorkspaceCampaignForRequest(
       resolveRuntimeCampaignCommandPorts(environment),
     );
   } catch (error) {
-    if (
-      error instanceof UnauthenticatedPrincipalError ||
-      error instanceof AuthenticatedWorkspaceUnavailableError
-    ) {
+    if (error instanceof UnauthenticatedPrincipalError) {
       return Object.freeze({ authenticated: false, campaign: undefined });
     }
     throw error;

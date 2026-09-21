@@ -10,6 +10,7 @@ import type {
   ConsumedCredentialToken,
   CredentialPort,
   PasswordCredential,
+  PasswordPolicyIdentity,
   RegisterAccountOutcome,
   SignInBinding,
 } from "./credential-ports.js";
@@ -113,6 +114,21 @@ function decodeLock(row: unknown): LockRow {
   return Object.freeze({
     lockedUntilEpochSeconds: optionalEpochSeconds(recordRow(row)["locked_until"]),
   });
+}
+
+/**
+ * PRD-006a D3. Both definer reads answer zero rows for every case they refuse, so a row that
+ * arrives with either column blank is a shape violation rather than a refusal, and it decodes to
+ * nothing rather than half a context: a policy that compared a new password against an empty
+ * fragment would refuse nothing while appearing to run.
+ */
+function decodePolicyIdentity(row: unknown): PasswordPolicyIdentity | undefined {
+  const record = recordRow(row);
+  const emailDisplay = record["email_display"];
+  const displayName = record["display_name"];
+  if (typeof emailDisplay !== "string" || emailDisplay.length === 0) return undefined;
+  if (typeof displayName !== "string" || displayName.length === 0) return undefined;
+  return Object.freeze({ emailDisplay, displayName });
 }
 
 function decodeCredential(row: unknown): PasswordCredential {
@@ -328,6 +344,43 @@ select platform.consume_auth_rate_limit(
   decode: decodeFlag,
 });
 
+/**
+ * PRD-006a D3. The policy context for a person the caller already holds a verified session for.
+ */
+export const passwordPolicyIdentityForUserContract = defineSqlContract<
+  PasswordPolicyIdentity | undefined
+>({
+  name: "runtime.password-policy-identity-for-user.v1",
+  access: "read",
+  text: `
+select
+  identity_row.email_display,
+  identity_row.display_name
+from platform.password_policy_identity_for_user($1::uuid) as identity_row
+  `.trim(),
+  decode: decodePolicyIdentity,
+});
+
+/**
+ * PRD-006a D3 and D5. The same two values for the person a live reset token belongs to, read
+ * without consuming it. The definer applies the same four liveness guards
+ * `platform.consume_credential_token` applies and fixes the purpose at `password_reset`, so the
+ * only token this can answer for is one the consume beside it would redeem.
+ */
+export const passwordPolicyIdentityForResetTokenContract = defineSqlContract<
+  PasswordPolicyIdentity | undefined
+>({
+  name: "runtime.password-policy-identity-for-reset-token.v1",
+  access: "read",
+  text: `
+select
+  identity_row.email_display,
+  identity_row.display_name
+from platform.password_policy_identity_for_reset_token($1::text) as identity_row
+  `.trim(),
+  decode: decodePolicyIdentity,
+});
+
 export function createPostgresCredentialPort(pool: DatabasePool): CredentialPort {
   return {
     async lookupCredential(emailNormalized) {
@@ -388,6 +441,22 @@ export function createPostgresCredentialPort(pool: DatabasePool): CredentialPort
     async consumeToken(input) {
       const values: readonly SqlScalar[] = [input.tokenHash, input.purpose];
       const rows = await queryRuntimeFunction(pool, consumeCredentialTokenContract, values);
+      return rows[0];
+    },
+
+    async passwordPolicyIdentityForUser(userId) {
+      const values: readonly SqlScalar[] = [userId];
+      const rows = await queryRuntimeFunction(pool, passwordPolicyIdentityForUserContract, values);
+      return rows[0];
+    },
+
+    async passwordPolicyIdentityForResetToken(tokenHash) {
+      const values: readonly SqlScalar[] = [tokenHash];
+      const rows = await queryRuntimeFunction(
+        pool,
+        passwordPolicyIdentityForResetTokenContract,
+        values,
+      );
       return rows[0];
     },
 

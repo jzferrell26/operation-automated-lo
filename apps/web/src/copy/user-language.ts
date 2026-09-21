@@ -144,6 +144,18 @@ export const SIGNED_IN_SOURCE =
 /** The shell above the workspace name. */
 export const WORKSPACE_EYEBROW = "Your workspace";
 
+/**
+ * What the shell calls the person and the workspace when the name read yields nothing.
+ *
+ * D2 forbids an internal reference in anything a person reads, and the references the session
+ * carries are exactly that: they begin with a forbidden prefix and mean nothing to anybody outside
+ * the database. D3's replacements are "you" for the person and "your workspace" for the tenant, so
+ * a shell with no name says those instead of showing a person their own row identifier. Neither
+ * string claims a fact the read failed to establish.
+ */
+export const SESSION_USER_FALLBACK = "You";
+export const SESSION_WORKSPACE_FALLBACK = "Your workspace";
+
 export const SIGNED_OUT_HEADING = "You're signed out";
 export const SIGNED_OUT_PROMPT = "Sign in to see your workspace";
 export const SIGN_OUT_LABEL = "Sign out";

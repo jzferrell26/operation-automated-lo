@@ -45,6 +45,8 @@ Never rendered to a user, in any case, tense, or compound, in text nodes, `aria-
 
 Most terms are banned outright and matched case-insensitively on a word boundary. Five entries carry a qualifier in the table ("as a software noun", "as a noun for a page", "as a noun for a page area", "as an access noun", and the instruction to name the provider). Those are still banned outright in user copy, because none of them has a user-facing sense in this product. The one word with a real user-facing sense is the geographic sense of "region" in ad targeting; the product says "area" there instead, so the ban holds without an exception. Where the guard cannot decide, the contract decides, and the guard is narrowed with a comment naming this section.
 
+"Route" carries the same qualifier ("as a noun for a page") and gets the same narrow treatment for a different reason: the guard bans only the exact word "route" (and its plural), not every inflection, because "routing" is the name HighLevel gives to sending a lead to the right person, and this product has a "Routing" health area and a `/settings/routing` page that name that feature, not a page. A loan officer reads "routing" as the feature's name, the same way "regional" is not read as a ban on "region". Both narrowings are pinned in `tooling/tests/unit/user-language/forbidden-vocabulary.test.ts` so neither can move without the other being considered.
+
 ## 4. Preferred vocabulary
 
 | Instead of | Say |
@@ -86,8 +88,8 @@ The product's not-connected states are a compliance commitment, not a style choi
 | Banner headline | Not connected yet |
 | Banner body | HighLevel, Meta, and Stripe aren't connected to this workspace yet, so nothing here is live and nothing can be published. |
 | Banner accessible name | Not connected yet: HighLevel, Meta, and Stripe |
-| A region's detail | Not connected yet. |
-| A region's source | HighLevel, Meta, and Stripe aren't connected. |
+| A section's detail | Not connected yet. |
+| A section's source | HighLevel, Meta, and Stripe aren't connected. |
 | A metric's source | Not live yet. Connect Meta and HighLevel to see spend and leads here. |
 | A metric's freshness | Not live yet |
 | What to do next | Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do. |
@@ -104,7 +106,7 @@ Three rules follow from those strings:
 
 ## 6. References, hashes, and codes: "Details for support"
 
-Version references, content fingerprints, rule codes, and support references are real and are kept. They are never names, headings, or inline prose. They live in exactly one place per screen: a collapsed `<details>` region titled **Details for support**, closed by default, with plain labels and monospace values.
+Version references, content fingerprints, rule codes, and support references are real and are kept. They are never names, headings, or inline prose. They live in exactly one place per screen: a collapsed `<details>` element titled **Details for support**, closed by default, with plain labels and monospace values.
 
 | Label | What it holds |
 |---|---|
@@ -114,7 +116,7 @@ Version references, content fingerprints, rule codes, and support references are
 | Rule | The code of one rule the checks reported |
 | Support reference | The reference support asks for when something goes wrong |
 
-Nothing outside that region shows an identifier. Nothing inside it is a session value, a token, or a hash of one.
+Nothing outside that element shows an identifier. Nothing inside it is a session value, a token, or a hash of one.
 
 ## 7. Error codes become sentences
 

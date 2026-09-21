@@ -3,7 +3,7 @@ import { extname, join, relative, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { GUIDED_SETUP_STEPS } from "../../copy/guided-setup-messages.js";
+import { GUIDED_SETUP_CONTROLS, GUIDED_SETUP_STEPS } from "../../copy/guided-setup-messages.js";
 import { findVocabularyHits } from "../../copy/forbidden-vocabulary.js";
 import { GUIDED_SETUP_STEP_DEFINITIONS } from "./steps/step-model.js";
 
@@ -95,6 +95,20 @@ describe("guided setup constraints", () => {
         if (typeof value !== "string") continue;
         expect(findVocabularyHits(value), `${name}.${field}: ${value}`).toEqual([]);
       }
+    }
+  });
+
+  /**
+   * `GUIDED_SETUP_STEPS` and `GUIDED_SETUP_CONTROLS` are the two exported string tables in
+   * `guided-setup-messages.ts`; the loop above only ever walked the first one, so a control label
+   * (dismiss, back, "Show me around again", and the rest) was never checked against the contract.
+   * Added 2026-09-20 after `technical-writing-craft-guardian`'s addendum read them and found no
+   * blocking finding; this closes the coverage gap the addendum noted.
+   */
+  it("keeps every control's copy inside the user-language contract", () => {
+    for (const [field, value] of Object.entries(GUIDED_SETUP_CONTROLS)) {
+      if (typeof value !== "string") continue;
+      expect(findVocabularyHits(value), `${field}: ${value}`).toEqual([]);
     }
   });
 

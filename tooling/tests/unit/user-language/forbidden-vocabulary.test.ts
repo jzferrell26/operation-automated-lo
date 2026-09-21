@@ -29,12 +29,21 @@ import {
 
 const repositoryRoot = resolve(import.meta.dirname, "../../../..");
 
-/** Everything that can put words on a screen (PRD-006b D6, the source guard's globs). */
+/**
+ * Everything that can put words on a screen (PRD-006b D6, the source guard's globs).
+ *
+ * `packages/application/src` widened in, 2026-09-20: it is where a campaign's role-aware next
+ * step is written (`campaign-workspace-read.ts`'s `label` fields, consumed by
+ * `persisted-campaign-screen.tsx` and `open-house-draft-builder.tsx`), so a word banned in the
+ * component that renders it was still legal one layer down. See the EXCLUDED entries below for
+ * the files this widening reaches that are still mid-migration in a parallel lane.
+ */
 const SCANNED_ROOTS: readonly string[] = [
   "apps/web/src/app",
   "apps/web/src/copy",
   "apps/web/src/features",
   "apps/web/src/server/email",
+  "packages/application/src",
   "packages/ui/src/components",
 ];
 
@@ -68,17 +77,27 @@ const EXCLUDED: readonly Readonly<{ path: string; because: string }>[] = [
   {
     path: "apps/web/src/features/brand/model/synthetic-brand-profile.ts",
     because:
-      "Demo fixture data that happens to sit beside a feature. A connected-account workspace replaces every value in it, and the PRD-006b Non-Goals leave fixture prose alone.",
+      'Demo fixture data (named beside synthetic-ui.ts in PRD-006b\'s Background, and covered by the same Non-Goals carve-out). Reviewed 2026-09-20: `toReviewBrand` in authenticated-workspace-data.ts replaces every honesty-sensitive value (disclosure, source, reason, nextAction) with the D4 constants before review mode renders it; only `field.label` ("Public loan officer name", "Company", and the rest) passes through unchanged, and those are already clean. A new field added here needs the same review before its label ships.',
   },
   {
     path: "apps/web/src/features/reporting/model",
     because:
-      "Demo fixture data for the reporting screens. A connected-account workspace never renders it, and the PRD-006b Non-Goals leave fixture prose alone.",
+      "Demo fixture data for the reporting screens, out of scope by the same Non-Goals carve-out, with one exception fixed 2026-09-20: `synthetic-reporting.ts`'s approved artifact `previewSummary` reached the product's one unauthenticated page, `apps/web/src/app/public/synthetic-open-house-v3/page.tsx`, and has been rewritten to the D1 register. The rest of this directory (reporting-acceptance.ts and the superseded artifacts) has no path to a rendered screen today.",
   },
   {
     path: "apps/web/src/features/ui-foundation/evidence",
     because:
-      "Demo campaign inputs used to produce local approval records. Nothing in it renders to a signed-in user.",
+      "Local hash-computation fixture data for `projectApproval`'s deterministic evidence, same Non-Goals class as synthetic-ui.ts. Reviewed 2026-09-20: it has no import outside its own unit test, so nothing in it reaches a screen.",
+  },
+  {
+    path: "packages/application/src/campaign-workspace-read.ts",
+    because:
+      'Added 2026-09-20 with the packages/application/src widening above, temporarily: this file\'s `label` fields ("Provider publication is not authorized.", "Review persisted version evidence.", and the rest) are the campaign next-step sentences PRD-006b D5 calls "role-aware next step", and they fail D2 today ("provider", "persisted", "evidence", "freeze"). A parallel lane (react-guardian) is moving this copy into apps/web/src/copy/user-language.ts; this entry is scoped to one file precisely so it is the first thing that goes red, and the first thing removed, once that move lands. Do not widen this entry to a directory.',
+  },
+  {
+    path: "packages/application/src/reporting.ts",
+    because:
+      'Added 2026-09-20 with the packages/application/src widening above, temporarily: this file\'s provider-connection and reporting-exception sentences ("The provider connection has expired.", "A lead could not be delivered through the approved route.", and the rest) fail D2 today ("provider", "route"). Same parallel migration and same removal condition as the campaign-workspace-read.ts entry above.',
   },
 ];
 

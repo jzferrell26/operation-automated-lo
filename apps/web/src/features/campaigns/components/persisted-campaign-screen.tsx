@@ -4,8 +4,10 @@ import type { CampaignWorkspaceProjection } from "@oalo/application";
 
 import {
   APPROVAL_ROLE_LABELS,
+  CAMPAIGN_NEXT_ACTION_LABELS,
   CAMPAIGN_NOT_AN_AD_YET,
   CAMPAIGN_SAVED_NOTICE,
+  CAMPAIGN_STATE_LABELS,
   CHECK_RESULT_NEEDS_CHANGES,
   CHECK_RESULT_READY,
   SUPPORT_DETAILS_LABELS,
@@ -26,7 +28,7 @@ export function PersistedCampaignScreen({
           <h1>{campaign.headline}</h1>
           <p>{campaign.propertyAddress}</p>
         </div>
-        <span>{stateLabel(campaign.state)}</span>
+        <span>{CAMPAIGN_STATE_LABELS[campaign.state]}</span>
       </header>
 
       <Card className={styles.notice} padding="md">
@@ -46,7 +48,7 @@ export function PersistedCampaignScreen({
         </Card>
         <Card padding="sm">
           <strong>Where it stands</strong>
-          <p>{stateLabel(campaign.state)}</p>
+          <p>{CAMPAIGN_STATE_LABELS[campaign.state]}</p>
         </Card>
         <Card padding="sm">
           <strong>Daily budget</strong>
@@ -151,7 +153,7 @@ export function PersistedCampaignScreen({
           {campaign.nextActions.map((action) => (
             <Card key={action.id} padding="sm">
               <strong>{action.available ? "Available" : "Not available"}</strong>
-              <p>{action.label}</p>
+              <p>{CAMPAIGN_NEXT_ACTION_LABELS[action.id]}</p>
             </Card>
           ))}
         </div>
@@ -179,11 +181,6 @@ export function PersistedCampaignScreen({
       />
     </div>
   );
-}
-
-/** The campaign's state as a sentence-case phrase, never the underlying token. */
-function stateLabel(state: CampaignWorkspaceProjection["state"]): string {
-  return state.replaceAll("_", " ").replace(/^./u, (value: string) => value.toUpperCase());
 }
 
 /** "Approved" or "Sent back for changes". The stored decision word is not the user's word. */

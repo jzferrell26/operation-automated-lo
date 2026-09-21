@@ -4,7 +4,12 @@ import { usePathname, useRouter } from "next/navigation.js";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { GUIDED_SETUP_STEPS } from "../../copy/guided-setup-messages.js";
-import { postInternalJson } from "../http/internal-api.js";
+import {
+  postInternalJson,
+  refusalFrom,
+  UNREACHED_REFUSAL,
+  type InternalRefusal,
+} from "../http/internal-api.js";
 import { GUIDED_SETUP_ANCHORS } from "./anchor-registry.js";
 import {
   GuidedSetupContext,
@@ -124,11 +129,19 @@ export function GuidedSetupProvider({
   const [campaign, setCampaign] = useState<SavedCampaignReport | undefined>(undefined);
   const [dismissPending, setDismissPending] = useState(false);
   /**
-   * PRD-006d D7, through 006D-AC-011. True from a failed profile or progress write until the next
-   * attempt. It is what the panel reads its sentence out of, and it is cleared when a write is
-   * tried again rather than when one succeeds, so the region says nothing while the retry travels.
+   * PRD-006d D7, through 006D-AC-011 and PRD-006b D7. The refusal a failed profile or progress
+   * write came back with, held until the next attempt.
+   *
+   * It used to be a boolean, and the panel answered it with the generic sentence every time: a
+   * setup whose write was refused for a reason the product has words for was described as
+   * "Something went wrong on our side", and one it has no words for sent the person to support
+   * with nothing to quote. Carrying the route's code and its reference lets the panel say the
+   * mapped sentence where there is one and show the reference where there is not.
+   *
+   * It is cleared when a write is tried again rather than when one succeeds, so the region says
+   * nothing while the retry travels.
    */
-  const [writeFailed, setWriteFailed] = useState(false);
+  const [writeFailure, setWriteFailure] = useState<InternalRefusal | undefined>(undefined);
   const [fieldIndex, setFieldIndex] = useState(0);
   const [values, setValues] = useState<Readonly<Record<string, string>>>(() =>
     valuesFrom(
@@ -202,18 +215,21 @@ export function GuidedSetupProvider({
     const token = progressWriteToken.current + 1;
     progressWriteToken.current = token;
     const previous = progressRef.current;
-    setWriteFailed(false);
+    setWriteFailure(undefined);
     setProgress(next);
-    const failed = (cause: unknown): boolean => {
+    const failed = (cause: unknown, refusal: InternalRefusal): boolean => {
       reportSaveFailure("progress", cause);
       if (token === progressWriteToken.current) setProgress(previous);
-      setWriteFailed(true);
+      setWriteFailure(refusal);
       return false;
     };
     try {
       const response = await postInternalJson("/api/setup/progress", { progress: next });
       if (!response.ok) {
-        return failed(`the server answered ${String(response.status)}`);
+        return failed(
+          `the server answered ${String(response.status)}`,
+          await refusalFrom(response),
+        );
       }
       const payload: unknown = await response.json();
       const stored = (payload as { progress?: unknown }).progress;
@@ -227,7 +243,7 @@ export function GuidedSetupProvider({
       );
       return true;
     } catch (error) {
-      return failed(error);
+      return failed(error, UNREACHED_REFUSAL);
     }
   }, []);
 
@@ -249,22 +265,25 @@ export function GuidedSetupProvider({
    */
   const saveProfile = useCallback(async (next: SetupProfile): Promise<boolean> => {
     const previous = profileRef.current;
-    setWriteFailed(false);
+    setWriteFailure(undefined);
     setProfile(next);
-    const failed = (cause: unknown): boolean => {
+    const failed = (cause: unknown, refusal: InternalRefusal): boolean => {
       reportSaveFailure("profile", cause);
       setProfile(previous);
-      setWriteFailed(true);
+      setWriteFailure(refusal);
       return false;
     };
     try {
       const response = await postInternalJson("/api/setup/profile", { profile: next });
       if (!response.ok) {
-        return failed(`the server answered ${String(response.status)}`);
+        return failed(
+          `the server answered ${String(response.status)}`,
+          await refusalFrom(response),
+        );
       }
       return true;
     } catch (error) {
-      return failed(error);
+      return failed(error, UNREACHED_REFUSAL);
     }
   }, []);
 
@@ -471,7 +490,7 @@ export function GuidedSetupProvider({
           setValues={setValues}
           stepAfterTheRealtor={stepAfterTheRealtor}
           values={values}
-          writeFailed={writeFailed}
+          writeFailure={writeFailure}
         />
       ) : null}
       {children}
@@ -505,7 +524,7 @@ type CurrentStepProps = Readonly<{
   /** D5. 4 for everybody whose own campaign this is, 5 for an approver who has one waiting. */
   stepAfterTheRealtor: number;
   values: Readonly<Record<string, string>>;
-  writeFailed: boolean;
+  writeFailure: InternalRefusal | undefined;
 }>;
 
 /**
@@ -523,7 +542,7 @@ function CurrentStep(props: CurrentStepProps) {
     position: definition.position,
     progress,
     title: definition.title,
-    writeFailed: props.writeFailed,
+    writeFailure: props.writeFailure,
   } as const;
 
   switch (progress.currentStep) {
@@ -665,7 +684,7 @@ function renderProfileStep(
       position={definition.position}
       progress={props.progress}
       title={definition.title}
-      writeFailed={props.writeFailed}
+      writeFailure={props.writeFailure}
     >
       <ProfileFieldsStep
         anchor={step.anchor}

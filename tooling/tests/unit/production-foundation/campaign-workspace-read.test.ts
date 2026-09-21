@@ -219,7 +219,7 @@ describe("campaign workspace read projection", () => {
     expect(projected.canApprove).toBe(false);
     expect(projected.nextActions.map((action) => action.id)).toEqual([
       "review_evidence",
-      "approve_version",
+      "already_decided",
       "provider_publish",
     ]);
     expect(
@@ -299,5 +299,41 @@ describe("campaign workspace read projection", () => {
     expect(
       deriveCampaignNextActions("awaiting_approval", false).map((action) => action.id),
     ).toEqual(["review_evidence", "wait_for_approver", "provider_publish"]);
+  });
+
+  /**
+   * PRD-006b D1 and D5. The application layer names steps; it does not write sentences.
+   *
+   * Every step used to travel with its own English, written in this package, where the
+   * user-language guard does not read and the writing review never reached: "Review persisted
+   * version evidence." and "Approve this exact persisted version." both went to a loan officer's
+   * screen with a D2 word in them. The words now live in `apps/web/src/copy/user-language.ts`,
+   * keyed by these identifiers, and this is what keeps them from coming back.
+   */
+  it("returns keys and no English at all", () => {
+    const states: CampaignState[] = [
+      "draft",
+      "generated",
+      "preflight_failed",
+      "awaiting_approval",
+      "approved",
+      "publishing",
+      "live",
+      "paused",
+      "completed",
+      "archived",
+    ];
+    for (const state of states) {
+      for (const canApprove of [true, false]) {
+        for (const action of deriveCampaignNextActions(state, canApprove)) {
+          expect(Object.keys(action).toSorted(), `${state}/${String(canApprove)}`).toEqual([
+            "available",
+            "id",
+          ]);
+          // A key is one token. A sentence has a space in it, and that is the whole difference.
+          expect(action.id).not.toMatch(/\s/u);
+        }
+      }
+    }
   });
 });

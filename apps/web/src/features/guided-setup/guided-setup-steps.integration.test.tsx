@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { useState, type ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -8,8 +8,15 @@ import {
   GUIDED_SETUP_STEPS,
   GUIDED_SETUP_TOTAL_STEPS,
 } from "../../copy/guided-setup-messages.js";
-import { CHECK_RESULT_READY, NOT_CONNECTED_SOURCE } from "../../copy/user-language.js";
+import {
+  CHECK_RESULT_READY,
+  NOT_CONNECTED_SOURCE,
+  SUPPORT_DETAILS_LABELS,
+  SUPPORT_REFERENCE_NOT_RECORDED,
+} from "../../copy/user-language.js";
+import { SUPPORT_REFERENCE_HEADER } from "../http/internal-api.js";
 import { OpenHouseDraftBuilder } from "../campaigns/components/open-house-draft-builder.js";
+import { fillAndSaveOpenHouseDraft } from "../campaigns/components/open-house-draft.test-support.js";
 import { anchorSelector, GUIDED_SETUP_ANCHORS } from "./anchor-registry.js";
 import { GuidedSetupShellControls } from "./guided-setup-progress.js";
 import { GuidedSetupProvider } from "./guided-setup-provider.js";
@@ -98,26 +105,16 @@ function panel() {
   return screen.getByRole("dialog", { name: /.+/u });
 }
 
+/** The reference the setup routes put on every answer, as one of them would look. */
+const SETUP_SUPPORT_REFERENCE = "correlation_setupProfile_4c8e12a06b5d9f37e1a2b3c4";
+
 /**
- * What a person types into the create screen that the profile did not already fill, and then the
- * press that runs the checks. The fields the walkthrough prefilled are left alone, because leaving
- * them alone is what a person does with a value that is already right.
+ * The create screen filled in and saved. The Realtor field is left alone on purpose: the
+ * walkthrough prefilled it two steps earlier, and leaving a value that is already right alone is
+ * what a person does.
  */
 function saveTheOpenHouseDraft(): void {
-  const typed: readonly (readonly [string, string])[] = [
-    ["Property address", "48 Cedar Street, Austin"],
-    ["Property description", "A three-bedroom home near the park."],
-    ["Open house starts", "2030-06-12T13:00"],
-    ["Open house ends", "2030-06-12T15:00"],
-    ["Where the ad runs", "Austin metro"],
-  ];
-  for (const [label, value] of typed) {
-    fireEvent.change(screen.getByLabelText(label), { target: { value } });
-  }
-  fireEvent.change(screen.getByLabelText("State", { exact: true }), { target: { value: "TX" } });
-  fireEvent.click(screen.getByLabelText("I have permission to market this property."));
-  fireEvent.click(screen.getByLabelText("I have permission to use the Realtor's materials."));
-  fireEvent.click(screen.getByRole("button", { name: "Save and run the checks" }));
+  fillAndSaveOpenHouseDraft();
 }
 
 /**
@@ -752,25 +749,27 @@ describe("guided setup steps", () => {
   });
 
   /**
-   * 006D-AC-011, through PRD-006b D7. A write that did not land is said out loud.
-   *
-   * The step used to move anyway and write a line to the console: somebody whose details had not
-   * saved was shown the next step, told nothing, and found their name missing the next morning.
-   * The panel now stays where it is, says PRD-006b D7's generic sentence in its own status region,
-   * and the same Continue is the retry.
+   * A profile write that is refused once, then accepted, with the route's code and reference on
+   * the first answer. `refusedProfileWrite` below builds it so each case names only what it is
+   * about.
    */
-  it("holds the step and says so when a write does not land, then advances on the retry", async () => {
-    const user = userEvent.setup();
+  function refusedProfileWriteOnce(
+    code: string | undefined,
+    reference: string | undefined,
+  ): typeof globalThis.fetch {
     let profileWrites = 0;
-    const fetchStub = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    return (async (input: RequestInfo | URL, init?: RequestInit) => {
       const path = String(input);
       const body: unknown = JSON.parse(String(init?.body ?? "{}"));
       if (path === "/api/setup/profile") {
         profileWrites += 1;
         if (profileWrites === 1) {
-          return new Response(JSON.stringify({ error: "SETUP_PREFERENCE_FAILED" }), {
+          return new Response(JSON.stringify(code === undefined ? {} : { error: code }), {
             status: 500,
-            headers: { "content-type": "application/json" },
+            headers: {
+              "content-type": "application/json",
+              ...(reference === undefined ? {} : { [SUPPORT_REFERENCE_HEADER]: reference }),
+            },
           });
         }
       }
@@ -779,8 +778,29 @@ describe("guided setup steps", () => {
         headers: { "content-type": "application/json" },
       });
     }) as typeof globalThis.fetch;
+  }
 
-    renderSetup({ fetch: fetchStub, profile: SAMPLE_PROFILE, progress: progressAt(2) });
+  /**
+   * 006D-AC-011, through PRD-006b D7. A write that did not land is said out loud.
+   *
+   * The step used to move anyway and write a line to the console: somebody whose details had not
+   * saved was shown the next step, told nothing, and found their name missing the next morning.
+   * The panel now stays where it is, says what the route's code means in its own status region,
+   * and the same Continue is the retry.
+   *
+   * Until 2026-09-20 the sentence was the generic one no matter what the route had said, so a
+   * refusal the product has words for was reported as an unexplained failure of ours. This case
+   * uses a mapped code and asserts the mapped sentence, and the one after it uses an unmapped code
+   * and asserts the support reference the generic sentence owes.
+   */
+  it("holds the step and says what the route said, then advances on the retry", async () => {
+    const user = userEvent.setup();
+
+    renderSetup({
+      fetch: refusedProfileWriteOnce("SETUP_PREFERENCE_FAILED", SETUP_SUPPORT_REFERENCE),
+      profile: SAMPLE_PROFILE,
+      progress: progressAt(2),
+    });
     await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
 
     // The step is where it was, the typed values are where they were, and the panel says why.
@@ -788,14 +808,55 @@ describe("guided setup steps", () => {
     expect(screen.getByLabelText(GUIDED_SETUP_STEPS.yourDetails.nameLabel)).toHaveValue(
       SAMPLE_PROFILE.displayName,
     );
-    const notice = await screen.findByText(userMessageSentence(undefined));
+    const notice = await screen.findByText(userMessageSentence("SETUP_PREFERENCE_FAILED"));
     expect(notice.closest("[role='status']")).not.toBeNull();
+    // A code with words of its own needs no reference, so the region stays out of the way.
+    expect(screen.queryByText(SUPPORT_DETAILS_LABELS.supportReference)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
     await waitFor(() => {
       expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.realtorPartner.title);
     });
-    expect(screen.queryByText(userMessageSentence(undefined))).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(userMessageSentence("SETUP_PREFERENCE_FAILED")),
+    ).not.toBeInTheDocument();
+  });
+
+  /**
+   * 006B-AC-007 on the walkthrough. The generic sentence sends the person to support, so it brings
+   * the reference support needs; the setup routes put one on every answer
+   * (`apps/web/src/server/setup-preferences.ts:354,381`).
+   */
+  it("carries the support reference when the refusal has no sentence of its own", async () => {
+    const user = userEvent.setup();
+
+    renderSetup({
+      fetch: refusedProfileWriteOnce("SETUP_UNHEARD_OF_REFUSAL", SETUP_SUPPORT_REFERENCE),
+      profile: SAMPLE_PROFILE,
+      progress: progressAt(2),
+    });
+    await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+
+    expect(await screen.findByText(userMessageSentence(undefined))).toBeInTheDocument();
+    expect(screen.getByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeInTheDocument();
+    const reference = screen.getByText(SETUP_SUPPORT_REFERENCE);
+    expect(reference.closest("[data-support-details]")).not.toBeNull();
+  });
+
+  it("says the reference was not recorded when nothing answered", async () => {
+    const user = userEvent.setup();
+
+    renderSetup({
+      fetch: (async () => {
+        throw new TypeError("network down");
+      }) as typeof globalThis.fetch,
+      profile: SAMPLE_PROFILE,
+      progress: progressAt(2),
+    });
+    await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+
+    expect(await screen.findByText(userMessageSentence(undefined))).toBeInTheDocument();
+    expect(screen.getByText(SUPPORT_REFERENCE_NOT_RECORDED)).toBeInTheDocument();
   });
 
   /**

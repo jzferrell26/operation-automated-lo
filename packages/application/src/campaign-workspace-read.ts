@@ -14,16 +14,29 @@ import {
 
 export type CampaignPersistenceKind = "filesystem" | "postgres";
 
+/**
+ * The steps a campaign can offer, as keys rather than sentences.
+ *
+ * PRD-006b D1 and D5. Each of these used to travel with its own English label, written here, in a
+ * package the user-language guard does not read and the writing review never reached. The words
+ * now live in `apps/web/src/copy/user-language.ts` (`CAMPAIGN_NEXT_ACTION_LABELS`), keyed by these
+ * identifiers, so the application layer holds no English and the sentence a person reads is
+ * reviewed in the one place every other sentence is.
+ *
+ * `already_decided` exists because one key carried two different sentences before: the step is a
+ * different step when a decision has been recorded than when one is being asked for, and a key
+ * that means two things cannot be mapped to one phrase.
+ */
 export type CampaignNextActionId =
   | "review_evidence"
   | "approve_version"
+  | "already_decided"
   | "wait_for_approver"
   | "remediate_preflight"
   | "provider_publish";
 
 export interface CampaignWorkspaceNextAction {
   readonly id: CampaignNextActionId;
-  readonly label: string;
   readonly available: boolean;
 }
 
@@ -90,13 +103,11 @@ export interface CampaignWorkspaceProjection {
 
 const PROVIDER_PUBLISH_ACTION: CampaignWorkspaceNextAction = Object.freeze({
   id: "provider_publish",
-  label: "Provider publication is not authorized.",
   available: false,
 });
 
 const REVIEW_EVIDENCE_ACTION: CampaignWorkspaceNextAction = Object.freeze({
   id: "review_evidence",
-  label: "Review persisted version evidence.",
   available: true,
 });
 
@@ -128,7 +139,6 @@ export function deriveCampaignNextActions(
         REVIEW_EVIDENCE_ACTION,
         Object.freeze({
           id: "remediate_preflight",
-          label: "Resolve blocking findings, then freeze a new version.",
           available: true,
         }),
         PROVIDER_PUBLISH_ACTION,
@@ -139,12 +149,10 @@ export function deriveCampaignNextActions(
         canApprove
           ? Object.freeze({
               id: "approve_version",
-              label: "Approve this exact persisted version.",
               available: true,
             })
           : Object.freeze({
               id: "wait_for_approver",
-              label: "Waiting for an authorized human approver.",
               available: false,
             }),
         PROVIDER_PUBLISH_ACTION,
@@ -153,8 +161,7 @@ export function deriveCampaignNextActions(
       return Object.freeze([
         REVIEW_EVIDENCE_ACTION,
         Object.freeze({
-          id: "approve_version",
-          label: "This version already has a recorded decision.",
+          id: "already_decided",
           available: false,
         }),
         PROVIDER_PUBLISH_ACTION,

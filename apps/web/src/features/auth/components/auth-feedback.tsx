@@ -1,6 +1,9 @@
 import { LiveRegion } from "@oalo/ui";
 import type { ReactNode } from "react";
 
+import type { InternalRefusal } from "../../http/internal-api.js";
+import { SupportReference } from "../../shell/components/support-details.js";
+import { userMessageSentence } from "../strings.js";
 import styles from "./auth-form.module.css";
 
 /**
@@ -21,4 +24,22 @@ export function AuthProblem({ children }: Readonly<{ children: ReactNode }>): Re
 
 export function AuthNotice({ children }: Readonly<{ children: ReactNode }>): ReactNode {
   return <LiveRegion className={styles.notice} message={children} urgency="status" visible />;
+}
+
+/**
+ * What an account screen says about a refused request: the sentence, and the reference when the
+ * sentence is the generic one (PRD-006b D7).
+ *
+ * `useAuthSubmit` builds this the moment a route answers and keeps it in state, which is why it is
+ * a function returning a node rather than a component the six forms would each have to remember to
+ * render. All six render `problem` through `AuthProblem` and nothing else, so a refusal that owes a
+ * reference carries it on every one of them, including the workspace-choice step.
+ */
+export function authProblemFor(refusal: InternalRefusal): ReactNode {
+  return (
+    <>
+      <span>{userMessageSentence(refusal.code)}</span>
+      <SupportReference refusal={refusal} />
+    </>
+  );
 }

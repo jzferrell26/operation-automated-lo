@@ -3,9 +3,14 @@ import { redirect } from "next/navigation.js";
 
 import { Card, Link } from "@oalo/ui";
 
+import {
+  CAMPAIGN_NEXT_ACTION_LABELS,
+  CAMPAIGN_STATE_LABELS,
+} from "../../../../copy/user-language.js";
 import styles from "../../../../features/campaigns/components/open-house-draft-builder.module.css";
 import { readWorkspaceCampaignsForRequest } from "../../../../server/campaign-workspace-reads.js";
 import { SIGN_IN_PATH } from "../../../../server/runtime-authentication.js";
+import type { CampaignWorkspaceNextAction } from "@oalo/application";
 
 export default async function CampaignListPage() {
   const incoming = await headers();
@@ -36,10 +41,10 @@ export default async function CampaignListPage() {
         <div className={styles.findings}>
           {campaigns.map((campaign) => (
             <Card key={campaign.campaignRef} padding="md">
-              <p className={styles.eyebrow}>{campaign.state.replaceAll("_", " ")}</p>
+              <p className={styles.eyebrow}>{CAMPAIGN_STATE_LABELS[campaign.state]}</p>
               <h2>{campaign.headline}</h2>
               <p>{campaign.propertyAddress}</p>
-              <p>{campaign.nextActions.find((action) => action.available)?.label}</p>
+              <p>{nextStepFor(campaign.nextActions)}</p>
               <Link href={campaign.detailHref} variant="action">
                 Open campaign
               </Link>
@@ -49,4 +54,16 @@ export default async function CampaignListPage() {
       )}
     </div>
   );
+}
+
+/**
+ * The first step this campaign offers, in the product's words.
+ *
+ * The state and the step both used to be turned into words here, the state by taking the
+ * underscores out of it, which put "Preflight failed" on the list page. Both now come from the
+ * copy module, so every screen that names a state or a step names it the same way.
+ */
+function nextStepFor(actions: readonly CampaignWorkspaceNextAction[]): string | undefined {
+  const available = actions.find((action) => action.available);
+  return available === undefined ? undefined : CAMPAIGN_NEXT_ACTION_LABELS[available.id];
 }

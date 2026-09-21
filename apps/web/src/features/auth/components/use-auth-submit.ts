@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
-import { postInternalJson } from "../../http/internal-api.js";
-import { userMessageSentence } from "../strings.js";
+import { postInternalJson, refusalFrom, UNREACHED_REFUSAL } from "../../http/internal-api.js";
+import { authProblemFor } from "./auth-feedback.js";
 
 /**
  * PRD-006a D5. The one submit every auth form makes.
@@ -24,16 +24,23 @@ export interface AuthResponsePayload {
 }
 
 export interface AuthSubmit<Payload extends AuthResponsePayload> {
-  /** The sentence to show, or null when there is nothing to report. */
-  readonly problem: string | null;
+  /**
+   * What to show, or null when there is nothing to report.
+   *
+   * It is a node rather than a sentence because PRD-006b D7 says a refusal the product has no
+   * words for owes the person the support reference as well, and the reference belongs inside the
+   * collapsed region D8 defines. Building both here keeps the six forms identical: each renders
+   * `problem` and nothing else, so none of them can be the one that forgets the reference.
+   */
+  readonly problem: ReactNode | null;
   readonly submitting: boolean;
   /** Resolves to the response body on success, or undefined once `problem` has been set. */
   submit(path: string, body: unknown): Promise<Payload | undefined>;
-  setProblem(problem: string | null): void;
+  setProblem(problem: ReactNode | null): void;
 }
 
 export function useAuthSubmit<Payload extends AuthResponsePayload>(): AuthSubmit<Payload> {
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem] = useState<ReactNode | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function submit(path: string, body: unknown): Promise<Payload | undefined> {
@@ -41,16 +48,16 @@ export function useAuthSubmit<Payload extends AuthResponsePayload>(): AuthSubmit
     setProblem(null);
     try {
       const response = await postInternalJson(path, body);
-      const payload = (await response.json()) as Payload;
       if (!response.ok) {
-        setProblem(userMessageSentence(payload.error));
+        setProblem(authProblemFor(await refusalFrom(response)));
         return undefined;
       }
-      return payload;
+      return (await response.json()) as Payload;
     } catch {
       // A network failure and an unreadable body say the same thing to the person: something went
-      // wrong on our side. Neither reveals anything about the account.
-      setProblem(userMessageSentence(undefined));
+      // wrong on our side. Neither reveals anything about the account, and neither carries a
+      // reference, so the support row says so rather than showing an empty line.
+      setProblem(authProblemFor(UNREACHED_REFUSAL));
       return undefined;
     } finally {
       setSubmitting(false);

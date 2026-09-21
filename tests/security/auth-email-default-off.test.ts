@@ -380,6 +380,13 @@ function createOfflineCredentialPort(store: OfflineStore): CredentialPort {
     },
     lookupCredentialForUser: () => unreachable("lookupCredentialForUser"),
     unverifiedEmailDisplayForUser: () => unreachable("unverifiedEmailDisplayForUser"),
+    passwordPolicyIdentityForUser: () => unreachable("passwordPolicyIdentityForUser"),
+    // PRD-006a D3 and D5. The reset flow reads the policy identity before it consumes the token;
+    // this offline store holds no display name or address, and `undefined` is the port's own
+    // answer for no context, which the handler treats as nothing to compare against.
+    async passwordPolicyIdentityForResetToken() {
+      return undefined;
+    },
     async listSignInBindings() {
       return Object.freeze([OFFLINE_BINDING]);
     },

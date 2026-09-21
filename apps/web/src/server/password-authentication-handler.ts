@@ -9,6 +9,7 @@ import {
   hashPassword,
   serializeFirstPartySessionCookie,
   verifyPassword,
+  type PasswordPolicyContext,
 } from "@oalo/auth";
 import { parseSessionRef } from "@oalo/contracts";
 import { z } from "zod";
@@ -30,6 +31,7 @@ import type {
   AuthRateLimitScope,
   CredentialPort,
   EmailDeliveryAction,
+  PasswordPolicyIdentity,
   SignInBinding,
 } from "./credential-ports.js";
 import { buildEmailVerificationEmail, buildPasswordResetEmail } from "./email/email-templates.js";
@@ -382,6 +384,22 @@ function requiredCredentialPort(ports: CampaignCommandPorts): CredentialPort {
   const credentials = ports.credentials;
   if (credentials === undefined) throw new UnauthenticatedPrincipalError();
   return credentials;
+}
+
+/**
+ * PRD-006a D3. Turns the identity read into the policy's context, or into no context.
+ *
+ * Sign-up builds the same shape from the body it was handed. Reset and change-password cannot:
+ * neither request carries a name or an address, and neither may take one from the browser, so
+ * both read it from the database first and pass it through here. An absent identity means the
+ * personal-fragment rule has nothing to compare against, which is the same as the empty context
+ * `evaluatePassword` already defaults to, so the length and denylist rules still run in full.
+ */
+function passwordPolicyContextFor(
+  identity: Readonly<PasswordPolicyIdentity> | undefined,
+): PasswordPolicyContext {
+  if (identity === undefined) return {};
+  return { email: identity.emailDisplay, displayName: identity.displayName };
 }
 
 /**
@@ -1119,7 +1137,22 @@ export async function handleResetPassword(
         context.correlation,
       );
     }
-    const policy = evaluatePassword(parsed.data.password);
+    /**
+     * PRD-006a D3 and D5 together. D3's personal-fragment rule needs to know who the password is
+     * for; D5 forbids spending the token on a request the policy is going to refuse. The identity
+     * therefore comes from a read keyed on the same token hash that consumes it, under the same
+     * liveness guards and without writing anything, so the ordering below is:
+     *
+     *   read identity (no write) -> evaluate the policy -> refuse, or consume.
+     *
+     * A dead or unknown token yields no identity, which is not a refusal: the policy runs on its
+     * length and denylist rules alone and the consume two lines down produces the one generic
+     * `AUTH_RESET_LINK_EXPIRED` that every dead link produces, so this read tells a caller nothing
+     * about whether a token exists.
+     */
+    const tokenHash = sha256Hex(parsed.data.token);
+    const identity = await context.credentials.passwordPolicyIdentityForResetToken(tokenHash);
+    const policy = evaluatePassword(parsed.data.password, passwordPolicyContextFor(identity));
     if (!policy.acceptable) {
       return withCorrelationHeaders(
         jsonResponse(400, { error: policy.reason }),
@@ -1128,7 +1161,7 @@ export async function handleResetPassword(
     }
 
     const consumed = await context.credentials.consumeToken({
-      tokenHash: sha256Hex(parsed.data.token),
+      tokenHash,
       purpose: "password_reset",
     });
     if (consumed === undefined) {
@@ -1469,7 +1502,13 @@ export async function handleChangePassword(
       );
     }
 
-    const policy = evaluatePassword(parsed.data.newPassword);
+    /**
+     * PRD-006a D3. The personal-fragment rule runs here too, so the password sign-up refuses is
+     * not the password a person can quietly move to afterwards. The identity is read by person,
+     * keyed on the session's own actor, so nothing in the request can point it at somebody else.
+     */
+    const identity = await credentials.passwordPolicyIdentityForUser(principal.actorId);
+    const policy = evaluatePassword(parsed.data.newPassword, passwordPolicyContextFor(identity));
     if (!policy.acceptable) {
       return withCorrelationHeaders(jsonResponse(400, { error: policy.reason }), correlation);
     }

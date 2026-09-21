@@ -1049,6 +1049,74 @@ describe("POST /api/auth/change-password (006A-AC-023)", () => {
     ).toBe(401);
   });
 
+  /**
+   * PRD-006a D3. The policy module runs at sign-up, reset, change, and seeding, and until now only
+   * sign-up handed it a context, so the personal-fragment rule was inert at change-password: the
+   * password sign-up refuses was the password a person could move to the moment they were inside.
+   * The context is read by person, keyed on the session's own actor, so nothing in the request can
+   * point it at somebody else.
+   *
+   * Both halves are asserted. A refusal alone would pass if the whole policy had simply become
+   * stricter, so the compliant password is changed in the same case and the session that made the
+   * change is left holding a working credential.
+   */
+  it("refuses a new password carrying the person's own name or address (006A-AC-023)", async () => {
+    const signedIn = await signIn(
+      { email: CHANGE_EMAIL, password: "a second settled harbour" },
+      { clientAddress: nextClientAddress() },
+    );
+    const cookie = sessionCookieFrom(signedIn);
+    const sessionRef = await newestSessionRefFor(changeId);
+    const csrfToken = createSessionBoundCsrfToken({
+      serverSecret: csrfServerSecret,
+      sessionId: sessionRef,
+    });
+
+    async function change(newPassword: string): Promise<Response> {
+      return handleChangePassword(
+        authRequest(
+          "/api/auth/change-password",
+          {
+            currentPassword: "a second settled harbour",
+            newPassword,
+            confirmPassword: newPassword,
+          },
+          { cookie, csrfToken },
+        ),
+      );
+    }
+
+    // "Change person" is the seeded display name; "route-change" is the local part of the address.
+    const byName = await change("the change person walks");
+    expect(byName.status).toBe(400);
+    expect(((await byName.json()) as { error: string }).error).toBe("PASSWORD_LOOKS_PERSONAL");
+
+    const byAddress = await change("route-change and onward");
+    expect(byAddress.status).toBe(400);
+    expect(((await byAddress.json()) as { error: string }).error).toBe("PASSWORD_LOOKS_PERSONAL");
+
+    // Neither refusal touched the credential: the password before them still signs in.
+    expect(
+      (
+        await signIn(
+          { email: CHANGE_EMAIL, password: "a second settled harbour" },
+          { clientAddress: nextClientAddress() },
+        )
+      ).status,
+    ).toBe(200);
+
+    const accepted = await change("a third quiet lantern");
+    expect(accepted.status).toBe(200);
+    expect(
+      (
+        await signIn(
+          { email: CHANGE_EMAIL, password: "a third quiet lantern" },
+          { clientAddress: nextClientAddress() },
+        )
+      ).status,
+    ).toBe(200);
+  });
+
   it("refuses without a session (006A-AC-023)", async () => {
     const response = await handleChangePassword(
       authRequest("/api/auth/change-password", {

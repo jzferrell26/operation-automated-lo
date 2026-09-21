@@ -61,6 +61,18 @@ export type RegisterAccountOutcome =
   | Readonly<{ registered: true; account: RegisteredAccount }>
   | Readonly<{ registered: false; reason: "duplicate_email" }>;
 
+/**
+ * PRD-006a D3. The two values the password policy's personal-fragment rule compares against.
+ *
+ * It is a separate shape from `PasswordCredential` because it is read for a different reason and
+ * under a different key: the credential lookup answers "may this password sign in", and this
+ * answers "is this new password the person's own name or address". Nothing here reaches a screen.
+ */
+export interface PasswordPolicyIdentity {
+  readonly emailDisplay: string;
+  readonly displayName: string;
+}
+
 export interface ConsumedCredentialToken {
   readonly userId: string;
   readonly tokenId: string;
@@ -111,6 +123,21 @@ export interface CredentialPort {
   consumeToken(
     input: Readonly<{ tokenHash: string; purpose: CredentialTokenPurpose }>,
   ): Promise<Readonly<ConsumedCredentialToken> | undefined>;
+  /**
+   * PRD-006a D3. The policy context for a person the caller already holds a verified session for.
+   * `undefined` for a suspended person and for a person with no credential row, which the caller
+   * treats as no context rather than as a refusal.
+   */
+  passwordPolicyIdentityForUser(
+    userId: string,
+  ): Promise<Readonly<PasswordPolicyIdentity> | undefined>;
+  /**
+   * PRD-006a D3 and D5. The same two values for the person a live reset token belongs to, read
+   * without consuming it, because D5 requires a policy failure to leave the link usable.
+   */
+  passwordPolicyIdentityForResetToken(
+    tokenHash: string,
+  ): Promise<Readonly<PasswordPolicyIdentity> | undefined>;
   /** Returns how many of the person's other sessions the change revoked. */
   setPassword(
     input: Readonly<{

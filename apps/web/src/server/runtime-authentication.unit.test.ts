@@ -14,7 +14,9 @@ import type {
   IdentityDirectory,
   RoleBindingPort,
   SessionDisplayNames,
+  SessionDisplayPort,
 } from "./authenticated-principal.js";
+import { SESSION_USER_FALLBACK, SESSION_WORKSPACE_FALLBACK } from "../copy/user-language.js";
 import { OALO_REVIEW_SURFACE_AUTHORIZED } from "./authenticated-workspace-data.js";
 import { handleCampaignApproval } from "./campaign-approval-handler.js";
 import { LOCAL_SYNTHETIC_ENV } from "./campaign-command-test-support.js";
@@ -414,6 +416,17 @@ describe("runtime shell session", () => {
     role: AuthenticatedPrincipal["role"],
     display: SessionDisplayNames | undefined,
   ) {
+    return shellForDisplayPort(role, {
+      async resolve() {
+        return display;
+      },
+    });
+  }
+
+  async function shellForDisplayPort(
+    role: AuthenticatedPrincipal["role"],
+    sessionDisplay: SessionDisplayPort,
+  ) {
     const gate = resolveRuntimeCampaignCommandPorts(REVIEW_ENV).mutation;
     if (gate === undefined) throw new Error("The review composition must supply a mutation gate");
     const principal: AuthenticatedPrincipal = {
@@ -437,11 +450,7 @@ describe("runtime shell session", () => {
         identityDirectory: denyingIdentityDirectory(),
         roleBindings: denyingRoleBindings(),
         mutation: gate,
-        sessionDisplay: {
-          async resolve() {
-            return display;
-          },
-        },
+        sessionDisplay,
       },
     );
     return { gate, principal, shell };
@@ -471,14 +480,40 @@ describe("runtime shell session", () => {
   });
 
   /**
-   * 005A-AC-011's failure direction. When the definer read yields nothing, the shell states the
-   * canonical references the session carries rather than inventing a friendly name.
+   * 005A-AC-011's failure direction, and PRD-006b D2's rule about what may be shown while it is
+   * happening. When the read yields nothing the shell has no name, so it says so in the D1
+   * register. It used to render the session's own canonical references, which are exactly the
+   * `actor_` and `location_` prefixed identifiers D2 forbids: operator language, shown to the
+   * person it names, at the one moment the product already has nothing useful to tell them.
    */
-  it("falls back to the canonical references when the display read yields nothing", async () => {
+  it("falls back to neutral wording, never a reference, when the display read yields nothing", async () => {
     const { principal, shell } = await shellForDisplay("campaign_creator", undefined);
 
-    expect(shell.session?.user.displayName).toBe(principal.actorRef);
-    expect(shell.session?.location.displayName).toBe(principal.locationRef);
+    expect(shell.session?.user.displayName).toBe(SESSION_USER_FALLBACK);
+    expect(shell.session?.location.displayName).toBe(SESSION_WORKSPACE_FALLBACK);
+    expect(shell.session?.user.displayName).not.toBe(principal.actorRef);
+    expect(shell.session?.location.displayName).not.toBe(principal.locationRef);
+    expect(JSON.stringify(shell.session)).not.toMatch(/\b(?:actor|location|session)_[0-9a-f]{8}/u);
+  });
+
+  /**
+   * A transient failure on the display read used to reject `resolveRuntimeShellSession`, which is
+   * awaited by the authenticated layout, so one unreachable optional read blanked every page
+   * inside the shell for somebody who was signed in and entitled to all of them. The read is a
+   * nicety; the session it decorates is already verified, so the failure degrades to the same
+   * fallback an inactive row produces and the shell still renders.
+   */
+  it("renders the fallback when the display read fails rather than failing the layout", async () => {
+    const { shell } = await shellForDisplayPort("campaign_creator", {
+      async resolve() {
+        throw new Error("the display read is unreachable");
+      },
+    });
+
+    expect(shell.authenticated).toBe(true);
+    expect(shell.session?.user.displayName).toBe(SESSION_USER_FALLBACK);
+    expect(shell.session?.location.displayName).toBe(SESSION_WORKSPACE_FALLBACK);
+    expect(shell.session?.user.roleLabel).toBe("Campaign creator");
   });
 
   it("never projects a shell session in synthetic mode", async () => {

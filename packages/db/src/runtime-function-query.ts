@@ -24,7 +24,7 @@ import { DatabaseContextError, shouldAssumeRuntimeRole } from "./transaction-con
  * from arguments it validates itself, and it is audited; the caller supplies parameters and never
  * SQL.
  *
- * PRD-006a widened this list by fourteen names and removed one. The inventory of what each new
+ * PRD-006a widened this list by sixteen names and removed one. The inventory of what each new
  * caller is, so a reviewer does not have to search for them:
  *
  * - `lookup-password-credential`, `record-password-sign-in-failure`,
@@ -49,6 +49,12 @@ import { DatabaseContextError, shouldAssumeRuntimeRole } from "./transaction-con
  *   pays for itself: it answers null for a person with no credential, a person who is not active,
  *   and a person whose email is already confirmed, so it can state nothing at all about a
  *   confirmed account and the only address it can ever return belongs to the session's own person.
+ * - `password-policy-identity-for-user`, `password-policy-identity-for-reset-token`: PRD-006a D3's
+ *   personal-fragment rule at change-password and at reset. The first is keyed on a person the
+ *   caller already holds a verified session for, so the address it can return is that session's
+ *   own. The second is keyed on the hash of a live reset token, under the same four liveness
+ *   guards `consume-credential-token` applies, and it consumes nothing, because D5 requires a
+ *   policy failure to leave the link usable.
  * - `resolve-review-persona` is gone: PRD-006a D9 drops the function with the persona selector
  *   that was its only caller.
  *
@@ -81,6 +87,8 @@ export const RUNTIME_FUNCTION_CONTRACT_NAMES = Object.freeze([
   "runtime.record-email-delivery.v1",
   "runtime.consume-auth-rate-limit.v1",
   "runtime.unverified-email-display-for-user.v1",
+  "runtime.password-policy-identity-for-user.v1",
+  "runtime.password-policy-identity-for-reset-token.v1",
 ] as const);
 
 export type RuntimeFunctionContractName = (typeof RUNTIME_FUNCTION_CONTRACT_NAMES)[number];

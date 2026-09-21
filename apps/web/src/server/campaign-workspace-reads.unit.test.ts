@@ -26,6 +26,13 @@ import { compileOpenHouseDraft } from "./open-house-draft.js";
 
 const store = createTemporaryCampaignStore("oalo-workspace-reads-");
 
+/** A deployment `authenticatedWorkspaceMode` refuses to classify: not local, not preview, not review. */
+const UNCLASSIFIABLE_ENV = Object.freeze({
+  OALO_ENVIRONMENT: "staging",
+  OALO_PROVIDER_MODE: "stub",
+  OALO_SYNTHETIC_DATA_ONLY: "true",
+});
+
 afterEach(async () => {
   await store.restore();
 });
@@ -101,11 +108,28 @@ describe("campaign workspace reads", () => {
 
   it("surfaces an unavailable workspace rather than reporting no campaigns", async () => {
     await expect(
-      loadOverviewCampaigns(createLocalSyntheticPrincipal(), {
-        OALO_ENVIRONMENT: "staging",
-        OALO_PROVIDER_MODE: "stub",
-        OALO_SYNTHETIC_DATA_ONLY: "true",
-      }),
+      loadOverviewCampaigns(createLocalSyntheticPrincipal(), UNCLASSIFIABLE_ENV),
+    ).rejects.toBeInstanceOf(AuthenticatedWorkspaceUnavailableError);
+  });
+
+  /**
+   * The same rule at the two entry points a page actually calls. A host whose workspace mode
+   * cannot be classified is a broken deployment, and the doc above `loadOverviewCampaigns` has
+   * always said so; these two functions used to disagree with it by catching the error and
+   * answering "not signed in", which sent an operator to a sign-in page to retype credentials
+   * that were never the problem and hid the misconfiguration behind ordinary product behaviour.
+   *
+   * Propagating still fails closed: the principal is never resolved, so no tenant row is read and
+   * none is rendered. The route error boundary is what the person sees.
+   */
+  it("propagates an unclassifiable workspace instead of rendering it as unauthenticated", async () => {
+    const request = new Request("https://oalo.local/overview");
+
+    await expect(
+      readWorkspaceCampaignsForRequest(request, UNCLASSIFIABLE_ENV),
+    ).rejects.toBeInstanceOf(AuthenticatedWorkspaceUnavailableError);
+    await expect(
+      readWorkspaceCampaignForRequest(request, "campaign_missingRef001", UNCLASSIFIABLE_ENV),
     ).rejects.toBeInstanceOf(AuthenticatedWorkspaceUnavailableError);
   });
 });

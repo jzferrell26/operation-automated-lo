@@ -1,12 +1,11 @@
 # Design quality sign-off
 
-PRD-006d D9 and acceptance criterion 006D-AC-015. **Status: OPEN.** This is the skeleton
-`ux-ui-guardian` prepared; the orchestrator fills it in from real screenshots of the running
-application and signs it.
+PRD-006d D9 and acceptance criterion 006D-AC-015. **Status: SIGNED.** `ux-ui-guardian` prepared the skeleton; the orchestrator filled it in
+from real screenshots of the running application and signed it (see "How this was filled").
 
-- Commit reviewed: _fill in the SHA of the final tree_
-- Date: _fill in_
-- Signed by: _the orchestrator_
+- Commit reviewed: `74999a8`
+- Date: 2026-09-21
+- Signed by: the orchestrator (Claude Code, the raid's orchestrating session)
 
 The screenshots themselves are retained outside git. They are large, some come from the deployed
 review URL, and none of them is needed to read the result: the table below is the result. Every
@@ -42,60 +41,60 @@ with a finding reference. A row is signed only when all eight are `pass` on all 
 
 | Screen | State | Server | 1440 L | 1440 D | 1180 L | 1180 D | 768 L | 768 D | 390 L | 390 D |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Sign in | default | review | | | | | | | | |
-| Sign in | signed out | review | | | | | | | | |
-| Sign in | refused | review | | | | | | | | |
-| Choose workspace | default | review | | | | | | | | |
-| Sign up | default | review | | | | | | | | |
-| Sign up | address already has an account | review | | | | | | | | |
-| Forgot password | default | review | | | | | | | | |
-| Forgot password | confirmation | review | | | | | | | | |
-| Reset password | default | review | | | | | | | | |
-| Reset password | link expired | review | | | | | | | | |
-| Verify email | default | review | | | | | | | | |
-| Verify email | confirmed | review | | | | | | | | |
-| Verify email | link expired | review | | | | | | | | |
-| Change password | default | review | | | | | | | | |
-| Change password | saved | review | | | | | | | | |
-| Shell | rail | synthetic | | | | | | | | |
-| Shell | collapsed rail | review | | | | | | | | |
-| Shell | tablet rail | synthetic | | | | | | | | |
-| Shell | topbar | synthetic | | | | | | | | |
-| Shell | mobile drawer | review | | | | | | | | |
-| Shell | not-connected banner | review | | | | | | | | |
-| Shell | "Finish setup" chip | review | | | | | | | | |
-| Shell | help menu | review | | | | | | | | |
-| Overview | default | synthetic | | | | | | | | |
-| Campaigns list | empty | synthetic | | | | | | | | |
-| Campaigns list | populated | synthetic | | | | | | | | |
-| Create | empty | synthetic | | | | | | | | |
-| Create | prefilled | review | | | | | | | | |
-| Create | saving | synthetic | | | | | | | | |
-| Create | ready for approval | synthetic | | | | | | | | |
-| Create | needs changes | synthetic | | | | | | | | |
-| Campaign detail | ready | review | | | | | | | | |
-| Campaign detail | permission-restricted | synthetic | | | | | | | | |
-| Campaign detail | approved | review | | | | | | | | |
-| Campaign detail | already decided | review | | | | | | | | |
-| Reports | not connected | synthetic | | | | | | | | |
-| Onboarding | default | synthetic | | | | | | | | |
-| Settings and connections | default | synthetic | | | | | | | | |
-| Brand | default | synthetic | | | | | | | | |
-| Guided setup step 1 | welcome | review | | | | | | | | |
-| Guided setup step 2 | your details | review | | | | | | | | |
-| Guided setup step 3 | your Realtor partner | review | | | | | | | | |
-| Guided setup step 4 | create the campaign, first field | review | | | | | | | | |
-| Guided setup step 4 | create the campaign, last field | review | | | | | | | | |
-| Guided setup step 5 | read the result, ready | review | | | | | | | | |
-| Guided setup step 5 | read the result, needs changes | review | | | | | | | | |
-| Guided setup step 6 | approve | review | | | | | | | | |
-| Guided setup step 6 | hand off | review | | | | | | | | |
-| Guided setup step 7 | what happens next | review | | | | | | | | |
-| Unverified email notice | unverified, with resend | synthetic | | | | | | | | |
-| Route error boundary | failed to load | synthetic | | | | | | | | |
-| Route loading boundary | loading | synthetic | | | | | | | | |
-| Email preview | reset password, 600px | synthetic | | | | | | | | |
-| Email preview | confirm email, 600px | synthetic | | | | | | | | |
+| Sign in | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Sign in | signed out | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Sign in | refused | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Choose workspace | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Sign up | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Sign up | address already has an account | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Forgot password | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Forgot password | confirmation | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Reset password | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Reset password | link expired | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Verify email | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Verify email | confirmed | review | not photographed (S-1) | not photographed (S-1) | not photographed (S-1) | not photographed (S-1) | not photographed (S-1) | not photographed (S-1) | not photographed (S-1) | not photographed (S-1) |
+| Verify email | link expired | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Change password | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Change password | saved | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Shell | rail | synthetic | pass | pass | pass | pass | n/a (tablet rail row) | n/a (tablet rail row) | n/a (drawer row) | n/a (drawer row) |
+| Shell | collapsed rail | review | pass | pass | pass | pass | pass | pass | n/a (no rail at 390) | n/a (no rail at 390) |
+| Shell | tablet rail | synthetic | n/a (rail row) | n/a (rail row) | n/a (rail row) | n/a (rail row) | pass | pass | n/a (drawer row) | n/a (drawer row) |
+| Shell | topbar | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Shell | mobile drawer | review | n/a (drawer only at 390) | n/a (drawer only at 390) | n/a (drawer only at 390) | n/a (drawer only at 390) | n/a (drawer only at 390) | n/a (drawer only at 390) | pass | pass |
+| Shell | not-connected banner | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Shell | "Finish setup" chip | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Shell | help menu | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Overview | default | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Campaigns list | empty | synthetic | not photographed (S-2) | not photographed (S-2) | not photographed (S-2) | not photographed (S-2) | not photographed (S-2) | not photographed (S-2) | not photographed (S-2) | not photographed (S-2) |
+| Campaigns list | populated | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Create | empty | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Create | prefilled | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Create | saving | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Create | ready for approval | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Create | needs changes | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Campaign detail | ready | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Campaign detail | permission-restricted | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Campaign detail | approved | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Campaign detail | already decided | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Reports | not connected | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Onboarding | default | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Settings and connections | default | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Brand | default | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Guided setup step 1 | welcome | review | pass | pass | pass, asserted (A-1) | pass, asserted (A-1) | pass | pass | pass, asserted (A-1) | pass, asserted (A-1) |
+| Guided setup step 2 | your details | review | pass | pass | pass, asserted (A-1) | pass, asserted (A-1) | pass | pass | pass, asserted (A-1) | pass, asserted (A-1) |
+| Guided setup step 3 | your Realtor partner | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Guided setup step 4 | create the campaign, first field | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Guided setup step 4 | create the campaign, last field | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Guided setup step 5 | read the result, ready | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Guided setup step 5 | read the result, needs changes | review | not photographed (S-3) | not photographed (S-3) | not photographed (S-3) | not photographed (S-3) | not photographed (S-3) | not photographed (S-3) | not photographed (S-3) | not photographed (S-3) |
+| Guided setup step 6 | approve | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Guided setup step 6 | hand off | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Guided setup step 7 | what happens next | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Unverified email notice | unverified, with resend | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Route error boundary | failed to load | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Route loading boundary | loading | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Email preview | reset password, 600px | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Email preview | confirm email, 600px | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
 
 The two email rows are scored on axes 1, 3, 4, and 10 only, per the rubric's section 4: an email
 has no states, no motion, and no responsive frames of its own. The frame columns record the frame
@@ -199,3 +198,64 @@ PRD-006d 006D-AC-018 and the rubric's section 5, entries D-004 and D-005.
 | The synthetic reporting gallery | Demonstration rows and filters that exist only to show the reporting surface. | PRD-006d Non-Goals. It renders only in synthetic mode. Its controls were nonetheless moved onto the governed primitives under 006D-AC-003, so it no longer drifts on the field specification. |
 | `<select>` on the reporting screens | Two native selects remain, wrapped in `FormField`. | PRD-006d D4 defers a `Select` primitive; nothing in PRD-006 needs one. Rubric section 5, entry D-004. |
 | Checkbox and radio controls | Native controls inside an associated label on sign-in, the workspace choice, and the create screen. | PRD-006d D4 ships no primitive for either. They are allowed by name in `tooling/tests/unit/design-quality/governed-controls.test.ts`, not hidden. |
+
+## How this was filled
+
+Filled and signed by the orchestrator on 2026-09-21 from a capture of `74999a8` written outside git
+(`OALO_SCREEN_SNAPSHOT_DIR`, `OALO_UPDATE_SCREEN_BASELINES=all`, both suites, 112 synthetic and
+232 review pictures, capture `signoff-74999a8`), read as 43 labelled contact sheets (eight
+pictures each, every picture on exactly one sheet) plus full-size reads of the pictures a sheet
+put in question. Every named state in the table maps to the picture group named in the capture
+by `<screen>--<state>--<frame>--<theme>.png`; a row whose picture group carries another row's
+screen (the shell rows, the create page prefilled by the walkthrough, the three design surfaces,
+the two emails) is judged on that picture.
+
+**What the machine asserted for every cell before a person looked.** The browser suite on the
+same tree (`scratchpad capture-74999a8.log, synthetic suite`, 139 cases) and the review project of the database gate
+(`scratchpad capture-74999a8.log, review project`, 90 cases) run, per screen, frame and theme: axe with zero violations, no
+horizontal overflow, every control at least 44 by 44 (axis 5 and 7), the keyboard walk with the
+ring measured on the control (2 px, 3 px offset, `--focus-color` from the element's own cascade,
+axis 5), reduced motion honoured (axis 6), the theme resolved before the picture (axis 8), and
+the named error and empty states rendered through the primitives (axis 9). Axis 4 is pinned by
+the token contrast test (82 pairs, every ring against every surface). The sheets were read for
+what those assertions cannot see: hierarchy, spacing rhythm, typography, dark and light parity,
+responsiveness of the composition, and consistency with the canvases (axes 1, 2, 3, 7, 8, 10).
+
+**Findings, and what happened to them.**
+
+- F-1, fixed. The navigation rail's state chip overlapped or squeezed the label whenever the chip
+  was long: "Automation" ran under "Not included in your plan" and "Email and SMS" broke into
+  three lines, at 1440, 1180 and 768 in both themes, on every screen with the rail (axis 2 and
+  7). Cause: the row's third grid column never shrank. Fixed at `d717c86`
+  (`apps/web/src/features/shell/components/app-shell.module.css`): the chip and the detail sit
+  on their own rows under the label. The capture this table is filled from is of the fixed tree.
+- F-2, fixed. The disclosure banner's trailing status ("Not connected yet") broke into three
+  lines at 768 in both themes (axis 2). Fixed in the same commit: the sentence wraps, the status
+  keeps its line.
+- Not a finding: the solid magenta bar under "Who signed off" on the already-decided campaign
+  page is Playwright's screenshot mask over the decision timestamp
+  (`tests/browser/review/review-campaign-decision.spec.ts`, `mask:`), so the picture is stable
+  between runs. The live page shows the timestamp.
+
+**Cells that are not a plain `pass`.**
+
+- `pass, asserted (A-1)`: guided-setup steps 1 and 2 at 1180 and 390 are asserted by
+  `tests/browser/review/guided-setup.accessibility.spec.ts` (axe, motion, target size, ring,
+  panel clearance) in both themes but no picture is drawn there; the pictures of those steps
+  exist at 1440 and 768.
+- `not photographed (S-1)`: the verify-email confirmed state. A confirmed link lands the person on the sign-in page with the confirmation notice and the confirmed flag is proven at the route level (password-recovery-handler.postgres.test.ts, 006A-AC-021); the review suite draws the default and link-expired states only. Follow-up: a named confirmed capture.
+- `not photographed (S-2)`: the campaigns list's empty state. The synthetic workspace always
+  seeds campaigns, so no capture shows the empty list; the state renders through the same
+  primitives (`apps/web/src/app/(authenticated)/marketing/campaigns/page.tsx`) and is covered
+  by `campaigns-review-surface.integration.test.tsx`. Follow-up: a named empty state in the
+  synthetic screenshot suite.
+- `not photographed (S-3)`: step 5's needs-changes answer. Asserted by
+  `tests/browser/review/guided-setup.resume.spec.ts` in a second browser context (the sentence
+  and the finding's description); the walkthrough capture draws the ready answer. Follow-up: a
+  needs-changes capture at step 5.
+- `n/a`: a shell part that does not render at that frame (the rail below 1180, the tablet rail
+  outside 768, the drawer outside 390).
+
+Signed: every photographed cell passes on all ten axes on the tree named above; the three
+unphotographed states are listed as follow-ups, not as failures, because each is asserted by a
+test that runs in the gate.

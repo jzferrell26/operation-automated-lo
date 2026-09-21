@@ -7,10 +7,10 @@ The numbers are user time under PRD-006c D9's model: every value typed one chara
 200 ms, a 4-second reading pause before acting on each screen, and the real
 server round trips. They are not machine time, and they are not a benchmark.
 
-- Date: 2026-09-20
-- Measured against commit: 949424a4588b4a744f71d2cb6345ae92b61521ea, plus the working tree this file was written from
+- Date: 2026-09-21
+- Measured against commit: 74999a8c1ffd2f4432f6bc05eb4d53a1f7096d6f, plus the working tree this file was written from
 - Ceiling: 300 s, from account creation to the last step's Done
-- Measured total: 78.1 s
+- Measured total: 78.0 s
 
 | Step | Measured (s) | Budget (s) | Verdict |
 | --- | --- | --- | --- |
@@ -18,8 +18,8 @@ server round trips. They are not machine time, and they are not a benchmark.
 | 1. Welcome | 4.2 | 10 | within |
 | 2. Your details | 7.2 | 40 | within |
 | 3. Your Realtor partner | 9.7 | 30 | within |
-| 4. Create the Open House Boost | 21.0 | 90 | within |
+| 4. Create the Open House Boost | 20.9 | 90 | within |
 | 5. Read the result | 4.1 | 20 | within |
-| 6. Approve | 4.4 | 20 | within |
+| 6. Approve | 4.5 | 20 | within |
 | 7. What happens next | 4.1 | 10 | within |
-| **Total** | **78.1** | **300** | **within** |
+| **Total** | **78.0** | **300** | **within** |

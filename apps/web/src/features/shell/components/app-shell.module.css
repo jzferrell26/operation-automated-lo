@@ -364,6 +364,8 @@
   }
 
   .syntheticDisclosure strong {
+    /* Its own line under the sentence; it may shrink to fit beside its own margin. */
+    flex: 0 1 auto;
     inline-size: 100%;
     margin-inline-start: calc(var(--space-4) + var(--space-2));
   }

@@ -1,4 +1,6 @@
--- PRD-005b acceptance criteria 005B-AC-001 through 005B-AC-010.
+-- PRD-005b acceptance criteria 005B-AC-001 through 005B-AC-009 and 005B-AC-016,
+-- plus PRD-005a 005A-AC-003 and 005A-AC-011. 005B-AC-010's cases moved to
+-- supabase/tests/password_credentials.pgtap.sql with platform.resolve_review_persona.
 -- Style follows supabase/tests/campaign_activation.pgtap.sql: fixed UUIDs,
 -- `set local role migration_owner` for seeding, and pg_temp.capture_sqlstate
 -- for refusal paths.

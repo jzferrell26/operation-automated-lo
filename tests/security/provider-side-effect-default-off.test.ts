@@ -440,6 +440,12 @@ describe("provider side effects stay disabled by default", () => {
     }
   });
 
+  // productionSourcesMatching walks apps/ and packages/ from disk and reads every .ts/.tsx/.mjs
+  // file, twice over (once per marker), so its wall time tracks filesystem cache state rather
+  // than the code under test. That can run past vitest's 5,000 ms default on a cold disk even
+  // though it finishes in a couple of seconds once the OS has the tree cached. An explicit
+  // budget keeps machine load from reddening this gate; it does not change what the scan
+  // asserts.
   it("has no Stripe charge adapter and no wired lead-routing write transport, and detects either if one appears", async () => {
     expect(registeredProviderOperations).toContain("stripe.entitlement.reconcile");
     expect(await productionSourcesMatching(STRIPE_OUTBOUND_MARKER)).toEqual([]);
@@ -463,5 +469,5 @@ describe("provider side effects stay disabled by default", () => {
 
     expect(leadWritePaths.length).toBeGreaterThan(0);
     expect(leadWritePaths.filter((path) => wiredRoutes.has(path))).toEqual([]);
-  });
+  }, 30_000);
 });

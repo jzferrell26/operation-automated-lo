@@ -314,9 +314,6 @@ function SafeActionContextDetails({
         {decision.state === "uncertain_reconciling" ? (
           <>
             <EvidenceDetail term="Where things stand">{decision.lastSafeState}</EvidenceDetail>
-            <EvidenceDetail term="Support reference" valueClassName={styles.dataText}>
-              {decision.correlationId}
-            </EvidenceDetail>
             <EvidenceDetail term="What to do next">{decision.nextAction}</EvidenceDetail>
           </>
         ) : null}
@@ -334,6 +331,22 @@ function SafeActionContextDetails({
           </>
         ) : null}
       </dl>
+      {decision.state === "uncertain_reconciling" ? (
+        /*
+         * The support reference is real but nobody reads it: it is what support asks for
+         * (PRD-006b D8). It gets its own collapsed region, closed by default, with
+         * `data-support-details` so the rendered-output guard can subtract it before checking
+         * that no identifier appears anywhere else on the page.
+         */
+        <details data-support-details>
+          <summary>Details for support</summary>
+          <dl className={styles.explanationDetails}>
+            <EvidenceDetail term="Support reference" valueClassName={styles.dataText}>
+              {decision.correlationId}
+            </EvidenceDetail>
+          </dl>
+        </details>
+      ) : null}
     </div>
   );
 }

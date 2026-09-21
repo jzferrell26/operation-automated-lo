@@ -264,11 +264,12 @@ export function GuidedSetupStep({
      * no reason. The panel stays where it is and the next attach re-measures.
      */
     let layoutObserver: ResizeObserver | undefined;
+    let settleAttached = () => undefined as void;
 
     function detach(): void {
       if (attached === undefined) return;
       attached.removeAttribute("data-guided-setup-highlight");
-      window.removeEventListener("resize", update);
+      window.removeEventListener("resize", settleAttached);
       window.removeEventListener("scroll", update, true);
       layoutObserver?.disconnect();
       layoutObserver = undefined;
@@ -296,12 +297,15 @@ export function GuidedSetupStep({
         if (delta !== 0) window.scrollBy({ behavior: "auto", top: delta });
         update();
       };
+      settleAttached = settle;
       settle();
       if (returnFocusRef.current) {
         returnFocusRef.current = false;
         focusFirstControl(element);
       }
-      window.addEventListener("resize", update);
+      // A frame change is a placement change: the element is brought clear again, not only
+      // re-measured, which is what D7 promises whatever size the window has just become.
+      window.addEventListener("resize", settleAttached);
       window.addEventListener("scroll", update, true);
       /**
        * The scroll above is right for the layout at the instant of the attach, and the layout is

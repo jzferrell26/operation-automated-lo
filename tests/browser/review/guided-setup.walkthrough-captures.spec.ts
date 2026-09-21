@@ -69,6 +69,11 @@ function panel(page: Page) {
  * on the page (its form is inside the panel) has no highlighted element and passes through.
  */
 async function expectAnchoredElementClearOfThePanel(page: Page): Promise<void> {
+  // The theme control was just clicked in the sticky header; whatever that did to the scroll
+  // position, a frame event makes the step bring its element clear again before the picture.
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("resize"));
+  });
   await page.waitForFunction(
     () => {
       const element = document.querySelector("[data-guided-setup-highlight='true']");

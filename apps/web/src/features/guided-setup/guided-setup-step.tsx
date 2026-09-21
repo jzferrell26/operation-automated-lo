@@ -263,11 +263,15 @@ export function GuidedSetupStep({
      * resting placement for a frame and then move it again, which is a jump a person would see for
      * no reason. The panel stays where it is and the next attach re-measures.
      */
+    let layoutObserver: ResizeObserver | undefined;
+
     function detach(): void {
       if (attached === undefined) return;
       attached.removeAttribute("data-guided-setup-highlight");
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
+      layoutObserver?.disconnect();
+      layoutObserver = undefined;
       attached = undefined;
       update = () => undefined as void;
     }
@@ -283,19 +287,40 @@ export function GuidedSetupStep({
       };
       // D7. The element is brought into the space the panel is not using before anything is
       // measured, so the numbers the panel is placed from are the ones the user will see.
-      const delta = resolveAnchorScroll(rectOf(element), panelSize, {
-        blockStart: stickyHeaderInset(),
-        height: window.innerHeight,
-        width: window.innerWidth,
-      });
-      if (delta !== 0) window.scrollBy({ behavior: "auto", top: delta });
-      update();
+      const settle = (): void => {
+        const delta = resolveAnchorScroll(rectOf(element), panelSize, {
+          blockStart: stickyHeaderInset(),
+          height: window.innerHeight,
+          width: window.innerWidth,
+        });
+        if (delta !== 0) window.scrollBy({ behavior: "auto", top: delta });
+        update();
+      };
+      settle();
       if (returnFocusRef.current) {
         returnFocusRef.current = false;
         focusFirstControl(element);
       }
       window.addEventListener("resize", update);
       window.addEventListener("scroll", update, true);
+      /**
+       * The scroll above is right for the layout at the instant of the attach, and the layout is
+       * not finished then: a font swap, a late card, or the room this step adds at the page's end
+       * moves the element after the fact, and a scroll that was correct a frame ago leaves it under
+       * the panel. Measured on 2026-09-21 by the runner's comparison of step 6 at 1440: the same
+       * tree gave two pictures, one with the approve card scrolled clear and one with it under the
+       * panel, depending on whether the layout had finished when the step attached. The observer
+       * re-runs the same scroll whenever the element or the document changes size; the scroll asks
+       * for zero once the element is clear, so it converges and never fights a person's own scroll,
+       * which changes no size.
+       */
+      if (typeof ResizeObserver === "function") {
+        layoutObserver = new ResizeObserver(() => {
+          settle();
+        });
+        layoutObserver.observe(element);
+        layoutObserver.observe(document.body);
+      }
     }
 
     function attachIfPresent(): boolean {

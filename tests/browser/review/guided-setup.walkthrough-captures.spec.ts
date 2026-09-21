@@ -60,6 +60,34 @@ function panel(page: Page) {
 }
 
 /**
+ * The step has finished scrolling its element clear of the panel.
+ *
+ * The walkthrough scrolls the page when a step attaches and again whenever the layout around
+ * the element settles (a font swap, a late card, the room the panel adds at the page's end).
+ * Measured on 2026-09-21: the runner's comparison of step 6 at 1440 caught the picture between
+ * those two scrolls, with the approve card still under the panel. A step that points at nothing
+ * on the page (its form is inside the panel) has no highlighted element and passes through.
+ */
+async function expectAnchoredElementClearOfThePanel(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const element = document.querySelector("[data-guided-setup-highlight='true']");
+      const layer = document.querySelector("[data-guided-setup-layer] [role='dialog']");
+      if (element === null) return true;
+      if (layer === null) return false;
+      const a = element.getBoundingClientRect();
+      const b = layer.getBoundingClientRect();
+      const inside = a.top >= 0 && a.bottom <= window.innerHeight;
+      const apart =
+        a.bottom <= b.top || a.top >= b.bottom || a.right <= b.left || a.left >= b.right;
+      return inside && apart;
+    },
+    undefined,
+    { timeout: 15_000 },
+  );
+}
+
+/**
  * One step, at all four frames, in both themes.
  *
  * The capture is of the viewport rather than the whole page. The panel is a fixed layer placed
@@ -72,6 +100,7 @@ async function captureStep(page: Page, state: string): Promise<void> {
     await page.setViewportSize({ width: 1440, height: 900 });
     await chooseThemeFromTheHeader(page, theme);
     await expect(panel(page)).toBeVisible();
+    await expectAnchoredElementClearOfThePanel(page);
     await captureNamedState(page, {
       screen: "guided-setup",
       state,

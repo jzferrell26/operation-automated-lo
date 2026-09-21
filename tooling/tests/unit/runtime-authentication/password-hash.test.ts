@@ -109,6 +109,12 @@ describe("reading a scrypt hash", () => {
    * Nothing in this product writes a scrypt hash. The shape stays readable so a hash written by
    * an older or a fallback derivation verifies instead of locking a person out.
    */
+  // N=2**17 (131,072) with r=8 costs roughly 128 * N * r bytes of memory to derive (~128 MiB)
+  // and the matching CPU work, deliberately, because these are the OWASP-minimum scrypt
+  // parameters. That derivation alone can run past vitest's 5,000 ms default on a loaded
+  // machine even though it finishes in well under a second in isolation, so this case gets an
+  // explicit budget instead of inheriting the default. It does not change what the case
+  // verifies.
   it("verifies a scrypt string written by the OWASP-minimum parameters", () => {
     const salt = Buffer.alloc(16, 0x11);
     const derived = scryptSync(Buffer.from(PASSWORD, "utf8"), salt, 64, {
@@ -128,7 +134,7 @@ describe("reading a scrypt hash", () => {
     expect(isStoredPasswordHash(stored)).toBe(true);
     expect(verifyPassword(stored, PASSWORD)).toBe(true);
     expect(verifyPassword(stored, "something else entirely")).toBe(false);
-  });
+  }, 20_000);
 });
 
 describe("passwordNeedsRehash", () => {

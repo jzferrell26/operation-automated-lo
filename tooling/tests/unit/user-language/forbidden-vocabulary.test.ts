@@ -322,6 +322,11 @@ function report(strings: readonly CopyString[]): readonly string[] {
 }
 
 describe("user-language guard, source level", () => {
+  // collectAllCopyStrings walks every SCANNED_ROOTS directory from disk, parses each file into
+  // a syntax tree, and reads every SCANNED_FILES entry, so its wall time tracks filesystem
+  // cache state rather than the code under test. That can run past vitest's 5,000 ms default
+  // on a cold disk. An explicit budget keeps machine load from reddening this gate; it does
+  // not change what the scan asserts.
   it("scans every file that can put words on a screen", async () => {
     const strings = await collectAllCopyStrings();
     const files = new Set(strings.map((entry) => entry.file));
@@ -332,12 +337,12 @@ describe("user-language guard, source level", () => {
     expect(files.has("packages/ui/src/components/metric.tsx")).toBe(true);
     expect(files.has("apps/web/src/copy/auth-messages.ts")).toBe(true);
     /**
-     * The unauthenticated page under `apps/web/src/app/public`. D6's exclusion list does not name
-     * it, and it used to be excluded anyway, which let two operator sentences sit on the one URL
-     * in the product that needs no sign-in to read.
+     * The unauthenticated page under `apps/web/src/app/public`. D6's exclusion list does not
+     * name it, and it used to be excluded anyway, which let two operator sentences sit on the
+     * one URL in the product that needs no sign-in to read.
      */
     expect(files.has("apps/web/src/app/public/synthetic-open-house-v3/page.tsx")).toBe(true);
-  });
+  }, 30_000);
 
   it("states a reason for every path it does not read", () => {
     expect(EXCLUDED.every((entry) => entry.because.length > 20)).toBe(true);
@@ -452,9 +457,12 @@ describe("user-language guard, source level", () => {
     ).toEqual([]);
   });
 
+  // Same whole-tree walk as "scans every file that can put words on a screen" above, run a
+  // second time through collectAllCopyStrings; see that case's comment for the timeout budget
+  // rationale.
   it("finds no forbidden word in any user-facing string in the product", async () => {
     expect(report(await collectAllCopyStrings())).toEqual([]);
-  });
+  }, 30_000);
 
   it("bans every term, shape, and dash the contract names", () => {
     expect(FORBIDDEN_TERMS.length).toBeGreaterThan(40);

@@ -60,35 +60,44 @@ function panel(page: Page) {
 }
 
 /**
- * The step has finished scrolling its element clear of the panel.
+ * The step has finished scrolling for this frame.
  *
- * The walkthrough scrolls the page when a step attaches and again whenever the layout around
- * the element settles (a font swap, a late card, the room the panel adds at the page's end).
- * Measured on 2026-09-21: the runner's comparison of step 6 at 1440 caught the picture between
- * those two scrolls, with the approve card still under the panel. A step that points at nothing
- * on the page (its form is inside the panel) has no highlighted element and passes through.
+ * The walkthrough scrolls the page when a step attaches and again whenever the frame or the
+ * layout around the element changes. Measured on 2026-09-21: the runner's comparison of step 6
+ * at 1440 caught the picture between the attach and that later scroll, with the approve card
+ * still under the panel, and a wait on the element's geometry proved wrong at step 5, whose
+ * element is taller than the space beside the panel by design (the model keeps its top). So the
+ * capture asks the step to settle for the frame it is in (a resize is a placement change) and
+ * then waits for the scroll position to hold still for six frames, which is what the picture
+ * needs: the same scroll every time, taken after the last movement.
  */
-async function expectAnchoredElementClearOfThePanel(page: Page): Promise<void> {
-  // The theme control was just clicked in the sticky header; whatever that did to the scroll
-  // position, a frame event makes the step bring its element clear again before the picture.
-  await page.evaluate(() => {
-    window.dispatchEvent(new Event("resize"));
-  });
-  await page.waitForFunction(
-    () => {
-      const element = document.querySelector("[data-guided-setup-highlight='true']");
-      const layer = document.querySelector("[data-guided-setup-layer] [role='dialog']");
-      if (element === null) return true;
-      if (layer === null) return false;
-      const a = element.getBoundingClientRect();
-      const b = layer.getBoundingClientRect();
-      const inside = a.top >= 0 && a.bottom <= window.innerHeight;
-      const apart =
-        a.bottom <= b.top || a.top >= b.bottom || a.right <= b.left || a.left >= b.right;
-      return inside && apart;
-    },
-    undefined,
-    { timeout: 15_000 },
+async function expectStepHasSettled(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        window.dispatchEvent(new Event("resize"));
+        const started = performance.now();
+        let last = window.scrollY;
+        let still = 0;
+        const tick = (): void => {
+          if (window.scrollY === last) {
+            still += 1;
+          } else {
+            still = 0;
+            last = window.scrollY;
+          }
+          if (still >= 6) {
+            resolve();
+            return;
+          }
+          if (performance.now() - started > 10_000) {
+            reject(new Error("the walkthrough kept scrolling for ten seconds"));
+            return;
+          }
+          window.requestAnimationFrame(tick);
+        };
+        window.requestAnimationFrame(tick);
+      }),
   );
 }
 
@@ -105,7 +114,7 @@ async function captureStep(page: Page, state: string): Promise<void> {
     await page.setViewportSize({ width: 1440, height: 900 });
     await chooseThemeFromTheHeader(page, theme);
     await expect(panel(page)).toBeVisible();
-    await expectAnchoredElementClearOfThePanel(page);
+    await expectStepHasSettled(page);
     await captureNamedState(page, {
       screen: "guided-setup",
       state,

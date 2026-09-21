@@ -760,6 +760,35 @@ export async function settleForScreenshot(
 }
 
 /**
+ * A full-page picture of a nine-thousand-pixel page is captured at least twice and compared once
+ * before the expectation can pass, and on the throttled runner each of those takes seconds. Five
+ * seconds, the suite's default, was measured too short on 2026-09-21: the first attempt on every
+ * reports page picture ended with two captures taken and no third to confirm the second. This is
+ * room for three captures and two comparisons with a margin.
+ */
+export const FULL_PAGE_SCREENSHOT_TIMEOUT_MS = 20_000;
+
+/**
+ * One full-page capture whose picture is thrown away, taken before the one that is compared.
+ *
+ * Measured on `ubuntu-24.04` on 2026-09-21, six attempts across two runs of `ci.yml`, on every
+ * reports page picture: the first full-page capture of a page measured 99 pixels taller than the
+ * page is, the whole difference being empty canvas after the last card, and the second capture
+ * was the page's height and identical to its baseline pixel for pixel. `toHaveScreenshot` wants
+ * two consecutive captures that agree before it compares, so the first attempt on a tall page was
+ * always spent, and the five seconds the expectation had were gone before a third capture could
+ * confirm the second. The baselines were drawn by the same expectation in its writing mode, which
+ * also waits for two captures to agree, so they hold the settled height; the comparison has to
+ * reach the same state, and this is the capture that gets it there. What Chromium does with the
+ * first capture beyond the viewport is not explained here, only measured: the extra height was
+ * the shell's sticky header and disclosure banner on every attempt, and the workstation never
+ * shows it.
+ */
+export async function warmFullPageCapture(page: Page): Promise<void> {
+  await page.screenshot({ fullPage: true });
+}
+
+/**
  * PRD-006d D3 and D8. One named state, captured at every frame the rubric scores it at, with the
  * same four machine checks the default states already get at every cell.
  *
@@ -800,10 +829,13 @@ export async function captureNamedState(
     await expectAxeClean(page, input.axe ?? {});
     await expectNoHorizontalOverflow(page);
     await expectTargetsAreLargeEnough(page);
+    const fullPage = input.fullPage ?? true;
+    if (fullPage) await warmFullPageCapture(page);
     await expect(page).toHaveScreenshot(
       screenshotName(input.screen, frame.name, input.theme, input.state),
       {
-        fullPage: input.fullPage ?? true,
+        fullPage,
+        ...(fullPage ? { timeout: FULL_PAGE_SCREENSHOT_TIMEOUT_MS } : {}),
         ...(input.mask === undefined ? {} : { mask: [...input.mask] }),
       },
     );

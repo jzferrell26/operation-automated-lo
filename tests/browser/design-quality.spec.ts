@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
+  FULL_PAGE_SCREENSHOT_TIMEOUT_MS,
   REVIEW_FRAMES,
   captureNamedState,
   expectAxeClean,
@@ -12,6 +13,7 @@ import {
   screenshotName,
   settleForScreenshot,
   useStoredTheme,
+  warmFullPageCapture,
   type ReviewTheme,
 } from "./helpers/design-quality.js";
 import {
@@ -110,8 +112,10 @@ for (const { screen, path } of SYNTHETIC_SCREENS) {
         await expectTargetsAreLargeEnough(page);
         // Axes 1, 2, 3, 8 and 10, as far as a machine can hold them: the whole composition is
         // compared against a committed baseline, so any of them moving is a failure with a picture.
+        await warmFullPageCapture(page);
         await expect(page).toHaveScreenshot(screenshotName(screen, frame.name, theme), {
           fullPage: true,
+          timeout: FULL_PAGE_SCREENSHOT_TIMEOUT_MS,
         });
 
         expect(externalRequests).toEqual([]);

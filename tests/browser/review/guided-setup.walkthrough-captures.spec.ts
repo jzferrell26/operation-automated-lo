@@ -82,9 +82,19 @@ async function expectStepHasSettled(page: Page): Promise<void> {
         // depends on what the layout did between the attach and the picture (measured on
         // 2026-09-21: the runner's step 6 at 1440 differed from its baseline by the height the
         // header gained when its font arrived).
-        document
-          .querySelector("[data-guided-setup-highlight='true']")
-          ?.scrollIntoView({ behavior: "instant", block: "start" });
+        const highlighted = document.querySelector("[data-guided-setup-highlight='true']");
+        if (highlighted === null) {
+          // A step that points at nothing on the page (step 7 is anchored to its own panel)
+          // scrolls nothing itself, so the frame would hold whatever the previous step left and
+          // whatever the browser's clamp did to it when the page's length changed: the room the
+          // panel reserves below the content follows the panel's measured size, which arrives
+          // after the step opens. Measured on 2026-09-21: the runner's step 7 at 1440 sat 426
+          // pixels below its baseline, at the very end of the page. The top of the page is the
+          // one start that does not depend on the page's length.
+          window.scrollTo({ behavior: "instant", top: 0 });
+        } else {
+          highlighted.scrollIntoView({ behavior: "instant", block: "start" });
+        }
         window.dispatchEvent(new Event("resize"));
         const started = performance.now();
         let last = window.scrollY;

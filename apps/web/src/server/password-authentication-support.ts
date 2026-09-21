@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { FIRST_PARTY_SESSION_COOKIE, hashPassword } from "@oalo/auth";
 import type { PostgresDatabasePool } from "@oalo/db";
 
@@ -269,14 +271,75 @@ export function createFetchRecorder(): FetchRecorder {
   };
 }
 
+/** The digest a handler keys a credential token by: `sha256Hex` in the handler, the same here. */
+export function tokenHashOf(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+const LOG_LEVELS = Object.freeze(["debug", "error", "info", "log", "warn"] as const);
+
+function renderLogArgument(value: unknown): string {
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value) ?? String(value);
+  } catch {
+    return String(value);
+  }
+}
+
 /**
- * Everything a proof must never find in a response, a cookie, or an audit row. The session secret
- * is the one exception a caller adds per case, because it legitimately appears in `Set-Cookie`.
+ * Everything the auth path writes to the console while `work` runs, as one string.
+ *
+ * 006A-AC-031 names a log line as one of the three surfaces a secret must never reach, and the
+ * auth path logs through `console` and through nothing else: `clientAddressFor` warns once per
+ * process when neither forwarded header is present, and `runtime-authentication` reports a
+ * composition failure by variable name. There is no logger port to inject, so capturing `console`
+ * is capturing the log.
+ *
+ * Every level is taken rather than the two that are used today, because a line added later at a
+ * level this helper skipped would be a surface the scan quietly stopped covering.
  */
-export function assertNoSecretsIn(haystack: string, secrets: readonly string[]): void {
-  for (const secret of secrets) {
-    if (secret.length > 0 && haystack.includes(secret)) {
-      throw new Error("A secret reached a response, a log line, or an audit row");
+export async function withCapturedLogLines<T>(
+  work: () => Promise<T>,
+): Promise<Readonly<{ value: T; logLines: string }>> {
+  const lines: string[] = [];
+  const originals = LOG_LEVELS.map((level) => Object.freeze([level, console[level]] as const));
+  for (const level of LOG_LEVELS) {
+    console[level] = (...args: readonly unknown[]): void => {
+      lines.push(args.map(renderLogArgument).join(" "));
+    };
+  }
+  try {
+    return Object.freeze({ value: await work(), logLines: lines.join("\n") });
+  } finally {
+    for (const [level, original] of originals) console[level] = original;
+  }
+}
+
+/** The three surfaces 006A-AC-031 names, each rendered as one string a scan can read. */
+export interface ScannedSurfaces {
+  readonly auditRows: string;
+  readonly logLines: string;
+  readonly responseBody: string;
+}
+
+/**
+ * 006A-AC-031's scan. Every named secret is looked for on every named surface.
+ *
+ * The secrets are named rather than listed, and so are the surfaces, because "a secret leaked" is
+ * a message somebody has to re-derive before they can act on it: which value reached which surface
+ * is the whole of what the failure has to say. The session secret is the one value with a
+ * legitimate home, the `Set-Cookie` header, so a caller passes the response body without it.
+ */
+export function assertNoSecretOnAnySurface(
+  surfaces: Readonly<ScannedSurfaces>,
+  secrets: Readonly<Record<string, string>>,
+): void {
+  for (const [surface, haystack] of Object.entries(surfaces)) {
+    for (const [name, secret] of Object.entries(secrets)) {
+      if (secret.length > 0 && haystack.includes(secret)) {
+        throw new Error(`006A-AC-031: the ${name} reached the ${surface}`);
+      }
     }
   }
 }

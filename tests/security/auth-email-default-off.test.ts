@@ -1,8 +1,22 @@
+import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { extname, join, relative, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { RESET_PASSWORD_EMAIL, VERIFY_EMAIL_EMAIL } from "../../apps/web/src/copy/auth-messages.js";
+import type {
+  CampaignCommandPorts,
+  FirstPartySessionIssuance,
+} from "../../apps/web/src/server/authenticated-principal.js";
+import type {
+  AuthRateLimitScope,
+  CredentialPort,
+  CredentialTokenPurpose,
+  EmailDeliveryAction,
+  RegisterAccountOutcome,
+  SignInBinding,
+} from "../../apps/web/src/server/credential-ports.js";
 import { createNotConfiguredEmailAdapter } from "../../apps/web/src/server/email/not-configured-email-adapter.js";
 import {
   RESEND_SEND_ENDPOINT,
@@ -12,10 +26,14 @@ import {
   emailDeliveryResult,
   emailDeliverySubject,
   type TransactionalEmailMessage,
+  type TransactionalEmailPort,
 } from "../../apps/web/src/server/email/transactional-email.js";
 import {
   flushAuthBackgroundWork,
+  handleForgotPassword,
+  handlePasswordSignUp,
   handleResendVerificationEmail,
+  handleResetPassword,
 } from "../../apps/web/src/server/password-authentication-handler.js";
 import { resolveRuntimeAuthenticationComposition } from "../../apps/web/src/server/runtime-authentication.js";
 
@@ -258,6 +276,380 @@ describe("the resend control with no email variables set (006A-AC-025)", () => {
     } finally {
       globalThis.fetch = original;
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The three flows 006A-AC-025 names, driven
+// ---------------------------------------------------------------------------
+
+/**
+ * 006A-AC-025 names sign-up, forgot-password and reset, and the cases above drive none of them.
+ * The resend case refuses on a missing session cookie before any send could be reached, so its
+ * zero is a zero the route never had the chance to spend, and a criterion answered that way is
+ * answered by the refusal rather than by the default.
+ *
+ * These cases walk the three flows in the order one person walks them, against in-memory ports.
+ * The database is the only thing replaced. The email port is not: it is read out of the product's
+ * own `resolveRuntimeAuthenticationComposition` under each environment, so what decides whether a
+ * message is handed to a provider is the D6 composition and never a stand-in this file wrote.
+ *
+ * Both halves are needed. With neither variable set the fake `fetch` must be untouched; with both
+ * set the same drive must reach the provider twice, once for the confirmation message sign-up
+ * sends and once for the reset link. Without the second half the first proves nothing, because a
+ * drive that never reaches a send point also makes no network request.
+ */
+
+const OFFLINE_PASSWORD = "a settled harbour lantern";
+const OFFLINE_NEW_PASSWORD = "a brighter harbour lantern";
+const OFFLINE_EMAIL = "offline-newcomer@oalo.invalid";
+const OFFLINE_USER_ID = "00000000-0000-4000-8000-0000000000a1";
+const OFFLINE_LOCATION_ID = "00000000-0000-4000-8000-0000000000b1";
+
+const SIGN_UP_ENABLED_ENVIRONMENT = Object.freeze({
+  ...BASE_ENVIRONMENT,
+  OALO_SELF_SERVE_SIGNUP: "enabled",
+});
+
+const OFFLINE_BINDING: SignInBinding = Object.freeze({
+  locationId: OFFLINE_LOCATION_ID,
+  locationDisplayName: "Offline workspace",
+  bindingRole: "location_admin",
+});
+
+function sha256Hex(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+/** A method the three flows never take. Reaching one means the drive took a path it should not. */
+function unreachable(method: string): never {
+  throw new Error(`The 006A-AC-025 drive must not reach ${method}`);
+}
+
+interface IssuedTokenRecord {
+  readonly purpose: CredentialTokenPurpose;
+  readonly tokenHash: string;
+}
+
+interface DeliveryRecord {
+  readonly action: EmailDeliveryAction;
+  readonly result: "success" | "failed";
+  readonly subjectId: string;
+}
+
+interface OfflineStore {
+  readonly registered: string[];
+  readonly limits: AuthRateLimitScope[];
+  readonly issuedTokens: IssuedTokenRecord[];
+  readonly liveTokens: Map<string, CredentialTokenPurpose>;
+  readonly deliveries: DeliveryRecord[];
+  readonly issuedBy: FirstPartySessionIssuance["issuedBy"][];
+  readonly passwordReasons: string[];
+  passwordHash: string;
+}
+
+function createOfflineStore(): OfflineStore {
+  return {
+    registered: [],
+    limits: [],
+    issuedTokens: [],
+    liveTokens: new Map<string, CredentialTokenPurpose>(),
+    deliveries: [],
+    issuedBy: [],
+    passwordReasons: [],
+    passwordHash: "",
+  };
+}
+
+/** A uuid-shaped token id, because the Resend adapter sends it as the idempotency key. */
+function offlineTokenId(sequence: number): string {
+  return `00000000-0000-4000-8000-${String(sequence).padStart(12, "0")}`;
+}
+
+function createOfflineCredentialPort(store: OfflineStore): CredentialPort {
+  return {
+    async lookupCredential(emailNormalized: string) {
+      if (!store.registered.includes(emailNormalized)) return undefined;
+      return Object.freeze({
+        userId: OFFLINE_USER_ID,
+        passwordHash: store.passwordHash,
+        lockedUntilEpochSeconds: undefined,
+        failedAttemptCount: 0,
+        emailVerified: false,
+      });
+    },
+    lookupCredentialForUser: () => unreachable("lookupCredentialForUser"),
+    unverifiedEmailDisplayForUser: () => unreachable("unverifiedEmailDisplayForUser"),
+    async listSignInBindings() {
+      return Object.freeze([OFFLINE_BINDING]);
+    },
+    recordSignInFailure: () => unreachable("recordSignInFailure"),
+    recordSignInSuccess: () => unreachable("recordSignInSuccess"),
+    async issueToken(input) {
+      store.issuedTokens.push({ purpose: input.purpose, tokenHash: input.tokenHash });
+      store.liveTokens.set(input.tokenHash, input.purpose);
+      return offlineTokenId(store.issuedTokens.length);
+    },
+    async consumeToken(input) {
+      if (store.liveTokens.get(input.tokenHash) !== input.purpose) return undefined;
+      store.liveTokens.delete(input.tokenHash);
+      return Object.freeze({ userId: OFFLINE_USER_ID, tokenId: offlineTokenId(0) });
+    },
+    async setPassword(input) {
+      store.passwordReasons.push(input.reason);
+      store.passwordHash = input.passwordHash;
+      return 0;
+    },
+    revokeAllSessions: () => unreachable("revokeAllSessions"),
+    async registerAccount(input): Promise<RegisterAccountOutcome> {
+      if (store.registered.includes(input.emailNormalized)) {
+        return Object.freeze({ registered: false as const, reason: "duplicate_email" as const });
+      }
+      store.registered.push(input.emailNormalized);
+      store.passwordHash = input.passwordHash;
+      return Object.freeze({
+        registered: true as const,
+        account: Object.freeze({
+          userId: OFFLINE_USER_ID,
+          locationId: OFFLINE_LOCATION_ID,
+          installationId: offlineTokenId(1),
+          bindingId: offlineTokenId(2),
+        }),
+      });
+    },
+    markEmailVerified: () => unreachable("markEmailVerified"),
+    async recordEmailDelivery(input) {
+      store.deliveries.push({
+        action: input.action,
+        result: input.result,
+        subjectId: input.subjectId,
+      });
+      return true;
+    },
+    async consumeRateLimit(input) {
+      store.limits.push(input.scope);
+      return true;
+    },
+  };
+}
+
+function createOfflinePorts(
+  store: OfflineStore,
+  transactionalEmail: TransactionalEmailPort | undefined,
+): CampaignCommandPorts {
+  return Object.freeze({
+    identityDirectory: {
+      resolveLocationId: () => unreachable("resolveLocationId"),
+      resolveActorId: () => unreachable("resolveActorId"),
+    },
+    roleBindings: { currentRoleVersion: () => unreachable("currentRoleVersion") },
+    mutation: Object.freeze({
+      expectedHost: REVIEW_HOST,
+      allowedBrowserOrigins: Object.freeze([REVIEW_ORIGIN]),
+      csrfServerSecret: new Uint8Array(32).fill(7),
+    }),
+    sessionIssuance: {
+      async issue(input: Readonly<FirstPartySessionIssuance>) {
+        store.issuedBy.push(input.issuedBy);
+        return offlineTokenId(3);
+      },
+      revoke: () => unreachable("revoke"),
+      recordDeniedAttempt: () => unreachable("recordDeniedAttempt"),
+    },
+    credentials: createOfflineCredentialPort(store),
+    ...(transactionalEmail === undefined ? {} : { transactionalEmail }),
+  });
+}
+
+interface RecordedCall {
+  readonly url: string;
+  readonly init: RequestInit;
+}
+
+/**
+ * The fake `fetch`. It records every attempt before it decides what to do, so a case asserts the
+ * count rather than leaning on a throw reaching an assertion: the Resend adapter deliberately
+ * swallows a thrown `fetch` into `provider_error`, and a proof built on the throw would pass for
+ * the wrong reason.
+ */
+async function underFakeFetch<T>(
+  answer: "refuse" | "accept",
+  work: () => Promise<T>,
+): Promise<Readonly<{ value: T; calls: readonly RecordedCall[] }>> {
+  const calls: RecordedCall[] = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: string, init: RequestInit) => {
+    calls.push({ url: String(input), init });
+    if (answer === "refuse") {
+      throw new Error("No auth flow may reach the network with no email variables set");
+    }
+    return new Response(JSON.stringify({ id: `resend-message-id-000${String(calls.length)}` }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof globalThis.fetch;
+  try {
+    return Object.freeze({ value: await work(), calls });
+  } finally {
+    globalThis.fetch = original;
+  }
+}
+
+function offlineRequest(path: string, body: unknown, clientAddress: string): Request {
+  return new Request(`${REVIEW_ORIGIN}${path}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      origin: REVIEW_ORIGIN,
+      host: REVIEW_HOST,
+      "x-forwarded-for": clientAddress,
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+/** The live reset token, matched to the hash the handler handed `issueToken`. */
+function resetTokenFrom(store: OfflineStore, minted: readonly string[]): string {
+  const issued = store.issuedTokens.find((record) => record.purpose === "password_reset");
+  const token = minted.find((candidate) => sha256Hex(candidate) === issued?.tokenHash);
+  if (token === undefined) throw new Error("forgot-password minted no password_reset token");
+  return token;
+}
+
+interface FlowRun {
+  readonly store: OfflineStore;
+  readonly signUp: Response;
+  readonly forgot: Response;
+  readonly reset: Response;
+  readonly emailConfigured: boolean;
+}
+
+/**
+ * Sign-up, then forgot-password, then reset, under the composition `environment` selects.
+ *
+ * The URL tokens are injected through the handlers' own `randomUrlToken` dependency rather than
+ * read back out of a message, because with no sending domain there is no message to read one out
+ * of, and reset has to hold the very token forgot-password minted or it refuses before it reaches
+ * any work of its own.
+ */
+async function driveTheThreeFlows(environment: Readonly<Record<string, string>>): Promise<FlowRun> {
+  const transactionalEmail =
+    resolveRuntimeAuthenticationComposition(environment).ports.transactionalEmail;
+  const store = createOfflineStore();
+  const ports = createOfflinePorts(store, transactionalEmail);
+  const minted: string[] = [];
+  const dependencies = {
+    randomUrlToken: () => {
+      const token = `offline-url-token-${String(minted.length)}`;
+      minted.push(token);
+      return token;
+    },
+  };
+
+  const signUp = await handlePasswordSignUp(
+    offlineRequest(
+      "/api/auth/sign-up",
+      { name: "Offline Newcomer", email: OFFLINE_EMAIL, password: OFFLINE_PASSWORD },
+      "203.0.113.1",
+    ),
+    environment,
+    ports,
+    dependencies,
+  );
+  await flushAuthBackgroundWork();
+
+  const forgot = await handleForgotPassword(
+    offlineRequest("/api/auth/forgot-password", { email: OFFLINE_EMAIL }, "203.0.113.2"),
+    environment,
+    ports,
+    dependencies,
+  );
+  await flushAuthBackgroundWork();
+
+  const reset = await handleResetPassword(
+    offlineRequest(
+      "/api/auth/reset-password",
+      {
+        token: resetTokenFrom(store, minted),
+        password: OFFLINE_NEW_PASSWORD,
+        confirmPassword: OFFLINE_NEW_PASSWORD,
+      },
+      "203.0.113.3",
+    ),
+    environment,
+    ports,
+    dependencies,
+  );
+  await flushAuthBackgroundWork();
+
+  return Object.freeze({
+    store,
+    signUp,
+    forgot,
+    reset,
+    emailConfigured: transactionalEmail?.configured === true,
+  });
+}
+
+describe("sign-up, forgot-password and reset with no email variables set (006A-AC-025)", () => {
+  it("drives all three flows to their send points and never calls fetch", async () => {
+    const { value: run, calls } = await underFakeFetch("refuse", () =>
+      driveTheThreeFlows(SIGN_UP_ENABLED_ENVIRONMENT),
+    );
+
+    expect(calls).toEqual([]);
+    expect(run.emailConfigured).toBe(false);
+
+    // Each flow got as far as it can get, so the zero above is the deployment's answer rather
+    // than a drive that stopped short of the place a message would have gone out.
+    expect(run.signUp.status).toBe(200);
+    expect(await run.signUp.clone().json()).toEqual({ next: "/overview" });
+    expect(run.store.registered).toEqual([OFFLINE_EMAIL]);
+    expect(run.forgot.status).toBe(200);
+    expect(await run.forgot.clone().text()).toBe('{"state":"sent"}');
+    expect(run.reset.status).toBe(200);
+    expect(await run.reset.clone().json()).toEqual({ next: "/overview?passwordReset=1" });
+    expect(run.store.passwordReasons).toEqual(["reset"]);
+    expect(run.store.issuedBy).toEqual(["password_sign_in", "password_reset"]);
+    expect(run.store.limits).toEqual(["sign_up_ip", "forgot_ip", "forgot_email", "reset_ip"]);
+
+    // 006A-AC-021. No sending domain means no confirmation token was minted at all, and the one
+    // audit row a reset request leaves behind says why nothing went out.
+    expect(run.store.issuedTokens.map((record) => record.purpose)).toEqual(["password_reset"]);
+    expect(run.store.deliveries).toEqual([
+      { action: "auth.reset-email", result: "failed", subjectId: "not_configured" },
+    ]);
+  });
+
+  it("reaches the provider twice under the same drive once both variables are set", async () => {
+    const { value: run, calls } = await underFakeFetch("accept", () =>
+      driveTheThreeFlows({
+        ...SIGN_UP_ENABLED_ENVIRONMENT,
+        OALO_RESEND_API_KEY: RESEND_KEY,
+        OALO_EMAIL_FROM: "no-reply@oalo.invalid",
+      }),
+    );
+
+    expect(run.emailConfigured).toBe(true);
+    expect(calls.map((call) => call.url)).toEqual([RESEND_SEND_ENDPOINT, RESEND_SEND_ENDPOINT]);
+    expect(
+      calls.map((call) => (call.init.headers as Record<string, string>)["authorization"]),
+    ).toEqual([`Bearer ${RESEND_KEY}`, `Bearer ${RESEND_KEY}`]);
+    expect(
+      calls.map((call) => (JSON.parse(String(call.init.body)) as { subject: string }).subject),
+    ).toEqual([VERIFY_EMAIL_EMAIL.subject, RESET_PASSWORD_EMAIL.subject]);
+
+    // The same three responses, and two audited sends where the case above had one unsent row.
+    expect(run.signUp.status).toBe(200);
+    expect(run.forgot.status).toBe(200);
+    expect(run.reset.status).toBe(200);
+    expect(run.store.issuedTokens.map((record) => record.purpose)).toEqual([
+      "email_verification",
+      "password_reset",
+    ]);
+    expect(run.store.deliveries.map((delivery) => `${delivery.action}:${delivery.result}`)).toEqual(
+      ["auth.verification-email:success", "auth.reset-email:success"],
+    );
   });
 });
 

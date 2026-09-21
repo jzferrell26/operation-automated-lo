@@ -44,8 +44,10 @@ import {
   handleSignOut,
   handleVerifyEmail,
   rateLimitKeyHash,
+  resetAuthHandlerProcessStateForTests,
 } from "./password-authentication-handler.js";
 import {
+  assertNoSecretOnAnySurface,
   authEnvironment,
   authRequest,
   createFetchRecorder,
@@ -53,6 +55,7 @@ import {
   resetRateLimitKey,
   seedCredential,
   sessionCookieFrom,
+  withCapturedLogLines,
 } from "./password-authentication-support.js";
 import {
   resolveRuntimeCampaignCommandPorts,
@@ -349,9 +352,23 @@ describe("POST /api/auth/sign-in", () => {
   });
 
   it("writes one sign-in row and one issuance row, and leaks nothing (006A-AC-031)", async () => {
-    const response = await signIn(
-      { email: CREATOR_EMAIL, password: PASSWORD },
-      { clientAddress: nextClientAddress() },
+    // The deployment has a sending domain, so the Resend key is a value this process actually
+    // holds while the request runs. Scanning for a key the composition never read would prove
+    // nothing about whether a configured one can escape.
+    let response = new Response();
+    let logLines = "";
+    await underDeployment(
+      { OALO_RESEND_API_KEY: RESEND_KEY, OALO_EMAIL_FROM: "no-reply@oalo.invalid" },
+      async () => {
+        const captured = await withCapturedLogLines(async () =>
+          signIn(
+            { email: CREATOR_EMAIL, password: PASSWORD },
+            { clientAddress: nextClientAddress() },
+          ),
+        );
+        response = captured.value;
+        logLines = captured.logLines;
+      },
     );
     const correlationRef = response.headers.get("x-oalo-correlation-ref") ?? "";
 
@@ -361,19 +378,54 @@ describe("POST /api/auth/sign-in", () => {
       "session.issued:success",
     ]);
 
-    const rendered = `${JSON.stringify(events)}\n${await response.clone().text()}`;
-    expect(rendered).not.toContain(PASSWORD);
-    const credential = await readReviewCredential(pool, creatorId);
-    expect(rendered).not.toContain(credential?.passwordHash ?? "no hash");
-
     // 006A-AC-031 names the session secret and its hash alongside the password and the password
     // hash. The secret has exactly one legitimate home, the `Set-Cookie` header, so it is read
     // back from there and then looked for everywhere else: a leak of the cookie value or of the
     // hash the session row is keyed by is a session takeover, not a formatting mistake.
     const sessionSecret = sessionCookieFrom(response)?.split("=")[1] ?? "";
     expect(sessionSecret.length).toBeGreaterThan(0);
-    expect(rendered).not.toContain(sessionSecret);
-    expect(rendered).not.toContain(createHash("sha256").update(sessionSecret).digest("hex"));
+    const credential = await readReviewCredential(pool, creatorId);
+
+    assertNoSecretOnAnySurface(
+      {
+        auditRows: JSON.stringify(events),
+        logLines,
+        responseBody: await response.clone().text(),
+      },
+      {
+        password: PASSWORD,
+        "password hash": credential?.passwordHash ?? "",
+        "session secret": sessionSecret,
+        "session secret hash": createHash("sha256").update(sessionSecret).digest("hex"),
+        "Resend key": RESEND_KEY,
+      },
+    );
+  });
+
+  /**
+   * 006A-AC-031's log-line surface, shown to be a surface.
+   *
+   * The auth path logs almost nothing, so the capture around a successful sign-in is empty, and an
+   * empty capture cannot tell "nothing was logged" from "nothing was captured". This drives the
+   * one line the request path can write, the once-per-process warning that neither forwarded
+   * header is present, and proves the capture holds it and that the line names the two headers and
+   * no value.
+   *
+   * It costs the shared no-address bucket one attempt. The proof that spends that bucket clears it
+   * before counting, so this cannot move its arithmetic.
+   */
+  it("captures what the auth path logs, and the line carries no value (006A-AC-031)", async () => {
+    resetAuthHandlerProcessStateForTests();
+    const { value: response, logLines } = await withCapturedLogLines(async () =>
+      signIn({ email: CREATOR_EMAIL, password: PASSWORD }, { withoutClientAddress: true }),
+    );
+
+    expect(logLines).toContain("x-forwarded-for");
+    expect(logLines).toContain("x-real-ip");
+    assertNoSecretOnAnySurface(
+      { auditRows: "", logLines, responseBody: await response.clone().text() },
+      { password: PASSWORD, "Resend key": RESEND_KEY },
+    );
   });
 
   /**

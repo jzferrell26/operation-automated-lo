@@ -29,6 +29,7 @@ import {
   rateLimitKeyHash,
 } from "./password-authentication-handler.js";
 import {
+  assertNoSecretOnAnySurface,
   authEnvironment,
   authRequest,
   countFetchAttemptsDuring,
@@ -41,7 +42,9 @@ import {
   seedCredential,
   sessionCookieFrom,
   signUpEnabledEnvironment,
+  tokenHashOf,
   verificationLinkTokenFrom,
+  withCapturedLogLines,
   type RouteEnvironmentSwapper,
 } from "./password-authentication-support.js";
 import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
@@ -256,8 +259,13 @@ describe("POST /api/auth/forgot-password (006A-AC-017)", () => {
       async () => {
         const restoreFetch = recorder.install();
         try {
-          const response = await forgot(RESET_EMAIL, nextClientAddress());
-          await flushAuthBackgroundWork();
+          const captured = await withCapturedLogLines(async () => {
+            const answer = await forgot(RESET_EMAIL, nextClientAddress());
+            await flushAuthBackgroundWork();
+            return answer;
+          });
+          const response = captured.value;
+          const logLines = captured.logLines;
           const correlationRef = response.headers.get("x-oalo-correlation-ref") ?? "";
 
           expect(recorder.calls).toHaveLength(1);
@@ -279,11 +287,31 @@ describe("POST /api/auth/forgot-password (006A-AC-017)", () => {
           expect(delivery?.result).toBe("success");
           expect(delivery?.subjectId).toBe("resend-message-id-0001");
 
-          // 006A-AC-019 and 031. The URL token is in the message and nowhere else.
+          // 006A-AC-019 and 031. The URL token is in the message and nowhere else, and neither is
+          // the digest the token row is keyed by: a leaked hash is a reset link an attacker can
+          // recognise, which is why the criterion names the hash separately from the token.
+          //
+          // The Resend key is scanned here rather than only where the adapter returns a value,
+          // because this is the one place in the product that holds a configured key, an audit
+          // row, a log line, and a response body at the same instant.
           const token = resetLinkTokenFrom(String(recorder.calls[0]?.init.body));
-          expect(JSON.stringify(events)).not.toContain(token);
-          expect(await response.clone().text()).not.toContain(token);
+          const credential = await readReviewCredential(pool, resetUserId);
+          assertNoSecretOnAnySurface(
+            {
+              auditRows: JSON.stringify(events),
+              logLines,
+              responseBody: await response.clone().text(),
+            },
+            {
+              "URL token": token,
+              "token hash": tokenHashOf(token),
+              "Resend key": RESEND_KEY,
+              password: PASSWORD,
+              "password hash": credential?.passwordHash ?? "",
+            },
+          );
           expect(response.headers.get("set-cookie") ?? "").not.toContain(token);
+          expect(response.headers.get("set-cookie") ?? "").not.toContain(tokenHashOf(token));
         } finally {
           restoreFetch();
         }
@@ -358,11 +386,13 @@ describe("POST /api/auth/reset-password (006A-AC-018)", () => {
     expect(tooShort.status).toBe(400);
     expect(((await tooShort.json()) as { error: string }).error).toBe("PASSWORD_TOO_SHORT");
 
-    const response = await handleResetPassword(
-      authRequest(
-        "/api/auth/reset-password",
-        { token, password: NEW_PASSWORD, confirmPassword: NEW_PASSWORD },
-        { clientAddress: nextClientAddress() },
+    const { value: response, logLines } = await withCapturedLogLines(async () =>
+      handleResetPassword(
+        authRequest(
+          "/api/auth/reset-password",
+          { token, password: NEW_PASSWORD, confirmPassword: NEW_PASSWORD },
+          { clientAddress: nextClientAddress() },
+        ),
       ),
     );
 
@@ -407,6 +437,36 @@ describe("POST /api/auth/reset-password (006A-AC-018)", () => {
         action: "auth.password-changed",
       }),
     ).toBe(passwordChangedBefore);
+
+    /**
+     * 006A-AC-031's scan, on the one flow that holds every value at once: the link that proved
+     * control of the inbox, the digest its row is keyed by, the password that was just chosen, the
+     * hash it was stored as, and the secret of the session the reset issued. The Resend key is the
+     * sixth value the criterion names and is not in play here, because reset touches no email
+     * port; it is scanned on the two flows that do hold a configured one, in the send case above
+     * and in `password-authentication-handler.postgres.test.ts`.
+     *
+     * The session secret's one legitimate home is `Set-Cookie`, so it is read back from there and
+     * then looked for on the three surfaces, which is why the body is passed without the header.
+     */
+    const resetSessionSecret = sessionCookieFrom(response)?.split("=")[1] ?? "";
+    expect(resetSessionSecret.length).toBeGreaterThan(0);
+    assertNoSecretOnAnySurface(
+      {
+        auditRows: JSON.stringify(events),
+        logLines,
+        responseBody: await response.clone().text(),
+      },
+      {
+        "URL token": token,
+        "token hash": tokenHashOf(token),
+        password: NEW_PASSWORD,
+        "previous password": PASSWORD,
+        "password hash": (await readReviewCredential(pool, resetUserId))?.passwordHash ?? "",
+        "session secret": resetSessionSecret,
+        "session secret hash": tokenHashOf(resetSessionSecret),
+      },
+    );
 
     // The token is spent, so the same link cannot be used again.
     const replayed = await handleResetPassword(
@@ -489,11 +549,13 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
 
   it("creates the account, signs the person in, and discloses a duplicate on purpose", async () => {
     await deployment.swap(signUpEnabledEnvironment(), async () => {
-      const response = await handlePasswordSignUp(
-        authRequest(
-          "/api/auth/sign-up",
-          { name: "Dana Newcomer", email: SIGN_UP_EMAIL, password: PASSWORD },
-          { clientAddress: nextClientAddress() },
+      const { value: response, logLines } = await withCapturedLogLines(async () =>
+        handlePasswordSignUp(
+          authRequest(
+            "/api/auth/sign-up",
+            { name: "Dana Newcomer", email: SIGN_UP_EMAIL, password: PASSWORD },
+            { clientAddress: nextClientAddress() },
+          ),
         ),
       );
 
@@ -509,6 +571,25 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
       const correlationRef = response.headers.get("x-oalo-correlation-ref") ?? "";
       const events = await readAuditEventsForCorrelation(pool, correlationRef);
       expect(events.map((event) => event.action)).toContain("auth.sign-up");
+
+      // 006A-AC-031 on the flow that creates the credential. Sign-up is the one request that
+      // carries a password the server has never seen before and writes the hash it will be
+      // checked against for the life of the account, and it issues a session in the same breath.
+      const signUpSecret = sessionCookieFrom(response)?.split("=")[1] ?? "";
+      expect(signUpSecret.length).toBeGreaterThan(0);
+      assertNoSecretOnAnySurface(
+        {
+          auditRows: JSON.stringify(events),
+          logLines,
+          responseBody: await response.clone().text(),
+        },
+        {
+          password: PASSWORD,
+          "password hash": (await readReviewCredential(pool, newUserId ?? ""))?.passwordHash ?? "",
+          "session secret": signUpSecret,
+          "session secret hash": tokenHashOf(signUpSecret),
+        },
+      );
 
       const duplicate = await handlePasswordSignUp(
         authRequest(
@@ -695,13 +776,16 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
           expect(body["subject"]).toBe("Confirm your email for Automated LO");
           const token = verificationLinkTokenFrom(String(sent?.init.body));
 
-          const confirmed = await handleVerifyEmail(
-            authRequest(
-              "/api/auth/verify-email",
-              { token },
-              { clientAddress: nextClientAddress() },
+          const captured = await withCapturedLogLines(async () =>
+            handleVerifyEmail(
+              authRequest(
+                "/api/auth/verify-email",
+                { token },
+                { clientAddress: nextClientAddress() },
+              ),
             ),
           );
+          const confirmed = captured.value;
           expect(confirmed.status).toBe(200);
           expect(await confirmed.clone().json()).toEqual({ state: "confirmed" });
           expect((await readReviewCredential(pool, loudUserId))?.emailVerified).toBe(true);
@@ -709,6 +793,22 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
           const correlationRef = confirmed.headers.get("x-oalo-correlation-ref") ?? "";
           const events = await readAuditEventsForCorrelation(pool, correlationRef);
           expect(events.map((event) => event.action)).toContain("auth.email-verified");
+
+          // 006A-AC-031 on the confirmation flow: the deployment holds a configured key, the
+          // request carries the link's own token, and the row the token is spent from is keyed by
+          // its digest. None of the three may reach the trail, the log, or the answer.
+          assertNoSecretOnAnySurface(
+            {
+              auditRows: JSON.stringify(events),
+              logLines: captured.logLines,
+              responseBody: await confirmed.clone().text(),
+            },
+            {
+              "URL token": token,
+              "token hash": tokenHashOf(token),
+              "Resend key": RESEND_KEY,
+            },
+          );
 
           expect(
             await refusalForSpentVerificationToken(handleVerifyEmail, token, nextClientAddress()),

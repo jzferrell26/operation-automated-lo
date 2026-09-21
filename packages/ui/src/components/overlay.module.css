@@ -105,6 +105,25 @@
   max-block-size: min(32rem, 70vh);
   padding: var(--space-5);
   overflow-y: auto;
+  /* WCAG 2.2 SC 2.4.11 and PRD-006d 006D-AC-009. The sticky footer below keeps
+   * itself on screen; this keeps it off everything else.
+   *
+   * Tab to a control in the panel's body that is past the end of this box and
+   * the browser scrolls it into view at the nearest edge, which is the end,
+   * which is exactly where the footer is pinned. Measured on 2026-09-20 by
+   * `expectTheRingOnThePanelsOwnControls` at Light 1180x900, guided setup step
+   * 2 "Your details": the NMLS field's 44px box at y 805 sat entirely under the
+   * footer's 56px box at y 799, ring and all, so a person tabbing into it saw
+   * nothing move. `scroll-padding-block-end` is the scroll box's own answer to
+   * that: it tells the browser the last stretch of the box is spoken for, and a
+   * scroll into view stops above it instead of behind it.
+   *
+   * The value is the footer's own two ingredients, a control row and the space
+   * above it, and one control row more, because `.footer` is `flex-wrap: wrap`
+   * and a footer whose controls have wrapped is twice as tall. Scrolling a
+   * little further than needed costs a person nothing; stopping short costs
+   * them the field. */
+  scroll-padding-block-end: calc(var(--target-min-size) * 2 + var(--space-3));
   border-radius: var(--radius-panel);
 }
 

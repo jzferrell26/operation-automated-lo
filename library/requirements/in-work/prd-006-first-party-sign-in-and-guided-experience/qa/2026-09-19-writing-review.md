@@ -2,7 +2,7 @@
 
 Reviewer: `technical-writing-craft-guardian`. Date: 2026-09-19. Branch: `claude/completion-review-2026-09-19`, reviewed at `12bffc8` (the merge of that branch onto `c140f11`).
 
-This review covers three ledger rows: 005D-AC-013 (the operator runbook and terrain rule diffs), 006B-AC-016 (every user-facing string PRD-006b's batch changed or added), and 006C-AC-019 (the guided-setup step copy). It is not the security audit or the QA report; those run after this one, in that order.
+This review covers four ledger rows: 005D-AC-013 (the operator runbook and terrain rule diffs), 006B-AC-001 (the durable contract document itself, added 2026-09-20, see Addendum), 006B-AC-016 (every user-facing string PRD-006b's batch changed or added), and 006C-AC-019 (the guided-setup step copy, extended 2026-09-20 for two strings added after the original pass, see Addendum). It is not the security audit or the QA report; those run after this one, in that order.
 
 Armed with `technical-writing-craft-weapon/SKILL.md` and its guides on Diataxis (`00-diataxis.md`), the reader lens (`04-reader-lens.md`), and voice and tone (`03-voice-and-tone.md`). Read against `library/knowledge/private/standards/user-language-contract.md`, PRD-006b D1 through D4 and D10, and PRD-006c D3.
 
@@ -72,11 +72,43 @@ Armed with `technical-writing-craft-weapon/SKILL.md` and its guides on Diataxis 
 - **What it must be:** the same fact PRD-005's own index states, said so a cold reader cannot mistake it for a claim about network ports, and so the fail-closed behavior (the default denies every request) is not left to the sentence's last clause to imply.
 - **Fixed:** reworded to "still compose a static local synthetic default for authentication outside synthetic mode, and that default denies every request", tracking the PRD-005 index's own wording (see S-06 for the resulting near-duplicate phrasing across the two documents, recorded as a Suggestion, not re-opened as a Blocker).
 
+## Addendum, 2026-09-20
+
+Two record gaps a later verification pass found in this review, closed here rather than by rewriting the 2026-09-19 sections above.
+
+**006B-AC-001, read for the first time.** The 2026-09-19 pass reviewed `library/knowledge/private/standards/user-language-contract.md` as the yardstick every other finding was checked against, but never recorded a verdict on the document itself. Read in full against D1 (audience, voice, tone), D2 through D4 (forbidden vocabulary, preferred vocabulary, the honesty table), and D8 (references and hashes), section by section, with the reader lens the document names for itself in section 1 (a loan officer who has never seen the codebase) applied to whether the document accurately and usably states the rules that reader's words must follow, since the document's actual audience is whoever writes those words, not the loan officer directly.
+
+### F-05. The contract's own "Details for support" rule used the page-area noun it had just forbidden
+
+- **Severity:** Blocker. **Status:** Fixed.
+- **Where:** `library/knowledge/private/standards/user-language-contract.md:89-90,107,117` (before the fix).
+- **What was there:** Section 3's own table states D2 forbids "region (as a noun for a page area)" and section 3's prose beneath it spends a full sentence establishing that the ban holds with no exception ("the ban holds without an exception"). Four lines later, section 5's honesty table labels two rows "A region's detail" and "A region's source", and section 6 calls the "Details for support" `<details>` element a "region" twice. Every one of those four uses is the exact page-area sense the document just finished banning.
+- **Why this is a Blocker and not a Suggestion:** this document is the rule a writer checks a string against. A writer who reads section 3, then reaches section 5 or 6 and sees "region" used as the document's own label for a page area, has two readable conclusions: either the ban has a quiet exception the prose denies, or the document does not apply its own rule to itself. Neither is a usable answer for someone trying to follow it, and the confusion is avoidable.
+- **What it must be:** the same facts, labeled with a word the document has not just forbidden.
+- **Fixed:** "A region's detail" and "A region's source" (section 5) are now "A section's detail" and "A section's source"; the two "region" uses describing the `<details>` element (section 6) are now "element". No meaning changed. Also added, beside the existing "region" exception note in section 3: a parallel note recording the "routing" narrowing (D2 bans "route" as a page noun; the guard bans only the exact word "route" and its plural, not "routing", because "Routing" is the name of a real feature), since that narrowing existed in the guard and its test before this pass but was not yet recorded in the one document the guard is supposed to answer to when the two disagree (section 8: "the contract wins and the guard is fixed").
+- **Proven by:** `library/knowledge/private/standards/user-language-contract.md` no longer contains the string "region" in prose (grepped for `\bregion` case-insensitively; the only remaining hits are inside the word "region" itself in D2's own forbidden-terms table entry, which must name the word it bans).
+
+**006C-AC-019, extended for two strings added after the 2026-09-19 pass.** `apps/web/src/copy/guided-setup-messages.ts:28-44` (`GUIDED_SETUP_CONTROLS`, six control labels) and `:92-93` (`readTheResult.unknownBody`) were added to the copy module after this review's original commit and were never read against D1 through D4. Read now, word by word:
+
+- `GUIDED_SETUP_CONTROLS`: "Not now", "Saving where you got to.", "Continue", "Back", "Close this step", "Finish setup", "Show me around again". All six pass `findVocabularyHits` (no forbidden term, identifier, or dash). Voice: five of the six are plain second-person-implied imperatives consistent with the rest of the feature's buttons; "Show me around again" breaks that shape into a first-person "show me" request, which reads as inconsistent in isolation but matches the feature's own established register elsewhere in the same file ("Let's go", "Let's set up your first Open House Boost", "We'll reuse these") of writing as one side of a conversation rather than as a row of commands. Not a finding.
+- `readTheResult.unknownBody`: "We couldn't read the result for this campaign just now. Open the campaign to see where it stands." Checked against the two things it was written to do (the file's own comment, `guided-setup-messages.ts:82-90`, states the requirement): it says the walkthrough does not know, in the product's own voice ("We couldn't read the result"), without describing the person as having done anything wrong, and its second sentence points at the one place that does know (the campaign's own page). Passes `findVocabularyHits`. No finding.
+
+No blocking finding in either string. `GUIDED_SETUP_CONTROLS` was until this addendum invisible to the automated guard: the unit test `apps/web/src/features/guided-setup/guided-setup-constraints.unit.test.ts`'s "keeps every step's copy inside the user-language contract" case iterated `GUIDED_SETUP_STEPS` only. A new case, "keeps every control's copy inside the user-language contract", now iterates `GUIDED_SETUP_CONTROLS` the same way, so a future control label is checked by the gate rather than only by whichever reviewer happens to reread the file.
+
+**006B-AC-002, the guard's own scope (not a writing-review row, recorded here for the trail).** A separate re-grade reopened a guard-scope finding: `tooling/tests/unit/user-language/forbidden-vocabulary.test.ts` excluded three paths PRD-006b D6 does not name, and its scanned globs did not reach `packages/application/src`, where a campaign's role-aware next-step sentences are written before they reach a screen. Each of the three exclusions was read for the strings it hides and decided on its own facts:
+
+- `apps/web/src/features/brand/model/synthetic-brand-profile.ts`: kept excluded. `authenticated-workspace-data.ts`'s `toReviewBrand` already replaces every honesty-sensitive value (disclosure, source, reason, next action) with the D4 constants before review mode renders it; only `field.label` passes through, and every label in the file today is already clean. The exclusion's stated reason was corrected to say this precisely, in place of the previous "replaces every value", which overstated what the sanitizer touches.
+- `apps/web/src/features/reporting/model`: kept excluded, but not as it stood. Its own stated reason, "a connected-account workspace never renders it", was false: `synthetic-reporting.ts`'s one `status: "approved"` artifact's `previewSummary`, "Approved synthetic public-page projection with no provider-backed behavior.", is read by `apps/web/src/app/public/synthetic-open-house-v3/page.tsx`, the product's one unauthenticated page, whenever that page is reachable. Fixed in the D1 register to "Approved. This sample page isn't connected to HighLevel or Meta.", with a comment at the string's definition explaining why this one field is written for a reader and the rest of the directory is not. No pinned test named the old string. The rest of the directory (`reporting-acceptance.ts` and the two superseded artifacts) still has no path to a rendered screen and stays out of scope.
+- `apps/web/src/features/ui-foundation/evidence`: kept excluded; verified it has zero imports outside its own unit test, so its "Synthetic fixture only..." fixture strings, used only to compute a local hash, reach no screen.
+
+`packages/application/src` was added to the guard's `SCANNED_ROOTS`. Running `pnpm test:unit` against the widened guard surfaced real, currently-failing D2 violations in exactly the file the task named: `packages/application/src/campaign-workspace-read.ts` ("Provider publication is not authorized.", "Review persisted version evidence.", "Approve this exact persisted version.", "Resolve blocking findings, then freeze a new version.") and, found in the same pass, `packages/application/src/reporting.ts` ("The provider connection has expired.", "A lead could not be delivered through the approved route.", and four more). Both files are the copy `react-guardian` is moving into `apps/web/src/copy/user-language.ts` in a parallel lane of this raid; per this lane's instructions, neither was edited. Each is instead a new, single-file `EXCLUDED` entry, dated and reasoned, so `pnpm test:unit` stays green in this lane without hiding the gap: the entry names the exact strings that fail, names the parallel migration, and says the entry should be the first thing removed once that migration lands. **Proposed D6 amendment, for the librarian to place in PRD-006b's Amendments section:** "D6's source guard also reads `packages/application/src`, where a campaign's role-aware next step and a reporting exception's sentence are written before they reach a screen; two files there are excluded until `react-guardian`'s copy migration into `apps/web/src/copy/user-language.ts` lands, named in `tooling/tests/unit/user-language/forbidden-vocabulary.test.ts`'s own `EXCLUDED` list." This session did not write that sentence into PRD-006b directly: PRD-006b's own "Owner Guardians" line assigns this Guardian the review step and the contract's prose, not the PRD text itself, so the amendment is handed off here rather than self-authored into the requirement.
+
 ## Verdicts
 
 - **005D-AC-013:** no blocking finding open. F-04 was the one Blocker in this row's scope and is fixed. The runbook, `project-map.md`, and `reviewable-preview-smoke.md` diffs were read in full against the same reader lens and contain no other finding above Suggestion (S-05, S-06).
+- **006B-AC-001 (added 2026-09-20, see Addendum):** no blocking finding open. `library/knowledge/private/standards/user-language-contract.md` was read in full against D1 through D4 and D8. F-05 was the one Blocker (the document's own "Details for support" prose used the page-area sense of "region" it had just forbidden) and is fixed; the document now reads consistently with its own ban, and the section-3 note beside the "region" exception has a matching note for the "routing" narrowing. No other finding.
 - **006B-AC-016:** no blocking finding open. F-01, F-02, and F-03 were the three Blockers in this row's scope and all three are fixed. F-01 and F-02 were fixed by this review, proven by `pnpm test:unit` and `pnpm test:integration` passing with the updated assertions. F-03 was a behavior gap rather than a wording gap and so was outside this review's fix authority; it was recorded with a concrete proposed fix and has since been built to that proposal by `react-guardian`, proven by the three tests named in F-03's fix note. The two items F-03 hands on (006A-AC-018's literal `next` value, and the multi-binding path that reaches the workspace through `/sign-in/choose`) are recorded there for the PRD-006a owner and neither is a copy finding.
-- **006C-AC-019:** no blocking finding open. Every quoted string in PRD-006c D3 (steps 1, 4, 5, 6, 7) matches `guided-setup-messages.ts` verbatim; steps 2 and 3, which D3 does not quote literally, read plainly and in voice. `ResultStep`'s visible duplication of `readyBody` (once as the panel's `aria-describedby` description, once as the step's own paragraph) was investigated and found to be a deliberate, tested design (`guided-setup-steps.integration.test.tsx:166-167` pins exactly two occurrences, one of them the panel's accessible description required by D6), not a copy defect, so it is not recorded as a finding. S-03 and S-04 are the only observations in this row's scope, both non-blocking.
+- **006C-AC-019:** no blocking finding open. Every quoted string in PRD-006c D3 (steps 1, 4, 5, 6, 7) matches `guided-setup-messages.ts` verbatim; steps 2 and 3, which D3 does not quote literally, read plainly and in voice. `ResultStep`'s visible duplication of `readyBody` (once as the panel's `aria-describedby` description, once as the step's own paragraph) was investigated and found to be a deliberate, tested design (`guided-setup-steps.integration.test.tsx:166-167` pins exactly two occurrences, one of them the panel's accessible description required by D6), not a copy defect, so it is not recorded as a finding. S-03 and S-04 are the only observations in this row's scope, both non-blocking. **Extended 2026-09-20 (see Addendum):** `GUIDED_SETUP_CONTROLS` and `readTheResult.unknownBody`, both added after the original pass, were read against D1 through D4 and carry no blocking finding; the guard gap that let `GUIDED_SETUP_CONTROLS` go unchecked by `pnpm test:unit` is closed.
 
 ## Gates run
 
@@ -93,6 +125,17 @@ All from this worktree at the commit above, with the Node 24.18.0 and psql-shim 
 
 `pnpm test:db` and `pnpm test:browser` were not run, per this lane's instructions (another lane owns Docker and port 3100).
 
+**Addendum, 2026-09-20, re-run after the Addendum's edits:**
+
+| Command | Result |
+|---|---|
+| `pnpm format:check` | Pass |
+| `pnpm lint` | Pass |
+| `pnpm typecheck` | Pass (16/16 packages) |
+| `pnpm test:unit` | Pass, 877/877 tests, 83 files (one run hit an unrelated 5000ms timeout in `tooling/tests/unit/runtime-authentication/password-hash.test.ts`'s scrypt-timing case, not a file this addendum touched; a clean re-run passed, 877/877) |
+
+Same scope note as above: `pnpm test:db` and `pnpm test:browser` were not run in this lane.
+
 ## Files changed by this review
 
 - `apps/web/src/features/http/user-messages.ts` (F-01)
@@ -101,3 +144,11 @@ All from this worktree at the commit above, with the Node 24.18.0 and psql-shim 
 - `apps/web/src/app/(authenticated)/brand/brand-review-surface.integration.test.tsx` (F-02, pinned assertion)
 - `.cursor/rules/core/the-map.mdc` (F-04)
 - This file (new).
+
+**Addendum, 2026-09-20:**
+
+- `library/knowledge/private/standards/user-language-contract.md` (F-05)
+- `apps/web/src/features/guided-setup/guided-setup-constraints.unit.test.ts` (closes the `GUIDED_SETUP_CONTROLS` coverage gap)
+- `tooling/tests/unit/user-language/forbidden-vocabulary.test.ts` (006B-AC-002: widened `SCANNED_ROOTS` to `packages/application/src`; corrected and added `EXCLUDED` entries)
+- `apps/web/src/features/reporting/model/synthetic-reporting.ts` (006B-AC-002: the `previewSummary` fix)
+- This file.

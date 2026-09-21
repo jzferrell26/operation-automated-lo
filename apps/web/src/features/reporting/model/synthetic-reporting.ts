@@ -259,8 +259,12 @@ const rawSyntheticReporting: unknown = {
         version: 3,
         status: "approved",
         previewTitle: "Tour 214 Cedar Street",
-        previewSummary:
-          "Approved synthetic public-page projection with no provider-backed behavior.",
+        // In the D1 register, not the fixture's internal register, because this is the one
+        // artifact whose `previewSummary` reaches the unauthenticated public page
+        // (`apps/web/src/app/public/synthetic-open-house-v3/page.tsx`), the product's one
+        // passer-by reader. See `tooling/tests/unit/user-language/forbidden-vocabulary.test.ts`'s
+        // EXCLUDED entry for this directory for why the rest of this file stays out of scope.
+        previewSummary: "Approved. This sample page isn't connected to HighLevel or Meta.",
         sourceProfileVersion: "brand-v3",
         publicHref: "/public/synthetic-open-house-v3",
       },

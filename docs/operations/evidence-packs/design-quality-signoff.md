@@ -237,6 +237,14 @@ responsiveness of the composition, and consistency with the canvases (axes 1, 2,
   (`tests/browser/review/review-campaign-decision.spec.ts`, `mask:`), so the picture is stable
   between runs. The live page shows the timestamp.
 
+- Recorded after signing, not a finding. The sixteen review pictures of steps 3 and 7 were
+  redrawn on the runner (screen-baselines run 35631562012, installed at `b9a0f97`) after the
+  capture's canonical start changed for a step that points at nothing on the page: the picture
+  now starts from the top of the page instead of wherever the previous step and the browser's
+  clamp against the changing room below the content left the scroll, which differed between
+  runs. The panel, its content and its placement are what the signed sheets show; only the
+  page behind it moved. The redrawn pictures were read at full size, not on a new contact sheet.
+
 **Cells that are not a plain `pass`.**
 
 - `pass, asserted (A-1)`: guided-setup steps 1 and 2 at 1180 and 390 are asserted by

@@ -157,7 +157,20 @@
   font-size: var(--text-caption-size);
 }
 
+/*
+ * 2026-09-21. The workspace is a column that fills the viewport and hands the main landmark
+ * whatever the topbar and the banner leave, instead of the main landmark carrying its own
+ * viewport-height minimum (globals.css gives every bare `main` one). With the minimum on the
+ * landmark below a sticky header, a full-page capture never settled: Playwright sizes the
+ * viewport to the document to photograph it, the landmark then grows to that height, and the
+ * document grows by the header and the banner again, every time (measured on the runner on the
+ * reports page: 9,383 px, then 9,482 px, then 9,383 px, on every attempt). The column keeps the
+ * short screens' composition (the landmark still fills the rest of the frame) and is stable,
+ * because the minimum sits on the element whose height is the document's.
+ */
 .workspace {
+  display: flex;
+  flex-direction: column;
   min-block-size: 100vh;
   margin-inline-start: 17rem;
   transition: margin-inline-start var(--motion-base) var(--ease-standard);
@@ -267,6 +280,8 @@
  * one that wins for the block end.
  */
 .content {
+  flex: 1 1 auto;
+  min-block-size: 0;
   padding: var(--space-6);
   padding-block-end: calc(var(--space-6) + var(--guided-setup-panel-room, 0px));
 }

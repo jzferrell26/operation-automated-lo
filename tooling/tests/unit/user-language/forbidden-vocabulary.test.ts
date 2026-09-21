@@ -36,7 +36,9 @@ const repositoryRoot = resolve(import.meta.dirname, "../../../..");
  * step is written (`campaign-workspace-read.ts`'s `label` fields, consumed by
  * `persisted-campaign-screen.tsx` and `open-house-draft-builder.tsx`), so a word banned in the
  * component that renders it was still legal one layer down. See the EXCLUDED entries below for
- * the files this widening reaches that are still mid-migration in a parallel lane.
+ * the one file this widening reaches that is still mid-migration. The campaign next-step copy
+ * moved into apps/web/src/copy/user-language.ts on 2026-09-21 (the application layer returns
+ * keys), so campaign-workspace-read.ts is scanned like any other file.
  */
 const SCANNED_ROOTS: readonly string[] = [
   "apps/web/src/app",
@@ -90,14 +92,9 @@ const EXCLUDED: readonly Readonly<{ path: string; because: string }>[] = [
       "Local hash-computation fixture data for `projectApproval`'s deterministic evidence, same Non-Goals class as synthetic-ui.ts. Reviewed 2026-09-20: it has no import outside its own unit test, so nothing in it reaches a screen.",
   },
   {
-    path: "packages/application/src/campaign-workspace-read.ts",
-    because:
-      'Added 2026-09-20 with the packages/application/src widening above, temporarily: this file\'s `label` fields ("Provider publication is not authorized.", "Review persisted version evidence.", and the rest) are the campaign next-step sentences PRD-006b D5 calls "role-aware next step", and they fail D2 today ("provider", "persisted", "evidence", "freeze"). A parallel lane (react-guardian) is moving this copy into apps/web/src/copy/user-language.ts; this entry is scoped to one file precisely so it is the first thing that goes red, and the first thing removed, once that move lands. Do not widen this entry to a directory.',
-  },
-  {
     path: "packages/application/src/reporting.ts",
     because:
-      'Added 2026-09-20 with the packages/application/src widening above, temporarily: this file\'s provider-connection and reporting-exception sentences ("The provider connection has expired.", "A lead could not be delivered through the approved route.", and the rest) fail D2 today ("provider", "route"). Same parallel migration and same removal condition as the campaign-workspace-read.ts entry above.',
+      'Added 2026-09-20 with the packages/application/src widening above, temporarily: this file\'s provider-connection and reporting-exception sentences ("The provider connection has expired.", "A lead could not be delivered through the approved route.", and the rest) fail D2 today ("provider", "route"). Same removal condition as the campaign-workspace-read.ts entry that was removed on 2026-09-21 once its copy moved: this entry goes the moment reporting.ts renders through the copy module.',
   },
 ];
 

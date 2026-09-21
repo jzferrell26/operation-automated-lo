@@ -70,6 +70,18 @@ jobs:
           # branch-specific to check".
           PR_BODY: ${{ github.event.pull_request.body }}
 
+      # The synthetic screenshot suite compares against the Linux baselines only here, so a
+      # mismatch can only be read from this runner's own pictures; without this step they die
+      # with it (the reports page differed here by 99 px on 2026-09-21 and nothing showed what).
+      - name: Hand back the pictures and traces of anything that failed
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: verify-failure-traces
+          path: test-results/browser
+          if-no-files-found: ignore
+          retention-days: 7
+
   database:
     name: Real PostgreSQL migrations and pgTAP
     runs-on: ubuntu-24.04

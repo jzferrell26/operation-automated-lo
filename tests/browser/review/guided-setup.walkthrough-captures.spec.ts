@@ -72,9 +72,19 @@ function panel(page: Page) {
  * needs: the same scroll every time, taken after the last movement.
  */
 async function expectStepHasSettled(page: Page): Promise<void> {
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
   await page.evaluate(
     () =>
       new Promise<void>((resolve, reject) => {
+        // From a canonical start: the element at the top of the frame, under the header, so the
+        // step's own scroll decides the final position from the same place every time. Without
+        // this the model answers zero for an element that is already clear, and where it is clear
+        // depends on what the layout did between the attach and the picture (measured on
+        // 2026-09-21: the runner's step 6 at 1440 differed from its baseline by the height the
+        // header gained when its font arrived).
+        document
+          .querySelector("[data-guided-setup-highlight='true']")
+          ?.scrollIntoView({ behavior: "instant", block: "start" });
         window.dispatchEvent(new Event("resize"));
         const started = performance.now();
         let last = window.scrollY;

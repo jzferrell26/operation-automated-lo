@@ -297,6 +297,27 @@ test("change-password meets the design quality bar at every frame in both themes
         fullPage: true,
       });
     }
+
+    /**
+     * 006D-AC-009's reopened row. The keyboard walk, on the one D3 screen that had never had one.
+     *
+     * `/settings/account` is the only screen in D3 built entirely out of `PasswordField`, and
+     * `PasswordField` is the control the ring walk was tightened around on 2026-09-20: the reveal
+     * control is the named reason `positionedLayerOver` ignores a layer in the page's own flow,
+     * and the affix's own `:focus-visible` rule in `field.module.css:183-186` is what that
+     * tightening now insists on. All four of the walk's call sites were on other screens, so the
+     * screen the rule was written for was the screen it was never run on.
+     *
+     * It runs after every picture for this theme has been taken, so the ring it leaves on a
+     * control cannot appear in a baseline, and the next theme's `goto` puts focus back on the
+     * body before anything else is measured. 1180 is the frame the walk uses everywhere else in
+     * this file, and both themes are walked because `--focus-color` is a different token value in
+     * each (`packages/ui/src/tokens.css:67,164`) and the walk resolves it from the control's own
+     * cascade.
+     */
+    await page.setViewportSize({ width: 1180, height: 900 });
+    await settleForScreenshot(page);
+    await expectKeyboardReachesEveryControl(page);
   }
 
   expectNoExternalRequests(guard);

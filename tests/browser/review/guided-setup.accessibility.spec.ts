@@ -1,6 +1,7 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { expectTheRingOnThePanelsOwnControls } from "../helpers/design-quality.js";
 import { READY_OPEN_HOUSE } from "../helpers/open-house-draft.js";
 import {
   continueToPanel,
@@ -76,6 +77,34 @@ async function assertNoMotion(page: Page, where: string): Promise<void> {
         ),
     );
   expect(animated, where).toEqual([]);
+}
+
+/** The panel itself, by the attribute the primitive puts on every non-modal layer. */
+const SHEET_SELECTOR = '[data-overlay-kind="sheet"]';
+
+/**
+ * 006D-AC-009 for the panel's own controls, at every step of every cell.
+ *
+ * PRD-006d D7 asks for the brief's ring on every control on every screen in D3, and the review
+ * suite's keyboard walk delivers that by tabbing through screens. The walkthrough's panel is not a
+ * screen and is in no screen's tab order, so its Continue, its "Not now", its Done, and its close
+ * control were the one group of controls in the product that no walk reached. What this file
+ * asserted about them was that focus arrives, which is a different promise from focus being
+ * visible once it has.
+ *
+ * It runs at every checkpoint rather than at one chosen step because the panel's primary control
+ * is one slot with three labels across the walkthrough: "Let's go" on step 1, "Continue" on steps
+ * 2 to 6, and "Done" on step 7. A single step would measure one of the three and leave the other
+ * two in exactly the position this row was reopened over.
+ *
+ * It runs after the clearance assertions and before the step advances, so the step it measures is
+ * the step the rest of the checkpoint just described.
+ */
+async function assertThePanelsControlsCarryTheRing(page: Page, where: string): Promise<void> {
+  await expectTheRingOnThePanelsOwnControls(page, {
+    containerSelector: SHEET_SELECTOR,
+    where,
+  });
 }
 
 async function assertTargetSizes(page: Page, where: string): Promise<void> {
@@ -308,6 +337,7 @@ async function walkAndAssert(page: Page, where: string): Promise<void> {
     await assertNoMotion(page, label);
     await assertTargetSizes(page, label);
     if (checkpoint.pointsAtPage) await assertPanelClearOfTheField(page, label);
+    await assertThePanelsControlsCarryTheRing(page, label);
     await checkpoint.advance();
   }
 }
@@ -337,6 +367,12 @@ test("every step is accessible in both themes at the mobile and embedded frames"
    * campaign saved through a pointer press rather than the keyboard. The budget stays at 420 s:
    * it is three times the measured duration, which is the room the 30 s step-arrival allowance
    * needs if a cold pool makes two or three saves take it.
+   *
+   * Wave 7t added the ring measurement of the panel's own controls at every checkpoint, which is
+   * twenty-eight short keyboard walks across the four cells. Measured on 2026-09-20 in the review
+   * composition on the same workstation: 150 s, up from 138 s, so the whole of 006D-AC-009's
+   * ring contract on the panel costs this test about twelve seconds. The budget stays at 420 s
+   * for the reason above; it is still nearly three times the measured duration.
    */
   test.setTimeout(420_000);
   const guard = await guardLocalOrigin(page);

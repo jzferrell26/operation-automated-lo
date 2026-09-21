@@ -272,6 +272,165 @@ const RING_LIVES_ON_A_DOCUMENTED_WRAPPER: readonly Readonly<{ tag: string; becau
 ];
 
 /**
+ * One stop of the walk below, measured in the page, so that a walk of a whole screen and a walk
+ * of one panel ask a control the identical question.
+ *
+ * It lived inside `expectKeyboardReachesEveryControl` until 2026-09-20, and that is the whole
+ * reason the guided setup's own panel had never been measured: the only way to reach this code
+ * was to tab through a page, and the panel's Continue, "Not now", and Done are in no page's tab
+ * order, because the panel is a non-modal layer the page under it knows nothing about. Naming the
+ * measurement is what lets the panel be held to the same three properties as every other control
+ * in the product, with no second copy of them to drift.
+ *
+ * `containerSelector` is `null` for a whole-page walk and the panel's selector for a panel walk.
+ * `inside` is how a panel walk knows it has tabbed out of the thing it is about; a page walk
+ * ignores it.
+ */
+function measureTheFocusedControl(containerSelector: string | null) {
+  const element = document.activeElement;
+  if (element === null || element === document.body) return undefined;
+  const container = containerSelector === null ? null : document.querySelector(containerSelector);
+  const style = getComputedStyle(element);
+  /**
+   * Read before anything is added to the document. `getComputedStyle` returns a live view, so
+   * a probe inserted first could be observed here through a `:last-child` or `:nth-child`
+   * rule somewhere on the page. Copying the four values out first makes that impossible.
+   */
+  const ring = {
+    color: style.outlineColor,
+    offset: style.outlineOffset,
+    style: style.outlineStyle,
+    width: style.outlineWidth,
+  };
+
+  /**
+   * `--focus-color` resolved where the control sits, by asking the engine to paint it. Reading
+   * the custom property back gives the declaration, `var(--ac-primary)`, while the outline
+   * computes to a colour, so the two can only be compared by resolving one of them. The probe
+   * is never rendered and is removed immediately, so it changes no layout and no picture.
+   */
+  const probe = document.createElement("span");
+  probe.style.display = "none";
+  probe.style.color = "var(--focus-color)";
+  (element.parentElement ?? document.body).append(probe);
+  const expectedColor = getComputedStyle(probe).color;
+  probe.remove();
+
+  const wrong: string[] = [];
+  if (ring.style === "none") wrong.push("outline-style is none");
+  if (ring.width !== "2px") wrong.push(`outline-width is ${ring.width}, not 2px`);
+  if (ring.offset !== "3px") wrong.push(`outline-offset is ${ring.offset}, not 3px`);
+  if (ring.color !== expectedColor) {
+    wrong.push(`outline-color is ${ring.color}, not --focus-color (${expectedColor})`);
+  }
+
+  /**
+   * SC 2.4.11. The control has to be the thing on top where its own ring is drawn, so the
+   * page is asked what is painted at five points on it.
+   *
+   * The centre and the four edge midpoints, not the four corners. Measured on 2026-09-20: a
+   * corner reported every rounded control on every screen as covered by its own parent, 26 of
+   * them on the overview alone, because the product's controls carry `--radius-control` and
+   * the pixel in the very corner of the bounding box is outside the rounded shape and belongs
+   * to whatever is behind it. That is a fact about `border-radius`, not about anything a
+   * person cannot see. An edge midpoint is inside the shape at any radius, and a surface that
+   * covers a control covers at least one of these five points.
+   *
+   * A point outside the viewport answers with nothing, which is the browser's own scrolling
+   * rather than a defect, so it is skipped.
+   */
+  const rect = element.getBoundingClientRect();
+  const covering: string[] = [];
+  if (rect.width > 0 && rect.height > 0) {
+    const midX = rect.left + rect.width / 2;
+    const midY = rect.top + rect.height / 2;
+    const samples: readonly (readonly [number, number])[] = [
+      [midX, midY],
+      [midX, rect.top + 1],
+      [midX, rect.bottom - 1],
+      [rect.left + 1, midY],
+      [rect.right - 1, midY],
+    ];
+    /**
+     * The layer a covering element belongs to, or null when it belongs to the page's own
+     * flow.
+     *
+     * Design brief section 14 and rubric axis 7 name the thing this check is for: "a sticky
+     * surface never covers a field, an error, or a focus ring". A positioned layer is what
+     * can arrive over content that was laid out without it: the rail, the sticky topbar, the
+     * guided setup's panel, a modal scrim.
+     *
+     * An element in the page's own flow that overlaps a control is a different animal, and
+     * on this product it is usually a specified part of the control. Measured on 2026-09-20:
+     * the password field's reveal control sits inside the field's inline end
+     * (`03-components/form-field-and-text-inputs.md`, "a reveal control at the inline end"),
+     * so it is on top of the input's own box by design, on every account screen. It covers
+     * the input's padding, never the input's ring, which `--focus-offset` draws outside the
+     * border box. Reporting it would be reporting the specification.
+     */
+    const positionedLayerOver = (candidate: Element): string | null => {
+      for (
+        let node: Element | null = candidate;
+        node !== null && node !== document.body;
+        node = node.parentElement
+      ) {
+        const position = getComputedStyle(node).position;
+        if (position === "fixed" || position === "sticky") {
+          return `${node.tagName.toLowerCase()}.${node.className.toString().slice(0, 40)} (${position})`;
+        }
+      }
+      return null;
+    };
+
+    for (const [x, y] of samples) {
+      if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) continue;
+      const onTop = document.elementFromPoint(x, y);
+      if (onTop === null || onTop === element || element.contains(onTop)) continue;
+      const layer = positionedLayerOver(onTop);
+      if (layer === null) continue;
+      const over = onTop.getBoundingClientRect();
+      covering.push(
+        [
+          `${onTop.tagName.toLowerCase()}.${onTop.className.toString().slice(0, 40)}`,
+          `in ${layer}`,
+          `at (${String(Math.round(x))}, ${String(Math.round(y))})`,
+          `control ${String(Math.round(rect.left))},${String(Math.round(rect.top))}`,
+          `${String(Math.round(rect.width))}x${String(Math.round(rect.height))}`,
+          `over ${String(Math.round(over.left))},${String(Math.round(over.top))}`,
+          `${String(Math.round(over.width))}x${String(Math.round(over.height))}`,
+        ].join(" "),
+      );
+    }
+  }
+
+  return {
+    tag: element.tagName.toLowerCase(),
+    name:
+      element.getAttribute("aria-label") ??
+      element.getAttribute("name") ??
+      element.textContent?.trim().slice(0, 40) ??
+      "unnamed",
+    classes: element.className.toString().slice(0, 60),
+    wrong,
+    covering: [...new Set(covering)],
+    inside: container === null ? true : container.contains(element),
+    /**
+     * Reported on failure, because the answer is almost never "somebody forgot a rule": it is
+     * that the control matches neither `:focus` nor `:focus-visible`, which is what a date
+     * control and a frame do, and the fix is a different selector rather than a different
+     * colour.
+     */
+    diagnostic: [
+      `outline ${ring.style} ${ring.width} at ${ring.offset}`,
+      `type=${element.getAttribute("type") ?? "none"}`,
+      `focus=${String(element.matches(":focus"))}`,
+      `focus-visible=${String(element.matches(":focus-visible"))}`,
+      `focus-within=${String(element.matches(":focus-within"))}`,
+    ].join(", "),
+  };
+}
+
+/**
  * PRD-006d 006D-AC-009 and design brief section 18. The keyboard reaches every interactive element
  * in reading order, and the ring the brief specifies is the ring that appears, on the control.
  *
@@ -320,147 +479,7 @@ export async function expectKeyboardReachesEveryControl(
 
   for (let stop = 0; stop < budget; stop += 1) {
     await page.keyboard.press("Tab");
-    const focused = await page.evaluate(() => {
-      const element = document.activeElement;
-      if (element === null || element === document.body) return undefined;
-      const style = getComputedStyle(element);
-      /**
-       * Read before anything is added to the document. `getComputedStyle` returns a live view, so
-       * a probe inserted first could be observed here through a `:last-child` or `:nth-child`
-       * rule somewhere on the page. Copying the four values out first makes that impossible.
-       */
-      const ring = {
-        color: style.outlineColor,
-        offset: style.outlineOffset,
-        style: style.outlineStyle,
-        width: style.outlineWidth,
-      };
-
-      /**
-       * `--focus-color` resolved where the control sits, by asking the engine to paint it. Reading
-       * the custom property back gives the declaration, `var(--ac-primary)`, while the outline
-       * computes to a colour, so the two can only be compared by resolving one of them. The probe
-       * is never rendered and is removed immediately, so it changes no layout and no picture.
-       */
-      const probe = document.createElement("span");
-      probe.style.display = "none";
-      probe.style.color = "var(--focus-color)";
-      (element.parentElement ?? document.body).append(probe);
-      const expectedColor = getComputedStyle(probe).color;
-      probe.remove();
-
-      const wrong: string[] = [];
-      if (ring.style === "none") wrong.push("outline-style is none");
-      if (ring.width !== "2px") wrong.push(`outline-width is ${ring.width}, not 2px`);
-      if (ring.offset !== "3px") wrong.push(`outline-offset is ${ring.offset}, not 3px`);
-      if (ring.color !== expectedColor) {
-        wrong.push(`outline-color is ${ring.color}, not --focus-color (${expectedColor})`);
-      }
-
-      /**
-       * SC 2.4.11. The control has to be the thing on top where its own ring is drawn, so the
-       * page is asked what is painted at five points on it.
-       *
-       * The centre and the four edge midpoints, not the four corners. Measured on 2026-09-20: a
-       * corner reported every rounded control on every screen as covered by its own parent, 26 of
-       * them on the overview alone, because the product's controls carry `--radius-control` and
-       * the pixel in the very corner of the bounding box is outside the rounded shape and belongs
-       * to whatever is behind it. That is a fact about `border-radius`, not about anything a
-       * person cannot see. An edge midpoint is inside the shape at any radius, and a surface that
-       * covers a control covers at least one of these five points.
-       *
-       * A point outside the viewport answers with nothing, which is the browser's own scrolling
-       * rather than a defect, so it is skipped.
-       */
-      const rect = element.getBoundingClientRect();
-      const covering: string[] = [];
-      if (rect.width > 0 && rect.height > 0) {
-        const midX = rect.left + rect.width / 2;
-        const midY = rect.top + rect.height / 2;
-        const samples: readonly (readonly [number, number])[] = [
-          [midX, midY],
-          [midX, rect.top + 1],
-          [midX, rect.bottom - 1],
-          [rect.left + 1, midY],
-          [rect.right - 1, midY],
-        ];
-        /**
-         * The layer a covering element belongs to, or null when it belongs to the page's own
-         * flow.
-         *
-         * Design brief section 14 and rubric axis 7 name the thing this check is for: "a sticky
-         * surface never covers a field, an error, or a focus ring". A positioned layer is what
-         * can arrive over content that was laid out without it: the rail, the sticky topbar, the
-         * guided setup's panel, a modal scrim.
-         *
-         * An element in the page's own flow that overlaps a control is a different animal, and
-         * on this product it is usually a specified part of the control. Measured on 2026-09-20:
-         * the password field's reveal control sits inside the field's inline end
-         * (`03-components/form-field-and-text-inputs.md`, "a reveal control at the inline end"),
-         * so it is on top of the input's own box by design, on every account screen. It covers
-         * the input's padding, never the input's ring, which `--focus-offset` draws outside the
-         * border box. Reporting it would be reporting the specification.
-         */
-        const positionedLayerOver = (candidate: Element): string | null => {
-          for (
-            let node: Element | null = candidate;
-            node !== null && node !== document.body;
-            node = node.parentElement
-          ) {
-            const position = getComputedStyle(node).position;
-            if (position === "fixed" || position === "sticky") {
-              return `${node.tagName.toLowerCase()}.${node.className.toString().slice(0, 40)} (${position})`;
-            }
-          }
-          return null;
-        };
-
-        for (const [x, y] of samples) {
-          if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) continue;
-          const onTop = document.elementFromPoint(x, y);
-          if (onTop === null || onTop === element || element.contains(onTop)) continue;
-          const layer = positionedLayerOver(onTop);
-          if (layer === null) continue;
-          const over = onTop.getBoundingClientRect();
-          covering.push(
-            [
-              `${onTop.tagName.toLowerCase()}.${onTop.className.toString().slice(0, 40)}`,
-              `in ${layer}`,
-              `at (${String(Math.round(x))}, ${String(Math.round(y))})`,
-              `control ${String(Math.round(rect.left))},${String(Math.round(rect.top))}`,
-              `${String(Math.round(rect.width))}x${String(Math.round(rect.height))}`,
-              `over ${String(Math.round(over.left))},${String(Math.round(over.top))}`,
-              `${String(Math.round(over.width))}x${String(Math.round(over.height))}`,
-            ].join(" "),
-          );
-        }
-      }
-
-      return {
-        tag: element.tagName.toLowerCase(),
-        name:
-          element.getAttribute("aria-label") ??
-          element.getAttribute("name") ??
-          element.textContent?.trim().slice(0, 40) ??
-          "unnamed",
-        classes: element.className.toString().slice(0, 60),
-        wrong,
-        covering: [...new Set(covering)],
-        /**
-         * Reported on failure, because the answer is almost never "somebody forgot a rule": it is
-         * that the control matches neither `:focus` nor `:focus-visible`, which is what a date
-         * control and a frame do, and the fix is a different selector rather than a different
-         * colour.
-         */
-        diagnostic: [
-          `outline ${ring.style} ${ring.width} at ${ring.offset}`,
-          `type=${element.getAttribute("type") ?? "none"}`,
-          `focus=${String(element.matches(":focus"))}`,
-          `focus-visible=${String(element.matches(":focus-visible"))}`,
-          `focus-within=${String(element.matches(":focus-within"))}`,
-        ].join(", "),
-      };
-    });
+    const focused = await page.evaluate(measureTheFocusedControl, null);
     if (focused === undefined) {
       if (seen.length > 0 || wrapped) break;
       wrapped = true;
@@ -485,6 +504,109 @@ export async function expectKeyboardReachesEveryControl(
   expect(seen.length, "nothing on the page takes keyboard focus").toBeGreaterThan(0);
   expect(ringless).toEqual([]);
   expect(obscured, "SC 2.4.11: a focused control is behind something else").toEqual([]);
+}
+
+/**
+ * 006D-AC-009 for a layer that is not in any page's tab order, which on this product means the
+ * guided setup's panel.
+ *
+ * The page walk above starts on a screen and tabs through it, so every control it has ever
+ * measured is a control some screen owns. The walkthrough's panel is a non-modal `Sheet`: it is
+ * placed over whichever screen the step is about, it is not part of that screen, and no walk of
+ * any screen in the review suite has ever had it open. Its Continue, its "Not now", its Done, and
+ * its close control were therefore held to D7's three ring properties by nothing at all, while
+ * `guided-setup.accessibility.spec.ts` asserted only that focus moved to the right places. Focus
+ * arriving somewhere and focus being visible there are two different promises, and until
+ * 2026-09-20 this product only kept the first one on its own panel.
+ *
+ * It walks the panel's own tab order rather than reading its controls off the DOM, for the reason
+ * the ring rules make unavoidable: every ring in `packages/ui` is drawn on `:focus-visible`, and a
+ * control focused from a script while the last interaction was a pointer press matches `:focus`
+ * and not `:focus-visible`. A walk that called `focus()` on each control would measure an absent
+ * ring on a correct product and pass only by accident. So the walk puts the browser in keyboard
+ * modality the way a person does: it steps back out of the panel's first control and tabs into it.
+ *
+ * Every stop is measured by `measureTheFocusedControl`, the same function the page walk uses, so
+ * the panel is held to `--focus-width` at 2px, `--focus-offset` at 3px, `--focus-color` resolved
+ * from the control's own cascade, and SC 2.4.11's hit test, with nothing weakened for it. The walk
+ * ends when Tab leaves the panel, which is the contract the panel is built to: PRD-006c D6 says
+ * Tab leaves the panel for the page, so leaving is the end of the panel's tab order and not a
+ * defect.
+ */
+export async function expectTheRingOnThePanelsOwnControls(
+  page: Page,
+  options: Readonly<{ containerSelector: string; where: string }>,
+): Promise<void> {
+  const { containerSelector, where } = options;
+  const controls = page.locator(containerSelector).locator(FOCUSABLE_SELECTOR);
+  const count = await controls.count();
+  expect(count, `${where}: the panel has controls of its own`).toBeGreaterThan(0);
+
+  /**
+   * Out of the panel's first control, then back in by Tab, so every stop the walk measures was
+   * arrived at by a key press and matches `:focus-visible`.
+   *
+   * Usually that is one Tab: Shift+Tab steps to whatever precedes the panel in tab order and the
+   * Tab after it comes straight back. When the panel holds the first control on the screen,
+   * Shift+Tab leaves the document instead and the next Tab re-enters at the document's first
+   * control, which may be some way above the panel. So the Tab is repeated until focus is inside
+   * the panel, bounded by the document's own focusable count. The panel's controls are contiguous
+   * in tab order either way, so the stop this ends on is the panel's first control.
+   */
+  await controls.first().focus();
+  await page.keyboard.press("Shift+Tab");
+  const documentBudget = await page.evaluate(
+    (selector) => document.querySelectorAll(selector).length + 2,
+    FOCUSABLE_SELECTOR,
+  );
+  let entered = false;
+  for (let step = 0; step < documentBudget && !entered; step += 1) {
+    await page.keyboard.press("Tab");
+    entered = await page.evaluate((selector) => {
+      const element = document.activeElement;
+      const container = document.querySelector(selector);
+      return element !== null && container !== null && container.contains(element);
+    }, containerSelector);
+  }
+  expect(entered, `${where}: Tab reaches the panel's own controls`).toBe(true);
+
+  const seen: string[] = [];
+  const ringless: string[] = [];
+  const obscured: string[] = [];
+
+  for (let stop = 0; stop < count + 1; stop += 1) {
+    const focused = await page.evaluate(measureTheFocusedControl, containerSelector);
+    if (focused === undefined || !focused.inside) break;
+    /**
+     * Every stop is recorded, including a name already seen.
+     *
+     * The page walk above stops when it comes back to where it started, because a page's tab order
+     * is a cycle. A non-modal panel's is not: Tab leaves it, which is what ends this loop. So a
+     * repeated name here would mean focus is not moving or the panel is holding it, which is a
+     * defect this should report rather than a signal to stop early; the count below is what says
+     * so, because the stops and the panel's own controls would no longer be the same number.
+     */
+    const key = `${focused.tag}:${focused.name}`;
+    seen.push(key);
+    if (focused.wrong.length > 0) {
+      ringless.push(
+        `${key} (class "${focused.classes}", ${focused.diagnostic}): ${focused.wrong.join("; ")}`,
+      );
+    }
+    if (focused.covering.length > 0) {
+      obscured.push(`${key} is covered by ${focused.covering.join(", ")}`);
+    }
+    await page.keyboard.press("Tab");
+  }
+
+  expect(seen.length, `${where}: the panel's own tab order reaches every one of its controls`).toBe(
+    count,
+  );
+  expect(ringless, `${where}: the panel's own controls carry the brief's ring`).toEqual([]);
+  expect(
+    obscured,
+    `${where}: SC 2.4.11, a focused control in the panel is behind something else`,
+  ).toEqual([]);
 }
 
 /**

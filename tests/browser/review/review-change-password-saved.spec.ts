@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { captureNamedState } from "../helpers/design-quality.js";
+import { captureNamedState, expectKeyboardReachesEveryControl } from "../helpers/design-quality.js";
 import {
   expectNoExternalRequests,
   guardLocalOrigin,
@@ -65,6 +65,25 @@ test("the change-password screen's saved state meets the bar", async ({ browser 
       await page.setViewportSize({ width: 1440, height: 900 });
       await chooseThemeFromTheHeader(page, theme);
       await captureNamedState(page, { screen: "change-password", state: "saved", theme });
+    }
+
+    /**
+     * 006D-AC-009's reopened row, on the saved state as well as the default one.
+     *
+     * The walk is what says the screen is still operable once the save has answered: the form
+     * keeps its three `PasswordField` controls, gains a status region, and a person who has just
+     * pressed Save is exactly the person about to tab back through it.
+     *
+     * It runs after both pictures, in its own loop rather than inside the capture loop, for one
+     * reason: a walk leaves a focus ring on a control, and a ring in a baseline would be a
+     * difference this spec created rather than one the product did. Nothing is photographed after
+     * this point. The state is React state on the page, so the themes are chosen from the header
+     * and the page is never reloaded, which is the same reason the captures above do it that way.
+     */
+    for (const theme of REVIEW_THEMES) {
+      await page.setViewportSize({ width: 1180, height: 900 });
+      await chooseThemeFromTheHeader(page, theme);
+      await expectKeyboardReachesEveryControl(page);
     }
   } finally {
     await page.setViewportSize({ width: 1440, height: 900 });

@@ -124,6 +124,21 @@ a panel with more content than cap never scrolls its own Continue control out of
 sight. PRD-006c D7 states the behaviour; before 2026-09-20 nothing implemented
 it.
 
+A sticky footer that keeps itself on screen will sit on whatever the browser
+scrolls to the end of that box, so the sheet also carries
+`scroll-padding-block-end: calc(var(--target-min-size) * 2 + var(--space-3))`.
+Tab to a control in the panel's body that is past the end of the box and the
+browser scrolls it into view at the nearest edge, which is the end, which is
+where the footer is pinned. Measured on 2026-09-20 in the review run at Light
+1180x900, guided setup step 2 "Your details": the NMLS field's 44px box sat
+entirely under the footer's 56px box, ring and all, which is a WCAG 2.2 SC
+2.4.11 failure and rubric axis 7's own sentence, "a sticky surface never covers
+a field, an error, or a focus ring". The scroll padding is the scroll box's
+answer: the last stretch of the box is spoken for and a scroll into view stops
+above it. Its value is the footer's own two ingredients, a control row and the
+space above it, plus one control row more, because the footer is
+`flex-wrap: wrap` and a footer whose controls have wrapped is twice as tall.
+
 `Dialog` generalises the `alertdialog` that `SafeAction` renders inline for a
 confirmation, and the drawer trap in the application shell. A new screen uses
 `Dialog`; `SafeAction` keeps its own inline confirmation because its confirmation

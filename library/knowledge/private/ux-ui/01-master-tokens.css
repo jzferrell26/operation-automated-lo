@@ -9,8 +9,9 @@
  *   1. Every custom property in this file was compared with
  *      `packages/ui/src/tokens.css` property by property, per selector, not by
  *      reading the note above. `:root` carries 69 properties on each side and
- *      they agree on all 69. `[data-theme="dark"]` carries 31 on each side and
- *      they agree on all 31. The `prefers-reduced-motion` block carries 3 on
+ *      they agree on all 69. `[data-theme="dark"]` carries 32 on each side and
+ *      they agree on all 32 (the count read 31 when signed; the Dark `--focus-color`
+ *      the same day's D-001 ruling added made it 32, corrected 2026-09-20). The `prefers-reduced-motion` block carries 3 on
  *      each side and they agree. The only selector present on one side alone is
  *      the `prefers-color-scheme` block below, which is deliberate and is
  *      explained further down.

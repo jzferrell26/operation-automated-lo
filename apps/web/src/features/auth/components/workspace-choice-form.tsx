@@ -46,7 +46,7 @@ const BINDING_ROLE_LABELS: Readonly<Record<string, string>> = Object.freeze({
 });
 
 export interface WorkspaceChoiceFormProps {
-  readonly problem: string | null;
+  readonly problem: ReactNode | null;
   readonly submitting: boolean;
   readonly workspaces: readonly WorkspaceChoice[];
   choose(workspaceIndex: number): Promise<void>;
@@ -145,7 +145,7 @@ function WorkspaceChoiceStep({
   submit,
 }: Readonly<{
   choice: WorkspaceChoiceState;
-  problem: string | null;
+  problem: ReactNode | null;
   submitting: boolean;
   submit(path: string, body: unknown): Promise<Readonly<{ next?: string }> | undefined>;
 }>): ReactNode {
@@ -187,7 +187,7 @@ export interface WorkspaceChoiceGate {
  * Two copies of that question are two chances for one of them to forget the reset flag.
  */
 export function useWorkspaceChoice(
-  problem: string | null,
+  problem: ReactNode | null,
   submitting: boolean,
   submit: (path: string, body: unknown) => Promise<Readonly<{ next?: string }> | undefined>,
 ): WorkspaceChoiceGate {

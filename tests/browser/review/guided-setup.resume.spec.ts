@@ -27,6 +27,12 @@ import {
  * and prove nothing about the row.
  */
 
+/**
+ * A licence number that is only ever typed here. It is optional on the step, so nothing fills it
+ * in for the person, and nothing puts it back after a sign-in except the stored profile.
+ */
+const NMLS_NUMBER = "2048117";
+
 async function freshPage(browser: Browser) {
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -42,6 +48,17 @@ test("progress survives a closed browser, a dismissal, and a restart", async ({ 
   await signUpFreshAccount(first.page, email);
   await first.page.getByRole("button", { name: "Let's go" }).click();
   await expect(first.page.getByRole("dialog", { name: "Your details" })).toBeVisible();
+  /*
+   * The one field on this step that the session cannot supply.
+   *
+   * Name and company both have a fallback: `profileFromSession`
+   * (`apps/web/src/features/guided-setup/model/profile.ts:114-115`) fills them from the signed-in
+   * session when the stored row has nothing, so a third sign-in shows them whether or not step 2
+   * ever saved anything. Asserting on them proved the session, not the row. The NMLS number has no
+   * fallback: that same function emits it only when the stored profile carries it, so the value
+   * below can only be on screen at the end of this test if it survived two closed browsers.
+   */
+  await typeIntoLabel(first.page, "NMLS number", NMLS_NUMBER);
   await continueToPanel(first.page, "Your Realtor partner");
   expectNoExternalRequests(first.guard);
   await first.context.close();
@@ -85,6 +102,9 @@ test("progress survives a closed browser, a dismissal, and a restart", async ({ 
   ).toBeVisible();
   await third.page.getByRole("button", { name: "Let's go" }).click();
   await expect(third.page.getByLabel("Your name")).toHaveValue(NEW_ACCOUNT_NAME);
+  // The field with no session fallback. This is the assertion that the row was written and read
+  // back; the name above would hold even if step 2 had saved nothing at all.
+  await expect(third.page.getByLabel("NMLS number", { exact: false })).toHaveValue(NMLS_NUMBER);
   expectNoExternalRequests(third.guard);
   await third.context.close();
 });

@@ -17,9 +17,14 @@ import {
   campaignDraftPrefill,
   type SetupProfile,
 } from "../../guided-setup/model/profile.js";
-import { isMappedErrorCode, userMessageSentence } from "../../http/user-messages.js";
-import { postInternalJson } from "../../http/internal-api.js";
-import { SupportDetails } from "../../shell/components/support-details.js";
+import { userMessageSentence } from "../../http/user-messages.js";
+import {
+  postInternalJson,
+  supportReferenceFrom,
+  UNREACHED_REFUSAL,
+  type InternalRefusal,
+} from "../../http/internal-api.js";
+import { SupportDetails, SupportReference } from "../../shell/components/support-details.js";
 import styles from "./open-house-draft-builder.module.css";
 
 type PreflightResponse = Readonly<{
@@ -86,10 +91,16 @@ export function OpenHouseDraftBuilder({
 }: Readonly<{ profile?: SetupProfile | undefined }> = {}) {
   const [result, setResult] = useState<PreflightResponse | null>(null);
   /**
-   * `null` means nothing has gone wrong. `undefined` means something went wrong and the route gave
-   * us no code to map, which renders the generic sentence plus the support reference.
+   * `null` means nothing has gone wrong. Anything else is the refusal the route answered with: the
+   * code to turn into sentences, and the reference to show when there is no sentence for it.
+   *
+   * It used to be the code alone, and the support row was filled with that same code. The label
+   * says "Support reference", and the thing support looks a request up by is the reference the
+   * route put on the response (`apps/web/src/server/campaign-preflight-handler.ts:31,70,73`), not
+   * the name of the failure. So the row now holds the reference on this screen too, which is what
+   * the approval control, the account screens, and the walkthrough all show under that label.
    */
-  const [errorCode, setErrorCode] = useState<string | null | undefined>(null);
+  const [refusal, setRefusal] = useState<InternalRefusal | null>(null);
   /**
    * PRD-006d 006D-AC-011. Which controls the route named, so the mark is on the field rather than
    * only in a sentence telling somebody to look for it.
@@ -132,7 +143,7 @@ export function OpenHouseDraftBuilder({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
-    setErrorCode(null);
+    setRefusal(null);
     setFieldErrors({});
     setResult(null);
     const form = new FormData(event.currentTarget);
@@ -160,15 +171,19 @@ export function OpenHouseDraftBuilder({
       if (!response.ok) {
         /**
          * The route answers with a code. PRD-006b D7 says a code never reaches a status line, so
-         * the code is mapped to sentences here and kept only for the support region below.
+         * the code is mapped to sentences here, and the reference the route put on the response is
+         * what the support region below holds.
          */
         const record = payload as { error?: string; issues?: unknown };
-        setErrorCode(record.error);
+        setRefusal({
+          code: record.error,
+          supportReference: supportReferenceFrom(response),
+        });
         setFieldErrors(fieldsTheRouteNamed(record.issues));
         setRefusals((count) => count + 1);
         return;
       }
-      setErrorCode(null);
+      setRefusal(null);
       const saved = payload as PreflightResponse;
       setResult(saved);
       // PRD-006c D3 step 4. The walkthrough finishes this step when the checks have actually run,
@@ -181,7 +196,7 @@ export function OpenHouseDraftBuilder({
         findings: saved.findings,
       });
     } catch {
-      setErrorCode(undefined);
+      setRefusal(UNREACHED_REFUSAL);
       setRefusals((count) => count + 1);
     } finally {
       setSubmitting(false);
@@ -224,18 +239,14 @@ export function OpenHouseDraftBuilder({
           this screen states no rule of its own for it. The support reference stays inside the
           collapsed region, so no code reaches a status line (PRD-006b D7).
         */}
-        {errorCode === null ? null : (
+        {refusal === null ? null : (
           <LiveRegion
             ref={problemRef}
             message={
               <>
                 <strong>We couldn&apos;t save this yet</strong>
-                <span>{userMessageSentence(errorCode)}</span>
-                {isMappedErrorCode(errorCode) ? null : (
-                  <SupportDetails
-                    rows={[[SUPPORT_DETAILS_LABELS.supportReference, errorCode ?? "Not recorded"]]}
-                  />
-                )}
+                <span>{userMessageSentence(refusal.code)}</span>
+                <SupportReference refusal={refusal} />
               </>
             }
             tabIndex={-1}

@@ -2,8 +2,14 @@ import { readFile, readdir } from "node:fs/promises";
 import { extname, join, relative, resolve } from "node:path";
 
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { userEvent } from "@testing-library/user-event";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import {
+  SUPPORT_DETAILS_LABELS,
+  SUPPORT_REFERENCE_NOT_RECORDED,
+} from "../../../copy/user-language.js";
+import { stubRefusedFetch } from "../../http/refusal.test-support.js";
 import {
   CHANGE_PASSWORD,
   FORGOT_PASSWORD,
@@ -11,6 +17,7 @@ import {
   SIGN_IN,
   SIGN_UP,
   VERIFY_EMAIL,
+  userMessageSentence,
 } from "../strings.js";
 import { AuthNotice, AuthProblem } from "./auth-feedback.js";
 import { ChangePasswordForm } from "./change-password-form.js";
@@ -210,6 +217,92 @@ describe("what a person is told when something is wrong", () => {
     expect(notice.compareDocumentPosition(firstField) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
+  });
+});
+
+/**
+ * PRD-006b 006B-AC-007 on the account screens.
+ *
+ * All six forms refuse through one hook, so the reference is proven once, on the sign-in form,
+ * and `use-auth-submit.ts` is what makes that true for the other five: each of them renders
+ * `problem` through `AuthProblem` and nothing else.
+ *
+ * Until 2026-09-20 the hook set a sentence and only a sentence. A route that answered a code the
+ * product has no words for produced "Something went wrong on our side. Try again, and contact
+ * support if it keeps happening", and the person who did contact support had nothing to give
+ * them, although every auth route puts a reference on every answer it makes
+ * (`apps/web/src/server/password-authentication-handler.ts:605,619`).
+ */
+describe("a refused sign-in", () => {
+  const SUPPORT_REFERENCE = "correlation_signIn_5d2a91c7e3b04f68a1b2c3d4";
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  async function signIn(): Promise<void> {
+    const user = userEvent.setup();
+    await user.type(fieldFor("email", SIGN_IN.emailLabel), "dana@example.test");
+    await user.type(
+      document.querySelector("input[name='password']") as HTMLInputElement,
+      "harbour lantern gate phrase",
+    );
+    await user.click(screen.getByRole("button", { name: SIGN_IN.submitLabel }));
+  }
+
+  it("shows the generic sentence and the support reference for a code it cannot map", async () => {
+    stubRefusedFetch("AUTH_SOMETHING_NEW", SUPPORT_REFERENCE);
+    render(<SignInForm signUpEnabled={false} signedOut={false} />);
+
+    await signIn();
+
+    const region = await screen.findByRole("alert");
+    expect(region).toHaveTextContent(userMessageSentence(undefined));
+    expect(screen.getByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeInTheDocument();
+    expect(screen.getByText(SUPPORT_REFERENCE).closest("[data-support-details]")).not.toBeNull();
+  });
+
+  it("shows the mapped sentence and no reference for a code it knows", async () => {
+    stubRefusedFetch("AUTH_CREDENTIALS_REJECTED", SUPPORT_REFERENCE);
+    render(<SignInForm signUpEnabled={false} signedOut={false} />);
+
+    await signIn();
+
+    const region = await screen.findByRole("alert");
+    expect(region).toHaveTextContent(userMessageSentence("AUTH_CREDENTIALS_REJECTED"));
+    expect(screen.queryByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeNull();
+    expect(screen.queryByText(SUPPORT_REFERENCE)).toBeNull();
+  });
+
+  it("says the reference was not recorded when the refusal carried none", async () => {
+    stubRefusedFetch(undefined, undefined);
+    render(<SignInForm signUpEnabled={false} signedOut={false} />);
+
+    await signIn();
+
+    expect(await screen.findByText(SUPPORT_REFERENCE_NOT_RECORDED)).toBeInTheDocument();
+    expect(screen.getByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeInTheDocument();
+  });
+
+  /**
+   * The rule the six forms keep by construction. If one of them ever renders `problem` some other
+   * way, the reference stops reaching that screen and this is what says so.
+   */
+  it("is rendered the same way by every form that can refuse", async () => {
+    const root = resolve("apps/web/src/features/auth/components");
+    const forms = [
+      "change-password-form.tsx",
+      "forgot-password-form.tsx",
+      "reset-password-form.tsx",
+      "sign-in-form.tsx",
+      "sign-up-form.tsx",
+      "verify-email-form.tsx",
+      "workspace-choice-form.tsx",
+    ];
+    for (const form of forms) {
+      const source = await readFile(join(root, form), "utf8");
+      expect(source, form).toContain("<AuthProblem>{problem}</AuthProblem>");
+    }
   });
 });
 

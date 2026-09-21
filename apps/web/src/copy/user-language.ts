@@ -1,4 +1,5 @@
-import type { ApplicationRole } from "@oalo/contracts";
+import type { CampaignNextActionId } from "@oalo/application";
+import type { ApplicationRole, CampaignState } from "@oalo/contracts";
 
 /**
  * The words the product shows a loan officer, in one place.
@@ -161,6 +162,15 @@ export const SUPPORT_DETAILS_LABELS = Object.freeze({
   supportReference: "Support reference",
 });
 
+/**
+ * What the support-reference row says when the request carried none.
+ *
+ * A failure that never reached the server, or one whose answer had no reference on it, still has
+ * to show the row: a person who is told to contact support and then finds nothing to quote has
+ * been sent away empty-handed. Saying so is the honest version of that row.
+ */
+export const SUPPORT_REFERENCE_NOT_RECORDED = "Not recorded";
+
 /** The two words the campaign check ends in. Never "passed" or "blocked". */
 export const CHECK_RESULT_READY = "Ready for approval";
 export const CHECK_RESULT_NEEDS_CHANGES = "Needs changes";
@@ -181,3 +191,52 @@ export const CAMPAIGN_NOT_AN_AD_YET =
   "This campaign won't run as an ad yet. HighLevel and Meta aren't connected.";
 export const CAMPAIGN_SAVED_NOTICE =
   "Saved to your workspace. This campaign won't run as an ad yet: HighLevel and Meta aren't connected.";
+
+/**
+ * Where a campaign stands, in the words a loan officer uses for it (contract sections 3 and 4).
+ *
+ * The three screens that show this used to make the words out of the stored state by taking the
+ * underscores out of it, so `preflight_failed` read "Preflight failed" and put a D2 word in front
+ * of the person whose campaign it was. A map keyed by `CampaignState` cannot do that: it is
+ * exhaustive, so a new state is a typecheck failure until somebody writes the phrase for it, and
+ * it is in this file, so the forbidden-vocabulary guard reads every phrase in it.
+ *
+ * `awaiting_approval` and `preflight_failed` deliberately borrow the two phrases the campaign
+ * check already ends in. A campaign whose check passed and whose approval has not happened is the
+ * same fact said twice on the same screen, and saying it two different ways would read as two
+ * different facts.
+ */
+export const CAMPAIGN_STATE_LABELS: Readonly<Record<CampaignState, string>> = Object.freeze({
+  draft: "Draft",
+  generated: "Not checked yet",
+  preflight_failed: CHECK_RESULT_NEEDS_CHANGES,
+  awaiting_approval: CHECK_RESULT_READY,
+  approved: "Approved",
+  publishing: "Going live",
+  live: "Live",
+  paused: "Paused",
+  completed: "Finished",
+  archived: "Archived",
+});
+
+/**
+ * What to do next about one campaign, keyed by the step the application layer named.
+ *
+ * The application layer used to carry these sentences itself, which put five user-facing lines
+ * outside the D1 voice and outside every glob the vocabulary guard reads: "Review persisted
+ * version evidence." and "Approve this exact persisted version." went to screens with three D2
+ * words between them. It now returns a key and nothing in English, and the words live here with
+ * the rest of the product's words.
+ *
+ * The map is exhaustive over `CampaignNextActionId`, so a new step cannot reach a screen without a
+ * sentence.
+ */
+export const CAMPAIGN_NEXT_ACTION_LABELS: Readonly<Record<CampaignNextActionId, string>> =
+  Object.freeze({
+    review_evidence: "Look over this version and what the checks found.",
+    approve_version: "Approve this version.",
+    already_decided: "Someone has already decided on this version.",
+    wait_for_approver: "Waiting for an approver to look at this version.",
+    remediate_preflight: "Fix what the checks found, then save it again.",
+    provider_publish: CAMPAIGN_NOT_AN_AD_YET,
+  });

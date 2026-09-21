@@ -11,7 +11,13 @@ import {
 import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
 import { CampaignHandOff } from "./campaign-hand-off.js";
 import { userMessageSentence } from "../../http/user-messages.js";
-import { postInternalJson } from "../../http/internal-api.js";
+import {
+  postInternalJson,
+  refusalFrom,
+  UNREACHED_REFUSAL,
+  type InternalRefusal,
+} from "../../http/internal-api.js";
+import { SupportReference } from "../../shell/components/support-details.js";
 
 export type CampaignApprovalControlsProps = Readonly<{
   /** Where this campaign lives, so a user who cannot approve can hand the address to someone who can. */
@@ -27,6 +33,24 @@ export type CampaignApprovalControlsProps = Readonly<{
   state: string;
 }>;
 
+/**
+ * What the control says back after a decision, and what support would need if it went wrong.
+ *
+ * The two travel together because they are decided together: a refusal the product has no sentence
+ * for is the one case that owes the person a reference (PRD-006b D7), and splitting the pair into
+ * two pieces of state is how one of them gets left behind on a later branch.
+ */
+type ApprovalStatus = Readonly<{
+  sentence: string;
+  /** Present only when the answer was a refusal. `SupportReference` decides whether to show it. */
+  refusal: InternalRefusal | undefined;
+}>;
+
+/** A decision that landed. Nothing went wrong, so there is nothing for support to look up. */
+function recorded(sentence: string): ApprovalStatus {
+  return Object.freeze({ sentence, refusal: undefined });
+}
+
 export function CampaignApprovalControls({
   campaignHref,
   campaignRef,
@@ -39,8 +63,8 @@ export function CampaignApprovalControls({
   blocking,
   state,
 }: CampaignApprovalControlsProps) {
-  const [status, setStatus] = useState<string | null>(
-    alreadyDecided === undefined ? null : decisionStatus(alreadyDecided, false),
+  const [status, setStatus] = useState<ApprovalStatus | null>(
+    alreadyDecided === undefined ? null : recorded(decisionStatus(alreadyDecided, false)),
   );
   const [busy, setBusy] = useState(false);
 
@@ -65,17 +89,28 @@ export function CampaignApprovalControls({
         expectedPreflightResultHash: preflightResultHash,
         expectedRowVersion: rowVersion,
       });
-      const payload: unknown = await response.json();
       if (!response.ok) {
-        // PRD-006b D7. The route's code becomes two sentences; the code never reaches this line.
-        const record = payload as { error?: string };
-        setStatus(userMessageSentence(record.error));
+        /*
+         * PRD-006b D7. The route's code becomes two sentences and never reaches the status line.
+         * A code the product has no sentence for is answered with the generic pair, which tells
+         * the person to contact support, so it also carries the reference the route put on the
+         * response. Without it that sentence sent somebody to support with nothing to quote.
+         */
+        const refusal = await refusalFrom(response);
+        setStatus({ sentence: userMessageSentence(refusal.code), refusal });
         return;
       }
-      const body = payload as { decision: "approved" | "rejected"; duplicate?: boolean };
-      setStatus(decisionStatus(body.decision, body.duplicate === true));
+      const body = (await response.json()) as {
+        decision: "approved" | "rejected";
+        duplicate?: boolean;
+      };
+      setStatus(recorded(decisionStatus(body.decision, body.duplicate === true)));
     } catch {
-      setStatus(userMessageSentence(undefined));
+      // Nothing answered, so there is no code to map and no reference to quote. Both are said.
+      setStatus({
+        sentence: userMessageSentence(UNREACHED_REFUSAL.code),
+        refusal: UNREACHED_REFUSAL,
+      });
     } finally {
       setBusy(false);
     }
@@ -116,7 +151,8 @@ export function CampaignApprovalControls({
         </Button>
       ) : null}
       {canApprove ? null : <CampaignHandOff campaignHref={campaignHref} />}
-      <p role="status">{status ?? "Nobody has approved this version yet."}</p>
+      <p role="status">{status?.sentence ?? "Nobody has approved this version yet."}</p>
+      <SupportReference refusal={status?.refusal} />
     </Card>
   );
 }

@@ -1,6 +1,8 @@
 import { Card, EmptyState, Icon, Link, Metric, Stack, Surface } from "@oalo/ui";
 
 import {
+  CAMPAIGN_NEXT_ACTION_LABELS,
+  CAMPAIGN_STATE_LABELS,
   NOT_CONNECTED_NEXT_STEP,
   NOT_CONNECTED_SOURCE,
   SUPPORT_DETAILS_LABELS,
@@ -175,11 +177,9 @@ export function OverviewScreen({
             <Card key={campaign.campaignRef} padding="md">
               <p className={styles.itemMeta}>Campaign</p>
               <h3>{campaign.headline}</h3>
-              <p>{stateLabel(campaign.state)}</p>
+              <p>{CAMPAIGN_STATE_LABELS[campaign.state]}</p>
               <p>
-                <strong>What to do next:</strong>{" "}
-                {campaign.nextActions.find((action) => action.available)?.label ??
-                  "Open it and see where it stands."}
+                <strong>What to do next:</strong> {campaignNextStep(campaign.nextActions)}
               </p>
               <Link href={campaign.detailHref} variant="action">
                 Open campaign
@@ -407,8 +407,18 @@ function workTypeLabel(type: Overview["activeWork"][number]["type"]): string {
   }
 }
 
-function stateLabel(state: CampaignWorkspaceProjection["state"]): string {
-  return state.replaceAll("_", " ").replace(/^./u, (value: string) => value.toUpperCase());
+/**
+ * The first step this campaign actually offers, or the honest answer when it offers none.
+ *
+ * The application layer returns the steps as keys (PRD-006b D5); the sentence is this product's,
+ * from the copy module, so the overview and the campaign's own page say the same words for the
+ * same step.
+ */
+function campaignNextStep(actions: CampaignWorkspaceProjection["nextActions"]): string {
+  const available = actions.find((action) => action.available);
+  return available === undefined
+    ? "Open it and see where it stands."
+    : CAMPAIGN_NEXT_ACTION_LABELS[available.id];
 }
 
 function formatTimestamp(timestamp: string): string {

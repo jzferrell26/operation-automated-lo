@@ -7,7 +7,9 @@ import {
   GUIDED_SETUP_CONTROLS,
   guidedSetupStepAnnouncement,
 } from "../../copy/guided-setup-messages.js";
+import type { InternalRefusal } from "../http/internal-api.js";
 import { userMessageSentence } from "../http/user-messages.js";
+import { SupportReference } from "../shell/components/support-details.js";
 import { anchorSelector, type GuidedSetupAnchorId } from "./anchor-registry.js";
 import { GuidedSetupProgressTrack } from "./guided-setup-progress.js";
 import type { GuidedSetupProgress } from "./model/progress.js";
@@ -76,11 +78,14 @@ export type GuidedSetupStepProps = Readonly<{
   progress: GuidedSetupProgress;
   title: string;
   /**
-   * 006D-AC-011. True when the write this step just made did not land. The panel stays on the
-   * step and reads PRD-006b D7's generic sentence out through its own status region; Continue is
-   * the retry, so nothing here is disabled.
+   * 006D-AC-011, through PRD-006b D7. The refusal the write this step just made came back with,
+   * or `undefined` when nothing has gone wrong.
+   *
+   * The panel stays on the step and reads the refusal's own sentence out through its status
+   * region, plus the support reference when the code has no sentence of its own. Continue is the
+   * retry, so nothing here is disabled.
    */
-  writeFailed?: boolean;
+  writeFailure?: InternalRefusal | undefined;
 }>;
 
 const FOCUSABLE_WITHIN_ANCHOR = "input, select, textarea, button, a[href]";
@@ -169,7 +174,7 @@ export function GuidedSetupStep({
   position,
   progress,
   title,
-  writeFailed = false,
+  writeFailure,
 }: GuidedSetupStepProps) {
   const [anchorRect, setAnchorRect] = useState<Rect | undefined>(undefined);
   const [panelSize, setPanelSize] = useState<Size | undefined>(undefined);
@@ -463,14 +468,19 @@ export function GuidedSetupStep({
           to be interrupted for. It is visible as well as announced, because the person who cannot
           hear it is the person about to press Continue and wonder why nothing moved.
         */}
-        {writeFailed ? (
+        {writeFailure === undefined ? null : (
           <LiveRegion
             className={styles.pendingNote}
-            message={userMessageSentence(undefined)}
+            message={
+              <>
+                <span>{userMessageSentence(writeFailure.code)}</span>
+                <SupportReference refusal={writeFailure} />
+              </>
+            }
             urgency="status"
             visible
           />
-        ) : null}
+        )}
       </Sheet>
     </div>
   );

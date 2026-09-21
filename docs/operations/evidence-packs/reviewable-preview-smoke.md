@@ -31,7 +31,7 @@ Ledger: [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md) Gauntlet section, 
 - [ ] Server-only `OALO_REVIEW_SURFACE=authorized` on the review preview URL
 - [ ] Server-only auth/OAuth secrets for preview env (see [`production-environments.md`](../../production-environments.md))
 - [ ] Confirm no second Vercel project will be created
-- [ ] The five PRD-005e operator asks (isolated review Postgres, the PRD-005 server-only env names, a review sign-in secret, one run of the seeding script, and presence for the seven-point proof), stated in full in [PRD-005e, section "Exact operator ask"](../../../library/requirements/in-work/prd-005-authenticated-review-runtime/prd-005e-authenticated-review-runtime-deployed-qualification.md)
+- [ ] The five PRD-005e operator asks (an isolated review Postgres, the server-only variable names on the existing project's Preview environment, the seeded passwords through `--set-password`, one run of the seeding script, and presence for the seven-point proof), stated operatively in [the review session seeding runbook](../review-session-seeding.md) and originally in [PRD-005e, section "Exact operator ask"](../../../library/requirements/in-work/prd-005-authenticated-review-runtime/prd-005e-authenticated-review-runtime-deployed-qualification.md) (restated 2026-09-21 after PRD-006a D9)
 
 ## Production tonight operator sequence
 

@@ -107,10 +107,12 @@ Prove, on one recorded deployment SHA of the existing Vercel project backed by a
 Everything below is a name or an instruction. No value is requested through any agent channel.
 
 1. **An isolated review Postgres URL, never production.** A fresh PostgreSQL 17 database on a managed instance, reachable over TLS. Apply `supabase/migrations/*.sql` in order with a migration login that is a member of `migration_owner`. The application login the app will use must be granted `app_runtime` and `support_runtime` `WITH SET true, INHERIT false` and must **not** be a member of `migration_owner` (see `docs/operations/database-runtime-role.md`). Set the application login's URL as `OALO_DATABASE_URL`, server-only, on the Preview environment of `operation-automated-lo-web`. Tell us the database name so the seeding guard can be confirmed; do not tell us the URL.
-2. **Server-only env names on the existing project's Preview environment**, per `docs/production-environments.md`: `OALO_ENVIRONMENT=preview`, `OALO_APP_URL`, `OALO_ALLOWED_ORIGINS`, `OALO_PROVIDER_MODE=stub`, `OALO_SYNTHETIC_DATA_ONLY=true`, `OALO_DATA_CLASSIFICATION`, `OALO_STRIPE_MODE`, `OALO_TRIGGER_ENVIRONMENT`, `OALO_SUPABASE_MODE`, `OALO_PRODUCTION_TRAFFIC=disabled`, `OALO_BUILD_COMMIT`, `OALO_BUILD_ID`, `OALO_DATABASE_ID`, `OALO_TASK_PROJECT_ID`, `OALO_SECRET_SCOPE_ID`, `OALO_PRIVATE_STORAGE_ID`, `OALO_PUBLISHED_STORAGE_ID`, `OALO_PROVIDER_APP_ID`, `OALO_RELEASE_MANIFEST_JSON`, `OALO_REVIEW_SURFACE=authorized`, `OALO_DATABASE_URL`, plus the PRD-005 additions `OALO_CSRF_SERVER_SECRET`, `OALO_REVIEW_SIGNIN_SECRET`, `OALO_REVIEW_LOCATION_ID`, and `OALO_REVIEW_OUTSIDER_LOCATION_ID`. Send back the list of names you set, the deployment URL, and the SHA. Never a value. Nothing with a `NEXT_PUBLIC_` prefix beyond the three allowlisted names.
-3. **The review sign-in secret.** Generate at least 32 random bytes (`openssl rand -base64 32`, then make it URL-safe), store it in `OALO_REVIEW_SIGNIN_SECRET` on Vercel and in your password manager, and keep it. You will type it into the sign-in page yourself during the proof. No agent will ask for it, and if one does, refuse.
-4. **Run the seeding script once** against the review database with the migration login: `node tooling/scripts/database/seed-review-location.mjs --review-database-url <url> --confirm-database <name>` (005b D5). Paste back only the three printed UUIDs for `OALO_REVIEW_LOCATION_ID` and `OALO_REVIEW_OUTSIDER_LOCATION_ID`.
-5. **Be present for the proof.** Sign in as `creator`, `approver`, and `outsider` when asked, in separate browser contexts, and allow the screenshots listed in 005E-AC-010 to be taken without any secret on screen.
+2. **The server-only variable names from `docs/production-environments.md` on the existing project `operation-automated-lo-web`, Preview environment only.** No second project. The application reads no persona sign-in secret and no review location variable; those three names left with PRD-006a D9.
+3. **Initial passwords for the seeded creator, approver and outsider**, set through `tooling/scripts/database/seed-review-location.mjs --set-password` (an echo-suppressed prompt, or `--password-stdin`); `OALO_SELF_SERVE_SIGNUP` and the two email names only if sign-up and forgot-password are to be exercised on the review URL.
+4. **One run of the seeding script** against the review database with the migration login. The printed ids are for the proof record; no variable takes them any more.
+5. **Be present for the proof**, which starts at `/sign-in` with the seeded email and password, in separate browser contexts for the creator, the approver and the outsider, and allow the screenshots listed in 005E-AC-010 to be taken without any secret on screen. The operative runbook is `docs/operations/review-session-seeding.md`.
+
+Amended 2026-09-21 at the batch close-out (quality finding C-1): asks 2 to 5 restated after PRD-006a D9 removed the persona sign-in page, `OALO_REVIEW_SIGNIN_SECRET`, `OALO_REVIEW_LOCATION_ID` and `OALO_REVIEW_OUTSIDER_LOCATION_ID`; the earlier text asked for a secret the sign-in page no longer takes and omitted `--set-password`, which 006A-AC-029 makes the only way to create the seeded credentials. `docs/operations/review-session-seeding.md` (reviewed by runbook-writing-guardian) is the operative statement and pull request #67 repeats it.
 
 ## Blockers (honest)
 
@@ -118,7 +120,7 @@ Everything below is a name or an instruction. No value is requested through any 
 |---|---|---|
 | No isolated review database exists | Operator | Ask 1 |
 | Required `OALO_*` env not set on the project (readiness is 503 today) | Operator | Ask 2 |
-| No sign-in secret or seeded rows | Operator | Asks 3 and 4 |
+| No seeded credentials or seeded rows | Operator | Asks 3 and 4 |
 | 005a, 005b, 005c not yet merged | Engineering | Land them first; the deploy in 005E-AC-004 is from the merged tree |
 | `/api/version` empty 500 | Engineering (agent-executable now) | 005E-AC-002 |
 

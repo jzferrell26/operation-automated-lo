@@ -3,7 +3,7 @@
 PRD-006d D9 and acceptance criterion 006D-AC-015. **Status: SIGNED.** `ux-ui-guardian` prepared the skeleton; the orchestrator filled it in
 from real screenshots of the running application and signed it (see "How this was filled").
 
-- Commit reviewed: `74999a8`
+- Commit reviewed: `74999a8` (the merged tree `b3cdae0` differs from it only by the 211 Linux screenshot baselines redrawn for the rail and banner fixes this sign-off found; no rendering code differs)
 - Date: 2026-09-21
 - Signed by: the orchestrator (Claude Code, the raid's orchestrating session)
 

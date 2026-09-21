@@ -114,6 +114,7 @@ For the ledger's reconciliation. Nothing here changes a status in PRD-005; the o
 | `005B-AC-016` (one audit row per issuance and revocation; no secret in any row, log, or response) | CRR-042 (OPEN) | Carried forward and widened in `006A-AC-031`. |
 | `005B-AC-019` (the page states this is not HighLevel SSO and satisfies no deferred row) | CRR-045 (OPEN) | Carried forward in user language: the sign-in footer line in 006b D10 ("This sign-in is separate from HighLevel. Connecting HighLevel comes later.") and `006A-AC-032`. |
 | `005B-AC-020` (routes unreachable in synthetic and production modes) | CRR-046 (OPEN) | Carried forward in `006A-AC-026`, with the production behaviour restated: the routes return 404 wherever `authenticatedWorkspaceMode` refuses to serve, which is production without the review flag. |
+| PRD-005e "Exact operator ask", asks 2 to 5 (persona sign-in secret, review location variables) | CRR-076 to CRR-084 and CRR-088 (BLOCKED) | Superseded by `006A-AC-029`: the seeded people carry passwords set through `--set-password`, the sign-in page takes an email and a password, and the three variables are gone; PRD-005e's section was restated on 2026-09-21 and `docs/operations/review-session-seeding.md` is the operative statement. |
 
 **Kept unchanged from PRD-005b** (rows stay as they are): `005B-AC-001` through `009` (the table, its functions other than the persona one, triggers, grants), `005B-AC-017` and `018` (seeding and its runbook, which 006a D8 extends rather than replaces), and every PRD-005a and PRD-005c row. `005A-AC-011` (CRR-019, display names in the shell) is closed by `006A-AC-028` if PRD-005 Wave 2 has not closed it first.
 
@@ -129,6 +130,7 @@ Additive, owned by 006a: `platform.user_credentials`, `platform.credential_token
 
 - New: `POST /api/auth/sign-in`, `sign-up`, `forgot-password`, `reset-password`, `verify-email`, `sign-out`, `change-password`, `choose`; pages `/sign-in`, `/sign-in/choose`, `/sign-up`, `/forgot-password`, `/reset-password`, `/verify-email`, `/settings/account`. All 404 in synthetic mode and wherever the workspace mode refuses to serve.
 - New: `POST /api/setup/progress`, `POST /api/setup/profile` (session and CSRF required).
+- New (Wave 7h, `32273f2`, PRD-006b D10's unverified-email notice): `POST /api/auth/resend-verification` under the full mutation gate, five per person per hour, one `auth.verification-resent` audit row per attempt, a fixed 303 with no body; it reads through `platform.unverified_email_display_for_user`, the sixteenth allowlisted definer function, reviewed by security-guardian at the close-out (`bd11e26`).
 - Removed: `GET /review/sign-in`, `POST /api/review/session`, `POST /api/review/session/sign-out` (PRD-005b D4, built in Wave 2).
 - Unchanged: `POST /api/campaigns/preflight`, `POST /api/campaigns/approve`, `/api/health/*`, `/api/version`.
 

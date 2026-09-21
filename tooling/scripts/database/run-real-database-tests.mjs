@@ -20,6 +20,11 @@ const LOCAL_DATABASE_HOST = "127.0.0.1";
 const LOCAL_DATABASE_ROLE = "postgres";
 const LOCAL_DATABASE_PASSWORD = "postgres";
 
+const DATABASE_PACKAGE_TEST_DIRECTORY = "packages/db/test";
+const DATABASE_UNIT_TEST_SUFFIX = ".test.mjs";
+const INTEGRATION_TEST_SUFFIX = ".integration.test.mjs";
+export const DATABASE_UNIT_TEST_LABEL = "run the @oalo/db package unit tests";
+
 export const WEB_POSTGRES_PROJECT = "web-postgres";
 const WEB_POSTGRES_TEST_DIRECTORY = "apps/web/src";
 const WEB_POSTGRES_TEST_SUFFIX = ".postgres.test.ts";
@@ -53,11 +58,22 @@ export const GATE_SEEDED_CREDENTIALS = Object.freeze({
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const defaultRepositoryRoot = resolve(scriptDirectory, "../../..");
 
-async function discoverSqlFiles(repositoryRoot, directory, suffix) {
+/**
+ * `excludedSuffix` exists for one case: `packages/db/test` holds both the package's unit tests and
+ * its real-PostgreSQL integration tests, and every integration file name ends with the unit
+ * suffix. Discovering the unit files therefore has to subtract the longer suffix, or the
+ * connectionless step would drag every integration file in and fail on a missing database URL.
+ */
+async function discoverSqlFiles(repositoryRoot, directory, suffix, excludedSuffix) {
   const absoluteDirectory = resolve(repositoryRoot, directory);
   const entries = await readdir(absoluteDirectory, { withFileTypes: true });
   const files = entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith(suffix))
+    .filter(
+      (entry) =>
+        entry.isFile() &&
+        entry.name.endsWith(suffix) &&
+        (excludedSuffix === undefined || !entry.name.endsWith(excludedSuffix)),
+    )
     .map((entry) =>
       relative(repositoryRoot, resolve(absoluteDirectory, entry.name)).replaceAll("\\", "/"),
     )
@@ -78,7 +94,30 @@ export async function discoverMigrationFiles(repositoryRoot = defaultRepositoryR
 }
 
 export async function discoverIntegrationTestFiles(repositoryRoot = defaultRepositoryRoot) {
-  return discoverSqlFiles(repositoryRoot, "packages/db/test", ".integration.test.mjs");
+  return discoverSqlFiles(repositoryRoot, DATABASE_PACKAGE_TEST_DIRECTORY, INTEGRATION_TEST_SUFFIX);
+}
+
+/**
+ * 005C-AC-006, Wave 7s. `packages/db/test/*.test.mjs` holds the package's connectionless
+ * `node:test` suites, among them the `transaction-context.test.mjs` cases that prove
+ * `validateTenantContext` rejects a UUID correlation id and accepts the canonical opaque form.
+ *
+ * `@oalo/db` declares its own `test` script for them, but no gate has ever invoked it: the root
+ * `verify:offline` chain never runs `turbo run test`, and `pnpm test:db` discovered only the
+ * `.integration.test.mjs` half of this directory. Four files therefore sat on the tree that no
+ * gate ran. They are discovered here and run as a setup step, directly after the build that
+ * produces the `packages/db/dist` they import, and before the local stack starts, because they
+ * need no database at all.
+ *
+ * Like the integration discovery, an empty result throws rather than quietly shrinking the plan.
+ */
+export async function discoverDatabaseUnitTestFiles(repositoryRoot = defaultRepositoryRoot) {
+  return discoverSqlFiles(
+    repositoryRoot,
+    DATABASE_PACKAGE_TEST_DIRECTORY,
+    DATABASE_UNIT_TEST_SUFFIX,
+    INTEGRATION_TEST_SUFFIX,
+  );
 }
 
 /**
@@ -159,7 +198,8 @@ export function assertDisposableTestDatabaseName(databaseName) {
 }
 
 export function commandPlan(discovery, repositoryRoot = defaultRepositoryRoot) {
-  const { pgtapFiles, migrationFiles, integrationTestFiles, databasePort } = discovery;
+  const { pgtapFiles, migrationFiles, integrationTestFiles, databaseUnitTestFiles, databasePort } =
+    discovery;
   const webPostgresTestFiles = discovery.webPostgresTestFiles ?? [];
   const node = process.execPath;
   const packageRunner = resolvePackageRunner(node);
@@ -202,6 +242,13 @@ export function commandPlan(discovery, repositoryRoot = defaultRepositoryRoot) {
           "--filter=@oalo/contracts...",
         ],
         label: "build @oalo/db, @oalo/auth, and their workspace dependencies",
+      }),
+      // The package's own connectionless suites, run against the dist the step above just wrote
+      // and before anything starts the local stack. They are the only gate these files have.
+      Object.freeze({
+        command: node,
+        args: ["--test", "--test-concurrency=1", ...databaseUnitTestFiles],
+        label: DATABASE_UNIT_TEST_LABEL,
       }),
       Object.freeze({
         command: node,
@@ -379,6 +426,7 @@ export async function runRealDatabaseTests(options = {}) {
   const plan = commandPlan(
     {
       databasePort: await readLocalDatabasePort(repositoryRoot),
+      databaseUnitTestFiles: await discoverDatabaseUnitTestFiles(repositoryRoot),
       integrationTestFiles: await discoverIntegrationTestFiles(repositoryRoot),
       migrationFiles: await discoverMigrationFiles(repositoryRoot),
       pgtapFiles: await discoverPgtapFiles(repositoryRoot),

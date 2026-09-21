@@ -35,7 +35,6 @@ import {
  */
 const ports = vi.hoisted(() => ({
   createDefaultCampaignCommandPorts: vi.fn(),
-  createLocalSyntheticPrincipal: vi.fn(),
   resolveAuthenticatedReadPrincipal: vi.fn(),
 }));
 
@@ -47,6 +46,35 @@ vi.mock("./authenticated-principal.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./authenticated-principal.js")>();
   original.module = actual;
   return { ...actual, ...ports };
+});
+
+/**
+ * 005A-AC-015 needs a spy on the synthetic principal factory, and the spy has to sit on the seam
+ * the production path actually crosses.
+ *
+ * The only production call of `createLocalSyntheticPrincipal` is made by
+ * `resolveAuthenticatedSession` in `authenticated-principal.ts`. While the factory was declared in
+ * that same module, the call went through the module's own local binding, which no module mock can
+ * reach: replacing the namespace importers see leaves a module's internal reference untouched. The
+ * spy above therefore recorded nothing the resolver did, and `not.toHaveBeenCalled()` held even on
+ * a build that constructed a synthetic principal on a review deployment.
+ *
+ * The factory now lives in `local-synthetic-principal.js` and the resolver imports it, so mocking
+ * that module intercepts the real call. The positive control at the end of this file proves the
+ * spy fires on the synthetic path, so this seam cannot silently go vacuous again.
+ */
+const syntheticPrincipal = vi.hoisted(() => ({
+  createLocalSyntheticPrincipal: vi.fn(),
+}));
+
+const originalSyntheticPrincipal = vi.hoisted(() => ({
+  module: undefined as typeof import("./local-synthetic-principal.js") | undefined,
+}));
+
+vi.mock("./local-synthetic-principal.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./local-synthetic-principal.js")>();
+  originalSyntheticPrincipal.module = actual;
+  return { ...actual, ...syntheticPrincipal };
 });
 
 const CSRF_SECRET = randomBytes(32).toString("base64url");
@@ -136,10 +164,16 @@ let loggedErrors: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   const actual = original.module;
   if (actual === undefined) throw new Error("The authenticated principal module did not load");
+  const actualSynthetic = originalSyntheticPrincipal.module;
+  if (actualSynthetic === undefined) {
+    throw new Error("The local synthetic principal module did not load");
+  }
   ports.createDefaultCampaignCommandPorts.mockImplementation(
     actual.createDefaultCampaignCommandPorts,
   );
-  ports.createLocalSyntheticPrincipal.mockImplementation(actual.createLocalSyntheticPrincipal);
+  syntheticPrincipal.createLocalSyntheticPrincipal.mockImplementation(
+    actualSynthetic.createLocalSyntheticPrincipal,
+  );
   ports.resolveAuthenticatedReadPrincipal.mockImplementation(
     actual.resolveAuthenticatedReadPrincipal,
   );
@@ -293,14 +327,34 @@ describe("runtime authentication at the exported handlers", () => {
 
     expect(approval.status).toBe(401);
     expect(preflight.status).toBe(401);
-    expect(ports.createLocalSyntheticPrincipal).not.toHaveBeenCalled();
+    expect(syntheticPrincipal.createLocalSyntheticPrincipal).not.toHaveBeenCalled();
   });
 
   it("refuses an unauthenticated mutation in production mode for the same reason", async () => {
     const approval = await handleCampaignApproval(mutationRequest(), PRODUCTION_ENV);
+    const preflight = await handleCampaignPreflight(mutationRequest(), PRODUCTION_ENV);
 
     expect(approval.status).toBe(401);
-    expect(ports.createLocalSyntheticPrincipal).not.toHaveBeenCalled();
+    expect(preflight.status).toBe(401);
+    expect(syntheticPrincipal.createLocalSyntheticPrincipal).not.toHaveBeenCalled();
+  });
+
+  /**
+   * 005A-AC-015's positive control, and the reason the two cases above mean anything.
+   *
+   * The same route, the same spy, the same uncredentialled request, in local synthetic mode: the
+   * factory must be called. If a refactor ever moves the synthetic construction back inside
+   * `authenticated-principal.ts`, or behind any other binding this file does not mock, this case
+   * fails immediately rather than leaving the two negatives above passing vacuously.
+   */
+  it("builds the synthetic principal on the same route in local synthetic mode", async () => {
+    const approval = await handleCampaignApproval(mutationRequest(), LOCAL_SYNTHETIC_ENV);
+
+    expect(approval.status).not.toBe(401);
+    expect(syntheticPrincipal.createLocalSyntheticPrincipal).toHaveBeenCalled();
+    expect(syntheticPrincipal.createLocalSyntheticPrincipal.mock.results[0]?.value).toMatchObject({
+      authenticationMode: "local_synthetic",
+    });
   });
 
   /**

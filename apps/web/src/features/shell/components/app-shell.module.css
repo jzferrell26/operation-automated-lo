@@ -57,12 +57,21 @@
   list-style: none;
 }
 
+/*
+ * Sign-off finding, 2026-09-21 (PRD-006d D9). The row used to place the state chip in a third
+ * column that never shrank, so a long chip ("Not included in your plan") squeezed the label
+ * column to nothing: "Automation" ran under the chip and "Email and SMS" broke into three
+ * lines at 1440, 1180 and 768 in both themes, on every screen with the rail. The chip and the
+ * detail now sit on their own rows under the label, so nothing in the row ever competes for
+ * width and every row reads the same way regardless of how long its state is.
+ */
 .navigationLink {
   display: grid;
   min-block-size: 44px;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: var(--space-2);
+  column-gap: var(--space-2);
+  row-gap: var(--space-1);
   padding: var(--space-2);
   border: 1px solid transparent;
   border-radius: var(--radius-control);
@@ -95,6 +104,8 @@
 }
 
 .navigationState {
+  grid-column: 2;
+  justify-self: start;
   border-radius: var(--radius-pill);
   background: var(--st-neutral-bg);
   color: var(--st-neutral-fg);
@@ -103,7 +114,7 @@
 }
 
 .navigationDetail {
-  grid-column: 2 / -1;
+  grid-column: 2;
   color: var(--tx-on-nav);
   font-size: var(--text-caption-size);
   line-height: var(--leading-normal);
@@ -214,6 +225,20 @@
   background: var(--st-info-bg);
   color: var(--st-info-fg);
   font-size: var(--text-secondary-size);
+}
+
+/*
+ * Sign-off finding, 2026-09-21. The trailing status ("Not connected yet") shared the row's
+ * width with the sentence and broke into three lines at 768; the sentence is the part that
+ * wraps and the status keeps its line.
+ */
+.syntheticDisclosure > span {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.syntheticDisclosure > strong {
+  flex: none;
 }
 
 .syntheticDisclosure[data-review-surface="true"] {

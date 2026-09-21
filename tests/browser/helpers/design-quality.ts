@@ -714,6 +714,18 @@ export async function settleForScreenshot(
    */
   await expectStylesHaveApplied(page);
   /**
+   * Every font face the page asked for has loaded, or failed for good.
+   *
+   * Measured on 2026-09-21 on the ubuntu-24.04 runner: the verify job's picture of the reports
+   * page at 1440 and 1180 differed from the baseline by two percent of a 9,383 px page in both
+   * themes, while two draws of the same page by the baselines workflow were identical to the
+   * pixel. A sheet that has applied is not a font that has arrived: text photographed in the
+   * fallback face moves every glyph on the longest page in the product. `document.fonts.ready`
+   * settles when every requested face is loaded or has failed, so the picture is of the type the
+   * design system specifies rather than of whatever the cache held.
+   */
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  /**
    * Every transition the last change started has finished.
    *
    * Measured on 2026-09-20 by the stricter keyboard walk. `app-shell.module.css` transitions

@@ -28,6 +28,11 @@ import {
   resolveRuntimeShellSession,
 } from "../../server/runtime-authentication.js";
 import { readSetupPreferencesForRequest } from "../../server/setup-preferences.js";
+import {
+  canRenderDashboardPreview,
+  dashboardPreviewShell,
+} from "../../server/dashboard-preview.js";
+import { DashboardPreviewProvider } from "../../features/dashboard-preview/preview-provider.js";
 
 export const dynamic = "force-dynamic";
 
@@ -85,6 +90,27 @@ const APPROVER_CAPABLE_ROLE_LABELS: ReadonlySet<string> = new Set(
  */
 export default async function AuthenticatedLayout({ children }: Readonly<{ children: ReactNode }>) {
   const workspace = loadAuthenticatedWorkspace();
+
+  if (canRenderDashboardPreview()) {
+    const preview = dashboardPreviewShell();
+    return (
+      <DashboardPreviewProvider>
+        <AppShell
+          navigation={projectNavigationForSession(preview.navigation, preview.session)}
+          session={preview.session}
+          workspaceMode="synthetic"
+          dashboardPreview
+          accountControls={
+            <Link href="/onboarding" variant="action">
+              Quick start
+            </Link>
+          }
+        >
+          {children}
+        </AppShell>
+      </DashboardPreviewProvider>
+    );
+  }
 
   if (workspace.mode !== "review") {
     const fixture = workspace.ui;

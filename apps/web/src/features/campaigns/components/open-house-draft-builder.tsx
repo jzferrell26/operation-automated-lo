@@ -26,6 +26,8 @@ import {
 } from "../../http/internal-api.js";
 import { SupportDetails, SupportReference } from "../../shell/components/support-details.js";
 import styles from "./open-house-draft-builder.module.css";
+import { useDashboardPreview } from "../../dashboard-preview/preview-provider.js";
+import { campaignCheckSchema } from "../../dashboard-preview/model.js";
 
 type PreflightResponse = Readonly<{
   state: string;
@@ -47,7 +49,7 @@ type PreflightResponse = Readonly<{
   dailyBudgetMinor: number;
   totalBudgetMinor: number;
   specialAdCategory: string;
-  persistenceKind: "filesystem" | "postgres";
+  persistenceKind: "filesystem" | "postgres" | "browser";
   providerPublicationAuthorized: false;
 }>;
 
@@ -90,6 +92,10 @@ export function OpenHouseDraftBuilder({
   profile,
 }: Readonly<{ profile?: SetupProfile | undefined }> = {}) {
   const [result, setResult] = useState<PreflightResponse | null>(null);
+  const dashboardPreview = useDashboardPreview();
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const resultRef = useRef<HTMLElement | null>(null);
+  const [previewSaveFailed, setPreviewSaveFailed] = useState(false);
   /**
    * `null` means nothing has gone wrong. Anything else is the refusal the route answered with: the
    * code to turn into sentences, and the reference to show when there is no sentence for it.
@@ -142,31 +148,36 @@ export function OpenHouseDraftBuilder({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting || (dashboardPreview && !dashboardPreview.ready)) return;
     setSubmitting(true);
     setRefusal(null);
     setFieldErrors({});
     setResult(null);
+    setPreviewSaveFailed(false);
     const form = new FormData(event.currentTarget);
 
     try {
-      const response = await postInternalJson("/api/campaigns/preflight", {
-        address: form.get("address"),
-        stateCode: form.get("stateCode"),
-        propertyDescription: form.get("propertyDescription"),
-        openHouseStartsAt: new Date(String(form.get("openHouseStartsAt"))).toISOString(),
-        openHouseEndsAt: new Date(String(form.get("openHouseEndsAt"))).toISOString(),
-        realtorDisplayName: form.get("realtorDisplayName"),
-        headline: form.get("headline"),
-        body: form.get("body"),
-        callToAction: form.get("callToAction"),
-        disclosureText: form.get("disclosureText"),
-        consentText: form.get("consentText"),
-        region: form.get("region"),
-        dailyBudgetDollars: Number(form.get("dailyBudgetDollars")),
-        totalBudgetDollars: Number(form.get("totalBudgetDollars")),
-        propertyPermissionConfirmed: form.get("propertyPermissionConfirmed") === "on",
-        realtorPermissionConfirmed: form.get("realtorPermissionConfirmed") === "on",
-      });
+      const response = await postInternalJson(
+        dashboardPreview ? "/api/preview/campaigns/check" : "/api/campaigns/preflight",
+        {
+          address: form.get("address"),
+          stateCode: form.get("stateCode"),
+          propertyDescription: form.get("propertyDescription"),
+          openHouseStartsAt: new Date(String(form.get("openHouseStartsAt"))).toISOString(),
+          openHouseEndsAt: new Date(String(form.get("openHouseEndsAt"))).toISOString(),
+          realtorDisplayName: form.get("realtorDisplayName"),
+          headline: form.get("headline"),
+          body: form.get("body"),
+          callToAction: form.get("callToAction"),
+          disclosureText: form.get("disclosureText"),
+          consentText: form.get("consentText"),
+          region: form.get("region"),
+          dailyBudgetDollars: Number(form.get("dailyBudgetDollars")),
+          totalBudgetDollars: Number(form.get("totalBudgetDollars")),
+          propertyPermissionConfirmed: form.get("propertyPermissionConfirmed") === "on",
+          realtorPermissionConfirmed: form.get("realtorPermissionConfirmed") === "on",
+        },
+      );
       const payload: unknown = await response.json();
       if (!response.ok) {
         /**
@@ -184,6 +195,23 @@ export function OpenHouseDraftBuilder({
         return;
       }
       setRefusal(null);
+      if (dashboardPreview) {
+        const checked = campaignCheckSchema.parse(payload);
+        if (
+          !dashboardPreview.save((current) => ({
+            ...current,
+            campaigns: [
+              checked,
+              ...current.campaigns.filter(
+                (campaign) => campaign.campaignRef !== checked.campaignRef,
+              ),
+            ],
+          }))
+        ) {
+          setPreviewSaveFailed(true);
+          return;
+        }
+      }
       const saved = payload as PreflightResponse;
       setResult(saved);
       // PRD-006c D3 step 4. The walkthrough finishes this step when the checks have actually run,
@@ -203,6 +231,52 @@ export function OpenHouseDraftBuilder({
     }
   }
 
+  useEffect(() => {
+    if (result) resultRef.current?.focus();
+  }, [result]);
+
+  function fillSampleProperty() {
+    const form = formRef.current;
+    if (!form || !dashboardPreview) return;
+    const starts = new Date();
+    starts.setDate(starts.getDate() + 7);
+    starts.setHours(13, 0, 0, 0);
+    const ends = new Date(starts.getTime() + 2 * 60 * 60 * 1000);
+    const localTime = (date: Date) =>
+      new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    const values: Record<string, string> = {
+      address: "214 Cedar Street, Dallas, TX",
+      stateCode: "TX",
+      propertyDescription:
+        "Sample three-bedroom home with an open living area and a covered patio.",
+      openHouseStartsAt: localTime(starts),
+      openHouseEndsAt: localTime(ends),
+      realtorDisplayName: dashboardPreview.state.partners[0]?.name ?? "Jordan Avery",
+      headline: "Tour a place to call home",
+      body: "Explore the home and meet the team at our upcoming open house. Ask us about your next steps.",
+      callToAction: "Plan your visit",
+      disclosureText:
+        "Sample marketing content for product testing only. Equal Housing Opportunity.",
+      consentText:
+        "By submitting this sample form, you agree to be contacted about this property. No form is sent in this preview.",
+      region: dashboardPreview.state.profile.region || "Dallas, TX",
+      dailyBudgetDollars: "25",
+      totalBudgetDollars: "75",
+    };
+    for (const [name, value] of Object.entries(values)) {
+      const control = form.elements.namedItem(name);
+      if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement)
+        control.value = value;
+    }
+    for (const name of ["propertyPermissionConfirmed", "realtorPermissionConfirmed"]) {
+      const control = form.elements.namedItem(name);
+      if (control instanceof HTMLInputElement) control.checked = true;
+    }
+    setResult(null);
+    setFieldErrors({});
+    setRefusal(null);
+  }
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -220,11 +294,31 @@ export function OpenHouseDraftBuilder({
         <Icon decorative name="lock" size="sm" tone="info" />
         <div>
           <strong>Nothing goes out from this page</strong>
-          <p>This is saved to your workspace. It doesn&apos;t publish, spend, or send anything.</p>
+          <p>
+            {dashboardPreview
+              ? "Test drafts are saved in this browser after the checks run. Use sample details. Nothing is published or sent."
+              : "This is saved to your workspace. It doesn't publish, spend, or send anything."}
+          </p>
         </div>
       </Card>
 
-      <form className={styles.form} onSubmit={handleSubmit}>
+      {dashboardPreview ? (
+        <Button
+          variant="outline"
+          disabled={!dashboardPreview.ready || submitting}
+          onClick={fillSampleProperty}
+        >
+          Fill with a sample property
+        </Button>
+      ) : null}
+      {previewSaveFailed ? (
+        <LiveRegion
+          urgency="alert"
+          visible
+          message="This draft was not saved. Check browser storage or reset the preview in Settings, then try again."
+        />
+      ) : null}
+      <form className={styles.form} onSubmit={handleSubmit} ref={formRef}>
         {/*
           PRD-006d 006D-AC-011 and rubric axis 9. A failed save says what happened and what to do
           next, above the first field, through the product's announcer.
@@ -409,14 +503,18 @@ export function OpenHouseDraftBuilder({
 
         <Button
           data-tour={GUIDED_SETUP_ANCHORS.campaignCreateSubmit}
-          disabled={submitting}
+          disabled={submitting || (dashboardPreview !== null && !dashboardPreview.ready)}
           type="submit"
         >
           {submitting ? "Running the checks" : "Save and run the checks"}
         </Button>
       </form>
 
-      {result ? <CampaignCheckResult result={result} /> : null}
+      {result ? (
+        <section ref={resultRef} tabIndex={-1} aria-label="Campaign check result">
+          <CampaignCheckResult result={result} />
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -461,7 +559,11 @@ function CampaignCheckResult({ result }: Readonly<{ result: PreflightResponse }>
         {result.findings.length === 0 ? (
           <Card padding="md">
             <strong>Nothing to fix.</strong>
-            <p>This campaign meets every rule we check. An approver can sign off on it now.</p>
+            <p>
+              {result.persistenceKind === "browser"
+                ? "The sample content checks passed. Open the campaign to try a test approval. Live account and artifact checks still require connected services."
+                : "This campaign meets every rule we check. An approver can sign off on it now."}
+            </p>
           </Card>
         ) : (
           result.findings.map((finding) => (

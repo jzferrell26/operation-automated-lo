@@ -18,3 +18,5 @@ Thumbs.db
 /tmp/g2-observations/
 /tmp/g2-sanitized-fixtures/
 tmp/
+
+.vercel

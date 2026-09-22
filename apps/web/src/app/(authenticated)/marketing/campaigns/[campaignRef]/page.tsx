@@ -6,11 +6,14 @@ import { AuthenticatedWorkspaceUnavailableError } from "../../../../../server/au
 import { CampaignWorkspaceStoreUnavailableError } from "../../../../../server/campaign-persistence-runtime.js";
 import { readWorkspaceCampaignForRequest } from "../../../../../server/campaign-workspace-reads.js";
 import { SIGN_IN_PATH } from "../../../../../server/runtime-authentication.js";
+import { canRenderDashboardPreview } from "../../../../../server/dashboard-preview.js";
+import { DashboardPreviewCampaign } from "../../../../../features/dashboard-preview/dashboard-screen.js";
 
 export default async function CampaignPage({
   params,
 }: Readonly<{ params: Promise<{ campaignRef: string }> }>) {
   const { campaignRef } = await params;
+  if (canRenderDashboardPreview()) return <DashboardPreviewCampaign campaignRef={campaignRef} />;
   const incoming = await headers();
   const request = new Request("https://oalo.local/marketing/campaigns", { headers: incoming });
   let read: Awaited<ReturnType<typeof readWorkspaceCampaignForRequest>>;

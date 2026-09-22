@@ -27,6 +27,10 @@ export type UserMessage = Readonly<{
  * pair.
  */
 export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Object.freeze({
+  ORIGIN_NOT_ALLOWED: {
+    what: "This request did not come from the page you are testing.",
+    whatToDo: "Open the dashboard directly, refresh the page, and try again.",
+  },
   INVALID_CAMPAIGN_DRAFT: {
     what: "Some of the campaign details aren't filled in the way the checks expect.",
     whatToDo: "Look over the fields marked below and try again.",

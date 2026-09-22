@@ -23,6 +23,7 @@
     "test:e2e:preview": "vitest run --project e2e-preview",
     "test:browser:install": "playwright install chromium",
     "test:browser": "playwright test --config playwright.config.ts",
+    "test:browser:dashboard": "playwright test --config playwright.dashboard-preview.config.ts",
     "tasks:local": "pnpm --filter @oalo/tasks run run:local",
     "jscpd": "jscpd --config jscpd.json",
     "audit:boundaries": "node tooling/scripts/audit-boundaries.mjs && node tooling/scripts/audit-boundaries.mjs --assert-reject tooling/fixtures/boundaries/reverse-dependency.json",

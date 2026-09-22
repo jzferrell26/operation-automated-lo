@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation.js";
 import { Button, Dialog, Icon, IconButton, Link, TextField, type IconName } from "@oalo/ui";
 import { ThemeControl } from "../../theme/ThemeControl.js";
 import { useRequiredDashboardPreview } from "./preview-provider.js";
 import styles from "./product-shell.module.css";
 import "@oalo/ui/product-tokens.css";
+import { SetupWelcome } from "./setup-wizard.js";
+import { ProductHelp } from "./product-help.js";
+import { ProductWalkthrough } from "./product-walkthrough.js";
 
 const navigation: readonly { label: string; href: string; icon: IconName; section: string }[] = [
   { label: "Overview", href: "/overview", icon: "home", section: "Workspace" },
@@ -52,7 +55,27 @@ export function ProductShell({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
   const [about, setAbout] = useState(false);
   const [appearance, setAppearance] = useState(false);
+  const [help, setHelp] = useState(false);
+  const closeHelp = useCallback(() => setHelp(false), []);
+  const headerRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const header = headerRef.current;
+    const root = header?.closest('[data-product-shell="true"]') as HTMLElement | null;
+    if (!header || !root) return;
+    const measure = () =>
+      root.style.setProperty(
+        "--product-header-height",
+        `${header.getBoundingClientRect().height}px`,
+      );
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    measure();
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--product-header-height");
+    };
+  }, []);
   const title =
     [...navigation, ...utility]
       .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
@@ -198,7 +221,7 @@ export function ProductShell({ children }: { children: ReactNode }) {
         {rail(collapsed)}
       </aside>
       <div className={styles.workspace}>
-        <header className={styles.topbar} data-shell-sticky-header="true">
+        <header ref={headerRef} className={styles.topbar} data-shell-sticky-header="true">
           <IconButton
             className={styles.desktopToggle}
             icon="panel-left"
@@ -232,6 +255,7 @@ export function ProductShell({ children }: { children: ReactNode }) {
               Demo workspace
             </Button>
             <IconButton icon="sun" label="Appearance" onClick={() => setAppearance(true)} />
+            <IconButton icon="help" label="Help & setup" onClick={() => setHelp(true)} />
             <Link
               href="/settings/account"
               className={styles.headerAvatar}
@@ -242,6 +266,21 @@ export function ProductShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className={styles.content} id="main-content">
+          {pathname !== "/onboarding" ? <SetupWelcome /> : null}
+          {pathname !== "/onboarding" &&
+          state.setup.welcomeSeen &&
+          state.setup.status !== "completed" ? (
+            <div className={styles.setupStrip}>
+              <Link href="/onboarding">
+                Continue workspace setup <Icon name="arrow-right" decorative size="sm" />
+              </Link>
+              {state.setup.guide?.paused ? (
+                <Button variant="ghost" onClick={() => setHelp(true)}>
+                  Resume walkthrough
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
           {children}
         </main>
         <footer className={styles.footer}>
@@ -313,6 +352,8 @@ export function ProductShell({ children }: { children: ReactNode }) {
       >
         <ThemeControl />
       </Dialog>
+      <ProductHelp open={help} onClose={closeHelp} />
+      <ProductWalkthrough suspended={drawer || search || about || appearance || help} />
     </div>
   );
 }

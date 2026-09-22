@@ -36,6 +36,7 @@ import {
   SelectField,
   StatCards,
 } from "./product-components.js";
+import { SetupWizard } from "./setup-wizard.js";
 import { SettingsWorkspace } from "./workspace-settings.js";
 import styles from "./workspace.module.css";
 
@@ -600,6 +601,7 @@ function Leads({ pipeline = false }: { pipeline?: boolean }) {
           className={styles.board}
           role="region"
           aria-label="Lead pipeline, scroll horizontally for more stages"
+          data-product-guide="lead-stages"
           tabIndex={0}
         >
           {leadStages.map((lane, index) => (
@@ -766,6 +768,7 @@ function Partners() {
         description="Your people, their properties, and the conversations you build together."
       >
         <Button
+          data-product-guide="add-partner"
           onClick={() => {
             setEditing(null);
             setOpen(true);
@@ -802,7 +805,7 @@ function Partners() {
           },
         ]}
       />
-      <div className={styles.listToolbar}>
+      <div className={styles.listToolbar} data-product-guide="partner-search">
         <TextField
           label="Search partners"
           value={query}
@@ -939,7 +942,7 @@ function Reports() {
         eyebrow="Reports"
         description="Follow the connection between your marketing, partners, and pipeline."
       >
-        <Button variant="outline" onClick={exportReport}>
+        <Button variant="outline" onClick={exportReport} data-product-guide="download-report">
           <Icon name="download" decorative size="sm" /> Download report
         </Button>
       </PageHeader>
@@ -1170,85 +1173,6 @@ function Assets({ creative = false }: { creative?: boolean }) {
   );
 }
 
-function Onboarding() {
-  const { state } = useRequiredDashboardPreview();
-  const steps = [
-    {
-      title: "Make it your brand",
-      detail: "Add your company, market, and the voice people recognize.",
-      href: "/brand",
-      icon: "building" as const,
-      complete: state.profile.company !== "Prairie Home Lending",
-    },
-    {
-      title: "Create your first campaign",
-      detail: "Give a property the spotlight with an Open House Boost.",
-      href: "/marketing/campaigns/new",
-      icon: "megaphone" as const,
-      complete: state.campaigns.length > 0,
-    },
-    {
-      title: "Give it a final look",
-      detail: "Review your campaign and try the approval process.",
-      href: "/marketing/campaigns",
-      icon: "shield" as const,
-      complete: state.campaigns.some((c) => c.state === "approved"),
-    },
-    {
-      title: "Move the conversation forward",
-      detail: "Pick a lead and move it to its next stage.",
-      href: "/leads/pipeline",
-      icon: "users" as const,
-      complete: Object.keys(state.leadStages).length > 0,
-    },
-  ];
-  const complete = steps.filter((step) => step.complete).length;
-  return (
-    <>
-      <PageHeader
-        title="Make yourself at home."
-        eyebrow="Getting started"
-        description="A few small steps. A much clearer picture of your business."
-      />
-      <div className={styles.onboardingLayout}>
-        <Card className={styles.panel} padding="none">
-          <div className={styles.onboardingProgress}>
-            <div>
-              <strong>
-                {complete} of {steps.length}
-              </strong>
-              <span>steps explored</span>
-            </div>
-            <progress aria-label="Getting started progress" value={complete} max={steps.length} />
-          </div>
-          <div className={styles.setupSteps}>
-            {steps.map((step, index) => (
-              <div key={step.title}>
-                <span className={styles.setupNumber} data-done={step.complete || undefined}>
-                  {step.complete ? <Icon name="check" decorative size="sm" /> : index + 1}
-                </span>
-                <div>
-                  <h2>{step.title}</h2>
-                  <p>{step.detail}</p>
-                </div>
-                <ActionLink href={step.href} secondary>
-                  {step.complete ? "Revisit" : "Let's go"}
-                  <Icon name="arrow-right" decorative size="sm" />
-                </ActionLink>
-              </div>
-            ))}
-          </div>
-        </Card>
-        <BoostCard />
-      </div>
-      <QuietNote>
-        This demo uses sample contacts and saves your changes on this device. Nothing is sent or
-        published.
-      </QuietNote>
-    </>
-  );
-}
-
 function ComingSoon({ view }: { view: PreviewView }) {
   const options: Record<
     string,
@@ -1400,7 +1324,7 @@ export function DashboardPreviewScreen({ view }: { view: PreviewView }) {
       content = <Assets creative />;
       break;
     case "onboarding":
-      content = <Onboarding />;
+      content = <SetupWizard />;
       break;
     case "settings":
     case "brand":
@@ -1487,7 +1411,7 @@ export function DashboardPreviewCampaign({ campaignRef }: { campaignRef: string 
                   : "Review your campaign, then give it the go-ahead."
               }
             />
-            <div className={styles.checkFindings}>
+            <div className={styles.checkFindings} data-product-guide="campaign-findings">
               {campaign.findings.length ? (
                 campaign.findings.map((finding, index) => (
                   <div key={`${finding.ruleCode}-${index}`}>
@@ -1538,7 +1462,7 @@ export function DashboardPreviewCampaign({ campaignRef }: { campaignRef: string 
             </QuietNote>
           </Card>
         </div>
-        <Card className={styles.approvalPanel} padding="md">
+        <Card className={styles.approvalPanel} padding="md" data-product-guide="campaign-approval">
           <span className={styles.iconTile}>
             <Icon name="shield" decorative />
           </span>
@@ -1555,6 +1479,11 @@ export function DashboardPreviewCampaign({ campaignRef }: { campaignRef: string 
           <Link href="/marketing/campaigns/new">Create another draft</Link>
           <div className={styles.divider} />
           <Button disabled>Publish campaign</Button>
+          {state.setup.campaignRef === campaignRef ? (
+            <Link href="/onboarding" variant="action">
+              Continue my setup
+            </Link>
+          ) : null}
           <small>
             Connect an ad account to publish. This demo does not launch ads or spend money.
           </small>

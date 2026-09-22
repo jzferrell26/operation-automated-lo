@@ -205,9 +205,62 @@
   align-items: start;
 }
 .productBuilder .fieldset {
+  min-inline-size: 0;
+  position: relative;
   padding: var(--space-6);
   border-radius: var(--radius-card);
-  scroll-margin-block-start: 100px;
+  scroll-margin-block-start: calc(var(--product-header-height, 72px) + 24px);
+}
+.productBuilder .hiddenLegend {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.sectionTitle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-block-end: var(--space-5);
+  margin-block-end: var(--space-1);
+  border-block-end: 1px solid var(--bd-hairline);
+}
+.sectionTitle > span {
+  display: grid;
+  place-items: center;
+  inline-size: 34px;
+  block-size: 34px;
+  flex: none;
+  border-radius: var(--radius-control);
+  color: var(--st-info-fg);
+  background: var(--st-info-bg);
+  font-family: var(--font-data);
+  font-size: 12px;
+}
+.sectionTitle h2 {
+  margin: 0;
+  font-size: 17px;
+  line-height: var(--leading-tight);
+}
+.sectionTitle p {
+  margin: var(--space-2) 0 0;
+}
+.productBuilder .form,
+.productBuilder .group {
+  min-inline-size: 0;
+}
+.productBuilder .group > div {
+  min-inline-size: 0;
+}
+.productBuilder .group > div:has(textarea) {
+  grid-column: 1 / -1;
+}
+.productBuilder .form {
+  gap: var(--space-6);
 }
 .productBuilder .form legend {
   font-size: 14px;
@@ -228,10 +281,11 @@
   display: grid;
   gap: var(--space-4);
   position: sticky;
-  top: 96px;
+  top: calc(var(--product-header-height, 72px) + 24px);
 }
 .previewCard {
   overflow: hidden;
+  min-inline-size: 0;
 }
 .previewTop {
   display: flex;
@@ -278,6 +332,12 @@
 }
 .previewDetails > strong {
   font-size: 14px;
+  overflow-wrap: anywhere;
+}
+@media (max-height: 760px) {
+  .campaignPreview {
+    position: static;
+  }
 }
 .previewDetails p {
   margin: 0;

@@ -32,4 +32,6 @@ Campaign checks reuse the existing server compiler and deterministic rules in me
 
 ## Validation
 
+The section/dropdown/onboarding update is specified in `../03-components/select-and-product-setup.md`. `/onboarding` now contains a seven-step explicit-save setup journey, with a skippable welcome and persistent Help & setup. Shared `Select` replaces native product dropdowns. The existing guide placement functions are reused, with measured header clearance and a visibility check before side placement. Product guide selection uses fixed IDs and destinations; stored data never supplies executable selectors or external URLs.
+
 Verify desktop, embedded, tablet, mobile, light/dark themes, keyboard-accessible dialogs, route coverage, local persistence after reload, separate browser isolation, blocked approval after failed checks, and zero live provider actions. Keep actual evidence in the release report.

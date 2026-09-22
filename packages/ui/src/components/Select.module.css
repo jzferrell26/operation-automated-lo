@@ -1,0 +1,128 @@
+.field {
+  position: relative;
+  min-inline-size: 0;
+}
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: var(--target-min-size);
+  padding: var(--space-3);
+  border: 1px solid var(--bd-input);
+  border-radius: var(--radius-control);
+  color: var(--tx-strong);
+  background: var(--sf-card);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-size);
+  line-height: var(--leading-normal);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+.trigger > span {
+  display: block;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trigger > svg {
+  flex: none;
+  color: var(--tx-faint);
+  transition: transform var(--motion-fast) var(--ease-standard);
+}
+.trigger:hover:not(:disabled) {
+  border-color: var(--ac-primary);
+}
+.trigger[aria-expanded="true"] {
+  border-color: var(--ac-primary);
+}
+.trigger[aria-expanded="true"] > svg {
+  transform: rotate(180deg);
+}
+.trigger:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+.trigger:disabled {
+  cursor: not-allowed;
+  color: var(--tx-faint);
+  background: var(--sf-sunken);
+}
+.trigger[data-empty="true"] {
+  color: var(--tx-faint);
+}
+.trigger[aria-invalid="true"] {
+  border-color: var(--st-critical-fg);
+}
+.popup {
+  z-index: 100;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-1);
+  border: 1px solid var(--bd-input);
+  border-radius: var(--radius-button);
+  box-shadow: var(--shadow-raised);
+  background: var(--sf-card);
+  color: var(--tx-strong);
+  font-family: var(--font-interface);
+  scrollbar-width: thin;
+  isolation: isolate;
+}
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-block-size: var(--target-min-size);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  font-size: var(--text-body-size);
+  line-height: var(--leading-normal);
+  cursor: pointer;
+}
+.option > span {
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.option strong {
+  font-weight: var(--weight-medium);
+}
+.option small {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+}
+.option > svg {
+  flex: none;
+  color: var(--st-info-fg);
+}
+.option[data-active="true"] {
+  background: var(--st-info-bg);
+  color: var(--st-info-fg);
+}
+.option[aria-selected="true"] strong {
+  font-weight: var(--weight-bold);
+}
+.option[aria-disabled="true"] {
+  color: var(--tx-faint);
+  cursor: not-allowed;
+}
+.compact > span:first-child {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.compact .trigger {
+  font-size: var(--text-secondary-size);
+}

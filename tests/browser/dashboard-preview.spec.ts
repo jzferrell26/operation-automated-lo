@@ -54,6 +54,11 @@ async function createCampaign(page: Page, headline: string) {
   await expect(page.getByRole("heading", { name: headline, exact: true })).toBeVisible();
 }
 
+async function chooseOption(page: Page, label: string, option: string) {
+  await page.getByRole("combobox", { name: label, exact: true }).click();
+  await page.getByRole("option", { name: option, exact: true }).click();
+}
+
 test("all dashboard routes, assets, and entry links work", async ({ page, request }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -121,11 +126,11 @@ test("partners, pipeline, brand, routing, and reset persist accurately", async (
   await page.reload();
   await expect(page.getByRole("heading", { name: "Preview QA Partner" })).toBeVisible();
   await open(page, "/leads/pipeline");
-  await page.getByLabel("Stage for Morgan Ellis", { exact: true }).selectOption("Application");
+  await chooseOption(page, "Stage for Morgan Ellis", "Application");
   await page.reload();
-  await expect(page.getByLabel("Stage for Morgan Ellis", { exact: true })).toHaveValue(
-    "Application",
-  );
+  await expect(
+    page.getByRole("combobox", { name: "Stage for Morgan Ellis", exact: true }),
+  ).toHaveText("Application");
   await open(page, "/reports");
   await expect(page.getByRole("img", { name: /Pipeline:.*2 application/u })).toBeVisible();
   await open(page, "/brand");
@@ -134,10 +139,10 @@ test("partners, pipeline, brand, routing, and reset persist accurately", async (
   await page.reload();
   await expect(page.getByLabel("Company name")).toHaveValue("Preview QA Lending");
   await open(page, "/settings/routing");
-  await page.getByLabel("Starting stage").selectOption("Contacted");
+  await chooseOption(page, "Starting stage", "Contacted");
   await page.getByRole("button", { name: "Save routing" }).click();
   await page.reload();
-  await expect(page.getByLabel("Starting stage")).toHaveValue("Contacted");
+  await expect(page.getByRole("combobox", { name: "Starting stage" })).toHaveText("Contacted");
   await open(page, "/settings");
   await page.getByText("Demo workspace options", { exact: true }).click();
   await page.getByRole("button", { name: "Reset demo data", exact: true }).click();

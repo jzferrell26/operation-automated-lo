@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Icon, Link, LiveRegion, TextArea, TextField } from "@oalo/ui";
+import { Button, Card, Icon, Link, LiveRegion, Select, TextArea, TextField } from "@oalo/ui";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import {
@@ -28,6 +28,7 @@ import { SupportDetails, SupportReference } from "../../shell/components/support
 import styles from "./open-house-draft-builder.module.css";
 import { useDashboardPreview } from "../../dashboard-preview/preview-provider.js";
 import { campaignCheckSchema } from "../../dashboard-preview/model.js";
+import { stateOptions } from "./campaign-form-options.js";
 
 type PreflightResponse = Readonly<{
   state: string;
@@ -92,6 +93,7 @@ export function OpenHouseDraftBuilder({
   profile,
 }: Readonly<{ profile?: SetupProfile | undefined }> = {}) {
   const [result, setResult] = useState<PreflightResponse | null>(null);
+  const [draftState, setDraftState] = useState("");
   const dashboardPreview = useDashboardPreview();
   const formRef = useRef<HTMLFormElement | null>(null);
   const resultRef = useRef<HTMLElement | null>(null);
@@ -138,6 +140,18 @@ export function OpenHouseDraftBuilder({
    * just typed is already in the field when the screen appears, rather than a render later.
    */
   const prefill = campaignDraftPrefill(guidedSetup?.profile ?? profile);
+  const selectedDemoPartner = dashboardPreview?.state.partners.find(
+    (partner) => partner.id === dashboardPreview.state.setup.partnerId,
+  );
+  useEffect(() => {
+    if (!dashboardPreview?.ready || !formRef.current) return;
+    const realtor = formRef.current.elements.namedItem("realtorDisplayName");
+    const region = formRef.current.elements.namedItem("region");
+    if (realtor instanceof HTMLInputElement && !realtor.value)
+      realtor.value = selectedDemoPartner?.name ?? "";
+    if (region instanceof HTMLInputElement && !region.value)
+      region.value = dashboardPreview.state.profile.region;
+  }, [dashboardPreview?.ready, selectedDemoPartner?.name, dashboardPreview?.state.profile.region]);
 
   /**
    * 006D-AC-011, the half a component test cannot show: the message has to be on screen without
@@ -212,6 +226,10 @@ export function OpenHouseDraftBuilder({
                 (campaign) => campaign.campaignRef !== checked.campaignRef,
               ),
             ],
+            setup:
+              current.setup.status === "in_progress"
+                ? { ...current.setup, campaignRef: checked.campaignRef }
+                : current.setup,
           }))
         ) {
           setPreviewSaveFailed(true);
@@ -244,6 +262,7 @@ export function OpenHouseDraftBuilder({
   function fillSampleProperty() {
     const form = formRef.current;
     if (!form || !dashboardPreview) return;
+    setDraftState("TX");
     const starts = new Date();
     starts.setDate(starts.getDate() + 7);
     starts.setHours(13, 0, 0, 0);
@@ -257,7 +276,8 @@ export function OpenHouseDraftBuilder({
         "Sample three-bedroom home with an open living area and a covered patio.",
       openHouseStartsAt: localTime(starts),
       openHouseEndsAt: localTime(ends),
-      realtorDisplayName: dashboardPreview.state.partners[0]?.name ?? "Jordan Avery",
+      realtorDisplayName:
+        selectedDemoPartner?.name ?? dashboardPreview.state.partners[0]?.name ?? "Jordan Avery",
       headline: "Tour a place to call home",
       body: "Explore the home and meet the team at our upcoming open house. Ask us about your next steps.",
       callToAction: "Plan your visit",
@@ -398,7 +418,18 @@ export function OpenHouseDraftBuilder({
             />
           )}
           <fieldset className={styles.fieldset} id="campaign-property">
-            <legend>The property and the open house</legend>
+            <legend className={dashboardPreview ? styles.hiddenLegend : undefined}>
+              The property and the open house
+            </legend>
+            {dashboardPreview ? (
+              <div className={styles.sectionTitle}>
+                <span>01</span>
+                <div>
+                  <h2>Property & open house</h2>
+                  <p>The home, the timing, and the partner behind your campaign.</p>
+                </div>
+              </div>
+            ) : null}
             <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateAddress}>
               <TextField
                 defaultValue=""
@@ -408,15 +439,28 @@ export function OpenHouseDraftBuilder({
                 placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.address}
                 requirement="required"
               />
-              <TextField
-                defaultValue=""
-                label="State"
-                maxLength={2}
-                error={fieldErrors["stateCode"]}
-                name="stateCode"
-                placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.stateCode}
-                requirement="required"
-              />
+              {dashboardPreview ? (
+                <Select
+                  label="State"
+                  name="stateCode"
+                  value={draftState}
+                  onValueChange={setDraftState}
+                  options={stateOptions}
+                  placeholder="Choose a state"
+                  error={fieldErrors["stateCode"]}
+                  requirement="required"
+                />
+              ) : (
+                <TextField
+                  defaultValue=""
+                  label="State"
+                  maxLength={2}
+                  error={fieldErrors["stateCode"]}
+                  name="stateCode"
+                  placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.stateCode}
+                  requirement="required"
+                />
+              )}
               <TextArea
                 defaultValue=""
                 label="Property description"
@@ -474,7 +518,18 @@ export function OpenHouseDraftBuilder({
             id="campaign-content"
             data-tour={GUIDED_SETUP_ANCHORS.campaignCreateHeadline}
           >
-            <legend>What the ad says</legend>
+            <legend className={dashboardPreview ? styles.hiddenLegend : undefined}>
+              What the ad says
+            </legend>
+            {dashboardPreview ? (
+              <div className={styles.sectionTitle}>
+                <span>02</span>
+                <div>
+                  <h2>Campaign content</h2>
+                  <p>Shape your message and review the details buyers will see.</p>
+                </div>
+              </div>
+            ) : null}
             <p className={styles.hint}>{GUIDED_SETUP_STEPS.createCampaign.starterTextNote}</p>
             <div className={styles.group}>
               <TextField
@@ -520,7 +575,18 @@ export function OpenHouseDraftBuilder({
             id="campaign-budget"
             data-tour={GUIDED_SETUP_ANCHORS.campaignCreateBudget}
           >
-            <legend>Budget and area</legend>
+            <legend className={dashboardPreview ? styles.hiddenLegend : undefined}>
+              Budget and area
+            </legend>
+            {dashboardPreview ? (
+              <div className={styles.sectionTitle}>
+                <span>03</span>
+                <div>
+                  <h2>Budget & reach</h2>
+                  <p>Choose your market and set the spending limits for this draft.</p>
+                </div>
+              </div>
+            ) : null}
             <div className={styles.group}>
               <TextField
                 defaultValue={prefill.region}
@@ -612,6 +678,11 @@ export function OpenHouseDraftBuilder({
       {result ? (
         <section ref={resultRef} tabIndex={-1} aria-label="Campaign check result">
           <CampaignCheckResult result={result} />
+          {dashboardPreview?.state.setup.status === "in_progress" ? (
+            <Link href="/onboarding" variant="action">
+              Continue my setup
+            </Link>
+          ) : null}
         </section>
       ) : null}
     </div>

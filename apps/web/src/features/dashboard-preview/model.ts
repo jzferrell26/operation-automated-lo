@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { initialProductSetup, productSetupSchema } from "./setup-model.js";
 
 export const PREVIEW_STORAGE_KEY = "oalo.dashboard-preview.v1";
 export const leadStages = ["New", "Contacted", "Appointment", "Application", "Closed"] as const;
@@ -57,6 +58,7 @@ const profileSchema = z
 export const previewStateSchema = z
   .object({
     version: z.literal(1),
+    setup: productSetupSchema.default(initialProductSetup),
     campaigns: z.array(campaignCheckSchema).max(50),
     partners: z.array(partnerSchema).max(50),
     leadStages: z.record(z.string().regex(/^sample-lead-\d+$/u), z.enum(leadStages)),
@@ -74,6 +76,7 @@ export type PreviewPartner = z.infer<typeof partnerSchema>;
 export function initialPreviewState(): PreviewState {
   return {
     version: 1,
+    setup: initialProductSetup(),
     campaigns: [],
     leadStages: {},
     partners: [

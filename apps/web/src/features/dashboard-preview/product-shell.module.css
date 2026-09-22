@@ -1,4 +1,5 @@
 .root {
+  padding-block-end: var(--product-guide-room, 0px);
   min-block-size: 100vh;
   background: var(--sf-canvas);
   color: var(--tx-strong);
@@ -307,6 +308,42 @@
 }
 .content section {
   max-width: none;
+}
+.content
+  :where(input, textarea, button, [role="combobox"], [tabindex], fieldset, [id^="campaign-"]) {
+  scroll-margin-block-start: calc(var(--product-header-height, 72px) + 24px);
+  scroll-margin-block-end: 28px;
+}
+.setupStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-block: -8px var(--space-4);
+}
+.setupStrip a,
+.setupStrip button {
+  font-size: var(--text-secondary-size);
+}
+@media (max-width: 900px) {
+  .root .demoBadge {
+    padding-inline: var(--space-2);
+    font-size: 10px;
+  }
+  .root .headerAvatar {
+    display: none;
+  }
+}
+@media (max-width: 479px) {
+  .root .searchTrigger {
+    padding-inline: var(--space-2);
+    min-inline-size: 36px;
+  }
+  .breadcrumb {
+    max-inline-size: 70px;
+    overflow: hidden;
+  }
 }
 .footer {
   display: flex;

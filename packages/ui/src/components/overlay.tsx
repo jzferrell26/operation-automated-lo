@@ -35,6 +35,10 @@ export const OVERLAY_FOCUSABLE_SELECTOR = [
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
+/** Shared ownership query for helpers that yield while a modal is open. */
+export const MODAL_OVERLAY_SELECTOR =
+  '[role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]';
+
 /**
  * Pure focus-wrap policy shared by the layer and its focused contract tests.
  * It returns the element that must receive focus, or `null` when the browser's
@@ -106,6 +110,8 @@ function useDismissableLayer({ modal, onClose, open, panelRef }: DismissableLaye
     }
 
     function handleKeyDown(event: KeyboardEvent) {
+      // A nested combobox or other widget owns a key it already handled.
+      if (event.defaultPrevented) return;
       if (event.key === "Escape") {
         event.preventDefault();
         onClose();

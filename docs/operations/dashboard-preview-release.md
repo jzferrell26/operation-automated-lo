@@ -6,6 +6,12 @@ The visual testing deployment uses the existing `operation-automated-lo-web` pro
 
 ## What can be tested
 
+The first visit offers **Set up my workspace** or **Explore first**. **Getting started** now opens a seven-step self-onboarding journey: profile, brand voice, Realtor partner, lead routing, connection requirements, first campaign, and final review. Each completed form step saves through the existing browser store. The selected partner and market prefill the campaign; completion requires the chosen campaign to pass its checks and receive an explicit demo approval. Reviewing connection requirements is not represented as connecting a live account.
+
+**Help & setup** is available from the question-mark control in every product header. It offers resume, replay, and eight guided tours. The helper highlights actual controls, stays clear of its target, and supports Back, Next, Let me try, Minimize, and Pause. Replaying a guide preserves campaign, partner, and profile records. The existing `oalo.dashboard-preview.v1` data is migrated additively with defaulted setup state; no reset is required after deployment. An incomplete form still needs **Save & continue** before leaving it; **Pause setup** preserves completed steps and guide position.
+
+Campaign sections now have numbered headings inside their borders and measured sticky-header clearance. Product dropdowns share the themed Select control, including the state picker, filters, and pipeline stages. Keyboard selection, Escape cancellation, type-ahead, scrolling, and nested dialogs are covered by browser checks.
+
 - Overview, marketing suite, campaign list and detail, reports, partners, leads and pipeline, property sites, sample creative, brand, account, routing, connections, and settings.
 - Create a campaign, use **Use example property**, then **Save & review campaign** to run the real in-memory content checks. Inspect findings and record a clearly labeled demo approval after successful checks. The campaign preview updates while entering details.
 - Add a fictional partner, change a sample lead's stage, edit the preview profile, save routing preferences, reload, and observe the saved changes. Reset requires confirmation in Settings.

@@ -48,9 +48,11 @@ function ProfileSettings({
   const { state, save } = useRequiredDashboardPreview();
   const [draft, setDraft] = useState({ ...state.profile, name: personName(state.profile.name) });
   const [message, setMessage] = useState("");
+  const savedProfile = JSON.stringify(state.profile);
   useEffect(() => {
-    setDraft({ ...state.profile, name: personName(state.profile.name) });
-  }, [state.profile]);
+    const profile = JSON.parse(savedProfile) as typeof state.profile;
+    setDraft({ ...profile, name: personName(profile.name) });
+  }, [savedProfile]);
   const update = (name: keyof typeof draft, value: string) => {
     setDraft((current) => ({ ...current, [name]: value }));
     setMessage("");
@@ -273,7 +275,7 @@ function ConnectionSettings() {
           title="Bring your tools together."
           detail="Your existing systems, working alongside AutomatedLO."
         />
-        <div className={styles.integrationList}>
+        <div className={styles.integrationList} data-product-guide="connections">
           {apps.map((item, index) => (
             <div key={item.name}>
               <span className={styles.appLogo} data-accent={index}>

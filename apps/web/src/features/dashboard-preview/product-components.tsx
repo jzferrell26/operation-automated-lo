@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, FormField, Icon, Link, type IconName } from "@oalo/ui";
+import { Card, Icon, Link, Select, type IconName } from "@oalo/ui";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation.js";
 import { leadStages, sampleLeads, type PreviewCampaign, type PreviewState } from "./model.js";
@@ -110,7 +110,7 @@ export function StatCards({
   }[];
 }) {
   return (
-    <div className={styles.stats}>
+    <div className={styles.stats} data-product-guide="metrics">
       {items.map((item, index) => (
         <Card className={styles.stat} padding="none" key={item.label}>
           <div className={styles.statTop}>
@@ -147,18 +147,13 @@ export function SelectField({
   compact?: boolean;
 }) {
   return (
-    <FormField
+    <Select
       label={label}
-      className={`${styles.selectField} ${compact ? styles.compactField : ""}`}
-    >
-      {(control) => (
-        <select {...control} value={value} onChange={(event) => onChange(event.target.value)}>
-          {options.map((option) => (
-            <option key={option}>{option}</option>
-          ))}
-        </select>
-      )}
-    </FormField>
+      value={value}
+      onValueChange={onChange}
+      options={options}
+      compact={compact}
+    />
   );
 }
 export function CampaignBadge({ campaign }: { campaign: PreviewCampaign }) {
@@ -183,7 +178,7 @@ export function PipelineVisual({ state }: { state: PreviewState }) {
   const circumference = 2 * Math.PI * 62;
   let offset = 0;
   return (
-    <div className={styles.pipelineVisual}>
+    <div className={styles.pipelineVisual} data-product-guide="pipeline">
       <figure className={styles.donut}>
         <svg
           viewBox="0 0 160 160"

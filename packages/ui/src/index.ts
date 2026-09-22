@@ -1,4 +1,6 @@
 export { uiTokens } from "./tokens.js";
+export { Select } from "./components/Select.js";
+export type { SelectProps, SelectOption } from "./components/Select.js";
 export type { UiTokens } from "./tokens.js";
 
 export { Button, SafeAction } from "./components/Button.js";
@@ -81,6 +83,7 @@ export type { ExternalLinkSafety, LinkProps, LinkVariant } from "./components/Li
 export {
   Dialog,
   OVERLAY_FOCUSABLE_SELECTOR,
+  MODAL_OVERLAY_SELECTOR,
   Sheet,
   SheetAnchor,
   resolveTabTarget,

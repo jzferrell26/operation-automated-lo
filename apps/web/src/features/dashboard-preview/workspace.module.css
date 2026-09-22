@@ -750,32 +750,10 @@
   font-size: 11px;
   color: var(--tx-faint);
 }
-.selectField {
-  display: grid;
-  gap: var(--space-2);
-  font-size: 12px;
-}
-.selectField select {
-  width: 100%;
-  min-block-size: 44px;
-  border: 1px solid var(--bd-input);
-  border-radius: var(--radius-control);
-  padding: var(--space-2) var(--space-3);
-  background: var(--sf-card);
-  color: var(--tx-strong);
-  font: inherit;
-}
-.selectField select:focus-visible,
 .tableRegion:focus-visible,
 .board:focus-visible {
   outline: var(--focus-width) solid var(--focus-color);
   outline-offset: var(--focus-offset);
-}
-.compactField > span:first-child {
-  font-size: 10px;
-}
-.compactField select {
-  font-size: 11px;
 }
 .board {
   display: grid;

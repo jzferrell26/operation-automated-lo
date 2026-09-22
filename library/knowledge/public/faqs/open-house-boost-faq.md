@@ -20,7 +20,10 @@ Answers to the questions a loan officer asks before installing Automated LO, sco
 ## Installing and access
 
 **Where does Automated LO run?**
-Inside your HighLevel location, as a page in the HighLevel interface. You install it from HighLevel and use it there. There is no separate account to create.
+In your browser. Sign in with your email and password.
+
+**I forgot my password.**
+Click Forgot your password? on the sign-in page. We'll email you a link that works for 30 minutes.
 
 **Do I need to give it access to my ad accounts?**
 No. This release does not publish ads, so it does not need publishing access to your connected ad assets.

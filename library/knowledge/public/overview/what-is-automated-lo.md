@@ -20,12 +20,12 @@ Automated LO is a HighLevel app for loan officers that turns one open house into
 
 Automated LO installs into your HighLevel location and adds one focused workflow: **Open House Boost.**
 
-You tell it about the open house and the property. It assembles a campaign version from your brand, compliance, and partner settings. That version is immutable: once created, it is a fixed record with its own identity, not a document that quietly changes under you. Before anything is treated as final, a named person with approval authority has to approve that exact version, and the approval is stored with it.
+You tell it about the open house and the property. It assembles a campaign version from your brand, compliance, and partner settings. Once that version is created, it is fixed: it keeps its own number and does not quietly change under you. Before anything is treated as final, a named person with approval authority has to approve that exact version, and the approval is stored with it.
 
 ## What you can do in this release
 
-1. **Install it into your HighLevel location.** Automated LO runs as a page inside HighLevel; you do not manage a separate login.
-2. **Set up your inputs once.** Brand details, compliance requirements, and Realtor partner information.
+1. **Sign in with your email and password.** Your work is saved to your workspace.
+2. **Set up your inputs once.** Brand details, compliance requirements, and Realtor partner information. A short guided setup walks you through it the first time.
 3. **Create an Open House Boost campaign.** Enter the open house and property details and generate a campaign version.
 4. **Come back to it later.** The campaign is saved. Close the tab, return tomorrow, and it is still there with the same version identity.
 5. **Approve it as a named human.** Someone with approval authority reviews the exact version and approves it. The approval records who approved what, and when.

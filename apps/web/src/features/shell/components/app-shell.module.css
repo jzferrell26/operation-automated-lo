@@ -57,12 +57,21 @@
   list-style: none;
 }
 
+/*
+ * Sign-off finding, 2026-09-21 (PRD-006d D9). The row used to place the state chip in a third
+ * column that never shrank, so a long chip ("Not included in your plan") squeezed the label
+ * column to nothing: "Automation" ran under the chip and "Email and SMS" broke into three
+ * lines at 1440, 1180 and 768 in both themes, on every screen with the rail. The chip and the
+ * detail now sit on their own rows under the label, so nothing in the row ever competes for
+ * width and every row reads the same way regardless of how long its state is.
+ */
 .navigationLink {
   display: grid;
   min-block-size: 44px;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: var(--space-2);
+  column-gap: var(--space-2);
+  row-gap: var(--space-1);
   padding: var(--space-2);
   border: 1px solid transparent;
   border-radius: var(--radius-control);
@@ -95,6 +104,8 @@
 }
 
 .navigationState {
+  grid-column: 2;
+  justify-self: start;
   border-radius: var(--radius-pill);
   background: var(--st-neutral-bg);
   color: var(--st-neutral-fg);
@@ -103,7 +114,7 @@
 }
 
 .navigationDetail {
-  grid-column: 2 / -1;
+  grid-column: 2;
   color: var(--tx-on-nav);
   font-size: var(--text-caption-size);
   line-height: var(--leading-normal);
@@ -146,7 +157,20 @@
   font-size: var(--text-caption-size);
 }
 
+/*
+ * 2026-09-21. The workspace is a column that fills the viewport and hands the main landmark
+ * whatever the topbar and the banner leave, instead of the main landmark carrying its own
+ * viewport-height minimum (globals.css gives every bare `main` one). With the minimum on the
+ * landmark below a sticky header, a full-page capture never settled: Playwright sizes the
+ * viewport to the document to photograph it, the landmark then grows to that height, and the
+ * document grows by the header and the banner again, every time (measured on the runner on the
+ * reports page: 9,383 px, then 9,482 px, then 9,383 px, on every attempt). The column keeps the
+ * short screens' composition (the landmark still fills the rest of the frame) and is stable,
+ * because the minimum sits on the element whose height is the document's.
+ */
 .workspace {
+  display: flex;
+  flex-direction: column;
   min-block-size: 100vh;
   margin-inline-start: 17rem;
   transition: margin-inline-start var(--motion-base) var(--ease-standard);
@@ -156,6 +180,10 @@
   margin-inline-start: 5rem;
 }
 
+/* Design brief section 14. The row wraps when it runs out of room rather than
+ * pushing the page sideways, which matters at the tablet and embedded frames now
+ * that they carry the full rail (F-19) and at 390 where the mobile block already
+ * relied on it. With room it never wraps, so the wide frames are unchanged. */
 .topbar {
   position: sticky;
   inset-block-start: 0;
@@ -163,6 +191,7 @@
   display: flex;
   min-block-size: 4.5rem;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: var(--space-4);
   padding: var(--space-3) var(--space-6);
@@ -190,6 +219,17 @@
   flex: none;
 }
 
+/* `03-components/application-shell-and-navigation.md`, the account control beside the theme
+ * control. It carries a plain form post, so the form itself must not introduce a block of its own
+ * between the topbar's flex row and the control. */
+.accountControls {
+  flex: none;
+}
+
+.accountControls form {
+  display: flex;
+}
+
 .syntheticDisclosure {
   display: flex;
   align-items: center;
@@ -200,82 +240,106 @@
   font-size: var(--text-secondary-size);
 }
 
+/*
+ * Sign-off finding, 2026-09-21. The trailing status ("Not connected yet") shared the row's
+ * width with the sentence and broke into three lines at 768; the sentence is the part that
+ * wraps and the status keeps its line.
+ */
+.syntheticDisclosure > span {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.syntheticDisclosure > strong {
+  flex: none;
+}
+
 .syntheticDisclosure[data-review-surface="true"] {
   background: var(--st-warning-bg);
   color: var(--st-warning-fg);
 }
 
+/* PRD-006c D7, Wave 7r. Room at the end of the page for the guided setup's
+ * panel, at every frame.
+ *
+ * The walkthrough can only ask the page to scroll, so an element within the
+ * panel's own block size of the page's end cannot be lifted clear of it and the
+ * panel covers the thing it is pointing at. Measured in the review run on
+ * 2026-09-20 at 390 on the create screen's "Save and run the checks" and at 1180
+ * on the campaign page's approve control, which is why this rule is not confined
+ * to the mobile frame. The number is the panel's block size plus the gap and the
+ * margin, published by `guided-setup-step.tsx` from
+ * `model/panel-placement.ts`'s `panelEndRoom`, so the page and the placement
+ * cannot drift apart.
+ *
+ * The fallback is what keeps this inert: with no step open the property is not
+ * set, the padding is the one above it, and nothing moves.
+ *
+ * `padding-block-end` follows the `padding` shorthand rather than replacing it,
+ * because the other three sides are unchanged and the later declaration is the
+ * one that wins for the block end.
+ */
 .content {
+  flex: 1 1 auto;
+  min-block-size: 0;
   padding: var(--space-6);
+  padding-block-end: calc(var(--space-6) + var(--guided-setup-panel-room, 0px));
 }
 
+/* PRD-006d 006D-AC-003. The drawer is the `Dialog` primitive at its
+ * `inline-start` placement, so the layer, the scrim, the trap, the scroll lock
+ * and the close control are all the primitive's. This wrapper is nothing but
+ * the frame gate: the drawer is the mobile frame's rail, so above that frame it
+ * is not drawn at all, and at it the wrapper contributes no box of its own and
+ * lets the primitive's fixed scrim position itself.
+ */
 .drawerLayer {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
   display: none;
 }
 
-.drawerBackdrop {
-  position: absolute;
-  inset: 0;
-  inline-size: 100%;
-  block-size: 100%;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: var(--sf-overlay);
-  box-shadow: none;
-  color: transparent;
-}
-
-.drawer {
-  position: relative;
+/* The drawer's own surface, overriding the centred card the panel is by default.
+ * `03-components/application-shell-and-navigation.md`: the drawer carries the
+ * navigation surface, `--sf-nav`, and its text is `--tx-on-nav`. The attribute
+ * is in the selector so this wins over the primitive's own `.panel` rule without
+ * depending on which stylesheet a bundler emits first.
+ */
+.drawer[data-overlay-kind="dialog"] {
   display: flex;
   block-size: 100%;
   inline-size: min(22rem, 88vw);
+  max-block-size: 100%;
   flex-direction: column;
   gap: var(--space-4);
-  overflow-y: auto;
   padding: var(--space-4);
+  border: 0;
+  border-radius: 0;
   background: var(--sf-nav);
   color: var(--tx-on-nav);
-  box-shadow: var(--shadow-raised);
 }
 
-.drawerHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+/* The panel's title is `--tx-strong`, which is a colour for a card. On the
+ * navigation surface it has to be `--tx-on-nav`, or the drawer's heading fails
+ * the contrast axis in one theme. Same for the close control's glyph, which
+ * inherits.
+ */
+.drawer[data-overlay-kind="dialog"] h2 {
+  color: var(--tx-on-nav);
 }
 
-.drawerHeader h2 {
-  margin: 0;
-  font-size: var(--text-section-size);
-}
-
-@media (max-width: 1180px) and (min-width: 769px) {
-  .desktopSidebar {
-    inline-size: 5rem;
-  }
-
-  .desktopSidebar .brand strong,
-  .desktopSidebar .navigationLink > span,
-  .desktopSidebar .subnavToggle,
-  .desktopSidebar .subnavigation,
-  .desktopSidebar .railToggle,
-  .desktopSidebar .identity div {
-    display: none;
-  }
-
-  .workspace,
-  .desktopSidebar[data-collapsed="true"] + .workspace {
-    margin-inline-start: 5rem;
-  }
-}
-
-@media (max-width: 768px) {
+/* Design brief section 14 and `03-components/application-shell-and-navigation.md`
+ * line 26: "Tablet uses a collapsible rail." Between 768 and 1180 this file used
+ * to force the rail to 5rem and hide `.railToggle`, which is a compact rail, not
+ * a collapsible one: the toggle was unreachable and the two states the brief
+ * names could not be told apart. There is now no rule here at all for that range.
+ * It inherits the desktop rail above, so the same toggle collapses the same rail
+ * to the same 5rem compact width at 1440, 1180, and 768, and the toggle's label
+ * describes what the rail is actually doing at every one of them.
+ *
+ * The 768px frame belongs to the rail, not to the drawer: the mobile range below
+ * stops just under it. Before PRD-006d the boundary was `min-width: 769px`
+ * against `max-width: 768px`, which handed the tablet frame the mobile drawer.
+ */
+@media (max-width: 767.98px) {
   .desktopSidebar {
     display: none;
   }
@@ -291,9 +355,12 @@
     padding: var(--space-3) var(--space-4);
   }
 
-  .mobileMenu,
-  .drawerLayer {
+  .mobileMenu {
     display: block;
+  }
+
+  .drawerLayer {
+    display: contents;
   }
 
   .locationContext {
@@ -312,12 +379,18 @@
   }
 
   .syntheticDisclosure strong {
+    /* Its own line under the sentence; it may shrink to fit beside its own margin. */
+    flex: 0 1 auto;
     inline-size: 100%;
     margin-inline-start: calc(var(--space-4) + var(--space-2));
   }
 
+  /* The mobile padding, carrying the same room rule as the frame above. Below
+   * 767.98px the panel is a bottom sheet pinned to the block end, which is the
+   * frame where this was first measured. */
   .content {
     padding: var(--space-4);
+    padding-block-end: calc(var(--space-4) + var(--guided-setup-panel-room, 0px));
   }
 }
 

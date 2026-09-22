@@ -1,5 +1,6 @@
-import { Card, Icon, Stack } from "@oalo/ui";
+import { Card, Icon, Link, Stack } from "@oalo/ui";
 
+import { ACCESS_GROUP_STATE_LABELS } from "../../../copy/user-language.js";
 import type { DeepReadonly, Onboarding } from "../../ui-foundation/model/synthetic-ui.js";
 import styles from "./onboarding.module.css";
 
@@ -12,11 +13,11 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
     <div className={styles.onboarding}>
       <header className={styles.pageHeader}>
         <div>
-          <p className={styles.eyebrow}>Connection evidence</p>
-          <h1>Permissions by business purpose</h1>
+          <p className={styles.eyebrow}>Connections</p>
+          <h1>What Automated LO asks for, and why</h1>
           <p>
-            This synthetic read-only view separates required access from granted, missing, and
-            optional capabilities.
+            Each item says what the app needs from your accounts, what it does with it, and what
+            happens if it&apos;s missing.
           </p>
         </div>
       </header>
@@ -24,7 +25,7 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
       <Card className={styles.safetyNotice} padding="md">
         <Icon decorative name="lock" size="sm" tone="info" />
         <div>
-          <strong>No provider authorization occurs here</strong>
+          <strong>Nothing is connected from this page</strong>
           <p>{onboarding.safety.disclosure}</p>
         </div>
       </Card>
@@ -34,7 +35,9 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
           <section aria-labelledby={`permission-${group.category}`} key={group.category}>
             <div className={styles.permissionHeading}>
               <h2 id={`permission-${group.category}`}>{group.label}</h2>
-              <span data-permission-category={group.category}>{group.category}</span>
+              <span data-permission-category={group.category}>
+                {ACCESS_GROUP_STATE_LABELS[group.category]}
+              </span>
             </div>
             <p>{group.description}</p>
             <Stack gap="3">
@@ -43,19 +46,19 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
                   <h3>{capability.label}</h3>
                   <dl className={styles.permissionDetails}>
                     <div>
-                      <dt>Business purpose</dt>
+                      <dt>Why it's needed</dt>
                       <dd>{capability.businessPurpose}</dd>
                     </div>
                     <div>
-                      <dt>Evidence</dt>
+                      <dt>What we checked</dt>
                       <dd>{capability.evidence}</dd>
                     </div>
                     <div>
-                      <dt>Impact</dt>
+                      <dt>What it affects</dt>
                       <dd>{capability.impact}</dd>
                     </div>
                     <div>
-                      <dt>Next safe action</dt>
+                      <dt>What to do next</dt>
                       <dd>{capability.nextAction}</dd>
                     </div>
                   </dl>
@@ -66,9 +69,9 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
         ))}
       </div>
 
-      <a className="oalo-action-link" href="/onboarding">
-        Return to setup checklist
-      </a>
+      <Link href="/onboarding" variant="action">
+        Back to setup
+      </Link>
     </div>
   );
 }

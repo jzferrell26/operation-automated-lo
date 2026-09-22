@@ -1,6 +1,6 @@
 # Production Tonight Operator Runbook
 
-> Category: Operations | Version: 1.0 | Date: September 2026 | Status: Active
+> Category: Operations | Version: 1.1 | Date: September 2026 | Status: Active
 
 The single ordered page for the operator-led half of the reviewable go-live: what to do, in what order, and exactly what to send back after each step so an agent can advance the ledger without guessing.
 
@@ -38,9 +38,9 @@ Read this first, then work top to bottom. Steps 1 to 3 must be sequential. Step 
 
 Set these as server-only environment variables on `operation-automated-lo-web` (root directory `apps/web`), per [`docs/production-environments.md`](../../../../docs/production-environments.md):
 
-- `OALO_DATABASE_URL` - a review or staging Postgres, **not** production seed data
+- `OALO_DATABASE_URL`, a review or staging Postgres, **not** production seed data
 - `OALO_REVIEW_SURFACE=authorized`
-- the remaining required `OALO_*` contract variables
+- the remaining required `OALO_*` contract variables, including the PRD-005 runtime authentication server variables now listed under "Required server variables" in [`docs/production-environments.md`](../../../../docs/production-environments.md), by reference rather than repeated here
 
 **Send back:** the list of variable **names** you set (not values), the deployment URL, and the commit SHA.
 
@@ -120,11 +120,11 @@ Independent of steps 1 to 5. Follow [`g2-highlevel-app-test.md`](../../../../doc
 
 ---
 
-## Step 7 - Optional: close the real-Postgres gate
+## Step 7 - Closed: the real-Postgres gate
 
-**Row:** `GGL-B16` · **Owner:** anyone with a Docker-capable machine
+**Row:** `GGL-B16` · **Owner:** none, no operator action required
 
-Independent of everything above. See [PRD-004d](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004d-reviewable-go-live-postgres-command-gate.md) for the one command and the three provisioning routes. This is the last locally provable row on the board.
+Closed. `GGL-B16` CLOSED by PR #65 (`c140f11`), CI run `35058370796` at head `dab2ec6`. Route R5 adopted: the canonical `pnpm test:db` gate provisions its own disposable database, so no provisioning-route decision and no manual run are needed. PR #66 was a separate, closed and unmerged approach to the same gate; it is not the gate's proof and is not reopened. See [PRD-004d](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004d-reviewable-go-live-postgres-command-gate.md) for the full record.
 
 ---
 
@@ -138,10 +138,11 @@ Independent of everything above. See [PRD-004d](../../../requirements/in-work/pr
 | 4. Test Link | `GGL-B06`, `GGL-B07` | Blocked by steps 1 and 3 |
 | 5. Listing submit | `GGL-B09` | Content ready (PRD-004e); capture blocked by steps 2 and 4 |
 | 6. G2 capture | `GGL-B10` | Harness ready; no sanitized fixtures |
-| 7. Postgres gate | `GGL-B16` | Tests exist; no observed run |
+| 7. Postgres gate | `GGL-B16` | Closed (CI run `35058370796`) |
 
-Code for every in-repo half of this path is merged on `main` (`f4b79f7`, PR #61). Nothing in steps 1 to 7 requires new application code.
+Code for every in-repo half of steps 1 through 6 is merged on `main` (`f4b79f7`, PR #61), and the Postgres gate in step 7 closed on `main` at `c140f11` (PR #65). Step 2's create, reload, and approve sequence now additionally requires PRD-005a and PRD-005b on the deployed SHA: on `main` at `c140f11`, the default request composition denies every non-synthetic session (completion review finding C1), so the review URL will not authenticate a real operator until those sub-PRDs merge. Steps 1, 3, 4, 5, and 6 remain operator-only and unaffected by that gap.
 
 ## Changelog
 
+- v1.1 (2026-09-19): Handoff reconciliation (PRD-005d). Step 7 and status row 7 now read Closed with CI run `35058370796` (PR #65, `c140f11`); the "nothing requires new application code" line is replaced with a note that step 2 additionally requires PRD-005a and PRD-005b, because the default request composition on `main` at `c140f11` denies every non-synthetic session (completion review finding C1). Step 1's env list now points at the PRD-005 server-only names in `docs/production-environments.md` by reference. Steps 1, 3, 4, 5, and 6 are otherwise unchanged.
 - v1.0 (2026-09-16): Initial runbook. Ordered steps, per-step return artifacts, abort conditions, and the listing-type decision point.

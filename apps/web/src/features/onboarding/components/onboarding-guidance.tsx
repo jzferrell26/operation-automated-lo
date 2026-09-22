@@ -16,7 +16,7 @@ export function OnboardingGuidance({ guidance }: OnboardingGuidanceProps) {
   if (!visible) {
     return (
       <p className={styles.guidanceDismissed} role="status">
-        Optional guidance dismissed. The setup checklist remains available below.
+        Tip closed. Your setup list is still below.
       </p>
     );
   }

@@ -51,6 +51,12 @@ const brandAllowances: readonly ReviewSurfaceAllowance[] = [
       "The product's own never-accepted-from-AI policy. A Marketplace reviewer should see it and it claims nothing about a tenant.",
   },
   { path: "safety.dataMode", because: "Literal 'synthetic' fixed by runtimeSafetySchema." },
+  {
+    path: "canonicalProfile.requiredFields[*].state",
+    value: "confirmed",
+    because:
+      "Substring of the not-connected field copy 'You haven't confirmed this yet.' (PRD-006b D4); no required field is reported confirmed here, which the next test asserts directly.",
+  },
 ];
 
 beforeEach(() => {
@@ -90,12 +96,10 @@ describe("authenticated brand route", () => {
     const { container, workspace } = renderBrand("production", OALO_REVIEW_SURFACE_AUTHORIZED);
     const { canonicalProfile } = workspace.brand;
 
-    expect(canonicalProfile.fields.every((field) => field.value.startsWith("Not saved."))).toBe(
-      true,
-    );
+    expect(canonicalProfile.fields.every((field) => field.value === "Not saved yet")).toBe(true);
     expect(canonicalProfile.requiredFields.every((field) => field.state === "missing")).toBe(true);
     expect(container.querySelectorAll("[data-profile-field-state='confirmed']")).toHaveLength(0);
-    expect(container.textContent).toContain("Demo workspace (not connected)");
+    expect(container.textContent).toContain("your workspace");
     for (const identity of ["Alex Morgan", "Prairie Home Lending", "NMLS 0000000"]) {
       expect(container.textContent).not.toContain(identity);
     }
@@ -106,14 +110,17 @@ describe("authenticated brand route", () => {
     const { aiAssistance } = workspace.brand;
 
     expect(
-      aiAssistance.suggestions.every((suggestion) =>
-        suggestion.proposedValue.startsWith("Not generated."),
+      aiAssistance.suggestions.every(
+        (suggestion) =>
+          suggestion.proposedValue === "No suggestion yet. Add a sample of your marketing first.",
       ),
     ).toBe(true);
     expect(
-      aiAssistance.approvedSamples.every((sample) => sample.displayName.includes("None attached")),
+      aiAssistance.approvedSamples.every((sample) =>
+        sample.displayName.includes("nothing added yet"),
+      ),
     ).toBe(true);
-    expect(screen.getByRole("status").textContent).toContain("No AI suggestion has been accepted");
+    expect(screen.getByRole("status").textContent).toBe("Nothing saved from a suggestion yet.");
   });
 
   it("keeps the demo-rich synthetic brand profile for local development", () => {

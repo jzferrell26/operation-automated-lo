@@ -15,13 +15,21 @@ describe("route error boundary projection", () => {
       <RouteError
         error={Object.assign(new Error("fixture parse failed"), { digest: "syn-digest-001" })}
         reset={reset}
-        routeName="Platform Overview"
+        routeName="Overview"
       />,
     );
 
-    expect(screen.getByText("Frozen synthetic fixture remains unchanged")).toBeInTheDocument();
+    /**
+     * PRD-006b D8. The reference support asks for is still here and is still the digest; it has
+     * moved into the one collapsed region where a reference belongs, with a plain label.
+     */
+    expect(
+      screen.getByText("We couldn't load this page. Nothing was changed."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Details for support")).toBeInTheDocument();
+    expect(screen.getByText("Support reference")).toBeInTheDocument();
     expect(screen.getByText("syn-digest-001")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Retry safe read" }));
+    await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(reset).toHaveBeenCalledOnce();
     expect(network).not.toHaveBeenCalled();
   });

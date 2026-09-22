@@ -3,6 +3,30 @@ import { z } from "zod";
 import type { CampaignPersistenceKind } from "@oalo/application";
 
 import {
+  ACCESS_GROUP_DESCRIPTION,
+  ACCESS_GROUP_LABELS,
+  ACCESS_NO_EFFECT_YET,
+  ACCESS_NOTHING_CHECKED,
+  BRAND_FIELD_SOURCE,
+  BRAND_FIELD_VALUE,
+  BRAND_MISSING_NEXT_STEP,
+  BRAND_MISSING_REASON,
+  BRAND_PROFILE_SOURCE,
+  BRAND_SUGGESTION_CONFIDENCE,
+  BRAND_SUGGESTION_VALUE,
+  brandSampleSlotLabel,
+  NOT_CONNECTED_DETAIL,
+  NOT_CONNECTED_DISCLOSURE,
+  NOT_CONNECTED_HEADLINE,
+  NOT_CONNECTED_NAVIGATION_DETAIL,
+  NOT_CONNECTED_NEXT_STEP,
+  NOT_CONNECTED_SETUP_OWNER,
+  NOT_CONNECTED_SETUP_REASON,
+  NOT_CONNECTED_SOURCE,
+  NOT_LIVE_METRIC_SOURCE,
+  NOT_LIVE_YET,
+} from "../copy/user-language.js";
+import {
   loadSyntheticBrandProfile,
   syntheticBrandProfileSchema,
   type SyntheticBrandProfile,
@@ -28,73 +52,79 @@ import {
 export const OALO_REVIEW_SURFACE_ENV = "OALO_REVIEW_SURFACE" as const;
 export const OALO_REVIEW_SURFACE_AUTHORIZED = "authorized" as const;
 
-export const REVIEW_SURFACE_DISCLOSURE =
-  "REVIEW SURFACE. Demo fixtures only. Not connected to HighLevel, Meta, or Stripe. These numbers are not live customer data.";
-
 /**
- * Review mode must never present a fixture as observed tenant state. Every region that would
- * read as live workspace truth collapses onto these strings instead of fixture narrative.
+ * Every string a not-connected workspace shows comes from `../copy/user-language.js`, so the words
+ * and their meaning move together. PRD-006b D4 rewrote the wording; the truths are unchanged, and
+ * PRD-004 RGL-002 still holds: no spend, lead, or outcome figure is presented as live.
+ *
+ * The exported names below keep their shape because other modules import them by name. What each
+ * one holds is now a shared constant rather than a literal written here.
  */
-const REVIEW_NOT_CONNECTED_DETAIL = "Not connected. Review surface only. No live provider link.";
-const REVIEW_NOT_CONNECTED_SOURCE =
-  "Review surface. HighLevel, Meta, and Stripe are not connected.";
-const REVIEW_METRIC_SOURCE = "Not connected. Review surface has no live spend, leads, or CRM feed.";
-const REVIEW_NO_OBSERVATION = "No live observation";
-const REVIEW_NEXT_SAFE_ACTION =
-  "Connect HighLevel, Meta, and Stripe in a separately authorized environment.";
-const REVIEW_NAVIGATION_STATE_DETAIL =
-  "Review surface. Demo navigation only. No live entitlement or provider state is evaluated.";
+export const REVIEW_SURFACE_DISCLOSURE = NOT_CONNECTED_DISCLOSURE;
 
 /**
- * Onboarding is the sharpest review-surface claim in the product, because a completed item carries
- * a verification time, a verifier version, and permitted provider references. None of those can
- * exist when nothing is connected, so every item collapses to `not_started`: the only state in
- * `onboardingItemSchema` that asserts no observation at all. `in_progress`, `blocked`, and `stale`
- * each assert an observation the review surface never made, and `complete` asserts evidence.
+ * A not-connected workspace must never present a fixture as observed tenant state. Every region
+ * that would read as live workspace truth collapses onto these strings instead.
  */
-const REVIEW_ONBOARDING_REASON =
-  "Review surface. No install, provider read, or verification has been attempted here.";
-const REVIEW_ONBOARDING_RESPONSIBLE_PARTY = "Unassigned. The review surface has no live seat.";
+const REVIEW_NOT_CONNECTED_DETAIL = NOT_CONNECTED_DETAIL;
+const REVIEW_NOT_CONNECTED_SOURCE = NOT_CONNECTED_SOURCE;
+const REVIEW_METRIC_SOURCE = NOT_LIVE_METRIC_SOURCE;
+const REVIEW_NO_OBSERVATION = NOT_LIVE_YET;
+const REVIEW_NEXT_SAFE_ACTION = NOT_CONNECTED_NEXT_STEP;
+const REVIEW_NAVIGATION_STATE_DETAIL = NOT_CONNECTED_NAVIGATION_DETAIL;
 
 /**
- * `granted` and `missing` are observed classifications, so review mode restates each group label
- * as what the category *means* in this product rather than as something observed about a tenant.
+ * Onboarding is the sharpest claim in the product, because a completed item carries a verification
+ * time, a checker version, and permitted account references. None of those can exist when nothing
+ * is connected, so every item collapses to `not_started`: the only state in `onboardingItemSchema`
+ * that asserts nothing was ever checked. `in_progress`, `blocked`, and `stale` each assert a
+ * reading that was never taken, and `complete` asserts a result.
+ */
+const REVIEW_ONBOARDING_REASON = NOT_CONNECTED_SETUP_REASON;
+const REVIEW_ONBOARDING_RESPONSIBLE_PARTY = NOT_CONNECTED_SETUP_OWNER;
+
+/**
+ * `granted` and `missing` are classifications of something observed, so a not-connected workspace
+ * restates each group label as what the group *means* in this product rather than as something
+ * observed about the user's accounts.
  */
 const REVIEW_PERMISSION_GROUP_LABELS: Readonly<Record<PermissionGroup["category"], string>> =
-  Object.freeze({
-    required: "Core access this app must request",
-    granted: "Access this app verifies after install",
-    missing: "Access this app reports when an outcome is blocked",
-    optional: "Optional access this app can use",
-  });
-const REVIEW_PERMISSION_GROUP_DESCRIPTION =
-  "Review surface. No provider authorization has occurred, so no capability here has an observed grant state.";
-const REVIEW_PERMISSION_EVIDENCE =
-  "No evidence. The review surface performs no capability read or authorization.";
-const REVIEW_PERMISSION_IMPACT =
-  "Not evaluated. Nothing in this deployment depends on an observed grant.";
+  ACCESS_GROUP_LABELS;
+const REVIEW_PERMISSION_GROUP_DESCRIPTION = ACCESS_GROUP_DESCRIPTION;
+const REVIEW_PERMISSION_EVIDENCE = ACCESS_NOTHING_CHECKED;
+const REVIEW_PERMISSION_IMPACT = ACCESS_NO_EFFECT_YET;
 
 const REVIEW_BRAND_PROFILE_ID = "synthetic-brand-profile-demo-review";
 const REVIEW_BRAND_PROFILE_VERSION = "brand-v0-not-connected";
-const REVIEW_BRAND_PROFILE_SOURCE =
-  "Review surface. No brand profile version has human confirmation on this deployment.";
-const REVIEW_BRAND_FIELD_VALUE = "Not saved. The review surface holds no brand value.";
-const REVIEW_BRAND_FIELD_SOURCE = "Review surface. No human confirmation is recorded.";
-const REVIEW_BRAND_MISSING_REASON =
-  "Review surface. This field has no recorded human confirmation here.";
-const REVIEW_BRAND_MISSING_NEXT_ACTION = "Confirm this field in a separately authorized workspace.";
+const REVIEW_BRAND_PROFILE_SOURCE = BRAND_PROFILE_SOURCE;
+const REVIEW_BRAND_FIELD_VALUE = BRAND_FIELD_VALUE;
+const REVIEW_BRAND_FIELD_SOURCE = BRAND_FIELD_SOURCE;
+const REVIEW_BRAND_MISSING_REASON = BRAND_MISSING_REASON;
+const REVIEW_BRAND_MISSING_NEXT_ACTION = BRAND_MISSING_NEXT_STEP;
 const REVIEW_BRAND_SAMPLE_ID_PREFIX = "synthetic-approved-sample-review-slot-";
-const REVIEW_BRAND_SUGGESTION_VALUE =
-  "Not generated. The review surface makes no model requests and has no approved sample.";
-const REVIEW_BRAND_CONFIDENCE_LABEL = "Not generated";
+const REVIEW_BRAND_SUGGESTION_VALUE = BRAND_SUGGESTION_VALUE;
+const REVIEW_BRAND_CONFIDENCE_LABEL = BRAND_SUGGESTION_CONFIDENCE;
 
-export const REVIEW_LOCATION_DISPLAY_NAME = "Demo workspace (not connected)";
-export const REVIEW_USER_DISPLAY_NAME = "Demo reviewer";
-export const REVIEW_ROLE_LABEL = "Demo session, no live seat";
+/**
+ * The workspace and account names a not-connected deployment shows. PRD-006a replaces all three
+ * with the signed-in user's real name, their workspace's name, and their role label (006A-AC-028);
+ * until then they say what is true, which is that nothing is connected to this workspace.
+ *
+ * `REVIEW_LOCATION_DISPLAY_NAME` is deliberately lowercase, not `WORKSPACE_EYEBROW`: the onboarding
+ * heading reads "Get {this} ready" and the brand page reads "...every Open House Boost for {this}
+ * uses them", so it has to read correctly in the middle of a sentence, not only on its own line.
+ */
+export const REVIEW_LOCATION_DISPLAY_NAME = "your workspace";
+export const REVIEW_USER_DISPLAY_NAME = "Your account";
+export const REVIEW_ROLE_LABEL = NOT_CONNECTED_HEADLINE;
 export const REVIEW_SPEND_METRIC_ID = "ad_spend";
 export const REVIEW_SPEND_METRIC_LABEL = "Ad spend";
 
-/** The fixture identifiers carry the demo persona and tenant name, so review mode renames both. */
+/**
+ * The fixture ids carry the demo persona and tenant name, so review mode renames both. They keep
+ * the `synthetic-` prefix the fixture schema requires, and no screen renders either of them:
+ * PRD-006b D5 removed the one that did, the brand profile id on the brand screen.
+ */
 const REVIEW_USER_ID = "synthetic-user-demo-reviewer";
 const REVIEW_LOCATION_ID = "synthetic-location-demo-review";
 
@@ -182,6 +212,20 @@ export function canRenderSyntheticDemo(input: unknown = process.env): boolean {
   return servableWorkspaceMode(input) === "synthetic";
 }
 
+/**
+ * A path a user can read in the address bar is copy (PRD-006b D2 and 006B-AC-012). The demo keeps
+ * its `synthetic-*` slugs, because renaming a demo route is not this sub-PRD's job, but nothing a
+ * connected-account workspace links to may carry one. Anything that does falls back to the section
+ * it belongs to rather than pointing at a demo page.
+ */
+function userSafeHref(href: string): string {
+  if (!/synthetic/iu.test(href)) {
+    return href;
+  }
+  const section = href.slice(0, href.indexOf("/", 1));
+  return section.length > 0 ? section : "/overview";
+}
+
 type ReviewSafety = DeepReadonly<Onboarding>["safety"];
 
 /** `runtimeSafetySchema` pins `dataMode` and `writesEnabled`, so only the disclosure can move. */
@@ -232,7 +276,7 @@ export function notConnectedReviewMetric(
 function toReviewOverview(overview: ReturnType<typeof loadSyntheticUiFixture>["overview"]) {
   return {
     safety: toReviewSafety(overview.safety),
-    heading: "Review dashboard (demo, not connected)",
+    heading: "Overview",
     readiness: "attention_required" as const,
     lastVerifiedAt: overview.lastVerifiedAt,
     health: overview.health.map(toReviewStatus),
@@ -287,7 +331,7 @@ function toReviewOnboardingItem(item: DeepReadonly<OnboardingItem>) {
     description: item.description,
     freshness: REVIEW_NO_OBSERVATION,
     state: "not_started" as const,
-    completionHref: item.completionHref,
+    completionHref: userSafeHref(item.completionHref),
     reason: REVIEW_ONBOARDING_REASON,
     responsibleParty: REVIEW_ONBOARDING_RESPONSIBLE_PARTY,
     nextAction: REVIEW_NEXT_SAFE_ACTION,
@@ -349,7 +393,7 @@ function toReviewBrand(
 ): DeepReadonly<SyntheticBrandProfile> {
   const approvedSamples = brand.aiAssistance.approvedSamples.map((sample, index) => ({
     id: `${REVIEW_BRAND_SAMPLE_ID_PREFIX}${index + 1}`,
-    displayName: `Approved sample slot ${index + 1}. None attached on the review surface.`,
+    displayName: brandSampleSlotLabel(index + 1),
     permission: sample.permission,
   }));
 
@@ -405,7 +449,7 @@ function toReviewNavigationItem(item: DeepReadonly<NavigationItem>): DeepReadonl
   return {
     id: item.id,
     label: item.label,
-    href: item.href,
+    href: userSafeHref(item.href),
     state: item.state,
     ...(item.requiredCapability === undefined
       ? {}

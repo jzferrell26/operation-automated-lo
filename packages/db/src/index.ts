@@ -67,6 +67,12 @@ export {
   type SqlScalar,
 } from "./sql-contract.js";
 export {
+  RUNTIME_FUNCTION_CONTRACT_NAMES,
+  isRuntimeFunctionContractName,
+  queryRuntimeFunction,
+  type RuntimeFunctionContractName,
+} from "./runtime-function-query.js";
+export {
   DatabaseContextError,
   createPrincipalBoundTenantContextAuthority,
   isSqlDriverResult,

@@ -1,0 +1,15 @@
+# PRD-006 QA
+
+Empty scaffold. `security-guardian` writes the security audit and `quality-guardian` writes the QA report here at close-out, security first, never reversed.
+
+No fabricated findings. No report exists until the audits run against a merged tree.
+
+## Reports on file
+
+| Date | Reviewer | Report | Rows | Verdict |
+|---|---|---|---|---|
+| 2026-09-19 | `ux-ui-guardian` | [PRD-006d scored design review](2026-09-19-prd-006d-design-review.md) | 006D | 17 findings, all fixed; 006D-AC-015 open, owned by the orchestrator |
+| 2026-09-19 | `technical-writing-craft-guardian` | [Writing review: batch prose and user-facing copy](2026-09-19-writing-review.md) | 005D-AC-013, 006B-AC-016, 006C-AC-019 | 005D-AC-013 and 006C-AC-019 closed with no blocking finding; 006B-AC-016: no blocking finding open (F-03, the reset-password success notice, was fixed after the review by `react-guardian`) |
+| 2026-09-19 | `runbook-writing-guardian` | [Runbook review: the seeding and retention runbooks](../../prd-005-authenticated-review-runtime/qa/2026-09-19-runbook-review.md) | 005B-AC-018, 006A-AC-030 | no blocking finding open; recorded in PRD-005's QA folder because the runbook is PRD-005's document that PRD-006a extends |
+| 2026-09-19 | `security-guardian` | [Batch security audit: PRD-005 and PRD-006](2026-09-19-batch-security-audit.md) | whole batch (PRD-005 and PRD-006, audited at `d4f5a76`) | PASS. 0 Critical, 0 High, 2 Medium, 6 Low, no code changed. Six rulings recorded, including the Vercel forwarded-header question verified against the vendor's documentation. CVE intelligence flagged stale at 150 days |
+| 2026-09-21 | `quality-guardian` | [PRD-006 QA report](2026-09-19-prd-006-qa-report.md) | all 100 PRD-006 rows (`FSG-001` to `FSG-008`, 006a to 006d) | PASS with warnings. 94 pass, 6 partial, 0 fail, 0 Critical. 6 Warnings: the unplanned resend-verification surface and its definer function, the post-approval screen that re-offers the approve button, three named design states with no capture, `FSG-008` against the two open Mediums, four em dashes in added ledger lines, and the in-flight database gate. 3 Suggestions. Eight sign-off pictures spot-checked across four frames and both themes; no superseded PRD-005b behaviour survives in code. Audited at `b3cdae0`, after `security-guardian`. The PRD-005 half is at [`../../prd-005-authenticated-review-runtime/qa/2026-09-19-prd-005-qa-report.md`](../../prd-005-authenticated-review-runtime/qa/2026-09-19-prd-005-qa-report.md) |

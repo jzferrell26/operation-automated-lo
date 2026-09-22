@@ -72,25 +72,25 @@ describe("state and data primitives", () => {
     for (const [state, markup] of markupByState) {
       expect(markup).toContain(`data-state="${state}"`);
       expect(markup).toContain("Source");
-      expect(markup).toContain("Freshness");
+      expect(markup).toContain("Last updated");
       expect(markup).not.toMatch(
         /nextaction=|pendingsources=|correlationid=|requiredrole=|accesspath=/i,
       );
     }
 
     expect(markupByState[0]?.[1]).toContain(">0<");
-    expect(markupByState[1]?.[1]).toContain("Next safe action");
+    expect(markupByState[1]?.[1]).toContain("What to do next");
     expect(markupByState[2]?.[1]).toContain("Unavailable");
-    expect(markupByState[3]?.[1]).toContain("Sources pending");
+    expect(markupByState[3]?.[1]).toContain("Still waiting on");
     expect(markupByState[4]?.[1]).toContain("Uncertain, reconciling");
     expect(markupByState[4]?.[1]).toContain("corr-metric-42");
-    expect(markupByState[5]?.[1]).toContain("Permission restricted");
+    expect(markupByState[5]?.[1]).toContain("No access");
     expect(markupByState[5]?.[1]).not.toContain("Pipeline value</p>");
     expect(markupByState[6]?.[1]).toContain('<p class="oalo-metric__value">Not connected</p>');
-    expect(markupByState[6]?.[1]).toContain("Next safe action");
+    expect(markupByState[6]?.[1]).toContain("What to do next");
   });
 
-  it("labels synthetic metrics and exposes source and freshness", () => {
+  it("says a value is not live, and still shows where it came from and when", () => {
     const markup = renderMetric({
       freshness: "Fixture timestamp: 2026-07-20T12:00:00Z",
       label: "Active work",
@@ -100,7 +100,10 @@ describe("state and data primitives", () => {
       value: "3 items",
     });
 
-    expect(markup).toContain("Synthetic data");
+    // PRD-006b 006B-AC-009. The `synthetic` prop keeps its meaning: the value is not a live
+    // reading. What changes is the words the row uses to say so.
+    expect(markup).toContain("Not live data");
+    expect(markup).not.toContain("Synthetic data");
     expect(markup).toContain("Frozen UI fixture");
     expect(markup).toContain("Fixture timestamp");
   });
@@ -117,9 +120,9 @@ describe("state and data primitives", () => {
     );
 
     expect(markup).toContain('data-state="permission_restricted"');
-    expect(markup).toContain("Permission restricted");
+    expect(markup).toContain("No access");
     expect(markup).toContain("viewer access only");
-    expect(markup).toContain("Required role");
+    expect(markup).toContain("Who can do this");
     expect(markup).toContain("Location owner");
     expect(markup).not.toMatch(/reason=|requiredrole=|responsibleparty=/i);
   });
@@ -140,7 +143,7 @@ describe("state and data primitives", () => {
 
     expect(error).toContain('role="alert"');
     expect(error).toContain("Error");
-    expect(degraded).toContain("Degraded");
+    expect(degraded).toContain("Having trouble");
   });
 
   it("renders onboarding items in source order with verified completion evidence", () => {
@@ -172,8 +175,12 @@ describe("state and data primitives", () => {
       markup.indexOf("Brand and compliance"),
     );
     expect(markup).toContain("Required scopes verified");
+    // PRD-006b D8. The checker version is kept, one region down, with a plain label.
+    expect(markup).toContain("data-support-details");
+    expect(markup).toContain("Details for support");
+    expect(markup).toContain("Checker version");
     expect(markup).toContain("permissions-v2");
-    expect(markup).toContain("Blocked");
-    expect(markup).toContain("Next safe action");
+    expect(markup).toContain("Stuck");
+    expect(markup).toContain("What to do next");
   });
 });

@@ -12,19 +12,38 @@ import {
   authenticateInboundEmbeddedSession,
   authenticateInboundFirstPartySession,
   assertBrowserMutationRequest,
+  type DatabaseBindingRole,
   type EmbeddedSessionTokenClaims,
   type EstablishedFirstPartySession,
   type FirstPartySessionLookup,
 } from "@oalo/auth";
 
 import { authenticatedWorkspaceMode } from "./authenticated-workspace-data.js";
+import type { CredentialPort } from "./credential-ports.js";
+import type { TransactionalEmailPort } from "./email/transactional-email.js";
+import {
+  createLocalSyntheticPrincipal,
+  LOCAL_SYNTHETIC_ACTOR_ID,
+  LOCAL_SYNTHETIC_ACTOR_REF,
+  LOCAL_SYNTHETIC_LOCATION_ID,
+  LOCAL_SYNTHETIC_LOCATION_REF,
+} from "./local-synthetic-principal.js";
 
-export const LOCAL_SYNTHETIC_LOCATION_ID = "00000000-0000-4000-8000-000000000801";
-export const LOCAL_SYNTHETIC_ACTOR_ID = "00000000-0000-4000-8000-000000000811";
-export const LOCAL_SYNTHETIC_LOCATION_REF = "location_localWorkspace001";
-export const LOCAL_SYNTHETIC_ACTOR_REF = "principal_localUser001";
-export const LOCAL_SYNTHETIC_INSTALLATION_REF = "installation_localWorkspace001";
-export const LOCAL_SYNTHETIC_SESSION_ID = "session_localSynthetic001";
+/**
+ * PRD-005a 005A-AC-015. The synthetic principal factory is imported rather than declared here, so
+ * that the one production call of it below crosses a module boundary a test can observe. See
+ * `local-synthetic-principal.ts` for why the seam has to be a real one. Everything that module
+ * exports is re-exported here, because this is where the rest of the tree already imports it from.
+ */
+export {
+  createLocalSyntheticPrincipal,
+  LOCAL_SYNTHETIC_ACTOR_ID,
+  LOCAL_SYNTHETIC_ACTOR_REF,
+  LOCAL_SYNTHETIC_INSTALLATION_REF,
+  LOCAL_SYNTHETIC_LOCATION_ID,
+  LOCAL_SYNTHETIC_LOCATION_REF,
+  LOCAL_SYNTHETIC_SESSION_ID,
+} from "./local-synthetic-principal.js";
 
 export class UnauthenticatedPrincipalError extends Error {
   public constructor() {
@@ -60,12 +79,80 @@ export interface EmbeddedSessionPort {
   readonly isSessionActive: (claims: EmbeddedSessionTokenClaims) => boolean | Promise<boolean>;
 }
 
+/**
+ * PRD-005b D4. Authenticated mutations move `last_seen_at` on the session they used. Reads do not,
+ * so a tab left open overnight does not keep a session alive on its own.
+ */
+export interface SessionActivityPort {
+  touch(sessionRef: string): Promise<void>;
+}
+
+export interface SessionDisplayNames {
+  readonly locationDisplayName: string;
+  readonly userDisplayName: string;
+}
+
+/**
+ * PRD-005a 005A-AC-011. The one read that turns a verified principal into the names the review
+ * shell paints. It answers `undefined` whenever the location or the person is not active, so a
+ * name can never outlive the row that justifies it.
+ */
+export interface SessionDisplayPort {
+  resolve(input: {
+    locationRef: string;
+    actorRef: string;
+  }): Promise<Readonly<SessionDisplayNames> | undefined>;
+}
+
+export interface FirstPartySessionIssuance {
+  readonly locationId: string;
+  readonly userId: string;
+  readonly bindingRole: DatabaseBindingRole;
+  readonly sessionRole: ApplicationRole;
+  readonly sessionSecretHash: string;
+  readonly lifetimeSeconds: number;
+  /**
+   * PRD-006a D1 widened this. `review_sign_in` was the persona selector's issuer and no longer
+   * has a caller; a password sign-in issues `password_sign_in` and a completed reset issues
+   * `password_reset`, so the store records which exchange minted each session.
+   */
+  readonly issuedBy: "password_sign_in" | "password_reset" | "embedded_exchange";
+  readonly correlationRef: string;
+}
+
+/**
+ * PRD-005b D4, as PRD-006a D9 leaves it. The three `security definer` calls the sign-in and
+ * sign-out paths make. Every decision they describe is taken inside the database function, not
+ * here: this interface exists so the handler can be driven from a unit test without a connection,
+ * and so the one pool the runtime composition opens is the only pool the auth routes use.
+ */
+export interface FirstPartySessionIssuancePort {
+  issue(input: Readonly<FirstPartySessionIssuance>): Promise<string>;
+  revoke(
+    input: Readonly<{ sessionRef: string; reason: "sign_out"; correlationRef: string }>,
+  ): Promise<boolean>;
+  /**
+   * 005B-AC-016. `issue` writes its own denied audit row and then raises, so that row dies with
+   * the transaction. This records the attempt afterwards, in a transaction of its own.
+   */
+  recordDeniedAttempt(
+    input: Readonly<{ locationId: string; userId: string; correlationRef: string }>,
+  ): Promise<boolean>;
+}
+
 export interface CampaignCommandPorts {
   readonly identityDirectory: IdentityDirectory;
   readonly roleBindings: RoleBindingPort;
   readonly firstPartySessions?: FirstPartySessionLookup;
   readonly embedded?: EmbeddedSessionPort;
   readonly mutation?: BrowserMutationGate;
+  readonly sessionActivity?: SessionActivityPort;
+  readonly sessionDisplay?: SessionDisplayPort;
+  readonly sessionIssuance?: FirstPartySessionIssuancePort;
+  /** PRD-006a D1. The credential trust boundary. Absent outside review mode. */
+  readonly credentials?: CredentialPort;
+  /** PRD-006a D6. Never the Resend adapter in synthetic mode. */
+  readonly transactionalEmail?: TransactionalEmailPort;
 }
 
 function nowEpochSeconds(clock?: () => number): number {
@@ -134,23 +221,6 @@ export function createStaticRoleBindingPort(
       return versions.get(`${input.locationRef}\0${input.actorRef}\0${input.role}`);
     },
   };
-}
-
-export function createLocalSyntheticPrincipal(
-  overrides: Partial<AuthenticatedPrincipal> = {},
-): Readonly<AuthenticatedPrincipal> {
-  return freezeAuthenticatedPrincipal({
-    actorRef: LOCAL_SYNTHETIC_ACTOR_REF,
-    actorId: LOCAL_SYNTHETIC_ACTOR_ID,
-    locationRef: LOCAL_SYNTHETIC_LOCATION_REF,
-    locationId: LOCAL_SYNTHETIC_LOCATION_ID,
-    installationRef: LOCAL_SYNTHETIC_INSTALLATION_REF,
-    role: "campaign_creator",
-    roleVersion: 1,
-    sessionId: LOCAL_SYNTHETIC_SESSION_ID,
-    authenticationMode: "local_synthetic",
-    ...overrides,
-  });
 }
 
 export function createDefaultCampaignCommandPorts(): CampaignCommandPorts {
@@ -306,6 +376,9 @@ async function resolveFirstPartyPrincipal(
   });
   if (mutationRequired) {
     assertMutationGate(request, session.sessionId, "cookie", ports.mutation);
+    // PRD-005b D4. Only after the whole gate passes, so a refused request never
+    // reports activity on the session it failed to use.
+    await ports.sessionActivity?.touch(session.sessionId);
   }
   return bindPrincipal({
     actorRef: session.userId,

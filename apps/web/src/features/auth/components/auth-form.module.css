@@ -1,0 +1,137 @@
+/* PRD-006d 006D-AC-003. Every field on an account screen is a `TextField` or a `PasswordField`
+ * from `@oalo/ui`, so this module places things and never styles a control. The `.field`,
+ * `.field input`, and `.helper` rules that used to live here were a second implementation of the
+ * field specification; they are gone, and the label row, description, error, focus ring, and 44px
+ * target all come from the primitive.
+ */
+.page {
+  display: grid;
+  justify-items: center;
+  padding-block: var(--space-7);
+  padding-inline: var(--space-4);
+  color: var(--tx-strong);
+}
+.panel {
+  display: grid;
+  inline-size: 100%;
+  max-inline-size: 26rem;
+  gap: var(--space-5);
+}
+.header {
+  display: grid;
+  gap: var(--space-2);
+}
+.header h1 {
+  margin: 0;
+  font-size: var(--text-page-size);
+  line-height: var(--leading-tight);
+}
+.header p {
+  margin: 0;
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+}
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+.body {
+  margin: 0;
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+}
+/* Brief section 18: the 44 by 44 target is the whole row, which is what a person taps, not an
+ * inflated box. Sizing the native control itself to 44 square drew a grey block the size of the
+ * button beside it and made the screen read as though something were loading. */
+.check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--target-min-size);
+  color: var(--tx-strong);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-normal);
+}
+.check input {
+  block-size: var(--space-4);
+  inline-size: var(--space-4);
+  accent-color: var(--ac-primary);
+}
+/* Brief section 18 and PRD-006d 006D-AC-009. A native checkbox and radio draw the browser's own
+ * ring, which is not the product's ring and disappears entirely in some themes. These two are the
+ * only controls on an account screen that are not a primitive, so the shared ring is stated here
+ * rather than inherited. */
+.check input:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+/* Brief section 9: a refusal and a confirmation are the critical and the information roles, and
+ * each carries its own glyph through the live region's own content, never colour alone. */
+.problem {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--st-critical-bg);
+  color: var(--st-critical-fg);
+  line-height: var(--leading-normal);
+}
+.notice {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--st-info-bg);
+  color: var(--st-info-fg);
+  line-height: var(--leading-normal);
+}
+.noticeBody {
+  display: block;
+}
+.noticeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+/* Brief section 4 and rubric axis 1: one primary action per screen. The footer's destinations are
+ * text links in a row, not three stacked full-width controls competing with the button above them. */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+}
+.honesty {
+  margin: 0;
+  color: var(--tx-faint);
+  font-size: var(--text-caption-size);
+  line-height: var(--leading-normal);
+}
+.choices {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-control);
+}
+.choicesLegend {
+  padding-inline: var(--space-2);
+  color: var(--tx-strong);
+  font-size: var(--text-card-size);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+/* Brief section 12: the account screens declare no motion, and cannot gain any. */
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .page * {
+    animation: none;
+    transition-duration: 0ms;
+  }
+}

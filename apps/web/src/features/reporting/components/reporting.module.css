@@ -311,20 +311,16 @@
   gap: var(--space-3);
 }
 
-.supportForm label {
-  display: grid;
-  gap: var(--space-1);
-  color: var(--tx-body);
-  font-size: var(--text-caption-size);
-  font-weight: var(--weight-medium);
-}
-
+/* PRD-006d 006D-AC-003. Every text control on this screen is a `TextField`, which brings its own
+ * label row, boundary, fill, focus ring, and 44px target from the field specification. The only
+ * control left here is `<select>`, which PRD-006d D4 defers: it is wrapped in `FormField`, so its
+ * label and identifiers are governed, and these rules give the control itself the same appearance
+ * the specification gives a text control until a `Select` primitive exists.
+ */
 .supportForm select,
-.supportForm input,
 .filterForm select,
-.filterForm input,
 .fieldControl select {
-  min-block-size: 44px;
+  min-block-size: var(--target-min-size);
   inline-size: 100%;
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--bd-input);
@@ -335,9 +331,7 @@
 }
 
 .supportForm select:focus-visible,
-.supportForm input:focus-visible,
 .filterForm select:focus-visible,
-.filterForm input:focus-visible,
 .fieldControl select:focus-visible {
   outline: var(--focus-width) solid var(--focus-color);
   outline-offset: var(--focus-offset);
@@ -352,15 +346,6 @@
   grid-template-columns: repeat(4, minmax(10rem, 1fr));
   align-items: end;
   gap: var(--space-3);
-}
-
-.filterForm label,
-.fieldControl {
-  display: grid;
-  gap: var(--space-1);
-  color: var(--tx-body);
-  font-size: var(--text-caption-size);
-  font-weight: var(--weight-medium);
 }
 
 .fieldControl {
@@ -409,5 +394,14 @@
   .launchDetails div {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-1);
+  }
+}
+
+/* Brief section 12: reporting declares no motion, and cannot gain any. */
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .page * {
+    animation: none;
+    transition-duration: 0ms;
   }
 }

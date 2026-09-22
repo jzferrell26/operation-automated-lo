@@ -26,6 +26,8 @@ Present Operation Automated LO as one platform with connected modules. The shell
 
 - Tablet uses a collapsible rail.
 - Mobile uses a top bar and modal navigation drawer.
+
+Ruled 2026-09-20 by `design-system-guardian`, closing rubric delta D-008 and matching brief section 14: the 1440, 1180, and 768 frames carry one rail and one toggle, not three rail designs. It opens expanded at all three, it collapses to the compact rail at all three, and its collapsed state is not required to persist across a reload. At 768 the expanded rail is 272px and leaves a 496px content column, which is accepted. Forcing the compact rail and hiding the toggle at a constrained frame is a defect against this line.
 - Drawer focus is trapped, Escape closes it, background scroll is locked, and focus returns to the trigger.
 - Touch targets are at least 44px by 44px.
 
@@ -41,6 +43,45 @@ Present Operation Automated LO as one platform with connected modules. The shell
 - Permission-restricted modules remain understandable without revealing protected records. The restricted state names the required role and a next safe action.
 - Plan-restricted and planned modules are visually and semantically distinct. Planned means unavailable, not a disabled operational tool.
 - Provider-degraded navigation retains the last safe known state and routes to status details; it must not initiate another uncertain provider write.
+
+### Account control
+
+Recorded 2026-09-20 by the PRD-006d named-state review, finding F-21. The folder named the
+identity area and the embedded "accessible account control" but never said where the controls that
+act on the session live, so the sign-out control had ended up as the first child of the page.
+
+- The shell owns the session's own controls. Sign out lives in the topbar's account area, beside
+  the theme control, at every frame. It never lives inside a page.
+- The page's main landmark opens with the page's own title. A control above a page heading is a
+  hierarchy defect (brief section 4 and rubric axis 1), whoever put it there.
+- The control is the `Button` primitive at its 44 by 44 target with the shared focus ring, and its
+  label comes from the copy module (PRD-006b D10's sign-out row, "Sign out").
+- It is a plain form post with a hidden session-bound field. No client script is loaded into the
+  shell to make one button work, and the control still cannot be pressed from another site.
+- A shell with no session renders no account control, and says so in the page instead.
+
+### The topbar says that it is sticky
+
+Recorded 2026-09-20 by Wave 7r, closing the reopened 006C-AC-013. The topbar is
+`position: sticky` at the block start on every frame, so it holds the first
+several rows of the viewport, and anything that scrolls the page has to leave
+that space alone: PRD-006c D7 asks that the guided-setup panel never obscure the
+focused element or the shell's sticky header. The walkthrough had been scrolling
+an anchored element to the 16px viewport margin, which put the first control
+inside a tall element underneath the topbar. Measured in the review browser run:
+"Dark 1180x900 1. Welcome: a tap at the centre of the element does not reach it
+... Received: header.app-shell-module__topbar".
+
+- The topbar carries `data-shell-sticky-header="true"`. It is the shell naming
+  its own pinned element, so anything that scrolls the page can measure it
+  without reading this file's class names, and a surface without the chrome
+  simply finds nothing.
+- The guided setup reads it into its placement model as `Viewport.blockStart`
+  (`apps/web/src/features/guided-setup/model/panel-placement.ts`). The model
+  itself knows nothing about the shell; the attribute is what crosses.
+- Nothing in the shell imports the walkthrough or is aware of it, which is the
+  same arrangement the "Finish setup" chip and the help menu keep: the shell
+  takes them as a slot.
 
 ### Theme control
 

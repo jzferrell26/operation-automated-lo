@@ -27,6 +27,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # PRD-006d 006D-AC-013. `baseline-note.test.ts` diffs against `origin/${GITHUB_BASE_REF}`;
+          # a depth-1 checkout never has that ref, so the guard would pass on every pull request.
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -60,11 +63,38 @@ jobs:
 
       - name: Run the non-database verification gate
         run: pnpm verify:offline
+        env:
+          # PRD-006d 006D-AC-013. `baseline-note.test.ts` reads the pull request body here so that a
+          # branch that moves a screen baseline without saying why fails the gate. It is empty on a
+          # push to a branch with no pull request, which is the case the test treats as "nothing
+          # branch-specific to check".
+          PR_BODY: ${{ github.event.pull_request.body }}
+
+      # The synthetic screenshot suite compares against the Linux baselines only here, so a
+      # mismatch can only be read from this runner's own pictures; without this step they die
+      # with it (the reports page differed here by 99 px on 2026-09-21 and nothing showed what).
+      - name: Hand back the pictures and traces of anything that failed
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: verify-failure-traces
+          path: test-results/browser
+          if-no-files-found: ignore
+          retention-days: 7
 
   database:
     name: Real PostgreSQL migrations and pgTAP
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # PRD-006c D9 added the review browser run to `pnpm test:db`: a web build, a real `next start`
+    # in review mode behind a TLS terminator, and the `review` Playwright specs. The timed spec
+    # alone spends its budget on deliberate typing and reading pauses, and the accessibility
+    # matrix walks the steps four times.
+    #
+    # Wave 7m measured the two halves on 2026-09-20: the review suite is 12 to 13 minutes on the
+    # runner when nothing hangs, and the database half about 8, which is 21 with the build and the
+    # install on top of it. One retry of the longest spec's 300-second budget adds 5 more. 45 left
+    # nothing for a slow Docker host on top of that; 60 does.
+    timeout-minutes: 60
     permissions:
       contents: read
     env:
@@ -102,8 +132,25 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
 
+      # PRD-006c D9. The review browser run inside `pnpm test:db` drives a real browser, so this
+      # job needs the same Chromium the verify job installs.
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Run the canonical real database verification
         run: pnpm test:db
+
+      # Wave 7m. Playwright keeps a trace for every failed test (`playwright.config.ts`,
+      # `trace: "retain-on-failure"`). Without this they die with the runner, which is why the
+      # 2026-09-20 review flake had to be reproduced on a workstation before it could be read.
+      - name: Hand back the traces of anything that failed
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: database-failure-traces
+          path: test-results/browser
+          if-no-files-found: ignore
+          retention-days: 7
 
   release-contract:
     name: Release and recovery contract

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Stack } from "@oalo/ui";
+import { Button, Card, Link, Stack } from "@oalo/ui";
 import { useState } from "react";
 
 import type { DeepReadonly } from "../../ui-foundation/model/synthetic-ui.js";
@@ -22,12 +22,12 @@ export function ArtifactWorkspace({ campaign }: ArtifactWorkspaceProps) {
     campaign.artifacts[0];
 
   if (!selectedArtifact || !approvedArtifact) {
-    return <p>No synthetic artifact versions are available.</p>;
+    return <p>There are no versions to show yet.</p>;
   }
 
   return (
     <Stack gap="4">
-      <div aria-label="Artifact version previews" className={styles.versionPicker} role="group">
+      <div aria-label="Preview a version" className={styles.versionPicker} role="group">
         {campaign.artifacts.map((artifact) => (
           <Button
             aria-pressed={artifact.id === selectedArtifact.id}
@@ -36,7 +36,7 @@ export function ArtifactWorkspace({ campaign }: ArtifactWorkspaceProps) {
             size="sm"
             variant={artifact.id === selectedArtifact.id ? "primary" : "secondary"}
           >
-            Preview version {artifact.version}
+            Version {artifact.version}
           </Button>
         ))}
       </div>
@@ -50,44 +50,37 @@ export function ArtifactWorkspace({ campaign }: ArtifactWorkspaceProps) {
         <p>{selectedArtifact.previewSummary}</p>
         <dl className={styles.inlineDetails}>
           <div>
-            <dt>Artifact</dt>
+            <dt>What this is</dt>
             <dd>{selectedArtifact.label}</dd>
           </div>
           <div>
-            <dt>Source profile</dt>
+            <dt>Built from your brand details</dt>
             <dd>{selectedArtifact.sourceProfileVersion}</dd>
           </div>
         </dl>
       </Card>
 
       <div className={styles.artifactActions}>
-        <a
-          className="oalo-action-link"
-          href={approvedArtifact.publicHref}
-          rel="noreferrer"
-          target="_blank"
-        >
-          Open approved public link
-        </a>
+        <Link external href={approvedArtifact.publicHref} variant="action">
+          Open the approved page
+        </Link>
         <Button onClick={() => setDraftSourceVersion(selectedArtifact.version)} variant="secondary">
-          Duplicate as new draft
+          Start a new draft from this
         </Button>
       </div>
 
       {draftSourceVersion === null ? null : (
         <Card className={styles.localProjection} padding="sm" role="status">
-          <strong>Local draft projection staged from version {draftSourceVersion}</strong>
-          <p>No campaign history, provider record, approval, or public artifact was changed.</p>
+          <strong>New draft started from version {draftSourceVersion}</strong>
+          <p>Nothing that already exists was changed, and nothing was published.</p>
         </Card>
       )}
 
       <section aria-labelledby="creative-originals-title" className={styles.creativeSection}>
         <div className={styles.sectionHeading}>
           <div>
-            <h2 id="creative-originals-title">Creative previews and originals</h2>
-            <p>
-              Each preview and download points to the same immutable synthetic creative version.
-            </p>
+            <h2 id="creative-originals-title">Artwork and downloads</h2>
+            <p>What you see here and what you download are the same version.</p>
           </div>
           <span>{campaign.creatives.length} approved sizes</span>
         </div>
@@ -109,19 +102,19 @@ export function ArtifactWorkspace({ campaign }: ArtifactWorkspaceProps) {
                   <dd>{creative.version}</dd>
                 </div>
                 <div>
-                  <dt>Original</dt>
+                  <dt>File</dt>
                   <dd>
                     {creative.dimensions}, {creative.mimeType}
                   </dd>
                 </div>
               </dl>
-              <a
-                className="oalo-action-link"
+              <Link
                 download={creative.downloadFileName}
                 href={creative.downloadHref}
+                variant="action"
               >
-                Download original {creative.label}
-              </a>
+                Download {creative.label}
+              </Link>
             </Card>
           ))}
         </div>
@@ -129,8 +122,8 @@ export function ArtifactWorkspace({ campaign }: ArtifactWorkspaceProps) {
 
       <section aria-labelledby="campaign-history-title" className={styles.history}>
         <div className={styles.sectionHeading}>
-          <h2 id="campaign-history-title">Campaign history</h2>
-          <span>Immutable history: {campaign.history.length} versions</span>
+          <h2 id="campaign-history-title">What changed, and when</h2>
+          <span>{campaign.history.length} versions, none of them edited after the fact</span>
         </div>
         <ol>
           {campaign.history.map((entry) => (

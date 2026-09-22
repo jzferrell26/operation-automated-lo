@@ -260,15 +260,15 @@ export const SafeAction = forwardRef<HTMLButtonElement, SafeActionProps>(functio
           <div id={confirmationDescriptionId}>
             <dl className={styles.explanationDetails}>
               <div>
-                <dt>Effect</dt>
+                <dt>What this does</dt>
                 <dd>{decision.confirmation.effect}</dd>
               </div>
               <div>
-                <dt>Scope</dt>
+                <dt>What it covers</dt>
                 <dd>{decision.confirmation.scope}</dd>
               </div>
               <div>
-                <dt>Result</dt>
+                <dt>What happens next</dt>
                 <dd>{decision.confirmation.result}</dd>
               </div>
             </dl>
@@ -297,43 +297,56 @@ function SafeActionContextDetails({
     <div id={id} className={styles.explanation} data-testid="safe-action-context">
       <p>{decision.explanation}</p>
       <dl className={styles.explanationDetails}>
-        <EvidenceDetail term="Required role">{decision.requiredRole}</EvidenceDetail>
+        <EvidenceDetail term="Who can do this">{decision.requiredRole}</EvidenceDetail>
         {decision.state === "blocked" ? (
           <>
-            <EvidenceDetail term="Prerequisite">{decision.prerequisite}</EvidenceDetail>
-            <EvidenceDetail term="Responsible party">{decision.responsibleParty}</EvidenceDetail>
-            <EvidenceDetail term="Next safe action">{decision.nextAction}</EvidenceDetail>
+            <EvidenceDetail term="First you need">{decision.prerequisite}</EvidenceDetail>
+            <EvidenceDetail term="Ask">{decision.responsibleParty}</EvidenceDetail>
+            <EvidenceDetail term="What to do next">{decision.nextAction}</EvidenceDetail>
           </>
         ) : null}
         {decision.state === "permission_restricted" ? (
           <>
-            <EvidenceDetail term="Authorized resolver">{decision.responsibleParty}</EvidenceDetail>
-            <EvidenceDetail term="Access path">{decision.nextAction}</EvidenceDetail>
+            <EvidenceDetail term="Ask">{decision.responsibleParty}</EvidenceDetail>
+            <EvidenceDetail term="How to get access">{decision.nextAction}</EvidenceDetail>
           </>
         ) : null}
         {decision.state === "uncertain_reconciling" ? (
           <>
-            <EvidenceDetail term="Last safe state">{decision.lastSafeState}</EvidenceDetail>
-            <EvidenceDetail term="Correlation ID" valueClassName={styles.dataText}>
-              {decision.correlationId}
-            </EvidenceDetail>
-            <EvidenceDetail term="Next safe action">{decision.nextAction}</EvidenceDetail>
+            <EvidenceDetail term="Where things stand">{decision.lastSafeState}</EvidenceDetail>
+            <EvidenceDetail term="What to do next">{decision.nextAction}</EvidenceDetail>
           </>
         ) : null}
         {decision.state === "loading" ? (
-          <EvidenceDetail term="Last safe state">{decision.lastSafeState}</EvidenceDetail>
+          <EvidenceDetail term="Where things stand">{decision.lastSafeState}</EvidenceDetail>
         ) : null}
         {decision.state === "error" ? (
           <>
-            <EvidenceDetail term="Last safe state">{decision.lastSafeState}</EvidenceDetail>
-            <EvidenceDetail term="Responsible party">{decision.responsibleParty}</EvidenceDetail>
-            <EvidenceDetail term="Next safe action">{decision.nextAction}</EvidenceDetail>
-            <EvidenceDetail term="Retry">
-              {decision.retrySafe ? "Safe to retry" : "Retry unavailable"}
+            <EvidenceDetail term="Where things stand">{decision.lastSafeState}</EvidenceDetail>
+            <EvidenceDetail term="Ask">{decision.responsibleParty}</EvidenceDetail>
+            <EvidenceDetail term="What to do next">{decision.nextAction}</EvidenceDetail>
+            <EvidenceDetail term="Trying again">
+              {decision.retrySafe ? "You can try again" : "Trying again will not help"}
             </EvidenceDetail>
           </>
         ) : null}
       </dl>
+      {decision.state === "uncertain_reconciling" ? (
+        /*
+         * The support reference is real but nobody reads it: it is what support asks for
+         * (PRD-006b D8). It gets its own collapsed region, closed by default, with
+         * `data-support-details` so the rendered-output guard can subtract it before checking
+         * that no identifier appears anywhere else on the page.
+         */
+        <details data-support-details>
+          <summary>Details for support</summary>
+          <dl className={styles.explanationDetails}>
+            <EvidenceDetail term="Support reference" valueClassName={styles.dataText}>
+              {decision.correlationId}
+            </EvidenceDetail>
+          </dl>
+        </details>
+      ) : null}
     </div>
   );
 }

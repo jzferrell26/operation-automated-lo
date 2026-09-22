@@ -1,0 +1,37 @@
+/* PRD-006d D3, the rubric's "Boundaries" entry and the unverified-email notice.
+ *
+ * Everything on this page except its own heading comes from a primitive, so
+ * this module states two type steps and nothing else. Brief section 10: the
+ * page title is `--text-page-size` and the sentence under it is the secondary
+ * step. Without them the heading would be the browser's 2em, which is axis 3 at
+ * 1 on a page whose whole job is to be scored.
+ */
+.page {
+  display: grid;
+  align-content: start;
+  inline-size: 100%;
+  max-inline-size: 44rem;
+  color: var(--tx-strong);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: var(--text-page-size);
+  line-height: var(--leading-tight);
+}
+
+.header p {
+  margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+/* Brief section 12: this page declares no motion, and cannot gain any. */
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .page * {
+    animation: none;
+    transition-duration: 0ms;
+  }
+}

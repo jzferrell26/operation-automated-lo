@@ -2,6 +2,18 @@ import { Card, Icon } from "@oalo/ui";
 
 import type { CampaignWorkspaceProjection } from "@oalo/application";
 
+import {
+  APPROVAL_ROLE_LABELS,
+  CAMPAIGN_NEXT_ACTION_LABELS,
+  CAMPAIGN_NOT_AN_AD_YET,
+  CAMPAIGN_SAVED_NOTICE,
+  CAMPAIGN_STATE_LABELS,
+  CHECK_RESULT_NEEDS_CHANGES,
+  CHECK_RESULT_READY,
+  SUPPORT_DETAILS_LABELS,
+} from "../../../copy/user-language.js";
+import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
+import { SupportDetails } from "../../shell/components/support-details.js";
 import { CampaignApprovalControls } from "./campaign-approval-controls.js";
 import styles from "./open-house-draft-builder.module.css";
 
@@ -16,21 +28,16 @@ export function PersistedCampaignScreen({
           <h1>{campaign.headline}</h1>
           <p>{campaign.propertyAddress}</p>
         </div>
-        <span>{stateLabel(campaign.state)}</span>
+        <span>{CAMPAIGN_STATE_LABELS[campaign.state]}</span>
       </header>
 
       <Card className={styles.notice} padding="md">
         <Icon decorative name="lock" size="sm" tone="info" />
         <div>
           <strong>
-            {campaign.persistenceKind === "postgres"
-              ? "Persisted tenant campaign record"
-              : "Persisted local campaign record"}
+            {campaign.persistenceKind === "postgres" ? "Saved" : "Saved on this computer"}
           </strong>
-          <p>
-            The immutable campaign version, deterministic preflight evidence, and legal state are
-            stored for this location. Provider publication remains disabled.
-          </p>
+          <p>{CAMPAIGN_SAVED_NOTICE}</p>
         </div>
       </Card>
 
@@ -40,8 +47,8 @@ export function PersistedCampaignScreen({
           <p>{campaign.realtorDisplayName}</p>
         </Card>
         <Card padding="sm">
-          <strong>State</strong>
-          <p>{stateLabel(campaign.state)}</p>
+          <strong>Where it stands</strong>
+          <p>{CAMPAIGN_STATE_LABELS[campaign.state]}</p>
         </Card>
         <Card padding="sm">
           <strong>Daily budget</strong>
@@ -52,7 +59,7 @@ export function PersistedCampaignScreen({
           <p>{dollars(campaign.totalBudgetMinor)}</p>
         </Card>
         <Card padding="sm">
-          <strong>Targeting</strong>
+          <strong>Where the ad runs</strong>
           <p>
             {campaign.targetingCountry}
             {campaign.targetingRegions.length > 0
@@ -74,53 +81,63 @@ export function PersistedCampaignScreen({
         <Card padding="sm">
           <strong>Approval scope</strong>
           <p>
-            Exact version {campaign.campaignVersionRef}. New material edits cannot inherit this
-            decision.
+            Approval applies to this exact version. If you change the campaign, the new version
+            needs its own approval.
           </p>
+          <SupportDetails
+            rows={[[SUPPORT_DETAILS_LABELS.versionId, campaign.campaignVersionRef]]}
+          />
         </Card>
       </div>
 
-      <section className={styles.review} aria-labelledby="campaign-preflight-title">
-        <div className={styles.reviewHeading}>
+      <section className={styles.review} aria-labelledby="campaign-check-title">
+        <div className={styles.reviewHeading} data-tour={GUIDED_SETUP_ANCHORS.campaignCheckResult}>
           <div>
-            <p className={styles.eyebrow}>Deterministic gate</p>
-            <h2 id="campaign-preflight-title">
-              Preflight {campaign.preflight.blocking ? "blocked" : "passed"}
+            <p className={styles.eyebrow}>Campaign check</p>
+            <h2 id="campaign-check-title">
+              {campaign.preflight.blocking ? CHECK_RESULT_NEEDS_CHANGES : CHECK_RESULT_READY}
             </h2>
           </div>
         </div>
-        {campaign.preflight.findings.length === 0 ? (
-          <Card padding="md">
-            <strong>Ready for an authorized approver.</strong>
-            <p>No blocking findings remain on this immutable version.</p>
-          </Card>
-        ) : (
-          <div className={styles.findings}>
-            {campaign.preflight.findings.map((finding) => (
+        {/* PRD-006c D2. The anchor is on the container, not on the list, because step 5 points at
+            what the checks found whether or not they found anything, and an anchor that exists
+            only in one branch is an anchor a step can fail to find. */}
+        <div className={styles.findings} data-tour={GUIDED_SETUP_ANCHORS.campaignCheckFindings}>
+          {campaign.preflight.findings.length === 0 ? (
+            <Card padding="md">
+              <strong>Nothing to fix.</strong>
+              <p>This campaign meets every rule we check. An approver can sign off on it now.</p>
+            </Card>
+          ) : (
+            campaign.preflight.findings.map((finding) => (
               <Card key={finding.ruleCode} padding="md">
-                <strong>{finding.ruleCode}</strong>
-                <p>{finding.description}</p>
-                <small>{finding.remediation}</small>
+                <strong>{finding.description}</strong>
+                <p>{finding.remediation}</p>
+                <small>
+                  {finding.severity === "blocking" ? "Fix this before approving" : "Worth a look"}
+                </small>
+                <SupportDetails rows={[[SUPPORT_DETAILS_LABELS.rule, finding.ruleCode]]} />
               </Card>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </section>
 
       {campaign.approval !== undefined ? (
         <section className={styles.review} aria-labelledby="campaign-approval-title">
           <div className={styles.reviewHeading}>
             <div>
-              <p className={styles.eyebrow}>Human decision</p>
-              <h2 id="campaign-approval-title">Approval evidence</h2>
+              <p className={styles.eyebrow}>Approval</p>
+              <h2 id="campaign-approval-title">Who signed off</h2>
             </div>
           </div>
           <Card padding="md">
             <strong>
-              {campaign.approval.decision} by {campaign.approval.actorRole}
+              {decisionLabel(campaign.approval.decision)} by{" "}
+              {APPROVAL_ROLE_LABELS[campaign.approval.actorRole]}
             </strong>
             <p>{new Date(campaign.approval.decidedAt).toLocaleString("en-US")}</p>
-            <small>Provider publication remains disabled.</small>
+            <small>{CAMPAIGN_NOT_AN_AD_YET}</small>
           </Card>
         </section>
       ) : null}
@@ -128,21 +145,22 @@ export function PersistedCampaignScreen({
       <section className={styles.review} aria-labelledby="campaign-next-title">
         <div className={styles.reviewHeading}>
           <div>
-            <p className={styles.eyebrow}>Role-aware next step</p>
-            <h2 id="campaign-next-title">Available next actions</h2>
+            <p className={styles.eyebrow}>What to do next</p>
+            <h2 id="campaign-next-title">Your next steps</h2>
           </div>
         </div>
         <div className={styles.findings}>
           {campaign.nextActions.map((action) => (
             <Card key={action.id} padding="sm">
-              <strong>{action.available ? "Available" : "Unavailable"}</strong>
-              <p>{action.label}</p>
+              <strong>{action.available ? "Available" : "Not available"}</strong>
+              <p>{CAMPAIGN_NEXT_ACTION_LABELS[action.id]}</p>
             </Card>
           ))}
         </div>
       </section>
 
       <CampaignApprovalControls
+        campaignHref={campaign.detailHref}
         campaignRef={campaign.campaignRef}
         campaignVersionRef={campaign.campaignVersionRef}
         manifestHash={campaign.manifestHash}
@@ -154,18 +172,20 @@ export function PersistedCampaignScreen({
         state={campaign.state}
       />
 
-      <details>
-        <summary>Immutable evidence</summary>
-        <code>{campaign.campaignVersionRef}</code>
-        <code>{campaign.manifestHash}</code>
-        <code>{campaign.preflight.resultHash}</code>
-      </details>
+      <SupportDetails
+        rows={[
+          [SUPPORT_DETAILS_LABELS.versionId, campaign.campaignVersionRef],
+          [SUPPORT_DETAILS_LABELS.contentFingerprint, campaign.manifestHash],
+          [SUPPORT_DETAILS_LABELS.checkFingerprint, campaign.preflight.resultHash],
+        ]}
+      />
     </div>
   );
 }
 
-function stateLabel(state: CampaignWorkspaceProjection["state"]): string {
-  return state.replaceAll("_", " ").replace(/^./u, (value: string) => value.toUpperCase());
+/** "Approved" or "Sent back for changes". The stored decision word is not the user's word. */
+function decisionLabel(decision: "approved" | "rejected"): string {
+  return decision === "approved" ? "Approved" : "Sent back for changes";
 }
 
 function dollars(minor: number): string {

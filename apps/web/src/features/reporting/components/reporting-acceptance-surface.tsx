@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Stack } from "@oalo/ui";
+import { Button, Card, FormField, Link, Stack, TextField } from "@oalo/ui";
 import { useMemo, useState } from "react";
 
 import type { DeepReadonly } from "../../ui-foundation/model/synthetic-ui.js";
@@ -73,14 +73,12 @@ export function ReportingAcceptanceSurface({
       id: `local-${action.id}-${String(localAuditHistory.length + 1).padStart(2, "0")}`,
       event: action.event,
       state: "staged locally",
-      source: "Synthetic Realtor sharing control",
+      source: "Realtor sharing control",
       occurredAt: new Date().toISOString(),
       target: action.target,
     };
     setLocalAuditHistory((current) => [...current, record]);
-    setAuditStatus(
-      `${action.event} audit staged locally for ${action.target}. No external mutation occurred.`,
-    );
+    setAuditStatus(`${action.event} recorded for ${action.target}. Nothing was sent anywhere.`);
   }
 
   return (
@@ -95,14 +93,12 @@ export function ReportingAcceptanceSurface({
         </div>
 
         <form className={styles.filterForm} onReset={() => setFilters(emptyFilters)}>
-          <label>
-            Search campaigns
-            <input
-              onChange={(event) => setFilter("query", event.target.value)}
-              type="search"
-              value={filters.query}
-            />
-          </label>
+          <TextField
+            label="Search campaigns"
+            onChange={(event) => setFilter("query", event.target.value)}
+            type="search"
+            value={filters.query}
+          />
           <FilterSelect
             label="Realtor"
             onChange={(value) => setFilter("realtor", value)}
@@ -166,7 +162,7 @@ export function ReportingAcceptanceSurface({
               </div>
               <dl className={styles.inlineDetails}>
                 <Detail label="Last attempt" value={formatTimestamp(exception.lastAttempt)} />
-                <Detail label="Correlation ID" value={exception.correlationId} />
+                <Detail label="Support reference" value={exception.correlationId} />
                 <Detail label="Next action" value={exception.nextAction} />
               </dl>
             </Card>
@@ -177,27 +173,29 @@ export function ReportingAcceptanceSurface({
       <section aria-labelledby="blueprint-learning-title" className={styles.portfolio}>
         <h2 id="blueprint-learning-title">Privacy-safe blueprint learning</h2>
         <Card padding="md">
-          <label className={styles.fieldControl}>
-            Group blueprint results by
-            <select
-              onChange={(event) => setBlueprintDimension(event.target.value as BlueprintDimension)}
-              value={blueprintDimension}
-            >
-              {blueprintDimensionOptions.map((option) => (
-                <option key={option.key} value={option.key}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <FormField className={styles.fieldControl} label="Group blueprint results by">
+            {(control) => (
+              <select
+                {...control}
+                onChange={(event) =>
+                  setBlueprintDimension(event.target.value as BlueprintDimension)
+                }
+                value={blueprintDimension}
+              >
+                {blueprintDimensionOptions.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </FormField>
           <p>
             Sample {projection.blueprintLearning.sampleSize}, minimum sample{" "}
             {projection.blueprintLearning.minimumSampleSize}, minimum privacy buckets{" "}
             {projection.blueprintLearning.minimumTenantCount}.
           </p>
-          <p>
-            Low-volume groups suppressed. Tenant identities omitted. Campaign mutation disabled.
-          </p>
+          <p>Small groups are hidden. No workspace is named. Nothing here changes a campaign.</p>
           <div
             aria-label="Blueprint grouping results"
             className={styles.tableRegion}
@@ -214,7 +212,7 @@ export function ReportingAcceptanceSurface({
                   <th scope="col">Privacy buckets</th>
                   <th scope="col">Leads</th>
                   <th scope="col">Appointments</th>
-                  <th scope="col">Evidence</th>
+                  <th scope="col">What we checked</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,18 +240,18 @@ export function ReportingAcceptanceSurface({
         <Card padding="md">
           <p>{projection.cohort.gateSummary}</p>
           <div
-            aria-label="Cohort milestone evidence"
+            aria-label="Every founding-cohort milestone, in a table"
             className={styles.tableRegion}
             role="region"
             tabIndex={0}
           >
             <table>
-              <caption>Structured synthetic cohort state and evidence</caption>
+              <caption>Where the founding cohort stands</caption>
               <thead>
                 <tr>
                   <th scope="col">Milestone</th>
-                  <th scope="col">State</th>
-                  <th scope="col">Evidence</th>
+                  <th scope="col">Where it stands</th>
+                  <th scope="col">What we checked</th>
                   <th scope="col">Source</th>
                 </tr>
               </thead>
@@ -277,7 +275,7 @@ export function ReportingAcceptanceSurface({
       </section>
 
       <section aria-labelledby="realtor-projection-title" className={styles.portfolio}>
-        <h2 id="realtor-projection-title">Assigned Realtor projection</h2>
+        <h2 id="realtor-projection-title">Your Realtor partner</h2>
         <Card data-realtor-identity={projection.realtor.identity} padding="md">
           <h3>{projection.realtor.identity}</h3>
           <p>{projection.realtor.assignmentSource}</p>
@@ -293,9 +291,9 @@ export function ReportingAcceptanceSurface({
           <p>Approved artifacts:</p>
           <div className={styles.inlineLinks}>
             {projection.realtor.approvedArtifacts.map((artifact) => (
-              <a className="oalo-action-link" href={artifact.href} key={artifact.label}>
+              <Link href={artifact.href} variant="action" key={artifact.label}>
                 Open {artifact.label}
-              </a>
+              </Link>
             ))}
           </div>
           <p>Read-only sharing controls:</p>
@@ -370,9 +368,9 @@ function CampaignReportingCard({
       <div className={styles.inlineLinks}>
         {campaign.targets.map((target) =>
           target.state === "authorized" ? (
-            <a className="oalo-action-link" href={target.href} key={target.label}>
+            <Link href={target.href} variant="action" key={target.label}>
               Open {target.label}, {target.authority}
-            </a>
+            </Link>
           ) : (
             <span key={target.label}>
               {target.label}: unavailable, {target.reason}
@@ -396,17 +394,18 @@ function FilterSelect({
   value: string;
 }>) {
   return (
-    <label>
-      {label}
-      <select onChange={(event) => onChange(event.target.value)} value={value}>
-        <option value="">All</option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    </label>
+    <FormField label={label}>
+      {(control) => (
+        <select {...control} onChange={(event) => onChange(event.target.value)} value={value}>
+          <option value="">All</option>
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      )}
+    </FormField>
   );
 }
 
@@ -416,10 +415,13 @@ function DateFilter({
   value,
 }: Readonly<{ label: string; onChange: (value: string) => void; value: string }>) {
   return (
-    <label>
-      {label}
-      <input onChange={(event) => onChange(event.target.value)} type="date" value={value} />
-    </label>
+    <TextField
+      label={label}
+      onChange={(event) => onChange(event.target.value)}
+      tone="data"
+      type="date"
+      value={value}
+    />
   );
 }
 

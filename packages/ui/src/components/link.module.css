@@ -1,0 +1,81 @@
+/* Product link primitive. Replaces the hand-rolled `.oalo-action-link`.
+ * Governed by design brief sections 9, 10, 14, and 18.
+ */
+
+.link {
+  align-items: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-control);
+  color: var(--st-info-fg);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-normal);
+  text-decoration-line: underline;
+  text-underline-offset: var(--space-1);
+  transition-duration: var(--motion-fast);
+  transition-property: background-color, border-color, color;
+  transition-timing-function: var(--ease-standard);
+}
+
+.link:hover {
+  color: var(--tx-strong);
+}
+
+.link:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+
+.link[aria-disabled="true"] {
+  color: var(--tx-faint);
+  cursor: not-allowed;
+  text-decoration-line: none;
+}
+
+.action {
+  box-sizing: border-box;
+  display: inline-flex;
+  justify-content: center;
+  min-block-size: var(--target-min-size);
+  min-inline-size: var(--target-min-size);
+  padding-block: var(--space-2);
+  padding-inline: var(--space-4);
+  color: var(--tx-strong);
+  background: var(--sf-card);
+  border: 1px solid var(--bd-input);
+  border-radius: var(--radius-button);
+  box-shadow: var(--shadow-rest);
+  text-decoration-line: none;
+}
+
+.action:hover {
+  color: var(--tx-strong);
+  background: var(--sf-sunken);
+  border-color: var(--ac-primary);
+}
+
+.glyph {
+  flex: none;
+}
+
+/* Design brief section 14 and `03-components/application-shell-and-navigation.md:30`, "Touch
+ * targets are at least 44px by 44px", which carries no frame condition.
+ *
+ * This rule used to apply only below 390. The PRD-006d review measured the sign-in footer at 1440
+ * and found its two links 20px tall: under the brief's 44, and under WCAG 2.2 SC 2.5.8's 24 as
+ * well. A pointer target does not get smaller because the window got bigger, so the rule is
+ * unconditional. */
+.inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--target-min-size);
+  min-inline-size: var(--target-min-size);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link {
+    transition-duration: 0ms;
+  }
+}

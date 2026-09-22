@@ -217,3 +217,12 @@
     justify-content: flex-start;
   }
 }
+
+/* Brief section 12: the overview declares no motion, and cannot gain any. */
+@media (prefers-reduced-motion: reduce) {
+  .overview,
+  .overview * {
+    animation: none;
+    transition-duration: 0ms;
+  }
+}

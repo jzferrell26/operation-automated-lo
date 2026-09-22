@@ -1,6 +1,18 @@
+import { generateKeyPairSync } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
+import { issueEmbeddedSessionToken } from "@oalo/auth";
+import type { ApplicationRole } from "@oalo/contracts";
+import { createPostgresPool, type PostgresDatabasePool } from "@oalo/db";
+
+import {
+  createStaticIdentityDirectory,
+  createStaticRoleBindingPort,
+  type BrowserMutationGate,
+  type CampaignCommandPorts,
+} from "./authenticated-principal.js";
 
 export const LOCAL_SYNTHETIC_ENV = Object.freeze({
   OALO_ENVIRONMENT: "local",
@@ -26,6 +38,29 @@ export const OPEN_HOUSE_DRAFT_INPUT = Object.freeze({
   propertyPermissionConfirmed: true,
   realtorPermissionConfirmed: true,
 });
+
+export function openHouseDraftInputWithHeadline(
+  headline: string,
+): Readonly<Omit<typeof OPEN_HOUSE_DRAFT_INPUT, "headline"> & { headline: string }> {
+  return Object.freeze({ ...OPEN_HOUSE_DRAFT_INPUT, headline });
+}
+
+/**
+ * The `x-correlation-id` regression matrix shared by 005C-AC-007 and 005C-AC-008: a canonical
+ * opaque header, a UUID, a vendor trace id, punctuation, an absent header, and headers at 301
+ * and 129 characters. Every case must derive a valid `CorrelationReferenceSchema` reference
+ * regardless of whether the inbound value itself was accepted as a tracing id.
+ */
+export const CORRELATION_HEADER_MATRIX: ReadonlyArray<readonly [string, string | undefined]> =
+  Object.freeze([
+    ["canonical opaque header", "correlation_review123"],
+    ["UUID header", "3fa85f64-5717-4562-b3fc-2c963f66afa6"],
+    ["vendor trace id", "trace-123"],
+    ["header with punctuation", "a.b:c/d-e"],
+    ["absent header", undefined],
+    ["301-character header", "a".repeat(301)],
+    ["129-character opaque-looking header", "a".repeat(129)],
+  ]);
 
 export type PersistedDraftSummary = Readonly<{
   campaignRef: string;
@@ -59,6 +94,142 @@ export function createTemporaryCampaignStore(prefix: string) {
       storePath = undefined;
     },
   };
+}
+
+export interface EmbeddedTestActor {
+  readonly actorRef: string;
+  readonly actorId: string;
+  readonly role: ApplicationRole;
+  readonly roleVersion?: number;
+}
+
+export interface EmbeddedSessionFixtureInput {
+  readonly locationRef: string;
+  readonly locationId: string;
+  readonly installationRef: string;
+  readonly actors: readonly EmbeddedTestActor[];
+  readonly mutation: BrowserMutationGate;
+}
+
+export interface EmbeddedSessionFixture {
+  readonly ports: CampaignCommandPorts;
+  headersFor(actorRef: string, extra?: HeadersInit): HeadersInit;
+}
+
+const EMBEDDED_TEST_ISSUER = "https://auth.operation-automated-lo.test";
+const EMBEDDED_TEST_AUDIENCE = "oalo-web";
+const EMBEDDED_TEST_NOW_EPOCH_SECONDS = 1_000;
+
+/**
+ * Builds an ed25519-signed embedded-session fixture (ports plus a header factory) for one
+ * tenant and its actors, without depending on 005b's first-party session issuance. Used by the
+ * route-level Postgres regression matrix, which authenticates the same way
+ * `campaign-approval-handler.unit.test.ts` already does against the filesystem adapter.
+ */
+export function embeddedSessionFixture(input: EmbeddedSessionFixtureInput): EmbeddedSessionFixture {
+  const { privateKey, publicKey } = generateKeyPairSync("ed25519");
+  const privateKeyPem = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+  const publicKeyPem = publicKey.export({ type: "spki", format: "pem" }).toString();
+  const ports: CampaignCommandPorts = {
+    identityDirectory: createStaticIdentityDirectory(
+      input.actors.map((actor) => ({
+        locationRef: input.locationRef,
+        locationId: input.locationId,
+        actorRef: actor.actorRef,
+        actorId: actor.actorId,
+      })),
+    ),
+    roleBindings: createStaticRoleBindingPort(
+      input.actors.map((actor) => ({
+        actorRef: actor.actorRef,
+        locationRef: input.locationRef,
+        role: actor.role,
+        roleVersion: actor.roleVersion ?? 1,
+      })),
+    ),
+    mutation: input.mutation,
+    embedded: {
+      issuer: EMBEDDED_TEST_ISSUER,
+      audience: EMBEDDED_TEST_AUDIENCE,
+      publicKeysById: { key_primary: publicKeyPem },
+      nowEpochSeconds: () => EMBEDDED_TEST_NOW_EPOCH_SECONDS + 1,
+      isSessionActive: () => true,
+    },
+  };
+  return {
+    ports,
+    headersFor(actorRef, extra = {}) {
+      const actor = input.actors.find((candidate) => candidate.actorRef === actorRef);
+      if (actor === undefined) {
+        throw new Error(`No embedded test actor registered for ${actorRef}`);
+      }
+      const token = issueEmbeddedSessionToken({
+        privateKeyPem,
+        keyId: "key_primary",
+        issuer: EMBEDDED_TEST_ISSUER,
+        audience: EMBEDDED_TEST_AUDIENCE,
+        subject: actor.actorRef,
+        sessionId: `session_${actor.actorRef}`,
+        nonce: `${actor.actorRef}-nonce`,
+        locationId: input.locationRef,
+        installationId: input.installationRef,
+        role: actor.role,
+        roleVersion: actor.roleVersion ?? 1,
+        nowEpochSeconds: EMBEDDED_TEST_NOW_EPOCH_SECONDS,
+      });
+      return {
+        authorization: `Bearer ${token}`,
+        origin: input.mutation.allowedBrowserOrigins[0] ?? "",
+        host: input.mutation.expectedHost,
+        ...extra,
+      };
+    },
+  };
+}
+
+/**
+ * A review-mode environment for a Postgres-backed test: `OALO_REVIEW_SURFACE=authorized` selects
+ * the "review" workspace mode, which `campaignPersistenceKind` maps onto the real Postgres
+ * repositories instead of the synthetic filesystem store.
+ *
+ * The route-level correlation matrix no longer uses this. It builds its environment through
+ * `campaign-route-postgres-support.ts`'s `routeEnvironment`, authenticates with real first-party
+ * sessions issued by PRD-005b, and installs that environment on the process so the exported route
+ * handlers read it the way they read it in production.
+ */
+export function reviewPostgresEnv(databaseUrl: string): Readonly<Record<string, string>> {
+  return Object.freeze({
+    OALO_ENVIRONMENT: "preview",
+    OALO_PROVIDER_MODE: "stub",
+    OALO_SYNTHETIC_DATA_ONLY: "true",
+    OALO_REVIEW_SURFACE: "authorized",
+    OALO_DATABASE_URL: databaseUrl,
+    OALO_DATABASE_SSL_MODE: "disable",
+  });
+}
+
+/**
+ * This module still does not seed a tenant or read audit and command rows itself, and it must not.
+ * The repository's database-privilege-escalation security test refuses any shipped `apps/**`
+ * source that assumes the schema-owning database role or touches the append-only trigger switches,
+ * and `platform.locations`, `audit.events`, and `integration.command_executions` are not writable
+ * or fully readable under the tenant runtime role.
+ *
+ * Both capabilities now exist, on the far side of that boundary:
+ * `packages/db/test/campaign-integration-support.mjs` holds the elevation, and
+ * `campaign-route-postgres-support.ts` reaches it through the `.js` re-export bridge. Nothing
+ * under `apps/` elevates.
+ */
+export function reviewPostgresPool(databaseUrl: string): PostgresDatabasePool {
+  return createPostgresPool({
+    applicationName: "oalo-web-correlation-postgres-test",
+    connectionString: databaseUrl,
+    deploymentEnvironment: "test",
+    maxConnections: 4,
+    poolingMode: "transaction",
+    preparedStatements: false,
+    sslMode: "disable",
+  });
 }
 
 export function persistedDraftFromPreflightBody(payload: unknown): PersistedDraftSummary {

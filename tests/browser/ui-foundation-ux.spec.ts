@@ -40,6 +40,24 @@ async function guardSyntheticLocalPage(page: Page) {
 async function chooseTheme(page: Page, theme: "Light" | "Dark") {
   await page.getByRole("radio", { name: theme }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme.toLowerCase());
+
+  /* The segmented control moves its fill and its label colour over
+   * `--motion-base`. axe reads computed colour, so sampling before the
+   * transition settles reports a blended pair that exists for 180ms and is not
+   * a token. Wait for the control to come to rest, with a ceiling above
+   * `--motion-slow` for the case where no transition runs at all.
+   */
+  await page.getByRole("radiogroup", { name: "Appearance theme" }).evaluate(
+    (group) =>
+      new Promise<void>((resolve) => {
+        const settle = () => {
+          window.clearTimeout(ceiling);
+          resolve();
+        };
+        const ceiling = window.setTimeout(settle, 400);
+        group.addEventListener("transitionend", settle, { once: true });
+      }),
+  );
 }
 
 async function assertAxeClean(page: Page) {
@@ -90,32 +108,51 @@ test("first paint applies the stored Dark theme before hydration", async ({ page
   await assertGuardClean(guard);
 });
 
-test("UIF-009 supports CSS compact and explicit collapsed navigation", async ({ page }) => {
+/**
+ * UIF-009, rewritten by PRD-006d's named-state review, F-19.
+ *
+ * It used to assert that 1180 rendered an 80px rail from a media query with no `data-collapsed`
+ * attribute, and that only 1440 had a control. That is a compact rail, not a collapsible one, and
+ * design brief section 14 and `03-components/application-shell-and-navigation.md:26` both say the
+ * tablet uses a collapsible navigation rail. The stylesheet's tablet block is gone, so the same
+ * control collapses the same rail to the same 80px compact width at 1440, 1180, and 768.
+ *
+ * Every assertion the old test made about the compact rail is still made here, at every frame that
+ * has one: nine links, each with an accessible name and a tooltip while the labels are hidden.
+ * What changed is how the compact rail is reached, which is the defect.
+ */
+test("UIF-009 collapses the rail to the compact icon rail at every frame that has one", async ({
+  page,
+}) => {
   const guard = await guardSyntheticLocalPage(page);
-  await page.setViewportSize({ width: 1180, height: 900 });
-  await page.goto("/overview");
-
   const sidebar = page.getByLabel("Primary workspace");
-  await expect(sidebar).not.toHaveAttribute("data-collapsed", "true");
-  expect((await sidebar.boundingBox())?.width).toBe(80);
   const compactLinks = page
     .getByRole("navigation", { name: "Product navigation" })
     .getByRole("link");
-  await expect(compactLinks).toHaveCount(9);
-  for (const link of await compactLinks.all()) {
-    await expect(link).toHaveAttribute("aria-label", /\S/u);
-    await expect(link).toHaveAttribute("title", /\S/u);
+
+  for (const width of [1440, 1180, 768] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/overview");
+
+    await expect(sidebar, `the rail opens expanded at ${String(width)}`).not.toHaveAttribute(
+      "data-collapsed",
+      "true",
+    );
+    await expect(compactLinks).toHaveCount(9);
+
+    await page.getByRole("button", { name: "Collapse navigation" }).click();
+    await expect(sidebar).toHaveAttribute("data-collapsed", "true");
+    await expect.poll(async () => Math.round((await sidebar.boundingBox())?.width ?? 0)).toBe(80);
+    // The labels are gone, so the name and the tooltip are the only things identifying each item.
+    for (const link of await compactLinks.all()) {
+      await expect(link).toHaveAttribute("aria-label", /\S/u);
+      await expect(link).toHaveAttribute("title", /\S/u);
+    }
+
+    await page.getByRole("button", { name: "Expand navigation" }).click();
+    await expect(sidebar).not.toHaveAttribute("data-collapsed", "true");
   }
 
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.reload();
-  await page.getByRole("button", { name: "Collapse navigation" }).click();
-  await expect(sidebar).toHaveAttribute("data-collapsed", "true");
-  await expect.poll(async () => Math.round((await sidebar.boundingBox())?.width ?? 0)).toBe(80);
-  for (const link of await compactLinks.all()) {
-    await expect(link).toHaveAttribute("aria-label", /\S/u);
-    await expect(link).toHaveAttribute("title", /\S/u);
-  }
   await assertGuardClean(guard);
 });
 
@@ -123,16 +160,16 @@ test("1180 and 390 layouts preserve the required Overview priorities", async ({ 
   const guard = await guardSyntheticLocalPage(page);
   await page.setViewportSize({ width: 1180, height: 900 });
   await page.goto("/overview");
-  for (const heading of ["Business Pulse", "Active Work", "Attention Queue"]) {
+  for (const heading of ["Your numbers", "What you have going on", "Needs your attention"]) {
     await expect(page.getByRole("heading", { name: heading, exact: true })).toBeAttached();
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
-  const readiness = page.getByText("Attention Required", { exact: true }).last();
+  const readiness = page.getByText("Still to do", { exact: true }).last();
   const quickActions = page.getByRole("heading", { name: "Quick actions", exact: true });
-  const businessPulse = page.getByRole("heading", { name: "Business Pulse", exact: true });
-  const attention = page.getByRole("heading", { name: "Attention Queue", exact: true });
+  const businessPulse = page.getByRole("heading", { name: "Your numbers", exact: true });
+  const attention = page.getByRole("heading", { name: "Needs your attention", exact: true });
   const moreActions = page.getByRole("heading", { name: "More quick actions", exact: true });
   const prioritySection = businessPulse.locator("xpath=ancestor::section");
   const priorityActions = quickActions
@@ -205,16 +242,18 @@ test("keyboard focus, target size, checklist order, and reduced motion meet the 
   expect(undersized).toEqual([]);
 
   const checklistHeadings = await page.locator("[data-tour^='onboarding-'] h3").allTextContents();
+  // PRD-006b D5. The nine steps and their order are unchanged; each one is now named the way a
+  // loan officer would name it, and the schema pins the new titles per position.
   expect(checklistHeadings).toEqual([
-    "Install and permissions",
+    "Install and access",
     "Brand and compliance",
     "HighLevel routing",
     "Meta connection",
-    "Team responsibilities",
-    "Dependency recheck",
-    "Synthetic lead",
-    "Results review",
-    "Launch Ready",
+    "Who does what",
+    "Check everything again",
+    "Send a test lead",
+    "Look at the result",
+    "Ready to launch",
   ]);
   const animated = await page.locator("main *").evaluateAll((elements) =>
     elements
@@ -231,10 +270,17 @@ test("keyboard focus, target size, checklist order, and reduced motion meet the 
   await assertGuardClean(guard);
 });
 
+/* PRD-006d, 006D-AC-017: the tablet frame from design brief section 14 joins the
+ * matrix. The brief's tablet rules are a collapsible rail and single-column
+ * forms, asserted separately below.
+ */
+const TABLET_FRAME = { width: 768, height: 1024 } as const;
+
 for (const route of ["overview", "onboarding"] as const) {
   for (const theme of ["Light", "Dark"] as const) {
     for (const viewport of [
       { width: 1180, height: 900 },
+      TABLET_FRAME,
       { width: 390, height: 844 },
     ] as const) {
       test(`${route} ${theme} ${viewport.width}x${viewport.height} is axe-clean`, async ({
@@ -256,6 +302,65 @@ for (const route of ["overview", "onboarding"] as const) {
   }
 }
 
+test("the 768 tablet frame uses the collapsible rail and single-column content", async ({
+  page,
+}) => {
+  const guard = await guardSyntheticLocalPage(page);
+  await page.setViewportSize(TABLET_FRAME);
+
+  for (const route of ["overview", "onboarding", "brand"] as const) {
+    await page.goto(`/${route}`);
+
+    // Design brief section 14: tablet uses a collapsible navigation rail, not
+    // the mobile top bar and drawer. F-19: collapsible means the control is
+    // here and it works, so the 80px compact rail is asserted as what this
+    // frame collapses to rather than as what the stylesheet forces on it.
+    const sidebar = page.getByLabel("Primary workspace");
+    await expect(sidebar).toBeVisible();
+    await expect(page.getByRole("button", { name: "Open navigation" })).toBeHidden();
+    await page.getByRole("button", { name: "Collapse navigation" }).click();
+    await expect.poll(async () => Math.round((await sidebar.boundingBox())?.width ?? 0)).toBe(80);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      "the collapsed tablet rail does not scroll the page sideways",
+    ).toBe(true);
+    await page.getByRole("button", { name: "Expand navigation" }).click();
+    await expect(sidebar).not.toHaveAttribute("data-collapsed", "true");
+
+    // Section 14: no horizontal overflow, and a constrained width puts the
+    // page into a single column.
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    const multiColumn = await page
+      .locator("main :where(section, form, article, div)")
+      .evaluateAll((elements) =>
+        elements
+          .filter((element) => {
+            const columns = getComputedStyle(element).gridTemplateColumns;
+            return columns.split(" ").filter((track) => track.endsWith("px")).length > 2;
+          })
+          .map((element) => element.className),
+      );
+    expect(multiColumn).toEqual([]);
+
+    // Section 14: 44 by 44 targets survive the frame change.
+    const undersized = await page
+      .locator("button:visible, a[href]:visible, [role='button']:visible")
+      .evaluateAll((elements) =>
+        elements
+          .map((element) => ({
+            name: element.getAttribute("aria-label") ?? element.textContent?.trim() ?? "unnamed",
+            rect: element.getBoundingClientRect().toJSON(),
+          }))
+          .filter(({ rect }) => rect.width < 44 || rect.height < 44),
+      );
+    expect(undersized).toEqual([]);
+  }
+
+  await assertGuardClean(guard);
+});
+
 test("open drawer and Overview state gallery meet accessibility contracts", async ({ page }) => {
   const guard = await guardSyntheticLocalPage(page);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -275,7 +380,7 @@ test("open drawer and Overview state gallery meet accessibility contracts", asyn
     element.style.position = "static";
   });
   const gallery = page
-    .getByRole("heading", { name: "Overview edge-state matrix" })
+    .getByRole("heading", { name: "How this page looks in every state" })
     .locator("xpath=ancestor::section");
   await gallery.scrollIntoViewIfNeeded();
   if (regenerateEvidence) {
@@ -292,9 +397,9 @@ test("synthetic acceptance surfaces preserve history, checklist, and authorizati
   await page.setViewportSize({ width: 1180, height: 900 });
 
   await page.goto("/onboarding");
-  await page.getByRole("button", { name: "Dismiss optional guidance" }).click();
-  await expect(page.getByRole("region", { name: "Get Connected" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Launch Readiness" })).toBeVisible();
+  await page.getByRole("button", { name: "Close this tip" }).click();
+  await expect(page.getByRole("region", { name: "Connect your accounts" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Ready to launch" })).toBeVisible();
 
   await page.goto("/settings/connections");
   for (const group of ["Required", "Granted", "Missing", "Optional"]) {
@@ -302,14 +407,14 @@ test("synthetic acceptance surfaces preserve history, checklist, and authorizati
   }
 
   await page.goto("/marketing/campaigns/synthetic-open-house-001");
-  await page.getByRole("button", { name: "Preview version 2" }).click();
+  await page.getByRole("button", { name: "Version 2", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Cedar Street open house, disclosure revision" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Duplicate as new draft" }).click();
-  await expect(page.getByText("Local draft projection staged from version 2")).toBeVisible();
-  await expect(page.getByText("Immutable history: 3 versions")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open approved public link" })).toHaveAttribute(
+  await page.getByRole("button", { name: "Start a new draft from this" }).click();
+  await expect(page.getByText("New draft started from version 2")).toBeVisible();
+  await expect(page.getByText("3 versions, none of them edited after the fact")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open the approved page" })).toHaveAttribute(
     "href",
     "/public/synthetic-open-house-v3",
   );
@@ -321,8 +426,8 @@ test("synthetic acceptance surfaces preserve history, checklist, and authorizati
   await expect(restricted.getByRole("link")).toHaveCount(0);
   await page.getByLabel("Activity").selectOption("Campaign review");
   await page.getByLabel("Minutes").fill("25");
-  await page.getByRole("button", { name: "Add local entry" }).click();
-  await expect(page.getByRole("status")).toContainText("No support record was saved");
+  await page.getByRole("button", { name: "Add entry" }).click();
+  await expect(page.getByRole("status")).toContainText("Nothing was saved");
 
   await assertGuardClean(guard);
 });
@@ -338,6 +443,7 @@ for (const route of [
 
     for (const contract of [
       { theme: "Light" as const, viewport: { width: 1180, height: 900 } },
+      { theme: "Light" as const, viewport: TABLET_FRAME },
       { theme: "Dark" as const, viewport: { width: 390, height: 844 } },
     ]) {
       await page.setViewportSize(contract.viewport);
@@ -360,31 +466,33 @@ test("canonical profile, creative delivery, Meta assets, approval scope, and lau
   await page.setViewportSize({ width: 1180, height: 900 });
 
   await page.goto("/brand");
-  await expect(page.getByText("brand-v3, current")).toBeVisible();
+  // PRD-006b D8. The version reference is still there, inside the collapsed support region, which
+  // is closed by default: that is the point, so it is asserted as present rather than as visible.
+  await expect(page.getByText("Details for support")).toBeVisible();
+  await expect(page.getByText("Version ID")).toBeAttached();
+  await expect(page.getByText("brand-v3", { exact: true })).toBeAttached();
   await expect(page.locator('[data-profile-field-state="missing"]')).toHaveCount(2);
   await expect(page.getByText("Approved spring newsletter")).toBeVisible();
-  await page.getByRole("button", { name: "Accept Voice suggestion" }).click();
-  await expect(page.getByRole("status")).toContainText(
-    "1 suggestion accepted into the local profile draft",
-  );
-  await expect(page.getByText("brand-v3, current")).toBeVisible();
+  await page.getByRole("button", { name: "Use this for Voice" }).click();
+  await expect(page.getByRole("status")).toContainText("1 suggestion added to your draft");
+  await expect(page.getByText("brand-v3", { exact: true })).toBeAttached();
 
   await page.goto("/marketing/campaigns/synthetic-open-house-001");
   await expect(page.getByAltText("Open House feed creative preview")).toBeVisible();
   await expect(page.getByAltText("Open House story creative preview")).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Download original Open House feed creative" }),
+    page.getByRole("link", { name: "Download Open House feed creative" }),
   ).toHaveAttribute("download", "synthetic-open-house-feed-v3.svg");
   await expect(
-    page.getByRole("link", { name: "Download original Open House story creative" }),
+    page.getByRole("link", { name: "Download Open House story creative" }),
   ).toHaveAttribute("download", "synthetic-open-house-story-v3.svg");
   for (const creative of [
     {
-      linkName: "Download original Open House feed creative",
+      linkName: "Download Open House feed creative",
       fileName: "synthetic-open-house-feed-v3.svg",
     },
     {
-      linkName: "Download original Open House story creative",
+      linkName: "Download Open House story creative",
       fileName: "synthetic-open-house-story-v3.svg",
     },
   ]) {
@@ -395,7 +503,8 @@ test("canonical profile, creative delivery, Meta assets, approval scope, and lau
     expect(download.suggestedFilename()).toBe(creative.fileName);
   }
   await expect(page.locator("[data-meta-asset-kind]")).toHaveCount(5);
-  await expect(page.getByText("synthetic-provider-instagram-001")).toBeVisible();
+  // PRD-006b D2. The account references are internal, so no screen prints one.
+  await expect(page.getByText("synthetic-provider-instagram-001")).toHaveCount(0);
   await expect(page.getByRole("table")).toContainText("destination-v3");
   await expect(page.getByRole("table").getByRole("row")).toHaveCount(11);
   await expect(page.getByText("Austin metro geography class")).toBeVisible();
@@ -404,17 +513,15 @@ test("canonical profile, creative delivery, Meta assets, approval scope, and lau
   await expect(page.getByText("2026-07-25")).toBeVisible();
   await expect(page.getByText("2026-07-27")).toBeVisible();
 
-  await page.getByRole("button", { name: "Confirm final launch summary" }).click();
+  await page.getByRole("button", { name: "Confirm the launch summary" }).click();
   const confirmation = page.getByRole("alertdialog", {
     name: "Confirm the exact synthetic launch summary",
   });
   await expect(confirmation).toBeVisible();
-  await expect(confirmation).toContainText("Campaign synthetic-campaign-open-house-001, version 3");
-  await confirmation.getByRole("button", { name: "Confirm exact local summary" }).click();
+  await expect(confirmation).toContainText("Version 3 of this campaign");
+  await confirmation.getByRole("button", { name: "Yes, that is right" }).click();
   await expect(
-    page.getByText(
-      "Final launch summary confirmed locally for campaign version 3. No provider write occurred.",
-    ),
+    page.getByText("You confirmed the launch summary. Nothing was launched."),
   ).toBeVisible();
 
   await assertGuardClean(guard);
@@ -431,13 +538,13 @@ test("delivered approval table, alertdialog, and drawer modal resolve semantic L
     await page.goto("/marketing/campaigns/synthetic-open-house-001");
     await chooseTheme(page, theme);
     const tableRegion = page.getByRole("region", {
-      name: "Exact approved artifact and launch versions",
+      name: "Exactly what was approved",
     });
     await tableRegion.focus();
     expect(
       await tableRegion.evaluate((element) => getComputedStyle(element).outlineWidth),
     ).not.toBe("0px");
-    await page.getByRole("button", { name: "Confirm final launch summary" }).click();
+    await page.getByRole("button", { name: "Confirm the launch summary" }).click();
     const alertdialog = page.getByRole("alertdialog", {
       name: "Confirm the exact synthetic launch summary",
     });

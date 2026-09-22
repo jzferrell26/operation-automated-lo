@@ -1,34 +1,63 @@
 "use client";
 
-import { Button, Icon, IconButton, Surface } from "@oalo/ui";
+import { Button, Dialog, Icon, IconButton, Surface } from "@oalo/ui";
 import { usePathname } from "next/navigation.js";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
+import {
+  NOT_CONNECTED_BANNER_LABEL,
+  NOT_CONNECTED_HEADLINE,
+  WORKSPACE_EYEBROW,
+} from "../../../copy/user-language.js";
 import { ThemeControl } from "../../../theme/index.js";
 import type {
   DeepReadonly,
   Navigation,
   NavigationItem,
-  SyntheticSession,
 } from "../../ui-foundation/model/synthetic-ui.js";
-import { isNavigationItemInteractive, isNavigationItemSelected } from "../model/navigation.js";
+import {
+  isNavigationItemInteractive,
+  isNavigationItemSelected,
+  type WorkspaceSessionView,
+} from "../model/navigation.js";
 import styles from "./app-shell.module.css";
 
 type AppShellProps = Readonly<{
+  /**
+   * `03-components/application-shell-and-navigation.md`: the shell's own account area, beside the
+   * theme control in the topbar. The signed-in layout puts the sign-out form here. Until the
+   * PRD-006d named-state review's F-21 that form was the first child of `<main>`, so every page in
+   * the workspace opened with a control instead of its own heading, which is rubric axis 1. The
+   * shell takes it as a slot for the same reason it takes `headerControls`: the form carries a
+   * server-rendered field, and the shell stays a client component that knows nothing about
+   * sessions.
+   */
+  accountControls?: ReactNode;
   children: ReactNode;
+  /**
+   * PRD-006c D5. The guided setup's two ways back in: the "Finish setup" chip and the help menu.
+   * The shell takes them as a slot rather than importing them, so the shell keeps knowing nothing
+   * about the walkthrough, and a workspace without one simply passes nothing.
+   */
+  headerControls?: ReactNode;
   navigation: DeepReadonly<Navigation>;
-  session: DeepReadonly<SyntheticSession>;
+  session: WorkspaceSessionView;
   workspaceMode?: "synthetic" | "review";
 }>;
 
-const focusableSelector = [
-  "a[href]",
-  "button:not([disabled]):not([tabindex='-1'])",
-  "[tabindex]:not([tabindex='-1'])",
-].join(",");
+/**
+ * PRD-006c D5 and D6's words for the drawer, kept beside each other so the trigger's name, the
+ * layer's name, and the close control's name cannot drift apart.
+ */
+const DRAWER_TITLE = "Workspace navigation";
+const DRAWER_CLOSE_LABEL = "Close navigation";
+const DRAWER_OPEN_LABEL = "Open navigation";
+const DRAWER_ID = "mobile-navigation-drawer";
 
 export function AppShell({
+  accountControls,
   children,
+  headerControls,
   navigation,
   session,
   workspaceMode = "synthetic",
@@ -37,61 +66,6 @@ export function AppShell({
   const [isRailCollapsed, setRailCollapsed] = useState(false);
   const [isMarketingExpanded, setMarketingExpanded] = useState(pathname.startsWith("/marketing"));
   const [isDrawerOpen, setDrawerOpen] = useState(false);
-  const drawerRef = useRef<HTMLDivElement | null>(null);
-  const drawerTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const drawerWasOpenRef = useRef(false);
-
-  useEffect(() => {
-    if (!isDrawerOpen) {
-      if (drawerWasOpenRef.current) {
-        drawerWasOpenRef.current = false;
-        drawerTriggerRef.current?.focus();
-      }
-      return;
-    }
-
-    drawerWasOpenRef.current = true;
-    const priorOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    drawerRef.current?.querySelector<HTMLElement>(focusableSelector)?.focus();
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setDrawerOpen(false);
-        return;
-      }
-
-      if (event.key !== "Tab" || !drawerRef.current) {
-        return;
-      }
-
-      const focusable = Array.from(
-        drawerRef.current.querySelectorAll<HTMLElement>(focusableSelector),
-      );
-      const first = focusable.at(0);
-      const last = focusable.at(-1);
-
-      if (!first || !last) {
-        event.preventDefault();
-        return;
-      }
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = priorOverflow;
-    };
-  }, [isDrawerOpen]);
 
   function closeDrawerAfterNavigation() {
     setDrawerOpen(false);
@@ -129,25 +103,35 @@ export function AppShell({
       </aside>
 
       <div className={styles.workspace}>
-        <header className={styles.topbar}>
+        {/*
+          PRD-006c D7, "the panel never obscures the focused element or the shell's sticky
+          header". The attribute is the shell saying which of its own elements is pinned to the
+          block start, so anything that scrolls the page can keep clear of it without reading this
+          file's class names. The guided setup's placement model takes the measurement as
+          `Viewport.blockStart`; the shell itself knows nothing about the walkthrough.
+        */}
+        <header className={styles.topbar} data-shell-sticky-header="true">
           <div className={styles.mobileMenu}>
             <IconButton
-              ref={drawerTriggerRef}
-              aria-controls="mobile-navigation-drawer"
+              aria-controls={DRAWER_ID}
               aria-expanded={isDrawerOpen}
               icon="menu"
-              label="Open navigation"
+              label={DRAWER_OPEN_LABEL}
               onClick={() => setDrawerOpen(true)}
             />
           </div>
           <div className={styles.locationContext}>
-            <span className={styles.eyebrow}>Current HighLevel location</span>
+            <span className={styles.eyebrow}>{WORKSPACE_EYEBROW}</span>
             <strong>{session.location.displayName}</strong>
             <span>{session.user.roleLabel}</span>
           </div>
+          {headerControls}
           <div className={styles.themeControl} aria-label="Theme settings">
             <ThemeControl />
           </div>
+          {accountControls === undefined ? null : (
+            <div className={styles.accountControls}>{accountControls}</div>
+          )}
         </header>
 
         <aside
@@ -155,8 +139,8 @@ export function AppShell({
           data-review-surface={workspaceMode === "review" || undefined}
           aria-label={
             workspaceMode === "review"
-              ? "Review surface. Demo, not connected"
-              : "Synthetic workspace safety"
+              ? NOT_CONNECTED_BANNER_LABEL
+              : "Local demo, nothing connected"
           }
         >
           <Icon
@@ -167,7 +151,7 @@ export function AppShell({
           />
           <span>{session.safety.disclosure}</span>
           <strong>
-            {workspaceMode === "review" ? "REVIEW / DEMO / NOT CONNECTED" : "Writes disabled"}
+            {workspaceMode === "review" ? NOT_CONNECTED_HEADLINE : "Nothing is connected."}
           </strong>
         </aside>
 
@@ -176,41 +160,43 @@ export function AppShell({
         </main>
       </div>
 
-      {isDrawerOpen ? (
-        <div className={styles.drawerLayer}>
-          <Button
-            aria-label="Close navigation"
-            className={styles.drawerBackdrop}
-            onClick={() => setDrawerOpen(false)}
-            tabIndex={-1}
-            variant="ghost"
-          >
-            Close navigation
-          </Button>
-          <div
-            ref={drawerRef}
-            aria-labelledby="mobile-navigation-title"
-            aria-modal="true"
-            className={styles.drawer}
-            id="mobile-navigation-drawer"
-            role="dialog"
-          >
-            <div className={styles.drawerHeader}>
-              <h2 id="mobile-navigation-title">Workspace navigation</h2>
-              <IconButton icon="x" label="Close navigation" onClick={() => setDrawerOpen(false)} />
-            </div>
-            <NavigationItems
-              isCollapsed={false}
-              isMarketingExpanded={isMarketingExpanded}
-              navigation={navigation}
-              onItemNavigate={closeDrawerAfterNavigation}
-              onMarketingExpandedChange={setMarketingExpanded}
-              pathname={pathname}
-            />
-            <SessionIdentity isCollapsed={false} session={session} />
-          </div>
-        </div>
-      ) : null}
+      {/*
+        PRD-006d 006D-AC-003 and D4 line 88. The drawer is the `Dialog` primitive at its
+        `inline-start` placement, not a hand-built layer.
+
+        Until 2026-09-20 this was a plain element wearing the dialog role and the modal flag, with
+        its own focus trap, its own Escape handler, its own scroll lock, and its own focus return,
+        which is exactly the behaviour D4 named `Dialog` to generalise. Two implementations of one
+        contract is how the two drift: the trap here already differed from the primitive's, which
+        decides the wrap in `resolveTabTarget`, a pure function with its own test.
+
+        The wrapper stays, with nothing in it but the media gate. The drawer is the mobile
+        frame's rail, so above the mobile frame there is no drawer to draw, and `display: none`
+        on an ancestor is what keeps a layer opened at 390 from reappearing over a tablet layout
+        after a resize. At the mobile frame it is `display: contents`, so the primitive's own
+        fixed scrim does the positioning.
+      */}
+      <div className={styles.drawerLayer}>
+        <Dialog
+          className={styles.drawer}
+          closeLabel={DRAWER_CLOSE_LABEL}
+          id={DRAWER_ID}
+          onClose={() => setDrawerOpen(false)}
+          open={isDrawerOpen}
+          placement="inline-start"
+          title={DRAWER_TITLE}
+        >
+          <NavigationItems
+            isCollapsed={false}
+            isMarketingExpanded={isMarketingExpanded}
+            navigation={navigation}
+            onItemNavigate={closeDrawerAfterNavigation}
+            onMarketingExpandedChange={setMarketingExpanded}
+            pathname={pathname}
+          />
+          <SessionIdentity isCollapsed={false} session={session} />
+        </Dialog>
+      </div>
     </div>
   );
 }
@@ -366,7 +352,7 @@ function NavigationItemView({
 function SessionIdentity({
   isCollapsed,
   session,
-}: Readonly<{ isCollapsed: boolean; session: DeepReadonly<SyntheticSession> }>) {
+}: Readonly<{ isCollapsed: boolean; session: WorkspaceSessionView }>) {
   return (
     <Surface className={styles.identity} data-collapsed={isCollapsed || undefined} padding="sm">
       <Icon decorative name="lock" size="sm" tone="navigation" />
@@ -387,13 +373,13 @@ function navigationStateLabel(state: NavigationItem["state"]): string {
     case "available":
       return "Available";
     case "permission_restricted":
-      return "Restricted";
+      return "No access";
     case "unavailable":
-      return "Not included";
+      return "Not included in your plan";
     case "planned":
-      return "Planned";
+      return "Coming later";
     case "degraded":
-      return "Degraded";
+      return "Having trouble";
   }
 }
 

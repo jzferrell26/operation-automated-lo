@@ -138,7 +138,21 @@ describe("interactive controls", () => {
     );
     expect(renderSafeAction(safeActionDecisions.uncertain_reconciling)).toContain("corr-safe-42");
     expect(renderSafeAction(safeActionDecisions.loading)).toContain("Pausing campaign");
-    expect(renderSafeAction(safeActionDecisions.error)).toContain("Safe to retry");
+    expect(renderSafeAction(safeActionDecisions.error)).toContain("You can try again");
+  });
+
+  it("keeps the uncertain_reconciling support reference inside its own data-support-details region", () => {
+    const markup = renderSafeAction(safeActionDecisions.uncertain_reconciling);
+    const detailsStart = markup.indexOf("<details data-support-details");
+    const detailsEnd = markup.indexOf("</details>", detailsStart) + "</details>".length;
+
+    expect(detailsStart).toBeGreaterThanOrEqual(0);
+
+    const detailsRegion = markup.slice(detailsStart, detailsEnd);
+    const outsideDetails = markup.slice(0, detailsStart) + markup.slice(detailsEnd);
+
+    expect(detailsRegion).toContain("corr-safe-42");
+    expect(outsideDetails).not.toContain("corr-safe-42");
   });
 
   it("blocks unsafe error retries", () => {
@@ -147,7 +161,7 @@ describe("interactive controls", () => {
 
     expect(getSafeActionActivation(unsafeError)).toBe("blocked");
     expect(markup).toContain("disabled");
-    expect(markup).toContain("Retry unavailable");
+    expect(markup).toContain("Trying again will not help");
   });
 
   it("requires explicit names for semantic icons and icon buttons", () => {

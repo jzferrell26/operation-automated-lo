@@ -3,6 +3,7 @@ import {
   createCampaignTenantContext,
   type AuthenticatedPrincipal,
 } from "@oalo/application";
+import { CorrelationReferenceSchema } from "@oalo/contracts";
 
 import type {
   DatabaseConnection,
@@ -85,6 +86,19 @@ const ASSUME_SUPPORT_RUNTIME_ROLE_REQUEST = request(
  * NOLOGIN role so RLS policies that target those roles actually apply.
  * Set OALO_DB_ASSUME_RUNTIME_ROLE=false only for migration/admin tooling that
  * deliberately connects as a privileged owner outside the app path.
+ *
+ * One path in the application deliberately runs without a tenant or support
+ * context: `queryRuntimeFunction` in `runtime-function-query.ts`. It exists
+ * because authentication is a bootstrap problem. Before a principal is
+ * resolved there is no `app.location_id` to set, so every `app_runtime` policy
+ * keyed on `platform.tenant_matches(location_id)` would deny, and `app_runtime`
+ * holds no `select` grant on `platform.app_users` at all. That helper may call
+ * only the PRD-005b `security definer` contracts named in
+ * `RUNTIME_FUNCTION_CONTRACT_NAMES`, which resolve identity, role version, and
+ * session state and nothing else. It still assumes `app_runtime`, it refuses
+ * any contract outside that allowlist with `DB_CONTRACT_ACCESS_MISMATCH`, and
+ * every campaign read and write continues to run through
+ * `withTenantTransaction` with `platform.set_app_context`.
  */
 export function shouldAssumeRuntimeRole(
   env: Readonly<Record<string, string | undefined>> = process.env,
@@ -299,10 +313,10 @@ function validateTenantContext(context: TenantDatabaseContext): TenantDatabaseCo
   if (!UUID_PATTERN.test(context.locationId) || !UUID_PATTERN.test(context.actorId)) {
     throw new DatabaseContextError("DB_CONTEXT_INVALID", "Tenant and actor IDs must be UUIDs");
   }
-  if (!SAFE_REFERENCE_PATTERN.test(context.correlationId)) {
+  if (!CorrelationReferenceSchema.safeParse(context.correlationId).success) {
     throw new DatabaseContextError(
       "DB_CONTEXT_INVALID",
-      "Correlation ID is not a safe opaque reference",
+      "Correlation ID is not a canonical opaque correlation reference",
     );
   }
   return Object.freeze({ ...context });

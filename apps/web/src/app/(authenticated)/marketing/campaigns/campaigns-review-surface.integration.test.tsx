@@ -16,7 +16,19 @@ import CampaignListPage from "./page.js";
 import NewCampaignPage from "./new/page.js";
 import SyntheticCampaignPage from "./synthetic-open-house-001/page.js";
 
+const redirectCalls: string[] = [];
+
 vi.mock("next/headers.js", () => ({ headers: () => Promise.resolve(new Headers()) }));
+vi.mock("next/navigation.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next/navigation.js")>();
+  return {
+    ...actual,
+    redirect(path: string) {
+      redirectCalls.push(path);
+      return actual.redirect(path);
+    },
+  };
+});
 
 /**
  * Nothing from the synthetic reporting fixture may reach any marketing campaign route in review
@@ -28,7 +40,13 @@ const reportingAllowances: readonly ReviewSurfaceAllowance[] = [
   {
     path: "campaign.metaConnection.state",
     value: "connected",
-    because: "Substring of the route heading 'This campaign is not connected'.",
+    because: "Substring of the route heading about this campaign not being connected yet.",
+  },
+  {
+    path: "campaign.metaConnection.assets[*].kind",
+    value: "page",
+    because:
+      "Substring of the region name that names your Meta pages. The enum value is also the ordinary English word the copy has to use for a Facebook Page.",
   },
   {
     path: "campaign.artifacts[*].status",
@@ -36,14 +54,9 @@ const reportingAllowances: readonly ReviewSurfaceAllowance[] = [
     because: "Substring of the create route's own 'Ready for approval' and approval copy.",
   },
   {
-    path: "portfolio.locations[*].state",
-    value: "authorized",
-    because: "Substring of the not-connected next safe action, '... separately authorized ...'.",
-  },
-  {
     path: "campaign.creatives[*].placement",
     value: "story",
-    because: "Substring of the region name 'Campaign history'.",
+    because: "Substring of the create route's own copy.",
   },
 ];
 
@@ -92,22 +105,12 @@ const uiAllowances: readonly ReviewSurfaceAllowance[] = [
   {
     path: "overview.health[*].id",
     value: "meta",
-    because: "Substring of the 'Meta plan' fieldset legend on the create route.",
-  },
-  {
-    path: "overview.health[*].label",
-    value: "Freshness",
-    because: "Substring of the Metric component's own 'Freshness' caption.",
+    because: "Substring of the region names that say what a connected Meta account would show.",
   },
   {
     path: "onboarding.getConnected[*].title",
     value: "Meta connection",
-    because: "The region name the review campaign screen prints; no onboarding item renders here.",
-  },
-  {
-    path: "onboarding.getConnected[*].state",
-    value: "blocked",
-    because: "Substring of the create route's 'Preflight blocked' heading branch.",
+    because: "Substring of the region name 'Your Meta connection'; no setup step renders here.",
   },
   {
     path: "session.safety.dataMode",
@@ -123,6 +126,7 @@ function stubWorkspaceEnvironment(environment: string, reviewSurface: string | u
 }
 
 beforeEach(() => {
+  redirectCalls.length = 0;
   stubWorkspaceEnvironment("production", OALO_REVIEW_SURFACE_AUTHORIZED);
 });
 
@@ -159,9 +163,9 @@ describe("authenticated marketing campaign routes", () => {
 
     expect(sweepSurface(container)).toEqual([]);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "This campaign is not connected",
+      "This campaign isn't connected yet",
     );
-    expect(screen.getByText("REVIEW / DEMO / NOT CONNECTED")).toBeInTheDocument();
+    expect(screen.getAllByText("Not connected yet").length).toBeGreaterThan(0);
   });
 
   it("names every campaign detail region as not connected instead of hiding the product", () => {
@@ -172,7 +176,11 @@ describe("authenticated marketing campaign routes", () => {
 
     expect(values.length).toBe(7);
     expect(values.every((value) => value === "Not connected")).toBe(true);
-    for (const region of ["Meta connection", "Approval scope", "Launch summary"]) {
+    for (const region of [
+      "Your Meta connection",
+      "What the approval covers",
+      "The launch summary",
+    ]) {
       expect(screen.getByRole("article", { name: region })).toBeInTheDocument();
     }
   });
@@ -183,11 +191,15 @@ describe("authenticated marketing campaign routes", () => {
     expect(sweepSurface(container)).toEqual([]);
   });
 
-  it("lists no campaign on the review surface because none is persisted", async () => {
-    const { container } = render(await CampaignListPage());
+  /**
+   * PRD-005a 005A-AC-010. "No campaigns in this location yet" is a claim about a tenant, so the
+   * review list route no longer renders it for a visitor with no verified session. It redirects to
+   * the review sign-in path instead, which Next.js signals by throwing a redirect.
+   */
+  it("redirects an unauthenticated review visitor instead of listing an empty location", async () => {
+    await expect(CampaignListPage()).rejects.toMatchObject({ digest: expect.any(String) });
 
-    expect(sweepSurface(container)).toEqual([]);
-    expect(container.textContent).toContain("No campaigns in this location yet.");
+    expect(redirectCalls).toEqual(["/sign-in"]);
   });
 
   it("keeps the demo-rich synthetic campaign detail for local development", () => {

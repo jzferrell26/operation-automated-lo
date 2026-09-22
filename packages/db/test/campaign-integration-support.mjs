@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
+import { databaseRoleForApplicationRole } from "../../auth/dist/role-binding-map.js";
 import { createPostgresPool } from "../dist/index.js";
 import { campaignManifestFixture } from "./campaign-manifest-fixture.mjs";
 
@@ -256,6 +257,24 @@ export function preflightRulesFor(version) {
   });
 }
 
+/**
+ * PRD-005a 005A-AC-007. The harness no longer carries its own two-role approximation. The one
+ * mapping between application session roles and `platform.role_bindings.role` lives in
+ * `@oalo/auth`, and it is imported from that package's build output because this harness runs as
+ * plain ESM under `node --test`.
+ *
+ * `@oalo/db` does not and must not depend on `@oalo/auth` (see `tooling/boundaries.json`), so the
+ * import is a path into the sibling package's `dist/`. `pnpm verify` builds every package before
+ * `pnpm test:db` runs, so that file is present on the canonical gate.
+ */
+function bindingRoleFor(applicationRole) {
+  const bindingRole = databaseRoleForApplicationRole(applicationRole);
+  if (bindingRole === undefined) {
+    throw new Error(`No database binding role backs the application role ${applicationRole}`);
+  }
+  return bindingRole;
+}
+
 export async function seedTenant(pool, tenant, displayName, principals = []) {
   const actors =
     principals.length === 0 ? [principalFixture(tenant, "location_admin")] : principals;
@@ -279,7 +298,7 @@ export async function seedTenant(pool, tenant, displayName, principals = []) {
         request(
           "test.campaign-role",
           "insert into platform.role_bindings (location_id, user_id, role) values ($1::uuid, $2::uuid, $3::text)",
-          [tenant.locationId, actor.actorId, databaseRoleFor(actor.role)],
+          [tenant.locationId, actor.actorId, bindingRoleFor(actor.role)],
         ),
       );
     }
@@ -353,6 +372,218 @@ export async function cleanupTenants(pool, tenants, principals = []) {
   });
 }
 
+/**
+ * PRD-005a 005A-AC-013 and 005A-AC-014 seeding, for the route-level proofs in
+ * `apps/web/src/server/*.postgres.test.ts`.
+ *
+ * These live here rather than beside those tests because this file is the one sanctioned holder of
+ * owner elevation in the repository, which
+ * `tests/security/database-privilege-escalation-boundary.test.ts` asserts directly. Session
+ * issuance is deliberately not elevated: it runs PRD-005b's
+ * `platform.issue_first_party_session`, which is `security definer` and granted to `app_runtime`,
+ * so the proof exercises the real issuance path rather than an insert that could drift from it.
+ */
+export async function seedReviewLocation(pool, displayName) {
+  const locationId = randomUUID();
+  const installationId = randomUUID();
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-location",
+        "insert into platform.locations (id, display_name, status) values ($1::uuid, $2::text, 'active')",
+        [locationId, displayName],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.review-installation",
+        "insert into platform.marketplace_installations (id, location_id, marketplace_app_id, status)" +
+          " values ($1::uuid, $2::uuid, 'oalo-review-surface', 'pending')",
+        [installationId, locationId],
+      ),
+    );
+  });
+  return Object.freeze({ locationId, installationId });
+}
+
+export async function seedReviewActor(pool, locationId, displayName, bindingRole) {
+  const actorId = randomUUID();
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-actor",
+        "insert into platform.app_users (id, safe_display_name) values ($1::uuid, $2::text)",
+        [actorId, displayName],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.review-binding",
+        "insert into platform.role_bindings (location_id, user_id, role) values ($1::uuid, $2::uuid, $3::text)",
+        [locationId, actorId, bindingRole],
+      ),
+    );
+  });
+  return actorId;
+}
+
+export async function revokeReviewBinding(pool, locationId, actorId, bindingRole) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-revoke-binding",
+        "update platform.role_bindings set revoked_at = now() where location_id = $1::uuid" +
+          " and user_id = $2::uuid and role = $3::text and revoked_at is null",
+        [locationId, actorId, bindingRole],
+      ),
+    );
+  });
+}
+
+export async function grantReviewBinding(pool, locationId, actorId, bindingRole) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-grant-binding",
+        "insert into platform.role_bindings (location_id, user_id, role) values ($1::uuid, $2::uuid, $3::text)",
+        [locationId, actorId, bindingRole],
+      ),
+    );
+  });
+}
+
+/**
+ * The tables the route-level proofs count and read. The name reaches unparameterised SQL below, so
+ * it is checked against this closed set rather than trusted: a table name is the one part of these
+ * statements a caller supplies, and PostgreSQL has no placeholder for it.
+ */
+export const REVIEW_ASSERTABLE_TABLES = Object.freeze([
+  "campaign.campaigns",
+  "campaign.campaign_versions",
+  "campaign.preflight_results",
+  "campaign.approval_decisions",
+  "integration.command_executions",
+  "audit.events",
+]);
+
+function assertAssertableTable(table) {
+  if (!REVIEW_ASSERTABLE_TABLES.includes(table)) {
+    throw new Error(`${table} is not an assertable table for the route-level proofs`);
+  }
+  return table;
+}
+
+export async function countLocationRows(pool, table, locationId) {
+  const safeTable = assertAssertableTable(table);
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.review-count-rows",
+        `select count(*)::text as total from ${safeTable} where location_id = $1::uuid`,
+        [locationId],
+      ),
+    );
+    return Number(result.rows[0]?.total ?? "0");
+  });
+}
+
+/**
+ * PRD-005c 005C-AC-007, 008, and 009. The stored correlation reference on a row the route wrote.
+ * `integration.command_executions` and `audit.events` carry no runtime `select` grant, so reading
+ * them for an assertion goes through this harness like every other owner-privileged read.
+ */
+export async function readLocationCorrelationIds(pool, table, locationId) {
+  const safeTable = assertAssertableTable(table);
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.review-read-correlations",
+        `select correlation_id from ${safeTable} where location_id = $1::uuid` +
+          " order by created_at, correlation_id",
+        [locationId],
+      ),
+    );
+    return result.rows.map((row) => row.correlation_id);
+  });
+}
+
+/**
+ * PRD-005b 005B-AC-016. A workspace with an active person and an active binding but no
+ * installation row. Everything ahead of issuance accepts it, because nothing ahead of issuance
+ * looks at installations, and `platform.issue_first_party_session` then refuses it and writes
+ * exactly one denied audit row. It is the one deterministic way to drive a denied issuance where
+ * the location is known.
+ */
+export async function seedReviewLocationWithoutInstallation(pool, displayName) {
+  const locationId = randomUUID();
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-location-no-installation",
+        "insert into platform.locations (id, display_name, status) values ($1::uuid, $2::text, 'active')",
+        [locationId, displayName],
+      ),
+    );
+  });
+  return locationId;
+}
+
+/** Runs one PRD-005b definer contract as `app_runtime`, with no tenant context and no elevation. */
+async function withRuntimeRole(pool, work) {
+  const connection = await pool.connect();
+  let open = false;
+  try {
+    await connection.execute(request("test.review-begin", "begin"));
+    open = true;
+    await connection.execute(request("test.review-assume-runtime", "set local role app_runtime"));
+    const result = await work(connection);
+    await connection.execute(request("test.review-commit", "commit"));
+    open = false;
+    return result;
+  } finally {
+    if (open) await connection.execute(request("test.review-rollback", "rollback"));
+    await connection.release();
+  }
+}
+
+export async function issueReviewSession(pool, input) {
+  return withRuntimeRole(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.review-issue-session",
+        "select (platform.issue_first_party_session($1::uuid, $2::uuid, $3::text, $4::text," +
+          " $5::text, $6::integer, 'review_sign_in', $7::text)).id::text as id",
+        [
+          input.locationId,
+          input.actorId,
+          input.bindingRole,
+          input.sessionRole,
+          input.secretHash,
+          input.lifetimeSeconds,
+          input.correlationId,
+        ],
+      ),
+    );
+    const id = result.rows[0]?.id;
+    if (typeof id !== "string") {
+      throw new Error("platform.issue_first_party_session returned no session id");
+    }
+    return id;
+  });
+}
+
+export async function revokeReviewSession(pool, sessionId, reason, correlationId) {
+  await withRuntimeRole(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-revoke-session",
+        "select platform.revoke_first_party_session($1::uuid, $2::text, $3::text)",
+        [sessionId, reason, correlationId],
+      ),
+    );
+  });
+}
+
 function stableJson(value) {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
@@ -362,8 +593,332 @@ function stableJson(value) {
     .join(",")}}`;
 }
 
-function databaseRoleFor(applicationRole) {
-  if (applicationRole === "campaign_creator") return "creator";
-  if (applicationRole === "campaign_approver") return "approver";
-  return "location_admin";
+/**
+ * PRD-006a. The credential-side reads and writes the route-level proofs need.
+ *
+ * `platform.user_credentials`, `platform.credential_tokens`, and `platform.auth_rate_limits`
+ * carry no grant for any runtime role at all, so every assertion about them is an owner-
+ * privileged read and belongs here, in the one sanctioned holder of that elevation, rather than
+ * under `apps/`. Nothing below writes a password: the hash is derived by the caller and passed in.
+ */
+
+export async function seedReviewCredential(pool, input) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.credential-upsert",
+        `insert into platform.user_credentials (user_id, email_normalized, email_display, password_hash)
+         values ($1::uuid, $2::text, $2::text, $3::text)
+         on conflict (user_id) do update
+           set email_normalized = excluded.email_normalized,
+               email_display = excluded.email_display,
+               password_hash = excluded.password_hash,
+               failed_attempt_count = 0,
+               locked_until = null,
+               email_verified_at = null,
+               updated_at = now()`,
+        [input.userId, input.emailNormalized, input.passwordHash],
+      ),
+    );
+  });
+}
+
+export async function readReviewCredential(pool, userId) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.credential-read",
+        `select password_hash,
+                failed_attempt_count::text as failed_attempt_count,
+                (locked_until is not null and locked_until > now())::text as locked,
+                to_char(locked_until at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+                  as locked_until,
+                (email_verified_at is not null)::text as email_verified,
+                (password_rotated_at is not null)::text as rotated
+         from platform.user_credentials where user_id = $1::uuid`,
+        [userId],
+      ),
+    );
+    const row = result.rows[0];
+    if (row === undefined) return undefined;
+    return Object.freeze({
+      passwordHash: row.password_hash,
+      failedAttemptCount: Number(row.failed_attempt_count),
+      locked: isTrue(row.locked),
+      // Formatted to microseconds by the database rather than through a Date, which rounds to
+      // milliseconds: a proof that a lock did not move has to compare the instant that was
+      // stored, not a value that two different instants can both round to.
+      lockedUntil: row.locked_until ?? undefined,
+      emailVerified: isTrue(row.email_verified),
+      rotated: isTrue(row.rotated),
+    });
+  });
+}
+
+function isTrue(value) {
+  return value === true || value === "true" || value === "t";
+}
+
+/** Moves an account's lock into the past, which is how a proof lets a lockout lapse. */
+export async function expireReviewCredentialLock(pool, userId) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.credential-expire-lock",
+        "update platform.user_credentials set locked_until = now() - interval '1 minute' where user_id = $1::uuid",
+        [userId],
+      ),
+    );
+  });
+}
+
+export async function countCredentialTokens(pool, input) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.credential-token-count",
+        `select count(*)::text as total from platform.credential_tokens
+         where user_id = $1::uuid and purpose = $2::text
+           and ($3::text is null or (consumed_at is null and superseded_at is null))`,
+        [input.userId, input.purpose, input.liveOnly === true ? "live" : null],
+      ),
+    );
+    return Number(result.rows[0]?.total ?? "0");
+  });
+}
+
+/** The lifetime of the newest token of a purpose, in seconds, so a proof can pin thirty minutes. */
+export async function newestCredentialTokenLifetimeSeconds(pool, input) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.credential-token-lifetime",
+        `select round(extract(epoch from (expires_at - issued_at)))::text as lifetime
+         from platform.credential_tokens
+         where user_id = $1::uuid and purpose = $2::text
+         order by issued_at desc, id desc limit 1`,
+        [input.userId, input.purpose],
+      ),
+    );
+    const lifetime = result.rows[0]?.lifetime;
+    return lifetime === undefined ? undefined : Number(lifetime);
+  });
+}
+
+/** Every audit row a correlation reference produced, in insertion order. */
+export async function readAuditEventsForCorrelation(pool, correlationId) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.audit-read-by-correlation",
+        `select action, result, subject_type, subject_id
+         from audit.events where correlation_id = $1::text
+         order by created_at, id`,
+        [correlationId],
+      ),
+    );
+    return Object.freeze(
+      result.rows.map((row) =>
+        Object.freeze({
+          action: row.action,
+          result: row.result,
+          subjectType: row.subject_type,
+          subjectId: row.subject_id,
+        }),
+      ),
+    );
+  });
+}
+
+/**
+ * How many audit rows of one action a person has, across every correlation reference.
+ *
+ * `readAuditEventsForCorrelation` answers what one request wrote, which cannot say whether an
+ * action had ever been written before it. A criterion that reads "exactly one row" needs the
+ * count on both sides of the flow, and this is that count.
+ */
+export async function countAuditEventsForActor(pool, input) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.audit-count-by-actor-action",
+        `select count(*)::text as total
+         from audit.events where actor_id = $1::uuid and action = $2::text`,
+        [input.userId, input.action],
+      ),
+    );
+    return Number(result.rows[0]?.total ?? "0");
+  });
+}
+
+/** The session rows a person holds, newest first, for the revocation proofs. */
+export async function readFirstPartySessionsForUser(pool, userId) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.session-read-by-user",
+        `select id::text as id, issued_by, revocation_reason,
+                (revoked_at is not null)::text as revoked,
+                round(extract(epoch from (expires_at - issued_at)))::text as lifetime
+         from platform.first_party_sessions where user_id = $1::uuid
+         order by issued_at desc, id desc`,
+        [userId],
+      ),
+    );
+    return Object.freeze(
+      result.rows.map((row) =>
+        Object.freeze({
+          id: row.id,
+          issuedBy: row.issued_by,
+          revocationReason: row.revocation_reason,
+          revoked: isTrue(row.revoked),
+          lifetimeSeconds: Number(row.lifetime),
+        }),
+      ),
+    );
+  });
+}
+
+/**
+ * Clears the fixed-window counters for ONE key, so a proof can start from a known count.
+ *
+ * It takes a key on purpose. The route-level suites run as separate vitest files against one
+ * database, and vitest runs files in parallel, so a helper that emptied the table would delete
+ * counters another file was in the middle of counting. That is not a hypothetical: it is what an
+ * earlier version of this helper did, and it made both rate-limit proofs fail intermittently
+ * while the product was correct.
+ */
+export async function clearAuthRateLimitsForKey(pool, keyHash) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.rate-limit-clear-key",
+        "delete from platform.auth_rate_limits where key_hash = $1::text",
+        [keyHash],
+      ),
+    );
+  });
+}
+
+/** The person a seeded email address names, for a proof that needs the id the route never returns. */
+export async function readUserIdForEmail(pool, emailNormalized) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.credential-user-for-email",
+        "select user_id::text as user_id from platform.user_credentials where email_normalized = $1::text",
+        [emailNormalized],
+      ),
+    );
+    return result.rows[0]?.user_id;
+  });
+}
+
+/** Suspends a seeded person, so a proof can show a suspended account is refused a session. */
+export async function suspendReviewActor(pool, actorId) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-suspend-actor",
+        "update platform.app_users set status = 'suspended', updated_at = now() where id = $1::uuid",
+        [actorId],
+      ),
+    );
+  });
+}
+
+/**
+ * PRD-006a. Tears down one credential fixture so the seeding script's guard still means what it
+ * says: it refuses a database holding an active workspace it does not own, and a proof that left
+ * its own workspaces behind would turn that guard into noise.
+ *
+ * The order is the foreign-key order, and the audit rows go first because every other delete here
+ * is blocked by them. `platform.first_party_sessions` refuses deletes outright, so a fixture that
+ * issued one cannot be torn down this way; nothing that uses this helper issues one.
+ */
+export async function cleanupCredentialFixture(pool, input) {
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    for (const disableTrigger of appendOnlyTriggerRequests("disable")) {
+      await connection.execute(disableTrigger);
+    }
+    await connection.execute(
+      request(
+        "test.credential-cleanup-audit",
+        "delete from audit.events where location_id = $1::uuid",
+        [input.locationId],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.credential-cleanup-tokens",
+        "delete from platform.credential_tokens where user_id = $1::uuid",
+        [input.userId],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.credential-cleanup-credential",
+        "delete from platform.user_credentials where user_id = $1::uuid",
+        [input.userId],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.credential-cleanup-bindings",
+        "delete from platform.role_bindings where location_id = $1::uuid",
+        [input.locationId],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.credential-cleanup-installations",
+        "delete from platform.marketplace_installations where location_id = $1::uuid",
+        [input.locationId],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.credential-cleanup-actor",
+        "delete from platform.app_users where id = $1::uuid",
+        [input.userId],
+      ),
+    );
+    await connection.execute(
+      request(
+        "test.credential-cleanup-location",
+        "delete from platform.locations where id = $1::uuid",
+        [input.locationId],
+      ),
+    );
+    for (const enableTrigger of appendOnlyTriggerRequests("enable")) {
+      await connection.execute(enableTrigger);
+    }
+  });
+}
+
+/** PRD-006a 006A-AC-009. The counter rows themselves, so a proof can see the window it made. */
+export async function readAuthRateLimitRows(pool, scope) {
+  return withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.rate-limit-read",
+        `select scope, key_hash, attempt_count::text as attempt_count,
+                window_start::text as window_start
+         from platform.auth_rate_limits
+         where $1::text is null or scope = $1::text
+         order by scope, key_hash, window_start`,
+        [scope ?? null],
+      ),
+    );
+    return Object.freeze(
+      result.rows.map((row) =>
+        Object.freeze({
+          scope: row.scope,
+          keyHash: row.key_hash,
+          attemptCount: Number(row.attempt_count),
+          windowStart: row.window_start,
+        }),
+      ),
+    );
+  });
 }

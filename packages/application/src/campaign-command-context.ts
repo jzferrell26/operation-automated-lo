@@ -1,5 +1,6 @@
 import {
   ApplicationRoleSchema,
+  CorrelationReferenceSchema,
   type ApplicationRole,
   type ApprovalDecision,
 } from "@oalo/contracts";
@@ -8,7 +9,6 @@ import type { ApprovalAuthorityPort } from "./campaign-foundation.js";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const OPAQUE_REFERENCE_PATTERN = /^[a-z][a-z0-9]*(?:_[A-Za-z0-9]+)+$/u;
-const CORRELATION_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,299}$/u;
 const AUTHENTICATION_MODES = new Set(["embedded", "first_party", "local_synthetic"]);
 
 export const CAMPAIGN_MUTATION_ROLES = Object.freeze([
@@ -118,7 +118,7 @@ export function createCampaignTenantContext(
   correlationId: string,
 ): Readonly<{ locationId: string; actorId: string; correlationId: string }> {
   const frozen = freezeAuthenticatedPrincipal(principal);
-  if (!CORRELATION_PATTERN.test(correlationId)) {
+  if (!CorrelationReferenceSchema.safeParse(correlationId).success) {
     throw new CampaignPrincipalInvalidError();
   }
   return Object.freeze({

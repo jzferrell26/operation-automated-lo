@@ -117,6 +117,24 @@ function hintsMatch(
   input: HumanCampaignApprovalInput,
   evidence: CampaignApprovalEvidence,
 ): boolean {
+  if (!evidenceHintsMatchIgnoringRowVersion(input, evidence)) {
+    return false;
+  }
+  if (input.expectedRowVersion !== undefined && input.expectedRowVersion !== evidence.rowVersion) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Same comparison as {@link hintsMatch}, but deliberately excludes `expectedRowVersion`. A
+ * successful commit always advances the row version, so an identical retry that still carries
+ * the pre-approval version must not be treated as stale on that field alone (D5).
+ */
+function evidenceHintsMatchIgnoringRowVersion(
+  input: HumanCampaignApprovalInput,
+  evidence: CampaignApprovalEvidence,
+): boolean {
   if (
     input.expectedCampaignVersionRef !== undefined &&
     input.expectedCampaignVersionRef !== evidence.version.campaignVersionRef
@@ -135,10 +153,22 @@ function hintsMatch(
   ) {
     return false;
   }
-  if (input.expectedRowVersion !== undefined && input.expectedRowVersion !== evidence.rowVersion) {
-    return false;
-  }
   return true;
+}
+
+function matchesExistingApproval(
+  input: HumanCampaignApprovalInput,
+  frozen: Readonly<AuthenticatedPrincipal>,
+  evidence: CampaignApprovalEvidence,
+): evidence is CampaignApprovalEvidence & { existingApproval: ApprovalDecision } {
+  const existing = evidence.existingApproval;
+  return (
+    existing !== undefined &&
+    existing.campaignVersionRef === evidence.version.campaignVersionRef &&
+    existing.actorRef === frozen.actorRef &&
+    existing.decision === input.decision &&
+    evidenceHintsMatchIgnoringRowVersion(input, evidence)
+  );
 }
 
 async function recordTransition(event: CampaignEvent): Promise<CampaignEvent> {
@@ -165,23 +195,17 @@ export async function executeHumanCampaignApproval(
     if (evidence === undefined || evidence.version.locationRef !== frozen.locationRef) {
       throw new CampaignResourceNotAccessibleError();
     }
-    if (!hintsMatch(input, evidence)) {
-      throw new CampaignApprovalStaleError();
-    }
-    const existing = evidence.existingApproval;
-    if (
-      existing !== undefined &&
-      existing.campaignVersionRef === evidence.version.campaignVersionRef &&
-      existing.actorRef === frozen.actorRef &&
-      existing.decision === input.decision
-    ) {
+    if (matchesExistingApproval(input, frozen, evidence)) {
       return Object.freeze({
         kind: "committed" as const,
-        decision: existing,
+        decision: evidence.existingApproval,
         state: evidence.state,
         rowVersion: evidence.rowVersion,
         duplicate: true,
       });
+    }
+    if (!hintsMatch(input, evidence)) {
+      throw new CampaignApprovalStaleError();
     }
     if (evidence.state === "approved") {
       throw new CampaignApprovalStaleError();

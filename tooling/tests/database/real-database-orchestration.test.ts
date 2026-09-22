@@ -1,20 +1,26 @@
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
 import { spawn } from "node:child_process";
 
 import {
+  DATABASE_UNIT_TEST_LABEL,
+  GATE_SEEDED_CREDENTIALS,
   SUPABASE_CLI_VERSION,
   TEST_DATABASE_NAME,
   TEST_DATABASE_NAME_PREFIX,
   assertDisposableTestDatabaseName,
   commandPlan,
+  REVIEW_BROWSER_RUN_LABEL,
+  WEB_POSTGRES_PROJECT,
+  discoverDatabaseUnitTestFiles,
   discoverIntegrationTestFiles,
   discoverMigrationFiles,
   discoverPgtapFiles,
+  discoverWebPostgresTestFiles,
   localDatabaseUrl,
   resolveLocalDatabasePort,
   resolveNpmCli,
@@ -55,21 +61,27 @@ describe("real database test orchestration", () => {
     const plan = await fixturePlan(repositoryRoot);
 
     expect(files).toEqual(["supabase/tests/a-first.pgtap.sql", "supabase/tests/z-last.pgtap.sql"]);
-    expect(plan.setup).toHaveLength(5);
+    expect(plan.setup).toHaveLength(6);
     expect(plan.tests).toHaveLength(2);
     expect([...plan.setup, ...plan.tests].every((step) => step.command === process.execPath)).toBe(
       true,
     );
     expect(plan.setup.map((step) => step.label)).toEqual([
-      "build @oalo/db and its workspace dependencies",
+      "build @oalo/db, @oalo/auth, and their workspace dependencies",
+      DATABASE_UNIT_TEST_LABEL,
       "run database orchestration contract tests",
       `verify Supabase CLI ${SUPABASE_CLI_VERSION}`,
       "start local Supabase",
       "recreate the local database and apply every migration",
     ]);
-    expect(plan.setup[1]?.args).toContain("--project");
+    expect(plan.setup[2]?.args).toContain("--project");
+    // The harness reads the shared role map out of packages/auth/dist, and
+    // @oalo/db is forbidden from depending on @oalo/auth, so the gate builds it
+    // explicitly rather than relying on the dependency graph.
+    expect(plan.setup[0]?.args).toContain("--filter=@oalo/auth...");
+    expect(plan.setup[0]?.args).toContain("--filter=@oalo/db...");
     expect(
-      [...plan.setup.slice(2), ...plan.tests].every((step) =>
+      [...plan.setup.slice(3), ...plan.tests].every((step) =>
         step.args.includes(`supabase@${SUPABASE_CLI_VERSION}`),
       ),
     ).toBe(true);
@@ -204,6 +216,56 @@ describe("real PostgreSQL integration phase", () => {
     );
   });
 
+  /**
+   * 005C-AC-006, Wave 7s. The package's connectionless suites are a gate step of their own, and
+   * the discovery that feeds it has to subtract the integration half of the same directory: every
+   * `*.integration.test.mjs` name also ends with `.test.mjs`, and those files refuse to run
+   * without `OALO_TEST_DATABASE_URL`, which this step deliberately does not carry.
+   */
+  it("discovers the package unit suites without dragging the integration files in", async () => {
+    const repositoryRoot = await fixtureRepository({
+      databaseUnitTestFiles: ["z-transaction-context.test.mjs", "a-foundation-contracts.test.mjs"],
+      integrationTestFiles: ["campaign-command.integration.test.mjs"],
+    });
+
+    expect(await discoverDatabaseUnitTestFiles(repositoryRoot)).toEqual([
+      "packages/db/test/a-foundation-contracts.test.mjs",
+      "packages/db/test/z-transaction-context.test.mjs",
+    ]);
+  });
+
+  it("fails rather than silently passing when the package holds only integration files", async () => {
+    const repositoryRoot = await fixtureRepository({
+      databaseUnitTestFiles: [],
+      integrationTestFiles: ["only.integration.test.mjs"],
+    });
+
+    await expect(discoverDatabaseUnitTestFiles(repositoryRoot)).rejects.toThrow(
+      "No packages/db/test/*.test.mjs files were found.",
+    );
+  });
+
+  it("runs the package unit suites right after the build and without a database URL", async () => {
+    const repositoryRoot = await fixtureRepository({
+      databaseUnitTestFiles: ["transaction-context.test.mjs"],
+    });
+    const plan = await fixturePlan(repositoryRoot);
+    const unitStep = plan.setup.find((step) => step.label === DATABASE_UNIT_TEST_LABEL);
+
+    expect(plan.setup.indexOf(unitStep!)).toBe(1);
+    expect(unitStep?.command).toBe(process.execPath);
+    expect(unitStep?.args).toEqual([
+      "--test",
+      "--test-concurrency=1",
+      "packages/db/test/transaction-context.test.mjs",
+    ]);
+    expect(unitStep?.env).toBeUndefined();
+    // The step precedes every Supabase command, so it never waits on a container to run.
+    expect(plan.setup.indexOf(unitStep!)).toBeLessThan(
+      plan.setup.findIndex((step) => step.label === "start local Supabase"),
+    );
+  });
+
   it("provisions the disposable database, replays every migration, then runs the tests", async () => {
     const repositoryRoot = await fixtureRepository({
       migrationFiles: ["20260102_second.sql", "20260101_first.sql"],
@@ -216,7 +278,13 @@ describe("real PostgreSQL integration phase", () => {
       `apply supabase/migrations/20260101_first.sql to ${TEST_DATABASE_NAME}`,
       `apply supabase/migrations/20260102_second.sql to ${TEST_DATABASE_NAME}`,
       "run the real-PostgreSQL integration tests",
+      `seed the review location and its credentials into ${TEST_DATABASE_NAME}`,
+      "prove the review seeding script inserts nothing on a second run",
+      REVIEW_BROWSER_RUN_LABEL,
     ]);
+    // No route-level file exists in this fixture, so the suite's own step is absent and the
+    // seeding pair runs straight into the review browser suite. The ordering assertion for a
+    // present route-level suite lives in its own case.
   });
 
   it("stops psql on the first error and applies each migration atomically", async () => {
@@ -240,7 +308,9 @@ describe("real PostgreSQL integration phase", () => {
       integrationTestFiles: ["a.integration.test.mjs", "b.integration.test.mjs"],
     });
     const plan = await fixturePlan(repositoryRoot);
-    const testStep = plan.integration.at(-1);
+    const testStep = plan.integration.find(
+      (step) => step.label === "run the real-PostgreSQL integration tests",
+    );
     const databaseUrl = testStep?.env?.OALO_TEST_DATABASE_URL;
 
     expect(testStep?.command).toBe(process.execPath);
@@ -287,6 +357,102 @@ describe("real PostgreSQL integration phase", () => {
     );
     expect(labels).not.toContain("run the real-PostgreSQL integration tests");
     expect(labels.at(-1)).toBe("stop local Supabase without preserving database state");
+  });
+
+  it("omits the route-level step and records a notice when no matching file exists", async () => {
+    const repositoryRoot = await fixtureRepository({});
+    const plan = await fixturePlan(repositoryRoot);
+
+    expect(await discoverWebPostgresTestFiles(repositoryRoot)).toEqual([]);
+    expect(plan.integration.map((step) => step.label)).not.toContain(
+      "run the route-level PostgreSQL tests",
+    );
+    expect(plan.notices).toEqual([
+      `no apps/web/src/**/*.postgres.test.ts file exists, so the ${WEB_POSTGRES_PROJECT} step is not in this plan`,
+    ]);
+  });
+
+  it("runs the route-level project with the disposable URL once a matching file exists", async () => {
+    const repositoryRoot = await fixtureRepository({
+      webPostgresTestFiles: [
+        "server/password-authentication-handler.postgres.test.ts",
+        "app/api/campaigns/approve/route.postgres.test.ts",
+      ],
+    });
+    const plan = await fixturePlan(repositoryRoot);
+    const routeStep = plan.integration.find(
+      (step) => step.label === "run the route-level PostgreSQL tests",
+    );
+
+    expect(await discoverWebPostgresTestFiles(repositoryRoot)).toEqual([
+      "apps/web/src/app/api/campaigns/approve/route.postgres.test.ts",
+      "apps/web/src/server/password-authentication-handler.postgres.test.ts",
+    ]);
+    expect(plan.notices).toEqual([]);
+    expect(routeStep?.command).toBe(process.execPath);
+    expect(routeStep?.args).toContain(WEB_POSTGRES_PROJECT);
+    // The suite signs in with the credentials the seeding step just created.
+    expect(routeStep?.env?.OALO_TEST_SEEDED_SIGN_IN_EMAIL).toBe(
+      GATE_SEEDED_CREDENTIALS.creatorEmail,
+    );
+    expect(routeStep?.env?.OALO_TEST_SEEDED_SIGN_IN_PASSWORD).toBe(
+      GATE_SEEDED_CREDENTIALS.password,
+    );
+    expect(
+      new URL(routeStep?.env?.OALO_TEST_DATABASE_URL as string).pathname.startsWith(
+        `/${TEST_DATABASE_NAME_PREFIX}`,
+      ),
+    ).toBe(true);
+    expect(plan.integration.indexOf(routeStep!)).toBeGreaterThan(
+      plan.integration.findIndex(
+        (step) => step.label === "run the real-PostgreSQL integration tests",
+      ),
+    );
+    // The seeding guard refuses a database holding an active location it does not own, and the
+    // route-level suite seeds exactly that. Seeding has to happen first or the guard fires on the
+    // suite's own fixtures instead of on a real foreign tenant.
+    expect(plan.integration.indexOf(routeStep!)).toBeGreaterThan(
+      plan.integration.findIndex(
+        (step) => step.label === "prove the review seeding script inserts nothing on a second run",
+      ),
+    );
+  });
+
+  it("seeds the review location and then proves the second run changes nothing", async () => {
+    const repositoryRoot = await fixtureRepository({});
+    const plan = await fixturePlan(repositoryRoot);
+    const seedIndex = plan.integration.findIndex(
+      (step) =>
+        step.label === `seed the review location and its credentials into ${TEST_DATABASE_NAME}`,
+    );
+    const [seedStep, idempotencyStep] = plan.integration.slice(seedIndex, seedIndex + 2);
+
+    expect(seedStep?.label).toBe(
+      `seed the review location and its credentials into ${TEST_DATABASE_NAME}`,
+    );
+    expect(seedStep?.command).toBe(process.execPath);
+    expect(seedStep?.args.at(0)?.replaceAll("\\", "/")).toContain(
+      "tooling/scripts/database/seed-review-location.mjs",
+    );
+    expect(seedStep?.args).toContain("--confirm-database");
+    expect(seedStep?.args).toContain(TEST_DATABASE_NAME);
+    expect(seedStep?.args).not.toContain("--expect-unchanged");
+    expect(idempotencyStep?.args).toContain("--expect-unchanged");
+
+    // PRD-006a D8 and 006A-AC-029. The gate has no terminal, so the three passwords arrive on
+    // standard input, and no password appears in an argument vector, where any process listing
+    // would show it.
+    expect(seedStep?.args).toContain("--set-password");
+    expect(seedStep?.args).toContain("--password-stdin");
+    expect(seedStep?.args).toContain("--creator-email");
+    expect(seedStep?.stdin?.split("\n").filter((line) => line.length > 0)).toHaveLength(3);
+    expect(seedStep?.args.join(" ")).not.toContain(GATE_SEEDED_CREDENTIALS.password);
+    expect(idempotencyStep?.args).not.toContain("--set-password");
+    expect(idempotencyStep?.stdin).toBeUndefined();
+    for (const step of [seedStep, idempotencyStep]) {
+      const urlArgument = step?.args[step.args.indexOf("--review-database-url") + 1];
+      expect(new URL(urlArgument as string).pathname).toBe(`/${TEST_DATABASE_NAME}`);
+    }
   });
 
   it("reports pgTAP and integration failures together", async () => {
@@ -387,27 +553,37 @@ async function fixturePlan(repositoryRoot: string) {
   return commandPlan(
     {
       databasePort: resolveLocalDatabasePort(CONFIG_TOML),
+      databaseUnitTestFiles: await discoverDatabaseUnitTestFiles(repositoryRoot),
       integrationTestFiles: await discoverIntegrationTestFiles(repositoryRoot),
       migrationFiles: await discoverMigrationFiles(repositoryRoot),
       pgtapFiles: await discoverPgtapFiles(repositoryRoot),
+      webPostgresTestFiles: await discoverWebPostgresTestFiles(repositoryRoot),
     },
     repositoryRoot,
   );
 }
 
 async function fixtureRepository({
+  databaseUnitTestFiles = ["only.test.mjs"],
   integrationTestFiles = ["only.integration.test.mjs"],
   migrationFiles = ["20260101_only.sql"],
   pgtapFiles = ["only.pgtap.sql"],
+  webPostgresTestFiles = [],
 }: {
+  databaseUnitTestFiles?: string[];
   integrationTestFiles?: string[];
   migrationFiles?: string[];
   pgtapFiles?: string[];
+  webPostgresTestFiles?: string[];
 }) {
   const repositoryRoot = await mkdtemp(join(tmpdir(), "oalo-db-orchestration-"));
   temporaryDirectories.push(repositoryRoot);
+  // The package's unit and integration suites share one directory, which is exactly why the two
+  // discoveries have to disagree about what belongs to each of them.
+  const databasePackageTestDirectory = join(repositoryRoot, "packages", "db", "test");
   const directories = {
-    integrationTestFiles: join(repositoryRoot, "packages", "db", "test"),
+    databaseUnitTestFiles: databasePackageTestDirectory,
+    integrationTestFiles: databasePackageTestDirectory,
     migrationFiles: join(repositoryRoot, "supabase", "migrations"),
     pgtapFiles: join(repositoryRoot, "supabase", "tests"),
   };
@@ -416,16 +592,23 @@ async function fixtureRepository({
   );
   await Promise.all([
     writeFile(join(repositoryRoot, "supabase", "config.toml"), CONFIG_TOML, "utf8"),
-    ...Object.entries({ integrationTestFiles, migrationFiles, pgtapFiles }).flatMap(
-      ([key, files]) =>
-        files.map((file) =>
-          writeFile(
-            join(directories[key as keyof typeof directories], file),
-            "select 1;\n",
-            "utf8",
-          ),
-        ),
+    ...Object.entries({
+      databaseUnitTestFiles,
+      integrationTestFiles,
+      migrationFiles,
+      pgtapFiles,
+    }).flatMap(([key, files]) =>
+      files.map((file) =>
+        writeFile(join(directories[key as keyof typeof directories], file), "select 1;\n", "utf8"),
+      ),
     ),
   ]);
+  // The route-level suite is discovered recursively, so its fixture files are
+  // written under nested directories rather than one flat folder.
+  for (const file of webPostgresTestFiles) {
+    const absolute = join(repositoryRoot, "apps", "web", "src", ...file.split("/"));
+    await mkdir(dirname(absolute), { recursive: true });
+    await writeFile(absolute, "export {};\n", "utf8");
+  }
   return repositoryRoot;
 }

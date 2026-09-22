@@ -1,13 +1,11 @@
 import { render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { OverviewScreen } from "../../../features/overview/components/overview-screen.js";
 import { loadSyntheticUiFixture } from "../../../features/ui-foundation/data/load-synthetic-ui.js";
-import {
-  OALO_REVIEW_SURFACE_AUTHORIZED,
-  loadAuthenticatedWorkspace,
-} from "../../../server/authenticated-workspace-data.js";
+import { loadAuthenticatedWorkspace } from "../../../server/authenticated-workspace-data.js";
 import AuthenticatedLayout from "../layout.js";
+import { useReviewModeEnvironment } from "../review-mode-test-support.js";
 import {
   collectFixtureStrings,
   forbiddenReviewStrings,
@@ -17,6 +15,7 @@ import {
   type ReviewSurfaceAllowance,
 } from "../review-surface-sweep.js";
 
+vi.mock("next/headers.js", () => ({ headers: () => Promise.resolve(new Headers()) }));
 vi.mock("next/navigation.js", () => ({ usePathname: () => "/overview" }));
 vi.mock("../../../theme/index.js", () => ({
   ThemeControl: () => <div aria-label="Theme control">Theme control</div>,
@@ -46,12 +45,6 @@ const renderedAllowances: readonly ReviewSurfaceAllowance[] = [
   {
     path: "navigation.marketingItems[*].state",
     because: "Closed navigationStateSchema enum; the visible label is component-authored.",
-  },
-  {
-    path: "navigation.items[*].requiredRole",
-    value: "Owner or Agency User",
-    because:
-      "Review navigation drops requiredRole; this hit is the illustrative edge-state matrix card in overview-edge-state-matrix.tsx, which is labelled a design reference.",
   },
 
   // Region identity the review projection deliberately keeps. Collapsing a region's evidence while
@@ -100,34 +93,7 @@ const renderedAllowances: readonly ReviewSurfaceAllowance[] = [
     path: "onboarding.getConnected[*].completionHref",
     because: "Route paths that collide with the navigation and quick-action hrefs.",
   },
-  {
-    path: "onboarding.permissionGroups[*].label",
-    value: "Required",
-    because: "Substring of the component-authored readiness chip 'Attention Required'.",
-  },
-  {
-    path: "onboarding.launchReadiness[*].title",
-    value: "Synthetic lead",
-    because:
-      "Substring of the component-authored metric caption 'Synthetic leads are excluded. ...'.",
-  },
 
-  // Role names that the illustrative edge-state matrix prints as part of its own demo cards.
-  {
-    path: "overview.attention[*].responsibleParty",
-    value: "Location Owner",
-    because: "Printed by the illustrative edge-state matrix; review mode empties attention.",
-  },
-  {
-    path: "onboarding.getConnected[*].responsibleParty",
-    value: "Location Owner",
-    because: "Printed by the illustrative edge-state matrix; onboarding does not render here.",
-  },
-  {
-    path: "onboarding.launchReadiness[*].responsibleParty",
-    value: "Location Owner",
-    because: "Printed by the illustrative edge-state matrix; onboarding does not render here.",
-  },
   {
     path: "overview.workspaceStatus[*].detail",
     value: "Active",
@@ -174,28 +140,27 @@ const projectionAllowances: readonly ReviewSurfaceAllowance[] = [
   ...projectionOnlyAllowances,
 ];
 
-beforeEach(() => {
-  vi.stubEnv("OALO_ENVIRONMENT", "production");
-  vi.stubEnv("OALO_PROVIDER_MODE", "stub");
-  vi.stubEnv("OALO_SYNTHETIC_DATA_ONLY", "true");
-  vi.stubEnv("OALO_REVIEW_SURFACE", OALO_REVIEW_SURFACE_AUTHORIZED);
-});
+useReviewModeEnvironment();
 
-afterEach(() => {
-  vi.unstubAllEnvs();
-});
-
-function renderReviewOverview() {
+/**
+ * The layout is an async server component since PRD-005a, and in review mode it resolves the shell
+ * session from the request rather than from the fixture. No session is presented here, so the shell
+ * renders its explicit not-signed-in identity. That is the state a review visitor actually reaches,
+ * so it is the state this honesty sweep should cover.
+ */
+async function renderReviewOverview() {
   const workspace = loadAuthenticatedWorkspace();
   const { container } = render(
-    <AuthenticatedLayout>
-      <OverviewScreen
-        overview={workspace.ui.overview}
-        session={workspace.ui.session}
-        workspaceCampaigns={[]}
-        workspaceMode="review"
-      />
-    </AuthenticatedLayout>,
+    await AuthenticatedLayout({
+      children: (
+        <OverviewScreen
+          overview={workspace.ui.overview}
+          session={workspace.ui.session}
+          workspaceCampaigns={[]}
+          workspaceMode="review"
+        />
+      ),
+    }),
   );
   return { container, workspace };
 }
@@ -209,8 +174,8 @@ describe("review surface honesty invariant", () => {
     expect(staleAllowances(fixture, projectionAllowances)).toEqual([]);
   });
 
-  it("keeps every unallowed fixture string out of the rendered review route", () => {
-    const { container } = renderReviewOverview();
+  it("keeps every unallowed fixture string out of the rendered review route", async () => {
+    const { container } = await renderReviewOverview();
     const forbidden = forbiddenReviewStrings(loadSyntheticUiFixture(), renderedAllowances);
 
     expect(leakedReviewStrings(reviewSurfaceText(container), forbidden)).toEqual([]);
@@ -223,26 +188,41 @@ describe("review surface honesty invariant", () => {
       overview: workspace.ui.overview,
       session: workspace.ui.session,
     });
-    const forbidden = forbiddenReviewStrings(loadSyntheticUiFixture(), projectionAllowances);
+    /**
+     * The payload, not a page. It legitimately carries closed enums such as `setup_required` and
+     * capability slugs, which gate what the page renders and which no user ever reads, so the
+     * user-language contract's vocabulary does not apply here (PRD-006b D2 governs what is read).
+     */
+    const forbidden = forbiddenReviewStrings(
+      loadSyntheticUiFixture(),
+      projectionAllowances,
+      "projection",
+    );
 
     expect(leakedReviewStrings(projection, forbidden)).toEqual([]);
   });
 
-  it("replaces navigation state detail and session provenance with review-mode statements", () => {
-    const { container, workspace } = renderReviewOverview();
+  it("replaces navigation state detail and session provenance with review-mode statements", async () => {
+    const { container, workspace } = await renderReviewOverview();
 
     expect(workspace.ui.navigation.items.every((item) => item.requiredRole === undefined)).toBe(
       true,
     );
-    expect(container.textContent).toContain(
-      "Review surface. Demo navigation only. No live entitlement or provider state is evaluated.",
-    );
-    expect(container.textContent).toContain("Demo session. No validated HighLevel location.");
-    expect(screen.getByText("REVIEW / DEMO / NOT CONNECTED")).toBeInTheDocument();
+    expect(container.textContent).toContain("Available once your accounts are connected.");
+    /**
+     * Since PRD-005a the shell states the session it actually has. Without a real sign-in that is
+     * "You're signed out", not the fixture's demo persona, so the fixture provenance string must be
+     * absent rather than present. PRD-006b D4 supplies the words.
+     */
+    expect(container.textContent).not.toContain("Demo session");
+    expect(container.textContent).not.toContain("Demo reviewer");
+    expect(container.textContent).toContain("You're signed out");
+    expect(container.textContent).toContain("Sign in to see your workspace");
+    expect(screen.getAllByText("Not connected yet").length).toBeGreaterThan(0);
   });
 
-  it("renders no numeric demo value in any review metric", () => {
-    const { container } = renderReviewOverview();
+  it("renders no numeric demo value in any review metric", async () => {
+    const { container } = await renderReviewOverview();
     const values = [...container.querySelectorAll(".oalo-metric__value")].map(
       (element) => element.textContent ?? "",
     );
@@ -252,46 +232,45 @@ describe("review surface honesty invariant", () => {
     expect(values.join(" ")).not.toMatch(/\d/u);
   });
 
-  it("reaches an honest not-connected representation for spend and leads", () => {
-    renderReviewOverview();
+  it("reaches an honest not-connected representation for spend and leads", async () => {
+    await renderReviewOverview();
 
     for (const label of ["Ad spend", "New leads"]) {
       const metric = screen.getByRole("article", { name: label });
       expect(within(metric).getByText("Not connected", { selector: ".oalo-state-label" }));
       expect(metric.textContent).toContain(
-        "Not connected. Review surface has no live spend, leads, or CRM feed.",
+        "Not live yet. Connect Meta and HighLevel to see spend and leads here.",
       );
     }
   });
 
-  it("replaces the persona header and the verification claim in review mode", () => {
-    const { container } = renderReviewOverview();
+  it("replaces the persona header and the verification claim in review mode", async () => {
+    const { container } = await renderReviewOverview();
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Review dashboard (demo, not connected)",
-    );
-    expect(container.textContent).toContain("Demo workspace (not connected)");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Overview");
+    expect(container.textContent).toContain("your workspace");
+    expect(container.textContent).toContain("HighLevel, Meta, and Stripe aren't connected.");
     expect(container.textContent).toContain(
-      "Last system verification: none. The review surface performs no live verification.",
+      "Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do.",
     );
   });
 
-  it("shows honest empty regions instead of fixture operational state", () => {
-    renderReviewOverview();
+  it("shows honest empty regions instead of fixture operational state", async () => {
+    await renderReviewOverview();
 
     for (const title of [
-      "No attention items to show",
-      "No recorded activity to show",
-      "No campaigns in this location yet",
+      "Nothing needs your attention",
+      "Nothing to show yet",
+      "No campaigns yet",
     ]) {
       expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
     }
   });
 
-  it("labels the illustrative edge-state matrix as demo rather than tenant data", () => {
-    const { container } = renderReviewOverview();
+  it("labels the illustrative edge-state matrix as demo rather than tenant data", async () => {
+    const { container } = await renderReviewOverview();
     const label = container.querySelector("[data-demo-label='overview-edge-state-matrix']");
 
-    expect(label?.textContent).toContain("Illustrative demo states");
+    expect(label?.textContent).toContain("Examples only");
   });
 });

@@ -1,0 +1,198 @@
+/* Form field chrome shared by FormField, TextField, TextArea, and PasswordField.
+ * Governed by design brief sections 10, 11, 14, and 18.
+ */
+
+.field {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  font-family: var(--font-interface);
+}
+
+.labelRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  justify-content: space-between;
+}
+
+.label {
+  color: var(--tx-strong);
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-normal);
+}
+
+.requirement {
+  flex: none;
+  color: var(--tx-faint);
+  font-size: var(--text-caption-size);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-normal);
+}
+
+.description {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+.message {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+.error {
+  color: var(--st-critical-fg);
+}
+
+.messageGlyph {
+  flex: none;
+  align-self: flex-start;
+}
+
+.controlWrap {
+  position: relative;
+  display: flex;
+  min-inline-size: 0;
+}
+
+.control {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: var(--target-min-size);
+  padding-block: var(--space-2);
+  padding-inline: var(--space-3);
+  color: var(--tx-strong);
+  background: var(--sf-card);
+  border: 1px solid var(--bd-input);
+  border-radius: var(--radius-control);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-normal);
+  transition-duration: var(--motion-fast);
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-timing-function: var(--ease-standard);
+}
+
+.control[data-size="lg"] {
+  padding-block: var(--space-3);
+  padding-inline: var(--space-4);
+  font-size: var(--text-card-size);
+  border-radius: var(--radius-button);
+}
+
+.control[data-tone="data"] {
+  font-family: var(--font-data);
+}
+
+.control::placeholder {
+  color: var(--tx-faint);
+  opacity: 1;
+}
+
+.control:hover:not(:disabled):not([readonly]) {
+  border-color: var(--ac-primary);
+}
+
+.control:focus-visible {
+  border-color: var(--ac-primary);
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+
+/* Design brief section 18, and the one place the brief's rule needs a second selector to hold.
+ *
+ * A date, time, or datetime control is a group of sub-fields inside the browser's own shadow tree.
+ * `document.activeElement` is the input, but the element that actually holds focus is a sub-field,
+ * so the input matches neither `:focus` nor `:focus-visible`: it matches `:focus-within`. Measured
+ * by `tests/browser/design-quality.spec.ts` during the PRD-006d review, where the open-house date
+ * fields and the report date filters took focus with no ring at all, which left a person tabbing
+ * through the form unable to see where they were in the control that is hardest to operate blind.
+ *
+ * `:focus-within` is therefore the only selector that works, and it is also honest: these controls
+ * are never focused except deliberately, so there is no pointer-focus flash to avoid, which is the
+ * only thing `:focus-visible` buys. */
+.control:is(
+    [type="date"],
+    [type="datetime-local"],
+    [type="month"],
+    [type="time"],
+    [type="week"]
+  ):focus-within {
+  border-color: var(--ac-primary);
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+
+.control[aria-invalid="true"] {
+  border-color: var(--st-critical-fg);
+}
+
+.control[readonly] {
+  color: var(--tx-body);
+  background: var(--sf-sunken);
+}
+
+.control:disabled {
+  color: var(--tx-body);
+  background: var(--sf-sunken);
+  border-color: var(--bd-hairline);
+  cursor: not-allowed;
+}
+
+.textArea {
+  min-block-size: calc(var(--space-8) * 3);
+  padding-block: var(--space-3);
+  resize: vertical;
+}
+
+.withAffix {
+  padding-inline-end: var(--target-min-size);
+}
+
+.affix {
+  box-sizing: border-box;
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  inline-size: var(--target-min-size);
+  min-block-size: var(--target-min-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tx-body);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition-duration: var(--motion-fast);
+  transition-property: background-color, border-color, color;
+  transition-timing-function: var(--ease-standard);
+}
+
+.affix:hover:not(:disabled) {
+  color: var(--ac-primary);
+}
+
+.affix:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+
+.affix:disabled {
+  color: var(--tx-faint);
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .control,
+  .affix {
+    transition-duration: 0ms;
+  }
+}

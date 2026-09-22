@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createLocalSyntheticPrincipal } from "./authenticated-principal.js";
-import { OALO_REVIEW_SURFACE_AUTHORIZED } from "./authenticated-workspace-data.js";
+import {
+  createLocalSyntheticPrincipal,
+  UnauthenticatedPrincipalError,
+} from "./authenticated-principal.js";
+import {
+  AuthenticatedWorkspaceUnavailableError,
+  OALO_REVIEW_SURFACE_AUTHORIZED,
+} from "./authenticated-workspace-data.js";
 import {
   LOCAL_SYNTHETIC_ENV,
   OPEN_HOUSE_DRAFT_INPUT,
@@ -13,10 +19,19 @@ import {
   loadOverviewCampaigns,
   loadWorkspaceCampaign,
   loadWorkspaceCampaignsForRequest,
+  readWorkspaceCampaignForRequest,
+  readWorkspaceCampaignsForRequest,
 } from "./campaign-workspace-reads.js";
 import { compileOpenHouseDraft } from "./open-house-draft.js";
 
 const store = createTemporaryCampaignStore("oalo-workspace-reads-");
+
+/** A deployment `authenticatedWorkspaceMode` refuses to classify: not local, not preview, not review. */
+const UNCLASSIFIABLE_ENV = Object.freeze({
+  OALO_ENVIRONMENT: "staging",
+  OALO_PROVIDER_MODE: "stub",
+  OALO_SYNTHETIC_DATA_ONLY: "true",
+});
 
 afterEach(async () => {
   await store.restore();
@@ -61,22 +76,60 @@ describe("campaign workspace reads", () => {
     );
   });
 
-  it("returns an empty overview list when unauthenticated or the store is unavailable", async () => {
-    expect(await loadOverviewCampaigns(undefined, LOCAL_SYNTHETIC_ENV)).toEqual([]);
+  /**
+   * PRD-005a 005A-AC-010. An empty array is a claim about a tenant, so it may only be the answer to
+   * an authenticated read. An unauthenticated request reports itself as unauthenticated, and a
+   * store that cannot serve the read raises instead of looking like an empty workspace.
+   */
+  it("reports an unauthenticated read instead of an empty campaign list", async () => {
     const reviewEnv = {
       ...LOCAL_SYNTHETIC_ENV,
-      OALO_ENVIRONMENT: "production" as const,
+      OALO_ENVIRONMENT: "preview" as const,
       OALO_REVIEW_SURFACE: OALO_REVIEW_SURFACE_AUTHORIZED,
     };
-    expect(await loadOverviewCampaigns(createLocalSyntheticPrincipal(), reviewEnv)).toEqual([]);
-    expect(
-      await loadOverviewCampaigns(createLocalSyntheticPrincipal(), {
-        OALO_ENVIRONMENT: "staging",
-        OALO_PROVIDER_MODE: "stub",
-        OALO_SYNTHETIC_DATA_ONLY: "true",
-      }),
-    ).toEqual([]);
     const request = new Request("https://oalo.local/overview");
-    expect(await loadWorkspaceCampaignsForRequest(request, reviewEnv)).toEqual([]);
+
+    const read = await readWorkspaceCampaignsForRequest(request, reviewEnv);
+    expect(read.authenticated).toBe(false);
+    expect(read.campaigns).toEqual([]);
+
+    const detail = await readWorkspaceCampaignForRequest(
+      request,
+      "campaign_missingRef001",
+      reviewEnv,
+    );
+    expect(detail.authenticated).toBe(false);
+    expect(detail.campaign).toBeUndefined();
+
+    await expect(loadWorkspaceCampaignsForRequest(request, reviewEnv)).rejects.toBeInstanceOf(
+      UnauthenticatedPrincipalError,
+    );
+  });
+
+  it("surfaces an unavailable workspace rather than reporting no campaigns", async () => {
+    await expect(
+      loadOverviewCampaigns(createLocalSyntheticPrincipal(), UNCLASSIFIABLE_ENV),
+    ).rejects.toBeInstanceOf(AuthenticatedWorkspaceUnavailableError);
+  });
+
+  /**
+   * The same rule at the two entry points a page actually calls. A host whose workspace mode
+   * cannot be classified is a broken deployment, and the doc above `loadOverviewCampaigns` has
+   * always said so; these two functions used to disagree with it by catching the error and
+   * answering "not signed in", which sent an operator to a sign-in page to retype credentials
+   * that were never the problem and hid the misconfiguration behind ordinary product behaviour.
+   *
+   * Propagating still fails closed: the principal is never resolved, so no tenant row is read and
+   * none is rendered. The route error boundary is what the person sees.
+   */
+  it("propagates an unclassifiable workspace instead of rendering it as unauthenticated", async () => {
+    const request = new Request("https://oalo.local/overview");
+
+    await expect(
+      readWorkspaceCampaignsForRequest(request, UNCLASSIFIABLE_ENV),
+    ).rejects.toBeInstanceOf(AuthenticatedWorkspaceUnavailableError);
+    await expect(
+      readWorkspaceCampaignForRequest(request, "campaign_missingRef001", UNCLASSIFIABLE_ENV),
+    ).rejects.toBeInstanceOf(AuthenticatedWorkspaceUnavailableError);
   });
 });

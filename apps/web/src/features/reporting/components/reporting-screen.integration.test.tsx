@@ -6,27 +6,39 @@ import { loadSyntheticReporting } from "../model/synthetic-reporting.js";
 import { CampaignDetailScreen } from "./campaign-detail-screen.js";
 import { ReportsScreen } from "./reports-screen.js";
 
+// Under a loaded integration run this file's renders can exceed the 5s project default; give it
+// real headroom here rather than raising the default for every other suite.
+vi.setConfig({ testTimeout: 20000 });
+
 describe("synthetic reporting screens", () => {
   it("previews immutable artifact versions and stages a duplicate without changing history", async () => {
     const user = userEvent.setup();
     const reporting = loadSyntheticReporting();
     render(<CampaignDetailScreen reporting={reporting} />);
 
-    expect(screen.getByRole("link", { name: "Open approved public link" })).toHaveAttribute(
-      "href",
-      "/public/synthetic-open-house-v3",
-    );
-    expect(screen.getByText("Immutable history: 3 versions")).toBeInTheDocument();
+    /**
+     * PRD-006d 006D-AC-003 moved this onto `Link`, whose `external` form says so in the
+     * accessible name and opens with `noopener noreferrer`. The name a screen reader hears is
+     * therefore longer than the visible words, on purpose: a link that changes window without
+     * warning is the thing the announcement exists to prevent.
+     */
+    const approvedPageLink = screen.getByRole("link", {
+      name: "Open the approved page, opens in a new tab",
+    });
+    expect(approvedPageLink).toHaveAttribute("href", "/public/synthetic-open-house-v3");
+    expect(approvedPageLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(approvedPageLink).toHaveAttribute("target", "_blank");
+    expect(screen.getByText("3 versions, none of them edited after the fact")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Preview version 2" }));
+    await user.click(screen.getByRole("button", { name: "Version 2" }));
     expect(
       screen.getByRole("heading", { name: "Cedar Street open house, disclosure revision" }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Duplicate as new draft" }));
-    expect(screen.getByText("Local draft projection staged from version 2")).toBeInTheDocument();
-    expect(screen.getByText("Immutable history: 3 versions")).toBeInTheDocument();
-    const history = screen.getByRole("region", { name: "Campaign history" });
+    await user.click(screen.getByRole("button", { name: "Start a new draft from this" }));
+    expect(screen.getByText("New draft started from version 2")).toBeInTheDocument();
+    expect(screen.getByText("3 versions, none of them edited after the fact")).toBeInTheDocument();
+    const history = screen.getByRole("region", { name: "What changed, and when" });
     expect(within(history).getByRole("list").children).toHaveLength(3);
   });
 
@@ -43,12 +55,14 @@ describe("synthetic reporting screens", () => {
       "/synthetic-assets/open-house-story-v3.svg",
     );
     for (const creative of reporting.campaign.creatives) {
-      expect(
-        screen.getByRole("link", { name: `Download original ${creative.label}` }),
-      ).toHaveAttribute("href", creative.downloadHref);
-      expect(
-        screen.getByRole("link", { name: `Download original ${creative.label}` }),
-      ).toHaveAttribute("download", creative.downloadFileName);
+      expect(screen.getByRole("link", { name: `Download ${creative.label}` })).toHaveAttribute(
+        "href",
+        creative.downloadHref,
+      );
+      expect(screen.getByRole("link", { name: `Download ${creative.label}` })).toHaveAttribute(
+        "download",
+        creative.downloadFileName,
+      );
     }
   });
 
@@ -58,12 +72,14 @@ describe("synthetic reporting screens", () => {
     vi.stubGlobal("fetch", fetchSpy);
     render(<CampaignDetailScreen reporting={loadSyntheticReporting()} />);
 
-    expect(screen.getByText(/synthetic-location-prairie-home/u)).toBeInTheDocument();
+    // PRD-006b D2 and D8. The workspace id and the five account references are internal, so the
+    // screen no longer prints any of them; the name of the workspace is what a user needs.
+    expect(screen.queryByText(/synthetic-location-prairie-home/u)).not.toBeInTheDocument();
+    expect(screen.queryAllByText(/^synthetic-provider-/u)).toHaveLength(0);
     expect(screen.getByText("connected")).toBeInTheDocument();
-    expect(screen.getAllByText(/^synthetic-provider-/u)).toHaveLength(5);
 
     const approvalTable = screen.getByRole("table", {
-      name: "Exact approved versions for campaign version 3",
+      name: "What was approved in version 3",
     });
     expect(within(approvalTable).getAllByRole("row")).toHaveLength(11);
     for (const label of [
@@ -86,19 +102,17 @@ describe("synthetic reporting screens", () => {
     expect(screen.getByText("2026-07-25")).toBeInTheDocument();
     expect(screen.getByText("2026-07-27")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Confirm final launch summary" }));
+    await user.click(screen.getByRole("button", { name: "Confirm the launch summary" }));
     const confirmation = screen.getByRole("alertdialog", {
       name: "Confirm the exact synthetic launch summary",
     });
-    expect(
-      within(confirmation).getByText("Campaign synthetic-campaign-open-house-001, version 3"),
-    ).toBeInTheDocument();
-    await user.click(
-      within(confirmation).getByRole("button", { name: "Confirm exact local summary" }),
-    );
+    // PRD-006b D2 and D8. The campaign's reference is internal, so the scope names the version the
+    // user is looking at instead of printing an identifier in the middle of a sentence.
+    expect(within(confirmation).getByText("Version 3 of this campaign")).toBeInTheDocument();
+    await user.click(within(confirmation).getByRole("button", { name: "Yes, that is right" }));
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Final launch summary confirmed locally for campaign version 3. No provider write occurred.",
+      "You confirmed the launch summary. Nothing was launched.",
     );
     expect(fetchSpy).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
@@ -124,10 +138,10 @@ describe("synthetic reporting screens", () => {
     await user.selectOptions(screen.getByLabelText("Activity"), "Campaign review");
     await user.clear(screen.getByLabelText("Minutes"));
     await user.type(screen.getByLabelText("Minutes"), "25");
-    await user.click(screen.getByRole("button", { name: "Add local entry" }));
+    await user.click(screen.getByRole("button", { name: "Add entry" }));
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Campaign review: 25 minutes staged locally. No support record was saved.",
+      "Campaign review: 25 minutes. Nothing was saved.",
     );
     expect(fetchSpy).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
@@ -203,7 +217,7 @@ describe("synthetic reporting screens", () => {
     expect(document.querySelectorAll("[data-exception-kind]")).toHaveLength(8);
     expect(
       screen.getByText(
-        "Low-volume groups suppressed. Tenant identities omitted. Campaign mutation disabled.",
+        "Small groups are hidden. No workspace is named. Nothing here changes a campaign.",
       ),
     ).toBeInTheDocument();
 
@@ -232,7 +246,7 @@ describe("synthetic reporting screens", () => {
     render(<ReportsScreen reporting={loadSyntheticReporting()} />);
 
     const cohort = screen.getByRole("table", {
-      name: "Structured synthetic cohort state and evidence",
+      name: "Where the founding cohort stands",
     });
     expect(within(cohort).getByRole("row", { name: /Purchase completed/u })).toHaveTextContent(
       "Synthetic founding-cohort event projection",
@@ -251,13 +265,11 @@ describe("synthetic reporting screens", () => {
     expect(within(realtor).getByText(/GHL contacts, Borrower details/u)).toBeInTheDocument();
 
     await user.click(within(realtor).getByRole("button", { name: "Stage approved link share" }));
-    expect(
-      within(realtor).getByText(/Share audit staged locally for Public page v3/u),
-    ).toHaveTextContent("No external mutation occurred");
-    const auditItems = within(realtor).getAllByRole("listitem");
-    expect(auditItems.at(-1)).toHaveTextContent(
-      /Share, staged locally, Synthetic Realtor sharing control/u,
+    expect(within(realtor).getByText(/Share recorded for Public page v3/u)).toHaveTextContent(
+      "Nothing was sent anywhere",
     );
+    const auditItems = within(realtor).getAllByRole("listitem");
+    expect(auditItems.at(-1)).toHaveTextContent(/Share, staged locally, Realtor sharing control/u);
     expect(fetchSpy).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });

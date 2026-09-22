@@ -7,15 +7,15 @@ export function ProjectedSafeAction({ label }: Readonly<{ label: string }>) {
     <SafeAction
       decision={{
         state: "blocked",
-        explanation: "This synthetic evidence route cannot perform consequential actions.",
-        requiredRole: "Authorized production role and verified runtime",
-        prerequisite: "A separately authorized production provider path",
-        responsibleParty: "Platform Owner",
-        nextAction: "Review the synthetic projection only.",
+        explanation: "This isn't available yet. Nothing here can spend, publish, or send.",
+        requiredRole: "Nobody yet",
+        prerequisite: "HighLevel, Meta, and Stripe connected to your workspace",
+        responsibleParty: "Automated LO",
+        nextAction: "Connect your accounts when you're ready.",
       }}
       label={label}
       onConfirm={() => {
-        throw new Error("Synthetic write guard prevented an unavailable action.");
+        throw new Error("A blocked action was confirmed; nothing may run from this control.");
       }}
     />
   );

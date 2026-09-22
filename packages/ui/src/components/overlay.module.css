@@ -1,0 +1,175 @@
+/* Dialog and Sheet. Governed by design brief sections 8, 11, 12, 14, and 18. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: var(--sf-overlay);
+}
+
+.panel {
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--space-4);
+  inline-size: min(100%, 44rem);
+  max-block-size: calc(100vh - var(--space-8));
+  padding: var(--space-6);
+  overflow-y: auto;
+  color: var(--tx-strong);
+  background: var(--sf-card);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-raised);
+  font-family: var(--font-interface);
+  transition-duration: var(--motion-slow);
+  transition-property: opacity;
+  transition-timing-function: var(--ease-standard);
+}
+
+.panel[data-panel-size="sm"] {
+  inline-size: min(100%, 28rem);
+}
+
+/* Design brief section 14 and `03-components/sheet-and-dialog.md`. The drawer
+ * placement: the same modal layer, filling the block axis against the
+ * inline-start edge rather than floating as a centred card. The application
+ * shell's navigation drawer is the only surface that asks for it, and it asks
+ * because PRD-006d D4 line 88 makes `Dialog` the owner of its focus contract.
+ */
+.overlay[data-dialog-placement="inline-start"] {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  color: var(--tx-strong);
+  font-size: var(--text-section-size);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+}
+
+.description {
+  margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-body-size);
+  line-height: var(--leading-normal);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* PRD-006c D7, "the footer stays visible", and rubric axis 7, "a sticky surface
+ * never covers a field, an error, or a focus ring".
+ *
+ * A sheet is capped in the block axis and scrolls inside itself, so a panel with
+ * more content than cap scrolled its own footer out of sight and the walkthrough's
+ * Continue control was below the fold at the desktop frame. The footer is the last
+ * row of that scroll box, so pinning it to the box's end keeps it on screen while
+ * everything above it scrolls behind. It carries the panel's own surface, so the
+ * body never shows through it, and the space above it separates the two.
+ */
+.sheet .footer {
+  position: sticky;
+  inset-block-end: 0;
+  padding-block-start: var(--space-3);
+  background: var(--sf-card);
+}
+
+/* Sheet: a non-modal panel anchored beside the control that opened it. */
+.sheet {
+  position: absolute;
+  z-index: 30;
+  inline-size: min(100vw - var(--space-8), 24rem);
+  max-block-size: min(32rem, 70vh);
+  padding: var(--space-5);
+  overflow-y: auto;
+  /* WCAG 2.2 SC 2.4.11 and PRD-006d 006D-AC-009. The sticky footer below keeps
+   * itself on screen; this keeps it off everything else.
+   *
+   * Tab to a control in the panel's body that is past the end of this box and
+   * the browser scrolls it into view at the nearest edge, which is the end,
+   * which is exactly where the footer is pinned. Measured on 2026-09-20 by
+   * `expectTheRingOnThePanelsOwnControls` at Light 1180x900, guided setup step
+   * 2 "Your details": the NMLS field's 44px box at y 805 sat entirely under the
+   * footer's 56px box at y 799, ring and all, so a person tabbing into it saw
+   * nothing move. `scroll-padding-block-end` is the scroll box's own answer to
+   * that: it tells the browser the last stretch of the box is spoken for, and a
+   * scroll into view stops above it instead of behind it.
+   *
+   * The value is the footer's own two ingredients, a control row and the space
+   * above it, and one control row more, because `.footer` is `flex-wrap: wrap`
+   * and a footer whose controls have wrapped is twice as tall. Scrolling a
+   * little further than needed costs a person nothing; stopping short costs
+   * them the field. */
+  scroll-padding-block-end: calc(var(--target-min-size) * 2 + var(--space-3));
+  border-radius: var(--radius-panel);
+}
+
+.sheet[data-anchor="inline-end"] {
+  inset-block-start: 0;
+  inset-inline-start: 100%;
+  margin-inline-start: var(--space-3);
+}
+
+.sheet[data-anchor="block-end"] {
+  inset-block-start: 100%;
+  inset-inline-start: 0;
+  margin-block-start: var(--space-3);
+}
+
+.sheetAnchor {
+  position: relative;
+  display: inline-block;
+}
+
+/* Design brief section 14: the sheet becomes a bottom sheet on mobile and the
+ * sticky surface never covers a field, an error, or the safe-area inset.
+ *
+ * The boundary is 767.98px, not 768px. 768 is the tablet frame the brief names
+ * in section 14, and `model/panel-placement.ts`'s `SIDE_ANCHOR_MIN_WIDTH` treats
+ * it as wide (`viewport.width < 768` is the mobile branch). At exactly 768 a
+ * `max-width: 768px` rule made this a bottom sheet while the model anchored the
+ * panel beside the element, so the two disagreed on the one frame the rubric
+ * scores tablet at. `app-shell.module.css` already draws its mobile boundary at
+ * 767.98px for the same reason.
+ */
+@media (max-width: 767.98px) {
+  .sheet {
+    position: fixed;
+    inset: auto 0 0;
+    inline-size: 100%;
+    max-block-size: 80vh;
+    margin: 0;
+    padding-block-end: calc(var(--space-5) + env(safe-area-inset-bottom));
+    border-end-end-radius: 0;
+    border-end-start-radius: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transition-duration: 0ms;
+  }
+}

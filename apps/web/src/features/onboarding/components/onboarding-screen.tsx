@@ -1,4 +1,4 @@
-import { Card, Icon, OnboardingChecklist, type OnboardingChecklistItemModel } from "@oalo/ui";
+import { Card, Icon, Link, OnboardingChecklist, type OnboardingChecklistItemModel } from "@oalo/ui";
 
 import type {
   DeepReadonly,
@@ -6,6 +6,10 @@ import type {
   OnboardingItem,
   SyntheticSession,
 } from "../../ui-foundation/model/synthetic-ui.js";
+import {
+  GUIDED_SETUP_ANCHORS,
+  onboardingChecklistAnchor,
+} from "../../guided-setup/anchor-registry.js";
 import { isLaunchReadinessLocked } from "../model/readiness.js";
 import { OnboardingGuidance } from "./onboarding-guidance.js";
 import styles from "./onboarding.module.css";
@@ -26,78 +30,67 @@ export function OnboardingScreen({ onboarding, session }: OnboardingScreenProps)
     <div className={styles.onboarding}>
       <header className={styles.pageHeader}>
         <div>
-          <p className={styles.eyebrow}>Self-onboarding command center</p>
-          <h1>Connect and verify {session.location.displayName}</h1>
-          <p>
-            Progress is a read-only server-shaped projection for {session.user.displayName} (
-            {session.user.roleLabel}).
-          </p>
+          <p className={styles.eyebrow}>Setup</p>
+          <h1>Get {session.location.displayName} ready</h1>
+          <p>Here&apos;s what&apos;s connected and what&apos;s left.</p>
         </div>
         <span className={styles.readinessStatus}>
           <Icon decorative name="alert-triangle" size="sm" tone="warning" />
-          Attention Required
+          Still to do
         </span>
       </header>
-
-      <p className={styles.sessionMode} data-session-mode={session.accessMode}>
-        <Icon decorative name="lock" size="sm" tone="info" />
-        {session.accessMode === "embedded"
-          ? "Embedded HighLevel session projection"
-          : "Authenticated first-party fallback projection"}
-      </p>
 
       <Card className={styles.safetyNotice} padding="md">
         <Icon decorative name="lock" size="sm" tone="info" />
         <div>
-          <strong>Read-only synthetic readiness evidence</strong>
+          <strong>We only mark a step done after we&apos;ve checked it.</strong>
           <p>{onboarding.safety.disclosure}</p>
-          <p>
-            Dismissing guidance cannot complete an item. The browser cannot record approval,
-            readiness, publication, provider access, or customer data.
-          </p>
+          <p>Closing a tip doesn&apos;t finish a step, and nothing here publishes or sends.</p>
         </div>
       </Card>
 
       <OnboardingGuidance guidance={onboarding.guidance} />
 
       <OnboardingChecklist
-        data-tour="onboarding-get-connected"
-        description="Complete these five outcomes with current server-verified evidence."
+        data-tour={GUIDED_SETUP_ANCHORS.onboardingGetConnected}
+        description="Five things to connect"
         items={getConnected}
-        title="Get Connected"
+        title="Connect your accounts"
       />
 
       <OnboardingChecklist
-        data-tour="onboarding-launch-readiness"
+        data-tour={GUIDED_SETUP_ANCHORS.onboardingLaunchReadiness}
         description={
           launchReadinessLocked
-            ? "Locked until every Get Connected outcome has current complete evidence."
-            : "Complete these four server-verified readiness outcomes."
+            ? "Locked until everything above is connected"
+            : "Four things to confirm before you launch"
         }
         items={launchReadiness}
         locked={launchReadinessLocked}
-        title="Launch Readiness"
+        title="Ready to launch"
       />
 
       <section aria-labelledby="readiness-evidence-title" className={styles.evidenceSummary}>
-        <h2 id="readiness-evidence-title">Readiness evidence policy</h2>
+        <h2 id="readiness-evidence-title">How we decide a step is done</h2>
         <div className={styles.policyGrid}>
           <Card padding="sm">
-            <strong>Verification</strong>
+            <strong>We check, then we tick</strong>
             <p>
-              Completion includes verifier version, verification time, safe evidence, and permitted
-              synthetic provider references.
+              A step is only done once we&apos;ve checked it for real, and we tell you when we
+              checked.
             </p>
           </Card>
           <Card padding="sm">
-            <strong>Invalidation</strong>
-            <p>A dependency change can move complete evidence to stale and revoke readiness.</p>
+            <strong>Things can come undone</strong>
+            <p>
+              If something you connected changes, a step can go back to needing a look. We&apos;ll
+              say so.
+            </p>
           </Card>
           <Card padding="sm">
-            <strong>Authority</strong>
+            <strong>Nothing finishes itself</strong>
             <p>
-              Only validated provider reads, saved configuration, and safe test results can complete
-              a step.
+              Only a real connection, something you saved, or a check that passed can finish a step.
             </p>
           </Card>
         </div>
@@ -114,19 +107,19 @@ function projectChecklistItem(
     <div className={styles.itemDescription}>
       <p>{item.description}</p>
       <p>
-        <strong>Evidence freshness:</strong> {item.freshness}
+        <strong>Checked on:</strong> {item.freshness}
       </p>
     </div>
   );
   const action = (
-    <a
-      className="oalo-action-link"
-      data-tour={`onboarding-${item.id}`}
+    <Link
+      data-tour={onboardingChecklistAnchor(item.id)}
       href={item.completionHref}
       tabIndex={locked ? -1 : undefined}
+      variant="action"
     >
-      {item.state === "complete" ? "Review completion evidence" : "Open completion surface"}
-    </a>
+      {item.state === "complete" ? "See what we checked" : "Open this step"}
+    </Link>
   );
 
   if (item.state === "complete") {

@@ -4,6 +4,8 @@ import {
   type ReviewNotConnectedRegion,
 } from "../../../../../features/shell/components/review-not-connected-screen.js";
 import { loadAuthenticatedWorkspace } from "../../../../../server/authenticated-workspace-data.js";
+import { canRenderDashboardPreview } from "../../../../../server/dashboard-preview.js";
+import { ExampleCampaign } from "../../../../../features/dashboard-preview/example-campaign.js";
 
 /**
  * The synthetic campaign detail renders the reporting fixture: a Meta connection reported as
@@ -25,6 +27,7 @@ const REVIEW_CAMPAIGN_REGION_SOURCE =
   "HighLevel and Meta aren't connected, so there's no campaign, no ad, and no approval to show.";
 
 export default function SyntheticCampaignPage() {
+  if (canRenderDashboardPreview()) return <ExampleCampaign />;
   const workspace = loadAuthenticatedWorkspace();
 
   if (workspace.mode === "review") {

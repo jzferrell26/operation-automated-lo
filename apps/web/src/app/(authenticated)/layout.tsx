@@ -28,11 +28,9 @@ import {
   resolveRuntimeShellSession,
 } from "../../server/runtime-authentication.js";
 import { readSetupPreferencesForRequest } from "../../server/setup-preferences.js";
-import {
-  canRenderDashboardPreview,
-  dashboardPreviewShell,
-} from "../../server/dashboard-preview.js";
+import { canRenderDashboardPreview } from "../../server/dashboard-preview.js";
 import { DashboardPreviewProvider } from "../../features/dashboard-preview/preview-provider.js";
+import { ProductShell } from "../../features/dashboard-preview/product-shell.js";
 
 export const dynamic = "force-dynamic";
 
@@ -92,22 +90,9 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
   const workspace = loadAuthenticatedWorkspace();
 
   if (canRenderDashboardPreview()) {
-    const preview = dashboardPreviewShell();
     return (
       <DashboardPreviewProvider>
-        <AppShell
-          navigation={projectNavigationForSession(preview.navigation, preview.session)}
-          session={preview.session}
-          workspaceMode="synthetic"
-          dashboardPreview
-          accountControls={
-            <Link href="/onboarding" variant="action">
-              Quick start
-            </Link>
-          }
-        >
-          {children}
-        </AppShell>
+        <ProductShell>{children}</ProductShell>
       </DashboardPreviewProvider>
     );
   }

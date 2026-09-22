@@ -1,0 +1,56 @@
+/* AutomatedLO product tokens, governed by ux-ui/04-screens/dashboard-preview.md. */
+[data-product-shell="true"] {
+  --text-page-size: 1.75rem;
+  --text-section-size: 1.0625rem;
+  --text-card-size: 0.9375rem;
+  --text-body-size: 0.875rem;
+  --text-secondary-size: 0.75rem;
+  --text-caption-size: 0.6875rem;
+  --weight-semibold: 600;
+  --ac-primary: #2856d9;
+  --ac-primary-hover: #2148b5;
+  --ac-primary-active: #1b3b94;
+  --product-nav: #0d172b;
+  --product-nav-hover: #1b2b46;
+  --product-nav-active: #243d63;
+  --product-on-nav: #f4f7fd;
+  --product-nav-muted: #b0bfd6;
+  --product-nav-border: #30415d;
+  --product-feature: #122445;
+  --product-feature-end: #1c3961;
+  --product-feature-accent: #96cfff;
+  --product-chart-1: #315edb;
+  --product-chart-2: #577ade;
+  --product-chart-3: #15806e;
+  --product-chart-4: #805bb5;
+  --product-chart-5: #a27013;
+  --product-selected-bg: #ebf1ff;
+  --product-selected-text: #214cae;
+  --product-tile: #e8eefb;
+  --product-tile-fg: #2c56b5;
+  --product-grid: #e5eaf3;
+  --product-large-radius: 1.25rem;
+}
+[data-theme="dark"] [data-product-shell="true"] {
+  --sf-canvas: #101827;
+  --sf-card: #172234;
+  --sf-sunken: #1d2b40;
+  --tx-strong: #f0f4fb;
+  --tx-body: #becadd;
+  --tx-faint: #a9b9d0;
+  --bd-hairline: #304057;
+  --bd-input: #445771;
+  --ac-primary: #3e67dd;
+  --ac-primary-hover: #3559c0;
+  --ac-primary-active: #2c4ca7;
+  --product-chart-1: #8caeff;
+  --product-chart-2: #a7bcfa;
+  --product-chart-3: #64cbb4;
+  --product-chart-4: #bf9bec;
+  --product-chart-5: #e5bd6c;
+  --product-selected-bg: #223b62;
+  --product-selected-text: #c6d9ff;
+  --product-tile: #263c5e;
+  --product-tile-fg: #afcbff;
+  --product-grid: #304057;
+}

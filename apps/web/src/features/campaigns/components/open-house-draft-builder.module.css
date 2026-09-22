@@ -157,3 +157,184 @@
   gap: var(--space-2);
   justify-items: start;
 }
+
+/* Product demo presentation; authenticated review keeps its established layout. */
+.productBuilder {
+  max-inline-size: none;
+  gap: var(--space-6);
+}
+.productBuilder .header h1 {
+  font-size: 28px;
+  letter-spacing: -0.035em;
+}
+.productBuilder .header p {
+  font-size: 13px;
+}
+.builderTools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  background: var(--sf-card);
+  flex-wrap: wrap;
+}
+.builderTools nav {
+  display: flex;
+  gap: var(--space-5);
+}
+.builderTools nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--tx-body);
+  font-size: 12px;
+  text-decoration: none;
+}
+.builderTools nav a span {
+  color: var(--st-info-fg);
+  font-size: 10px;
+  font-family: var(--font-data);
+}
+.builderLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: var(--space-6);
+  align-items: start;
+}
+.productBuilder .fieldset {
+  padding: var(--space-6);
+  border-radius: var(--radius-card);
+  scroll-margin-block-start: 100px;
+}
+.productBuilder .form legend {
+  font-size: 14px;
+  color: var(--tx-strong);
+  font-weight: 650;
+}
+.productBuilder .form p {
+  font-size: 12px;
+}
+.productBuilder .form input,
+.productBuilder .form textarea {
+  font-size: 13px;
+}
+.productBuilder .form > button {
+  justify-self: start;
+}
+.campaignPreview {
+  display: grid;
+  gap: var(--space-4);
+  position: sticky;
+  top: 96px;
+}
+.previewCard {
+  overflow: hidden;
+}
+.previewTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--tx-faint);
+}
+.previewProperty {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background: linear-gradient(145deg, var(--product-feature), var(--product-feature-end));
+  color: var(--product-on-nav);
+}
+.previewProperty > svg {
+  inline-size: 52px;
+  block-size: 52px;
+  color: var(--product-feature-accent);
+}
+.previewProperty > span {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--product-feature-accent);
+}
+.previewProperty h2 {
+  margin: 0;
+  font-size: 25px;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.productBuilder .previewProperty p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--product-nav-muted);
+}
+.previewDetails {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5);
+}
+.previewDetails > strong {
+  font-size: 14px;
+}
+.previewDetails p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--tx-faint);
+}
+.previewDetails > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  border-block: 1px solid var(--bd-hairline);
+  font-size: 12px;
+  margin-block: var(--space-2);
+}
+.previewDetails > small {
+  color: var(--tx-faint);
+  font-size: 10px;
+}
+.previewNote {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+.previewNote > svg {
+  flex: none;
+  color: var(--st-info-fg);
+}
+.previewNote strong {
+  font-size: 12px;
+}
+.previewNote p {
+  margin: var(--space-1) 0 0;
+  font-size: 11px;
+  color: var(--tx-faint);
+  line-height: 1.65;
+}
+@media (max-width: 1100px) {
+  .builderLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .campaignPreview {
+    position: static;
+    max-inline-size: 500px;
+  }
+}
+@media (max-width: 767.98px) {
+  .productBuilder .header h1 {
+    font-size: 25px;
+  }
+  .productBuilder .fieldset {
+    padding: var(--space-4);
+  }
+  .builderTools nav {
+    gap: var(--space-3);
+  }
+  .builderTools button {
+    width: 100%;
+  }
+}

@@ -96,6 +96,12 @@ export function OpenHouseDraftBuilder({
   const formRef = useRef<HTMLFormElement | null>(null);
   const resultRef = useRef<HTMLElement | null>(null);
   const [previewSaveFailed, setPreviewSaveFailed] = useState(false);
+  const [livePreview, setLivePreview] = useState({
+    headline: "A place for your next chapter.",
+    address: "Your property address",
+    partner: "Your Realtor partner",
+    budget: "25",
+  });
   /**
    * `null` means nothing has gone wrong. Anything else is the refusal the route answered with: the
    * code to turn into sentences, and the reference to show when there is no sentence for it.
@@ -275,41 +281,66 @@ export function OpenHouseDraftBuilder({
     setResult(null);
     setFieldErrors({});
     setRefusal(null);
+    setLivePreview({
+      headline: values.headline ?? "",
+      address: values.address ?? "",
+      partner: values.realtorDisplayName ?? "",
+      budget: values.dailyBudgetDollars ?? "25",
+    });
   }
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${dashboardPreview ? styles.productBuilder : ""}`}>
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Open House Boost</p>
-          <h1>Create an Open House Boost</h1>
+          <h1>
+            {dashboardPreview ? "Create your next opportunity." : "Create an Open House Boost"}
+          </h1>
           <p>
-            Tell us about the open house. We&apos;ll check it against the rules before anyone
-            approves it.
+            {dashboardPreview
+              ? "Start with the property. Make the story yours. Give buyers a reason to connect."
+              : "Tell us about the open house. We'll check it against the rules before anyone approves it."}
           </p>
         </div>
       </header>
 
-      <Card className={styles.notice} padding="md">
-        <Icon decorative name="lock" size="sm" tone="info" />
-        <div>
-          <strong>Nothing goes out from this page</strong>
-          <p>
-            {dashboardPreview
-              ? "Test drafts are saved in this browser after the checks run. Use sample details. Nothing is published or sent."
-              : "This is saved to your workspace. It doesn't publish, spend, or send anything."}
-          </p>
-        </div>
-      </Card>
+      {!dashboardPreview ? (
+        <Card className={styles.notice} padding="md">
+          <Icon decorative name="lock" size="sm" tone="info" />
+          <div>
+            <strong>Nothing goes out from this page</strong>
+            <p>
+              {dashboardPreview
+                ? "Test drafts are saved in this browser after the checks run. Use sample details. Nothing is published or sent."
+                : "This is saved to your workspace. It doesn't publish, spend, or send anything."}
+            </p>
+          </div>
+        </Card>
+      ) : null}
 
       {dashboardPreview ? (
-        <Button
-          variant="outline"
-          disabled={!dashboardPreview.ready || submitting}
-          onClick={fillSampleProperty}
-        >
-          Fill with a sample property
-        </Button>
+        <div className={styles.builderTools}>
+          <nav aria-label="Campaign steps">
+            {[
+              ["01", "Property", "campaign-property"],
+              ["02", "Content", "campaign-content"],
+              ["03", "Budget", "campaign-budget"],
+            ].map(([number, label, id]) => (
+              <Link key={id} href={`#${id}`}>
+                <span>{number}</span>
+                {label}
+              </Link>
+            ))}
+          </nav>
+          <Button
+            variant="outline"
+            disabled={!dashboardPreview.ready || submitting}
+            onClick={fillSampleProperty}
+          >
+            <Icon name="sparkles" decorative size="sm" /> Use example property
+          </Button>
+        </div>
       ) : null}
       {previewSaveFailed ? (
         <LiveRegion
@@ -318,8 +349,26 @@ export function OpenHouseDraftBuilder({
           message="This draft was not saved. Check browser storage or reset the preview in Settings, then try again."
         />
       ) : null}
-      <form className={styles.form} onSubmit={handleSubmit} ref={formRef}>
-        {/*
+      <div className={dashboardPreview ? styles.builderLayout : undefined}>
+        <form
+          className={styles.form}
+          onSubmit={handleSubmit}
+          ref={formRef}
+          onInput={
+            dashboardPreview
+              ? (event) => {
+                  const form = new FormData(event.currentTarget);
+                  setLivePreview({
+                    headline: String(form.get("headline") || "A place for your next chapter."),
+                    address: String(form.get("address") || "Your property address"),
+                    partner: String(form.get("realtorDisplayName") || "Your Realtor partner"),
+                    budget: String(form.get("dailyBudgetDollars") || "25"),
+                  });
+                }
+              : undefined
+          }
+        >
+          {/*
           PRD-006d 006D-AC-011 and rubric axis 9. A failed save says what happened and what to do
           next, above the first field, through the product's announcer.
 
@@ -333,182 +382,232 @@ export function OpenHouseDraftBuilder({
           this screen states no rule of its own for it. The support reference stays inside the
           collapsed region, so no code reaches a status line (PRD-006b D7).
         */}
-        {refusal === null ? null : (
-          <LiveRegion
-            ref={problemRef}
-            message={
-              <>
-                <strong>We couldn&apos;t save this yet</strong>
-                <span>{userMessageSentence(refusal.code)}</span>
-                <SupportReference refusal={refusal} />
-              </>
-            }
-            tabIndex={-1}
-            urgency="alert"
-            visible
-          />
-        )}
-        <fieldset className={styles.fieldset}>
-          <legend>The property and the open house</legend>
-          <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateAddress}>
-            <TextField
-              defaultValue=""
-              label="Property address"
-              error={fieldErrors["address"]}
-              name="address"
-              placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.address}
-              requirement="required"
+          {refusal === null ? null : (
+            <LiveRegion
+              ref={problemRef}
+              message={
+                <>
+                  <strong>We couldn&apos;t save this yet</strong>
+                  <span>{userMessageSentence(refusal.code)}</span>
+                  <SupportReference refusal={refusal} />
+                </>
+              }
+              tabIndex={-1}
+              urgency="alert"
+              visible
             />
-            <TextField
-              defaultValue=""
-              label="State"
-              maxLength={2}
-              error={fieldErrors["stateCode"]}
-              name="stateCode"
-              placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.stateCode}
-              requirement="required"
-            />
-            <TextArea
-              defaultValue=""
-              label="Property description"
-              error={fieldErrors["propertyDescription"]}
-              name="propertyDescription"
-              placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.propertyDescription}
-              requirement="required"
-            />
-          </div>
-          <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateDates}>
-            <TextField
-              label="Open house starts"
-              error={fieldErrors["openHouseStartsAt"]}
-              name="openHouseStartsAt"
-              requirement="required"
-              tone="data"
-              type="datetime-local"
-            />
-            <TextField
-              label="Open house ends"
-              error={fieldErrors["openHouseEndsAt"]}
-              name="openHouseEndsAt"
-              requirement="required"
-              tone="data"
-              type="datetime-local"
-            />
-          </div>
-          <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateRealtor}>
-            <TextField
-              defaultValue={prefill.realtorDisplayName}
-              label="Realtor name"
-              error={fieldErrors["realtorDisplayName"]}
-              name="realtorDisplayName"
-              placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.realtorDisplayName}
-              requirement="required"
-            />
-          </div>
-          <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreatePermissions}>
-            <label className={styles.check}>
-              <input name="propertyPermissionConfirmed" type="checkbox" />
-              <span>I have permission to market this property.</span>
-            </label>
-            <label className={styles.check}>
-              <input name="realtorPermissionConfirmed" type="checkbox" />
-              <span>I have permission to use the Realtor&apos;s materials.</span>
-            </label>
-          </div>
-        </fieldset>
+          )}
+          <fieldset className={styles.fieldset} id="campaign-property">
+            <legend>The property and the open house</legend>
+            <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateAddress}>
+              <TextField
+                defaultValue=""
+                label="Property address"
+                error={fieldErrors["address"]}
+                name="address"
+                placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.address}
+                requirement="required"
+              />
+              <TextField
+                defaultValue=""
+                label="State"
+                maxLength={2}
+                error={fieldErrors["stateCode"]}
+                name="stateCode"
+                placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.stateCode}
+                requirement="required"
+              />
+              <TextArea
+                defaultValue=""
+                label="Property description"
+                error={fieldErrors["propertyDescription"]}
+                name="propertyDescription"
+                placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.propertyDescription}
+                requirement="required"
+              />
+            </div>
+            <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateDates}>
+              <TextField
+                label="Open house starts"
+                error={fieldErrors["openHouseStartsAt"]}
+                name="openHouseStartsAt"
+                requirement="required"
+                tone="data"
+                type="datetime-local"
+              />
+              <TextField
+                label="Open house ends"
+                error={fieldErrors["openHouseEndsAt"]}
+                name="openHouseEndsAt"
+                requirement="required"
+                tone="data"
+                type="datetime-local"
+              />
+            </div>
+            <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateRealtor}>
+              <TextField
+                defaultValue={prefill.realtorDisplayName}
+                label="Realtor name"
+                error={fieldErrors["realtorDisplayName"]}
+                name="realtorDisplayName"
+                placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.realtorDisplayName}
+                requirement="required"
+              />
+            </div>
+            <div
+              className={styles.group}
+              data-tour={GUIDED_SETUP_ANCHORS.campaignCreatePermissions}
+            >
+              <label className={styles.check}>
+                <input name="propertyPermissionConfirmed" type="checkbox" />
+                <span>I have permission to market this property.</span>
+              </label>
+              <label className={styles.check}>
+                <input name="realtorPermissionConfirmed" type="checkbox" />
+                <span>I have permission to use the Realtor&apos;s materials.</span>
+              </label>
+            </div>
+          </fieldset>
 
-        <fieldset
-          className={styles.fieldset}
-          data-tour={GUIDED_SETUP_ANCHORS.campaignCreateHeadline}
-        >
-          <legend>What the ad says</legend>
-          <p className={styles.hint}>{GUIDED_SETUP_STEPS.createCampaign.starterTextNote}</p>
-          <div className={styles.group}>
-            <TextField
-              defaultValue={prefill.headline}
-              label="Headline"
-              error={fieldErrors["headline"]}
-              name="headline"
-              requirement="required"
-            />
-            <TextArea
-              defaultValue={prefill.body}
-              label="Body"
-              error={fieldErrors["body"]}
-              name="body"
-              requirement="required"
-            />
-            <TextField
-              defaultValue={prefill.callToAction}
-              label="Call to action"
-              error={fieldErrors["callToAction"]}
-              name="callToAction"
-              requirement="required"
-            />
-            <TextArea
-              defaultValue={prefill.disclosureText}
-              label="Disclosure"
-              error={fieldErrors["disclosureText"]}
-              name="disclosureText"
-              requirement="required"
-            />
-            <TextArea
-              defaultValue={prefill.consentText}
-              label="Lead consent"
-              error={fieldErrors["consentText"]}
-              name="consentText"
-              requirement="required"
-            />
-          </div>
-        </fieldset>
+          <fieldset
+            className={styles.fieldset}
+            id="campaign-content"
+            data-tour={GUIDED_SETUP_ANCHORS.campaignCreateHeadline}
+          >
+            <legend>What the ad says</legend>
+            <p className={styles.hint}>{GUIDED_SETUP_STEPS.createCampaign.starterTextNote}</p>
+            <div className={styles.group}>
+              <TextField
+                defaultValue={prefill.headline}
+                label="Headline"
+                error={fieldErrors["headline"]}
+                name="headline"
+                requirement="required"
+              />
+              <TextArea
+                defaultValue={prefill.body}
+                label="Body"
+                error={fieldErrors["body"]}
+                name="body"
+                requirement="required"
+              />
+              <TextField
+                defaultValue={prefill.callToAction}
+                label="Call to action"
+                error={fieldErrors["callToAction"]}
+                name="callToAction"
+                requirement="required"
+              />
+              <TextArea
+                defaultValue={prefill.disclosureText}
+                label="Disclosure"
+                error={fieldErrors["disclosureText"]}
+                name="disclosureText"
+                requirement="required"
+              />
+              <TextArea
+                defaultValue={prefill.consentText}
+                label="Lead consent"
+                error={fieldErrors["consentText"]}
+                name="consentText"
+                requirement="required"
+              />
+            </div>
+          </fieldset>
 
-        <fieldset className={styles.fieldset} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateBudget}>
-          <legend>Budget and area</legend>
-          <div className={styles.group}>
-            <TextField
-              defaultValue={prefill.region}
-              label="Where the ad runs"
-              error={fieldErrors["region"]}
-              name="region"
-              placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.region}
-              requirement="required"
-            />
-            <TextField
-              defaultValue={prefill.dailyBudgetDollars}
-              label="Daily budget ($)"
-              min="5"
-              error={fieldErrors["dailyBudgetDollars"]}
-              name="dailyBudgetDollars"
-              requirement="required"
-              step="1"
-              tone="data"
-              type="number"
-            />
-            <TextField
-              defaultValue={prefill.totalBudgetDollars}
-              label="Total budget ($)"
-              min="5"
-              error={fieldErrors["totalBudgetDollars"]}
-              name="totalBudgetDollars"
-              requirement="required"
-              step="1"
-              tone="data"
-              type="number"
-            />
-          </div>
-          <p className={styles.hint}>
-            Housing ads have their own rules. We apply them for you, every time.
-          </p>
-        </fieldset>
+          <fieldset
+            className={styles.fieldset}
+            id="campaign-budget"
+            data-tour={GUIDED_SETUP_ANCHORS.campaignCreateBudget}
+          >
+            <legend>Budget and area</legend>
+            <div className={styles.group}>
+              <TextField
+                defaultValue={prefill.region}
+                label="Where the ad runs"
+                error={fieldErrors["region"]}
+                name="region"
+                placeholder={CAMPAIGN_FIELD_PLACEHOLDERS.region}
+                requirement="required"
+              />
+              <TextField
+                defaultValue={prefill.dailyBudgetDollars}
+                label="Daily budget ($)"
+                min="5"
+                error={fieldErrors["dailyBudgetDollars"]}
+                name="dailyBudgetDollars"
+                requirement="required"
+                step="1"
+                tone="data"
+                type="number"
+              />
+              <TextField
+                defaultValue={prefill.totalBudgetDollars}
+                label="Total budget ($)"
+                min="5"
+                error={fieldErrors["totalBudgetDollars"]}
+                name="totalBudgetDollars"
+                requirement="required"
+                step="1"
+                tone="data"
+                type="number"
+              />
+            </div>
+            <p className={styles.hint}>
+              Housing ads have their own rules. We apply them for you, every time.
+            </p>
+          </fieldset>
 
-        <Button
-          data-tour={GUIDED_SETUP_ANCHORS.campaignCreateSubmit}
-          disabled={submitting || (dashboardPreview !== null && !dashboardPreview.ready)}
-          type="submit"
-        >
-          {submitting ? "Running the checks" : "Save and run the checks"}
-        </Button>
-      </form>
+          <Button
+            data-tour={GUIDED_SETUP_ANCHORS.campaignCreateSubmit}
+            disabled={submitting || (dashboardPreview !== null && !dashboardPreview.ready)}
+            type="submit"
+          >
+            {submitting
+              ? "Checking your campaign…"
+              : dashboardPreview
+                ? "Save & review campaign"
+                : "Save and run the checks"}
+          </Button>
+        </form>
+        {dashboardPreview ? (
+          <aside className={styles.campaignPreview} aria-label="Campaign preview">
+            <Card className={styles.previewCard} padding="none">
+              <div className={styles.previewTop}>
+                <span>CAMPAIGN PREVIEW</span>
+                <Icon name="eye" decorative size="sm" />
+              </div>
+              <div className={styles.previewProperty}>
+                <Icon name="home" decorative size="lg" />
+                <span>OPEN HOUSE</span>
+                <h2>{livePreview.headline}</h2>
+                <p>{livePreview.address}</p>
+              </div>
+              <div className={styles.previewDetails}>
+                <strong>{livePreview.partner}</strong>
+                <p>Open House Boost</p>
+                <div>
+                  <span>Daily budget</span>
+                  <strong>${Number(livePreview.budget || 0).toLocaleString()}</strong>
+                </div>
+                <small>Layout preview with example artwork.</small>
+              </div>
+            </Card>
+            <div className={styles.previewNote}>
+              <Icon name="shield" decorative />
+              <span>
+                <strong>You stay in control.</strong>
+                <p>
+                  Review the content before approval. This demo does not publish ads or spend money.
+                </p>
+              </span>
+            </div>
+            <Link href="/marketing/campaigns" variant="action">
+              Back to campaigns
+            </Link>
+          </aside>
+        ) : null}
+      </div>
 
       {result ? (
         <section ref={resultRef} tabIndex={-1} aria-label="Campaign check result">
@@ -561,7 +660,7 @@ function CampaignCheckResult({ result }: Readonly<{ result: PreflightResponse }>
             <strong>Nothing to fix.</strong>
             <p>
               {result.persistenceKind === "browser"
-                ? "The sample content checks passed. Open the campaign to try a test approval. Live account and artifact checks still require connected services."
+                ? "Your campaign is ready for a final look. Review the details and record a demo approval."
                 : "This campaign meets every rule we check. An approver can sign off on it now."}
             </p>
           </Card>

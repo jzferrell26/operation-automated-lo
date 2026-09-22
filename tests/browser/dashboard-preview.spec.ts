@@ -41,14 +41,14 @@ async function open(page: Page, path: string) {
 }
 async function createCampaign(page: Page, headline: string) {
   await open(page, "/marketing/campaigns/new");
-  await page.getByRole("button", { name: "Fill with a sample property" }).click();
+  await page.getByRole("button", { name: "Use example property" }).click();
   await page.getByLabel("Headline", { exact: true }).fill(headline);
   const response = page.waitForResponse(
     (response) =>
       response.url().endsWith("/api/preview/campaigns/check") &&
       response.request().method() === "POST",
   );
-  await page.getByRole("button", { name: "Save and run the checks" }).click();
+  await page.getByRole("button", { name: "Save & review campaign" }).click();
   expect((await response).status()).toBe(200);
   await page.getByRole("link", { name: "Open campaign", exact: true }).click();
   await expect(page.getByRole("heading", { name: headline, exact: true })).toBeVisible();
@@ -61,11 +61,7 @@ test("all dashboard routes, assets, and entry links work", async ({ page, reques
   await expect(page).toHaveURL(/\/overview$/u);
   for (const route of routes) {
     await open(page, route);
-    await expect(
-      page.getByText("Product preview · Sample data · Test edits stay in this browser.", {
-        exact: true,
-      }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Demo workspace", exact: true })).toBeVisible();
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
       `${route} does not overflow`,
@@ -89,41 +85,39 @@ test("all dashboard routes, assets, and entry links work", async ({ page, reques
 test("campaign checks, test approval, reload, and browser isolation", async ({ page, browser }) => {
   await createCampaign(page, "Dashboard QA open house");
   await expect(page.getByRole("button", { name: "Publish campaign", exact: true })).toBeDisabled();
-  await page.getByRole("button", { name: "Approve test campaign", exact: true }).click();
-  await page.getByRole("button", { name: "Confirm test approval", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Test approval recorded" })).toBeDisabled();
+  await page.getByRole("button", { name: "Approve campaign", exact: true }).click();
+  await page.getByRole("button", { name: "Confirm approval", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Approval recorded" })).toBeDisabled();
   const campaignURL = page.url();
   await page.reload();
-  await expect(page.getByRole("button", { name: "Test approval recorded" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Approval recorded" })).toBeVisible();
   await open(page, "/marketing/campaigns");
   await page.getByLabel("Search campaigns").fill("Dashboard QA");
-  await expect(page.getByRole("cell", { name: /Dashboard QA open house/u })).toBeVisible();
+  await expect(page.getByRole("cell", { name: /^Dashboard QA open house/u })).toBeVisible();
   const other = await browser.newContext();
   try {
     const isolated = await other.newPage();
     await isolated.goto(campaignURL);
     await expect(
-      isolated.getByRole("heading", { name: "This test campaign is not in this browser" }),
+      isolated.getByRole("heading", { name: "We couldn't find this campaign." }),
     ).toBeVisible();
   } finally {
     await other.close();
   }
   await createCampaign(page, "Guaranteed approval");
+  await expect(page.getByRole("button", { name: "Approve campaign", exact: true })).toBeDisabled();
   await expect(
-    page.getByRole("button", { name: "Approve test campaign", exact: true }),
-  ).toBeDisabled();
-  await expect(
-    page.getByRole("heading", { name: "Changes are needed before approval" }),
+    page.getByRole("heading", { name: "A few details need your attention." }),
   ).toBeVisible();
 });
 
 test("partners, pipeline, brand, routing, and reset persist accurately", async ({ page }) => {
   await open(page, "/partners");
-  await page.getByRole("button", { name: "Add a test partner" }).click();
+  await page.getByRole("button", { name: "Add partner" }).click();
   await page.getByLabel("Partner name").fill("Preview QA Partner");
   await page.getByLabel("Brokerage").fill("Fictional Test Realty");
-  await page.getByLabel("Sample email", { exact: true }).fill("preview@example.test");
-  await page.getByRole("button", { name: "Save test partner" }).click();
+  await page.getByLabel("Email address", { exact: true }).fill("preview@example.test");
+  await page.getByRole("button", { name: "Save partner" }).click();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Preview QA Partner" })).toBeVisible();
   await open(page, "/leads/pipeline");
@@ -133,25 +127,24 @@ test("partners, pipeline, brand, routing, and reset persist accurately", async (
     "Application",
   );
   await open(page, "/reports");
-  await expect(page.getByRole("progressbar", { name: "Application sample leads" })).toHaveAttribute(
-    "value",
-    "2",
-  );
+  await expect(page.getByRole("img", { name: /Pipeline:.*2 application/u })).toBeVisible();
   await open(page, "/brand");
   await page.getByLabel("Company name").fill("Preview QA Lending");
-  await page.getByRole("button", { name: "Save preview profile" }).click();
+  await page.getByRole("button", { name: "Save changes" }).click();
   await page.reload();
   await expect(page.getByLabel("Company name")).toHaveValue("Preview QA Lending");
   await open(page, "/settings/routing");
   await page.getByLabel("Starting stage").selectOption("Contacted");
-  await page.getByRole("button", { name: "Save preview routing" }).click();
+  await page.getByRole("button", { name: "Save routing" }).click();
   await page.reload();
   await expect(page.getByLabel("Starting stage")).toHaveValue("Contacted");
   await open(page, "/settings");
-  await page.getByRole("button", { name: "Reset preview data", exact: true }).click();
-  await page.getByRole("button", { name: "Keep my test data" }).click();
-  await page.getByRole("button", { name: "Reset preview data", exact: true }).click();
-  await page.getByRole("button", { name: "Reset preview", exact: true }).click();
+  await page.getByText("Demo workspace options", { exact: true }).click();
+  await page.getByRole("button", { name: "Reset demo data", exact: true }).click();
+  await page.getByRole("button", { name: "Keep my changes" }).click();
+  await page.getByRole("button", { name: "Reset demo data", exact: true }).click();
+  await page.getByRole("button", { name: "Reset demo", exact: true }).click();
+  await expect(page.getByLabel("Company name")).toHaveValue("Prairie Home Lending");
   await open(page, "/partners");
   await expect(page.getByRole("heading", { name: "Preview QA Partner" })).toHaveCount(0);
   await open(page, "/brand");
@@ -165,8 +158,8 @@ test("storage failure never displays a saved result", async ({ page }) => {
     };
   });
   await open(page, "/marketing/campaigns/new");
-  await page.getByRole("button", { name: "Fill with a sample property" }).click();
-  await page.getByRole("button", { name: "Save and run the checks" }).click();
+  await page.getByRole("button", { name: "Use example property" }).click();
+  await page.getByRole("button", { name: "Save & review campaign" }).click();
   await expect(
     page.getByText(
       "This draft was not saved. Check browser storage or reset the preview in Settings, then try again.",
@@ -179,8 +172,34 @@ test("storage failure never displays a saved result", async ({ page }) => {
 test("desktop, embedded, tablet, mobile, themes, and accessibility", async ({ page }, info) => {
   for (const width of [1440, 1180, 768, 390]) {
     await page.setViewportSize({ width, height: 1000 });
-    for (const route of ["/overview", "/leads/pipeline", "/marketing/campaigns/new", "/reports"]) {
+    for (const route of [
+      "/overview",
+      "/settings",
+      "/leads/pipeline",
+      "/marketing/campaigns/new",
+      "/reports",
+    ]) {
       await open(page, route);
+      const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+      if (documentWidth > width) {
+        console.log(
+          "Layout overflow",
+          width,
+          route,
+          await page.evaluate(() =>
+            Array.from(document.querySelectorAll("body *"))
+              .map((node) => ({
+                tag: node.tagName,
+                class: node.className,
+                right: node.getBoundingClientRect().right,
+                width: node.getBoundingClientRect().width,
+                overflow: getComputedStyle(node).overflowX,
+              }))
+              .filter((node) => node.right > innerWidth + 1 && node.width > 0)
+              .slice(0, 25),
+          ),
+        );
+      }
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
         `${width} ${route}`,
@@ -188,7 +207,11 @@ test("desktop, embedded, tablet, mobile, themes, and accessibility", async ({ pa
     }
   }
   await open(page, "/overview");
-  await page.screenshot({ path: info.outputPath("overview-mobile.png"), fullPage: true });
+  await page.screenshot({
+    path: info.outputPath("overview-mobile.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
   const menu = page.getByRole("button", {
     name: /Open navigation|Open menu|Open workspace navigation/u,
   });
@@ -198,13 +221,143 @@ test("desktop, embedded, tablet, mobile, themes, and accessibility", async ({ pa
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await open(page, "/overview");
-  await page.screenshot({ path: info.outputPath("overview-desktop-light.png"), fullPage: true });
+  await page.screenshot({
+    path: info.outputPath("overview-desktop-light.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
   const light = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();
   expect(light.violations).toEqual([]);
+  await page.getByRole("button", { name: "Appearance", exact: true }).click();
   await page.getByRole("radio", { name: "Dark", exact: true }).click();
-  await page.screenshot({ path: info.outputPath("overview-desktop-dark.png"), fullPage: true });
+  await page.keyboard.press("Escape");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.screenshot({
+    path: info.outputPath("overview-desktop-dark.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
   const dark = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
   expect(dark.violations).toEqual([]);
+});
+
+test("workspace search, partner editing, campaign views, and report downloads work", async ({
+  page,
+}) => {
+  await open(page, "/overview");
+  await page.keyboard.press("Control+k");
+  await expect(page.getByRole("dialog", { name: "Search your workspace" })).toBeVisible();
+  await page.getByLabel("Search pages and campaigns").fill("zzzz no match");
+  await expect(page.getByText("No results. Try a page name or property address.")).toBeVisible();
+  await page.getByLabel("Search pages and campaigns").fill("partners");
+  await page
+    .getByRole("dialog")
+    .getByRole("link", { name: /Partners/u })
+    .click();
+  await expect(page).toHaveURL(/\/partners$/u);
+  await page.getByRole("button", { name: "Edit Jordan Avery", exact: true }).click();
+  await page.getByLabel("Brokerage").fill("Updated Demo Realty");
+  await page.getByRole("button", { name: "Save partner", exact: true }).click();
+  await page.reload();
+  await expect(page.getByText("Updated Demo Realty", { exact: true })).toBeVisible();
+  await open(page, "/settings");
+  await page.getByLabel("Company name").fill("Instant Brand Preview");
+  await expect(
+    page.getByRole("heading", { name: "Instant Brand Preview", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.reload();
+  await expect(page.getByLabel("Company name")).toHaveValue("Instant Brand Preview");
+  await open(page, "/marketing/campaigns");
+  await page.getByRole("button", { name: "Cards", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Cedar Street Open House Boost" })).toBeVisible();
+  await page.getByRole("button", { name: "List", exact: true }).click();
+  await expect(page.getByRole("table")).toBeVisible();
+  await open(page, "/reports");
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download report" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("automatedlo-demo-pipeline.csv");
+  expect(await download.failure()).toBeNull();
+  await page.getByRole("button", { name: "Campaigns", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Campaign performance" })).toBeVisible();
+  await open(page, "/settings/connections");
+  await page.getByRole("button", { name: "View setup" }).first().click();
+  await expect(page.getByRole("dialog", { name: "HighLevel connection" })).toBeVisible();
+  await page.getByRole("button", { name: "Got it" }).click();
+  await open(page, "/marketing/campaigns/synthetic-open-house-001");
+  await page.getByRole("button", { name: "Creative & assets", exact: true }).click();
+  await expect(page.getByRole("img", { name: "Feed creative for Cedar Street" })).toBeVisible();
+  await page.getByRole("button", { name: "Leads", exact: true }).click();
+  await expect(page.getByText("Morgan Ellis", { exact: true })).toBeVisible();
+});
+
+test("redesigned screens and interactive states remain accessible in both themes", async ({
+  page,
+}, info) => {
+  test.setTimeout(180000);
+  for (const theme of ["Light", "Dark"] as const) {
+    await open(page, "/overview");
+    await page.getByRole("button", { name: "Appearance", exact: true }).click();
+    await page.getByRole("radio", { name: theme, exact: true }).click();
+    await page.keyboard.press("Escape");
+    for (const route of [
+      "/overview",
+      "/settings",
+      "/partners",
+      "/reports",
+      "/marketing/campaigns/new",
+      "/settings/connections",
+    ]) {
+      await open(page, route);
+      const issues = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+        .analyze();
+      expect(
+        issues.violations.map((issue) => ({
+          id: issue.id,
+          nodes: issue.nodes.map((node) => ({
+            target: node.target,
+            failureSummary: node.failureSummary,
+          })),
+        })),
+        `${theme} ${route}`,
+      ).toEqual([]);
+      await page.screenshot({
+        path: info.outputPath(`${theme.toLowerCase()}${route.replaceAll("/", "-")}.png`),
+        fullPage: true,
+        animations: "disabled",
+      });
+    }
+    await open(page, "/settings");
+    await page.getByRole("button", { name: "Save changes" }).hover();
+    const hover = await new AxeBuilder({ page }).withTags(["wcag2aa"]).analyze();
+    expect(hover.violations).toEqual([]);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, "/settings");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.screenshot({
+      path: info.outputPath(`${theme.toLowerCase()}-settings-mobile.png`),
+      fullPage: true,
+      animations: "disabled",
+    });
+    await page.getByRole("button", { name: "Open navigation", exact: true }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    const drawer = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+      .analyze();
+    expect(
+      drawer.violations.map((issue) => ({
+        id: issue.id,
+        targets: issue.nodes.map((node) => node.target),
+      })),
+      `${theme} mobile drawer`,
+    ).toEqual([]);
+    await page.keyboard.press("Escape");
+    await page.setViewportSize({ width: 1440, height: 1000 });
+  }
 });

@@ -16,6 +16,7 @@ const workspaceResolve = {
     "@oalo/rendering": resolve("packages/rendering/src/index.ts"),
     "@oalo/storage": resolve("packages/storage/src/index.ts"),
     "@oalo/test-support": resolve("packages/test-support/src/index.ts"),
+    "@oalo/ui/product-tokens.css": resolve("packages/ui/src/product-tokens.css"),
     "@oalo/ui": resolve("packages/ui/src/index.ts"),
   },
 };

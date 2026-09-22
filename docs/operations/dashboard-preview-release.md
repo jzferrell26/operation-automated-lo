@@ -2,15 +2,16 @@
 
 ## Entry point
 
-The visual testing deployment uses the existing `operation-automated-lo-web` project in Vercel's `jonathan-ferrell` team. Its stable address is `https://operation-automated-lo-web.vercel.app`. The homepage opens `/overview`; `/onboarding` provides the quick-start checklist. This is a public sample-data preview, not a signed-in customer workspace.
+The visual testing deployment uses the existing `operation-automated-lo-web` project in Vercel's `jonathan-ferrell` team. Its stable address is `https://operation-automated-lo-web.vercel.app`. The homepage opens `/overview`; `/onboarding` provides Getting started. This is a public sample-data demo, not a signed-in customer workspace. The compact **Demo workspace** control explains its data and publishing limits.
 
 ## What can be tested
 
 - Overview, marketing suite, campaign list and detail, reports, partners, leads and pipeline, property sites, sample creative, brand, account, routing, connections, and settings.
-- Create a campaign, use **Fill with a sample property**, save and run the real in-memory content checks, inspect findings, and record a test approval after successful checks.
+- Create a campaign, use **Use example property**, then **Save & review campaign** to run the real in-memory content checks. Inspect findings and record a clearly labeled demo approval after successful checks. The campaign preview updates while entering details.
 - Add a fictional partner, change a sample lead's stage, edit the preview profile, save routing preferences, reload, and observe the saved changes. Reset requires confirmation in Settings.
 - Open the included Cedar Street property page and download its sample SVG creative. New property-site and print generation are not represented as working live services.
 - Automations, marketplace, messaging, team invitations, and billing have intentional availability screens; their live services are not enabled.
+- Open workspace search with the search control or Ctrl/Cmd+K. Switch campaign list/card views, edit a partner profile, and download a demo pipeline CSV from Reports. Settings opens directly to the company editor and a brand preview that updates while typing.
 
 ## Deployment configuration
 
@@ -49,8 +50,8 @@ pnpm test:browser:dashboard
 
 The dedicated browser configuration starts the compiled app locally with the explicit preview flag. To test an existing deployment, set `OALO_PREVIEW_BASE_URL` to its HTTPS origin and run `pnpm test:browser:dashboard`; it will not start a local server. The suite covers 23 dashboard destinations and sample assets, creation/checks/test approval, blocked approval, reload persistence, separate-browser isolation, quota failure, reset behavior, four viewport widths, mobile navigation, and light/dark accessibility.
 
-Local visual captures and any failure traces are saved beneath `test-results/dashboard-preview-local`. Hosted verification uses `test-results/dashboard-preview-live`. These files are intentionally not committed. The existing authenticated review layouts and screenshot baselines are unaffected by the new shell layout prop.
+Local visual captures and any failure traces are saved beneath `test-results/dashboard-preview-local`. Hosted verification uses `test-results/dashboard-preview-live`. These files are intentionally not committed. The product demo now uses `ProductShell` with separate scoped tokens from `@oalo/ui/product-tokens.css`; the existing authenticated review layouts and screenshot baselines are unaffected.
 
 ## Recovery
 
-To restore the previous UI, disable `OALO_DASHBOARD_PREVIEW` and redeploy the previous source commit, or restore the prior Vercel deployment. This does not delete a visitor's browser test data. The **Reset preview data** action removes only the preview's own key and restores the included sample workspace.
+To restore the previous UI, disable `OALO_DASHBOARD_PREVIEW` and redeploy the previous source commit, or restore the prior Vercel deployment. This does not delete a visitor's browser test data. **Settings > Demo workspace options > Reset demo data** removes only the demo's own key and restores the included sample workspace after confirmation.

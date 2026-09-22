@@ -5,6 +5,29 @@ import { forwardRef, type ButtonHTMLAttributes, type SVGProps } from "react";
 import styles from "./Icon.module.css";
 
 export type IconName =
+  | "home"
+  | "users"
+  | "megaphone"
+  | "chart"
+  | "settings"
+  | "sparkles"
+  | "layers"
+  | "search"
+  | "arrow-right"
+  | "arrow-up-right"
+  | "plus"
+  | "mail"
+  | "calendar"
+  | "building"
+  | "shield"
+  | "credit-card"
+  | "download"
+  | "file-text"
+  | "panel-left"
+  | "help"
+  | "globe"
+  | "image"
+  | "bolt"
   | "alert-triangle"
   | "check"
   | "chevron-down"
@@ -51,6 +74,137 @@ function classNames(...values: Array<string | false | null | undefined>): string
 
 function IconGeometry({ name }: Readonly<{ name: IconName }>) {
   switch (name) {
+    case "home":
+      return (
+        <>
+          <path d="m3 10 9-7 9 7" />
+          <path d="M5 9v11h14V9M9 20v-7h6v7" />
+        </>
+      );
+    case "users":
+      return (
+        <>
+          <circle cx="9" cy="8" r="3" />
+          <path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5" />
+        </>
+      );
+    case "megaphone":
+      return (
+        <>
+          <path d="m3 10 17-6v16L3 14zM7 15l2 6h4l-2-5M3 10v4" />
+        </>
+      );
+    case "chart":
+      return (
+        <>
+          <path d="M4 3v17h17M8 16v-4M13 16V7M18 16v-7" />
+        </>
+      );
+    case "settings":
+      return (
+        <>
+          <path d="m9 3-1 3-3 1v3l-2 2 2 2v3l3 1 1 3h6l1-3 3-1v-3l2-2-2-2V7l-3-1-1-3Z" />
+          <circle cx="12" cy="12" r="3" />
+        </>
+      );
+    case "sparkles":
+      return (
+        <>
+          <path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5ZM20 2v4M18 4h4" />
+        </>
+      );
+    case "layers":
+      return (
+        <>
+          <path d="m3 7 9-4 9 4-9 4ZM3 12l9 4 9-4M3 17l9 4 9-4" />
+        </>
+      );
+    case "search":
+      return (
+        <>
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="m16 16 5 5" />
+        </>
+      );
+    case "arrow-right":
+      return <path d="M4 12h16m-6-6 6 6-6 6" />;
+    case "arrow-up-right":
+      return <path d="M6 18 18 6M6 6h12v12" />;
+    case "plus":
+      return <path d="M12 5v14M5 12h14" />;
+    case "mail":
+      return (
+        <>
+          <rect x="3" y="5" width="18" height="14" rx="2" />
+          <path d="m3 6 9 7 9-7" />
+        </>
+      );
+    case "calendar":
+      return (
+        <>
+          <rect x="3" y="5" width="18" height="16" rx="2" />
+          <path d="M7 3v4M17 3v4M3 11h18M8 15h2M14 15h2" />
+        </>
+      );
+    case "building":
+      return (
+        <>
+          <path d="M4 21V3h12v18M16 11h4v10M2 21h20M8 7h4M8 11h4M8 15h4M9 21v-3h3v3" />
+        </>
+      );
+    case "shield":
+      return (
+        <>
+          <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z" />
+          <path d="m8 12 3 3 5-6" />
+        </>
+      );
+    case "credit-card":
+      return (
+        <>
+          <rect x="3" y="5" width="18" height="14" rx="2" />
+          <path d="M3 10h18M7 15h4" />
+        </>
+      );
+    case "download":
+      return <path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" />;
+    case "file-text":
+      return (
+        <>
+          <path d="M14 3H5v18h14V8ZM14 3v5h5M8 12h8M8 16h6" />
+        </>
+      );
+    case "panel-left":
+      return (
+        <>
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="M9 4v16" />
+        </>
+      );
+    case "help":
+      return (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5M12 17h.01" />
+        </>
+      );
+    case "globe":
+      return (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18M12 3c-5 5-5 13 0 18 5-5 5-13 0-18" />
+        </>
+      );
+    case "image":
+      return (
+        <>
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="8" cy="8" r="1.5" />
+          <path d="m3 17 5-5 4 4 4-6 5 7" />
+        </>
+      );
+    case "bolt":
+      return <path d="m13 2-9 12h7l-1 8 10-13h-7Z" />;
     case "alert-triangle":
       return (
         <>

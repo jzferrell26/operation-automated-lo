@@ -29,6 +29,7 @@ import styles from "./open-house-draft-builder.module.css";
 import { useDashboardPreview } from "../../dashboard-preview/preview-provider.js";
 import { campaignCheckSchema } from "../../dashboard-preview/model.js";
 import { stateOptions } from "./campaign-form-options.js";
+import type { WorkspacePartner } from "../../workspace/model.js";
 
 type PreflightResponse = Readonly<{
   state: string;
@@ -91,9 +92,14 @@ export function fieldsTheRouteNamed(issues: unknown): Readonly<Record<string, st
  */
 export function OpenHouseDraftBuilder({
   profile,
-}: Readonly<{ profile?: SetupProfile | undefined }> = {}) {
+  savedPartners = [],
+}: Readonly<{
+  profile?: SetupProfile | undefined;
+  savedPartners?: readonly WorkspacePartner[];
+}> = {}) {
   const [result, setResult] = useState<PreflightResponse | null>(null);
   const [draftState, setDraftState] = useState("");
+  const [selectedPartner, setSelectedPartner] = useState("");
   const dashboardPreview = useDashboardPreview();
   const formRef = useRef<HTMLFormElement | null>(null);
   const resultRef = useRef<HTMLElement | null>(null);
@@ -491,6 +497,30 @@ export function OpenHouseDraftBuilder({
               />
             </div>
             <div className={styles.group} data-tour={GUIDED_SETUP_ANCHORS.campaignCreateRealtor}>
+              {!dashboardPreview && savedPartners.length ? (
+                <Select
+                  label="Saved Realtor partner"
+                  value={selectedPartner}
+                  placeholder="Choose from your partner list"
+                  options={savedPartners.map((partner) => ({
+                    value: partner.id,
+                    label: partner.name,
+                    description: partner.company,
+                  }))}
+                  onValueChange={(id) => {
+                    const partner = savedPartners.find((item) => item.id === id);
+                    const field = formRef.current?.elements.namedItem("realtorDisplayName");
+                    if (partner && field instanceof HTMLInputElement) {
+                      field.value = partner.name;
+                      setSelectedPartner(id);
+                      const permission = formRef.current?.elements.namedItem(
+                        "realtorPermissionConfirmed",
+                      );
+                      if (permission instanceof HTMLInputElement) permission.checked = false;
+                    }
+                  }}
+                />
+              ) : null}
               <TextField
                 defaultValue={prefill.realtorDisplayName}
                 label="Realtor name"

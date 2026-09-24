@@ -3,6 +3,13 @@ import { headers } from "next/headers.js";
 import { OpenHouseDraftBuilder } from "../../../../../features/campaigns/components/open-house-draft-builder.js";
 import { readSetupPreferencesForRequest } from "../../../../../server/setup-preferences.js";
 import { canRenderDashboardPreview } from "../../../../../server/dashboard-preview.js";
+import { authenticatedWorkspaceMode } from "../../../../../server/authenticated-workspace-data.js";
+import {
+  readWorkspacePreferences,
+  workspacePrincipal,
+} from "../../../../../server/workspace-preferences.js";
+import { campaignDatabasePool } from "../../../../../server/campaign-persistence-runtime.js";
+import { UnauthenticatedPrincipalError } from "../../../../../server/authenticated-principal.js";
 
 export const dynamic = "force-dynamic";
 
@@ -17,5 +24,21 @@ export default async function NewCampaignPage() {
   const incoming = await headers();
   const request = new Request("https://oalo.local/marketing/campaigns/new", { headers: incoming });
   const preferences = await readSetupPreferencesForRequest(request, process.env);
+  if (authenticatedWorkspaceMode() === "review") {
+    try {
+      const principal = await workspacePrincipal(request);
+      const saved = await readWorkspacePreferences(principal, campaignDatabasePool());
+      return (
+        <OpenHouseDraftBuilder
+          profile={preferences.profile}
+          savedPartners={saved.partners?.value.items ?? []}
+        />
+      );
+    } catch (error) {
+      // The existing signed-out create page contains no personal data. Its mutation
+      // endpoint still requires authentication before anything can be saved.
+      if (!(error instanceof UnauthenticatedPrincipalError)) throw error;
+    }
+  }
   return <OpenHouseDraftBuilder profile={preferences.profile} />;
 }

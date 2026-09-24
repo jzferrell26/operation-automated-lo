@@ -9,6 +9,17 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
+### September 24, 2026 release update
+
+- The authenticated runtime and password/onboarding work merged as PR #67 (`58d77fd`) on September 22. The older C1/unmerged statements below describe the September 16 checkpoint, not the current code.
+- The completed dashboard and standalone AVM/homeowner-report implementation merged as PR #69 (`da8dfb9`) on September 24. PR #68 was closed as superseded. The full application, real PostgreSQL/authenticated-browser and release gates passed in run `35951313777`; main verification also passed.
+- `operation-automated-lo-web.vercel.app` now serves the authenticated app against the dedicated Supabase project `vonesqpyfsrhasuxfiiz`. Signup, password sign-in, profile persistence, report access and sign-out were exercised on the hosted app. The restricted runtime login uses verified TLS and has no migration-owner membership. See `docs/operations/homeowner-avm-activation.md` and the PRD-007 release reports.
+- Live RentCast credentials are still absent. Valuation calls, HighLevel report delivery, paid ads and subscription billing are not activated. The report adapter is implemented; fixture tests are not a live valuation. Only approved workspace UUIDs can receive paid lookup access after activation.
+- `fix/authenticated-workspace-pages` finishes the signed-in navigation destinations, saved personal report identity, partner list and message drafts. Its scope and qualification live under `library/requirements/in-work/prd-007-homeowner-reports/reports/`. Preserve these changes when resuming.
+- PRD-007 explicitly authorizes the homeowner-report slice of PRD-002e. Other PRD-002 options remain backlog. Do not rebuild authentication or provision another database based on the historical checkpoint below, and do not flip any external acceptance criterion without its evidence.
+
+### Historical September 16 checkpoint
+
 - `main` tip (as of 2026-09-16): `c140f11` (PR #65), preceded by `daa498e` (PR #64) and `86ef97d` (PR #63), after `deeb3e2` (PR #62 production-tonight docs), `f4b79f7` (PR #61 locally provable go-live code), `011c53c` (PR #60 PRD-004 docs), `6d5982f` (PR #59 map/ledger sync), `26051b3` (PR #58 PRD-003d).
 - Go-live raid ledger: [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md) rows `GGL-001` through `GGL-010` (VERIFIED) and `GGL-B01` through `GGL-B15` (blocked or accepted); `GGL-B16` CLOSED (CI run `35058370796` at `dab2ec6`, PR #65, with PR #66 closed and unmerged).
 - Completion review finding C1 (2026-09-19): runtime request authentication is not composed on `main` at `c140f11`. The exported campaign routes and read pages still compose a static local synthetic default for authentication outside synthetic mode, and that default denies every request. Owned by [PRD-005](../../../library/requirements/in-work/prd-005-authenticated-review-runtime/prd-005-authenticated-review-runtime-index.md) (005a, 005b, in progress on branch `claude/completion-review-2026-09-19`, unmerged; pull request #67 opened 2026-09-21); the review URL denies every request without a real session until those sub-PRDs merge.

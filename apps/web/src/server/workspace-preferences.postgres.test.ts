@@ -27,6 +27,7 @@ import {
   type BrowserRequestOverrides,
 } from "./campaign-route-postgres-support.js";
 import { resetCampaignDatabasePoolForTests } from "./campaign-persistence-runtime.js";
+import { withMigrationOwnerTransaction } from "../../../../packages/db/test/route-seeding-bridge.js";
 
 const environment = routeEnvironment({
   OALO_HOMEOWNER_REPORTS: "enabled",
@@ -58,26 +59,18 @@ const write = (body: unknown, session = owner, overrides: BrowserRequestOverride
 const prefs = async (session = owner): Promise<WorkspacePreferences> =>
   envelope.parse(await (await GET(read(session))).json()).preferences;
 async function fixtureQuery(text: string, values: readonly SqlScalar[] = []) {
-  const connection = await pool.connect();
-  const execute = (sql: string, args: readonly SqlScalar[] = []) =>
-    connection.execute({
-      statementName: "workspace.fixture",
-      text: sql,
-      values: args,
-      preparedStatementMode: "unnamed",
-    });
-  try {
-    await execute("begin");
-    await execute("set local role migration_owner");
-    const result = await execute(text, values);
-    await execute("commit");
-    return result.rows;
-  } catch (error) {
-    await execute("rollback");
-    throw error;
-  } finally {
-    await connection.release();
-  }
+  return withMigrationOwnerTransaction(
+    pool,
+    async (connection) =>
+      (
+        await connection.execute({
+          statementName: "workspace.fixture",
+          text,
+          values,
+          preparedStatementMode: "unnamed",
+        })
+      ).rows,
+  );
 }
 beforeAll(async () => {
   restore = applyRouteEnvironment(environment);

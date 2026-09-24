@@ -250,6 +250,37 @@ describe.sequential("real homeowner persistence", () => {
     expect(reuse.cached).toEqual(item.report.valuation);
     await repoA.fail(revised.requestId, item.propertyId, "FIXTURE_END", false);
   });
+  it("keeps only one concurrent replacement link active and revokes every issued link without a lookup", async () => {
+    const item = await seed(repoA, "concurrent-shares");
+    const before = await repoA.usage();
+    const hashes = Array.from({ length: 6 }, () => homeHash(randomUUID()));
+    const expiry = new Date(Date.now() + 86400000).toISOString();
+    await Promise.all(hashes.map((hash) => repoA.createShare(item.report.id, hash, expiry)));
+    const shares = await repoA.shares(item.report.id);
+    expect(shares).toHaveLength(hashes.length);
+    expect(shares.filter((share) => !share.revoked)).toHaveLength(1);
+    const readable = await Promise.all(hashes.map((hash) => readSharedHomeReport(pool, hash)));
+    expect(readable.filter((report) => report !== null)).toHaveLength(1);
+    await expect(
+      repoB.createShare(item.report.id, homeHash(randomUUID()), expiry),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    await repoA.revokeShares(item.propertyId);
+    expect(await Promise.all(hashes.map((hash) => readSharedHomeReport(pool, hash)))).toEqual(
+      hashes.map(() => null),
+    );
+    expect(await repoA.usage()).toBe(before);
+  });
+  it("retains the existing link when a replacement cannot commit", async () => {
+    const item = await seed(repoA, "share-rollback");
+    const hash = homeHash(randomUUID());
+    const expiry = new Date(Date.now() + 86400000).toISOString();
+    await repoA.createShare(item.report.id, hash, expiry);
+    await expect(repoA.createShare(item.report.id, hash, expiry)).rejects.toThrow();
+    expect((await readSharedHomeReport(pool, hash))?.id).toBe(item.report.id);
+    expect((await repoA.shares(item.report.id)).filter((share) => !share.revoked)).toHaveLength(1);
+  });
   it("honors expiring links, current author access, revocation and explicit-event deduplication", async () => {
     const item = await seed(repoA, "shared-contact"),
       secret = homeHash(randomUUID()),

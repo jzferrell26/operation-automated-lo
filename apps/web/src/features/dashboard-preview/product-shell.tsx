@@ -17,6 +17,7 @@ const navigation: readonly { label: string; href: string; icon: IconName; sectio
   { label: "Partners", href: "/partners", icon: "users", section: "Workspace" },
   { label: "Leads & pipeline", href: "/leads", icon: "layers", section: "Workspace" },
   { label: "Reports", href: "/reports", icon: "chart", section: "Workspace" },
+  { label: "Homeowner reports", href: "/homeowners", icon: "home", section: "Workspace" },
   { label: "Marketing studio", href: "/marketing", icon: "sparkles", section: "Create & grow" },
   {
     label: "Property sites",

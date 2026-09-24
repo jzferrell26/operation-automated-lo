@@ -2,6 +2,27 @@ import { SUPPORT_REFERENCE_NOT_RECORDED } from "../../copy/user-language.js";
 
 const INTERNAL_PATH = /^\/(?!\/)/u;
 
+function assertInternalPath(path: string): void {
+  const unsafeCharacter = [...path].some(
+    (character) => character.charCodeAt(0) <= 32 || character.charCodeAt(0) === 127,
+  );
+  if (!INTERNAL_PATH.test(path) || path.includes("\\") || unsafeCharacter) {
+    throw new Error("Internal API requests must use an application-relative path");
+  }
+}
+
+/** Reads stay on this origin and do not cache homeowner financial snapshots. */
+export async function getInternalJson(path: string): Promise<Response> {
+  assertInternalPath(path);
+  const request = globalThis["fetch"];
+  return request(path, {
+    method: "GET",
+    credentials: "same-origin",
+    cache: "no-store",
+    redirect: "error",
+  });
+}
+
 export const CSRF_META_NAME = "oalo-csrf-token";
 export const CSRF_REQUEST_HEADER = "x-csrf-token";
 
@@ -64,14 +85,15 @@ export function readCsrfToken(): string | undefined {
 }
 
 export async function postInternalJson(path: string, body: unknown): Promise<Response> {
-  if (!INTERNAL_PATH.test(path)) {
-    throw new Error("Internal API requests must use an application-relative path");
-  }
+  assertInternalPath(path);
 
   const csrfToken = readCsrfToken();
   const request = globalThis["fetch"];
   return request(path, {
     method: "POST",
+    credentials: "same-origin",
+    cache: "no-store",
+    redirect: "error",
     headers: {
       "content-type": "application/json",
       ...(csrfToken === undefined ? {} : { [CSRF_REQUEST_HEADER]: csrfToken }),

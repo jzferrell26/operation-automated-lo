@@ -795,6 +795,13 @@ export function ExploreWorkspace() {
       icon: "chart",
       label: "View reports",
     },
+    {
+      title: "Homeowner value & equity",
+      detail: "Create branded property reports, review loan assumptions and keep report history.",
+      href: "/homeowners",
+      icon: "home",
+      label: "Open homeowner reports",
+    },
   ];
   return (
     <>
@@ -839,14 +846,12 @@ export function ExploreWorkspace() {
           detail="Future ideas, separate from the tools you can use today."
         />
         <div className={pageStyles.roadmap}>
-          {["Homeowner insights", "Financing tools", "Additional campaign templates"].map(
-            (title) => (
-              <div key={title}>
-                <strong>{title}</strong>
-                <Badge>Planned</Badge>
-              </div>
-            ),
-          )}
+          {["Financing tools", "Additional campaign templates"].map((title) => (
+            <div key={title}>
+              <strong>{title}</strong>
+              <Badge>Planned</Badge>
+            </div>
+          ))}
         </div>
       </Card>
     </>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { HomePropertySchema } from "@oalo/contracts";
 import { initialProductSetup, productSetupSchema } from "./setup-model.js";
 
 export const PREVIEW_STORAGE_KEY = "oalo.dashboard-preview.v1";
@@ -68,6 +69,7 @@ export const previewStateSchema = z
     version: z.literal(1),
     setup: productSetupSchema.default(initialProductSetup),
     campaigns: z.array(campaignCheckSchema).max(50),
+    homeownerProperties: z.array(HomePropertySchema).max(50).default([]),
     partners: z.array(partnerSchema).max(50),
     messageDrafts: z
       .array(messageDraftSchema)
@@ -91,6 +93,7 @@ export function initialPreviewState(): PreviewState {
     version: 1,
     setup: initialProductSetup(),
     campaigns: [],
+    homeownerProperties: [],
     leadStages: {},
     messageDrafts: [],
     partners: [

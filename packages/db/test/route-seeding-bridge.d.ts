@@ -1,4 +1,9 @@
-import type { DatabasePool } from "../src/index.js";
+import type { DatabasePool, DatabaseConnection } from "../src/index.js";
+
+export declare function withMigrationOwnerTransaction<Result>(
+  pool: DatabasePool,
+  work: (connection: DatabaseConnection) => Promise<Result>,
+): Promise<Result>;
 
 /**
  * Types for `route-seeding-bridge.js`, which re-exports the review-seeding surface of the

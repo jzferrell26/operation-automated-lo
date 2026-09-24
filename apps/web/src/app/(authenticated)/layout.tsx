@@ -148,7 +148,24 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
     <AppShell
       accountControls={shell.authenticated ? signOutControl : undefined}
       headerControls={shell.authenticated ? <GuidedSetupShellControls /> : undefined}
-      navigation={projectNavigationForSession(workspace.ui.navigation, session)}
+      navigation={projectNavigationForSession(
+        process.env.OALO_HOMEOWNER_REPORTS === "enabled" && shell.authenticated
+          ? {
+              ...workspace.ui.navigation,
+              items: [
+                ...workspace.ui.navigation.items,
+                {
+                  id: "homeowner-reports",
+                  label: "Homeowner reports",
+                  href: "/homeowners",
+                  state: "available",
+                  requiredCapability: "reports:read",
+                },
+              ],
+            }
+          : workspace.ui.navigation,
+        session,
+      )}
       session={session}
       workspaceMode={workspace.mode}
     >

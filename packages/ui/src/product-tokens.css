@@ -30,6 +30,12 @@
   --product-tile-fg: #2c56b5;
   --product-grid: #e5eaf3;
   --product-large-radius: 1.25rem;
+  --product-print-paper: #ffffff;
+  --product-print-surface: #f7f9fc;
+  --product-print-ink: #172032;
+  --product-print-body: #455064;
+  --product-print-muted: #505c70;
+  --product-print-border: #dce2eb;
 }
 [data-theme="dark"] [data-product-shell="true"] {
   --sf-canvas: #101827;

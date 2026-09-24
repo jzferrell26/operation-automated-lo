@@ -17,7 +17,7 @@ import {
  * `default-src 'self'`, which would intersect with the nonce policy and block the theme bootstrap
  * script, so only these two headers are applied here.
  */
-const TOKEN_BEARING_PATHS = Object.freeze(["/reset-password", "/verify-email"]);
+const TOKEN_BEARING_PATHS = Object.freeze(["/reset-password", "/verify-email", "/home-report"]);
 
 function isTokenBearingPath(pathname: string): boolean {
   return TOKEN_BEARING_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
@@ -51,6 +51,8 @@ export function proxy(request: NextRequest): NextResponse {
   if (isTokenBearingPath(request.nextUrl.pathname)) {
     response.headers.set("Referrer-Policy", "no-referrer");
     response.headers.set("Cache-Control", "no-store");
+    if (request.nextUrl.pathname.startsWith("/home-report/"))
+      response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
   }
   return response;
 }

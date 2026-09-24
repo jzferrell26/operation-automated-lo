@@ -1,4 +1,5 @@
 import { contractVersion } from "@oalo/contracts";
+export { calculateHomeEquity, buildHomeReport, homeReportFreshness } from "./homeowner-reports.js";
 import { foundationPhase, type FoundationStatus } from "@oalo/domain";
 
 export * from "./tenant-installation.js";

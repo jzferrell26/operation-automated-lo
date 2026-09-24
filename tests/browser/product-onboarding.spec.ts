@@ -330,8 +330,8 @@ test("every Help walkthrough points to an existing control without performing it
     ["Reports & downloads", "/reports"],
     ["Account connections", "/settings/connections"],
     ["Review & approval", reviewPath],
-  ]) {
-    await visit(page, startPath!);
+  ] as const) {
+    await visit(page, startPath);
     await page.getByRole("button", { name: "Help & setup", exact: true }).click();
     await page
       .getByRole("dialog", { name: "Help & setup", exact: true })

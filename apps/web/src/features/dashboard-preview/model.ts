@@ -55,12 +55,25 @@ const profileSchema = z
     region: z.string().max(120),
   })
   .strict();
+export const messageDraftSchema = z
+  .object({
+    id: z.string().regex(/^(invitation|follow-up|partner-update):(email|sms)$/u),
+    subject: z.string().max(160),
+    body: z.string().trim().min(1).max(5000),
+  })
+  .strict();
+
 export const previewStateSchema = z
   .object({
     version: z.literal(1),
     setup: productSetupSchema.default(initialProductSetup),
     campaigns: z.array(campaignCheckSchema).max(50),
     partners: z.array(partnerSchema).max(50),
+    messageDrafts: z
+      .array(messageDraftSchema)
+      .max(6)
+      .refine((drafts) => new Set(drafts.map((draft) => draft.id)).size === drafts.length)
+      .default([]),
     leadStages: z.record(z.string().regex(/^sample-lead-\d+$/u), z.enum(leadStages)),
     profile: profileSchema,
     routing: z
@@ -79,6 +92,7 @@ export function initialPreviewState(): PreviewState {
     setup: initialProductSetup(),
     campaigns: [],
     leadStages: {},
+    messageDrafts: [],
     partners: [
       {
         id: "sample-partner-1",

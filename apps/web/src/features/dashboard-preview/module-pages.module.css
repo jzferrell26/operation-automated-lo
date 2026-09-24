@@ -1,0 +1,476 @@
+.mainAside,
+.composerLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(270px, 0.42fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+.mainAside > *,
+.composerLayout > * {
+  min-inline-size: 0;
+}
+.connectionNote,
+.exploreIntro {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--sf-card);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+}
+.connectionNote > div,
+.exploreIntro > div {
+  flex: 1;
+  min-inline-size: 0;
+}
+.connectionNote p,
+.exploreIntro p {
+  font-size: var(--text-body-size);
+  margin-block-start: var(--space-1);
+}
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  border-block: 1px solid var(--bd-hairline);
+}
+.queue {
+  display: grid;
+}
+.queueRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+  border-block-end: 1px solid var(--bd-hairline);
+  text-decoration: none;
+  color: var(--tx-strong);
+}
+.queueRow:hover {
+  background: var(--sf-sunken);
+}
+.queueRow > span:nth-child(2) {
+  display: grid;
+  gap: var(--space-1);
+}
+.queueRow strong {
+  overflow-wrap: anywhere;
+}
+.queueRow small,
+.caption {
+  color: var(--tx-faint);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.asideCard {
+  display: grid;
+  gap: var(--space-4);
+  border: 1px solid var(--bd-hairline);
+  box-shadow: var(--shadow-rest);
+}
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-5);
+}
+.steps li {
+  display: flex;
+  align-items: start;
+  gap: var(--space-3);
+}
+.steps li > span {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 28px;
+  block-size: 28px;
+  border-radius: 50%;
+  background: var(--product-tile);
+  color: var(--product-tile-fg);
+  font-size: 12px;
+  font-weight: 700;
+}
+.steps p {
+  font-size: 12px;
+  margin-block-start: var(--space-1);
+}
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  text-align: center;
+}
+.messageToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.templatePicker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.templatePicker button {
+  cursor: pointer;
+  font: inherit;
+  text-align: start;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: 88px;
+  padding: var(--space-4);
+  color: var(--tx-body);
+  background: var(--sf-card);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+}
+.templatePicker .templateChoice > span {
+  display: flex;
+  inline-size: 100%;
+  gap: var(--space-3);
+  justify-content: start;
+}
+.templatePicker .choiceText {
+  flex: 1;
+  display: grid;
+  gap: var(--space-1);
+  justify-content: start;
+  white-space: normal;
+  min-inline-size: 0;
+}
+.templatePicker strong {
+  font-size: 13px;
+}
+.templatePicker small {
+  color: var(--tx-faint);
+  font-size: 12px;
+}
+.templatePicker button:hover {
+  background: var(--sf-sunken);
+}
+.templatePicker button[aria-pressed="true"] {
+  border-color: var(--ac-primary);
+  box-shadow: inset 0 0 0 1px var(--ac-primary);
+  background: var(--product-tile);
+  color: var(--product-tile-fg);
+}
+.templatePicker button[aria-pressed="true"] small {
+  color: var(--product-tile-fg);
+}
+.templatePicker button:focus-visible,
+.assetPreviewButton:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+.composerLayout {
+  grid-template-columns: minmax(0, 1fr) minmax(270px, 0.62fr);
+}
+.editorMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--tx-faint);
+}
+.messagePreview {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  background: var(--sf-card);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-rest);
+}
+.previewIdentity {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding-block-end: var(--space-4);
+  border-block-end: 1px solid var(--bd-hairline);
+}
+.previewIdentity > div {
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+.previewIdentity small {
+  color: var(--tx-faint);
+  overflow-wrap: anywhere;
+}
+.messageBody {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-block-size: 180px;
+  font-size: 13px;
+}
+.workflow {
+  padding: var(--space-2) var(--space-6) var(--space-6);
+  display: grid;
+}
+.workflowStep {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  padding: var(--space-5) 0;
+  align-items: start;
+}
+.workflowStep + .workflowStep {
+  border-block-start: 1px solid var(--bd-hairline);
+}
+.workflowStep small {
+  color: var(--tx-faint);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+.workflowStep h3 {
+  margin-block: var(--space-1);
+  overflow-wrap: anywhere;
+}
+.workflowStep p {
+  font-size: 13px;
+}
+.simulationResult {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--bd-hairline);
+  background: var(--sf-sunken);
+  border-radius: var(--radius-button);
+}
+.simulationResult small {
+  color: var(--tx-faint);
+  line-height: 1.6;
+}
+.relatedLinks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.relatedLinks > a {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  text-decoration: none;
+  padding: var(--space-5) var(--space-6);
+  border-block-start: 1px solid var(--bd-hairline);
+}
+.relatedLinks > a > span {
+  flex: 1;
+  display: grid;
+  gap: var(--space-1);
+}
+.relatedLinks small {
+  color: var(--tx-faint);
+  font-size: 12px;
+}
+.templateHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.6fr);
+  gap: var(--space-8);
+  padding: var(--space-8);
+  background: var(--sf-card);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.templateHero > div:first-child {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: var(--space-4);
+}
+.templateHero h2 {
+  font-size: clamp(26px, 3vw, 40px);
+  letter-spacing: -0.04em;
+}
+.featurePills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-block: var(--space-2);
+}
+.featurePills > span {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--tx-body);
+  font-size: 12px;
+}
+.templateArtwork {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: center;
+  align-content: center;
+  padding: var(--space-5);
+  background: var(--sf-sunken);
+  border-radius: var(--radius-card);
+}
+.templateArtwork img {
+  inline-size: 100%;
+  max-inline-size: 280px;
+  aspect-ratio: 1;
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-button);
+}
+.templateArtwork > span {
+  color: var(--tx-faint);
+  font-size: 11px;
+}
+.packageTabs {
+  padding-inline: var(--space-5);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border-block-end: 1px solid var(--bd-hairline);
+}
+.packageTabs button[aria-pressed="true"] {
+  background: var(--product-tile);
+  color: var(--product-tile-fg);
+}
+.packageDetail {
+  padding: var(--space-6);
+  display: grid;
+  gap: var(--space-4);
+}
+.moduleGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+.moduleCard {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: var(--space-4);
+  border: 1px solid var(--bd-hairline);
+}
+.moduleCard p {
+  flex: 1;
+  font-size: 13px;
+}
+.roadmap {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: var(--space-2) var(--space-6) var(--space-5);
+  gap: var(--space-5);
+}
+.roadmap > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.assetPreviewButton[data-variant] {
+  display: block;
+  inline-size: 100%;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: var(--sf-sunken);
+  color: var(--tx-body);
+  font: inherit;
+}
+.assetPreviewButton[data-variant] > span {
+  display: block;
+  inline-size: 100%;
+}
+.assetPreviewContent {
+  display: grid;
+  inline-size: 100%;
+}
+.assetPreviewLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 44px;
+  border-block: 1px solid var(--bd-hairline);
+  font-size: 12px;
+}
+.assetPreviewButton:hover {
+  color: var(--ac-primary);
+}
+.assetDialog {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: center;
+}
+.assetDialog img {
+  max-inline-size: 100%;
+  max-block-size: 60vh;
+  object-fit: contain;
+}
+@media (max-width: 1180px) {
+  .mainAside,
+  .composerLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .templatePicker,
+  .moduleGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .connectionNote {
+    flex-wrap: wrap;
+  }
+  .templateHero {
+    gap: var(--space-5);
+    padding: var(--space-6);
+  }
+  .roadmap {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .templatePicker,
+  .moduleGrid,
+  .relatedLinks,
+  .templateHero,
+  .toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .queueRow {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+  .queueRow > span:nth-child(3) {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .queueRow > svg:last-child {
+    grid-row: 1;
+    grid-column: 3;
+  }
+  .workflow {
+    padding-inline: var(--space-4);
+  }
+  .workflowStep {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .workflowStep > span:last-child {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .toolbar,
+  .messagePreview,
+  .packageDetail,
+  .templateHero {
+    padding: var(--space-4);
+  }
+  .connectionNote > div {
+    flex-basis: calc(100% - 70px);
+  }
+  .relatedLinks > a {
+    padding: var(--space-4);
+  }
+}

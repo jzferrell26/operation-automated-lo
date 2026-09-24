@@ -89,6 +89,12 @@ type DismissableLayerOptions = Readonly<{
 function useDismissableLayer({ modal, onClose, open, panelRef }: DismissableLayerOptions) {
   const openerRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+
+  // Callback updates do not reopen an existing layer or move focus out of a field.
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) {
@@ -114,7 +120,7 @@ function useDismissableLayer({ modal, onClose, open, panelRef }: DismissableLaye
       if (event.defaultPrevented) return;
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -141,7 +147,7 @@ function useDismissableLayer({ modal, onClose, open, panelRef }: DismissableLaye
         document.body.style.overflow = priorOverflow;
       }
     };
-  }, [modal, onClose, open, panelRef]);
+  }, [modal, open, panelRef]);
 }
 
 type LayerBaseProps = Omit<HTMLAttributes<HTMLDivElement>, "children" | "role" | "title"> &

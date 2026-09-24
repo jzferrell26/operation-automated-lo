@@ -127,12 +127,12 @@ export function productGuides(reviewPath: string): Readonly<Record<ProductGuideI
       steps: [
         {
           title: "Choose your report",
-          body: "Switch between pipeline distribution and campaign progress. Figures are based on demo data until live accounts are connected.",
+          body: "Switch between pipeline distribution, campaign progress and partner contributions. Figures are based on demo data until live accounts are connected.",
           selector: '[aria-label="Report view"]',
         },
         {
           title: "Take the details with you",
-          body: "Download the demo pipeline as a CSV. The download includes the stages you've saved for the sample leads.",
+          body: "Download the selected report as a CSV. Pipeline uses your saved lead stages; Campaigns and Partners export the records in their selected view.",
           selector: anchor("download-report"),
         },
       ],

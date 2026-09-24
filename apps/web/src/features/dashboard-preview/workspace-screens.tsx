@@ -26,7 +26,6 @@ import {
   Badge,
   CampaignBadge,
   exampleCampaignHref,
-  examplePageHref,
   MarketingTabs,
   PageHeader,
   PipelineVisual,
@@ -38,6 +37,15 @@ import {
 } from "./product-components.js";
 import { SetupWizard } from "./setup-wizard.js";
 import { SettingsWorkspace } from "./workspace-settings.js";
+import {
+  AdsWorkspace,
+  AutomationsWorkspace,
+  ExploreWorkspace,
+  MessagingWorkspace,
+  TemplatesWorkspace,
+} from "./marketing-workspaces.js";
+import { AssetWorkspace } from "./asset-workspace.js";
+import { buildWorkspaceReport, type ReportView } from "./workspace-report.js";
 import styles from "./workspace.module.css";
 
 function CampaignRows({
@@ -544,11 +552,14 @@ function Leads({ pipeline = false }: { pipeline?: boolean }) {
   const { state, save } = useRequiredDashboardPreview();
   const [query, setQuery] = useState("");
   const [stage, setStage] = useState("All stages");
+  const [source, setSource] = useState("All sources");
+  const [message, setMessage] = useState("");
   const [selected, setSelected] = useState<(typeof sampleLeads)[number] | null>(null);
   const leads = sampleLeads.filter(
     (lead) =>
       `${lead.name} ${lead.email} ${lead.partner}`.toLowerCase().includes(query.toLowerCase()) &&
-      (stage === "All stages" || (state.leadStages[lead.id] ?? lead.stage) === stage),
+      (stage === "All stages" || (state.leadStages[lead.id] ?? lead.stage) === stage) &&
+      (source === "All sources" || lead.source === source),
   );
   const stageControl = (lead: (typeof sampleLeads)[number]) => (
     <SelectField
@@ -558,11 +569,14 @@ function Leads({ pipeline = false }: { pipeline?: boolean }) {
       options={leadStages}
       onChange={(value) => {
         const next = leadStages.find((item) => item === value);
-        if (next)
+        if (
+          next &&
           save((current) => ({
             ...current,
             leadStages: { ...current.leadStages, [lead.id]: next },
-          }));
+          }))
+        )
+          setMessage(`${lead.name} moved to ${next}.`);
       }}
     />
   );
@@ -581,6 +595,41 @@ function Leads({ pipeline = false }: { pipeline?: boolean }) {
           Lead routing
         </ActionLink>
       </PageHeader>
+      <StatCards
+        items={[
+          {
+            label: "New conversations",
+            value: sampleLeads.filter((lead) => (state.leadStages[lead.id] ?? lead.stage) === "New")
+              .length,
+            detail: "Ready for a first touch",
+            icon: "users",
+          },
+          {
+            label: "Appointments",
+            value: sampleLeads.filter(
+              (lead) => (state.leadStages[lead.id] ?? lead.stage) === "Appointment",
+            ).length,
+            detail: "A chance to understand their goals",
+            icon: "calendar",
+          },
+          {
+            label: "Applications",
+            value: sampleLeads.filter(
+              (lead) => (state.leadStages[lead.id] ?? lead.stage) === "Application",
+            ).length,
+            detail: "Moving toward a decision",
+            icon: "file-text",
+          },
+          {
+            label: "Closed",
+            value: sampleLeads.filter(
+              (lead) => (state.leadStages[lead.id] ?? lead.stage) === "Closed",
+            ).length,
+            detail: "Completed conversations",
+            icon: "check",
+          },
+        ]}
+      />
       <div className={styles.listToolbar}>
         <TextField
           label="Search leads"
@@ -594,8 +643,32 @@ function Leads({ pipeline = false }: { pipeline?: boolean }) {
           onChange={setStage}
           options={["All stages", ...leadStages]}
         />
+        <SelectField
+          label="Filter by source"
+          value={source}
+          onChange={setSource}
+          options={["All sources", "Cedar Street open house", "Partner referral"]}
+        />
         <Badge tone="info">{leads.length} leads</Badge>
       </div>
+      {query || stage !== "All stages" || source !== "All sources" ? (
+        <div className={styles.row}>
+          <span className={styles.muted}>
+            Showing {leads.length} of {sampleLeads.length} demo leads
+          </span>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setQuery("");
+              setStage("All stages");
+              setSource("All sources");
+            }}
+          >
+            Clear filters
+          </Button>
+        </div>
+      ) : null}
+      {message ? <LiveRegion message={message} visible /> : null}
       {pipeline ? (
         <div
           className={styles.board}
@@ -719,6 +792,24 @@ function Leads({ pipeline = false }: { pipeline?: boolean }) {
               </div>
             </div>
             {stageControl(selected)}
+            <Card padding="md" className={styles.card}>
+              <h3>Suggested next step</h3>
+              <p>
+                {
+                  {
+                    New: "Introduce yourself and ask what they are looking for in their next home.",
+                    Contacted: "Offer a time to discuss their questions and next steps.",
+                    Appointment: "Confirm the conversation and prepare the details they need.",
+                    Application: "Review outstanding items and keep the buyer informed.",
+                    Closed:
+                      "Thank them for working with you and stay available for future questions.",
+                  }[state.leadStages[selected.id] ?? selected.stage]
+                }
+              </p>
+              <ActionLink href="/marketing/messaging" secondary>
+                Prepare a follow-up draft
+              </ActionLink>
+            </Card>
             <QuietNote>
               Calling and messaging become available when HighLevel is connected.
             </QuietNote>
@@ -915,25 +1006,24 @@ function Partners() {
 
 function Reports() {
   const { state } = useRequiredDashboardPreview();
-  const [view, setView] = useState("Pipeline");
-  const [exported, setExported] = useState(false);
+  const [view, setView] = useState<ReportView>("Pipeline");
+  const [message, setMessage] = useState("");
   const stages = sampleLeads.map((lead) => state.leadStages[lead.id] ?? lead.stage);
   function exportReport() {
-    const csv = [
-      "Name,Email,Source,Partner,Stage",
-      ...sampleLeads.map((lead) =>
-        [lead.name, lead.email, lead.source, lead.partner, state.leadStages[lead.id] ?? lead.stage]
-          .map((value) => `"${value.replaceAll('"', '""')}"`)
-          .join(","),
-      ),
-    ].join("\r\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "automatedlo-demo-pipeline.csv";
-    anchor.click();
-    URL.revokeObjectURL(url);
-    setExported(true);
+    try {
+      const csv = buildWorkspaceReport(state, view);
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `automatedlo-demo-${view.toLowerCase()}.csv`;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setMessage(`Your ${view.toLowerCase()} report is ready.`);
+    } catch {
+      setMessage("The report could not be downloaded. Please try again.");
+    }
   }
   return (
     <>
@@ -948,12 +1038,15 @@ function Reports() {
       </PageHeader>
       <div className={styles.reportHeading}>
         <div className={styles.viewToggle} role="group" aria-label="Report view">
-          {["Pipeline", "Campaigns"].map((tab) => (
+          {(["Pipeline", "Campaigns", "Partners"] as const).map((tab) => (
             <Button
               variant="ghost"
               key={tab}
               aria-pressed={view === tab}
-              onClick={() => setView(tab)}
+              onClick={() => {
+                setView(tab);
+                setMessage("");
+              }}
             >
               {tab}
             </Button>
@@ -961,34 +1054,70 @@ function Reports() {
         </div>
         <Badge tone="info">Demo data</Badge>
       </div>
-      {exported ? <LiveRegion message="Your pipeline report is ready." visible /> : null}
+      {message ? <LiveRegion message={message} visible /> : null}
       <StatCards
-        items={[
-          {
-            label: "Total leads",
-            value: sampleLeads.length,
-            detail: "Across your pipeline",
-            icon: "users",
-          },
-          {
-            label: "Appointments",
-            value: stages.filter((stage) => stage === "Appointment").length,
-            detail: "Conversations taking shape",
-            icon: "calendar",
-          },
-          {
-            label: "Applications",
-            value: stages.filter((stage) => stage === "Application").length,
-            detail: "The next step toward closing",
-            icon: "file-text",
-          },
-          {
-            label: "Ad spend",
-            value: "Unavailable",
-            detail: "Connect an ad account to see spend",
-            icon: "credit-card",
-          },
-        ]}
+        items={
+          view === "Campaigns"
+            ? [
+                {
+                  label: "Saved campaigns",
+                  value: state.campaigns.length,
+                  detail: "Included in this report",
+                  icon: "megaphone",
+                },
+                {
+                  label: "Approved",
+                  value: state.campaigns.filter(
+                    (campaign) => campaign.state === "approved" && !campaign.blocking,
+                  ).length,
+                  detail: "Demo approvals",
+                  icon: "shield",
+                },
+                {
+                  label: "Planned budget",
+                  value: dollars(
+                    state.campaigns.reduce(
+                      (total, campaign) => total + campaign.totalBudgetMinor,
+                      0,
+                    ),
+                  ),
+                  detail: "Planned, not actual spend",
+                  icon: "credit-card",
+                },
+                {
+                  label: "Live results",
+                  value: "Unavailable",
+                  detail: "Requires connected reporting",
+                  icon: "chart",
+                },
+              ]
+            : [
+                {
+                  label: "Total leads",
+                  value: sampleLeads.length,
+                  detail: "Across your pipeline",
+                  icon: "users",
+                },
+                {
+                  label: "Appointments",
+                  value: stages.filter((stage) => stage === "Appointment").length,
+                  detail: "Conversations taking shape",
+                  icon: "calendar",
+                },
+                {
+                  label: "Applications",
+                  value: stages.filter((stage) => stage === "Application").length,
+                  detail: "The next step toward closing",
+                  icon: "file-text",
+                },
+                {
+                  label: "Ad spend",
+                  value: "Unavailable",
+                  detail: "Connect an ad account to see spend",
+                  icon: "credit-card",
+                },
+              ]
+        }
       />
       {view === "Pipeline" ? (
         <div className={styles.columns}>
@@ -1030,16 +1159,73 @@ function Reports() {
             </QuietNote>
           </Card>
         </div>
-      ) : (
+      ) : view === "Campaigns" ? (
         <Card className={styles.panel} padding="none">
           <SectionTitle
             title="Campaign performance"
             detail="Review your campaign progress before launch."
           />
-          <CampaignRows campaigns={state.campaigns} />
+          {state.campaigns.length ? (
+            <CampaignRows campaigns={state.campaigns} example={false} />
+          ) : (
+            <div className={styles.panelInset}>
+              <EmptyState
+                title="No saved campaigns to report yet"
+                description="Create a campaign to review its status and planned budget here."
+              />
+              <ActionLink href="/marketing/campaigns/new">Create campaign</ActionLink>
+            </div>
+          )}
           <QuietNote>
             Spend and delivery results become available when an ad account is connected.
           </QuietNote>
+        </Card>
+      ) : (
+        <Card className={styles.panel} padding="none">
+          <SectionTitle
+            title="Partner contributions"
+            detail="Sample lead attribution alongside your saved campaign activity."
+            href="/partners"
+            link="Manage partners"
+          />
+          <div
+            className={styles.tableRegion}
+            role="region"
+            aria-label="Partner report"
+            tabIndex={0}
+          >
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th scope="col">Partner</th>
+                  <th scope="col">Brokerage</th>
+                  <th scope="col">Demo leads</th>
+                  <th scope="col">Saved campaigns</th>
+                </tr>
+              </thead>
+              <tbody>
+                {state.partners.map((partner, index) => (
+                  <tr key={partner.id}>
+                    <td>
+                      <div className={styles.personCell}>
+                        <ProfileAvatar name={partner.name} index={index} />
+                        <strong>{partner.name}</strong>
+                      </div>
+                    </td>
+                    <td>{partner.company}</td>
+                    <td>{sampleLeads.filter((lead) => lead.partner === partner.name).length}</td>
+                    <td>
+                      {
+                        state.campaigns.filter(
+                          (campaign) => campaign.realtorDisplayName === partner.name,
+                        ).length
+                      }
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
       <Card className={styles.panel} padding="none">
@@ -1059,229 +1245,6 @@ function Reports() {
           ))}
         </div>
       </Card>
-    </>
-  );
-}
-
-function Assets({ creative = false }: { creative?: boolean }) {
-  return (
-    <>
-      <PageHeader
-        title={creative ? "Made to stop the scroll." : "A home for every listing."}
-        eyebrow={creative ? "Creative library" : "Property sites"}
-        description={
-          creative
-            ? "Your property story, ready for the right format."
-            : "Give buyers a clear view of the property and a reason to connect."
-        }
-      >
-        <ActionLink href="/marketing/campaigns/new">
-          <Icon name="plus" decorative size="sm" /> Create campaign
-        </ActionLink>
-      </PageHeader>
-      <MarketingTabs />
-      {creative ? (
-        <div className={styles.assetGrid}>
-          {[
-            ["Feed creative", "1080 × 1080", "/synthetic-assets/open-house-feed-v3.svg"],
-            ["Story creative", "1080 × 1920", "/synthetic-assets/open-house-story-v3.svg"],
-          ].map(([title, size, href]) => (
-            <Card key={title} className={styles.assetCard} padding="none">
-              <div className={styles.assetFrame}>
-                <img src={href} alt={`${title} for the Cedar Street example campaign`} />
-              </div>
-              <div className={styles.assetDetails}>
-                <div className={styles.row}>
-                  <h2>{title}</h2>
-                  <Badge tone="info">Example</Badge>
-                </div>
-                <p>214 Cedar Street · {size}</p>
-                <Link
-                  href={href ?? exampleCampaignHref}
-                  download
-                  variant="action"
-                  className={styles.secondaryAction}
-                >
-                  <Icon name="download" decorative size="sm" /> Download creative
-                </Link>
-              </div>
-            </Card>
-          ))}
-          <Card className={styles.assetCard} padding="none">
-            <div className={`${styles.assetFrame} ${styles.printFrame}`}>
-              <Icon name="file-text" decorative size="lg" />
-              <strong>
-                Open house.
-                <br />
-                Open possibilities.
-              </strong>
-              <span>214 Cedar Street</span>
-            </div>
-            <div className={styles.assetDetails}>
-              <h2>Print & property package</h2>
-              <p>Property details, branding, and the next step for buyers.</p>
-              <ActionLink href={exampleCampaignHref} secondary>
-                Explore example package
-              </ActionLink>
-              <QuietNote>New PDF generation is coming soon.</QuietNote>
-            </div>
-          </Card>
-        </div>
-      ) : (
-        <div className={styles.columns}>
-          <Card className={styles.siteCard} padding="none">
-            <div className={styles.browserChrome}>
-              <i />
-              <i />
-              <i />
-              <span>214 Cedar Street</span>
-              <Icon name="globe" decorative size="sm" />
-            </div>
-            <div className={styles.sitePreview}>
-              <span>OPEN HOUSE</span>
-              <Icon name="home" decorative size="lg" />
-              <h2>
-                A place for
-                <br />
-                your next chapter.
-              </h2>
-              <p>214 Cedar Street</p>
-              <span className={styles.siteCta}>
-                Explore the property <Icon name="arrow-right" decorative size="sm" />
-              </span>
-            </div>
-            <div className={styles.assetDetails}>
-              <div className={styles.row}>
-                <h2>Cedar Street</h2>
-                <Badge tone="info">Example site</Badge>
-              </div>
-              <p>Built around one property. Designed for the next conversation.</p>
-              <Link
-                href={examplePageHref}
-                external
-                variant="action"
-                className={styles.primaryAction}
-              >
-                Open property page
-              </Link>
-            </div>
-          </Card>
-          <BoostCard />
-        </div>
-      )}
-    </>
-  );
-}
-
-function ComingSoon({ view }: { view: PreviewView }) {
-  const options: Record<
-    string,
-    {
-      title: string;
-      eyebrow: string;
-      description: string;
-      icon: IconName;
-      cards: readonly [string, string][];
-    }
-  > = {
-    automations: {
-      title: "Keep the momentum going.",
-      eyebrow: "Automations",
-      description: "Thoughtful follow-up, from the first introduction to the next opportunity.",
-      icon: "bolt",
-      cards: [
-        ["A timely first touch", "Welcome new leads with the right next step."],
-        ["Stronger partner relationships", "Stay close to the people who send business your way."],
-        ["Less chasing. More clarity.", "Know when a campaign needs your attention."],
-      ],
-    },
-    marketplace: {
-      title: "Room for what comes next.",
-      eyebrow: "Explore",
-      description: "More ways to build relationships and grow your business.",
-      icon: "layers",
-      cards: [
-        ["Homeowner insights", "Better conversations with the people you have already helped."],
-        ["Financing tools", "Help buyers understand their next move."],
-        ["New campaign templates", "More moments worth marketing."],
-      ],
-    },
-    messaging: {
-      title: "The right message. The right moment.",
-      eyebrow: "Email & SMS",
-      description: "Keep the conversation connected to the property, partner, and person.",
-      icon: "mail",
-      cards: [
-        ["Open house invitations", "Put the property on the right people's radar."],
-        ["Personal follow-up", "Give every interested buyer a clear next step."],
-        ["Partner updates", "Keep your Realtor in the loop."],
-      ],
-    },
-    blueprints: {
-      title: "Start with a great idea.",
-      eyebrow: "Campaign templates",
-      description: "A clear starting point for the moments that matter to your business.",
-      icon: "sparkles",
-      cards: [
-        ["Open House Boost", "Bring the property and your Realtor partnership together."],
-        ["New listing", "Introduce a property with a coordinated marketing package."],
-        ["Partner spotlight", "Put your local relationships front and center."],
-      ],
-    },
-    ads: {
-      title: "Give your campaign a bigger audience.",
-      eyebrow: "Ads Manager",
-      description: "Connect an ad account to take approved campaigns further.",
-      icon: "megaphone",
-      cards: [
-        ["Choose the campaign", "Start with the property and approved content."],
-        ["Set the budget", "Decide what you want to spend before launch."],
-        ["Follow the results", "See the leads and conversations that follow."],
-      ],
-    },
-  };
-  const item = options[view] ?? options.automations!;
-  return (
-    <>
-      <PageHeader title={item.title} eyebrow={item.eyebrow} description={item.description} />
-      {["messaging", "blueprints", "ads"].includes(view) ? <MarketingTabs /> : null}
-      <div className={styles.featureIntro}>
-        <span className={styles.bigIcon}>
-          <Icon name={item.icon} decorative size="lg" />
-        </span>
-        <div>
-          <Badge tone={view === "blueprints" ? "info" : "neutral"}>
-            {view === "blueprints" ? "Open House Boost is ready to explore" : "Coming soon"}
-          </Badge>
-          <h2>
-            {view === "ads"
-              ? "Your next audience starts with a connection."
-              : "Built around the way you do business."}
-          </h2>
-          <p>
-            {view === "ads"
-              ? "Meta isn't connected in this demo. You can still create and review a campaign."
-              : "Explore the workflow today. Live delivery will arrive with connected accounts."}
-          </p>
-          <ActionLink href="/marketing/campaigns/new">
-            Create an Open House Boost <Icon name="arrow-right" decorative size="sm" />
-          </ActionLink>
-        </div>
-      </div>
-      <div className={styles.three}>
-        {item.cards.map(([title, description], index) => (
-          <Card className={styles.card} padding="md" key={title}>
-            <span className={styles.stepNumber}>0{index + 1}</span>
-            <h2>{title}</h2>
-            <p>{description}</p>
-            {title === "Open House Boost" ? (
-              <Link href="/marketing/campaigns/new">Use this template</Link>
-            ) : (
-              <Badge>Coming soon</Badge>
-            )}
-          </Card>
-        ))}
-      </div>
     </>
   );
 }
@@ -1318,10 +1281,10 @@ export function DashboardPreviewScreen({ view }: { view: PreviewView }) {
       content = <Reports />;
       break;
     case "property-sites":
-      content = <Assets />;
+      content = <AssetWorkspace />;
       break;
     case "creative":
-      content = <Assets creative />;
+      content = <AssetWorkspace creative />;
       break;
     case "onboarding":
       content = <SetupWizard />;
@@ -1335,8 +1298,21 @@ export function DashboardPreviewScreen({ view }: { view: PreviewView }) {
     case "billing":
       content = <SettingsWorkspace view={view} />;
       break;
-    default:
-      content = <ComingSoon view={view} />;
+    case "ads":
+      content = <AdsWorkspace />;
+      break;
+    case "messaging":
+      content = <MessagingWorkspace />;
+      break;
+    case "automations":
+      content = <AutomationsWorkspace />;
+      break;
+    case "blueprints":
+      content = <TemplatesWorkspace />;
+      break;
+    case "marketplace":
+      content = <ExploreWorkspace />;
+      break;
   }
   return <div className={styles.page}>{content}</div>;
 }

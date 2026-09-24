@@ -12,6 +12,7 @@ coverage
 **/.turbo
 .oalo
 test-results
+tmp
 playwright-report
 /reports
 supabase

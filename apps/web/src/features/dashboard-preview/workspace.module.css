@@ -594,6 +594,7 @@
   padding-block-end: var(--space-1);
 }
 .page .tabs a {
+  flex: 0 0 auto;
   text-decoration: none;
   color: var(--tx-body);
   font-size: 12px;

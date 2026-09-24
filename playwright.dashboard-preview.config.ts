@@ -4,7 +4,7 @@ const remote = process.env.OALO_PREVIEW_BASE_URL;
 const baseURL = remote ?? "http://127.0.0.1:3210";
 export default defineConfig({
   testDir: "./tests/browser",
-  testMatch: ["dashboard-preview.spec.ts", "product-onboarding.spec.ts"],
+  testMatch: ["dashboard-preview.spec.ts", "product-onboarding.spec.ts", "workspace-pages.spec.ts"],
   outputDir: remote
     ? "test-results/dashboard-preview-live"
     : "test-results/dashboard-preview-local",

@@ -115,11 +115,14 @@ export function createHomeHighLevelPort(
         "Complete the contact's name in HighLevel before creating a report.",
       );
     const channelStatus = contact.dndSettings;
+    // Current v3 documentation uses lowercase channel keys; older records may
+    // retain Email/SMS. Any active or unknown duplicate still blocks delivery.
+    const channels = Object.keys(channelStatus ?? {}).map((channel) => channel.toLowerCase());
     const allowed =
       contact.dnd === false &&
       channelStatus !== undefined &&
-      channelStatus.Email?.status === "inactive" &&
-      channelStatus.SMS?.status === "inactive" &&
+      channels.includes("email") &&
+      channels.includes("sms") &&
       Object.values(channelStatus).every((channel) => channel.status === "inactive");
     return { id: contact.id, name, email: contact.email ?? null, communicationAllowed: allowed };
   }

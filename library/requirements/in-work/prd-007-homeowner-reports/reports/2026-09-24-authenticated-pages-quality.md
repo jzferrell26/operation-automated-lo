@@ -1,0 +1,70 @@
+# Authenticated workspace pages: quality review
+
+Scope: `2026-09-24-authenticated-pages-scope.md`. Reviewed after the security self-review in `2026-09-24-authenticated-pages-security.md`. This records the implementing agent's verification, not an independent audit.
+
+## Implementation result
+
+All sixteen existing catch-all destinations now render an authenticated page instead of requiring demo mode. Marketing and settings hubs connect the existing campaign and homeowner-report workflows. Property-site/creative lists use saved records and explicit generation state; ads, routing, team and billing pages distinguish current account information from unavailable external capabilities.
+
+The personal report identity, partner list and six channel-specific drafts persist in the existing user/location preference table. Revision conflicts preserve the submitted form and require reconciliation. The partner dialog can reload current revisions while retaining edits. Selecting a saved partner populates the campaign name and clears the material-permission checkbox. Report branding becomes the default for a new report, while saved snapshots remain unchanged.
+
+## Traceability
+
+| Requirement | Evidence |
+| --- | --- |
+| Authenticated routes and unknown routes | `tests/browser/review/workspace-pages.spec.ts` opens all 16 destinations through a signed-in session, checks the main heading and rejects the unknown-route document. An unauthenticated context reaches sign-in. |
+| Branding persistence and consumption | The browser journey saves company, officer, email, NMLS and tagline, reloads them, exercises a two-tab conflict and, with reports enabled, verifies the saved company/tagline inside the new-report form. The unavailable valuation submit remains disabled. |
+| Partner CRUD and permission | The journey adds, edits, reloads, searches/selects and removes a partner. Selecting a saved partner clears the previously checked material permission. A second-tab conflict is recovered inside the still-open dialog without losing its typed phone number. |
+| Independent message drafts | Email and SMS drafts save separately. Unsaved switches require a choice, canceled switches retain text, and reload returns the saved channel. Failed storage and missing clipboard APIs never display a false success. New edits clear previous saved/copy feedback. |
+| API boundaries | Nine `workspace-preferences.postgres.test.ts` scenarios exercise real persistence, concurrent writes, exact retries, user/location isolation, role/CSRF/origin/key refusal, record bounds, corrupted stored data and revoked sessions. No provider request is made. |
+| Navigation | `navigation.unit.test.ts` verifies enabled preparation links retain their capability requirements and that the original fixture remains unchanged. The report-enabled browser journey checks the actual navigation links. |
+| Responsive and accessibility behavior | Seven browser journeys pass together against a fresh optimized build, real local PostgreSQL and HTTPS. The nine-page matrix passes accessibility checks in both themes and document bounds at 1440, 1180, 768 and 390 pixels. |
+
+## Corrections from review
+
+The mobile breakpoint now immediately removes the desktop rail margin, preventing a transient sideways page during a viewport transition. Desktop rail toggles retain their animation. The branded preview explicitly keeps its dark surface inside the governed Card component, and small card links use the theme's accessible information-text color. No screenshot tolerance, accessibility rule or data-isolation assertion was weakened.
+
+An incremental local build once rendered shared buttons without their expected style mapping. A fresh optimized build removed that inconsistency; the complete browser journey and both-theme matrix passed on that build. The CI run will independently build from its clean checkout. No duplicate button styling was introduced to conceal the symptom.
+
+Actual light marketing and dark report-branding mobile screenshots were opened and inspected. They show readable labels, visible inputs/actions, correctly stacked cards and no clipped content. Screenshots and traces are retained under `test-results/browser`.
+
+## Verification completed before publication
+
+- 950 unit tests passed with the repository's coverage thresholds unchanged.
+- 184 integration tests passed, including the existing guided setup journeys.
+- All nine real PostgreSQL preference tests passed.
+- The final metadata-only summary read passed together with the existing homeowner tests: 23 PostgreSQL scenarios in three files. General workspace pages no longer load report snapshots merely to show a property count.
+- All seven authenticated workspace browser journeys passed together (1.2 minutes on the clean build).
+- Optimized build, type checking, lint, formatting, boundary/type/secret/dependency audits and clone detection passed. Clone detection reported zero clones; the dependency audit reported no known vulnerabilities.
+
+The new browser suite is discovered by the existing real-database review project. The report-enabled local run additionally checks the live navigation projection and new-report defaults. Existing synthetic and review fixtures remain separate. Full CI, hosted preview, merge and production results are recorded on the release PR as those actions complete.
+
+The final repository refinement uses property metadata and a database report count for workspace hubs instead of loading every saved financial snapshot. All 23 relevant PostgreSQL scenarios passed afterward: nine workspace preference tests, nine homeowner repository tests and five homeowner route tests. The added case checks both the returned metadata and tenant isolation; the source change does not modify the rendered page contract or database schema.
+
+## Deployment limits
+
+Final report-action verification passed all 190 integration tests and six AVM/report browser scenarios. The new dialog fixture resets queued one-shot responses between tests so a failed test cannot supply the next test's response. The mobile validation screenshot was inspected: the error is visible inside the open form, entered values remain in place and the underlying report is unchanged. The browser discovery check confirms 26 demo scenarios and seven authenticated workspace scenarios in their separate runtimes.
+
+The demo browser configuration now excludes `review/**`, matching the existing separation in the legacy synthetic runner. Its basename match for `workspace-pages.spec.ts` had also discovered the authenticated suite under that directory, which requires the separate PostgreSQL/TLS review server. The seven signed-in scenarios remain in the canonical real-database gate; no test assertion is skipped within its intended runtime.
+
+The Linux release gate exposed a stylesheet-order dependency in the existing Connections notice: its title could inherit the Card's standard text color instead of the intended information tone. The shared notice title now declares its existing semantic text color directly. The 390px light/dark reference images were inspected and kept unchanged; no screenshot tolerance was changed. This also stabilizes the same title styling on the existing onboarding page.
+
+No new migration, subscription price, live API credential, provider request or customer message is part of this change. The signed-in pages do not authorize live ads, billing, CRM imports or team invitations. RentCast activation still requires its licensed credential, an approved workspace UUID and an explicit lookup allowance. The current map update preserves the historical acceptance ledger and labels older deployment/authentication statements as historical.
+
+## Final report interaction qualification
+
+After the security review of the final client corrections, all six `report-actions.integration.test.tsx` scenarios passed. They cover modal validation/refusal with retained values, canceled schedule edits, a pending command's disabled fields and Escape behavior, unavailable clipboard access, failed revocation, owner removal of a failed first lookup, viewer access, and release of the overlap guard after a rejected command.
+
+The optimized build and type check passed. All five report browser journeys passed together (22.3 seconds), including saved reports and history, actual PDF download, browser isolation, unknown debt, disabled live operations, failed browser storage, the mobile dialog error/recovery flow and both-theme accessibility/layout checks. The new 390px error screenshot was opened and inspected: the message is readable within the dialog below its save action, and correcting the balance clears the error before the saved report updates. No visual baseline or assertion was relaxed. Lint, package/type/secret/dependency audits and clone detection passed; clone detection found zero clones.
+
+Full-head CI and stable deployment verification remain release actions, reported on PR71 when complete. The above browser exercise uses explicit fictional sample data. It does not establish a live RentCast response or a delivered HighLevel message.
+
+The HighLevel channel-name correction is cross-checked against the current v3 contact documentation and covered by adapter assertions: lowercase, legacy and mixed case names are accepted only with explicit inactive settings; missing, active, unknown or conflicting channel permissions refuse the handoff without a write. RentCast's documented `/v1/avm/value`, `lookupSubjectAttributes` and `compCount` contract was also checked and requires no implementation change. External documentation agreement is separate from live-provider qualification, which still needs the configured credentials.
+
+## Mobile walkthrough capture correction
+
+Run `35961931888` passed the application job and 95 real-database browser scenarios but failed the mobile pictures for walkthrough step 5 and the step-6 handoff. The downloaded expected/actual images were inspected: the fixed header and bottom panel agreed, while the underlying page retained a different valid scroll position from the previous tablet viewport. The handoff retry separately encountered the review proxy's upstream timeout.
+
+`guided-setup.walkthrough-captures.spec.ts` now settles layout at each frame and, on entering mobile, reuses its existing canonical anchor-scroll setup before capturing. The product still determines the highlighted element's final placement. Desktop captures, all named states, accessibility checks, screenshot baselines and pixel tolerances are unchanged. This is a test-state correction after the intentional removal of the desktop-margin transition at the mobile breakpoint, not a replacement of reference images or a relaxed product assertion. Final Linux CI and hosted release results are recorded on PR71.
+
+The corrected approver-path journey passed against the local PostgreSQL/HTTPS review runtime in 1.6 minutes. Its steps 3 through 7 still traverse all four viewports and both themes with the existing accessibility checks. The locally captured mobile step-5 image was inspected and places the highlighted result below the sticky header and above the bottom sheet. Linux pixel comparison remains the release gate because Windows font rendering is not interchangeable with the committed Linux references.

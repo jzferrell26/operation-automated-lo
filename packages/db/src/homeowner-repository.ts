@@ -98,6 +98,19 @@ const cachedValuation = statement(
   `select report.snapshot->'valuation' as valuation from homeowner.reports report join homeowner.properties property on property.location_id=report.location_id and property.id=report.property_id where report.location_id=$1::uuid and property.address_hash=$2 and report.valuation_at>now()-interval '30 days' and property.revoked_at is null order by report.valuation_at desc limit 1`,
   z.object({ valuation: HomeValuationSchema }),
 );
+const propertySummaries = statement(
+  "property-summaries",
+  "read",
+  `select property.id, property.address, property.updated_at, property.cadence, property.paused, (select count(*)::integer from homeowner.reports report where report.location_id=property.location_id and report.property_id=property.id) as report_count from homeowner.properties property where property.location_id=$1::uuid and property.revoked_at is null order by property.updated_at desc limit 200`,
+  z.object({
+    id: z.string(),
+    address: HomeAddressSchema,
+    updated_at: isoDate,
+    cadence: z.enum(["off", "monthly"]),
+    paused: z.boolean(),
+    report_count: z.number().int().nonnegative(),
+  }),
+);
 
 export interface HomeLookupReservation {
   kind: "reserved" | "existing";
@@ -150,6 +163,19 @@ export class PostgresHomeownerRepository {
   async getReport(id: string): Promise<HomeReport | null> {
     return this.transaction(
       async (tx) => (await tx.read(readReport, [tx.context.locationId, id]))[0]?.snapshot ?? null,
+    );
+  }
+  /** Workspace navigation needs property metadata, never every financial snapshot. */
+  async summaries() {
+    return this.transaction(async (tx) =>
+      (await tx.read(propertySummaries, [tx.context.locationId])).map((row) => ({
+        id: row.id,
+        address: row.address,
+        updatedAt: row.updated_at,
+        reportCount: row.report_count,
+        monthly: row.cadence === "monthly",
+        paused: row.paused,
+      })),
     );
   }
   async usage(): Promise<number> {

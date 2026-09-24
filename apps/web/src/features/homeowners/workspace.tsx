@@ -217,8 +217,11 @@ function HomeReportList({ data }: { data: ReturnType<typeof useHomeWorkspace> })
       >
         <ol className={styles.helpSteps}>
           <li>
-            <strong>Choose the homeowner and property.</strong>
-            <p>Use an existing HighLevel contact and confirm the address.</p>
+            <strong>Choose a property or a linked homeowner report.</strong>
+            <p>
+              Start with a confirmed address. Select an existing HighLevel contact when preparing
+              homeowner follow-up.
+            </p>
           </li>
           <li>
             <strong>Confirm the mortgage details.</strong>
@@ -328,6 +331,7 @@ function HomeReportDetails({
   const [paused, setPaused] = useState(property.enrollment.paused);
   const [consent, setConsent] = useState(false);
   const [message, setMessage] = useState("");
+  const [actionError, setActionError] = useState("");
   const [share, setShare] = useState<{ url: string; expiresAt?: string } | null>(null);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [deliveryStatus, setDeliveryStatus] = useState<string | null>(null);
@@ -349,7 +353,9 @@ function HomeReportDetails({
     };
   }, [reportId, reportStatus, busy]);
   async function act(action: HomeAction) {
+    if (data.busy) return;
     setMessage("");
+    setActionError("");
     try {
       const result = await data.command(action);
       if (result.report) setSelectedId(result.report.id);
@@ -362,24 +368,35 @@ function HomeReportDetails({
       );
       setDialog(null);
       if (action.action === "delete") router.push("/homeowners");
-    } catch {
-      setMessage(
-        "The action was not completed. Review the message above and your saved report status.",
+    } catch (failure) {
+      setActionError(
+        failure instanceof Error
+          ? failure.message
+          : "The action was not completed. Check the report details and try again.",
       );
     }
   }
   function open(next: typeof dialog) {
+    if (data.busy) return;
+    data.clearError();
+    setActionError("");
+    setMessage("");
     setConsent(false);
     setRequestId(crypto.randomUUID());
     if (next === "edit" && report) {
       setMortgage(mortgageDraft(report.input.mortgage));
       setBrand(report.input.brand);
     }
+    if (next === "schedule") {
+      setCadence(property.enrollment.cadence);
+      setDeliver(property.enrollment.deliverUpdates);
+      setPaused(property.enrollment.paused);
+    }
     setDialog(next);
   }
   async function edit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!report) return;
+    if (!report || data.busy) return;
     try {
       await act({
         action: "revise",
@@ -389,7 +406,16 @@ function HomeReportDetails({
         brand,
       });
     } catch {
-      setMessage("Check the mortgage details and branding fields before saving.");
+      setActionError("Check the mortgage details and branding fields before saving.");
+    }
+  }
+  async function copyShareLink() {
+    if (!share) return;
+    try {
+      await navigator.clipboard.writeText(share.url);
+      setMessage("Report link copied.");
+    } catch {
+      setMessage("Clipboard access is unavailable. Select the report link to copy it.");
     }
   }
   if (!report)
@@ -404,10 +430,43 @@ function HomeReportDetails({
           before starting a new request.
         </p>
         <HomeRecoveryControls propertyId={property.id} data={data} />
+        {data.workspace.canWrite ? (
+          <Button variant="outline" disabled={data.busy} onClick={() => open("delete")}>
+            Remove property
+          </Button>
+        ) : null}
         <ActionLink href="/homeowners/new">Create a report</ActionLink>
         <ActionLink href="/homeowners" secondary>
           Back to homeowner reports
         </ActionLink>
+        <Dialog
+          title="Remove this property?"
+          open={dialog === "delete"}
+          onClose={() => {
+            if (!data.busy) setDialog(null);
+          }}
+        >
+          <p>
+            This removes the property and its unfinished report requests. It does not repeat a
+            valuation, erase recorded lookup usage, or delete a HighLevel contact.
+          </p>
+          <label className={styles.check}>
+            <input
+              type="checkbox"
+              disabled={data.busy}
+              checked={consent}
+              onChange={(event) => setConsent(event.target.checked)}
+            />
+            <span>I confirm removal of this property's reports.</span>
+          </label>
+          {actionError ? <LiveRegion urgency="alert" visible message={actionError} /> : null}
+          <Button
+            disabled={!consent || data.busy}
+            onClick={() => void act({ action: "delete", propertyId: property.id, confirmed: true })}
+          >
+            {data.busy ? "Removing…" : "Remove property"}
+          </Button>
+        </Dialog>
       </>
     );
   const titles = {
@@ -439,13 +498,19 @@ function HomeReportDetails({
             Print
           </Button>
           {data.workspace.canWrite ? (
-            <Button onClick={() => open("share")} disabled={data.workspace.mode === "demo"}>
+            <Button
+              onClick={() => open("share")}
+              disabled={data.busy || data.workspace.mode === "demo"}
+            >
               Share report <Icon name="arrow-up-right" decorative size="sm" />
             </Button>
           ) : null}
         </div>
       </header>
       {message ? <LiveRegion visible message={message} /> : null}
+      {actionError && dialog === null ? (
+        <LiveRegion urgency="alert" visible message={actionError} />
+      ) : null}
       {property.lastError ? (
         <p className={`${styles.note} ${styles.screenOnly}`}>
           The last valuation or update could not be completed. Your saved report is still available.
@@ -468,6 +533,7 @@ function HomeReportDetails({
           {data.workspace.canWrite ? (
             <Button
               variant="outline"
+              disabled={data.busy}
               onClick={() => void act({ action: "resolve-review", propertyId: property.id })}
             >
               Mark reviewed
@@ -478,6 +544,7 @@ function HomeReportDetails({
       <div className={`${styles.detailToolbar} ${styles.screenOnly}`}>
         <Select
           label="Report history"
+          disabled={data.busy}
           value={report.id}
           options={property.reports.map((item, index) => ({
             value: item.id,
@@ -488,13 +555,20 @@ function HomeReportDetails({
         <div className={styles.actions}>
           {data.workspace.canWrite ? (
             <>
-              <Button variant="outline" onClick={() => open("edit")}>
+              <Button variant="outline" disabled={data.busy} onClick={() => open("edit")}>
                 Update loan details
               </Button>
-              <Button variant="outline" onClick={() => open("refresh")}>
+              <Button
+                variant="outline"
+                disabled={
+                  data.busy ||
+                  (data.workspace.mode !== "demo" && !data.workspace.valuationConnected)
+                }
+                onClick={() => open("refresh")}
+              >
                 Refresh value
               </Button>
-              <Button variant="outline" onClick={() => open("schedule")}>
+              <Button variant="outline" disabled={data.busy} onClick={() => open("schedule")}>
                 <Icon name="calendar" decorative size="sm" />{" "}
                 {property.enrollment.cadence === "monthly" && !property.enrollment.paused
                   ? "Monthly updates"
@@ -531,6 +605,7 @@ function HomeReportDetails({
         </div>
         <Button
           disabled={
+            data.busy ||
             !data.workspace.deliveryEnabled ||
             !data.workspace.canWrite ||
             report.input.association === "property_only"
@@ -543,16 +618,7 @@ function HomeReportDetails({
       {share ? (
         <div className={`${styles.shareResult} ${styles.screenOnly}`}>
           <TextField label="Private report link" value={share.url} readOnly />
-          <Button
-            variant="outline"
-            onClick={() => {
-              void navigator.clipboard.writeText(share.url).then(
-                () => setMessage("Report link copied."),
-                () =>
-                  setMessage("Clipboard access is unavailable. Select the report link to copy it."),
-              );
-            }}
-          >
+          <Button variant="outline" onClick={() => void copyShareLink()}>
             Copy link
           </Button>
           {share.expiresAt ? (
@@ -566,14 +632,14 @@ function HomeReportDetails({
         <div className={`${styles.maintenance} ${styles.screenOnly}`}>
           <Button
             variant="ghost"
-            disabled={data.workspace.mode === "demo"}
+            disabled={data.busy || data.workspace.mode === "demo"}
             onClick={() => {
               void act({ action: "revoke", propertyId: property.id });
             }}
           >
             Revoke share links
           </Button>
-          <Button variant="ghost" onClick={() => open("delete")}>
+          <Button variant="ghost" disabled={data.busy} onClick={() => open("delete")}>
             Remove property
           </Button>
         </div>
@@ -582,133 +648,145 @@ function HomeReportDetails({
       <Dialog
         title={dialog ? titles[dialog] : "Report action"}
         open={dialog !== null}
-        onClose={() => setDialog(null)}
+        onClose={() => {
+          if (!data.busy) setDialog(null);
+        }}
         description={
           dialog === "edit"
             ? "This creates a new saved report using the same valuation. No new lookup is requested."
             : undefined
         }
       >
-        {dialog === "edit" ? (
-          <form className={styles.formStack} onSubmit={(event) => void edit(event)}>
-            <MortgageFields value={mortgage} onChange={setMortgage} />
-            <details>
-              <summary>Edit report branding</summary>
-              <HomeBrandFields value={brand} onChange={setBrand} />
-            </details>
-            <Button type="submit" disabled={data.busy}>
-              Save updated report
-            </Button>
-          </form>
-        ) : dialog === "schedule" ? (
-          <div className={styles.formStack}>
-            <Select
-              label="Update frequency"
-              value={cadence}
-              options={[
-                { value: "off", label: "On demand only" },
-                { value: "monthly", label: "Monthly valuation refresh" },
-              ]}
-              onValueChange={(value) => setCadence(value === "monthly" ? "monthly" : "off")}
-            />
-            <label className={styles.check}>
-              <input
-                type="checkbox"
-                checked={paused}
-                onChange={(event) => setPaused(event.target.checked)}
+        <fieldset
+          className={styles.actionFields}
+          disabled={data.busy}
+          onChange={() => {
+            setActionError("");
+            setMessage("");
+          }}
+        >
+          {dialog === "edit" ? (
+            <form className={styles.formStack} onSubmit={(event) => void edit(event)}>
+              <MortgageFields value={mortgage} onChange={setMortgage} />
+              <details>
+                <summary>Edit report branding</summary>
+                <HomeBrandFields value={brand} onChange={setBrand} />
+              </details>
+              <Button type="submit" disabled={data.busy}>
+                Save updated report
+              </Button>
+            </form>
+          ) : dialog === "schedule" ? (
+            <div className={styles.formStack}>
+              <Select
+                label="Update frequency"
+                value={cadence}
+                options={[
+                  { value: "off", label: "On demand only" },
+                  { value: "monthly", label: "Monthly valuation refresh" },
+                ]}
+                onValueChange={(value) => setCadence(value === "monthly" ? "monthly" : "off")}
               />
-              <span>Pause scheduled updates</span>
-            </label>
-            <label className={styles.check}>
-              <input
-                type="checkbox"
-                checked={deliver}
-                disabled={
-                  data.workspace.mode === "demo" || report.input.association === "property_only"
-                }
-                onChange={(event) => setDeliver(event.target.checked)}
-              />
-              <span>
-                Hand fresh reports to the configured HighLevel workflow when communication and
-                source checks pass.
-              </span>
-            </label>
-            <p className={styles.note}>
-              {data.workspace.mode === "demo"
-                ? "This saves a demo preference only. No background job or message will run."
-                : "Each fresh valuation counts toward your monthly lookup allowance. Loan details older than 35 days are omitted from monthly reports until you confirm current balances. Delivery stops when communication is not allowed or the report cannot be verified."}
-            </p>
-            <Button
-              disabled={data.busy}
-              onClick={() =>
-                void act({
-                  action: "enrollment",
-                  propertyId: property.id,
-                  cadence,
-                  paused,
-                  deliverUpdates: deliver,
-                  confirmed: true,
-                })
-              }
-            >
-              Save update preferences
-            </Button>
-          </div>
-        ) : (
-          <div className={styles.formStack}>
-            <p>
-              {dialog === "delete"
-                ? "This removes the property, all saved report history and its share links from this workspace. It does not delete the HighLevel contact."
-                : dialog === "refresh"
-                  ? "A fresh valuation may use one lookup from your allowance. Mortgage inputs keep their original date. Confirm current balances separately when needed."
-                  : dialog === "deliver"
-                    ? "This starts the configured HighLevel workflow for the selected homeowner. The workflow may send messages based on its configuration. Check that it is the correct report and contact."
-                    : "The private link gives anyone who has it access to this property's value and supplied loan information. It expires automatically and can be revoked."}
-            </p>
-            <label className={styles.check}>
-              <input
-                type="checkbox"
-                checked={consent}
-                onChange={(event) => setConsent(event.target.checked)}
-              />
-              <span>
-                {dialog === "delete"
-                  ? "I confirm removal of this property's reports."
-                  : dialog === "refresh"
-                    ? "I confirm this new valuation request."
-                    : dialog === "deliver"
-                      ? "I confirm this homeowner and authorize the workflow handoff."
-                      : "I authorize sharing this report with the intended homeowner."}
-              </span>
-            </label>
-            <Button
-              disabled={!consent || data.busy}
-              onClick={() => {
-                if (dialog === "delete")
-                  void act({ action: "delete", propertyId: property.id, confirmed: true });
-                else if (dialog === "refresh")
+              <label className={styles.check}>
+                <input
+                  type="checkbox"
+                  checked={paused}
+                  onChange={(event) => setPaused(event.target.checked)}
+                />
+                <span>Pause scheduled updates</span>
+              </label>
+              <label className={styles.check}>
+                <input
+                  type="checkbox"
+                  checked={deliver}
+                  disabled={
+                    data.workspace.mode === "demo" || report.input.association === "property_only"
+                  }
+                  onChange={(event) => setDeliver(event.target.checked)}
+                />
+                <span>
+                  Hand fresh reports to the configured HighLevel workflow when communication and
+                  source checks pass.
+                </span>
+              </label>
+              <p className={styles.note}>
+                {data.workspace.mode === "demo"
+                  ? "This saves a demo preference only. No background job or message will run."
+                  : "Each fresh valuation counts toward your monthly lookup allowance. Loan details older than 35 days are omitted from monthly reports until you confirm current balances. Delivery stops when communication is not allowed or the report cannot be verified."}
+              </p>
+              <Button
+                disabled={data.busy}
+                onClick={() =>
                   void act({
-                    action: "refresh",
+                    action: "enrollment",
                     propertyId: property.id,
-                    requestId,
+                    cadence,
+                    paused,
+                    deliverUpdates: deliver,
                     confirmed: true,
-                  });
-                else if (dialog === "share" || dialog === "deliver")
-                  void act({ action: dialog, reportId: report.id, confirmed: true });
-              }}
-            >
-              {data.busy
-                ? "Working…"
-                : dialog === "delete"
-                  ? "Remove property"
+                  })
+                }
+              >
+                Save update preferences
+              </Button>
+            </div>
+          ) : (
+            <div className={styles.formStack}>
+              <p>
+                {dialog === "delete"
+                  ? "This removes the property, all saved report history and its share links from this workspace. It does not delete the HighLevel contact."
                   : dialog === "refresh"
-                    ? "Request valuation"
+                    ? "A fresh valuation may use one lookup from your allowance. Mortgage inputs keep their original date. Confirm current balances separately when needed."
                     : dialog === "deliver"
-                      ? "Confirm HighLevel handoff"
-                      : "Create report link"}
-            </Button>
-          </div>
-        )}
+                      ? "This starts the configured HighLevel workflow for the selected homeowner. The workflow may send messages based on its configuration. Check that it is the correct report and contact."
+                      : "The private link gives anyone who has it access to this property's value and supplied loan information. It expires automatically and can be revoked."}
+              </p>
+              <label className={styles.check}>
+                <input
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(event) => setConsent(event.target.checked)}
+                />
+                <span>
+                  {dialog === "delete"
+                    ? "I confirm removal of this property's reports."
+                    : dialog === "refresh"
+                      ? "I confirm this new valuation request."
+                      : dialog === "deliver"
+                        ? "I confirm this homeowner and authorize the workflow handoff."
+                        : "I authorize sharing this report with the intended homeowner."}
+                </span>
+              </label>
+              <Button
+                disabled={!consent || data.busy}
+                onClick={() => {
+                  if (dialog === "delete")
+                    void act({ action: "delete", propertyId: property.id, confirmed: true });
+                  else if (dialog === "refresh")
+                    void act({
+                      action: "refresh",
+                      propertyId: property.id,
+                      requestId,
+                      confirmed: true,
+                    });
+                  else if (dialog === "share" || dialog === "deliver")
+                    void act({ action: dialog, reportId: report.id, confirmed: true });
+                }}
+              >
+                {data.busy
+                  ? "Working…"
+                  : dialog === "delete"
+                    ? "Remove property"
+                    : dialog === "refresh"
+                      ? "Request valuation"
+                      : dialog === "deliver"
+                        ? "Confirm HighLevel handoff"
+                        : "Create report link"}
+              </Button>
+            </div>
+          )}
+        </fieldset>
+        {actionError ? <LiveRegion urgency="alert" visible message={actionError} /> : null}
       </Dialog>
     </>
   );
@@ -792,7 +870,7 @@ export function HomeownerWorkspace({
         <HomeReportBuilder data={data} initialBrand={cleanBrand} />
       ) : view === "detail" ? (
         property ? (
-          <HomeReportDetails property={property} data={data} />
+          <HomeReportDetails key={property.id} property={property} data={data} />
         ) : (
           <>
             <PageHeader

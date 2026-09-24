@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   HomeReportSchema,
   HomeWorkspaceSchema,
@@ -78,6 +78,8 @@ export function useHomeWorkspace() {
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const operationInProgress = useRef(false);
+  const clearError = useCallback(() => setError(null), []);
   const reload = useCallback(async () => {
     if (isDemo) return;
     try {
@@ -99,6 +101,9 @@ export function useHomeWorkspace() {
     ? { ...empty, mode: "demo", canWrite: true, properties: demo.state.homeownerProperties }
     : remote;
   async function command(action: HomeAction): Promise<HomeCommandResponse> {
+    if (operationInProgress.current)
+      throw new Error("Wait for the current report action to finish before starting another.");
+    operationInProgress.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -198,6 +203,7 @@ export function useHomeWorkspace() {
       setError(failure instanceof Error ? failure.message : "The report action failed.");
       throw failure;
     } finally {
+      operationInProgress.current = false;
       setBusy(false);
     }
   }
@@ -216,6 +222,8 @@ export function useHomeWorkspace() {
     return response.contacts;
   }
   async function download(report: HomeReport) {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -239,6 +247,7 @@ export function useHomeWorkspace() {
           : "The PDF could not be created. Use Print to save this report as a PDF.",
       );
     } finally {
+      operationInProgress.current = false;
       setBusy(false);
     }
   }
@@ -258,6 +267,7 @@ export function useHomeWorkspace() {
     ready: demo ? demo.ready : ready,
     busy,
     error: error ?? demo?.error ?? null,
+    clearError,
     reload,
     command,
     searchContacts,

@@ -361,6 +361,10 @@
   .workspace,
   .desktopSidebar[data-collapsed="true"] + .workspace {
     margin-inline-start: 0;
+    /* Switching from the desktop rail to the mobile drawer must not animate a
+     * leftover rail margin through the narrower viewport. Rail toggles still
+     * animate above this breakpoint. */
+    transition-duration: 0ms;
   }
 
   .topbar {

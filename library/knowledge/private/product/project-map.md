@@ -1,6 +1,6 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.11 | Date: September 2026 | Status: Active
+> Category: Product Operations | Version: 1.12 | Date: September 24, 2026 | Status: Active
 
 The canonical internal map of the product boundary, system flow, implementation status, external gates, and next work for Operation Automated LO.
 
@@ -28,7 +28,25 @@ Agents (Cursor, Claude Code, Codex) should also read [`.cursor/rules/core/the-ma
 
 Before this document, no canonical single project map existed. The information was distributed across the product definition, architecture documents, PRD indexes, readiness gate, and execution ledger.
 
-## Status snapshot
+## Current implementation and hosted status
+
+The following September 24 update supersedes the older tip, uncomposed-authentication and missing-database statements in the archived checkpoint below. It does not change external-evidence acceptance criteria or reopen accepted constraints.
+
+| Area | Verified implementation or remaining activation |
+| --- | --- |
+| Authentication | PR #67 (`58d77fd`) merged September 22. First-party password sessions, CSRF protection, account flows and saved onboarding are implemented. |
+| Dashboard and homeowner reports | PR #69 (`da8dfb9`) merged September 24; PR #68 was closed as superseded. Standalone address valuation, optional verified contact association, mortgage/equity calculations, snapshot history, PDF output, sharing, monthly worker and guarded HighLevel handoff are implemented. |
+| Release verification | Full CI run `35951313777` passed application, real PostgreSQL/authenticated browser, recovery and preview-smoke gates. This includes the previously failing guided-setup focus journey. |
+| Hosted app | `operation-automated-lo-web.vercel.app` is an authenticated deployment. Hosted signup, password login, profile persistence, report API access and sign-out were exercised. The production verification left paid lookup allowance at zero and confirmed unconfigured lookups fail before external access. |
+| Database | Dedicated Supabase project `vonesqpyfsrhasuxfiiz`, US East, in Jonathan's personal organization. Ten tracked migrations applied. The separate runtime login uses transaction pooling and certificate-verified TLS, cannot assume the migration owner, and sees no tenant rows without context. |
+| Live AVM | A licensed RentCast credential and an explicitly approved workspace/lookup allowance are still required. A property-only report does not require HighLevel. No live RentCast response has been represented as verified. |
+| Authenticated page completion | The follow-up scope closes missing signed-in destinations and adds persisted personal report branding, Realtor partners and per-channel drafts. These are user-and-location scoped settings, not shared company records or CRM imports. See the authenticated-page scope and review reports under PRD-007. |
+| External connections | HighLevel App Test/SSO, live Meta publication/reporting, CRM pipeline import, billing and external compliance evidence remain separately gated. Missing connections are shown explicitly; example data is not presented as observed customer data. |
+| Add-on authority | PRD-007 implements the authorized homeowner-intelligence slice from PRD-002e. Other future-option PRD-002 modules remain backlog. |
+
+Operational detail: [Homeowner AVM activation](../../../../docs/operations/homeowner-avm-activation.md). Implementation and review evidence: [PRD-007](../../../requirements/in-work/prd-007-homeowner-reports/prd-007-homeowner-reports-index.md). The formal PRD-001 ledger remains the source for external acceptance, and its counts are not implicitly changed by this map update.
+
+## Historical September 16 status snapshot
 
 Status date: September 16, 2026.
 
@@ -59,7 +77,7 @@ Status date: September 16, 2026.
 7. PRD-004a in-repo code (`f4b79f7`, PR #61): honest review surfaces when `OALO_REVIEW_SURFACE=authorized`, public-env secret boundary gate, provider default-off tests. See [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md) `GGL-*` rows.
 8. Production-tonight requirements authoring: [PRD-004d](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004d-reviewable-go-live-postgres-command-gate.md) closed `GGL-B16` on 2026-09-16 (PR #65, with PR #66 closed and unmerged, `c140f11`, CI run `35058370796`), [PRD-004e](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004e-reviewable-go-live-listing-content-and-demo-script.md) holds the authored listing content, the [operator runbook](../operations/production-tonight-operator-runbook.md) holds the step order and return artifacts, and [`2026-09-16` coverage report](../../../requirements/reports/2026-09-16-production-tonight-requirements-coverage-report.md) shows every parked `GGL-B*` row with an owner. Documentation only: no criterion status changed.
 
-### Pending (external / operator)
+### Historical pending list (external / operator)
 
 1. **Production tonight (PRD-004 operator):** follow the [operator runbook](../operations/production-tonight-operator-runbook.md), which sequences the steps below. Wire `OALO_DATABASE_URL` + `OALO_REVIEW_SURFACE=authorized` on `operation-automated-lo-web`, run [`reviewable-preview-smoke.md`](../../../../docs/operations/evidence-packs/reviewable-preview-smoke.md) (`GGL-B01`–`B03`), then Developer Portal + Test Link (`GGL-B04`–`B07`), then capture and submit the authored listing (`GGL-B09`).
 2. **HighLevel App Test** (operator-led): try sandbox + Test Link now; do not invent G2 evidence (`GGL-B10`).

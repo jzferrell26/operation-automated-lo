@@ -27,6 +27,26 @@ export type UserMessage = Readonly<{
  * pair.
  */
 export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Object.freeze({
+  WORKSPACE_ACCESS_DENIED: {
+    what: "This account cannot change the requested workspace settings.",
+    whatToDo: "Sign in to the correct account or ask the workspace owner to review your role.",
+  },
+  WORKSPACE_WRITE_CONFLICT: {
+    what: "Another tab saved newer settings.",
+    whatToDo: "Keep a copy of your edits, then load the latest saved details before trying again.",
+  },
+  WORKSPACE_PREFERENCE_INVALID: {
+    what: "Some workspace details need attention.",
+    whatToDo: "Check the required fields and try again.",
+  },
+  WORKSPACE_PREFERENCE_TOO_LARGE: {
+    what: "These settings are too long to save.",
+    whatToDo: "Shorten the text or remove unused partner entries.",
+  },
+  WORKSPACE_PREFERENCES_UNAVAILABLE: {
+    what: "Your saved workspace settings could not be confirmed.",
+    whatToDo: "Reload the saved details before making another change.",
+  },
   HANDOFF_UNCERTAIN: {
     what: "HighLevel did not confirm the report handoff.",
     whatToDo: "Check the contact's workflow history before authorizing another delivery.",

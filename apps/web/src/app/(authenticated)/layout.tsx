@@ -31,6 +31,7 @@ import { readSetupPreferencesForRequest } from "../../server/setup-preferences.j
 import { canRenderDashboardPreview } from "../../server/dashboard-preview.js";
 import { DashboardPreviewProvider } from "../../features/dashboard-preview/preview-provider.js";
 import { ProductShell } from "../../features/dashboard-preview/product-shell.js";
+import { reportWorkspaceNavigation } from "../../features/workspace/navigation.js";
 
 export const dynamic = "force-dynamic";
 
@@ -151,9 +152,9 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
       navigation={projectNavigationForSession(
         process.env.OALO_HOMEOWNER_REPORTS === "enabled" && shell.authenticated
           ? {
-              ...workspace.ui.navigation,
+              ...reportWorkspaceNavigation(workspace.ui.navigation),
               items: [
-                ...workspace.ui.navigation.items,
+                ...reportWorkspaceNavigation(workspace.ui.navigation).items,
                 {
                   id: "homeowner-reports",
                   label: "Homeowner reports",

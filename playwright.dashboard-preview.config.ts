@@ -4,6 +4,9 @@ const remote = process.env.OALO_PREVIEW_BASE_URL;
 const baseURL = remote ?? "http://127.0.0.1:3210";
 export default defineConfig({
   testDir: "./tests/browser",
+  // Authenticated review specs have their own real-database/TLS project. A
+  // matching basename must not make the demo server run a sign-in journey.
+  testIgnore: "review/**",
   testMatch: [
     "dashboard-preview.spec.ts",
     "product-onboarding.spec.ts",

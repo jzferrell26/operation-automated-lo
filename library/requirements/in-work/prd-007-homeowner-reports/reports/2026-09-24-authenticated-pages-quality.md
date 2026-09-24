@@ -43,6 +43,8 @@ The final repository refinement uses property metadata and a database report cou
 
 ## Deployment limits
 
+The demo browser configuration now excludes `review/**`, matching the existing separation in the legacy synthetic runner. Its basename match for `workspace-pages.spec.ts` had also discovered the authenticated suite under that directory, which requires the separate PostgreSQL/TLS review server. The seven signed-in scenarios remain in the canonical real-database gate; no test assertion is skipped within its intended runtime.
+
 The Linux release gate exposed a stylesheet-order dependency in the existing Connections notice: its title could inherit the Card's standard text color instead of the intended information tone. The shared notice title now declares its existing semantic text color directly. The 390px light/dark reference images were inspected and kept unchanged; no screenshot tolerance was changed. This also stabilizes the same title styling on the existing onboarding page.
 
 No new migration, subscription price, live API credential, provider request or customer message is part of this change. The signed-in pages do not authorize live ads, billing, CRM imports or team invitations. RentCast activation still requires its licensed credential, an approved workspace UUID and an explicit lookup allowance. The current map update preserves the historical acceptance ledger and labels older deployment/authentication statements as historical.

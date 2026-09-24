@@ -34,6 +34,7 @@ type AppShellProps = Readonly<{
    */
   accountControls?: ReactNode;
   children: ReactNode;
+  dashboardPreview?: boolean;
   /**
    * PRD-006c D5. The guided setup's two ways back in: the "Finish setup" chip and the help menu.
    * The shell takes them as a slot rather than importing them, so the shell keeps knowing nothing
@@ -57,6 +58,7 @@ const DRAWER_ID = "mobile-navigation-drawer";
 export function AppShell({
   accountControls,
   children,
+  dashboardPreview = false,
   headerControls,
   navigation,
   session,
@@ -76,6 +78,7 @@ export function AppShell({
       className={styles.shell}
       data-data-mode={session.safety.dataMode}
       data-workspace-mode={workspaceMode}
+      data-dashboard-preview={dashboardPreview || undefined}
     >
       <aside
         className={styles.desktopSidebar}

@@ -35,6 +35,10 @@ export const OVERLAY_FOCUSABLE_SELECTOR = [
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
+/** Shared ownership query for helpers that yield while a modal is open. */
+export const MODAL_OVERLAY_SELECTOR =
+  '[role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]';
+
 /**
  * Pure focus-wrap policy shared by the layer and its focused contract tests.
  * It returns the element that must receive focus, or `null` when the browser's
@@ -85,6 +89,12 @@ type DismissableLayerOptions = Readonly<{
 function useDismissableLayer({ modal, onClose, open, panelRef }: DismissableLayerOptions) {
   const openerRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+
+  // Callback updates do not reopen an existing layer or move focus out of a field.
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) {
@@ -106,9 +116,11 @@ function useDismissableLayer({ modal, onClose, open, panelRef }: DismissableLaye
     }
 
     function handleKeyDown(event: KeyboardEvent) {
+      // A nested combobox or other widget owns a key it already handled.
+      if (event.defaultPrevented) return;
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -135,7 +147,7 @@ function useDismissableLayer({ modal, onClose, open, panelRef }: DismissableLaye
         document.body.style.overflow = priorOverflow;
       }
     };
-  }, [modal, onClose, open, panelRef]);
+  }, [modal, open, panelRef]);
 }
 
 type LayerBaseProps = Omit<HTMLAttributes<HTMLDivElement>, "children" | "role" | "title"> &

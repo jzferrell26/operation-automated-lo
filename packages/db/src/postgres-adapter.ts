@@ -1,4 +1,5 @@
 import { URL } from "node:url";
+import { X509Certificate } from "node:crypto";
 
 import postgres, { type ReservedSql, type Sql } from "postgres";
 
@@ -18,6 +19,7 @@ export interface PostgresPoolConfiguration {
   readonly poolingMode: "transaction";
   readonly preparedStatements: false;
   readonly sslMode: "disable" | "require" | "verify-full";
+  readonly caCertificatePem?: string;
   readonly applicationName?: string;
   readonly maxConnections?: number;
   readonly connectTimeoutSeconds?: number;
@@ -67,7 +69,12 @@ export class PostgresDatabasePool implements DatabasePool {
       max: configuration.maxConnections,
       onnotice: () => undefined,
       prepare: false,
-      ssl: configuration.sslMode === "disable" ? false : configuration.sslMode,
+      ssl:
+        configuration.sslMode === "disable"
+          ? false
+          : configuration.caCertificatePem === undefined
+            ? configuration.sslMode
+            : { ca: configuration.caCertificatePem, rejectUnauthorized: true },
     });
   }
 
@@ -146,6 +153,7 @@ function validateConfiguration(value: unknown): ValidatedPostgresPoolConfigurati
     "poolingMode",
     "preparedStatements",
     "sslMode",
+    "caCertificatePem",
     "statementTimeoutMilliseconds",
   ]);
 
@@ -170,6 +178,7 @@ function validateConfiguration(value: unknown): ValidatedPostgresPoolConfigurati
     invalid("TLS cannot be disabled outside local or test environments");
   }
   validateConnectionString(connectionString, sslMode);
+  const caCertificatePem = validateCaCertificate(configuration.caCertificatePem, sslMode);
 
   return Object.freeze({
     applicationName: optionalApplicationName(configuration.applicationName),
@@ -200,6 +209,7 @@ function validateConfiguration(value: unknown): ValidatedPostgresPoolConfigurati
     poolingMode,
     preparedStatements: false,
     sslMode,
+    ...(caCertificatePem === undefined ? {} : { caCertificatePem }),
     statementTimeoutMilliseconds: boundedInteger(
       configuration.statementTimeoutMilliseconds,
       "statementTimeoutMilliseconds",
@@ -208,6 +218,26 @@ function validateConfiguration(value: unknown): ValidatedPostgresPoolConfigurati
       30_000,
     ),
   });
+}
+
+function validateCaCertificate(value: unknown, sslMode: string): string | undefined {
+  if (value === undefined) return undefined;
+  if (sslMode === "disable" || typeof value !== "string" || value.length > 16_000)
+    invalid("caCertificatePem requires TLS and a bounded PEM certificate");
+  const pem = value.trim();
+  if (
+    !/^-----BEGIN CERTIFICATE-----\r?\n[A-Za-z0-9+/=\r\n]+\r?\n-----END CERTIFICATE-----$/u.test(
+      pem,
+    )
+  )
+    invalid("caCertificatePem must contain one public root certificate");
+  try {
+    const certificate = new X509Certificate(pem);
+    if (!certificate.ca) invalid("caCertificatePem must be a CA certificate");
+  } catch {
+    invalid("caCertificatePem is not a valid CA certificate");
+  }
+  return pem;
 }
 
 function validateConnectionString(connectionString: string, sslMode: string): void {

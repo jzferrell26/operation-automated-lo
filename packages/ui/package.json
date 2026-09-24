@@ -12,6 +12,7 @@
       "default": "./dist/index.js"
     },
     "./tokens.css": "./dist/tokens.css",
+    "./product-tokens.css": "./dist/product-tokens.css",
     "./components.css": "./dist/components.css"
   },
   "sideEffects": [

@@ -1,4 +1,13 @@
 import { contractVersion } from "@oalo/contracts";
+export {
+  PostgresHomeownerRepository,
+  HomeownerStoreError,
+  readSharedHomeReport,
+  recordSharedHomeEvent,
+  claimDueHomeProperties,
+  type HomeLookupReservation,
+  type ReserveHomeLookup,
+} from "./homeowner-repository.js";
 
 export const databasePackage = Object.freeze({
   contractVersion,

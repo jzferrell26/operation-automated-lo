@@ -10,6 +10,7 @@
  * holder. Its types live in `route-seeding-bridge.d.ts`.
  */
 export {
+  withMigrationOwnerTransaction,
   clearAuthRateLimitsForKey,
   countAuditEventsForActor,
   countCredentialTokens,

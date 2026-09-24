@@ -4,6 +4,8 @@ import {
 } from "../../../features/shell/components/review-not-connected-screen.js";
 import { ReportsScreen } from "../../../features/reporting/components/reports-screen.js";
 import { loadAuthenticatedWorkspace } from "../../../server/authenticated-workspace-data.js";
+import { canRenderDashboardPreview } from "../../../server/dashboard-preview.js";
+import { DashboardPreviewScreen } from "../../../features/dashboard-preview/dashboard-screen.js";
 
 /**
  * The synthetic reporting projection carries invented spend and lead values. They are legitimate
@@ -20,6 +22,7 @@ const reviewReportingMeasures: readonly ReviewNotConnectedRegion[] = Object.free
 ] as const satisfies readonly ReviewNotConnectedRegion[]);
 
 export default function ReportsPage() {
+  if (canRenderDashboardPreview()) return <DashboardPreviewScreen view="reports" />;
   const workspace = loadAuthenticatedWorkspace();
 
   if (workspace.mode === "review") {

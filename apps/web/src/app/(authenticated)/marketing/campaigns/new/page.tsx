@@ -2,6 +2,7 @@ import { headers } from "next/headers.js";
 
 import { OpenHouseDraftBuilder } from "../../../../../features/campaigns/components/open-house-draft-builder.js";
 import { readSetupPreferencesForRequest } from "../../../../../server/setup-preferences.js";
+import { canRenderDashboardPreview } from "../../../../../server/dashboard-preview.js";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ export const dynamic = "force-dynamic";
  * replace.
  */
 export default async function NewCampaignPage() {
+  if (canRenderDashboardPreview()) return <OpenHouseDraftBuilder />;
   const incoming = await headers();
   const request = new Request("https://oalo.local/marketing/campaigns/new", { headers: incoming });
   const preferences = await readSetupPreferencesForRequest(request, process.env);

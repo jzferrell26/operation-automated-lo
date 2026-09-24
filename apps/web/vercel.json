@@ -1,5 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
+  "crons": [{ "path": "/api/jobs/homeowner-reports", "schedule": "0 12 * * *" }],
+  "buildCommand": "cd ../.. && pnpm --filter @oalo/web... build",
   "installCommand": "cd ../.. && corepack enable && pnpm install --frozen-lockfile"
 }

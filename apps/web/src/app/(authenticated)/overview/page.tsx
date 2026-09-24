@@ -7,6 +7,8 @@ import { OverviewScreen } from "../../../features/overview/components/overview-s
 import { loadAuthenticatedWorkspace } from "../../../server/authenticated-workspace-data.js";
 import { readWorkspaceCampaignsForRequest } from "../../../server/campaign-workspace-reads.js";
 import { SIGN_IN_PATH } from "../../../server/runtime-authentication.js";
+import { canRenderDashboardPreview } from "../../../server/dashboard-preview.js";
+import { DashboardPreviewScreen } from "../../../features/dashboard-preview/dashboard-screen.js";
 
 /**
  * PRD-006b D10. The workspace is where a completed password reset lands, so the workspace is where
@@ -26,6 +28,7 @@ export default async function OverviewPage({
   searchParams,
 }: Readonly<{ searchParams: Promise<Readonly<Record<string, string | string[] | undefined>>> }>) {
   const workspace = loadAuthenticatedWorkspace();
+  if (canRenderDashboardPreview()) return <DashboardPreviewScreen view="overview" />;
   const incoming = await headers();
   const request = new Request("https://oalo.local/overview", { headers: incoming });
   const read = await readWorkspaceCampaignsForRequest(request, process.env);

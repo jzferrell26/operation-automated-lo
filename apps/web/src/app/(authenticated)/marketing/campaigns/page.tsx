@@ -11,8 +11,11 @@ import styles from "../../../../features/campaigns/components/open-house-draft-b
 import { readWorkspaceCampaignsForRequest } from "../../../../server/campaign-workspace-reads.js";
 import { SIGN_IN_PATH } from "../../../../server/runtime-authentication.js";
 import type { CampaignWorkspaceNextAction } from "@oalo/application";
+import { canRenderDashboardPreview } from "../../../../server/dashboard-preview.js";
+import { DashboardPreviewScreen } from "../../../../features/dashboard-preview/dashboard-screen.js";
 
 export default async function CampaignListPage() {
+  if (canRenderDashboardPreview()) return <DashboardPreviewScreen view="campaigns" />;
   const incoming = await headers();
   const request = new Request("https://oalo.local/marketing/campaigns", { headers: incoming });
   const read = await readWorkspaceCampaignsForRequest(request, process.env);

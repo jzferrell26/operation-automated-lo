@@ -27,6 +27,38 @@ export type UserMessage = Readonly<{
  * pair.
  */
 export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Object.freeze({
+  HANDOFF_UNCERTAIN: {
+    what: "HighLevel did not confirm the report handoff.",
+    whatToDo: "Check the contact's workflow history before authorizing another delivery.",
+  },
+  INVALID_REPORT_DETAILS: {
+    what: "Some report details need attention.",
+    whatToDo: "Check the required fields, loan balances and dates.",
+  },
+  REPORTS_UNAVAILABLE: {
+    what: "Homeowner reports are unavailable right now.",
+    whatToDo: "Check the workspace connection and try again.",
+  },
+  REPORT_ACCESS_UNAVAILABLE: {
+    what: "This account cannot open the requested reports.",
+    whatToDo: "Sign in to the correct workspace or ask its owner for access.",
+  },
+  REPORT_SAVE_UNCERTAIN: {
+    what: "The report save was not confirmed.",
+    whatToDo: "Check report history before authorizing a fresh valuation request.",
+  },
+  SCHEDULE_NEEDS_REVIEW: {
+    what: "Monthly reports are paused for this property.",
+    whatToDo: "Review the connection and contact details before resuming updates.",
+  },
+  UNAUTHORIZED: {
+    what: "This request is not authorized.",
+    whatToDo: "Sign in or ask your workspace owner to check the connection.",
+  },
+  ORIGIN_NOT_ALLOWED: {
+    what: "This request did not come from the page you are testing.",
+    whatToDo: "Open the dashboard directly, refresh the page, and try again.",
+  },
   INVALID_CAMPAIGN_DRAFT: {
     what: "Some of the campaign details aren't filled in the way the checks expect.",
     whatToDo: "Look over the fields marked below and try again.",

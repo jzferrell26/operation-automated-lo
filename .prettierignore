@@ -2,6 +2,7 @@
 .github/
 .next/
 .turbo/
+.vercel/
 coverage/
 dist/
 docs/
@@ -12,6 +13,7 @@ pnpm-lock.yaml
 reports/
 supabase/
 test-results/
+tmp/
 EXECUTION_LEDGER.md
 README.md
 tests/visual/rendering/v1/*.canonical.json

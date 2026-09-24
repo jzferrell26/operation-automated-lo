@@ -28,6 +28,9 @@ import {
   resolveRuntimeShellSession,
 } from "../../server/runtime-authentication.js";
 import { readSetupPreferencesForRequest } from "../../server/setup-preferences.js";
+import { canRenderDashboardPreview } from "../../server/dashboard-preview.js";
+import { DashboardPreviewProvider } from "../../features/dashboard-preview/preview-provider.js";
+import { ProductShell } from "../../features/dashboard-preview/product-shell.js";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +89,14 @@ const APPROVER_CAPABLE_ROLE_LABELS: ReadonlySet<string> = new Set(
 export default async function AuthenticatedLayout({ children }: Readonly<{ children: ReactNode }>) {
   const workspace = loadAuthenticatedWorkspace();
 
+  if (canRenderDashboardPreview()) {
+    return (
+      <DashboardPreviewProvider>
+        <ProductShell>{children}</ProductShell>
+      </DashboardPreviewProvider>
+    );
+  }
+
   if (workspace.mode !== "review") {
     const fixture = workspace.ui;
     return (
@@ -137,7 +148,24 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
     <AppShell
       accountControls={shell.authenticated ? signOutControl : undefined}
       headerControls={shell.authenticated ? <GuidedSetupShellControls /> : undefined}
-      navigation={projectNavigationForSession(workspace.ui.navigation, session)}
+      navigation={projectNavigationForSession(
+        process.env.OALO_HOMEOWNER_REPORTS === "enabled" && shell.authenticated
+          ? {
+              ...workspace.ui.navigation,
+              items: [
+                ...workspace.ui.navigation.items,
+                {
+                  id: "homeowner-reports",
+                  label: "Homeowner reports",
+                  href: "/homeowners",
+                  state: "available",
+                  requiredCapability: "reports:read",
+                },
+              ],
+            }
+          : workspace.ui.navigation,
+        session,
+      )}
       session={session}
       workspaceMode={workspace.mode}
     >

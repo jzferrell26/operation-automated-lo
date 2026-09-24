@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 import type { AuthenticatedPrincipal } from "@oalo/application";
 import { createSessionBoundCsrfToken, FIRST_PARTY_SESSION_COOKIE } from "@oalo/auth";
@@ -98,6 +99,29 @@ const REVIEW_ENV = Object.freeze({
 });
 
 const PRODUCTION_ENV = Object.freeze({ ...REVIEW_ENV, OALO_ENVIRONMENT: "production" });
+
+describe("authentication database certificate configuration", () => {
+  it("uses the configured CA and invalidates the cached authentication ports when it changes", () => {
+    const ca = readFileSync("tooling/fixtures/database/supabase-root-ca.crt", "utf8");
+    const environment = {
+      ...REVIEW_ENV,
+      OALO_DATABASE_SSL_MODE: "verify-full",
+      OALO_DATABASE_CA_CERT_PEM: ca,
+    };
+    const good = resolveRuntimeAuthenticationComposition(environment);
+    expect(good.failedVariable).toBeUndefined();
+    expect(good.ports.firstPartySessions).toBeDefined();
+    const bad = resolveRuntimeAuthenticationComposition({
+      ...environment,
+      OALO_DATABASE_CA_CERT_PEM: "invalid",
+    });
+    expect(bad.failedVariable).toBe("OALO_DATABASE_URL");
+    expect(bad.ports.firstPartySessions).toBeUndefined();
+    expect(
+      resolveRuntimeAuthenticationComposition(environment).ports.firstPartySessions,
+    ).toBeDefined();
+  });
+});
 
 const EMBEDDED_ENV = Object.freeze({
   ...REVIEW_ENV,

@@ -7,6 +7,10 @@ const outputComponentsDirectory = new URL("components/", outputDirectory);
 
 await mkdir(outputComponentsDirectory, { recursive: true });
 await copyFile(new URL("tokens.css", sourceDirectory), new URL("tokens.css", outputDirectory));
+await copyFile(
+  new URL("product-tokens.css", sourceDirectory),
+  new URL("product-tokens.css", outputDirectory),
+);
 
 const componentEntries = await readdir(sourceComponentsDirectory, { withFileTypes: true });
 const componentStylesheets = componentEntries

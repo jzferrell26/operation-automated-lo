@@ -70,6 +70,14 @@ describe("campaign persistence adapter selection", () => {
     expect(configuration.sslMode).toBe("require");
     expect(
       parseCampaignDatabasePoolConfiguration({
+        OALO_ENVIRONMENT: "preview",
+        OALO_DATABASE_URL: "postgresql://runtime:secret@db.example.test/oalo",
+        OALO_DATABASE_SSL_MODE: "verify-full",
+        OALO_DATABASE_CA_CERT_PEM: "public-root-certificate",
+      }).caCertificatePem,
+    ).toBe("public-root-certificate");
+    expect(
+      parseCampaignDatabasePoolConfiguration({
         OALO_ENVIRONMENT: "local",
         OALO_DATABASE_URL: "postgresql://runtime:secret@127.0.0.1:5432/oalo",
         OALO_DATABASE_SSL_MODE: "disable",

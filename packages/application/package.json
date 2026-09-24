@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./homeowner-reports": {
+      "types": "./src/homeowner-reports.ts",
+      "default": "./dist/homeowner-reports.js"
+    },
     ".": {
       "types": "./src/index.ts",
       "default": "./dist/index.js"

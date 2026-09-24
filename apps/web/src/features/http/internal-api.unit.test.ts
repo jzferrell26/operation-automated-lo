@@ -4,6 +4,7 @@ import { SUPPORT_REFERENCE_NOT_RECORDED } from "../../copy/user-language.js";
 import { CORRELATION_REFERENCE_HEADER } from "../../server/correlation-boundary.js";
 import {
   postInternalJson,
+  getInternalJson,
   refusalFrom,
   supportReferenceFrom,
   SUPPORT_REFERENCE_HEADER,
@@ -38,6 +39,30 @@ describe("postInternalJson", () => {
       /application-relative/u,
     );
     expect(network).not.toHaveBeenCalled();
+  });
+  it("rejects backslash and control-character host escapes for reads and writes", async () => {
+    const network = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", network);
+    for (const path of [
+      "/\\outside.example/report",
+      "/\n/outside.example/report",
+      "//outside.example/report",
+      "https://outside.example/report",
+    ]) {
+      await expect(getInternalJson(path)).rejects.toThrow("application-relative");
+      await expect(postInternalJson(path, {})).rejects.toThrow("application-relative");
+    }
+    expect(network).not.toHaveBeenCalled();
+    await getInternalJson("/api/homeowner-reports");
+    expect(network).toHaveBeenCalledWith(
+      "/api/homeowner-reports",
+      expect.objectContaining({
+        method: "GET",
+        cache: "no-store",
+        credentials: "same-origin",
+        redirect: "error",
+      }),
+    );
   });
 });
 

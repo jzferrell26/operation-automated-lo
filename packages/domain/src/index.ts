@@ -1,4 +1,11 @@
 export const foundationPhase = "phase-0-evidence-harness" as const;
+export {
+  estimateMortgageBalance,
+  estimatedSaleProceeds,
+  hypotheticalBorrowingRoom,
+  nextMonthlyRefresh,
+  type AmortizationInput,
+} from "./homeowner-finance.js";
 
 export * from "./tenant-installation.js";
 

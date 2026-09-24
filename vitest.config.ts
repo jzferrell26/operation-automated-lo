@@ -5,6 +5,7 @@ import { defineConfig } from "vitest/config";
 const workspaceResolve = {
   alias: {
     "@oalo/ai": resolve("packages/ai/src/index.ts"),
+    "@oalo/application/homeowner-reports": resolve("packages/application/src/homeowner-reports.ts"),
     "@oalo/application": resolve("packages/application/src/index.ts"),
     "@oalo/auth": resolve("packages/auth/src/index.ts"),
     "@oalo/config": resolve("packages/config/src/index.ts"),
@@ -16,6 +17,7 @@ const workspaceResolve = {
     "@oalo/rendering": resolve("packages/rendering/src/index.ts"),
     "@oalo/storage": resolve("packages/storage/src/index.ts"),
     "@oalo/test-support": resolve("packages/test-support/src/index.ts"),
+    "@oalo/ui/product-tokens.css": resolve("packages/ui/src/product-tokens.css"),
     "@oalo/ui": resolve("packages/ui/src/index.ts"),
   },
 };

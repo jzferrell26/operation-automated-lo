@@ -2,6 +2,7 @@ import { Link } from "@oalo/ui";
 import { redirect } from "next/navigation.js";
 
 import { canRenderReviewSurface } from "../server/authenticated-workspace-data.js";
+import { canRenderDashboardPreview } from "../server/dashboard-preview.js";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export const dynamic = "force-dynamic";
  * token, not a literal hex value.
  */
 export default function HomePage() {
-  if (canRenderReviewSurface()) {
+  if (canRenderReviewSurface() || canRenderDashboardPreview()) {
     redirect("/overview");
   }
 

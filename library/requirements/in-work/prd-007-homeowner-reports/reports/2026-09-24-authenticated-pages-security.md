@@ -26,4 +26,8 @@ Review also closed user-data reliability issues: a conflicting partner edit now 
 
 ## Limits
 
+The final data-access review replaced full report-history reads in workspace hubs with a tenant-scoped property-summary query. It returns only the property address, update time, schedule state and saved-report count. Mortgage inputs, homeowner contact identifiers and financial snapshots are not fetched for these navigation cards. A real PostgreSQL test confirms the exact projection, tenant isolation, enrollment updates and removal. No table, RLS policy or grant changed.
+
+The final read-path review also adopted `PostgresHomeownerRepository.summaries()` for workspace navigation. It selects only property metadata and report counts rather than loading complete borrower/financial snapshots. The new real PostgreSQL scenario verifies tenant isolation, count accuracy, pause state and property removal. All 23 homeowner and workspace-preference PostgreSQL tests passed after this change.
+
 Partner entries are a personal list within this user/workspace, not shared brokerage membership or CRM records. Team invitations, payment operations and live-provider activation are not introduced by this correction. Live RentCast, HighLevel and Meta evidence is not inferred from successful preference persistence. Hosted verification uses synthetic identities; their account/session cleanup is part of deployment closeout.

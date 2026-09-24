@@ -33,10 +33,13 @@ Actual light marketing and dark report-branding mobile screenshots were opened a
 - 950 unit tests passed with the repository's coverage thresholds unchanged.
 - 184 integration tests passed, including the existing guided setup journeys.
 - All nine real PostgreSQL preference tests passed.
+- The final metadata-only summary read passed together with the existing homeowner tests: 23 PostgreSQL scenarios in three files. General workspace pages no longer load report snapshots merely to show a property count.
 - All seven authenticated workspace browser journeys passed together (1.2 minutes on the clean build).
 - Optimized build, type checking, lint, formatting, boundary/type/secret/dependency audits and clone detection passed. Clone detection reported zero clones; the dependency audit reported no known vulnerabilities.
 
 The new browser suite is discovered by the existing real-database review project. The report-enabled local run additionally checks the live navigation projection and new-report defaults. Existing synthetic and review fixtures remain separate. Full CI, hosted preview, merge and production results are recorded on the release PR as those actions complete.
+
+The final repository refinement uses property metadata and a database report count for workspace hubs instead of loading every saved financial snapshot. All 23 relevant PostgreSQL scenarios passed afterward: nine workspace preference tests, nine homeowner repository tests and five homeowner route tests. The added case checks both the returned metadata and tenant isolation; the source change does not modify the rendered page contract or database schema.
 
 ## Deployment limits
 

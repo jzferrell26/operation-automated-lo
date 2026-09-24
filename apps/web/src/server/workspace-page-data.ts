@@ -49,7 +49,7 @@ export async function loadWorkspacePageData(
     needsPreferences ? readWorkspacePreferences(principal, pool) : emptyWorkspacePreferences(),
     needsPreferences ? readSetupPreferences(principal, environment) : undefined,
     needsCampaigns ? listWorkspaceCampaigns(principal, environment) : [],
-    needsReports ? reportRepository.list() : [],
+    needsReports ? reportRepository.summaries() : [],
     reportsEnabled ? homeConnectionsFor(principal.locationId, reportRepository, config) : null,
     needsReports ? reportRepository.usage() : 0,
   ]);
@@ -81,10 +81,10 @@ export async function loadWorkspacePageData(
     properties: properties.map((property) => ({
       id: property.id,
       address: homeAddressText(property.address),
-      reportCount: property.reports.length,
+      reportCount: property.reportCount,
       updatedAt: property.updatedAt,
-      monthly: property.enrollment.cadence === "monthly",
-      paused: property.enrollment.paused,
+      monthly: property.monthly,
+      paused: property.paused,
     })),
     reportsEnabled,
     valuationConfigured: connections?.valuation !== null && connections?.valuation !== undefined,

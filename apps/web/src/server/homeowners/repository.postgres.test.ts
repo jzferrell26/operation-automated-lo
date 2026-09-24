@@ -121,6 +121,34 @@ afterAll(async () => {
   }
 });
 describe.sequential("real homeowner persistence", () => {
+  it("returns tenant-scoped navigation summaries without loading borrower details or financial snapshots", async () => {
+    const item = await seed(repoA, "summary-contact");
+    const summary = (await repoA.summaries()).find((property) => property.id === item.propertyId);
+    expect(summary).toEqual({
+      id: item.propertyId,
+      address: item.input.address,
+      updatedAt: expect.any(String),
+      reportCount: 1,
+      monthly: false,
+      paused: false,
+    });
+    expect((await repoB.summaries()).some((property) => property.id === item.propertyId)).toBe(
+      false,
+    );
+    await repoA.enrollment(item.propertyId, {
+      cadence: "monthly",
+      paused: true,
+      nextRefreshAt: null,
+      deliverUpdates: false,
+    });
+    expect(
+      (await repoA.summaries()).find((property) => property.id === item.propertyId),
+    ).toMatchObject({ reportCount: 1, monthly: true, paused: true });
+    await repoA.remove(item.propertyId);
+    expect((await repoA.summaries()).some((property) => property.id === item.propertyId)).toBe(
+      false,
+    );
+  });
   it("runs address-only AVM through the HTTP adapter and real persistence with one lookup across retries", async () => {
     const fixture = rentCastFixture();
     fixture.subjectProperty.addressLine1 = "260 Cedar St";

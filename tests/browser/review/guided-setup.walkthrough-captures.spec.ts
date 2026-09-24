@@ -1,6 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { captureNamedState } from "../helpers/design-quality.js";
+import {
+  captureNamedState,
+  REVIEW_FRAMES,
+  settleForScreenshot,
+} from "../helpers/design-quality.js";
 import { READY_OPEN_HOUSE, fillTheOpenHouseDraft } from "../helpers/open-house-draft.js";
 import {
   continueToPanel,
@@ -135,15 +139,23 @@ async function captureStep(page: Page, state: string): Promise<void> {
     await chooseThemeFromTheHeader(page, theme);
     await expect(panel(page)).toBeVisible();
     await expectStepHasSettled(page);
-    await captureNamedState(page, {
-      screen: "guided-setup",
-      state,
-      theme,
-      fullPage: false,
-      // The walkthrough scrolls the page itself so the step's element sits clear of its panel.
-      // Scrolling back to the top would photograph a panel pointing at something off the picture.
-      keepScroll: true,
-    });
+    for (const frame of REVIEW_FRAMES) {
+      await page.setViewportSize({ width: frame.width, height: frame.height });
+      await settleForScreenshot(page, { keepScroll: true });
+      // Switching to the docked mobile sheet changes both the rail and the header.
+      // A valid scroll position from the tablet frame is not a canonical mobile
+      // capture position. Reset only this boundary, then let the product place its
+      // highlighted element; all the existing screenshots and assertions remain.
+      if (frame.width < 768) await expectStepHasSettled(page);
+      await captureNamedState(page, {
+        screen: "guided-setup",
+        state,
+        theme,
+        frames: [frame],
+        fullPage: false,
+        keepScroll: true,
+      });
+    }
   }
   await page.setViewportSize({ width: 1440, height: 900 });
 }

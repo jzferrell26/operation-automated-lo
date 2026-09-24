@@ -85,6 +85,38 @@ describe("RentCast valuation adapter", () => {
   });
 });
 describe("HighLevel report handoff", () => {
+  it("recognizes current lowercase channels without allowing missing or conflicting permission", async () => {
+    for (const dndSettings of [
+      { email: { status: "inactive" }, sms: { status: "inactive" } },
+      { Email: { status: "inactive" }, SMS: { status: "inactive" } },
+      { email: { status: "inactive" }, SMS: { status: "inactive" } },
+    ]) {
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(Response.json({ contact: contact({ dndSettings }) }));
+      expect(
+        (await createHomeHighLevelPort(config, fetcher).get("contact-one")).communicationAllowed,
+      ).toBe(true);
+      expect(fetcher).toHaveBeenCalledOnce();
+    }
+    for (const dndSettings of [
+      { email: { status: "inactive" } },
+      { email: { status: "inactive" }, sms: { status: "active" } },
+      { email: { status: "inactive" }, Email: { status: "active" }, sms: { status: "inactive" } },
+      { email: {}, sms: { status: "inactive" } },
+    ]) {
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(Response.json({ contact: contact({ dndSettings }) }));
+      await expect(
+        createHomeHighLevelPort(config, fetcher).handoff(
+          "contact-one",
+          `https://app.example.test/home-report/${"a".repeat(64)}`,
+        ),
+      ).rejects.toMatchObject({ code: "CONTACT_COMMUNICATION_BLOCKED" });
+      expect(fetcher).toHaveBeenCalledOnce();
+    }
+  });
   it("rejects contacts from a different location and missing communication permission", async () => {
     const fetcher = vi
       .fn<typeof fetch>()

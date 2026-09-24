@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 
 import { campaignManifestFixture } from "../../../../packages/db/test/campaign-manifest-fixture.mjs";
 import {
@@ -205,6 +206,26 @@ describe("PostgreSQL adapter configuration", () => {
     await pool.close();
     await pool.close();
     await expect(pool.connect()).rejects.toMatchObject({ code: "DB_POOL_CLOSED" });
+  });
+  it("accepts a public database CA without disabling peer verification", async () => {
+    const caCertificatePem = readFileSync("tooling/fixtures/database/supabase-root-ca.crt", "utf8");
+    const pool = createPostgresPool({ ...valid, sslMode: "verify-full", caCertificatePem });
+    await pool.close();
+    expect(() => createPostgresPool({ ...valid, caCertificatePem })).toThrow(PostgresAdapterError);
+    expect(() =>
+      createPostgresPool({
+        ...valid,
+        sslMode: "verify-full",
+        caCertificatePem: "not a certificate",
+      }),
+    ).toThrow(PostgresAdapterError);
+    expect(() =>
+      createPostgresPool({
+        ...valid,
+        sslMode: "verify-full",
+        caCertificatePem: "-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----",
+      }),
+    ).toThrow(PostgresAdapterError);
   });
 
   it("rejects unsafe, unknown, and internally inconsistent settings", () => {

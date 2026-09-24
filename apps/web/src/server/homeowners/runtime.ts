@@ -20,6 +20,17 @@ export const HomeEnvironmentSchema = z
   .object({
     OALO_HOMEOWNER_REPORTS: z.string().optional(),
     OALO_HOMEOWNER_LIVE_DATA: z.string().optional(),
+    OALO_HOMEOWNER_ALLOWED_LOCATION_IDS: z
+      .string()
+      .max(8000)
+      .default("")
+      .transform((value) =>
+        value
+          .split(",")
+          .map((id) => id.trim())
+          .filter(Boolean),
+      )
+      .pipe(z.array(z.uuid()).max(200)),
     OALO_RENTCAST_API_KEY: z.string().optional(),
     OALO_HOMEOWNER_MONTHLY_LOOKUP_LIMIT: z.coerce.number().int().min(0).max(10000).default(0),
     OALO_HOMEOWNER_GHL_CONNECTIONS_JSON: z.string().optional(),
@@ -106,7 +117,11 @@ export async function homeConnectionsFor(
       }
     }
   }
-  const live = config.OALO_HOMEOWNER_LIVE_DATA === "enabled";
+  // A public sign-up must not acquire paid provider access merely by creating a
+  // new workspace. Each live location is explicitly enabled by the operator.
+  const live =
+    config.OALO_HOMEOWNER_LIVE_DATA === "enabled" &&
+    config.OALO_HOMEOWNER_ALLOWED_LOCATION_IDS.includes(locationId);
   return {
     connectionIssue,
     contacts: live && connection ? createHomeHighLevelPort(connection) : null,

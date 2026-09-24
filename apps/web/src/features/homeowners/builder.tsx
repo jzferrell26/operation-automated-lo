@@ -178,6 +178,12 @@ export function HomeReportBuilder({
           <p>One property. A clear view of value, equity and the next conversation.</p>
         </div>
       </header>
+      {!demo && !data.workspace.valuationConnected ? (
+        <p className={styles.note}>
+          Property valuations are not connected in this workspace yet. You can prepare the report
+          details now; your workspace owner needs to enable value estimates before you create it.
+        </p>
+      ) : null}
       <nav className={styles.builderSteps} aria-label="Report creation progress">
         {["Property & homeowner", "Mortgage details", "Review & create"].map((label, index) => (
           <div
@@ -407,7 +413,15 @@ export function HomeReportBuilder({
                 Back
               </Button>
               <span>Step {step + 1} of 3</span>
-              <Button type="submit" disabled={data.busy || (!demo && !data.workspace.canWrite)}>
+              <Button
+                type="submit"
+                disabled={
+                  data.busy ||
+                  (!demo &&
+                    (!data.workspace.canWrite ||
+                      (step === 2 && !data.workspace.valuationConnected)))
+                }
+              >
                 {data.busy ? "Creating report…" : step === 2 ? "Create report" : "Continue"}
                 <Icon name="arrow-right" decorative size="sm" />
               </Button>

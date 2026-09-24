@@ -32,6 +32,7 @@ import { homeownerInput, rentCastFixture } from "./homeowner-fixtures.js";
 const environment = routeEnvironment({
   OALO_HOMEOWNER_REPORTS: "enabled",
   OALO_HOMEOWNER_LIVE_DATA: "enabled",
+  OALO_HOMEOWNER_ALLOWED_LOCATION_IDS: "",
   OALO_RENTCAST_API_KEY: "fixture-only-no-live-credential",
   OALO_HOMEOWNER_MONTHLY_LOOKUP_LIMIT: "20",
   OALO_HOMEOWNER_GHL_CONNECTIONS_JSON: "",
@@ -76,6 +77,7 @@ beforeAll(async () => {
   csrfServerSecret = csrfSecretFor(environment);
   const location = await seedLocation(pool, "AVM route fixture");
   const other = await seedLocation(pool, "AVM isolated route fixture");
+  process.env.OALO_HOMEOWNER_ALLOWED_LOCATION_IDS = location.locationId;
   ownerSession = await issueSession(
     pool,
     location,

@@ -90,6 +90,7 @@ const RuntimeAuthenticationEnvironmentSchema = z
     OALO_SYNTHETIC_DATA_ONLY: z.enum(["true", "false"]).default("true"),
     OALO_REVIEW_SURFACE: z.string().optional(),
     OALO_DATABASE_SSL_MODE: z.enum(["disable", "require", "verify-full"]).optional(),
+    OALO_DATABASE_CA_CERT_PEM: z.string().max(16_000).optional(),
     OALO_DATABASE_URL: z.string().optional(),
     OALO_APP_URL: z.string().optional(),
     OALO_ALLOWED_ORIGINS: z.string().optional(),
@@ -334,6 +335,9 @@ function createAuthenticationPool(environment: RuntimeAuthenticationEnvironment)
       poolingMode: "transaction",
       preparedStatements: false,
       sslMode: sslModeFor(environment.OALO_ENVIRONMENT, environment.OALO_DATABASE_SSL_MODE),
+      ...(environment.OALO_DATABASE_CA_CERT_PEM === undefined
+        ? {}
+        : { caCertificatePem: environment.OALO_DATABASE_CA_CERT_PEM }),
       applicationName: "oalo-runtime-authentication",
     });
   } catch {
@@ -416,6 +420,7 @@ function fingerprintOf(environment: RuntimeAuthenticationEnvironment): string {
     environment.OALO_SYNTHETIC_DATA_ONLY,
     environment.OALO_REVIEW_SURFACE ?? "",
     environment.OALO_DATABASE_SSL_MODE ?? "",
+    environment.OALO_DATABASE_CA_CERT_PEM ?? "",
     ...RUNTIME_AUTHENTICATION_VARIABLES.map((variable) => rawValue(environment, variable) ?? ""),
   ].join("\0");
 }

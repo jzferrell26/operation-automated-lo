@@ -19,6 +19,29 @@ const now = new Date("2026-09-24T12:00:00Z");
 const reportId = `hreport_${"a".repeat(32)}`;
 const propertyId = `home_${"a".repeat(32)}`;
 describe("homeowner calculations", () => {
+  it("rejects contradictory loan sources instead of presenting ambiguous balances", () => {
+    const mortgage = homeownerInput(now).mortgage;
+    const loan = {
+      originalPrincipalMinor: 30_000_000,
+      annualRatePercent: 6,
+      termMonths: 360,
+      paymentsMade: 60,
+    };
+    expect(HomeMortgageSchema.safeParse({ ...mortgage, source: "confirmed", loan }).success).toBe(
+      false,
+    );
+    expect(HomeMortgageSchema.safeParse({ ...mortgage, source: "amortized", loan }).success).toBe(
+      false,
+    );
+    expect(
+      HomeMortgageSchema.safeParse({
+        ...mortgage,
+        source: "amortized",
+        firstBalanceMinor: null,
+        loan,
+      }).success,
+    ).toBe(true);
+  });
   it("distinguishes value, debt, equity, selling costs and hypothetical borrowing", () => {
     const financials = calculateHomeEquity(homeownerInput(now).mortgage, homeownerValuation(now));
     expect(financials).toMatchObject({
@@ -149,6 +172,9 @@ describe("homeowner calculations", () => {
   it("schedules calendar months safely and does not fabricate current mortgage balances", () => {
     expect(nextMonthlyRefresh(new Date("2028-01-31T18:00:00Z"))).toBe("2028-02-29T12:00:00.000Z");
     expect(nextMonthlyRefresh(new Date("2026-12-31T18:00:00Z"))).toBe("2027-01-31T12:00:00.000Z");
+    expect(nextMonthlyRefresh(new Date("2026-10-25T12:00:00Z"), 24)).toBe(
+      "2026-11-24T12:00:00.000Z",
+    );
     expect(() => nextMonthlyRefresh(now, 32)).toThrow();
     expect(() => nextMonthlyRefresh(new Date("invalid"))).toThrow();
     const input = homeownerInput(now);

@@ -364,6 +364,12 @@ describe("guided setup steps", () => {
     await waitFor(() => {
       expect(push).toHaveBeenCalledWith(READY_PREFLIGHT_RESPONSE.detailHref);
     });
+    await waitFor(() => {
+      const heading = within(panel()).getByRole("heading", {
+        name: GUIDED_SETUP_STEPS.readTheResult.title,
+      });
+      expect(heading.contains(document.activeElement)).toBe(true);
+    });
   });
 
   /** The creator's own path is untouched: step 3 still leads to the create screen. */

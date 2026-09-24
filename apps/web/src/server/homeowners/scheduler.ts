@@ -97,7 +97,7 @@ async function refreshScheduledProperty(
     await repository.advanceSchedule(
       property.id,
       due,
-      nextMonthlyRefresh(now, new Date(property.createdAt).getUTCDate()),
+      nextMonthlyRefresh(now, new Date(due).getUTCDate()),
       null,
     );
     return "updated";

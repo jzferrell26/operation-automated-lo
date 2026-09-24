@@ -118,6 +118,8 @@ export function createHomeHighLevelPort(
     const allowed =
       contact.dnd === false &&
       channelStatus !== undefined &&
+      channelStatus.Email?.status === "inactive" &&
+      channelStatus.SMS?.status === "inactive" &&
       Object.values(channelStatus).every((channel) => channel.status === "inactive");
     return { id: contact.id, name, email: contact.email ?? null, communicationAllowed: allowed };
   }

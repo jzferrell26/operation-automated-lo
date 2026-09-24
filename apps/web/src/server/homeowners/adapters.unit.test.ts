@@ -96,6 +96,9 @@ describe("HighLevel report handoff", () => {
       { dnd: true },
       { dnd: undefined },
       { dndSettings: undefined },
+      { dndSettings: {} },
+      { dndSettings: { Email: { status: "inactive" } } },
+      { dndSettings: { SMS: { status: "inactive" } } },
       { dndSettings: { Email: { status: "active" } } },
     ]) {
       const block = vi

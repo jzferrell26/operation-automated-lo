@@ -159,7 +159,9 @@ function HomeReportList({ data }: { data: ReturnType<typeof useHomeWorkspace> })
                       ? "Review requested"
                       : property.enrollment.cadence === "monthly" && !property.enrollment.paused
                         ? "Monthly"
-                        : "On demand"}
+                        : property.enrollment.cadence === "monthly"
+                          ? "Updates paused"
+                          : "On demand"}
                   </Badge>
                   <Icon name="arrow-up-right" decorative />
                 </Link>
@@ -444,6 +446,18 @@ function HomeReportDetails({
         </div>
       </header>
       {message ? <LiveRegion visible message={message} /> : null}
+      {property.lastError ? (
+        <p className={`${styles.note} ${styles.screenOnly}`}>
+          The last valuation or update could not be completed. Your saved report is still available.
+          Review the connection and request status before starting another lookup.
+        </p>
+      ) : null}
+      {property.enrollment.cadence === "monthly" && property.enrollment.paused ? (
+        <p className={`${styles.note} ${styles.screenOnly}`}>
+          Monthly updates are paused. Review the property details and connections, then use Update
+          schedule to resume them.
+        </p>
+      ) : null}
       {property.reviewRequestedAt ? (
         <div className={styles.notice}>
           <Icon name="users" decorative />
@@ -738,6 +752,7 @@ export function HomeownerWorkspace({
   return (
     <div className={styles.workspace} data-product-shell="true" data-homeowner-workspace="true">
       {data.error ? <LiveRegion urgency="alert" message={data.error} visible /> : null}
+      {data.workspace.mode === "live" && !data.workspace.valuationConnected ? <div className={styles.notice}><span><strong>Valuations need to be connected</strong><p>Your report workspace is ready. A valuation connection is required before creating a report; saved reports can still be opened and downloaded.</p></span><Button variant="outline" disabled={data.busy} onClick={() => void data.reload()}>Check connection</Button></div> : null}
       {data.workspace.mode === "unconfigured" ? (
         <>
           <PageHeader

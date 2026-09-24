@@ -4,7 +4,9 @@
 
 PRD-007 implements address-only valuations, saved report snapshots, optional homeowner association, mortgage calculations, reports, PDF export and refreshes. A property valuation does not require HighLevel.
 
-The current `operation-automated-lo-web` Vercel project was inspected during this implementation. It has the five demo environment settings but no database URL, authentication configuration or RentCast credential. The local project also has no RentCast credential. No real valuation call or customer message was made during qualification. The available Supabase account did not list an Operation Automated LO project. Do not attach this app to an unrelated project's database by guessing its purpose.
+The AVM source is implemented and qualified with synthetic provider responses and real PostgreSQL persistence. A dedicated free Nano Supabase project, `vonesqpyfsrhasuxfiiz` (`operation-automated-lo`, US East), was created in Jonathan Ferrell's personal organization on September 24, 2026. All ten tracked migrations are applied. The separate `oalo_web` runtime login was verified over the transaction pooler with TLS certificate and hostname verification; it cannot assume `migration_owner`, and no tenant rows are visible without a tenant context.
+
+The inspected Vercel project and local workspace still have no RentCast credential. No real valuation call or customer message was made during qualification. Hosted activation and final deployment evidence are recorded in the release follow-up report. Do not treat a configured adapter, successful synthetic lookup, or saved report template as live valuation evidence.
 
 ## Connect the authenticated workspace
 
@@ -17,7 +19,8 @@ Configure the established first-party authentication runtime using [review-sessi
 | Setting | Value or purpose |
 | --- | --- |
 | `OALO_DATABASE_URL` | Tenant-runtime database connection, with the established role memberships. Do not expose it to the browser. |
-| `OALO_DATABASE_SSL_MODE` | `require` or `verify-full` for hosted connections. |
+| `OALO_DATABASE_SSL_MODE` | `verify-full` for this hosted connection. |
+| `OALO_DATABASE_CA_CERT_PEM` | Current public database root CA in PEM format. The driver validates the CA and verifies the peer. A certificate rotation changes the pool fingerprint. This is public trust material, not a private key. |
 | `OALO_APP_URL` | Exact HTTPS origin that will serve the authenticated app and shared reports. |
 | `OALO_ALLOWED_ORIGINS` | Approved browser origins, including that exact origin. |
 | `OALO_CSRF_SERVER_SECRET` | Cryptographically random secret, at least 32 bytes encoded as base64url. |
@@ -36,6 +39,7 @@ Set these through the hosting provider's secret/environment interface. Never com
 | --- | --- |
 | `OALO_HOMEOWNER_REPORTS=enabled` | Makes the authenticated report module available. |
 | `OALO_HOMEOWNER_LIVE_DATA=enabled` | Permits the server to construct the live valuation adapter. |
+| `OALO_HOMEOWNER_ALLOWED_LOCATION_IDS` | Comma-separated internal workspace UUIDs explicitly approved for live lookups. Empty by default; new signups never inherit paid lookup access. No wildcard is accepted. |
 | `OALO_RENTCAST_API_KEY` | RentCast API credential with the required valuation/report-display rights. |
 | `OALO_HOMEOWNER_MONTHLY_LOOKUP_LIMIT` | Explicit per-workspace lookup-attempt allowance. Default `0` blocks fresh lookups. Choose the allowance deliberately; this is not a subscription price. |
 

@@ -45,6 +45,7 @@ const CampaignDatabaseEnvironmentSchema = z
     OALO_ENVIRONMENT: z.enum(["local", "preview", "staging", "production"]).default("local"),
     OALO_DATABASE_URL: z.string().url().startsWith("postgres"),
     OALO_DATABASE_SSL_MODE: z.enum(["disable", "require", "verify-full"]).optional(),
+    OALO_DATABASE_CA_CERT_PEM: z.string().max(16_000).optional(),
   })
   .passthrough();
 
@@ -81,13 +82,19 @@ export function parseCampaignDatabasePoolConfiguration(input: unknown) {
     poolingMode: "transaction" as const,
     preparedStatements: false as const,
     sslMode: sslModeFor(parsed.data.OALO_ENVIRONMENT, parsed.data.OALO_DATABASE_SSL_MODE),
+    ...(parsed.data.OALO_DATABASE_CA_CERT_PEM === undefined
+      ? {}
+      : { caCertificatePem: parsed.data.OALO_DATABASE_CA_CERT_PEM }),
     applicationName: "oalo-campaign-runtime",
   });
 }
 
 export function campaignDatabasePool(input: unknown = process.env): PostgresDatabasePool {
   const configuration = parseCampaignDatabasePoolConfiguration(input);
-  const fingerprint = `${configuration.deploymentEnvironment}:${configuration.sslMode}:${configuration.connectionString}`;
+  const caFingerprint = createHash("sha256")
+    .update(configuration.caCertificatePem ?? "")
+    .digest("hex");
+  const fingerprint = `${configuration.deploymentEnvironment}:${configuration.sslMode}:${configuration.connectionString}:${caFingerprint}`;
   if (cachedPool !== undefined && cachedFingerprint === fingerprint) {
     return cachedPool;
   }

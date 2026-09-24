@@ -256,8 +256,10 @@ export function OpenHouseDraftBuilder({
   }
 
   useEffect(() => {
-    if (result) resultRef.current?.focus();
-  }, [result]);
+    // An active walkthrough owns the next step's focus. Its result step and this
+    // inline result may commit together while the destination route is loading.
+    if (result && !guidedSetup?.open) resultRef.current?.focus();
+  }, [result, guidedSetup?.open]);
 
   function fillSampleProperty() {
     const form = formRef.current;
@@ -630,7 +632,9 @@ export function OpenHouseDraftBuilder({
             type="submit"
           >
             {submitting
-              ? "Checking your campaign…"
+              ? dashboardPreview
+                ? "Checking your campaign…"
+                : "Running the checks"
               : dashboardPreview
                 ? "Save & review campaign"
                 : "Save and run the checks"}

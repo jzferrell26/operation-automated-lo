@@ -35,6 +35,34 @@ function dependencies(): GenerateHomeDependencies {
   };
 }
 describe("homeowner report commands", () => {
+  it("does not grant paid provider access to an unapproved or newly registered workspace", async () => {
+    const repository = { ghlLocation: vi.fn().mockResolvedValue(null) };
+    const approved = "00000000-0000-4000-8000-000000000001";
+    const unapproved = "00000000-0000-4000-8000-000000000002";
+    const config = HomeEnvironmentSchema.parse({
+      OALO_HOMEOWNER_LIVE_DATA: "enabled",
+      OALO_RENTCAST_API_KEY: "fixture-key",
+      OALO_HOMEOWNER_ALLOWED_LOCATION_IDS: approved,
+    });
+    expect((await homeConnectionsFor(approved, repository, config)).valuation).not.toBeNull();
+    expect((await homeConnectionsFor(unapproved, repository, config)).valuation).toBeNull();
+    expect(
+      (
+        await homeConnectionsFor(
+          approved,
+          repository,
+          HomeEnvironmentSchema.parse({
+            OALO_HOMEOWNER_LIVE_DATA: "enabled",
+            OALO_RENTCAST_API_KEY: "fixture-key",
+          }),
+        )
+      ).valuation,
+    ).toBeNull();
+    expect(
+      HomeEnvironmentSchema.safeParse({ OALO_HOMEOWNER_ALLOWED_LOCATION_IDS: "*" }).success,
+    ).toBe(false);
+    expect(repository.ghlLocation).not.toHaveBeenCalled();
+  });
   it("creates a standalone AVM report without HighLevel and cannot attach an unverified contact", async () => {
     const deps = dependencies();
     const propertyInput = {
@@ -61,6 +89,7 @@ describe("homeowner report commands", () => {
     const repository = { ghlLocation: vi.fn().mockResolvedValue(null) };
     const config = HomeEnvironmentSchema.parse({
       OALO_HOMEOWNER_LIVE_DATA: "enabled",
+      OALO_HOMEOWNER_ALLOWED_LOCATION_IDS: "00000000-0000-4000-8000-000000000001",
       OALO_RENTCAST_API_KEY: "fixture-key",
       OALO_HOMEOWNER_GHL_CONNECTIONS_JSON: "invalid",
     });

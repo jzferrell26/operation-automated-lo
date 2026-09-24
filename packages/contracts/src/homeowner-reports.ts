@@ -47,6 +47,18 @@ export const HomeMortgageSchema = z
   })
   .strict()
   .superRefine((mortgage, context) => {
+    if (mortgage.source !== "amortized" && mortgage.loan !== null)
+      context.addIssue({
+        code: "custom",
+        path: ["loan"],
+        message: "Original loan terms belong only to a scheduled-payment estimate",
+      });
+    if (mortgage.source === "amortized" && mortgage.firstBalanceMinor !== null)
+      context.addIssue({
+        code: "custom",
+        path: ["firstBalanceMinor"],
+        message: "Use either a confirmed balance or an estimate from loan terms",
+      });
     if (mortgage.source === "confirmed" && mortgage.firstBalanceMinor === null)
       context.addIssue({
         code: "custom",

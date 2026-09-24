@@ -449,6 +449,9 @@ export class PostgresHomeownerRepository {
   }
   async createShare(reportId: string, hash: string, expiresAt: string): Promise<string> {
     return this.transaction(async (tx) => {
+      // Rotation and revocation must share a database lock across tabs and servers,
+      // including when no link exists yet for an UPDATE to lock.
+      await tx.write(lockLocation, [tx.context.locationId]);
       const report = (await tx.read(readReport, [tx.context.locationId, reportId]))[0]?.snapshot;
       if (!report) throw new HomeownerStoreError("NOT_FOUND");
       await tx.write(
@@ -477,6 +480,7 @@ export class PostgresHomeownerRepository {
   }
   async revokeShares(propertyId: string): Promise<void> {
     await this.transaction(async (tx) => {
+      await tx.write(lockLocation, [tx.context.locationId]);
       await tx.write(
         statement(
           "revoke-shares",

@@ -29,7 +29,9 @@ const propertyId = `home_${"a".repeat(32)}`;
 let workspace: HomeWorkspace;
 let property: HomeProperty;
 beforeEach(() => {
-  vi.clearAllMocks();
+  // Reset queued one-shot responses as well as call history. A failed scenario
+  // must not donate a response or pending promise to the next test.
+  vi.resetAllMocks();
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
     new DOMRect(16, 120, 240, 44),
   );

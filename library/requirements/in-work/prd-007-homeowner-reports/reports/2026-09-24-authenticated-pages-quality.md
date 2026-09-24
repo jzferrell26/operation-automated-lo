@@ -43,6 +43,8 @@ The final repository refinement uses property metadata and a database report cou
 
 ## Deployment limits
 
+Final report-action verification passed all 190 integration tests and six AVM/report browser scenarios. The new dialog fixture resets queued one-shot responses between tests so a failed test cannot supply the next test's response. The mobile validation screenshot was inspected: the error is visible inside the open form, entered values remain in place and the underlying report is unchanged. The browser discovery check confirms 26 demo scenarios and seven authenticated workspace scenarios in their separate runtimes.
+
 The demo browser configuration now excludes `review/**`, matching the existing separation in the legacy synthetic runner. Its basename match for `workspace-pages.spec.ts` had also discovered the authenticated suite under that directory, which requires the separate PostgreSQL/TLS review server. The seven signed-in scenarios remain in the canonical real-database gate; no test assertion is skipped within its intended runtime.
 
 The Linux release gate exposed a stylesheet-order dependency in the existing Connections notice: its title could inherit the Card's standard text color instead of the intended information tone. The shared notice title now declares its existing semantic text color directly. The 390px light/dark reference images were inspected and kept unchanged; no screenshot tolerance was changed. This also stabilizes the same title styling on the existing onboarding page.

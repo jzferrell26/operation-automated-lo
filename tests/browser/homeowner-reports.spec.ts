@@ -117,6 +117,43 @@ test("unknown debt remains unavailable, sample schedules are honest, and removal
   ).toBeVisible();
 });
 
+test("canceled schedule edits and report validation preserve the saved report", async ({
+  page,
+}, info) => {
+  await create(page);
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.getByRole("button", { name: "Update schedule", exact: true }).click();
+  await choose(page, "Update frequency", "Monthly valuation refresh");
+  await page.getByLabel("Pause scheduled updates").check();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Update schedule", exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "Update frequency" })).toContainText(
+    "On demand only",
+  );
+  await expect(page.getByLabel("Pause scheduled updates")).not.toBeChecked();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Update loan details", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Update mortgage details" });
+  await dialog.getByLabel("Current first mortgage balance").fill("invalid");
+  await dialog.getByRole("button", { name: "Save updated report" }).click();
+  await expect(dialog.getByRole("alert")).toContainText(
+    "Check the mortgage details and branding fields before saving.",
+  );
+  const results = await new AxeBuilder({ page })
+    .include('[role="dialog"]')
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+    .analyze();
+  expect(results.violations).toEqual([]);
+  await page.screenshot({ path: info.outputPath("report-error-mobile.png"), fullPage: true });
+  await dialog.getByLabel("Current first mortgage balance").fill("300000");
+  await expect(dialog.getByRole("alert")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Save updated report" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(
+    page.locator("[data-home-report]").getByText("$165,000", { exact: true }),
+  ).toBeVisible();
+});
+
 test("failed storage never creates a saved report and live endpoints remain closed in demo", async ({
   page,
   request,

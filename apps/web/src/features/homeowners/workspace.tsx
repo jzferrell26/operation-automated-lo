@@ -752,7 +752,20 @@ export function HomeownerWorkspace({
   return (
     <div className={styles.workspace} data-product-shell="true" data-homeowner-workspace="true">
       {data.error ? <LiveRegion urgency="alert" message={data.error} visible /> : null}
-      {data.workspace.mode === "live" && !data.workspace.valuationConnected ? <div className={styles.notice}><span><strong>Valuations need to be connected</strong><p>Your report workspace is ready. A valuation connection is required before creating a report; saved reports can still be opened and downloaded.</p></span><Button variant="outline" disabled={data.busy} onClick={() => void data.reload()}>Check connection</Button></div> : null}
+      {data.workspace.mode === "live" && !data.workspace.valuationConnected ? (
+        <div className={styles.notice}>
+          <span>
+            <strong>Valuations need to be connected</strong>
+            <p>
+              Your report workspace is ready. A valuation connection is required before creating a
+              report; saved reports can still be opened and downloaded.
+            </p>
+          </span>
+          <Button variant="outline" disabled={data.busy} onClick={() => void data.reload()}>
+            Check connection
+          </Button>
+        </div>
+      ) : null}
       {data.workspace.mode === "unconfigured" ? (
         <>
           <PageHeader

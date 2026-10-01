@@ -929,6 +929,28 @@ describe("guided setup steps", () => {
       },
     );
 
+    /**
+     * The other half of R6. When the layout's whole read of the setup failed, the walkthrough is at
+     * its first step with the failed state set, and an approver who cannot create a campaign can
+     * still press Continue through the steps, because the saves are separate requests. They reach
+     * step 6, and it must say it could not look rather than that nothing is waiting.
+     */
+    it("takes an approver who cannot create from the welcome step to a step 6 that says it could not look", async () => {
+      const { calls } = await walkToTheStepAfterTheRealtor({
+        canApprove: true,
+        canCreate: false,
+        campaignAwaitingDecisionFailed: true,
+      });
+
+      await screen.findByRole("dialog", { name: "We couldn't load what's waiting for you" });
+      expect(panel()).not.toHaveTextContent("Nothing is waiting for you");
+      expect(storedMoves(calls)).toEqual([
+        [2, null],
+        [3, null],
+        [6, null],
+      ]);
+    });
+
     it.each([
       [
         "a workspace owner with nothing waiting",

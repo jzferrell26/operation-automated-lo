@@ -28,6 +28,7 @@ import {
 import {
   resolveAuthenticatedPrincipal,
   resolveAuthenticatedReadPrincipal,
+  UnauthenticatedPrincipalError,
   type CampaignCommandPorts,
 } from "./authenticated-principal.js";
 import { campaignCommandAuthErrorResponse, jsonCommandError } from "./campaign-command-http.js";
@@ -202,28 +203,39 @@ function safeErrorToken(value: unknown, maxLength: number): string | undefined {
 }
 
 /**
+ * The kind of a failure, as a log line may carry it: the error's class and, when the driver gave
+ * one, its short code. It never carries the error's message, because a driver's message can quote a
+ * value from the query, and it never names the person, their session, or their workspace.
+ */
+function failureKind(error: unknown): string {
+  return error instanceof Error
+    ? [
+        safeErrorToken(error.name, 80) ?? "Error",
+        safeErrorToken((error as { code?: unknown }).code, 40),
+      ]
+        .filter((part) => part !== undefined)
+        .join(" ")
+    : typeof error;
+}
+
+/**
  * The server's record that the list could not be read.
  *
- * It names the module, what failed, and the kind of failure, which is the error's class and, when
- * the driver gave one, its short code. It never carries the error's message, because a driver's
- * message can quote a value from the query, and it never names the person, their session, or their
- * workspace. The message a person reads is the walkthrough's own sentence; this line is for whoever
- * watches the deployment's log and needs to tell a workspace whose list read keeps failing from one
- * with nothing in it. It is written on every failure rather than once a process, because a failure
- * of this read is an event on a request and not a standing fact about the deployment's configuration.
+ * The message a person reads is the walkthrough's own sentence; this line is for whoever watches the
+ * deployment's log and needs to tell a workspace whose list read keeps failing from one with nothing
+ * in it. It is written on every failure rather than once a process, because a failure of this read
+ * is an event on a request and not a standing fact about the deployment's configuration.
  */
 function logAwaitingDecisionFailure(error: unknown): void {
-  const kind =
-    error instanceof Error
-      ? [
-          safeErrorToken(error.name, 80) ?? "Error",
-          safeErrorToken((error as { code?: unknown }).code, 40),
-        ]
-          .filter((part) => part !== undefined)
-          .join(" ")
-      : typeof error;
   console.error(
-    `setup-preferences: the campaign waiting for a decision could not be read (${kind}); the guided setup says it could not look, and not that nothing is waiting.`,
+    `setup-preferences: the campaign waiting for a decision could not be read (${failureKind(error)}); the guided setup says it could not look, and not that nothing is waiting.`,
+  );
+}
+
+/** The same record, for the layout's whole read of the setup failing before it got to the list. */
+function logSetupReadFailure(error: unknown): void {
+  console.error(
+    `setup-preferences: the guided setup's saved state could not be read (${failureKind(error)}); the guided setup starts again and says it could not look for a campaign waiting for a decision, and not that nothing is waiting.`,
   );
 }
 
@@ -490,7 +502,19 @@ export async function handleSetupProfile(
 
 /**
  * The layout's read, from a request rather than a principal. It answers the empty value for an
- * unauthenticated or synthetic render, so the caller has one shape to handle.
+ * unauthenticated or synthetic render, so the caller has one shape to handle: nobody signed in is
+ * nobody to look for, and is not a failure to look.
+ *
+ * It also answers an empty value when the read fails, because the read cannot fail the page: the
+ * walkthrough starts again at its first step. Writing review R6, second half. That empty value says
+ * no campaign is waiting for anybody, and an approver who cannot create a campaign can still press
+ * Continue through the steps, because their saves are separate requests, and be told at step 6 that
+ * "nothing is waiting" about a workspace nobody looked at. So for somebody who is, or may be, an
+ * approver, the failure is the same failed state the campaign list read reports, and it is logged
+ * the same way. The person is not known when it was resolving them that failed, so that case counts
+ * as an approver: the provider only says anything different to somebody who can approve and cannot
+ * create. For somebody who is known not to be able to approve the empty value is what it always was,
+ * with no new state and no new log line, because nothing the walkthrough says to them depends on it.
  */
 export async function readSetupPreferencesForRequest(
   request: Request,
@@ -500,10 +524,16 @@ export async function readSetupPreferencesForRequest(
     return emptySetupPreferences();
   }
   const ports = resolveRuntimeCampaignCommandPorts(environment);
+  let principal: Readonly<AuthenticatedPrincipal> | undefined;
   try {
-    const principal = await resolveAuthenticatedReadPrincipal(request, environment, ports);
+    principal = await resolveAuthenticatedReadPrincipal(request, environment, ports);
     return await readSetupPreferences(principal, environment);
-  } catch {
-    return emptySetupPreferences();
+  } catch (error: unknown) {
+    if (error instanceof UnauthenticatedPrincipalError) return emptySetupPreferences();
+    if (principal !== undefined && !principalHasCampaignApprovalRole(principal)) {
+      return emptySetupPreferences();
+    }
+    logSetupReadFailure(error);
+    return { ...emptySetupPreferences(), awaitingDecisionFailed: true };
   }
 }

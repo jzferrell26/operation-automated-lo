@@ -17,6 +17,12 @@
   max-inline-size: 26rem;
   gap: var(--space-5);
 }
+/* The change-password page inside the shell takes the whole content column, so the panel above
+ * starts at the column's inline start, as every sibling page's title does (PRD-008d, second
+ * redraw, R-20). */
+.accountPage {
+  inline-size: 100%;
+}
 .header {
   display: grid;
   gap: var(--space-2);

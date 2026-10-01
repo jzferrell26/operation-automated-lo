@@ -477,6 +477,33 @@ test("the overview's action links keep their own height at every frame", async (
 });
 
 /**
+ * Rubric axis 1 in the rail. PRD-008d, the second redraw of 2026-10-01, finding R-19: the product's
+ * name at the top of the rail and the workspace's name at its foot carried no size of their own,
+ * so once D-009 put the body step on `body` they were drawn at the same size as every navigation
+ * link between them. Each is a title, at the card step, above the links' body step.
+ */
+test("the rail's titles are drawn above its navigation links", async ({ page }) => {
+  await blockAnythingOffOrigin(page);
+  await useStoredTheme(page, "light");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/overview");
+  await settleForScreenshot(page);
+  const sizes = await page.evaluate(() => {
+    const size = (selector: string): number => {
+      const element = document.querySelector(selector);
+      return element === null ? Number.NaN : Number.parseFloat(getComputedStyle(element).fontSize);
+    };
+    return {
+      brand: size("[class*='__brand'] strong"),
+      identity: size("[class*='__identity'] strong"),
+      link: size("[class*='__navigationLink']"),
+    };
+  });
+  expect(sizes.brand, "the product's name").toBeGreaterThan(sizes.link);
+  expect(sizes.identity, "the workspace's name").toBeGreaterThan(sizes.link);
+});
+
+/**
  * Rubric axes 1, 2, and 10 on the reports screen.
  *
  * PRD-008d, the second redraw of 2026-10-01. R-15: each group of actions laid its items out with

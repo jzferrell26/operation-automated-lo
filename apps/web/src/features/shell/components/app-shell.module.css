@@ -162,6 +162,14 @@
   font-size: var(--text-caption-size);
 }
 
+/* The rail's two titles, the product's name and the workspace's, take the card step. Unsized,
+ * they took the body step once D-009 put it on `body`, the same size as every navigation link
+ * under them (PRD-008d, second redraw, R-19). */
+.brand strong,
+.identity strong {
+  font-size: var(--text-card-size);
+}
+
 /*
  * 2026-09-21. The workspace is a column that fills the viewport and hands the main landmark
  * whatever the topbar and the banner leave, instead of the main landmark carrying its own

@@ -1,7 +1,7 @@
 # PRD-005c: Authenticated Review Runtime - Correlation Reference Boundary and Approval Retry Idempotency
 
 > **Parent:** [PRD-005](./prd-005-authenticated-review-runtime-index.md)
-> **Status:** Done (PR #67, `58d77fd`, merged 2026-09-22). All 13 criteria are DONE in `EXECUTION_LEDGER.md` (`CRR-047` to `CRR-059`) and pass the 2026-09-21 [quality audit](./qa/2026-09-19-prd-005-qa-report.md). No operator-blocked row.
+> **Status:** Done (PR #67, `58d77fd`, merged 2026-09-22). All 13 criteria are VERIFIED in `EXECUTION_LEDGER.md` (`CRR-047` to `CRR-059`), written back on 2026-10-01 from the 2026-09-21 [quality audit](./qa/2026-09-19-prd-005-qa-report.md), which passes all 13. No operator-blocked row.
 > **Priority:** P2 (completion review finding C2, correctness defect, plus the retry ordering the review flagged as an additional regression target)
 > **Schema changes:** None
 > **Owner Guardians:** `typescript-node-guardian` (handler, command, and validator changes), `http-rest-fundamentals-guardian` (header semantics and status-code honesty), `db-guardian` (validator adoption in the transaction context)

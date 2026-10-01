@@ -1,7 +1,7 @@
 # PRD-006b: First-Party Sign-In and Guided Experience - User Language, Not Operator Language
 
 > **Parent:** [PRD-006](./prd-006-first-party-sign-in-and-guided-experience-index.md)
-> **Status:** Done in the ledger (PR #67, `58d77fd`, merged 2026-09-22). All 17 criteria are DONE in `EXECUTION_LEDGER.md` (`CRR-131` to `CRR-147`), none operator-blocked. The 2026-09-21 [quality audit](./qa/2026-09-19-prd-006-qa-report.md) passes 16 and marks `006B-AC-015` (`CRR-145`) partial for four em dashes in ledger prose, which the close-out replaced. PRD-008c extended the guard this sub-PRD built.
+> **Status:** Done in the ledger (PR #67, `58d77fd`, merged 2026-09-22). All 17 criteria are VERIFIED in `EXECUTION_LEDGER.md` (`CRR-131` to `CRR-147`), written back on 2026-10-01; none is operator-blocked. The 2026-09-21 [quality audit](./qa/2026-09-19-prd-006-qa-report.md) passes 16 and marks `006B-AC-015` (`CRR-145`) partial for four em dashes in ledger prose; the close-out replaced them, and the row is VERIFIED on that fix. PRD-008c extended the guard this sub-PRD built.
 > **Priority:** P0 (owner requirement 2)
 > **Schema changes:** None
 > **Owner Guardians:** `technical-writing-craft-guardian` (the review step and the contract's prose), `react-guardian` (component and page edits), `library-guardian` (the durable contract document and the public docs), `ux-ui-guardian` (copy fits the screens)

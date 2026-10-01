@@ -39,3 +39,13 @@ Activation instructions: [Homeowner AVM activation](../../../../docs/operations/
 - HighLevel workflow: https://marketplace.gohighlevel.com/docs/ghl/contacts/add-contact-to-workflow/
 
 The first report uses one valuation request with subject attributes and comparable listings. It does not require a rental request or retrieve unrelated owner/loan records. That keeps the data footprint and billable work aligned with the first release.
+
+## Amendments
+
+### 2026-10-01: item 7, "explicit and deduplicated" review requests
+
+Item 7 says review requests are "explicit and deduplicated". That text did not settle whether a homeowner may raise a request again after the loan officer has marked the first one reviewed. The [independent quality review](reports/2026-10-01-independent-quality-review.md) found the gap as W-2: a repeated request was accepted and the homeowner was told the loan officer could see it, but nothing reached the loan officer. This amendment settles it:
+
+> A request is deduplicated while one is open; after the loan officer marks it reviewed, a new request is recorded.
+
+The run implemented it in the additive migration [`20261001090000_homeowner_review_rerequest.sql`](../../../../supabase/migrations/20261001090000_homeowner_review_rerequest.sql), which replaces `homeowner.record_shared_event` so that an accepted request raises the property's pending-request flag whenever it is not already set. The report still keeps one request event, so the flag, not the event, carries the latest open request. Proof is a set of pgTAP assertions in `supabase/tests/homeowner_reports.pgtap.sql` and a request, resolve, request-again case in `apps/web/src/server/homeowners/repository.postgres.test.ts`. The activation runbook states the rule under "Sharing, recovery and retention" in [Homeowner AVM activation](../../../../docs/operations/homeowner-avm-activation.md). Every other term of item 7 is unchanged.

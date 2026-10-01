@@ -1,6 +1,6 @@
 # PRD-005: Authenticated Review Runtime
 
-> **Status:** In Work (moved from backlog at gauntlet raid start, 2026-09-19). Merged in PR #67 (`58d77fd`) on 2026-09-22. It stays In Work because the deployed qualification rows `CRR-006` (`ARR-006`), `CRR-076` to `CRR-084`, and `CRR-088` are BLOCKED on the operator (see 005e's "Exact operator ask").
+> **Status:** In Work (moved from backlog at gauntlet raid start, 2026-09-19). Merged in PR #67 (`58d77fd`) on 2026-09-22. In `EXECUTION_LEDGER.md` 73 of its 88 rows are VERIFIED (written back 2026-10-01 from the 2026-09-21 [quality audit](./qa/2026-09-19-prd-005-qa-report.md)); `CRR-036` to `CRR-038` are superseded by PRD-006a and stay DONE, and `CRR-075` stays DONE until `008A-AC-019`'s evidence is written back. It stays In Work because the deployed qualification rows `CRR-006` (`ARR-006`), `CRR-076` to `CRR-084`, and `CRR-088` are BLOCKED on the operator (see 005e's "Exact operator ask").
 > **Priority:** P1. The 2026-09-19 completion review rates C1 (real request authentication) and C4 (deployed qualification) P1 and C2 (correlation validation and retry idempotency) and C3 (stale handoff documents) P2. They ride in one batch because C2's proof runs through the request path C1 builds, and C3 and C4 must cite what C1 and C2 actually merged.
 > **Effort:** XL (> 3d engineering, plus operator time for the isolated review database and the deployed proof)
 > **Schema changes:** Additive (005b adds a first-party session store and its functions; nothing existing changes shape)

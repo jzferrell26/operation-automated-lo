@@ -1,7 +1,7 @@
 # PRD-005a: Authenticated Review Runtime - Runtime Authentication Composition
 
 > **Parent:** [PRD-005](./prd-005-authenticated-review-runtime-index.md)
-> **Status:** Done (PR #67, `58d77fd`, merged 2026-09-22). All 18 criteria are DONE in `EXECUTION_LEDGER.md` (`CRR-009` to `CRR-026`) and pass the 2026-09-21 [quality audit](./qa/2026-09-19-prd-005-qa-report.md). No operator-blocked row.
+> **Status:** Done (PR #67, `58d77fd`, merged 2026-09-22). All 18 criteria are VERIFIED in `EXECUTION_LEDGER.md` (`CRR-009` to `CRR-026`), written back on 2026-10-01 from the 2026-09-21 [quality audit](./qa/2026-09-19-prd-005-qa-report.md), which passes all 18. No operator-blocked row.
 > **Priority:** P1 (completion review finding C1, functional release blocker)
 > **Schema changes:** None in this sub-PRD (consumes the functions 005b adds)
 > **Owner Guardians:** `auth-guardian` (composition and session ports), `typescript-node-guardian` (server modules and route wiring), `react-guardian` (layout, pages, browser helper), `db-guardian` (identity and role queries through the 005b functions)

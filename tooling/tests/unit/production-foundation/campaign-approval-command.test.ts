@@ -214,6 +214,42 @@ async function passingEvidence(
   };
 }
 
+/** The approved decision `actorRef` already recorded on `evidence`, as the repository returns it. */
+function existingApprovalFor(
+  evidence: CampaignApprovalEvidence,
+  actorRef: string,
+): ApprovalDecision {
+  return {
+    schemaVersion: 1 as const,
+    approvalRef: "approval_existingDecision01",
+    locationRef: evidence.version.locationRef,
+    campaignRef: evidence.version.campaignRef,
+    campaignVersionRef: evidence.version.campaignVersionRef,
+    manifestHash: evidence.version.manifestHash,
+    preflightResultHash: evidence.preflight.resultHash,
+    actorRef,
+    actorKind: "human" as const,
+    actorRole: "approver" as const,
+    decidedAt: now.toISOString(),
+    ipAuditHash: sha("a"),
+    decision: "approved" as const,
+    snapshot: {
+      pageVersionRef: evidence.version.manifest.artifacts.pageVersionRef,
+      pdfVersionRef: evidence.version.manifest.artifacts.pdfVersionRef,
+      creativeVersionRef: evidence.version.manifest.artifacts.creativeVersionRef,
+      copyVersionRef: evidence.version.manifest.artifacts.copyVersionRef,
+      emailPackageVersionRef: evidence.version.manifest.artifacts.emailPackageVersionRef,
+      smsPackageVersionRef: evidence.version.manifest.artifacts.smsPackageVersionRef,
+      disclosureVersionRef: evidence.version.manifest.artifacts.disclosureVersionRef,
+      targetingHash: sha("t"),
+      budgetHash: sha("b"),
+      datesHash: sha("d"),
+      formVersionRef: evidence.version.manifest.artifacts.formVersionRef,
+      destinationVersionRef: evidence.version.manifest.artifacts.destinationVersionRef,
+    },
+  } satisfies ApprovalDecision;
+}
+
 function command(overrides: Partial<HumanCampaignApprovalInput> = {}): HumanCampaignApprovalInput {
   return {
     campaignRef: "campaign_01OpenHouse",
@@ -278,35 +314,7 @@ describe("human campaign approval command", () => {
 
   it("returns a duplicate without rewriting when the same actor already recorded that decision", async () => {
     const evidence = await passingEvidence();
-    const existing = {
-      schemaVersion: 1 as const,
-      approvalRef: "approval_existingDecision01",
-      locationRef: evidence.version.locationRef,
-      campaignRef: evidence.version.campaignRef,
-      campaignVersionRef: evidence.version.campaignVersionRef,
-      manifestHash: evidence.version.manifestHash,
-      preflightResultHash: evidence.preflight.resultHash,
-      actorRef: approver.actorRef,
-      actorKind: "human" as const,
-      actorRole: "approver" as const,
-      decidedAt: now.toISOString(),
-      ipAuditHash: sha("a"),
-      decision: "approved" as const,
-      snapshot: {
-        pageVersionRef: evidence.version.manifest.artifacts.pageVersionRef,
-        pdfVersionRef: evidence.version.manifest.artifacts.pdfVersionRef,
-        creativeVersionRef: evidence.version.manifest.artifacts.creativeVersionRef,
-        copyVersionRef: evidence.version.manifest.artifacts.copyVersionRef,
-        emailPackageVersionRef: evidence.version.manifest.artifacts.emailPackageVersionRef,
-        smsPackageVersionRef: evidence.version.manifest.artifacts.smsPackageVersionRef,
-        disclosureVersionRef: evidence.version.manifest.artifacts.disclosureVersionRef,
-        targetingHash: sha("t"),
-        budgetHash: sha("b"),
-        datesHash: sha("d"),
-        formVersionRef: evidence.version.manifest.artifacts.formVersionRef,
-        destinationVersionRef: evidence.version.manifest.artifacts.destinationVersionRef,
-      },
-    } satisfies ApprovalDecision;
+    const existing = existingApprovalFor(evidence, approver.actorRef);
     const repository = new MemoryApprovalRepository();
     repository.evidence = { ...evidence, state: "approved", existingApproval: existing };
     const result = await executeHumanCampaignApproval(
@@ -434,6 +442,57 @@ describe("human campaign approval command", () => {
       expect(result).toEqual({ kind: "denied" });
       expect(repository.commits).toHaveLength(0);
       expect(repository.denials).toHaveLength(1);
+    }
+  });
+
+  /**
+   * PRD-008a 008A-AC-020. The role is consulted before the idempotent retry, so somebody whose
+   * approving role was revoked after they decided cannot read their own decision back through a
+   * retry: they get the role refusal, and the refusal is recorded like any other.
+   */
+  it("refuses a non-approver even when an identical decision of theirs exists", async () => {
+    const evidence = await passingEvidence();
+    const revoked = principal({ role: "campaign_creator" });
+    const repository = new MemoryApprovalRepository();
+    repository.evidence = {
+      ...evidence,
+      state: "approved",
+      existingApproval: existingApprovalFor(evidence, revoked.actorRef),
+    };
+
+    const result = await executeHumanCampaignApproval(
+      command({
+        expectedCampaignVersionRef: evidence.version.campaignVersionRef,
+        expectedManifestHash: evidence.version.manifestHash,
+        expectedPreflightResultHash: evidence.preflight.resultHash,
+        expectedRowVersion: 1,
+      }),
+      revoked,
+      repository,
+    );
+
+    expect(result).toEqual({ kind: "denied" });
+    expect(repository.commits).toHaveLength(0);
+    expect(repository.denials).toHaveLength(1);
+    expect(repository.denials[0]?.campaignRef).toBe(evidence.version.campaignRef);
+  });
+
+  it("refuses a non-approver before settling staleness or state", async () => {
+    const evidence = await passingEvidence();
+    for (const evidenceState of [
+      { ...evidence, state: "approved" as const },
+      { ...evidence, state: "draft" as const },
+    ]) {
+      const repository = new MemoryApprovalRepository();
+      repository.evidence = evidenceState;
+      const result = await executeHumanCampaignApproval(
+        command({ expectedCampaignVersionRef: "version_02Stale" }),
+        principal({ role: "viewer", actorRef: "principal_viewer001" }),
+        repository,
+      );
+      expect(result).toEqual({ kind: "denied" });
+      expect(repository.denials).toHaveLength(1);
+      expect(repository.commits).toHaveLength(0);
     }
   });
 

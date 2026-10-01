@@ -243,22 +243,29 @@ describe("campaign approval handler correlation matrix (real Postgres)", () => {
   });
 
   /**
-   * Once the campaign is approved, the creator's attempt is a conflict rather than a forbidden
-   * one: `executeHumanCampaignApproval` settles staleness and state before it consults the role
-   * (`packages/application/src/campaign-approval-command.ts`), so the approved state answers
-   * first. Both are refusals that write nothing, and pinning which one arrives keeps the ordering
-   * from drifting unnoticed.
+   * Once the campaign is approved, the creator's attempt is still a forbidden one rather than a
+   * conflict. Since PRD-008a 008A-AC-020, `executeHumanCampaignApproval` consults the role before
+   * the idempotent retry and before staleness and state
+   * (`packages/application/src/campaign-approval-command.ts`), so a principal who may not approve
+   * learns nothing about the campaign's state from the answer. This case used to pin the opposite
+   * ordering (409, written by nothing); it is re-pinned rather than dropped, so the ordering still
+   * cannot drift unnoticed. The refusal writes exactly one denied audit row and nothing else, the
+   * same shape as the creator's 403 on a pending campaign above.
    */
-  it("returns 409, not 403, when a creator attempts an already approved campaign", async () => {
+  it("returns 403, not 409, when a creator attempts an already approved campaign", async () => {
     const draft = await createDraft();
     expect((await approvePost(approvalRequest(approverSession, approvalBody(draft)))).status).toBe(
       200,
     );
     const before = await tableCountsFor(pool, location.locationId);
 
-    const conflicted = await approvePost(approvalRequest(creatorSession, approvalBody(draft)));
+    const forbidden = await approvePost(approvalRequest(creatorSession, approvalBody(draft)));
 
-    expect(conflicted.status).toBe(409);
-    expect(await tableCountsFor(pool, location.locationId)).toEqual(before);
+    expect(forbidden.status).toBe(403);
+    const after = await tableCountsFor(pool, location.locationId);
+    expect(after.approvals).toBe(before.approvals);
+    expect(after.commands).toBe(before.commands);
+    expect(after.campaigns).toBe(before.campaigns);
+    expect(after.audit).toBe(before.audit + 1);
   });
 });

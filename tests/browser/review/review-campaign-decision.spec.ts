@@ -133,15 +133,49 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
   await expect(page.getByText("Approved.", { exact: false }).first()).toBeVisible();
 
   /**
-   * `approved` is the moment after the decision and before the next load: the page still holds the
-   * version it arrived with, and the only thing that has changed is what the screen says back. The
-   * theme is chosen from the header rather than by reloading, because a reload is exactly the
-   * thing this state is defined as being before.
+   * PRD-008b 008B-AC-006. The decision replaces the controls with what was recorded and refreshes
+   * the page, so this waits for the refreshed page rather than for the card alone.
+   *
+   * "Who signed off" is rendered by the server only once a decision is stored, so its arrival is
+   * the proof that the refresh has landed. Until 2026-10-01 this state photographed the moment
+   * before that: an approved card beside a screen that still said "Ready for approval", offered
+   * "An approver can sign off on it now.", and re-offered the approval, which is the contradiction
+   * the PRD-006 QA report recorded. The assertions are scoped to the page's main region, so
+   * nothing in the shell or a closed walkthrough can satisfy or break them.
+   */
+  const main = page.getByRole("main");
+  const signedOffNow = page.getByRole("region", { name: "Who signed off" });
+  await expect(signedOffNow).toBeVisible();
+  await expect(main.getByText("Ready for approval", { exact: false })).toHaveCount(0);
+  await expect(main.getByText("An approver can sign off on it now.", { exact: false })).toHaveCount(
+    0,
+  );
+  await expect(main.getByText("Approve this version", { exact: false })).toHaveCount(0);
+  await expect(main.getByRole("button", { name: "Approve this version" })).toHaveCount(0);
+  await expect(main.getByRole("button", { name: "Send back for changes" })).toHaveCount(0);
+  await expect(
+    main.getByText(
+      "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.",
+    ),
+  ).toBeVisible();
+  await expect(signedOffNow).toContainText("Approved by");
+
+  /**
+   * `approved` is the page after the decision landed and the refresh re-read the stored state: the
+   * card says what was recorded, and every region around it agrees. The theme is chosen from the
+   * header rather than by reloading, because a reload would replace the card with the control a
+   * later visitor sees, which is the `already-decided` state below. The moment the decision was
+   * recorded is a fact about this run, not about the design, so it is masked as it is there.
    */
   for (const theme of REVIEW_THEMES) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await chooseThemeFromTheHeader(page, theme);
-    await captureNamedState(page, { screen: "campaign-detail", state: "approved", theme });
+    await captureNamedState(page, {
+      screen: "campaign-detail",
+      state: "approved",
+      theme,
+      mask: [signedOffNow.locator("p").last()],
+    });
   }
 
   for (const theme of REVIEW_THEMES) {

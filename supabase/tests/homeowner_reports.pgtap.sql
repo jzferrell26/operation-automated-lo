@@ -34,7 +34,7 @@
 
 begin;
 
-select plan(207);
+select plan(226);
 
 create function pg_temp.assert_is(actual anyelement, expected anyelement, description text)
 returns text
@@ -134,9 +134,11 @@ as $function$
 $function$;
 
 -- A report snapshot with the keys the migration reads: id, propertyId, the contact id
--- the share function masks, the mortgage source and as-of date, and one financial figure.
+-- the share function masks, the mortgage source and as-of date, and one financial figure
+-- that a fixture can vary so two reports with one id still tell their tenants apart.
 create function pg_temp.snapshot(
-  report_id text, property_id text, contact_id text, mortgage jsonb
+  report_id text, property_id text, contact_id text, mortgage jsonb,
+  equity_minor bigint default 14000000
 )
 returns jsonb
 language sql
@@ -150,18 +152,20 @@ as $function$
       'contactName', 'Fixture Homeowner',
       'mortgage', mortgage
     ),
-    'financials', pg_catalog.jsonb_build_object('equityMinor', 14000000)
+    'financials', pg_catalog.jsonb_build_object('equityMinor', equity_minor)
   )
 $function$;
 
--- One property and its one report, numbered n.
+-- One property and its one report, numbered n. The primary keys are (location_id, id), so
+-- the same n may be seeded for two locations and the two rows are different rows.
 create function pg_temp.seed_report(
   n integer,
   loc uuid,
   actor uuid,
   valuation_age interval default interval '1 hour',
   mortgage jsonb default pg_temp.confirmed_mortgage(0),
-  property_revoked boolean default false
+  property_revoked boolean default false,
+  equity_minor bigint default 14000000
 )
 returns void
 language plpgsql
@@ -179,7 +183,7 @@ begin
   insert into homeowner.reports (id, location_id, property_id, snapshot, valuation_at, created_by)
   values (
     pg_temp.rid(n), loc, pg_temp.pid(n),
-    pg_temp.snapshot(pg_temp.rid(n), pg_temp.pid(n), 'contact-' || n, mortgage),
+    pg_temp.snapshot(pg_temp.rid(n), pg_temp.pid(n), 'contact-' || n, mortgage, equity_minor),
     pg_catalog.now() - valuation_age, actor
   );
 end
@@ -436,6 +440,22 @@ begin
   perform pg_temp.seed_report(21, '00000000-0000-4000-8000-000000000f02', '00000000-0000-4000-8000-000000000f17');
   -- The suspended location.
   perform pg_temp.seed_report(30, '00000000-0000-4000-8000-000000000f03', '00000000-0000-4000-8000-000000000f11');
+  -- Reports and properties that tenant A and tenant B both hold under the same ids, the
+  -- primary keys being (location_id, id). Tenant A's carry equity 21000000 and tenant B's
+  -- 37000000, so a snapshot says which tenant it came from. In 70 both are live. In 71 and
+  -- 72 one tenant's valuation is stale and the other's fresh; in 73 and 74 one tenant's
+  -- property is revoked and the other's is not. A share must answer for its own tenant's
+  -- row and never borrow the other tenant's row that happens to share the id.
+  perform pg_temp.seed_report(70, '00000000-0000-4000-8000-000000000f01', '00000000-0000-4000-8000-000000000f11', equity_minor => 21000000);
+  perform pg_temp.seed_report(70, '00000000-0000-4000-8000-000000000f02', '00000000-0000-4000-8000-000000000f17', equity_minor => 37000000);
+  perform pg_temp.seed_report(71, '00000000-0000-4000-8000-000000000f01', '00000000-0000-4000-8000-000000000f11', valuation_age => interval '40 days', equity_minor => 21000000);
+  perform pg_temp.seed_report(71, '00000000-0000-4000-8000-000000000f02', '00000000-0000-4000-8000-000000000f17', equity_minor => 37000000);
+  perform pg_temp.seed_report(72, '00000000-0000-4000-8000-000000000f01', '00000000-0000-4000-8000-000000000f11', equity_minor => 21000000);
+  perform pg_temp.seed_report(72, '00000000-0000-4000-8000-000000000f02', '00000000-0000-4000-8000-000000000f17', valuation_age => interval '40 days', equity_minor => 37000000);
+  perform pg_temp.seed_report(73, '00000000-0000-4000-8000-000000000f01', '00000000-0000-4000-8000-000000000f11', property_revoked => true, equity_minor => 21000000);
+  perform pg_temp.seed_report(73, '00000000-0000-4000-8000-000000000f02', '00000000-0000-4000-8000-000000000f17', equity_minor => 37000000);
+  perform pg_temp.seed_report(74, '00000000-0000-4000-8000-000000000f01', '00000000-0000-4000-8000-000000000f11', equity_minor => 21000000);
+  perform pg_temp.seed_report(74, '00000000-0000-4000-8000-000000000f02', '00000000-0000-4000-8000-000000000f17', property_revoked => true, equity_minor => 37000000);
 
   perform pg_temp.seed_share('r1-valid', 1, '00000000-0000-4000-8000-000000000f01', '00000000-0000-4000-8000-000000000f11', interval '7 days');
   perform pg_temp.seed_share('r1-expired', 1, '00000000-0000-4000-8000-000000000f01', '00000000-0000-4000-8000-000000000f11', interval '-1 day');
@@ -454,6 +474,17 @@ begin
   perform pg_temp.seed_share('r20-valid', 20, '00000000-0000-4000-8000-000000000f02', '00000000-0000-4000-8000-000000000f17', interval '7 days');
   perform pg_temp.seed_share('r30-valid', 30, '00000000-0000-4000-8000-000000000f03', '00000000-0000-4000-8000-000000000f11', interval '7 days');
   perform pg_temp.seed_share('r60-valid', 60, '00000000-0000-4000-8000-000000000f01', '00000000-0000-4000-8000-000000000f11', interval '7 days');
+  -- One live share per tenant on each shared id: dup70-a is tenant A's, dup70-b tenant B's.
+  perform pg_temp.seed_share('dup70-a', 70, '00000000-0000-4000-8000-000000000f01', '00000000-0000-4000-8000-000000000f11', interval '7 days');
+  perform pg_temp.seed_share('dup70-b', 70, '00000000-0000-4000-8000-000000000f02', '00000000-0000-4000-8000-000000000f17', interval '7 days');
+  perform pg_temp.seed_share('dup71-a', 71, '00000000-0000-4000-8000-000000000f01', '00000000-0000-4000-8000-000000000f11', interval '7 days');
+  perform pg_temp.seed_share('dup71-b', 71, '00000000-0000-4000-8000-000000000f02', '00000000-0000-4000-8000-000000000f17', interval '7 days');
+  perform pg_temp.seed_share('dup72-a', 72, '00000000-0000-4000-8000-000000000f01', '00000000-0000-4000-8000-000000000f11', interval '7 days');
+  perform pg_temp.seed_share('dup72-b', 72, '00000000-0000-4000-8000-000000000f02', '00000000-0000-4000-8000-000000000f17', interval '7 days');
+  perform pg_temp.seed_share('dup73-a', 73, '00000000-0000-4000-8000-000000000f01', '00000000-0000-4000-8000-000000000f11', interval '7 days');
+  perform pg_temp.seed_share('dup73-b', 73, '00000000-0000-4000-8000-000000000f02', '00000000-0000-4000-8000-000000000f17', interval '7 days');
+  perform pg_temp.seed_share('dup74-a', 74, '00000000-0000-4000-8000-000000000f01', '00000000-0000-4000-8000-000000000f11', interval '7 days');
+  perform pg_temp.seed_share('dup74-b', 74, '00000000-0000-4000-8000-000000000f02', '00000000-0000-4000-8000-000000000f17', interval '7 days');
 
   -- Properties for the monthly claim. 40, 41 and 42 are the only claimable ones: 41 holds
   -- a lease that lapsed an hour ago. 43 to 51 each fail one condition.
@@ -1218,6 +1249,86 @@ select pg_temp.assert_is(
   'a mortgage marked unknown needs no as-of date, so the same report is still shared'
 );
 
+-- One id, two tenants. Each tenant's secret answers for that tenant's own row: when both
+-- reports are live it returns its own snapshot, and when its own row fails a check it
+-- returns nothing even though the other tenant's row under the same id would pass.
+select pg_temp.assert_is(
+  homeowner.read_shared_report(pg_temp.hash_of(same_id.secret)),
+  same_id.expected,
+  same_id.what
+)
+from (values
+  (
+    'tenant A''s secret returns tenant A''s report when tenant B holds a live report under the same id',
+    'dup70-a',
+    pg_temp.snapshot(pg_temp.rid(70), pg_temp.pid(70), 'shared', pg_temp.confirmed_mortgage(0), 21000000)
+  ),
+  (
+    'tenant B''s secret returns tenant B''s report when tenant A holds a live report under the same id',
+    'dup70-b',
+    pg_temp.snapshot(pg_temp.rid(70), pg_temp.pid(70), 'shared', pg_temp.confirmed_mortgage(0), 37000000)
+  ),
+  (
+    'tenant A''s secret returns nothing for its stale valuation, not tenant B''s fresh report under the same id',
+    'dup71-a',
+    null::jsonb
+  ),
+  (
+    'tenant B''s secret returns tenant B''s fresh report, not tenant A''s stale one under the same id',
+    'dup71-b',
+    pg_temp.snapshot(pg_temp.rid(71), pg_temp.pid(71), 'shared', pg_temp.confirmed_mortgage(0), 37000000)
+  ),
+  (
+    'tenant A''s secret returns tenant A''s fresh report, not tenant B''s stale one under the same id',
+    'dup72-a',
+    pg_temp.snapshot(pg_temp.rid(72), pg_temp.pid(72), 'shared', pg_temp.confirmed_mortgage(0), 21000000)
+  ),
+  (
+    'tenant B''s secret returns nothing for its stale valuation, not tenant A''s fresh report under the same id',
+    'dup72-b',
+    null::jsonb
+  ),
+  (
+    'tenant A''s secret returns nothing for its revoked property, not through tenant B''s live property of the same id',
+    'dup73-a',
+    null::jsonb
+  ),
+  (
+    'tenant B''s secret returns tenant B''s report, not blocked by tenant A''s revoked property of the same id',
+    'dup73-b',
+    pg_temp.snapshot(pg_temp.rid(73), pg_temp.pid(73), 'shared', pg_temp.confirmed_mortgage(0), 37000000)
+  ),
+  (
+    'tenant A''s secret returns tenant A''s report, not blocked by tenant B''s revoked property of the same id',
+    'dup74-a',
+    pg_temp.snapshot(pg_temp.rid(74), pg_temp.pid(74), 'shared', pg_temp.confirmed_mortgage(0), 21000000)
+  ),
+  (
+    'tenant B''s secret returns nothing for its revoked property, not through tenant A''s live property of the same id',
+    'dup74-b',
+    null::jsonb
+  )
+) as same_id(what, secret, expected);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.count(*)::integer
+    from (values
+      ('dup70-a'), ('dup71-a'), ('dup72-a'), ('dup73-a'), ('dup74-a')
+    ) as tenant_a_secret(secret)
+    where homeowner.read_shared_report(pg_temp.hash_of(tenant_a_secret.secret))
+      #>> '{financials,equityMinor}' = '37000000'
+  ) + (
+    select pg_catalog.count(*)::integer
+    from (values
+      ('dup70-b'), ('dup71-b'), ('dup72-b'), ('dup73-b'), ('dup74-b')
+    ) as tenant_b_secret(secret)
+    where homeowner.read_shared_report(pg_temp.hash_of(tenant_b_secret.secret))
+      #>> '{financials,equityMinor}' = '21000000'
+  ),
+  0,
+  'no secret of one tenant ever returns the other tenant''s figures'
+);
+
 -- record_shared_event. A valid secret records, once per kind, and a repeat is accepted.
 select pg_temp.assert_is(
   homeowner.record_shared_event(
@@ -1384,6 +1495,91 @@ select pg_temp.assert_is(
   ),
   array[pg_temp.pid(1)],
   'only the property behind the one valid review request is marked review requested'
+);
+reset role;
+
+-- The same two tenants and one shared id, now for recording. An event lands on the tenant
+-- that issued the secret and on no other, including the property it marks, and a secret
+-- that reads nothing records nothing whatever the other tenant holds under that id.
+set local role app_runtime;
+select platform.reset_transaction_context();
+select pg_temp.assert_is(
+  homeowner.record_shared_event(
+    pg_temp.hash_of('dup70-a'), 'viewed', '00000000-0000-4000-8000-000000000fa1'
+  ),
+  true,
+  'tenant A''s secret records a view of the report id both tenants hold'
+);
+select pg_temp.assert_is(
+  homeowner.record_shared_event(
+    pg_temp.hash_of('dup70-b'), 'review_requested', '00000000-0000-4000-8000-000000000fa2'
+  ),
+  true,
+  'tenant B''s secret records a review request on the report id both tenants hold'
+);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.bool_or(
+      homeowner.record_shared_event(
+        pg_temp.hash_of(unreadable.secret), attempt.kind, attempt.event_key::uuid
+      )
+    )
+    from (values ('dup71-a'), ('dup72-b'), ('dup73-a'), ('dup74-b')) as unreadable(secret)
+    cross join (values
+      ('viewed', '00000000-0000-4000-8000-000000000fa3'),
+      ('review_requested', '00000000-0000-4000-8000-000000000fa4')
+    ) as attempt(kind, event_key)
+  ),
+  false,
+  'a secret whose own row fails a check records nothing, though the other tenant''s row of that id passes'
+);
+reset role;
+set local role migration_owner;
+select pg_temp.assert_is(
+  (
+    select pg_catalog.array_agg(location_id order by location_id)
+    from homeowner.events
+    where report_id = pg_temp.rid(70) and event_kind = 'viewed'
+  ),
+  array['00000000-0000-4000-8000-000000000f01']::uuid[],
+  'the view is attributed to tenant A only'
+);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.array_agg(location_id order by location_id)
+    from homeowner.events
+    where report_id = pg_temp.rid(70) and event_kind = 'review_requested'
+  ),
+  array['00000000-0000-4000-8000-000000000f02']::uuid[],
+  'the review request is attributed to tenant B only'
+);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.array_agg(location_id order by location_id)
+    from homeowner.properties
+    where id = pg_temp.pid(70) and review_requested_at is not null
+  ),
+  array['00000000-0000-4000-8000-000000000f02']::uuid[],
+  'only tenant B''s property is marked review requested, not tenant A''s property of the same id'
+);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.count(*)::integer
+    from homeowner.events
+    where report_id in (pg_temp.rid(71), pg_temp.rid(72), pg_temp.rid(73), pg_temp.rid(74))
+  ),
+  0,
+  'the refused secrets left no event on any report id of the shared pairs'
+);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.count(*)::integer
+    from homeowner.properties
+    where id in (pg_temp.pid(71), pg_temp.pid(72), pg_temp.pid(73), pg_temp.pid(74))
+      and review_requested_at is not null
+  ),
+  0,
+  'the refused secrets marked no property of the shared pairs as review requested'
 );
 reset role;
 

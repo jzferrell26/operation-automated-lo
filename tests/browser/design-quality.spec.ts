@@ -18,6 +18,10 @@ import {
 } from "./helpers/design-quality.js";
 import { withAnEmptyCampaignWorkspace } from "./helpers/empty-campaign-workspace.js";
 import {
+  POPULATED_CAMPAIGNS,
+  withAPopulatedCampaignWorkspace,
+} from "./helpers/populated-campaign-workspace.js";
+import {
   FINISHED_OPEN_HOUSE,
   READY_OPEN_HOUSE,
   fillTheOpenHouseDraft,
@@ -93,7 +97,24 @@ async function blockAnythingOffOrigin(page: Page): Promise<readonly string[]> {
   return externalRequests;
 }
 
-for (const { screen, path } of SYNTHETIC_SCREENS) {
+/**
+ * Screens the matrix below takes no `default` picture of, because the rubric names every state
+ * they have and each named state has its own capture further down.
+ *
+ * The campaigns list is "empty and populated" in the rubric's section 4, and the matrix's picture
+ * of it was whichever of the two the workspace happened to hold when the matrix ran. On the
+ * runner, whose workspace starts empty and whose matrix runs before any test saves a campaign,
+ * that was the empty list, so the sign-off's populated row had no populated picture behind it
+ * (PRD-008d, the baseline review of 2026-10-01). The two states are now taken from their own
+ * fixture workspaces, `campaigns--empty` and `campaigns--populated`, and there is no
+ * `campaigns--default` for a reader to mistake for either. The screen stays in
+ * `SYNTHETIC_SCREENS`, so the motion, keyboard, and demo-link checks still visit it.
+ */
+const NAMED_STATES_ONLY: ReadonlySet<string> = new Set(["campaigns"]);
+
+for (const { screen, path } of SYNTHETIC_SCREENS.filter(
+  (candidate) => !NAMED_STATES_ONLY.has(candidate.screen),
+)) {
   for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
     for (const frame of REVIEW_FRAMES) {
       test(`${screen} at ${frame.name} in ${theme} meets the design quality bar`, async ({
@@ -474,6 +495,55 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
       );
 
       await captureNamedState(page, { screen: "campaigns", state: "empty", theme });
+
+      await page.setViewportSize({ width: 1180, height: 900 });
+      await settleForScreenshot(page);
+      await expectKeyboardReachesEveryControl(page);
+    });
+
+    expect(externalRequests).toEqual([]);
+  });
+
+  /**
+   * PRD-008d 008D-AC-010, the sign-off's "Campaigns list, populated" row.
+   *
+   * Taken from a fixture workspace holding exactly the two campaigns
+   * `helpers/populated-campaign-workspace.ts` saves through the create screen, one ready for
+   * approval and one that needs changes, so the picture is the same list on every run and on
+   * every machine. The list's contents are asserted before anything is photographed: both cards,
+   * in the order they were saved, each with its headline, address, and badge and its way onward,
+   * and no empty-state card.
+   */
+  test(`the campaigns list's populated state meets the bar at every frame in ${theme}`, async ({
+    page,
+  }) => {
+    test.setTimeout(240_000);
+    const externalRequests = await blockAnythingOffOrigin(page);
+    await useStoredTheme(page, theme);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await withAPopulatedCampaignWorkspace(page, async () => {
+      await page.goto("/marketing/campaigns");
+      await expectThemeResolved(page, theme);
+      await settleForScreenshot(page);
+
+      const main = page.getByRole("main");
+      await expect(main.getByRole("heading", { level: 1, name: "Your campaigns" })).toBeVisible();
+      await expect(main.getByText("No campaigns yet.")).toHaveCount(0);
+      await expect(main.getByRole("link", { name: "Open campaign" })).toHaveCount(
+        POPULATED_CAMPAIGNS.length,
+      );
+      // Each campaign is one `Card`, which renders an `article`.
+      const cards = main.getByRole("article");
+      await expect(cards).toHaveCount(POPULATED_CAMPAIGNS.length);
+      for (const [index, campaign] of POPULATED_CAMPAIGNS.entries()) {
+        await expect(cards.nth(index).getByRole("heading", { level: 2 })).toHaveText(
+          campaign.headline,
+        );
+        await expect(cards.nth(index)).toContainText(campaign.address);
+        await expect(cards.nth(index)).toContainText(campaign.verdict);
+      }
+
+      await captureNamedState(page, { screen: "campaigns", state: "populated", theme });
 
       await page.setViewportSize({ width: 1180, height: 900 });
       await settleForScreenshot(page);

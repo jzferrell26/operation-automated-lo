@@ -19,6 +19,7 @@ import {
 import {
   expectNoExternalRequests,
   guardLocalOrigin,
+  letTheStepPlaceItself,
   restartGuidedSetup,
   seededCredentials,
   signInExisting,
@@ -397,6 +398,40 @@ test("the workspace after a saved password meets the design quality bar", async 
 });
 
 /**
+ * PRD-008d, the scored baseline review of 2026-10-01: the picture of a step that points at the page
+ * shows what it points at. The element is on screen, below the sticky header, above the viewport's
+ * end, and clear of the panel, before the picture is taken, because a picture is only compared on
+ * the runner that drew it and this has to hold everywhere.
+ */
+async function expectTheStepPointsAtSomethingOnScreen(
+  page: Page,
+  frame: ReviewFrame,
+): Promise<void> {
+  const highlighted = page.locator("[data-guided-setup-highlight='true']").first();
+  await expect(highlighted, `at ${frame.name} the step points at something`).toBeVisible();
+  const target = await highlighted.boundingBox();
+  const panelBox = await page.getByRole("dialog").boundingBox();
+  const header = await page.getByRole("banner").boundingBox();
+  expect(target, `at ${frame.name} the element has a box`).not.toBeNull();
+  expect(panelBox, `at ${frame.name} the panel has a box`).not.toBeNull();
+  if (target === null || panelBox === null) return;
+  expect(
+    target.y,
+    `at ${frame.name} the element starts below the sticky header`,
+  ).toBeGreaterThanOrEqual(header === null ? 0 : header.y + header.height - 1);
+  expect(
+    target.y + target.height,
+    `at ${frame.name} the element ends inside the viewport`,
+  ).toBeLessThanOrEqual(frame.height);
+  const overlaps =
+    panelBox.x < target.x + target.width &&
+    panelBox.x + panelBox.width > target.x &&
+    panelBox.y < target.y + target.height &&
+    panelBox.y + panelBox.height > target.y;
+  expect(overlaps, `at ${frame.name} the panel covers what it is pointing at`).toBe(false);
+}
+
+/**
  * 006C-AC-020's review half for steps 1 and 2, at all four frames, and 006D-AC-018 from the review
  * side.
  *
@@ -405,12 +440,16 @@ test("the workspace after a saved password meets the design quality bar", async 
  * 2 at 1180 and 390 as "pass, asserted (A-1)": `guided-setup.accessibility.spec.ts` runs axe, the
  * motion check, the target sizes, the ring, and the panel clearance there, and draws no picture.
  * An assertion holds a rule; it does not hold a composition. So the same cell procedure now runs
- * at all four frames and every cell has a baseline. Each cell starts the walkthrough again and
- * photographs from the top of the page, which is how the 1440 and 768 cells were drawn and signed:
- * the top is the canonical start for step 2, which points at nothing on the page, and it is the
- * opening of the overview for step 1, whose quick actions sit further down. That the panel is
- * clear of those quick actions once the product has scrolled to them stays asserted where it was,
- * in the accessibility spec.
+ * at all four frames and every cell has a baseline. Each cell starts the walkthrough again from
+ * the top of the overview, which is where a person meets step 1.
+ *
+ * Step 1 is photographed where the product puts it, not at the top of the page. PRD-008d's scored
+ * baseline review of 2026-10-01 found the earlier cells scrolling back to the top after the
+ * walkthrough had scrolled the quick actions clear of its panel, so at 1180, 768, and 390 the
+ * pictures showed the panel pointing at quick actions below the fold: a state nobody using the
+ * product is in, signed as if it were. The cell now starts at the top and lets the step's own
+ * scroll run (`letTheStepPlaceItself`). Step 2 points at nothing on the page, so the top of the
+ * page stays its canonical start.
  *
  * It signs in as the seeded creator and restarts the walkthrough rather than creating an account,
  * so the run's sign-up budget stays where PRD-006c's specs need it. `restartGuidedSetup` is what a
@@ -434,6 +473,8 @@ test("the guided setup's steps 1 and 2 meet the bar at every frame, in both them
       await page.setViewportSize({ width: frame.width, height: frame.height });
       await restartGuidedSetup(page);
       await settleForScreenshot(page);
+      await letTheStepPlaceItself(page, "top");
+      await settleForScreenshot(page, { keepScroll: true });
 
       await expectAxeClean(page);
       await expectTargetsAreLargeEnough(page);
@@ -444,6 +485,7 @@ test("the guided setup's steps 1 and 2 meet the bar at every frame, in both them
        * The controls are measured before the picture is taken, at both frames.
        */
       await expectPanelFooterIsOnScreen(page, frame, ["Let's go", "Not now"]);
+      await expectTheStepPointsAtSomethingOnScreen(page, frame);
       await expect(page).toHaveScreenshot(
         screenshotName("guided-setup", frame.name, theme, "step-1-welcome"),
       );

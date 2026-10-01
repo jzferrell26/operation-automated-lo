@@ -211,6 +211,28 @@ flowchart TD
 
 ---
 
+## Follow-ups after PRD-008
+
+The close-out quality report deliberately left these Low and Info findings, and its re-check judged each disposition acceptable. They are listed here so the next batch finds them without reading the report. None changes a PRD-008 criterion. Each entry links the report and gives the line that rates the finding.
+
+- **Quality L-1:** `--space-7` is undefined, so `email-preview.module.css` and `auth-form.module.css` lose their vertical padding. Goes to the next UI batch, because changing the value moves five screens' pictures and needs a baseline redraw under 006D-AC-013 ([report, line 54](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-2:** copy R4, "Fix what the checks found, then save it again.", reaches approvers who cannot edit. A copy follow-up; the replacement wording is in the [008c writing review](./qa/2026-10-01-008c-writing-review.md) ([report, line 59](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-3:** copy R5, step 7 promises an approver who cannot create that they will launch campaigns. A copy follow-up, with L-2 ([report, line 60](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-4:** copy R7, step 7's failed-read lead is an error with no next action. A copy follow-up, with L-2; the same fix also closes L-3 ([report, line 61](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-10:** eight comments still say "the pinned Next 16.3.3", seven in `apps/web/src/app/api/auth/*/route.ts` and one at `password-authentication-handler.ts:281`, while `apps/web/package.json` pins `16.3.6`. Left so that no auth file changed after the final security look; say "16.3.6" or drop the version in a change reviewed as auth code ([report, line 67](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-14:** approval records carry constant profile references (`brandprofile_local001` and three more) on every version. A future PRD, alongside photo intake ([report, line 71](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-15:** no route saves a new version of an existing campaign, yet some sentences say "a new version" and "save it again". An owner decision: an edit flow, or wording that names who can make the new version ([report, line 72](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-16:** `ReportingException.explanation` carries the snake_case code. It is latent, because no screen reads it; fix it when the first screen renders an exception ([report, line 73](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-17:** onboarding evidence shows a raw ISO timestamp. Format it as the reports screen does ([report, line 74](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-18:** the walkthrough panel puts the progress track before the step content. Pre-existing from PRD-006c; the report names no fix, and the [008d baseline review](./qa/2026-10-01-008d-baseline-review.md) discusses it at lines 252 to 255 ([report, line 75](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-19:** a handler comment (`password-authentication-handler.ts:389-395`) says Vercel "sets and overwrites all three", which is more than security L-2 established. Left so that no auth file changed after the final security look; after checklist step 8's deployed check, cite its result or soften the sentence ([report, line 76](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality I-1:** `governed-controls.test.ts` times out at 5 s under heavy parallel load, and passes alone and in CI. A longer per-test timeout would remove the noise ([report, line 81](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality I-3:** the synthetic public open-house page's 30rem reading measure is not in the design brief. `design-system-guardian` adds a reading-measure rule to the brief, so the next public page does not choose one ([report, line 83](./qa/2026-10-01-closeout-quality-report.md)).
+
+The close-out security audit's Lows L-1 to L-15 (L-15 was closed at its final look; the others carry on) have their dispositions in the [security audit](./qa/2026-10-01-closeout-security-audit.md), and the quality report records them as L-20 (line 77). The operator-owned ones are in steps 0 and 8 of the [finish-line operator checklist](../../../knowledge/private/operations/finish-line-operator-checklist.md): step 0, the three migrations (security L-14 stays open until they are applied), and step 8, the deployed forwarded-header check (security L-2) and the credential-stuffing and missing-header alerts (security L-10).
+
+---
+
 ## Related
 
 - [Finish-line operator checklist](../../../knowledge/private/operations/finish-line-operator-checklist.md): everything outside this PRD, in dependency order.

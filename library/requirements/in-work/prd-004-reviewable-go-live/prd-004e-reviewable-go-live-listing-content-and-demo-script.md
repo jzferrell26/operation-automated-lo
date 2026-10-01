@@ -1,7 +1,7 @@
 # PRD-004e: Reviewable Go-Live - Listing Content and Demo Script
 
 > **Parent:** [PRD-004](./prd-004-reviewable-go-live-index.md)
-> **Status:** In work. Content authored in-repo; publication still gated by 004a smoke and 004b Test Link
+> **Status:** In work. Content authored in-repo; publication still gated by 004a smoke and 004b Test Link. Independent re-audit 2026-10-01: 3 of 8 criteria `VERIFIED`, 5 open ([report](./qa/2026-10-01-004e-re-audit.md))
 > **Priority:** P0
 > **Schema changes:** None
 > **Owner Guardians:** `library-guardian`, `ux-ui-guardian`, `gohighlevel-guardian`
@@ -47,17 +47,17 @@ Automated LO's demonstrated scope today is: **install into a HighLevel location,
 
 | ID | Criterion | Status |
 |---|---|---|
-| 004E-AC-001 | A customer-facing scope statement exists, describes only install → setup → create → persist → approve, and does not imply distribution of the approved version. | REOPENED then remediated 2026-09-16 ([what-is-automated-lo](../../../knowledge/public/overview/what-is-automated-lo.md)); awaiting re-audit |
-| 004E-AC-002 | A customer-facing FAQ exists and contains no Meta publish, lead delivery, billing, collateral, or performance claim. | REOPENED then remediated 2026-09-16 ([open-house-boost-faq](../../../knowledge/public/faqs/open-house-boost-faq.md)); awaiting re-audit |
-| 004E-AC-003 | Paste-ready listing fields exist (short description, long description, category, scope disclaimer) with every operator-supplied value marked as a placeholder rather than invented. | DONE ([listing copy pack](../../../knowledge/private/product/marketplace-listing-copy-pack.md)) |
-| 004E-AC-004 | A screenshot shot list exists, requires `OALO_REVIEW_SURFACE=authorized`, and forbids frames containing synthetic spend or lead numbers. | DONE (copy pack, shot list section) |
-| 004E-AC-005 | A Loom script exists whose beats are install → setup → create → approve → disconnect and which narrates no ungated capability. | DONE (copy pack, Loom script section) |
-| 004E-AC-006 | The listing-type default is recorded as **Standard**, with the White-label terminology consequence stated, and is marked as confirm-against-portal rather than decided. | DONE (copy pack, listing type section) |
-| 004E-AC-007 | Every customer-facing claim is traceable to a criterion or merged PR in the claim audit table, and no claim is stated unconditionally in copy while its audit row shows an unmet gate. | REOPENED then remediated 2026-09-16 (copy pack, claim audit section); awaiting re-audit |
-| 004E-AC-008 | No customer-facing or listing artifact contains a token, client secret, connection string, support credential, or real contact PII. | DONE (placeholders only; `pnpm audit:secrets` covers the repo side) |
-| 004E-AC-009 | Screenshots and Loom recorded from the review URL match this content before submission. | BLOCKED: needs 004a smoke and 004b Test Link (`GGL-B09`) |
+| 004E-AC-001 | A customer-facing scope statement exists, describes only install → setup → create → persist → approve, and does not imply distribution of the approved version. | OPEN. Re-audit 2026-10-01 FAIL ([report](./qa/2026-10-01-004e-re-audit.md), F-01 to F-04): the distribution phrases are gone, but the overview says the product installs into HighLevel, builds campaigns from saved brand and compliance settings, creates a new version on edit, and is "one focused workflow" with no PDF, public page, or lead capture ([what-is-automated-lo](../../../knowledge/public/overview/what-is-automated-lo.md)) |
+| 004E-AC-002 | A customer-facing FAQ exists and contains no Meta publish, lead delivery, billing, collateral, or performance claim. | OPEN. Re-audit 2026-10-01 FAIL ([report](./qa/2026-10-01-004e-re-audit.md), F-03, F-05, F-06): "Publishing is a later release" breaks the non-goal, and the lead, data, edit, uninstall, team, and AI answers do not match the code ([open-house-boost-faq](../../../knowledge/public/faqs/open-house-boost-faq.md)) |
+| 004E-AC-003 | Paste-ready listing fields exist (short description, long description, category, scope disclaimer) with every operator-supplied value marked as a placeholder rather than invented. | OPEN. Re-audit 2026-10-01 FAIL ([report](./qa/2026-10-01-004e-re-audit.md)): placeholders are correct, but the long description and the scope disclaimer carry the F-01 to F-03 claims, so they are not paste-ready ([listing copy pack](../../../knowledge/private/product/marketplace-listing-copy-pack.md)) |
+| 004E-AC-004 | A screenshot shot list exists, requires `OALO_REVIEW_SURFACE=authorized`, and forbids frames containing synthetic spend or lead numbers. | VERIFIED 2026-10-01 ([report](./qa/2026-10-01-004e-re-audit.md)). One Warning stays open for the author (F-10): the budget note quotes an in-app sentence that no longer exists |
+| 004E-AC-005 | A Loom script exists whose beats are install → setup → create → approve → disconnect and which narrates no ungated capability. | OPEN. Re-audit 2026-10-01 FAIL ([report](./qa/2026-10-01-004e-re-audit.md), F-01, F-02, F-04): beats 1, 2, 5, and 7 narrate install, "no separate login", settings feeding campaigns, edit, and uninstall |
+| 004E-AC-006 | The listing-type default is recorded as **Standard**, with the White-label terminology consequence stated, and is marked as confirm-against-portal rather than decided. | VERIFIED 2026-10-01 ([report](./qa/2026-10-01-004e-re-audit.md)); checked against HighLevel's listing-type article. Whether a type can change after creation is UNVERIFIED |
+| 004E-AC-007 | Every customer-facing claim is traceable to a criterion or merged PR in the claim audit table, and no claim is stated unconditionally in copy while its audit row shows an unmet gate. | OPEN. Re-audit 2026-10-01 FAIL ([report](./qa/2026-10-01-004e-re-audit.md), F-01 to F-09): rows P1, P2, P4, P9, P11, N2, N4, and N8 do not hold, about a dozen shipped claims have no row, and Homeowner reports have no row ([copy pack, claim audit section](../../../knowledge/private/product/marketplace-listing-copy-pack.md)) |
+| 004E-AC-008 | No customer-facing or listing artifact contains a token, client secret, connection string, support credential, or real contact PII. | VERIFIED 2026-10-01 ([report](./qa/2026-10-01-004e-re-audit.md)); pattern scan of all 004E artifacts was clean. `pnpm audit:secrets` was not run in this audit |
+| 004E-AC-009 | Screenshots and Loom recorded from the review URL match this content before submission. | BLOCKED: needs 004a smoke and 004b Test Link (`GGL-B09`). Unchanged by the re-audit; capture should wait for the open criteria above |
 
-`004E-AC-003` through `004E-AC-006` and `004E-AC-008` are marked `DONE` because the artifacts exist in this repository and can be read. Nothing here is marked `VERIFIED`: `quality-guardian` owns that verdict, and the first audit pass reopened three criteria (below), which is precisely why an author's `DONE` is not a verification.
+`quality-guardian` re-audited the content on 2026-10-01 ([report](./qa/2026-10-01-004e-re-audit.md)): three criteria are `VERIFIED` (`004E-AC-004`, `006`, `008`) and five stay open (`001`, `002`, `003`, `005`, `007`). The report lists exact replacement wording (R-1 to R-6) for the owner to apply; the copy pack and the public drafts were not edited by the audit. The open criteria need a second re-audit after those edits. `004E-AC-001` and `004E-AC-005` name install and disconnect as steps, which the product cannot demonstrate today (no HighLevel install, no framing, no uninstall handler); `library-guardian` should decide whether to amend the criterion text or keep the listing blocked until the G2 track passes.
 
 ## Remediation log
 
@@ -91,7 +91,7 @@ These are placeholders in the copy pack. None of them was invented.
 |---|---|---|
 | Screenshots and Loom need a live review URL in review mode | Operator | `GGL-B01` through `B03`, then record with `OALO_REVIEW_SURFACE=authorized` |
 | Listing type cannot be confirmed without portal sign-in | Human | `GGL-B04` |
-| Independent copy audit | `quality-guardian` | Run after this branch merges |
+| Content corrections after the 2026-10-01 re-audit (five criteria open) | `library-guardian` | Apply R-1 to R-6 from the [re-audit report](./qa/2026-10-01-004e-re-audit.md), decide Option A or B for Homeowner reports, then request a second re-audit |
 
 ## Related
 

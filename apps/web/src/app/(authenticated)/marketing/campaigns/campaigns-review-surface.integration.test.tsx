@@ -1,3 +1,6 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -195,6 +198,28 @@ describe("authenticated marketing campaign routes", () => {
     await expect(CampaignListPage()).rejects.toMatchObject({ digest: expect.any(String) });
 
     expect(redirectCalls).toEqual(["/sign-in"]);
+  });
+
+  /**
+   * Rubric axis 9 and `03-components/async-empty-error-permission-state.md`: an empty list is the
+   * shared `empty` state with its one creation action, not a card assembled on the page. PRD-008d's
+   * baseline review of 2026-10-01 found the hand-built card when it photographed the state.
+   */
+  it("says a workspace with no campaigns is empty through the shared empty state", async () => {
+    stubWorkspaceEnvironment("local", undefined);
+    vi.stubEnv(
+      "OALO_LOCAL_CAMPAIGN_STORE",
+      join(tmpdir(), `oalo-no-campaigns-${String(process.pid)}-${String(Date.now())}.json`),
+    );
+
+    const { container } = render(await CampaignListPage());
+
+    const empty = container.querySelector(".oalo-async-state[data-state='empty']");
+    expect(empty?.querySelector("h2")?.textContent).toBe("No campaigns yet.");
+    expect(empty?.querySelector("a[href='/marketing/campaigns/new']")?.textContent).toBe(
+      "Create an Open House Boost",
+    );
+    expect(container.querySelectorAll("article")).toHaveLength(0);
   });
 
   it("keeps the demo-rich synthetic campaign detail for local development", () => {

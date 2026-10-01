@@ -287,6 +287,13 @@
 .content {
   flex: 1 1 auto;
   min-block-size: 0;
+  /* PRD-008d, the scored baseline review of 2026-10-01. The bootstrap `main` rule in
+   * `globals.css` makes every `<main>` a grid that centres its content in both axes, and this
+   * landmark grows to fill the column, so a page shorter than the frame floated to the middle of
+   * it: the campaigns list's title sat about 200px below where every sibling page's title sits,
+   * and so did change password's. Pages start at the top of the content; the inline centring the
+   * pages rely on is kept. */
+  align-items: start;
   padding: var(--space-6);
   padding-block-end: calc(var(--space-6) + var(--guided-setup-panel-room, 0px));
 }

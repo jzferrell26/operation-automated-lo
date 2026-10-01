@@ -108,6 +108,11 @@
 .oalo-checklist__heading {
   align-items: flex-start;
   display: flex;
+  /* PRD-008d, the scored baseline review of 2026-10-01. The state label does not shrink, so in a
+   * card narrower than its title and label together it ran past the card's edge: at 1440 and 1180
+   * the overview's metric cards clipped "Not connected" and pushed "Needs a refresh" outside the
+   * card. When the two do not fit side by side, the label takes the next line. */
+  flex-wrap: wrap;
   gap: var(--space-3);
   justify-content: space-between;
 }

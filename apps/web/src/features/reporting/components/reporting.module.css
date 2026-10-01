@@ -93,6 +93,25 @@
   flex-wrap: wrap;
 }
 
+/* A group of actions stays together at the start of its card. With `space-between` from the
+ * shared heading rule above, two actions sat at opposite edges once the sections took the whole
+ * column (PRD-008d, second redraw, R-15). */
+.inlineLinks {
+  justify-content: flex-start;
+}
+
+/* A campaign card's heading, details, metrics, more details, and actions sit one spacing step
+ * apart. They were stacked with nothing between them, so the metric cards touched the lines above
+ * and below them (PRD-008d, second redraw, R-16). */
+.reportCard {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.reportCard .sectionHeading p {
+  margin-block: var(--space-1) 0;
+}
+
 .preview {
   display: grid;
   min-block-size: 15rem;

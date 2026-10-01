@@ -439,6 +439,107 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
 }
 
 /**
+ * Rubric axes 1 and 2. A link drawn as an action keeps its own height inside a grid.
+ *
+ * PRD-008d, the second redraw of 2026-10-01, finding R-14. The overview's action grids let every
+ * item stretch to its row, so beside an unavailable action and the sentences that explain it, "See
+ * your leads" was a button some 200px tall at 1440 and 1180, and the wider column D-010 gave the
+ * overview made it wider as well.
+ */
+test("the overview's action links keep their own height at every frame", async ({ page }) => {
+  await blockAnythingOffOrigin(page);
+  await useStoredTheme(page, "light");
+  await page.goto("/overview");
+  for (const frame of REVIEW_FRAMES) {
+    await page.setViewportSize({ width: frame.width, height: frame.height });
+    await settleForScreenshot(page);
+    const stretched = await page
+      .locator("main [class*='__quickActions'] > a")
+      .evaluateAll((links) =>
+        links
+          .filter((link) => {
+            const style = getComputedStyle(link);
+            const text = document.createRange();
+            text.selectNodeContents(link);
+            const natural =
+              text.getBoundingClientRect().height +
+              Number.parseFloat(style.paddingTop) +
+              Number.parseFloat(style.paddingBottom) +
+              Number.parseFloat(style.borderTopWidth) +
+              Number.parseFloat(style.borderBottomWidth);
+            const floor = Number.parseFloat(style.minHeight) || 0;
+            return link.getBoundingClientRect().height > Math.max(natural, floor) + 1;
+          })
+          .map((link) => link.textContent?.trim() ?? "a link"),
+      );
+    expect(stretched, `at ${frame.name} an action link is stretched to its row`).toEqual([]);
+  }
+});
+
+/**
+ * Rubric axes 1, 2, and 10 on the reports screen.
+ *
+ * PRD-008d, the second redraw of 2026-10-01. R-15: each group of actions laid its items out with
+ * `space-between`, so once D-010 gave the sections the whole column, "Open Public page v3" and
+ * "Open Feed creative v3", or "Open the campaign" and "See what went wrong", sat at opposite edges
+ * of their card instead of together. R-16: a campaign card's parts had no space between them, so
+ * its metric cards touched the line above and the details below, at every frame.
+ */
+test("the reports screen keeps its actions together and its campaign cards on the spacing scale", async ({
+  page,
+}) => {
+  await blockAnythingOffOrigin(page);
+  await useStoredTheme(page, "light");
+  await page.goto("/reports");
+  for (const frame of REVIEW_FRAMES) {
+    await page.setViewportSize({ width: frame.width, height: frame.height });
+    await settleForScreenshot(page);
+    const measured = await page.evaluate(() => {
+      const probe = document.createElement("span");
+      probe.style.display = "none";
+      probe.style.width = "var(--space-4)";
+      document.body.append(probe);
+      const space4 = Number.parseFloat(getComputedStyle(probe).width);
+      probe.remove();
+
+      const spread = [...document.querySelectorAll("main [class*='__inlineLinks']")].flatMap(
+        (group) => {
+          const gap = Number.parseFloat(getComputedStyle(group).columnGap) || 0;
+          const items = [...group.children].map((child) => child.getBoundingClientRect());
+          return items.slice(1).flatMap((item, index) => {
+            const before = items[index];
+            if (before === undefined || Math.abs(item.top - before.top) > 2) return [];
+            const between = item.left - before.right;
+            return between > gap + 1
+              ? [`${String(Math.round(between))}px between two actions`]
+              : [];
+          });
+        },
+      );
+
+      const cramped = [...document.querySelectorAll("main [data-campaign-id]")].flatMap((card) => {
+        const parts = [...card.children].map((child) => child.getBoundingClientRect());
+        return parts.slice(1).flatMap((part, index) => {
+          const before = parts[index];
+          if (before === undefined) return [];
+          const between = part.top - before.bottom;
+          return Math.abs(between - space4) > 1
+            ? [
+                `${card.getAttribute("data-campaign-id") ?? "a card"}: ${String(Math.round(between))}px`,
+              ]
+            : [];
+        });
+      });
+      return { spread, cramped };
+    });
+    expect.soft(measured.spread, `at ${frame.name} actions are pushed apart`).toEqual([]);
+    expect
+      .soft(measured.cramped, `at ${frame.name} a campaign card's parts are not --space-4 apart`)
+      .toEqual([]);
+  }
+});
+
+/**
  * PRD-006d D3's named states on the create screen and on a campaign a person has actually saved.
  *
  * The draft itself, and the two open-house windows that separate a ready campaign from one that
@@ -556,6 +657,33 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
     await fillTheOpenHouseDraft(page, FINISHED_OPEN_HOUSE);
     await page.getByRole("button", { name: "Save and run the checks" }).click();
     await expect(page.getByRole("heading", { name: "Needs changes" })).toBeVisible();
+
+    /**
+     * Rubric axis 2. PRD-008d, the second redraw of 2026-10-01, finding R-18: a finding's note
+     * ("Fix this before approving") ran inline and touched the support details under it. It keeps
+     * `--space-3` between itself and what follows, at every frame.
+     */
+    for (const frame of REVIEW_FRAMES) {
+      await page.setViewportSize({ width: frame.width, height: frame.height });
+      await settleForScreenshot(page);
+      const tight = await page.locator("main [class*='__findings'] article").evaluateAll((cards) =>
+        cards.flatMap((card) => {
+          const note = card.querySelector(":scope > small");
+          const next = note?.nextElementSibling;
+          if (note === null || note === undefined || next === null || next === undefined) return [];
+          const probe = document.createElement("span");
+          probe.style.display = "none";
+          probe.style.width = "var(--space-3)";
+          card.append(probe);
+          const space3 = Number.parseFloat(getComputedStyle(probe).width);
+          probe.remove();
+          const between = next.getBoundingClientRect().top - note.getBoundingClientRect().bottom;
+          return between < space3 - 0.5 ? [`${String(Math.round(between))}px`] : [];
+        }),
+      );
+      expect(tight, `at ${frame.name} a finding's note touches what follows it`).toEqual([]);
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
 
     await captureNamedState(page, {
       screen: "campaign-create",

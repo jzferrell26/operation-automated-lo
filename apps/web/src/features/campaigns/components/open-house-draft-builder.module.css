@@ -96,9 +96,13 @@
   border-radius: var(--radius-control);
   background: var(--sf-card);
 }
+/* A fieldset's legend is the title of the card it draws, so it takes the card step. It named
+ * `--weight-semibold`, which only the dashboard preview's product tokens define, so it was drawn
+ * at weight 400, lighter than the field labels under it (PRD-008d, second redraw, R-17). */
 .form legend {
   padding-inline: var(--space-2);
-  font-weight: var(--weight-semibold);
+  font-size: var(--text-card-size);
+  font-weight: var(--weight-bold);
 }
 /* Brief section 14: two columns from the tablet frame up, one column below it. */
 .group {
@@ -158,6 +162,12 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
+}
+/* A finding's note ("Fix this before approving") is its own line, one spacing step above the
+ * support details. Inline, it touched them (PRD-008d, second redraw, R-18). */
+.findings small {
+  display: block;
+  margin-block-end: var(--space-3);
 }
 .review details {
   display: grid;

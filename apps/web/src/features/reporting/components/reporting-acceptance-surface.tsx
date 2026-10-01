@@ -328,7 +328,7 @@ function CampaignReportingCard({
   campaign,
 }: Readonly<{ campaign: DeepReadonly<ReportingCampaign> }>) {
   return (
-    <Card data-campaign-id={campaign.id} padding="md">
+    <Card className={styles.reportCard} data-campaign-id={campaign.id} padding="md">
       <div className={styles.sectionHeading}>
         <div>
           <h3>{campaign.title}</h3>

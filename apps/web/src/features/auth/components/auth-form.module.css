@@ -123,7 +123,9 @@
   padding-inline: var(--space-2);
   color: var(--tx-strong);
   font-size: var(--text-card-size);
-  font-weight: var(--weight-semibold);
+  /* The card step's weight. `--weight-semibold` is not a token here (PRD-008d, second redraw,
+   * R-17). */
+  font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
 }
 

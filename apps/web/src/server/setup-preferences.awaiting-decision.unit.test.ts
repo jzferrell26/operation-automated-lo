@@ -8,6 +8,13 @@ import {
 import { createLocalSyntheticPrincipal } from "./authenticated-principal.js";
 import { listWorkspaceCampaigns } from "./campaign-workspace-reads.js";
 import { readSetupPreferences } from "./setup-preferences.js";
+import {
+  driverFailure,
+  expectNoPersonSessionOrDriverWords,
+  firstLoggedLine,
+  spyOnServerLog,
+  type ServerLogSpy,
+} from "./setup-preferences.test-support.js";
 
 /**
  * PRD-008b 008B-AC-009 to 008B-AC-011, writing review Re-review 4, suggestion R6.
@@ -20,43 +27,31 @@ import { readSetupPreferences } from "./setup-preferences.js";
  * fails on every page would otherwise look like a workspace with nothing in it.
  */
 
-vi.mock("./campaign-workspace-reads.js", () => ({
-  listWorkspaceCampaigns: vi.fn(),
-  loadWorkspaceCampaign: vi.fn(),
-}));
+// A `vi.mock` factory is hoisted above the imports, so what it shares is loaded inside it.
+vi.mock("./campaign-workspace-reads.js", async () =>
+  (await import("./setup-preferences.test-support.js")).campaignWorkspaceReadsDouble(),
+);
 
 vi.mock("@oalo/db", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@oalo/db")>()),
-  // The preferences table is not what these cases are about: the person has stored nothing, so the
-  // walkthrough is at its start, and the read goes on to the campaign list.
-  withTenantTransaction: async (
-    _pool: unknown,
-    _authority: unknown,
-    work: (transaction: { read: () => Promise<readonly unknown[]> }) => Promise<unknown>,
-  ) => work({ read: () => Promise.resolve([]) }),
+  // The person has stored nothing, so the walkthrough is at its start.
+  withTenantTransaction: (await import("./setup-preferences.test-support.js"))
+    .transactionWithNothingStored,
 }));
 
 const POOL = {} as DatabasePool;
 const ENVIRONMENT = {};
 
-let logged: ReturnType<typeof vi.spyOn>;
+let logged: ServerLogSpy;
 
 beforeEach(() => {
   vi.mocked(listWorkspaceCampaigns).mockReset();
-  logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  logged = spyOnServerLog();
 });
 
 afterEach(() => {
   logged.mockRestore();
 });
-
-/** What a database driver says when it fails: a message that may carry anything, and a short code. */
-function driverFailure(): Error {
-  return Object.assign(
-    new Error("connection terminated while reading for dana.reyes@example.test"),
-    { code: "57P01" },
-  );
-}
 
 describe("the campaign waiting for an approver, when the list cannot be read", () => {
   it("does not answer that none is waiting, because that is not known", async () => {
@@ -74,19 +69,12 @@ describe("the campaign waiting for an approver, when the list cannot be read", (
     await readSetupPreferences(APPROVER, ENVIRONMENT, POOL);
 
     expect(logged).toHaveBeenCalledTimes(1);
-    const line = String(logged.mock.calls[0]?.join(" "));
+    const line = firstLoggedLine(logged);
     expect(line).toContain("setup-preferences");
     expect(line).toContain("campaign waiting for a decision");
     // The kind of failure is useful and carries nothing about anyone.
     expect(line).toContain("57P01");
-    // The message is the driver's own and can carry a value, so it is not logged.
-    expect(line).not.toContain("dana.reyes");
-    expect(line).not.toContain("connection terminated");
-    expect(line).not.toContain(APPROVER.actorId);
-    expect(line).not.toContain(APPROVER.sessionId);
-    expect(line).not.toContain(APPROVER.locationId);
-    expect(line).not.toContain(APPROVER.actorRef);
-    expect(line).not.toContain(APPROVER.locationRef);
+    expectNoPersonSessionOrDriverWords(line, APPROVER);
   });
 });
 

@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  approvedProjection,
   awaitingApprovalProjection,
   sentBackProjection,
 } from "../../../../features/campaigns/components/campaign-decision.test-support.js";
@@ -44,6 +45,22 @@ describe("the campaign list for a campaign somebody has decided on", () => {
 
     expect(screen.getByText("Sent back for changes")).toBeInTheDocument();
     expect(screen.queryByText("Ready for approval")).toBeNull();
+    expect(screen.queryByText("Approve this version.")).toBeNull();
+  });
+
+  /**
+   * 008B-AC-009, the approved half. An approval moves the state to `approved`, so the stored state
+   * already says so; this keeps it that way and keeps the list from describing an approved
+   * campaign as ready for approval or as sent back.
+   */
+  it("says an approved campaign is approved, and never that it is ready for approval", async () => {
+    mocked.read.mockResolvedValue({ authenticated: true, campaigns: [await approvedProjection()] });
+
+    render(await CampaignListPage());
+
+    expect(screen.getByText("Approved")).toBeInTheDocument();
+    expect(screen.queryByText("Ready for approval")).toBeNull();
+    expect(screen.queryByText("Sent back for changes")).toBeNull();
     expect(screen.queryByText("Approve this version.")).toBeNull();
   });
 

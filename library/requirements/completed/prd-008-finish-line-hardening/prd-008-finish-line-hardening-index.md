@@ -1,6 +1,6 @@
 # PRD-008: Finish-Line Hardening
 
-> **Status:** Complete. Delivered in draft pull request #74 (branch `claude/gauntlet-prd-008`); the merge is pending the owner. Authored 2026-09-30; moved from `backlog/` to `in-work/` at Gauntlet start and from `in-work/` to `completed/` at its end, both on 2026-10-01. In `EXECUTION_LEDGER.md` 62 of the 74 `FLR` rows read VERIFIED at `211b519`. The other 12 close at ship and are listed under "Ledger status at the exit move" below. The full `pnpm verify`, including `pnpm test:db`, is green on `5585ee9`. Before the merge, the owner applies the three PRD-008 migrations to the hosted database ([operator checklist](../../../knowledge/private/operations/finish-line-operator-checklist.md) step 0).
+> **Status:** Complete. Delivered in draft pull request #74 (branch `claude/gauntlet-prd-008`); the merge is pending the owner. Authored 2026-09-30; moved from `backlog/` to `in-work/` at Gauntlet start and from `in-work/` to `completed/` at its end, both on 2026-10-01. In `EXECUTION_LEDGER.md` all 74 `FLR` rows read VERIFIED; "Ledger status at ship" below says what closed the last five. The full `pnpm verify`, including `pnpm test:db`, is green on `5585ee9`. Before the merge, the owner applies the three PRD-008 migrations to the hosted database ([operator checklist](../../../knowledge/private/operations/finish-line-operator-checklist.md) step 0).
 > **Priority:** P0. Every item here is open on `main` at `131c7f4`. One of them, the dependency audit, currently fails the canonical gate for every new pull request. All of them can be closed inside the repository.
 > **Effort:** L (1-3d of agent time across five sub-PRDs, no operator time)
 > **Schema changes:** Additive (008a widens one rate-limit scope list; 008d adds a pgTAP suite and no schema)
@@ -65,30 +65,21 @@ This PRD does not authorize production traffic, a deployment, an environment-var
 
 | Sub-PRD | Scope | Status |
 |---|---|---|
-| [`prd-008a-finish-line-hardening-security-and-dependency-closure`](./prd-008a-finish-line-hardening-security-and-dependency-closure.md) | Dependency audit to zero, the PR #70 group, two Medium and six Low audit findings, the missing-header log severity | Complete. 21 of 23 criteria VERIFIED; `008A-AC-003` and `008A-AC-007` close at ship |
+| [`prd-008a-finish-line-hardening-security-and-dependency-closure`](./prd-008a-finish-line-hardening-security-and-dependency-closure.md) | Dependency audit to zero, the PR #70 group, two Medium and six Low audit findings, the missing-header log severity | Complete. All 23 criteria VERIFIED |
 | [`prd-008b-finish-line-hardening-product-correctness`](./prd-008b-finish-line-hardening-product-correctness.md) | No fabricated approved image, the approve control after a decision, `/brand` independent of the reports flag, leftover demo slug | Complete. All 11 criteria VERIFIED |
 | [`prd-008c-finish-line-hardening-user-language-completion`](./prd-008c-finish-line-hardening-user-language-completion.md) | Guard reaches `server/homeowners`, rewrite flagged strings, remove the `reporting.ts` exclusion | Complete. All 7 criteria VERIFIED |
 | [`prd-008d-finish-line-hardening-verification-depth`](./prd-008d-finish-line-hardening-verification-depth.md) | Homeowner pgTAP suite, one baseline redraw after all UI and dependency changes, the three unphotographed states and A-1 rows, re-signed sign-off | Complete. All 11 criteria VERIFIED |
-| [`prd-008e-finish-line-hardening-records-and-independent-review`](./prd-008e-finish-line-hardening-records-and-independent-review.md) | Status-line and ledger reconciliation, README boundary rewrite, maps, 004E re-audit, PRD-007 independent review, PR #72 release record | Complete. 10 of 15 criteria VERIFIED; `008E-AC-004`, `008E-AC-006`, `008E-AC-007`, `008E-AC-010`, and `008E-AC-014` close at ship |
+| [`prd-008e-finish-line-hardening-records-and-independent-review`](./prd-008e-finish-line-hardening-records-and-independent-review.md) | Status-line and ledger reconciliation, README boundary rewrite, maps, 004E re-audit, PRD-007 independent review, PR #72 release record | Complete. All 15 criteria VERIFIED |
 
-### Ledger status at the exit move
+### Ledger status at ship
 
-Counted from `EXECUTION_LEDGER.md` at `211b519`: 62 of the 74 `FLR` rows are VERIFIED. The other 12 are below, with what closes each. None needs a product change, an operator, or a credential. The scope contract's "Lifecycle at exit" row moves the folder once every criterion is VERIFIED. The move was made with these 12 still open at the orchestrator's direction, because each closes at ship in the same pull request.
+All 74 `FLR` rows in `EXECUTION_LEDGER.md` (`FLR-001` to `FLR-074`) are VERIFIED. The folder moved to `completed/` while 12 rows were still open, at the orchestrator's direction, because each of them closed in the same pull request. The last five closed this way:
 
-| Row | Criterion | Ledger status | What closes it |
-|---|---|---|---|
-| `FLR-001` | `FLH-001` | OPEN | Every criterion VERIFIED by a pass other than its implementer. It closes after the rows below. |
-| `FLR-002` | `FLH-002` | DONE | `pnpm verify` and `pnpm test:db` are green on `5585ee9`. The push, the four required checks, and `MERGEABLE` on the final head come at ship. |
-| `FLR-004` | `FLH-004` | OPEN | The [close-out quality report](./qa/2026-10-01-closeout-quality-report.md) said FIX FIRST on one records Medium (M-1, `008E-AC-004`). The write-back it asked for is done. The row closes after a pass other than the orchestrator re-checks it. |
-| `FLR-006` | `FLH-006` | OPEN | The close-out quality report records PASS (a row-by-row diff of the ledger statuses). The orchestrator writes the row. |
-| `FLR-007` | `FLH-007` | OPEN | The close-out quality report records PASS (no U+2014 or U+2013 in any added line). The orchestrator writes the row. |
-| `FLR-010` | `008A-AC-003` | DONE | `pnpm audit` is re-run on the final head at ship. It was clean at moderate and low on `6f24a14`. |
-| `FLR-014` | `008A-AC-007` | DONE | Comment on PR #70 and close it as superseded, at ship. The lockfile half is verified. |
-| `FLR-060` | `008E-AC-004` | DONE | The write-back of the held `CRR` rows is done. The row closes after the same independent re-check as `FLR-004`. |
-| `FLR-062` | `008E-AC-006` | DONE | The close-out quality report records PASS and says the row can move to VERIFIED. The orchestrator writes the row. |
-| `FLR-063` | `008E-AC-007` | DONE | The same. |
-| `FLR-066` | `008E-AC-010` | DONE | The same. |
-| `FLR-070` | `008E-AC-014` | OPEN | This move to `completed/`, with every inbound link and lifecycle label repaired in the same commit. |
+- `FLR-001`, `FLR-004`, `FLR-060`, and `FLR-070` (`FLH-001`, `FLH-004`, `008E-AC-004`, and `008E-AC-014`): the final quality re-check, [`qa/2026-10-01-closeout-quality-report.md`](./qa/2026-10-01-closeout-quality-report.md), section "Re-check (2026-10-01) on `468e281`", verdict SHIP.
+- `FLR-002` (`FLH-002`):
+  - the green full `pnpm verify`, including `pnpm test:db`, on `5585ee9`;
+  - the green required checks on `468e281`, which has code identical to the final head;
+  - the final head's own checks, shown on PR #74.
 
 ## Dependency order
 
@@ -217,6 +208,28 @@ flowchart TD
 ## Open questions
 
 - [x] None blocking. The product owner confirmed OD-1 and OD-2 on 2026-09-30.
+
+---
+
+## Follow-ups after PRD-008
+
+The close-out quality report deliberately left these Low and Info findings, and its re-check judged each disposition acceptable. They are listed here so the next batch finds them without reading the report. None changes a PRD-008 criterion. Each entry links the report and gives the line that rates the finding.
+
+- **Quality L-1:** `--space-7` is undefined, so `email-preview.module.css` and `auth-form.module.css` lose their vertical padding. Goes to the next UI batch, because changing the value moves five screens' pictures and needs a baseline redraw under 006D-AC-013 ([report, line 54](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-2:** copy R4, "Fix what the checks found, then save it again.", reaches approvers who cannot edit. A copy follow-up; the replacement wording is in the [008c writing review](./qa/2026-10-01-008c-writing-review.md) ([report, line 59](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-3:** copy R5, step 7 promises an approver who cannot create that they will launch campaigns. A copy follow-up, with L-2 ([report, line 60](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-4:** copy R7, step 7's failed-read lead is an error with no next action. A copy follow-up, with L-2; the same fix also closes L-3 ([report, line 61](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-10:** eight comments still say "the pinned Next 16.3.3", seven in `apps/web/src/app/api/auth/*/route.ts` and one at `password-authentication-handler.ts:281`, while `apps/web/package.json` pins `16.3.6`. Left so that no auth file changed after the final security look; say "16.3.6" or drop the version in a change reviewed as auth code ([report, line 67](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-14:** approval records carry constant profile references (`brandprofile_local001` and three more) on every version. A future PRD, alongside photo intake ([report, line 71](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-15:** no route saves a new version of an existing campaign, yet some sentences say "a new version" and "save it again". An owner decision: an edit flow, or wording that names who can make the new version ([report, line 72](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-16:** `ReportingException.explanation` carries the snake_case code. It is latent, because no screen reads it; fix it when the first screen renders an exception ([report, line 73](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-17:** onboarding evidence shows a raw ISO timestamp. Format it as the reports screen does ([report, line 74](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-18:** the walkthrough panel puts the progress track before the step content. Pre-existing from PRD-006c; the report names no fix, and the [008d baseline review](./qa/2026-10-01-008d-baseline-review.md) discusses it at lines 252 to 255 ([report, line 75](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality L-19:** a handler comment (`password-authentication-handler.ts:389-395`) says Vercel "sets and overwrites all three", which is more than security L-2 established. Left so that no auth file changed after the final security look; after checklist step 8's deployed check, cite its result or soften the sentence ([report, line 76](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality I-1:** `governed-controls.test.ts` times out at 5 s under heavy parallel load, and passes alone and in CI. A longer per-test timeout would remove the noise ([report, line 81](./qa/2026-10-01-closeout-quality-report.md)).
+- **Quality I-3:** the synthetic public open-house page's 30rem reading measure is not in the design brief. `design-system-guardian` adds a reading-measure rule to the brief, so the next public page does not choose one ([report, line 83](./qa/2026-10-01-closeout-quality-report.md)).
+
+The close-out security audit's Lows L-1 to L-15 (L-15 was closed at its final look; the others carry on) have their dispositions in the [security audit](./qa/2026-10-01-closeout-security-audit.md), and the quality report records them as L-20 (line 77). The operator-owned ones are in steps 0 and 8 of the [finish-line operator checklist](../../../knowledge/private/operations/finish-line-operator-checklist.md): step 0, the three migrations (security L-14 stays open until they are applied), and step 8, the deployed forwarded-header check (security L-2) and the credential-stuffing and missing-header alerts (security L-10).
 
 ---
 

@@ -1,6 +1,6 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.15 | Date: October 1, 2026 | Status: Active
+> Category: Product Operations | Version: 1.16 | Date: October 1, 2026 | Status: Active
 
 The canonical internal map of the product boundary, system flow, implementation status, external gates, and next work for Operation Automated LO.
 
@@ -82,7 +82,7 @@ The checklist covers:
 
 No criterion status changed with this split.
 
-**October 1 update.** A Gauntlet run executed PRD-008 on branch `claude/gauntlet-prd-008`. PRD-008 is complete in draft pull request #74 (74 acceptance criteria), which is open and not merged and waits for the owner's merge, while `main` stays at `36b58f1` (PR #73). Its folder moved to `library/requirements/completed/`. Per-criterion results are in the PRD-008 section of [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md): 62 of the 74 rows read VERIFIED at `211b519`, and the other 12 close at ship (the PRD's [index](../../../requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) lists them). This map claims no PRD-001 criterion as changed. The remaining work is the [finish-line operator checklist](../operations/finish-line-operator-checklist.md), and its step 0 comes first: apply the three PRD-008 migrations to the hosted database before the merge.
+**October 1 update.** A Gauntlet run executed PRD-008 on branch `claude/gauntlet-prd-008`. PRD-008 is complete in draft pull request #74 (74 acceptance criteria), which is open and not merged and waits for the owner's merge, while `main` stays at `36b58f1` (PR #73). Its folder moved to `library/requirements/completed/`. Per-criterion results are in the PRD-008 section of [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md): all 74 rows read VERIFIED (the PRD's [index](../../../requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) says what closed the last five). This map claims no PRD-001 criterion as changed. The remaining work is the [finish-line operator checklist](../operations/finish-line-operator-checklist.md), and its step 0 comes first: apply the three PRD-008 migrations to the hosted database before the merge.
 
 ## Historical September 16 status snapshot
 
@@ -305,6 +305,7 @@ PRD-001 core is complete only when all of the following are true:
 
 ## Changelog
 
+- v1.16 (2026-10-01): PRD-008 ledger counts refreshed at ship. All 74 PRD-008 ledger rows now read VERIFIED, so the "October 1 update" says that in place of the partial count recorded in v1.15, which stays below as history. PRD-008 stays recorded as complete in draft pull request #74, open and awaiting the owner's merge, with checklist step 0 first. Documentation only.
 - v1.15 (2026-10-01): The Database row now says the three PRD-008 migrations are not recorded as applied to the hosted database (UNVERIFIED) and links checklist step 0 (close-out quality L-11), matching the README, the terrain map, and `NEXT_BATCH_LEDGER.md`. PRD-008 is recorded as complete in draft pull request #74 and awaiting the owner's merge: its folder moved to `library/requirements/completed/` (008E-AC-014), every link to it was repaired, and the "October 1 update" and "Prioritized next steps" now say so, with checklist step 0 first. 62 of its 74 ledger rows are VERIFIED at `211b519`; the other 12 close at ship. Documentation only.
 - v1.14 (2026-10-01): PRD-008 finish-line hardening, in review. A Gauntlet run executed the agent-executable work on branch `claude/gauntlet-prd-008`; it is in draft pull request #74 (74 acceptance criteria), open and not merged, and `main` stays at `36b58f1` (PR #73). PRD-008 moved from `backlog/` to `in-work/` at the start of the run. This map records no PRD-008 criterion as complete: the per-criterion results are in the PRD-008 section of `EXECUTION_LEDGER.md`, and the run's final results go in at ship. "Prioritized next steps" now points at the finish-line operator checklist, which holds every remaining item that needs a person. The missing v1.12 entry is restored below (008E-AC-011). Documentation only: no PRD-001 criterion status changed.
 - v1.13 (2026-09-30): Finish-line split. Added PRD-008 (agent-executable finish-line hardening, in backlog) and the finish-line operator checklist (human-only items in dependency order). Recorded that the dependency audit now fails on the `131c7f4` lockfile because of advisories published after the 2026-09-24 green run, and that the Critical `next/og` advisory does not reach this app. Documentation only: no criterion status changed. The v1.12 entry for the 2026-09-24 release update was missing from this changelog when v1.13 was written; it is restored below.

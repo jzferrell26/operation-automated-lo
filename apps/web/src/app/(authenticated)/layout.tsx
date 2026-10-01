@@ -209,6 +209,7 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
       ) : (
         <GuidedSetupProvider
           campaignAwaitingDecision={preferences.awaitingDecision}
+          campaignAwaitingDecisionFailed={preferences.awaitingDecisionFailed}
           canApprove={APPROVER_CAPABLE_ROLE_LABELS.has(session.user.roleLabel)}
           canCreate={CREATOR_CAPABLE_ROLE_LABELS.has(session.user.roleLabel)}
           enabled

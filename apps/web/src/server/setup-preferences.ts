@@ -75,6 +75,17 @@ export type SetupPreferences = Readonly<{
    * walkthrough can never point at something the approval command would refuse.
    */
   awaitingDecision: SetupCampaignResult | undefined;
+  /**
+   * PRD-008b 008B-AC-009 to 008B-AC-011, writing review R6. True when the list of this workspace's
+   * campaigns was asked for and could not be read.
+   *
+   * `awaitingDecision` is `undefined` in that case too, and it cannot carry the difference: the
+   * walkthrough tells an approver that nothing is waiting for them when it is `undefined`, which is
+   * true of a list that was read and empty and not known of one that could not be read. This is what
+   * says which it was. It is `false` whenever the list was not asked for, because there is then no
+   * failure to report.
+   */
+  awaitingDecisionFailed: boolean;
 }>;
 
 function emptySetupPreferences(): SetupPreferences {
@@ -83,6 +94,7 @@ function emptySetupPreferences(): SetupPreferences {
     profile: undefined,
     campaign: undefined,
     awaitingDecision: undefined,
+    awaitingDecisionFailed: false,
   };
 }
 
@@ -170,22 +182,76 @@ export function selectCampaignAwaitingDecision<
 }
 
 /**
+ * What asking for the campaign waiting for a decision came back with. The two empty answers are
+ * different facts: `{ campaign: undefined, failed: false }` is a list that was read and had nothing
+ * waiting on it, and `failed: true` is a list that could not be read, about which nothing is known.
+ */
+type AwaitingDecisionRead = Readonly<{
+  campaign: SetupCampaignResult | undefined;
+  failed: boolean;
+}>;
+
+const NOTHING_WAITING: AwaitingDecisionRead = Object.freeze({ campaign: undefined, failed: false });
+const READ_FAILED: AwaitingDecisionRead = Object.freeze({ campaign: undefined, failed: true });
+
+/** A short word from an error, or nothing: used to log what kind of failure it was and no more. */
+function safeErrorToken(value: unknown, maxLength: number): string | undefined {
+  return typeof value === "string" && value.length <= maxLength && /^[A-Za-z0-9_.-]+$/u.test(value)
+    ? value
+    : undefined;
+}
+
+/**
+ * The server's record that the list could not be read.
+ *
+ * It names the module, what failed, and the kind of failure, which is the error's class and, when
+ * the driver gave one, its short code. It never carries the error's message, because a driver's
+ * message can quote a value from the query, and it never names the person, their session, or their
+ * workspace. The message a person reads is the walkthrough's own sentence; this line is for whoever
+ * watches the deployment's log and needs to tell a workspace whose list read keeps failing from one
+ * with nothing in it. It is written on every failure rather than once a process, because a failure
+ * of this read is an event on a request and not a standing fact about the deployment's configuration.
+ */
+function logAwaitingDecisionFailure(error: unknown): void {
+  const kind =
+    error instanceof Error
+      ? [
+          safeErrorToken(error.name, 80) ?? "Error",
+          safeErrorToken((error as { code?: unknown }).code, 40),
+        ]
+          .filter((part) => part !== undefined)
+          .join(" ")
+      : typeof error;
+  console.error(
+    `setup-preferences: the campaign waiting for a decision could not be read (${kind}); the guided setup says it could not look, and not that nothing is waiting.`,
+  );
+}
+
+/**
  * PRD-006c D5. The newest campaign in this workspace that this person could approve right now and
  * that nobody has decided. The role is checked first so that a creator, who is most people, never
  * pays for the list.
+ *
+ * Writing review R6. A read that fails is reported as a failure, in the result and in the log, and
+ * is not folded into "nothing is waiting". The read still cannot fail the page, because the layout
+ * performs it before the shell renders: what the person loses is the walkthrough's answer, and the
+ * walkthrough says so.
  */
 async function readCampaignAwaitingDecision(
   principal: Readonly<AuthenticatedPrincipal>,
   environment: unknown,
-): Promise<SetupCampaignResult | undefined> {
-  if (!principalHasCampaignApprovalRole(principal)) return undefined;
+): Promise<AwaitingDecisionRead> {
+  if (!principalHasCampaignApprovalRole(principal)) return NOTHING_WAITING;
   try {
     const newest = selectCampaignAwaitingDecision(
       await listWorkspaceCampaigns(principal, environment),
     );
-    return newest === undefined ? undefined : campaignResultFrom(newest);
-  } catch {
-    return undefined;
+    return newest === undefined
+      ? NOTHING_WAITING
+      : Object.freeze({ campaign: campaignResultFrom(newest), failed: false });
+  } catch (error: unknown) {
+    logAwaitingDecisionFailure(error);
+    return READ_FAILED;
   }
 }
 
@@ -268,19 +334,21 @@ export async function readSetupPreferences(
     progress.campaignRef === undefined || progress.status === "completed"
       ? undefined
       : await readCampaignResult(principal, progress.campaignRef, environment);
+  // Only for somebody with nothing of their own to read, and only once the walkthrough is far
+  // enough along to use it. A person who created a campaign in this walkthrough is looking at
+  // that one, and a second candidate would be a second answer to a question they have already
+  // settled; a person on the welcome step, or one who has finished, is not being handed anything
+  // and should not pay for the list on every page they open.
+  const awaiting =
+    campaign === undefined && wantsCampaignAwaitingDecision(progress)
+      ? await readCampaignAwaitingDecision(principal, environment)
+      : NOTHING_WAITING;
   return Object.freeze({
     progress,
     profile: profileRow === undefined ? undefined : parseStoredProfile(profileRow.value),
     campaign,
-    // Only for somebody with nothing of their own to read, and only once the walkthrough is far
-    // enough along to use it. A person who created a campaign in this walkthrough is looking at
-    // that one, and a second candidate would be a second answer to a question they have already
-    // settled; a person on the welcome step, or one who has finished, is not being handed anything
-    // and should not pay for the list on every page they open.
-    awaitingDecision:
-      campaign === undefined && wantsCampaignAwaitingDecision(progress)
-        ? await readCampaignAwaitingDecision(principal, environment)
-        : undefined,
+    awaitingDecision: awaiting.campaign,
+    awaitingDecisionFailed: awaiting.failed,
   });
 }
 

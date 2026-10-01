@@ -86,8 +86,33 @@ describe("what step 6 shows", () => {
     }
   });
 
+  it("says it could not load what is waiting, and points at nothing, when the list could not be read", () => {
+    for (const canApprove of [true, false]) {
+      expect(approveOrHandOffStep({ canApprove, standing: "campaigns_unread" })).toEqual({
+        anchor: PANEL_ANCHORED,
+        body: "We couldn't load the campaigns waiting for your approval just now. Refresh the page to try again, or open your campaigns to see if one is waiting.",
+        title: "We couldn't load what's waiting for you",
+      });
+    }
+  });
+
+  it("never says nothing is waiting when it does not know", () => {
+    for (const canApprove of [true, false]) {
+      const unread = approveOrHandOffStep({ canApprove, standing: "campaigns_unread" });
+      expect(unread.title).not.toBe(WORDS.noneTitle);
+      expect(unread.body).not.toBe(WORDS.noneBody);
+      expect(unread.body).not.toMatch(/\bNo campaign is waiting\b|\bNothing is waiting\b/u);
+    }
+  });
+
   it("never gives a version that cannot be approved the approve or copy-link control", () => {
-    for (const standing of ["approved", "sent_back", "needs_changes", "none"] as const) {
+    for (const standing of [
+      "approved",
+      "sent_back",
+      "needs_changes",
+      "none",
+      "campaigns_unread",
+    ] as const) {
       for (const canApprove of [true, false]) {
         const step = approveOrHandOffStep({ canApprove, standing });
         expect(step.anchor).not.toBe(GUIDED_SETUP_ANCHORS.campaignHandoffLink);
@@ -103,6 +128,10 @@ describe("what step 5 says", () => {
   it.each([
     ["unknown", GUIDED_SETUP_STEPS.readTheResult.unknownBody],
     ["none", "No campaign is waiting for your approval right now."],
+    [
+      "campaigns_unread",
+      "We couldn't load the campaigns waiting for your approval just now. Refresh the page to try again.",
+    ],
     ["needs_changes", GUIDED_SETUP_STEPS.readTheResult.needsChangesBody],
     ["waiting", GUIDED_SETUP_STEPS.readTheResult.readyBody],
     ["approved", "Your campaign is saved and approved. Nothing has been published or sent."],
@@ -118,6 +147,7 @@ describe("what step 5 says", () => {
     const standings: readonly CampaignStanding[] = [
       "unknown",
       "none",
+      "campaigns_unread",
       "needs_changes",
       "waiting",
       "approved",
@@ -140,6 +170,10 @@ describe("what step 7 says", () => {
     [
       "none",
       "No campaign is waiting for your approval right now. A campaign won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch campaigns.",
+    ],
+    [
+      "campaigns_unread",
+      "We couldn't load the campaigns waiting for your approval just now. A campaign won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch campaigns.",
     ],
     ["needs_changes", `Your campaign is saved, and the checks found things to fix first. ${TAIL}`],
     ["approved", `Your campaign is saved and approved. ${TAIL}`],
@@ -164,7 +198,14 @@ describe("what step 7 says", () => {
   });
 
   it("says the campaign is approved only when an approval is recorded", () => {
-    for (const standing of ["waiting", "needs_changes", "sent_back", "unknown", "none"] as const) {
+    for (const standing of [
+      "waiting",
+      "needs_changes",
+      "sent_back",
+      "unknown",
+      "none",
+      "campaigns_unread",
+    ] as const) {
       expect(whatHappensNextBody(standing), standing).not.toMatch(/\bapproved\b/u);
     }
   });
@@ -177,6 +218,7 @@ describe("what step 7 says", () => {
       "sent_back",
       "unknown",
       "none",
+      "campaigns_unread",
     ] as const) {
       const body = whatHappensNextBody(standing);
       expect(body, standing).toContain("won't run as an ad yet");

@@ -53,9 +53,15 @@ export type SetupCampaignResult = Readonly<{
  * waiting for them: there is no campaign to describe, and the steps say so rather than describe one
  * that does not exist. The provider decides it, because it needs the person's role and the stored
  * progress as well as the campaign, so `campaignStanding` never returns it.
+ *
+ * `campaigns_unread` is the same person in the same place, when the server tried to read the
+ * campaigns waiting for them and could not. It is not `none`: "nothing is waiting" is a claim about
+ * the workspace, and a failed read is not evidence of it. It is not `unknown` either, which is a
+ * campaign that exists and could not be read, so the steps have a campaign to point at; here there
+ * is none to point at. The provider decides this one too, and `campaignStanding` never returns it.
  */
 export type CampaignStanding =
-  "unknown" | "none" | "needs_changes" | "waiting" | "approved" | "sent_back";
+  "unknown" | "none" | "campaigns_unread" | "needs_changes" | "waiting" | "approved" | "sent_back";
 
 export function campaignStanding(
   campaign: Pick<SetupCampaignResult, "decision" | "ready"> | undefined,

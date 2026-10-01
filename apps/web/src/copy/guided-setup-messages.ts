@@ -104,6 +104,15 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
      * There is no result to read, and the step says that instead of describing a campaign.
      */
     noneBody: "No campaign is waiting for your approval right now.",
+    /**
+     * PRD-008b 008B-AC-009 to 008B-AC-011, writing review R6. The same approver, when the
+     * workspace's campaigns could not be loaded to look for one. "No campaign is waiting" is a claim
+     * about the workspace, and a list that could not be read says nothing about it, so this says
+     * what is true: the product could not look, and the page can be loaded again. It does not offer
+     * "Open the campaign" as `unknownBody` does, because there is no campaign to open.
+     */
+    campaignsUnreadBody:
+      "We couldn't load the campaigns waiting for your approval just now. Refresh the page to try again.",
   }),
   approveOrHandOff: Object.freeze({
     position: 6,
@@ -148,6 +157,15 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
     noneTitle: "Nothing is waiting for you",
     noneBody:
       "No campaign is waiting for your approval right now. When somebody saves one, open it from your campaigns and approve it there.",
+    /**
+     * Writing review R6. What step 6 says to that same approver when the campaigns could not be
+     * loaded, so it is not known whether one is waiting. It says that it could not look, and gives
+     * the two things a person can do: load the page again, or open the list themselves, which is the
+     * page that names every campaign in the workspace. It never says that nothing is waiting.
+     */
+    campaignsUnreadTitle: "We couldn't load what's waiting for you",
+    campaignsUnreadBody:
+      "We couldn't load the campaigns waiting for your approval just now. Refresh the page to try again, or open your campaigns to see if one is waiting.",
   }),
   whatHappensNext: Object.freeze({
     position: 7,
@@ -177,6 +195,12 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
     noneLead: "No campaign is waiting for your approval right now.",
     noneTail:
       "A campaign won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch campaigns.",
+    /**
+     * Writing review R6. The first sentence for that approver when the campaigns could not be
+     * loaded. It is followed by `noneTail`, which says nothing about whether a campaign is waiting
+     * and is the part 006C-AC-018 requires of the last step.
+     */
+    campaignsUnreadLead: "We couldn't load the campaigns waiting for your approval just now.",
     /**
      * The same sentence without the promise of a launch, for a campaign that was sent back. "It needs
      * a new version before anyone can approve it" followed by "this is where you'll launch it" reads

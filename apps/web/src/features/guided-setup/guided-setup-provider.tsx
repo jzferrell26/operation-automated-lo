@@ -100,6 +100,16 @@ export type GuidedSetupProviderProps = Readonly<{
    */
   campaignAwaitingDecision?: SetupCampaignResult | undefined;
   /**
+   * Writing review R6. True when the server tried to read the campaigns waiting for this person and
+   * could not.
+   *
+   * `campaignAwaitingDecision` is `undefined` both when nothing is waiting and when the read failed,
+   * and the walkthrough says "nothing is waiting" only for the first. This is what tells them apart.
+   * It changes what the steps say for an approver who cannot create a campaign and has none of their
+   * own, and nothing else: everybody else is sent to create a campaign whatever the list said.
+   */
+  campaignAwaitingDecisionFailed?: boolean | undefined;
+  /**
    * The instant the server rendered this page, so the seven-day chip window is decided once, on
    * one clock. Reading `Date.now()` during render would let the server and the browser disagree
    * about whether the chip exists, which is a hydration mismatch waiting for a wrong system clock.
@@ -134,6 +144,7 @@ export function GuidedSetupProvider({
   children,
   enabled,
   campaignAwaitingDecision,
+  campaignAwaitingDecisionFailed = false,
   initialProfile,
   initialProgress,
   savedCampaign,
@@ -480,13 +491,22 @@ export function GuidedSetupProvider({
       ? { ...heldCampaign, decision: decidedHere }
       : heldCampaign;
   /**
-   * PRD-008b 008B-AC-010. An approver who cannot create a campaign, with none waiting for them and
+   * PRD-008b 008B-AC-010. An approver who cannot create a campaign, with none offered to them and
    * none stored as theirs. There is nothing to describe, and the steps say so. A person who can
    * create a campaign is never in this state, because the walkthrough asks them for one.
    */
-  const nothingWaiting =
+  const noCampaignToDescribe =
     canApprove && !canCreate && stepCampaign === undefined && progress.campaignRef === undefined;
-  const standing: CampaignStanding = nothingWaiting ? "none" : campaignStanding(stepCampaign);
+  /*
+   * Writing review R6. What the steps say about that person depends on whether the server looked.
+   * "Nothing is waiting for you" is true only of a list that was read and had nothing on it; a list
+   * that could not be read gets its own answer, because the walkthrough does not know.
+   */
+  const standing: CampaignStanding = noCampaignToDescribe
+    ? campaignAwaitingDecisionFailed
+      ? "campaigns_unread"
+      : "none"
+    : campaignStanding(stepCampaign);
   /**
    * On a resume the stored reference is all that survives when the campaign itself could not be
    * read, so the detail address is still rebuilt from it: the step says it does not know what the

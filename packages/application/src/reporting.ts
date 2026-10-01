@@ -27,14 +27,23 @@ export class ReportingError extends Error {
   }
 }
 
-export const REPORTING_METRIC_DEFINITIONS = Object.freeze({
-  spendCents: "Provider-reported ad spend in minor currency units.",
-  leads: "Accepted non-test lead submissions attributed to the campaign.",
-  costPerLeadCents: "Spend divided by accepted non-test leads, unavailable when either is missing.",
-  appointments: "Current GHL appointments attributed to the campaign.",
-  applications: "Current GHL application-stage outcomes attributed to the campaign.",
-  fundedOrClosed: "Current GHL funded or closed outcomes attributed to the campaign.",
-});
+/**
+ * The six figures a campaign's reporting record carries, in the order a screen lists them.
+ *
+ * This layer names a figure and nothing in English. What each one means to a loan officer is
+ * written in `apps/web/src/copy/reporting-messages.ts`, keyed by these names, so the words are read
+ * by the user-language guard like every other sentence on a screen (PRD-008c, 008C-AC-005).
+ */
+export const REPORTING_METRIC_KEYS = Object.freeze([
+  "spendCents",
+  "leads",
+  "costPerLeadCents",
+  "appointments",
+  "applications",
+  "fundedOrClosed",
+] as const satisfies readonly (keyof CampaignReportingRecord["metrics"])[]);
+
+export type ReportingMetricKey = (typeof REPORTING_METRIC_KEYS)[number];
 
 interface RawMetric {
   readonly value: number | null;
@@ -134,25 +143,23 @@ export function filterCampaignHistory(
   );
 }
 
-const exceptionExplanations: Readonly<Record<ReportingException["code"], string>> = {
-  token_expired: "The provider connection has expired.",
-  token_failed: "The provider connection could not be verified.",
-  meta_disconnected: "The selected advertising asset is disconnected.",
-  ad_disapproved: "An advertising provider rejected the campaign.",
-  reporting_stale: "Reporting data is older than the allowed freshness window.",
-  lead_route_failed: "A lead could not be delivered through the approved route.",
-  mapping_missing: "A required provider mapping is unavailable.",
-  approval_stale: "The approval is older than the current campaign inputs.",
-  reconciliation_gap: "Provider state does not match the local expected state.",
-};
-
+/**
+ * Records one reporting exception.
+ *
+ * The exception's `explanation` is its code, not a sentence. This layer used to write the sentence
+ * itself ("The provider connection has expired."), which put nine lines of user-facing English
+ * outside the voice contract and outside every glob the vocabulary guard reads. The sentence for
+ * each code now lives in `apps/web/src/copy/reporting-messages.ts`, keyed by the same code, and
+ * whatever shows an exception looks it up there.
+ *
+ * `explanation` stays on the record because the shared contract requires a non-empty string in that
+ * field, and the contract is not this layer's to change. Holding the code satisfies it without
+ * keeping any wording here.
+ */
 export function createReportingException(
   input: Omit<ReportingException, "explanation">,
 ): ReportingException {
-  return ReportingExceptionSchema.parse({
-    ...input,
-    explanation: exceptionExplanations[input.code],
-  });
+  return ReportingExceptionSchema.parse({ ...input, explanation: input.code });
 }
 
 export function buildSafeSupportNotification(exception: ReportingException): Readonly<{

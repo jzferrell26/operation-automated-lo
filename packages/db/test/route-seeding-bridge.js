@@ -21,6 +21,7 @@ export {
   newestCredentialTokenLifetimeSeconds,
   readAuditEventsForCorrelation,
   readAuthRateLimitRows,
+  readDatabaseClockMilliseconds,
   readFirstPartySessionsForUser,
   readLocationCorrelationIds,
   readReviewCredential,

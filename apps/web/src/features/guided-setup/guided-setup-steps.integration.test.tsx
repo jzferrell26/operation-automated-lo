@@ -745,6 +745,126 @@ describe("guided setup steps", () => {
   });
 
   /**
+   * PRD-008b 008B-AC-010, the order of the steps. Every case above starts at step 3, which is where
+   * the campaign is handed over, and so could not see a change that began earlier. The campaign was
+   * stored as the person's own on the first move of any kind, the press of "Let's go" included, and
+   * once it was stored it was no longer waiting, so a workspace owner with a colleague's campaign
+   * waiting was sent from step 3 to step 4, "Create the Open House Boost", instead of to the result.
+   *
+   * These walk from the welcome step, the way a person does, and read the progress the walkthrough
+   * asked the server to store at each move. The undecided path is the one it always was: step 2,
+   * step 3, then step 5 for somebody with a campaign waiting, 4 for somebody who has none to look
+   * at, and 6 for an approver who cannot create one. The campaign is stored when the walkthrough
+   * reaches the step that is about it, and not before.
+   */
+  describe("walked from the welcome step", () => {
+    const WAITING = savedCampaignResult();
+
+    /** What the walkthrough asked the server to store at each move: the step, and the campaign if any. */
+    function storedMoves(calls: readonly { path: string; body: unknown }[]) {
+      return calls
+        .filter((call) => call.path === "/api/setup/progress")
+        .map((call) => {
+          const { progress } = call.body as {
+            progress: { campaignRef?: string; currentStep: number };
+          };
+          return [progress.currentStep, progress.campaignRef ?? null] as const;
+        });
+    }
+
+    /** "Let's go", then Continue on each of the two steps that ask for details. */
+    async function walkToTheStepAfterTheRealtor(options: ProviderOptions) {
+      const view = renderSetup({
+        profile: SAMPLE_PROFILE,
+        progress: initialGuidedSetupProgress(),
+        ...options,
+      });
+      const user = userEvent.setup();
+      const press = async (name: string) => {
+        await user.click(screen.getByRole("button", { name }));
+      };
+      await press(GUIDED_SETUP_STEPS.welcome.primaryLabel);
+      await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.yourDetails.title });
+      await press(GUIDED_SETUP_CONTROLS.continueLabel);
+      await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.realtorPartner.title });
+      await press(GUIDED_SETUP_CONTROLS.continueLabel);
+      return view;
+    }
+
+    it.each([
+      ["a workspace owner, who can approve and create", true, true],
+      ["an approver who cannot create a campaign", true, false],
+    ] as const)(
+      "takes %s with a campaign waiting from step 3 to the result, and stores it there",
+      async (_who, canApprove, canCreate) => {
+        const { calls } = await walkToTheStepAfterTheRealtor({
+          campaignAwaitingDecision: WAITING,
+          canApprove,
+          canCreate,
+        });
+
+        await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.readTheResult.title });
+        expect(storedMoves(calls)).toEqual([
+          [2, null],
+          [3, null],
+          [5, WAITING.campaignRef],
+        ]);
+      },
+    );
+
+    it.each([
+      [
+        "a workspace owner with nothing waiting",
+        true,
+        true,
+        GUIDED_SETUP_STEPS.createCampaign.title,
+        4,
+      ],
+      [
+        "a campaign creator, who cannot approve",
+        false,
+        true,
+        GUIDED_SETUP_STEPS.createCampaign.title,
+        4,
+      ],
+      [
+        "an approver who cannot create, with nothing waiting",
+        true,
+        false,
+        "Nothing is waiting for you",
+        6,
+      ],
+    ] as const)(
+      "takes %s to the step that is theirs, and stores no campaign",
+      async (_who, canApprove, canCreate, title, step) => {
+        const { calls } = await walkToTheStepAfterTheRealtor({ canApprove, canCreate });
+
+        await screen.findByRole("dialog", { name: title });
+        expect(storedMoves(calls)).toEqual([
+          [2, null],
+          [3, null],
+          [step, null],
+        ]);
+      },
+    );
+
+    it("does not hand a campaign that is waiting to somebody who cannot approve it", async () => {
+      const { calls } = await walkToTheStepAfterTheRealtor({
+        campaignAwaitingDecision: WAITING,
+        canApprove: false,
+        canCreate: true,
+      });
+
+      await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.createCampaign.title });
+      expect(storedMoves(calls)).toEqual([
+        [2, null],
+        [3, null],
+        [4, null],
+      ]);
+    });
+  });
+
+  /**
    * PRD-008b 008B-AC-011. Step 5 says the campaign is "ready for approval". That is true of a
    * version that passed its checks and is waiting for somebody to decide it, and of nothing else:
    * a version somebody has decided is past that, and one whose checks need changes is not ready.

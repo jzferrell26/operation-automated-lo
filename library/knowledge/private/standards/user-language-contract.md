@@ -1,7 +1,7 @@
 # User Language Contract
 
 > Category: Standard | Version: 1.1 | Date: October 2026 | Status: Approved
-> Source: [PRD-006b](../../../requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/prd-006b-first-party-sign-in-and-guided-experience-user-language.md) D1 through D4 and D8, extended by [PRD-008c](../../../requirements/in-work/prd-008-finish-line-hardening/prd-008c-finish-line-hardening-user-language-completion.md) (`adapter`, `origin`, the administrator-instruction phrase rule, and the user-facing error classes) and recorded here under PRD-008e `008E-AC-015`
+> Source: [PRD-006b](../../../requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/prd-006b-first-party-sign-in-and-guided-experience-user-language.md) D1 through D4 and D8, extended by [PRD-008c](../../../requirements/completed/prd-008-finish-line-hardening/prd-008c-finish-line-hardening-user-language-completion.md) (`adapter`, `origin`, the administrator-instruction phrase rule, and the user-facing error classes) and recorded here under PRD-008e `008E-AC-015`
 
 Every word a user reads in Operation Automated LO is written for a mortgage loan officer who has never seen this codebase. This document is the rule. It governs product copy, page titles, the site description, accessible names, placeholders, help text, error messages, and the account emails. It does not govern code identifiers, database column names, log lines, test names, or anything else a user never sees.
 

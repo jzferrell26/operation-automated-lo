@@ -19,7 +19,7 @@ Phase 0 built the platform scaffold and the evidence harness. A hosted, authenti
 - The synthetic [`/demo`](http://localhost:3000/demo) illustrates the intended product shape. It cannot approve, publish, spend, or prove a provider contract.
 - Research gates G1 and G4 are `ACCEPTED CONSTRAINT` (external distribution removed; Housing Special Ad Category requirements known). G2, G3, G5, G6, and G7 remain **BLOCKED**, and production stays unauthorized until each remaining blocked gate is `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE`. The production ledger and project map carry G2 as `DEFERRED FOR NOW` (the live HighLevel App Test is still outstanding). G8 is `ACCEPTED CONSTRAINT`, never `PASS`: no evidence of 15 paid founders exists, commercial validation is unproven, and 15 paid founders is now a post-start target. See the [build-readiness gate](library/knowledge/private/research/2026-build-readiness-and-research-gate.md).
 
-Everything that remains and needs a person (a decision, an account, a credential, or a live provider) is in the [finish-line operator checklist](library/knowledge/private/operations/finish-line-operator-checklist.md), in dependency order.
+Everything that remains and needs a person (a decision, an account, a credential, or a live provider) is in the [finish-line operator checklist](library/knowledge/private/operations/finish-line-operator-checklist.md), in dependency order. The agent-executable hardening, [PRD-008](library/requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md), is complete in draft pull request #74 and waits for the owner's merge. Step 0 of that checklist (apply the three PRD-008 migrations to the hosted database) comes before the merge.
 
 ## Where it runs
 

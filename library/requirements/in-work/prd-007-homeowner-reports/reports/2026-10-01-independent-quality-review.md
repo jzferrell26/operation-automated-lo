@@ -260,3 +260,36 @@ Files:
 - At step 6b, make the first call a read-only contact lookup and record the accepted `Version` value (W-7). If HighLevel rejects `v3`, change `highlevel.ts:69` and nothing else is affected.
 - Decide whether to surface the estimate label on the figure (S-1) and to skip contact re-verification for balance corrections (S-2).
 - Security's carried items L-1, L-3, L-5, L-10, L-15 and L-16 are policy or design decisions and are unchanged by this review.
+
+## Addendum, 2026-10-01: W-2 fixed, and the heavy suites have run
+
+Added after this report was written, by `library-guardian` in the PRD-008 Gauntlet run (close-out quality L-12). The findings, scorecard, and verdict above are unchanged: they describe the tree at the head named in the header. This addendum records what happened to the two things the report left open or pending.
+
+### W-2 is fixed
+
+W-2 (a repeated review request, after the loan officer has resolved the first, is acknowledged but never recorded) was fixed by `2de43cc`:
+
+- **Migration.** `supabase/migrations/20261001090000_homeowner_review_rerequest.sql` replaces `homeowner.record_shared_event` with the same signature. An accepted `review_requested` call now raises `review_requested_at` when it is null and leaves the row untouched when it is already set: one open request at a time, one event per report. The body differs from the previous one by four lines.
+- **pgTAP coverage.** `supabase/tests/homeowner_reports.pgtap.sql` gains 18 assertions (plan 244). Two failed against the old body, including the cross-tenant same-id case.
+- **Repository test.** One case in `apps/web/src/server/homeowners/repository.postgres.test.ts`: request, duplicate while open, resolve, view, request again, revoked link.
+- **Decision recorded.** The behaviour this review recommended confirming is settled in the PRD-007 index "Amendments" (2026-10-01): a request is deduplicated while one is open; after the loan officer marks it reviewed, a new request is recorded.
+
+This closes the "OPEN" label on W-2, the "Two Warnings stay open" sentence in the Summary, the W-2 caveats in the rule sweep, the traceability table, and the evidence for item 7, and the first bullet under "Recommended follow-up". W-7 is not affected: it needs operator step 6b.
+
+### The heavy suites ran green
+
+"Not verified, pending heavy" listed proof that only a heavy suite provides. It has since run, on a tree that contains `2de43cc`:
+
+- **CI run `36848467698`** on `a37e238`: all four required checks passed (`Application verification`, `Real PostgreSQL migrations and pgTAP`, `Release and recovery contract`, `Preview smoke contract`). `2de43cc` is an ancestor of `a37e238`.
+- **Local full `pnpm verify`, including `pnpm test:db`, on `5585ee9`**: exit 0, as the orchestrator recorded in `EXECUTION_LEDGER.md` (`FLR-002` and the raid log). pgTAP: 15 files and 745 assertions. Postgres integration 14, route 181, review browser 104. In the offline half, browser 149 passed and 26 skipped, dashboard 26, visual 8. `2de43cc` is an ancestor of `5585ee9`.
+
+Against the four bullets of "Not verified, pending heavy":
+
+| Bullet | Now |
+| --- | --- |
+| Real database | Run. `pnpm test:db` runs every `supabase/tests/*.pgtap.sql` file and every `apps/web/src/**/*.postgres.test.ts` suite (`tooling/scripts/database/run-real-database-tests.mjs`), which includes `homeowner_reports.pgtap.sql`, `repository.postgres.test.ts`, `routes.postgres.test.ts`, and `workspace-preferences.postgres.test.ts`. |
+| Browser, visual and accessibility | Run, as part of the same full gate. |
+| A real server (the M-1 throttle's 429 path against a built server) | UNVERIFIED here. This addendum did not check whether the recorded runs exercise it, and it does not close it. |
+| Live providers | Still open: operator steps 6a and 6b. `HOR-008` and `HOR-009` in `EXECUTION_LEDGER.md` stay BLOCKED. |
+
+The ledger rows that cite this report as their VERIFIED source (`HOR-001`, `HOR-005`, `HOR-007`, and `HOR-010`) are unaffected: the addendum only records that the pending proof arrived.

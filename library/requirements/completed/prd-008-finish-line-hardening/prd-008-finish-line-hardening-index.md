@@ -1,6 +1,6 @@
 # PRD-008: Finish-Line Hardening
 
-> **Status:** In Work (authored 2026-09-30; moved from `backlog/` to `in-work/` at Gauntlet start, 2026-10-01, branch `claude/gauntlet-prd-008`)
+> **Status:** Complete. Delivered in draft pull request #74 (branch `claude/gauntlet-prd-008`); the merge is pending the owner. Authored 2026-09-30; moved from `backlog/` to `in-work/` at Gauntlet start and from `in-work/` to `completed/` at its end, both on 2026-10-01. In `EXECUTION_LEDGER.md` 62 of the 74 `FLR` rows read VERIFIED at `211b519`. The other 12 close at ship and are listed under "Ledger status at the exit move" below. The full `pnpm verify`, including `pnpm test:db`, is green on `5585ee9`. Before the merge, the owner applies the three PRD-008 migrations to the hosted database ([operator checklist](../../../knowledge/private/operations/finish-line-operator-checklist.md) step 0).
 > **Priority:** P0. Every item here is open on `main` at `131c7f4`. One of them, the dependency audit, currently fails the canonical gate for every new pull request. All of them can be closed inside the repository.
 > **Effort:** L (1-3d of agent time across five sub-PRDs, no operator time)
 > **Schema changes:** Additive (008a widens one rate-limit scope list; 008d adds a pgTAP suite and no schema)
@@ -65,11 +65,30 @@ This PRD does not authorize production traffic, a deployment, an environment-var
 
 | Sub-PRD | Scope | Status |
 |---|---|---|
-| [`prd-008a-finish-line-hardening-security-and-dependency-closure`](./prd-008a-finish-line-hardening-security-and-dependency-closure.md) | Dependency audit to zero, the PR #70 group, two Medium and six Low audit findings, the missing-header log severity | Draft |
-| [`prd-008b-finish-line-hardening-product-correctness`](./prd-008b-finish-line-hardening-product-correctness.md) | No fabricated approved image, the approve control after a decision, `/brand` independent of the reports flag, leftover demo slug | Draft |
-| [`prd-008c-finish-line-hardening-user-language-completion`](./prd-008c-finish-line-hardening-user-language-completion.md) | Guard reaches `server/homeowners`, rewrite flagged strings, remove the `reporting.ts` exclusion | Draft |
-| [`prd-008d-finish-line-hardening-verification-depth`](./prd-008d-finish-line-hardening-verification-depth.md) | Homeowner pgTAP suite, one baseline redraw after all UI and dependency changes, the three unphotographed states and A-1 rows, re-signed sign-off | Draft |
-| [`prd-008e-finish-line-hardening-records-and-independent-review`](./prd-008e-finish-line-hardening-records-and-independent-review.md) | Status-line and ledger reconciliation, README boundary rewrite, maps, 004E re-audit, PRD-007 independent review, PR #72 release record | Draft |
+| [`prd-008a-finish-line-hardening-security-and-dependency-closure`](./prd-008a-finish-line-hardening-security-and-dependency-closure.md) | Dependency audit to zero, the PR #70 group, two Medium and six Low audit findings, the missing-header log severity | Complete. 21 of 23 criteria VERIFIED; `008A-AC-003` and `008A-AC-007` close at ship |
+| [`prd-008b-finish-line-hardening-product-correctness`](./prd-008b-finish-line-hardening-product-correctness.md) | No fabricated approved image, the approve control after a decision, `/brand` independent of the reports flag, leftover demo slug | Complete. All 11 criteria VERIFIED |
+| [`prd-008c-finish-line-hardening-user-language-completion`](./prd-008c-finish-line-hardening-user-language-completion.md) | Guard reaches `server/homeowners`, rewrite flagged strings, remove the `reporting.ts` exclusion | Complete. All 7 criteria VERIFIED |
+| [`prd-008d-finish-line-hardening-verification-depth`](./prd-008d-finish-line-hardening-verification-depth.md) | Homeowner pgTAP suite, one baseline redraw after all UI and dependency changes, the three unphotographed states and A-1 rows, re-signed sign-off | Complete. All 11 criteria VERIFIED |
+| [`prd-008e-finish-line-hardening-records-and-independent-review`](./prd-008e-finish-line-hardening-records-and-independent-review.md) | Status-line and ledger reconciliation, README boundary rewrite, maps, 004E re-audit, PRD-007 independent review, PR #72 release record | Complete. 10 of 15 criteria VERIFIED; `008E-AC-004`, `008E-AC-006`, `008E-AC-007`, `008E-AC-010`, and `008E-AC-014` close at ship |
+
+### Ledger status at the exit move
+
+Counted from `EXECUTION_LEDGER.md` at `211b519`: 62 of the 74 `FLR` rows are VERIFIED. The other 12 are below, with what closes each. None needs a product change, an operator, or a credential. The scope contract's "Lifecycle at exit" row moves the folder once every criterion is VERIFIED. The move was made with these 12 still open at the orchestrator's direction, because each closes at ship in the same pull request.
+
+| Row | Criterion | Ledger status | What closes it |
+|---|---|---|---|
+| `FLR-001` | `FLH-001` | OPEN | Every criterion VERIFIED by a pass other than its implementer. It closes after the rows below. |
+| `FLR-002` | `FLH-002` | DONE | `pnpm verify` and `pnpm test:db` are green on `5585ee9`. The push, the four required checks, and `MERGEABLE` on the final head come at ship. |
+| `FLR-004` | `FLH-004` | OPEN | The [close-out quality report](./qa/2026-10-01-closeout-quality-report.md) said FIX FIRST on one records Medium (M-1, `008E-AC-004`). The write-back it asked for is done. The row closes after a pass other than the orchestrator re-checks it. |
+| `FLR-006` | `FLH-006` | OPEN | The close-out quality report records PASS (a row-by-row diff of the ledger statuses). The orchestrator writes the row. |
+| `FLR-007` | `FLH-007` | OPEN | The close-out quality report records PASS (no U+2014 or U+2013 in any added line). The orchestrator writes the row. |
+| `FLR-010` | `008A-AC-003` | DONE | `pnpm audit` is re-run on the final head at ship. It was clean at moderate and low on `6f24a14`. |
+| `FLR-014` | `008A-AC-007` | DONE | Comment on PR #70 and close it as superseded, at ship. The lockfile half is verified. |
+| `FLR-060` | `008E-AC-004` | DONE | The write-back of the held `CRR` rows is done. The row closes after the same independent re-check as `FLR-004`. |
+| `FLR-062` | `008E-AC-006` | DONE | The close-out quality report records PASS and says the row can move to VERIFIED. The orchestrator writes the row. |
+| `FLR-063` | `008E-AC-007` | DONE | The same. |
+| `FLR-066` | `008E-AC-010` | DONE | The same. |
+| `FLR-070` | `008E-AC-014` | OPEN | This move to `completed/`, with every inbound link and lifecycle label repaired in the same commit. |
 
 ## Dependency order
 

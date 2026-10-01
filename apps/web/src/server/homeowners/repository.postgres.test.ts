@@ -323,6 +323,58 @@ describe.sequential("real homeowner persistence", () => {
     );
     expect(await readSharedHomeReport(pool, homeHash(secret + "new"))).toBeNull();
   });
+  it("shows the loan officer a review request made after the first one was marked reviewed", async () => {
+    const item = await seed(repoA, "review-again-contact"),
+      secret = homeHash(randomUUID()),
+      expiry = new Date(Date.now() + 86400000).toISOString();
+    await repoA.createShare(item.report.id, homeHash(secret), expiry);
+    // What the loan officer sees: the flag on the property, read through the tenant-scoped list.
+    const flag = async (repo: PostgresHomeownerRepository) =>
+      (await repo.list()).find((property) => property.id === item.propertyId)?.reviewRequestedAt;
+    const reviewEvents = () =>
+      admin(
+        "select count(*)::int as count from homeowner.events where location_id=$1::uuid and report_id=$2 and event_kind='review_requested'",
+        [locationA, item.report.id],
+      );
+    expect(await flag(repoA)).toBeNull();
+
+    expect(
+      await recordSharedHomeEvent(pool, homeHash(secret), "review_requested", randomUUID()),
+    ).toBe(true);
+    const firstRequest = await flag(repoA);
+    expect(firstRequest).not.toBeNull();
+
+    // A second request while the first is open is accepted and changes nothing.
+    expect(
+      await recordSharedHomeEvent(pool, homeHash(secret), "review_requested", randomUUID()),
+    ).toBe(true);
+    expect(await flag(repoA)).toBe(firstRequest);
+    expect(await reviewEvents()).toEqual([{ count: 1 }]);
+
+    // The loan officer marks it reviewed through the application's own statement.
+    await repoA.resolveReview(item.propertyId);
+    expect(await flag(repoA)).toBeNull();
+
+    // A view is not intent, so it does not raise the flag.
+    expect(await recordSharedHomeEvent(pool, homeHash(secret), "viewed", randomUUID())).toBe(true);
+    expect(await flag(repoA)).toBeNull();
+
+    // Asking again is accepted and now reaches the loan officer. The report still has one event.
+    expect(
+      await recordSharedHomeEvent(pool, homeHash(secret), "review_requested", randomUUID()),
+    ).toBe(true);
+    expect(await flag(repoA)).not.toBeNull();
+    expect(await reviewEvents()).toEqual([{ count: 1 }]);
+    expect(await repoB.list()).not.toContainEqual(expect.objectContaining({ id: item.propertyId }));
+
+    // And a link that has since been revoked records nothing and raises nothing.
+    await repoA.resolveReview(item.propertyId);
+    await repoA.revokeShares(item.propertyId);
+    expect(
+      await recordSharedHomeEvent(pool, homeHash(secret), "review_requested", randomUUID()),
+    ).toBe(false);
+    expect(await flag(repoA)).toBeNull();
+  });
   it("leases monthly work and blocks duplicate delivery while preserving explicit pause", async () => {
     const item = await seed(repoA, "monthly-contact");
     const due = new Date(Date.now() - 60000).toISOString();

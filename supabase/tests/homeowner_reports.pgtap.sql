@@ -11,6 +11,11 @@
 --                reaches nothing and records nothing.
 --   008D-AC-004  claim_due_properties is executable by scheduler_runtime alone, and
 --                homeowner.allowed behaves as the migration's grants and role lists state.
+--   W-2          (PRD-007 independent quality review) a review request is one event per
+--                report but one open request at a time: asked again after the loan officer
+--                marked the first reviewed, the property's flag goes up again; asked twice
+--                while open, nothing moves. Covered by
+--                supabase/migrations/20261001090000_homeowner_review_rerequest.sql.
 --
 -- Style follows supabase/tests/tenant_isolation.pgtap.sql and
 -- supabase/tests/user_preferences.pgtap.sql: fixed UUIDs, `set local role
@@ -34,7 +39,7 @@
 
 begin;
 
-select plan(226);
+select plan(244);
 
 create function pg_temp.assert_is(actual anyelement, expected anyelement, description text)
 returns text
@@ -1580,6 +1585,245 @@ select pg_temp.assert_is(
   ),
   0,
   'the refused secrets marked no property of the shared pairs as review requested'
+);
+reset role;
+
+-- W-2 (PRD-007 independent quality review). A review request is one event per report for
+-- good, but it is one open request at a time: it raises the property's flag when the flag
+-- is down and leaves it alone when the flag is already up. So a homeowner who asks again
+-- after the loan officer marked the first request reviewed is seen, and a homeowner who
+-- asks twice before that is not counted twice. "Mark reviewed" is run below as the
+-- repository's resolveReview statement runs it, under app_runtime with the tenant context.
+--
+-- Everything in a pgTAP run shares one transaction, so now() is one fixed instant. The open
+-- request on property 1 is therefore moved to a distinct earlier time first, which is what
+-- makes "left alone" observable: an unconditional write would show as a different time.
+set local role migration_owner;
+update homeowner.properties
+set review_requested_at = '2026-01-02 03:04:05+00', updated_at = '2026-01-02 03:04:05+00'
+where location_id = '00000000-0000-4000-8000-000000000f01' and id = pg_temp.pid(1);
+reset role;
+
+-- A second request while the first is open: accepted, and nothing about the property moves.
+set local role app_runtime;
+select platform.reset_transaction_context();
+select pg_temp.assert_is(
+  homeowner.record_shared_event(
+    pg_temp.hash_of('r1-valid'), 'review_requested', '00000000-0000-4000-8000-000000000fb1'
+  ),
+  true,
+  'a review request while the first is still open is accepted'
+);
+reset role;
+set local role migration_owner;
+select pg_temp.assert_is(
+  (
+    select review_requested_at
+    from homeowner.properties
+    where location_id = '00000000-0000-4000-8000-000000000f01' and id = pg_temp.pid(1)
+  ),
+  '2026-01-02 03:04:05+00'::timestamptz,
+  'a review request while one is open leaves the flag at the time of the first request'
+);
+select pg_temp.assert_is(
+  (
+    select updated_at
+    from homeowner.properties
+    where location_id = '00000000-0000-4000-8000-000000000f01' and id = pg_temp.pid(1)
+  ),
+  '2026-01-02 03:04:05+00'::timestamptz,
+  'a review request while one is open does not rewrite the property row'
+);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.count(*)::integer
+    from homeowner.events
+    where location_id = '00000000-0000-4000-8000-000000000f01'
+      and report_id = pg_temp.rid(1)
+      and event_kind = 'review_requested'
+  ),
+  1,
+  'a review request while one is open adds no event'
+);
+reset role;
+
+-- The loan officer marks it reviewed, exactly as the application does.
+set local role app_runtime;
+select platform.set_app_context(
+  '00000000-0000-4000-8000-000000000f01',
+  '00000000-0000-4000-8000-000000000f11',
+  'corr.homeowner-review-resolve'
+);
+select pg_temp.assert_is(
+  pg_temp.write_outcome(
+    pg_catalog.format(
+      'update homeowner.properties set review_requested_at=null,updated_at=now() where location_id=%L and id=%L',
+      '00000000-0000-4000-8000-000000000f01',
+      pg_temp.pid(1)
+    )
+  ),
+  'rows 1',
+  'the loan officer can mark a review request as reviewed'
+);
+select platform.reset_transaction_context();
+reset role;
+set local role migration_owner;
+select pg_temp.assert_ok(
+  (
+    select review_requested_at is null
+    from homeowner.properties
+    where location_id = '00000000-0000-4000-8000-000000000f01' and id = pg_temp.pid(1)
+  ),
+  'marking a review reviewed puts the flag down'
+);
+reset role;
+
+-- With the flag down, only an accepted review request raises it. A view does not, and a
+-- link that is expired or revoked records nothing even though it names the same report.
+set local role app_runtime;
+select platform.reset_transaction_context();
+select pg_temp.assert_is(
+  homeowner.record_shared_event(
+    pg_temp.hash_of('r1-valid'), 'viewed', '00000000-0000-4000-8000-000000000fb2'
+  ),
+  true,
+  'a view after the review was marked reviewed is accepted'
+);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.bool_or(
+      homeowner.record_shared_event(
+        pg_temp.hash_of(lapsed_link.secret), 'review_requested', lapsed_link.event_key::uuid
+      )
+    )
+    from (values
+      ('r1-expired', '00000000-0000-4000-8000-000000000fb3'),
+      ('r1-revoked', '00000000-0000-4000-8000-000000000fb4')
+    ) as lapsed_link(secret, event_key)
+  ),
+  false,
+  'an expired or revoked link to the same report records no review request'
+);
+reset role;
+set local role migration_owner;
+select pg_temp.assert_ok(
+  (
+    select review_requested_at is null
+    from homeowner.properties
+    where location_id = '00000000-0000-4000-8000-000000000f01' and id = pg_temp.pid(1)
+  ),
+  'neither a view nor a lapsed link raises the review flag'
+);
+reset role;
+
+-- The homeowner asks again. It is accepted, the flag goes up at this request, and the
+-- report still has the one review_requested event it always had.
+set local role app_runtime;
+select platform.reset_transaction_context();
+select pg_temp.assert_is(
+  homeowner.record_shared_event(
+    pg_temp.hash_of('r1-valid'), 'review_requested', '00000000-0000-4000-8000-000000000fb5'
+  ),
+  true,
+  'a review request after the first was marked reviewed is accepted'
+);
+reset role;
+set local role migration_owner;
+select pg_temp.assert_ok(
+  (
+    select review_requested_at = pg_catalog.now()
+    from homeowner.properties
+    where location_id = '00000000-0000-4000-8000-000000000f01' and id = pg_temp.pid(1)
+  ),
+  'a review request after the first was marked reviewed raises the flag again, at the new request'
+);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.array_agg(event_key order by event_key)
+    from homeowner.events
+    where location_id = '00000000-0000-4000-8000-000000000f01'
+      and report_id = pg_temp.rid(1)
+      and event_kind = 'review_requested'
+  ),
+  array['00000000-0000-4000-8000-000000000f83']::uuid[],
+  'the repeated request leaves the report with its one review_requested event, the first'
+);
+reset role;
+
+-- One id, two tenants, again. Tenant B marks its request on report 70 reviewed. Tenant A
+-- then asks about its own report 70: that must raise tenant A's flag and not put tenant B's
+-- resolved flag back up. Tenant B asks again afterwards and its own flag goes up again.
+set local role app_runtime;
+select platform.set_app_context(
+  '00000000-0000-4000-8000-000000000f02',
+  '00000000-0000-4000-8000-000000000f17',
+  'corr.homeowner-review-resolve-b'
+);
+select pg_temp.assert_is(
+  pg_temp.write_outcome(
+    pg_catalog.format(
+      'update homeowner.properties set review_requested_at=null,updated_at=now() where location_id=%L and id=%L',
+      '00000000-0000-4000-8000-000000000f02',
+      pg_temp.pid(70)
+    )
+  ),
+  'rows 1',
+  'tenant B can mark its own review request reviewed'
+);
+select platform.reset_transaction_context();
+select pg_temp.assert_is(
+  homeowner.record_shared_event(
+    pg_temp.hash_of('dup70-a'), 'review_requested', '00000000-0000-4000-8000-000000000fb6'
+  ),
+  true,
+  'tenant A''s secret records a review request on the report id both tenants hold'
+);
+reset role;
+set local role migration_owner;
+select pg_temp.assert_is(
+  (
+    select pg_catalog.array_agg(location_id order by location_id)
+    from homeowner.properties
+    where id = pg_temp.pid(70) and review_requested_at is not null
+  ),
+  array['00000000-0000-4000-8000-000000000f01']::uuid[],
+  'tenant A''s request raises tenant A''s flag and not tenant B''s resolved flag for the same id'
+);
+reset role;
+set local role app_runtime;
+select platform.reset_transaction_context();
+select pg_temp.assert_is(
+  homeowner.record_shared_event(
+    pg_temp.hash_of('dup70-b'), 'review_requested', '00000000-0000-4000-8000-000000000fb7'
+  ),
+  true,
+  'tenant B''s secret records a new review request after tenant B marked the first reviewed'
+);
+reset role;
+set local role migration_owner;
+select pg_temp.assert_is(
+  (
+    select pg_catalog.array_agg(location_id order by location_id)
+    from homeowner.properties
+    where id = pg_temp.pid(70) and review_requested_at is not null
+  ),
+  array[
+    '00000000-0000-4000-8000-000000000f01'::uuid,
+    '00000000-0000-4000-8000-000000000f02'::uuid
+  ],
+  'tenant B''s repeated request raises tenant B''s flag again and leaves tenant A''s up'
+);
+select pg_temp.assert_is(
+  (
+    select pg_catalog.array_agg(location_id order by location_id)
+    from homeowner.events
+    where report_id = pg_temp.rid(70) and event_kind = 'review_requested'
+  ),
+  array[
+    '00000000-0000-4000-8000-000000000f01'::uuid,
+    '00000000-0000-4000-8000-000000000f02'::uuid
+  ],
+  'each tenant holds exactly one review_requested event for the report id both hold'
 );
 reset role;
 

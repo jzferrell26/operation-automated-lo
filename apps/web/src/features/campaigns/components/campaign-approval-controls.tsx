@@ -10,6 +10,7 @@ import {
   WORKSPACE_OWNER_PARTY,
 } from "../../../copy/user-language.js";
 import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
+import { useGuidedSetup } from "../../guided-setup/guided-setup-context.js";
 import { CampaignHandOff } from "./campaign-hand-off.js";
 import { userMessageSentence } from "../../http/user-messages.js";
 import {
@@ -76,6 +77,7 @@ export function CampaignApprovalControls({
    */
   const [decided, setDecided] = useState(false);
   const router = useRouter();
+  const guidedSetup = useGuidedSetup();
   const outcomeRef = useRef<HTMLParagraphElement | null>(null);
 
   /*
@@ -125,6 +127,9 @@ export function CampaignApprovalControls({
       };
       setStatus(recorded(decisionStatus(body.decision, body.duplicate === true)));
       setDecided(true);
+      // 008B-AC-010. The guided walkthrough, when there is one, hears what was recorded now, so its
+      // step agrees with this card without waiting for the refreshed page to carry the decision.
+      guidedSetup?.reportCampaignDecided({ campaignRef, decision: body.decision });
       /*
        * The server-rendered regions around this card (where the campaign stands, the check result,
        * what to do next, who signed off) were written before the decision existed. Refreshing

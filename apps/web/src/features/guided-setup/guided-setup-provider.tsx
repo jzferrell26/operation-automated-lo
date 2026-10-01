@@ -112,6 +112,9 @@ export type GuidedSetupProviderProps = Readonly<{
 
 const CAMPAIGN_DETAIL_PREFIX = "/marketing/campaigns/";
 
+/** Step 5, "Read the result": the first step whose subject is the campaign itself. */
+const FIRST_STEP_ABOUT_THE_CAMPAIGN = 5;
+
 /**
  * What a failed save leaves in the console, beside what it says on the screen.
  *
@@ -154,6 +157,16 @@ export function GuidedSetupProvider({
    * is about the instant it stores the reference.
    */
   const [handedCampaign, setHandedCampaign] = useState<SetupCampaignResult | undefined>(undefined);
+  /**
+   * PRD-008b 008B-AC-010. The decisions the approval card has recorded in this browser, by campaign.
+   *
+   * They fill in a campaign the walkthrough is holding from before the decision, so the step agrees
+   * with the card at once rather than when the layout next reads the campaign, which can be a
+   * refresh away or never. The server's own reading wins as soon as it carries a decision.
+   */
+  const [localDecisions, setLocalDecisions] = useState<
+    Readonly<Record<string, "approved" | "rejected">>
+  >({});
   /** The campaign being offered to this person right now, for `goToStep` to read without depending on it. */
   const waitingRef = useRef<SetupCampaignResult | undefined>(undefined);
   const [dismissPending, setDismissPending] = useState(false);
@@ -283,14 +296,24 @@ export function GuidedSetupProvider({
       const advanced = advanceTo(progressRef.current, step);
       /*
        * PRD-008b 008B-AC-010. An approver who is shown a campaign they did not create is bound to
-       * it as the first move on from it. Their progress names no campaign, because only the create
-       * screen writes one and their role cannot reach it, so without this the campaign is chosen
-       * again on every render from the ones still waiting. The moment they decide it, it stops
-       * waiting, drops out of that choice, and the walkthrough has nothing left to describe. Stored
-       * as theirs, it is read back by reference with the decision on it, as a creator's own is.
+       * it when the walkthrough reaches the step that is about it. Their progress names no
+       * campaign, because only the create screen writes one and their role cannot reach it, so
+       * without this the campaign is chosen again on every render from the ones still waiting. The
+       * moment they decide it, it stops waiting, drops out of that choice, and the walkthrough has
+       * nothing left to describe. Stored as theirs, it is read back by reference with the decision
+       * on it, as a creator's own is.
+       *
+       * Only at that step, and not on the first move of any kind. Once the campaign is stored it is
+       * no longer waiting, and the step after the Realtor partner is chosen from whether one is, so
+       * storing it on the press of "Let's go" sent a workspace owner from step 3 to step 4 instead
+       * of to the result.
        */
       const handedOver = waitingRef.current;
-      if (handedOver !== undefined && advanced.campaignRef === undefined) {
+      if (
+        handedOver !== undefined &&
+        advanced.campaignRef === undefined &&
+        step >= FIRST_STEP_ABOUT_THE_CAMPAIGN
+      ) {
         setHandedCampaign(handedOver);
         void persistProgress(withCampaign(advanced, handedOver.campaignRef));
         return;
@@ -414,6 +437,13 @@ export function GuidedSetupProvider({
     [persistProgress],
   );
 
+  const reportCampaignDecided = useCallback(
+    (report: Readonly<{ campaignRef: string; decision: "approved" | "rejected" }>) => {
+      setLocalDecisions((current) => ({ ...current, [report.campaignRef]: report.decision }));
+    },
+    [],
+  );
+
   /**
    * PRD-006c D3 step 5 and D5. Which campaign steps 5 and 6 are about, and what is known about it.
    *
@@ -442,7 +472,13 @@ export function GuidedSetupProvider({
       ? campaignAwaitingDecision
       : undefined;
   waitingRef.current = waitingCampaign;
-  const stepCampaign = ownCampaign ?? waitingCampaign ?? handedCampaign;
+  const heldCampaign = ownCampaign ?? waitingCampaign ?? handedCampaign;
+  const decidedHere =
+    heldCampaign === undefined ? undefined : localDecisions[heldCampaign.campaignRef];
+  const stepCampaign: SetupCampaignResult | undefined =
+    heldCampaign !== undefined && heldCampaign.decision === undefined && decidedHere !== undefined
+      ? { ...heldCampaign, decision: decidedHere }
+      : heldCampaign;
   /**
    * PRD-008b 008B-AC-010. An approver who cannot create a campaign, with none waiting for them and
    * none stored as theirs. There is nothing to describe, and the steps say so. A person who can
@@ -513,6 +549,7 @@ export function GuidedSetupProvider({
       open,
       profile,
       progress,
+      reportCampaignDecided,
       reportCampaignSaved,
       restartSetup,
       resumeSetup,
@@ -529,6 +566,7 @@ export function GuidedSetupProvider({
       open,
       profile,
       progress,
+      reportCampaignDecided,
       reportCampaignSaved,
       restartSetup,
       resumeSetup,

@@ -705,7 +705,9 @@ describe("guided setup steps", () => {
       [
         "sent back",
         savedCampaignResult({ decision: "rejected" }),
-        `Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it. ${TAIL}`,
+        // Finding R2. It ends where the not-connected sentence ends, so it does not follow "needs a
+        // new version" with "this is where you'll launch it".
+        "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it. It won't run as an ad yet: HighLevel and Meta aren't connected.",
       ],
       [
         "waiting on its checks",

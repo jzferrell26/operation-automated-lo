@@ -155,7 +155,7 @@ export function PersistedCampaignScreen({
           <div className={styles.reviewHeading}>
             <div>
               <p className={styles.eyebrow}>Approval</p>
-              <h2 id="campaign-approval-title">Who signed off</h2>
+              <h2 id="campaign-approval-title">Who decided</h2>
             </div>
           </div>
           <Card padding="md">

@@ -218,6 +218,18 @@ function decisionStatus(decision: "approved" | "rejected", duplicate: boolean): 
     : "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.";
 }
 
+/** A version nobody can approve yet: it is waiting for the person who wrote it. */
+function needsChanges(): SafeActionDecision {
+  return {
+    state: "blocked",
+    explanation: "This version needs changes before anyone can approve it.",
+    requiredRole: APPROVER_OR_OWNER,
+    prerequisite: "A version where the checks find nothing to fix",
+    responsibleParty: CAMPAIGN_CREATOR_PARTY,
+    nextAction: "Fix what the checks found, then save it again.",
+  };
+}
+
 function resolveDecision(input: {
   canApprove: boolean;
   alreadyDecided?: "approved" | "rejected" | undefined;
@@ -242,9 +254,18 @@ function resolveDecision(input: {
       requiredRole: APPROVER_OR_OWNER,
       prerequisite: "A new version, after someone changes the campaign",
       responsibleParty: CAMPAIGN_CREATOR_PARTY,
-      nextAction: "Read the decision below. Nothing else happens from this page.",
+      // The section that says who decided is above this card on the campaign page.
+      nextAction: "Read who decided, above. Nothing else happens from this page.",
     };
   }
+  /*
+   * The checks come before the viewer's permission. A version whose checks need changes is not
+   * approvable by anyone, so `canApprove` is false for an approver as well as for a creator, and
+   * testing it first told an approver they lacked the permission they hold, and told everybody to
+   * send the page to an approver, who could do nothing with it. The reason is the checks, and the
+   * person who can act on it is whoever wrote the campaign.
+   */
+  if (input.blocking) return needsChanges();
   if (!input.canApprove) {
     return {
       state: "permission_restricted",
@@ -254,16 +275,7 @@ function resolveDecision(input: {
       nextAction: "Send them this page and ask them to look at this version.",
     };
   }
-  if (input.blocking || input.state !== "awaiting_approval") {
-    return {
-      state: "blocked",
-      explanation: "This version needs changes before anyone can approve it.",
-      requiredRole: APPROVER_OR_OWNER,
-      prerequisite: "A version where the checks find nothing to fix",
-      responsibleParty: CAMPAIGN_CREATOR_PARTY,
-      nextAction: "Fix what the checks found, then save it again.",
-    };
-  }
+  if (input.state !== "awaiting_approval") return needsChanges();
   return {
     state: "ready",
     explanation:

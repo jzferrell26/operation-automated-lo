@@ -153,6 +153,13 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
     sentBackLead:
       "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it.",
     tail: "It won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it.",
+    /**
+     * The same sentence without the promise of a launch, for a campaign that was sent back. "It needs
+     * a new version before anyone can approve it" followed by "this is where you'll launch it" reads
+     * as though the next thing that happens is a launch. 006C-AC-018 asks the last step to say that
+     * nothing runs as an ad and that HighLevel and Meta are not connected, and this still does.
+     */
+    tailWithoutLaunch: "It won't run as an ad yet: HighLevel and Meta aren't connected.",
     primaryLabel: "Done",
   }),
 });

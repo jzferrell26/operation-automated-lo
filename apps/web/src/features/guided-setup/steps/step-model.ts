@@ -197,7 +197,7 @@ export function whatHappensNextBody(standing: CampaignStanding): string {
     case "approved":
       return `${words.approvedLead} ${words.tail}`;
     case "sent_back":
-      return `${words.sentBackLead} ${words.tail}`;
+      return `${words.sentBackLead} ${words.tailWithoutLaunch}`;
   }
 }
 

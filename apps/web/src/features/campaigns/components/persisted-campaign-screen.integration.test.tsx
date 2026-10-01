@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -13,10 +13,13 @@ import {
   OPEN_HOUSE_DRAFT_INPUT,
 } from "../../../server/campaign-command-test-support.js";
 import { compileOpenHouseDraft } from "../../../server/open-house-draft.js";
+import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
 import {
   APPROVER,
   awaitingApprovalProjection,
+  approvedProjection,
   sentBackProjection,
+  needsChangesProjection,
 } from "./campaign-decision.test-support.js";
 import { PersistedCampaignScreen } from "./persisted-campaign-screen.js";
 
@@ -110,7 +113,7 @@ describe("persisted campaign approval screen", () => {
     expect(screen.queryByText(/An approver can sign off on it now/u)).toBeNull();
     expect(screen.queryByText("Approve this version.")).toBeNull();
     expect(screen.getAllByText("Approved").length).toBeGreaterThan(0);
-    expect(screen.getByRole("region", { name: "Who signed off" })).toHaveTextContent(
+    expect(screen.getByRole("region", { name: "Who decided" })).toHaveTextContent(
       "Approved by an approver",
     );
     // A decision was recorded, but it was not a send-back, so the send-back sentence stays out.
@@ -127,7 +130,7 @@ describe("persisted campaign approval screen", () => {
     expect(screen.getByText("Approve this version.")).toBeInTheDocument();
     // Nobody has decided, so nothing here may say a decision was made.
     expect(screen.queryByText(/sent back/iu)).toBeNull();
-    expect(screen.queryByRole("region", { name: "Who signed off" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Who decided" })).toBeNull();
   });
 
   /**
@@ -151,7 +154,7 @@ describe("persisted campaign approval screen", () => {
 
       // The header badge and the "Where it stands" card, as exact phrases on their own.
       expect(screen.getAllByText("Sent back for changes")).toHaveLength(2);
-      expect(screen.getByRole("region", { name: "Who signed off" })).toHaveTextContent(
+      expect(screen.getByRole("region", { name: "Who decided" })).toHaveTextContent(
         "Sent back for changes by an approver",
       );
     });
@@ -192,4 +195,63 @@ describe("persisted campaign approval screen", () => {
       ).toBeInTheDocument();
     });
   });
+
+  /**
+   * Finding H1 of the 2026-10-01 writing re-review. A version whose checks need changes is not
+   * approvable by anyone, so `canApprove` is false for an approver as well as for a creator. The
+   * approve control tested the viewer's permission before it tested the checks, so it told an
+   * approver "Only an approver or your workspace owner can approve a campaign" and told everyone to
+   * send the page to one. Both are false for the person reading them: the reason is the checks, and
+   * the person who can do something about it is whoever wrote the campaign.
+   */
+  describe("on a version whose checks need changes", () => {
+    const PERMISSION = "Only an approver or your workspace owner can approve a campaign.";
+    const SEND_IT_ON = "Send them this page and ask them to look at this version.";
+
+    it.each([
+      ["an approver", APPROVER],
+      ["a campaign creator", createLocalSyntheticPrincipal()],
+    ])("gives %s the checks as the reason, not their permission", async (_who, principal) => {
+      const { container } = render(
+        <PersistedCampaignScreen campaign={await needsChangesProjection(principal)} />,
+      );
+      const control = container.querySelector<HTMLElement>(
+        `[data-tour="${GUIDED_SETUP_ANCHORS.campaignApproveControl}"]`,
+      );
+      if (control === null) throw new Error("The approve control has no card around it.");
+
+      expect(screen.queryByText(PERMISSION)).toBeNull();
+      expect(screen.queryByText(SEND_IT_ON)).toBeNull();
+      expect(
+        within(control).getByText("This version needs changes before anyone can approve it."),
+      ).toBeInTheDocument();
+      expect(
+        within(control).getByText("Fix what the checks found, then save it again."),
+      ).toBeInTheDocument();
+      expect(within(control).getByRole("button", { name: "Approve this version" })).toBeDisabled();
+    });
+  });
+
+  /**
+   * Finding R3, with R1. The blocked control sends the reader to "the decision below", and the
+   * section that says who decided is above the control, not below it. That section was headed "Who
+   * signed off", which is not what a send-back is, so it is headed "Who decided" and the control
+   * points at it.
+   */
+  it.each([
+    ["approved", approvedProjection],
+    ["sent back", sentBackProjection],
+  ] as const)(
+    "points a version that was %s at the section above that says who decided",
+    async (_outcome, project) => {
+      render(<PersistedCampaignScreen campaign={await project()} />);
+
+      expect(
+        screen.getByText("Read who decided, above. Nothing else happens from this page."),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Read the decision below/u)).toBeNull();
+      expect(screen.getByRole("region", { name: "Who decided" })).toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: "Who signed off" })).toBeNull();
+    },
+  );
 });

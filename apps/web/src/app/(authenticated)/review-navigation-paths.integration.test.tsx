@@ -4,6 +4,7 @@ import {
   OALO_REVIEW_SURFACE_AUTHORIZED,
   loadAuthenticatedWorkspace,
 } from "../../server/authenticated-workspace-data.js";
+import SyntheticCampaignPage from "./marketing/campaigns/synthetic-open-house-001/page.js";
 
 /**
  * PRD-006b 006B-AC-012.
@@ -53,6 +54,22 @@ describe("paths a connected-account workspace can send a user to", () => {
     // The step stays: hiding it would hide the product. Only where it sends the user changes.
     expect(testLeadStep?.title).toBe("Send a test lead");
     expect(testLeadStep?.completionHref).toBe("/onboarding");
+  });
+
+  /**
+   * PRD-008b 008B-AC-008. Nothing links to the demo campaign address, and a person who types it in
+   * is not shown a not-connected screen for a campaign that was never theirs: it does not exist in
+   * a connected-account workspace. Rendering the page throws Next.js's not-found signal.
+   */
+  it("does not answer the demo campaign address at all", () => {
+    let thrown: unknown;
+    try {
+      SyntheticCampaignPage();
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toMatchObject({ digest: "NEXT_HTTP_ERROR_FALLBACK;404" });
   });
 
   it("leaves the local demo's own routes alone", () => {

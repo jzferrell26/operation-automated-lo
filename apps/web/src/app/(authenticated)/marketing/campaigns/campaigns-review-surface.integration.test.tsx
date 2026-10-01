@@ -134,6 +134,16 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
+/** What a page throws while it renders, or `undefined` when it renders without throwing. */
+function whatItThrows(renderPage: () => unknown): unknown {
+  try {
+    renderPage();
+  } catch (error) {
+    return error;
+  }
+  return undefined;
+}
+
 function sweepSurface(container: HTMLElement): readonly string[] {
   const surface = reviewSurfaceText(container);
   return [
@@ -158,31 +168,16 @@ describe("authenticated marketing campaign routes", () => {
     expect(staleAllowances(ui, uiAllowances)).toEqual([]);
   });
 
-  it("keeps every unallowed fixture string off the review synthetic campaign detail route", () => {
-    const { container } = render(<SyntheticCampaignPage />);
-
-    expect(sweepSurface(container)).toEqual([]);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "This campaign isn't connected yet",
-    );
-    expect(screen.getAllByText("Not connected yet").length).toBeGreaterThan(0);
-  });
-
-  it("names every campaign detail region as not connected instead of hiding the product", () => {
-    const { container } = render(<SyntheticCampaignPage />);
-    const values = [...container.querySelectorAll(".oalo-metric__value")].map(
-      (element) => element.textContent ?? "",
-    );
-
-    expect(values.length).toBe(7);
-    expect(values.every((value) => value === "Not connected")).toBe(true);
-    for (const region of [
-      "Your Meta connection",
-      "What the approval covers",
-      "The launch summary",
-    ]) {
-      expect(screen.getByRole("article", { name: region })).toBeInTheDocument();
-    }
+  /**
+   * PRD-008b 008B-AC-008. The demo campaign address answered in review mode with a not-connected
+   * screen, and nothing links to it. A signed-in person has no demo campaign, so the address now
+   * answers as a page that does not exist. Synthetic mode is untouched and is covered at the end of
+   * this file.
+   */
+  it("answers not found at the demo campaign address in review mode", () => {
+    expect(whatItThrows(() => SyntheticCampaignPage())).toMatchObject({
+      digest: "NEXT_HTTP_ERROR_FALLBACK;404",
+    });
   });
 
   it("keeps every unallowed fixture string off the review campaign create route", () => {

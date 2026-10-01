@@ -78,6 +78,11 @@ export const FORBIDDEN_TERMS: readonly string[] = Object.freeze([
   "compile",
   "mutation",
   "observation",
+  // How a connection or an address is built. PRD-008c: a loan officer connects HighLevel or a
+  // valuation service and opens a link, and never meets the part the engineers call an adapter
+  // or the part of a web address they call an origin.
+  "adapter",
+  "origin",
 ]);
 
 /**
@@ -106,6 +111,31 @@ export const FORBIDDEN_IDENTIFIER_PATTERNS: readonly Readonly<{
     name: "snake_case state or role token",
     pattern:
       /\b(?:location_admin|campaign_creator|campaign_approver|campaign_publisher|platform_support|realtor_collaborator|awaiting_approval|not_started|in_progress|permission_restricted|setup_required|not_connected|needs_confirmation|approved_for_profile_assistance|unavailable_data|restricted_viewer|authorized_agency|healthy_without_campaign|provider_degraded|setup_incomplete|new_workspace|safe_retry|route_error)\b/u,
+  },
+]);
+
+/**
+ * Sentences that hand somebody else's job to the reader.
+ *
+ * A word list cannot say that "Set the report website address before sharing." is the wrong
+ * sentence for a loan officer, because every word in it is plain. What is wrong is who it is
+ * addressed to: the address is a deployment setting that whoever runs the product sets, a loan
+ * officer has no control to set it with, and an instruction they cannot follow is not a next step
+ * (contract section 5, rule 3: always say what the user can do). The shape that gives it away is an
+ * imperative to set or configure a named piece of deployment configuration, so that shape is
+ * banned, and the honest replacement says what is true and sends the reader to support.
+ *
+ * Narrow on purpose. It names the verb and the nouns, so a sentence a loan officer can act on
+ * ("Set a budget for the campaign", "Set your company name") never matches.
+ */
+export const FORBIDDEN_PHRASE_PATTERNS: readonly Readonly<{
+  name: string;
+  pattern: RegExp;
+}>[] = Object.freeze([
+  {
+    name: "setup instruction for an administrator",
+    pattern:
+      /\b(?:set|configure)\s+(?:up\s+)?(?:the|this)\s+(?:[a-z-]+\s+){0,3}?(?:address|url|origin|key|secret|token|variable|environment|settings?)\b/iu,
   },
 ]);
 
@@ -192,7 +222,10 @@ export function forbiddenTermPattern(term: string): RegExp {
   return new RegExp(`(?<!\\w)(?:${branches.join("|")})(?!\\w)`, "iu");
 }
 
-export type VocabularyHit = Readonly<{ kind: "term" | "identifier" | "dash"; detail: string }>;
+export type VocabularyHit = Readonly<{
+  kind: "term" | "identifier" | "phrase" | "dash";
+  detail: string;
+}>;
 
 /** Every contract violation in one piece of user-facing text, in the order they are checked. */
 export function findVocabularyHits(text: string): readonly VocabularyHit[] {
@@ -207,6 +240,12 @@ export function findVocabularyHits(text: string): readonly VocabularyHit[] {
     const match = pattern.exec(text);
     if (match) {
       hits.push({ kind: "identifier", detail: `${name}: ${match[0]}` });
+    }
+  }
+  for (const { name, pattern } of FORBIDDEN_PHRASE_PATTERNS) {
+    const match = pattern.exec(text);
+    if (match) {
+      hits.push({ kind: "phrase", detail: `${name}: ${match[0]}` });
     }
   }
   for (const { name, character } of FORBIDDEN_DASHES) {

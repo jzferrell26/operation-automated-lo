@@ -14,6 +14,7 @@
 
 import {
   FORBIDDEN_IDENTIFIER_PATTERNS,
+  FORBIDDEN_PHRASE_PATTERNS,
   FORBIDDEN_TERMS,
   forbiddenTermPattern,
 } from "../../copy/forbidden-vocabulary.js";
@@ -122,6 +123,11 @@ export function userLanguageForbiddenStrings(): readonly ForbiddenReviewString[]
     ...FORBIDDEN_IDENTIFIER_PATTERNS.map(({ name, pattern }) => ({
       value: pattern.source,
       paths: [`user-language-contract:identifier:${name}`],
+      match: "pattern" as const,
+    })),
+    ...FORBIDDEN_PHRASE_PATTERNS.map(({ name, pattern }) => ({
+      value: pattern.source,
+      paths: [`user-language-contract:phrase:${name}`],
       match: "pattern" as const,
     })),
   ];

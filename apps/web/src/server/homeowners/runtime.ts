@@ -76,7 +76,16 @@ export async function homeRuntime(
       403,
       "Your role cannot perform this report action. Ask your workspace owner.",
     );
-  const config = HomeEnvironmentSchema.parse(environment);
+  // A setting that cannot be read is the operator's fault to fix, not the caller's. A raw validation
+  // error here would tell a loan officer to "check the required report fields" and name the setting.
+  const parsedConfig = HomeEnvironmentSchema.safeParse(environment);
+  if (!parsedConfig.success)
+    throw new HomeownerError(
+      "REPORTS_UNAVAILABLE",
+      503,
+      "Homeowner reports are unavailable right now. Your existing data has not been replaced.",
+    );
+  const config = parsedConfig.data;
   if (config.OALO_HOMEOWNER_REPORTS !== "enabled")
     throw new HomeownerError(
       "REPORTS_NOT_CONFIGURED",

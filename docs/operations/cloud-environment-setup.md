@@ -160,6 +160,7 @@ curl.exe -sD - "https://<preview-host>/demo"
 Pass criteria for this phase:
 
 - `/api/health/live` returns HTTP 200 and `productionTrafficEnabled: false`
+- `/api/version` returns HTTP 200 with exactly three fields, `environment` (`"preview"`), `buildId`, and `commit` (the deployed 40-character SHA), and nothing else. It answers every caller the same way, so it carries no contract version, phase, or release manifest versions (PRD-008a D4). A handled 503 `{"status":"unavailable","code":"CONFIGURATION_INVALID"}` means the environment contract is not satisfied yet.
 - `/overview` and `/demo` render the synthetic UI (not a bare framework 404)
 - No live provider credentials were required
 

@@ -89,11 +89,24 @@ export default async function EmailPreviewPage() {
             focus ring inside it belongs to the framed document, which is the email itself and is
             not this product's to style; the keyboard check in
             `tests/browser/helpers/design-quality.ts` says so and says why.
+
+            PRD-008a 008A-AC-021, the sandbox. The most restrictive value, `sandbox=""`, fails
+            axe's `frame-tested` rule: axe can only check a frame by running inside it, so with
+            scripts disabled the rule cannot pass and every check of the email document itself
+            (its language, its title, its link's name, its contrast) silently stops running. That
+            was measured with @axe-core/playwright on 2026-09-30: under `sandbox=""` a planted
+            contrast failure inside the frame went unreported; under `allow-scripts` it was caught.
+            So the frame gets `allow-scripts` and nothing else, the most restrictive value under
+            which the suite's axe run still means something. It must never be combined with
+            `allow-same-origin`: together they let framed content remove its own sandbox. Alone,
+            the email still runs in an opaque origin with no access to this page, its cookies, or
+            its storage, and with no forms, popups, or navigation of this page.
           */}
           <div className={styles.viewport}>
             <iframe
               className={styles.frame}
               data-email-preview={email.id}
+              sandbox="allow-scripts"
               srcDoc={email.message.html}
               title={`${email.message.subject}, as a mail client renders it`}
             />

@@ -166,10 +166,11 @@ async function captureStep(page: Page, state: string): Promise<void> {
   await page.setViewportSize({ width: 1440, height: 900 });
 }
 
-test("the guided setup's steps 3 through 7 meet the bar on the approver's path", async ({
+test("the guided setup's steps 3 through 7, and step 5's refusal, meet the bar on the approver's path", async ({
   page,
 }) => {
-  // One journey of seven steps with deliberate typing, forty screenshots, and two themes.
+  // One journey of seven steps with deliberate typing, forty screenshots, and two themes, then a
+  // second walk to step 5 for eight more.
   /**
    * Wave 7m. A budget, not a place to hang.
    *
@@ -179,8 +180,12 @@ test("the guided setup's steps 3 through 7 meet the bar on the approver's path",
    * here is now the measured duration with room on top. Measured on 2026-09-20 against the
    * review composition with the processor throttled 4x, which is slower than the `ubuntu-24.04`
    * runner's own numbers for the same tests: 132 s here, 90 s on the runner.
+   *
+   * PRD-008d added the second walk. Measured on 2026-10-01 in the review composition on a Windows
+   * workstation: the first journey alone took 66 s and the second walk about 25 s, so the budget
+   * grows by the same proportion.
    */
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   const guard = await guardLocalOrigin(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await signUpFreshAccount(page, freshEmail());
@@ -238,6 +243,40 @@ test("the guided setup's steps 3 through 7 meet the bar on the approver's path",
   await page.getByRole("button", { name: "Done" }).click();
   await expect(panel(page)).toBeHidden();
 
+  /**
+   * PRD-008d 008D-AC-007, S-3: step 5's needs-changes answer, the sign-off's "Guided setup step 5,
+   * read the result, needs changes" row.
+   *
+   * The journey above saves a campaign the checks accept, because that is the journey PRD-006c
+   * D3's budget is written against, so it photographs step 5's ready answer only. The other answer
+   * needs a draft the checks refuse, and the refusal is the product's own: an open house that
+   * finished years ago is the blocking finding `OPEN_HOUSE_DATES_INVALID`
+   * (`tests/browser/helpers/open-house-draft.ts`), the one rule this draft fails. Everything else in
+   * it is the draft the ready picture saved.
+   *
+   * It is the same person, walked again from step 1 with the control a person uses to start over,
+   * and saved from inside the walkthrough. That is deliberate twice over. The two step-5 pictures
+   * then differ by the answer and not by the workspace or the page behind it. And it costs the run
+   * no sign-in: a separate case for it signed the seeded creator in once more, and on 2026-10-01
+   * that was the twenty-first sign-in from this address inside fifteen minutes
+   * (`AUTH_RATE_LIMITS.sign_in_ip`), so the last spec in the run was refused "Too many attempts".
+   *
+   * The answer is asserted in words before anything is photographed, because the picture is only
+   * compared on the runner that drew it: the needs-changes sentence, the finding's own description,
+   * and no ready sentence anywhere in the panel.
+   */
+  await restartGuidedSetup(page);
+  await walkToTheCreateStep(page);
+  await fillTheOpenHouseDraft(page, FINISHED_OPEN_HOUSE);
+  await runTheChecksFromTheWalkthrough(page);
+
+  const refusedResult = page.getByRole("dialog", { name: "Read the result" });
+  await expect(refusedResult).toContainText("the checks found things to fix first");
+  await expect(refusedResult).toContainText("The open-house dates are expired or out of order.");
+  await expect(refusedResult).not.toContainText("ready for approval");
+  await captureStep(page, "step-5-read-the-result-needs-changes");
+
+  await putTheWalkthroughAside(page);
   expectNoExternalRequests(guard);
 });
 
@@ -269,53 +308,6 @@ test("the guided setup's step 6 meets the bar on the hand-off path", async ({ pa
   const handOffStep = page.getByRole("dialog", { name: "Approve, or hand it to an approver" });
   await expect(handOffStep).toContainText("Only an approver or your workspace owner can approve.");
   await captureStep(page, "step-6-hand-off");
-
-  await putTheWalkthroughAside(page);
-  expectNoExternalRequests(guard);
-});
-
-/**
- * PRD-008d 008D-AC-007, S-3: step 5's needs-changes answer, the sign-off's "Guided setup step 5,
- * read the result, needs changes" row.
- *
- * The approver's path above saves a campaign the checks accept, because that is the journey
- * PRD-006c D3's budget is written against, so it photographs step 5's ready answer only. The other
- * answer needs a draft the checks refuse, and the refusal is the product's own: an open house that
- * finished years ago is the blocking finding `OPEN_HOUSE_DATES_INVALID`
- * (`tests/browser/helpers/open-house-draft.ts`), the one rule this draft fails. Everything else in
- * it is the draft the ready picture saved, so the two pictures differ by the answer and not by the
- * page behind it.
- *
- * It is the seeded creator, walked from step 1 with the controls a person uses and saved from
- * inside the walkthrough, so no sign-up is spent and nothing writes progress into the database. It
- * runs after the hand-off case, which leaves the same person's walkthrough put aside, and before
- * `review-campaign-decision.spec.ts`, which restarts and dismisses it again before it does anything.
- *
- * The answer is asserted in words before anything is photographed, because the picture is only
- * compared on the runner that drew it: the needs-changes sentence, the finding's own description,
- * and no ready sentence anywhere in the panel.
- */
-test("the guided setup's step 5 meets the bar when the checks refuse the campaign", async ({
-  page,
-}) => {
-  // The hand-off case's journey and one picture group. Measured on 2026-10-01 in the review
-  // composition on a Windows workstation: 27 s. The budget is the hand-off case's.
-  test.setTimeout(240_000);
-  const guard = await guardLocalOrigin(page);
-  const { creatorEmail, password } = seededCredentials();
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await signInExisting(page, creatorEmail, password);
-
-  await restartGuidedSetup(page);
-  await walkToTheCreateStep(page);
-  await fillTheOpenHouseDraft(page, FINISHED_OPEN_HOUSE);
-  await runTheChecksFromTheWalkthrough(page);
-
-  const resultStep = page.getByRole("dialog", { name: "Read the result" });
-  await expect(resultStep).toContainText("the checks found things to fix first");
-  await expect(resultStep).toContainText("The open-house dates are expired or out of order.");
-  await expect(resultStep).not.toContainText("ready for approval");
-  await captureStep(page, "step-5-read-the-result-needs-changes");
 
   await putTheWalkthroughAside(page);
   expectNoExternalRequests(guard);

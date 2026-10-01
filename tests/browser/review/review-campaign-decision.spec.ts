@@ -199,3 +199,62 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
   expectNoExternalRequests(guard);
   await approverContext.close();
 });
+
+/**
+ * PRD-008b 008B-AC-007 and 008B-AC-008, in the project that can reach them.
+ *
+ * Both are about what a signed-in person is shown, so they are checked as one, signed in as the
+ * seeded creator, who can edit branding. `/brand` has to be the person's own saved branding editor
+ * whether or not the homeowner reports flag is set on the server under test, so the assertions
+ * read the same in either state and the run does not need to know which one it is in. The demo
+ * campaign address has no page in a signed-in workspace.
+ *
+ * It sits in this file for the reason the file gives: it signs the seeded creator in once more, and
+ * running last means nothing PRD-006c owns starts after it.
+ */
+test("the brand page is the person's own saved branding, and the demo campaign address does not exist", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const { creatorEmail, password } = seededCredentials();
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const guard = await guardLocalOrigin(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await signInExisting(page, creatorEmail, password);
+  await restartGuidedSetup(page);
+  await putTheWalkthroughAside(page);
+
+  await page.goto("/brand", { waitUntil: "networkidle" });
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1, name: "Report branding" })).toBeVisible();
+  await expect(main.getByLabel("Company name", { exact: true })).toBeVisible();
+  // What the workspace's demo brand carries, which a signed-in person must never read as their own.
+  await expect(main).not.toContainText("Alex Morgan");
+  await expect(main).not.toContainText("Prairie Home Lending");
+
+  // A save persists for the same person, and survives a reload.
+  const tagline = "Saved from the brand page.";
+  await main.getByLabel("Brand tagline", { exact: true }).fill(tagline);
+  const response = page.waitForResponse(
+    (result) =>
+      result.url().endsWith("/api/workspace/preferences") && result.request().method() === "POST",
+  );
+  await main.getByRole("button", { name: "Save report branding", exact: true }).click();
+  expect((await response).status()).toBe(200);
+  await expect(page.getByText("Your changes are saved.", { exact: true })).toBeVisible();
+  await page.reload({ waitUntil: "networkidle" });
+  await expect(page.getByRole("main").getByLabel("Brand tagline", { exact: true })).toHaveValue(
+    tagline,
+  );
+
+  // The demo campaign address is not a page here. Next.js may already have streamed a parent
+  // loading boundary with a 200, so the document is checked rather than only the status.
+  const demo = await page.goto("/marketing/campaigns/synthetic-open-house-001");
+  expect([200, 404]).toContain(demo?.status());
+  await expect(page.getByRole("heading", { name: "404", exact: true })).toBeVisible();
+  await expect(page.getByText("This campaign isn't connected yet")).toHaveCount(0);
+
+  expectNoExternalRequests(guard);
+  await context.close();
+});

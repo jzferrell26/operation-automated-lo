@@ -1,7 +1,7 @@
 # PRD-005e: Authenticated Review Runtime - Deployed Qualification of the Review URL
 
 > **Parent:** [PRD-005](./prd-005-authenticated-review-runtime-index.md)
-> **Status:** Draft
+> **Status:** In work. The agent-executable half is Done (PR #67, `58d77fd`, merged 2026-09-22): `005E-AC-001` to `003` and `013` to `015` (`CRR-073` to `CRR-075`, `CRR-085` to `CRR-087`). Blocked on the operator: `005E-AC-004` to `012` and `016` (`CRR-076` to `CRR-084`, `CRR-088`), and with them the index row `ARR-006` (`CRR-006`). The ask is restated under "Exact operator ask" below.
 > **Priority:** P1 for release acceptance (completion review finding C4), separate from C1's code work
 > **Schema changes:** None
 > **Owner Guardians:** `release-deploy-guardian` (preview deploy, env wiring verification, smoke), `devops-guardian` (Vercel project inspection, `/api/version` hardening), `security-guardian` and `quality-guardian` (close-out on the deployed SHA)
@@ -99,8 +99,8 @@ Prove, on one recorded deployment SHA of the existing Vercel project backed by a
 
 ## Open questions
 
-- [ ] Preview URL versus the production alias of the same project for the review deployment (the OAuth callback in PRD-004b depends on this). Either is "no second project".
-- [ ] Whether the optional HTTP proof script is worth writing, or whether curl transcripts pasted into the outside-git log are enough. Recommendation: curl, unless the proof must be repeated more than twice.
+- [ ] Preview URL versus the production alias of the same project for the review deployment (the OAuth callback in PRD-004b depends on this). Either is "no second project". **Still open (2026-10-01):** needs the owner. Same question as the PRD-005 index; see the operator checklist's D-1 and D-2.
+- [ ] Whether the optional HTTP proof script is worth writing, or whether curl transcripts pasted into the outside-git log are enough. Recommendation: curl, unless the proof must be repeated more than twice. **Still open (2026-10-01):** decided when the seven-point proof runs, which is blocked on the operator (`CRR-076` to `CRR-084`). No proof script exists, and this is not an owner decision.
 
 ## Exact operator ask
 

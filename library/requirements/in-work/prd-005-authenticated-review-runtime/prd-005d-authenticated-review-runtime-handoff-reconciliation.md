@@ -1,7 +1,7 @@
 # PRD-005d: Authenticated Review Runtime - Handoff Documentation Reconciliation
 
 > **Parent:** [PRD-005](./prd-005-authenticated-review-runtime-index.md)
-> **Status:** Draft
+> **Status:** Done (PR #67, `58d77fd`, merged 2026-09-22). All 13 criteria are DONE in `EXECUTION_LEDGER.md` (`CRR-060` to `CRR-072`). The 2026-09-21 [quality audit](./qa/2026-09-19-prd-005-qa-report.md) passes 12 and marks `005D-AC-012` (`CRR-071`) partial for four em dashes in ledger prose, which the close-out replaced. No operator-blocked row.
 > **Priority:** P2 (completion review finding C3, execution and acceptance accuracy)
 > **Schema changes:** None
 > **Owner Guardians:** `library-guardian` (every document below), `technical-writing-craft-guardian` (writing review of the runbook and map diffs)
@@ -122,7 +122,7 @@ Not changed: `PRODUCTION_EXECUTION_LEDGER.md`, `EXECUTION_LEDGER.md` criterion r
 
 ## Open questions
 
-- [ ] Whether to record the PRD-005 batch in `EXECUTION_LEDGER.md` as a new raid section (the orchestrator's decision at raid start) or only in the raid log. Either is fine for this sub-PRD; the criterion is that GGL rows do not change.
+- [x] Whether to record the PRD-005 batch in `EXECUTION_LEDGER.md` as a new raid section (the orchestrator's decision at raid start) or only in the raid log. Either is fine for this sub-PRD; the criterion is that GGL rows do not change. **Answered (2026-10-01):** as a new raid section. `EXECUTION_LEDGER.md` carries "Gauntlet raid: completion review C1 through C4 (PRD-005)", with rows `CRR-001` to `CRR-088`.
 
 ## Exact operator ask
 

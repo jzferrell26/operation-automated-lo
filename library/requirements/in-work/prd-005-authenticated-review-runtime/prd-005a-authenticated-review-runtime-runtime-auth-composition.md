@@ -1,7 +1,7 @@
 # PRD-005a: Authenticated Review Runtime - Runtime Authentication Composition
 
 > **Parent:** [PRD-005](./prd-005-authenticated-review-runtime-index.md)
-> **Status:** Draft
+> **Status:** Done (PR #67, `58d77fd`, merged 2026-09-22). All 18 criteria are DONE in `EXECUTION_LEDGER.md` (`CRR-009` to `CRR-026`) and pass the 2026-09-21 [quality audit](./qa/2026-09-19-prd-005-qa-report.md). No operator-blocked row.
 > **Priority:** P1 (completion review finding C1, functional release blocker)
 > **Schema changes:** None in this sub-PRD (consumes the functions 005b adds)
 > **Owner Guardians:** `auth-guardian` (composition and session ports), `typescript-node-guardian` (server modules and route wiring), `react-guardian` (layout, pages, browser helper), `db-guardian` (identity and role queries through the 005b functions)
@@ -176,8 +176,8 @@ Verified paths and line ranges at `c140f11`; new files are marked.
 
 ## Open questions
 
-- [ ] Should the unauthenticated read branch redirect to `/review/sign-in` or render an inline "not signed in" screen? Redirect is the recommendation because it keeps the fixture shell out of the review path entirely; either satisfies 005A-AC-010.
-- [ ] Whether `/api/health/ready` should carry a `session-runtime` check (listed as a should in the test plan).
+- [x] Should the unauthenticated read branch redirect to `/review/sign-in` or render an inline "not signed in" screen? Redirect is the recommendation because it keeps the fixture shell out of the review path entirely; either satisfies 005A-AC-010. **Answered (2026-10-01):** redirect. The overview and both campaign pages redirect an unauthenticated read to the sign-in page (`redirect(SIGN_IN_PATH)` at `apps/web/src/app/(authenticated)/overview/page.tsx:36`, `marketing/campaigns/page.tsx:20`, and `marketing/campaigns/[campaignRef]/page.tsx:34`). PRD-006a D9 moved the path from `/review/sign-in` to `/sign-in`.
+- [ ] Whether `/api/health/ready` should carry a `session-runtime` check (listed as a should in the test plan). **Still open (2026-10-01):** same as the PRD-005 index question: not implemented, an engineering choice.
 
 ## Exact operator ask
 

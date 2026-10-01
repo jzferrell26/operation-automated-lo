@@ -238,6 +238,14 @@ proposed section 5 entries are written here for their owner to record.
 | D-009 | Page paragraphs that no module sizes render at the browser's 16px default, not brief section 10's 13px body step. `globals.css` sets no root size, and module rules such as `.header p` and `.review p` (`open-house-draft-builder.module.css:15-21`) set colour and leading only. | A 12px cap height on the campaigns list's lead sentence at 1440, which is 16px in the runner's sans face, while the page title measures the specified 23px. The same holds on campaign detail, the overview, change password, and the account screens. | `design-system-guardian` | Decide how the body step is applied (on the shell's content and the account layout, or per module) and redraw every screen once. |
 | D-010 | The bootstrap `section { max-width: 44rem }` (`apps/web/src/app/globals.css:60`) caps every `section` in the shell, so the overview's metric grids put four cards in 704px at 1440 and 1180. The word value "Unavailable" in the synthetic overview's "More numbers" runs into its card's end padding. | The value's last glyph ends 2px inside the card's border at 1440 (`overview--default--1440--light.png`). | `design-system-guardian` | Remove or scope the bootstrap rule for the shell's content (the dashboard preview already overrides it), size the metric grids to the column, and redraw the shell screens once. |
 
+**Ruled 2026-10-01 by `design-system-guardian`: both fix now.** Both are recorded in section 5 of
+`library/knowledge/private/ux-ui/06-review-rubric.md` (rows D-009 and D-010, and "The rulings of
+2026-10-01"), with the measurements corrected, the exact change, the pictures each moves, and the
+gates. Neither is accepted or deferred, so neither closes by its entry: until the fix and its single
+redraw land, the pictures each reaches are below 3 on the axes the ruling names (D-009 axes 1 and 3;
+D-010 axes 2, 7, and 10 at 1440 and 1180), and 008D-AC-006 closes on them only through the review of
+the redrawn set.
+
 Two observations that are not deltas against the brief or a specification, for the screens'
 owners: the decided campaign page says "won't run as an ad yet" in four places (PRD-008b's copy,
 which the 008c writing review read); and the walkthrough panel puts the progress track before a
@@ -251,9 +259,10 @@ Baseline change: PRD-008d single redraw of every screen baseline (screen-baselin
 
 ## Per-picture table
 
-Every picture whose pixels differ from its committed baseline, and every new picture, on the
-installed set (run 36828316006). "3 on every axis" is the rubric's top score on all ten axes at that
-frame and theme. The eight removed `campaigns--default` pictures are counted above and not listed.
+Every picture whose pixels differ from its committed baseline, every new picture, and every removed
+picture, on the installed set (run 36828316006). "3 on every axis" is the rubric's top score on all
+ten axes at that frame and theme. The eight removed `campaigns--default` pictures are listed by name
+with their cause, R-5; a removed picture is not installed, so it carries no score.
 
 | Picture | Change against the committed baseline | Cause | Score | Verdict |
 | --- | --- | --- | --- | --- |
@@ -298,6 +307,14 @@ frame and theme. The eight removed `campaigns--default` pictures are counted abo
 | `chromium/campaign-detail--permission-restricted--390--light.png` | changed, 1702 px (0.163%) | Dependency group: notice title colour by stylesheet order (R-6, pinned blue) | 3 on every axis | pass |
 | `chromium/campaign-detail--permission-restricted--768--dark.png` | changed, 1688 px (0.087%) | Dependency group: notice title colour by stylesheet order (R-6, pinned blue) | 3 on every axis | pass |
 | `chromium/campaign-detail--permission-restricted--768--light.png` | changed, 1702 px (0.088%) | Dependency group: notice title colour by stylesheet order (R-6, pinned blue) | 3 on every axis | pass |
+| `chromium/campaigns--default--1180--dark.png` | removed (`2cadc3e`) | R-5: the matrix takes no default picture of the campaigns list; `campaigns--empty` and `campaigns--populated` replace it | not installed | removed |
+| `chromium/campaigns--default--1180--light.png` | removed (`2cadc3e`) | R-5: the matrix takes no default picture of the campaigns list; `campaigns--empty` and `campaigns--populated` replace it | not installed | removed |
+| `chromium/campaigns--default--1440--dark.png` | removed (`2cadc3e`) | R-5: the matrix takes no default picture of the campaigns list; `campaigns--empty` and `campaigns--populated` replace it | not installed | removed |
+| `chromium/campaigns--default--1440--light.png` | removed (`2cadc3e`) | R-5: the matrix takes no default picture of the campaigns list; `campaigns--empty` and `campaigns--populated` replace it | not installed | removed |
+| `chromium/campaigns--default--390--dark.png` | removed (`2cadc3e`) | R-5: the matrix takes no default picture of the campaigns list; `campaigns--empty` and `campaigns--populated` replace it | not installed | removed |
+| `chromium/campaigns--default--390--light.png` | removed (`2cadc3e`) | R-5: the matrix takes no default picture of the campaigns list; `campaigns--empty` and `campaigns--populated` replace it | not installed | removed |
+| `chromium/campaigns--default--768--dark.png` | removed (`2cadc3e`) | R-5: the matrix takes no default picture of the campaigns list; `campaigns--empty` and `campaigns--populated` replace it | not installed | removed |
+| `chromium/campaigns--default--768--light.png` | removed (`2cadc3e`) | R-5: the matrix takes no default picture of the campaigns list; `campaigns--empty` and `campaigns--populated` replace it | not installed | removed |
 | `chromium/campaigns--empty--1180--dark.png` | new | S-2 (L6a), drawn after R-7, R-8, R-13 | 3 on every axis | pass |
 | `chromium/campaigns--empty--1180--light.png` | new | S-2 (L6a), drawn after R-7, R-8, R-13 | 3 on every axis | pass |
 | `chromium/campaigns--empty--1440--dark.png` | new | S-2 (L6a), drawn after R-7, R-8, R-13 | 3 on every axis | pass |

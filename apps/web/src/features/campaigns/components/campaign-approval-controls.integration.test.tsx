@@ -51,10 +51,44 @@ const APPROVABLE = {
   state: "awaiting_approval",
 } as const;
 
+const APPROVE_LABEL = "Approve this version";
+const SEND_BACK_LABEL = "Send back for changes";
+
 async function approve(): Promise<void> {
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "Approve this version" }));
+  await user.click(screen.getByRole("button", { name: APPROVE_LABEL }));
   await user.click(await screen.findByRole("button", { name: "Yes, approve" }));
+}
+
+async function sendBack(): Promise<void> {
+  await userEvent.setup().click(screen.getByRole("button", { name: SEND_BACK_LABEL }));
+}
+
+/** A route that answers 200 to a decision, with the reference header every answer carries. */
+function stubDecisionFetch(body: { decision: "approved" | "rejected"; duplicate: boolean }): void {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            [SUPPORT_REFERENCE_HEADER]: SUPPORT_REFERENCE,
+          },
+        }),
+    ),
+  );
+}
+
+/**
+ * PRD-008b 008B-AC-005. A decision that did not land changes nothing about what the person can do:
+ * both controls are still there and still usable, and the page was not asked to refresh.
+ */
+function expectDecisionStillOffered(): void {
+  expect(screen.getByRole("button", { name: APPROVE_LABEL })).toBeEnabled();
+  expect(screen.getByRole("button", { name: SEND_BACK_LABEL })).toBeEnabled();
+  expect(mocked.refresh).not.toHaveBeenCalled();
 }
 
 describe("the approval control when the route refuses", () => {
@@ -77,6 +111,7 @@ describe("the approval control when the route refuses", () => {
     expect(screen.getByText(SUPPORT_REFERENCE)).toBeInTheDocument();
     // D8: the reference is inside the collapsed region and nowhere else on the screen.
     expect(screen.getByText(SUPPORT_REFERENCE).closest("[data-support-details]")).not.toBeNull();
+    expectDecisionStillOffered();
   });
 
   it("shows the mapped sentence and no reference for a code it knows", async () => {
@@ -92,6 +127,7 @@ describe("the approval control when the route refuses", () => {
     });
     expect(screen.queryByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeNull();
     expect(screen.queryByText(SUPPORT_REFERENCE)).toBeNull();
+    expectDecisionStillOffered();
   });
 
   it("still shows the row, and says so, when the refusal carried no reference", async () => {
@@ -102,6 +138,7 @@ describe("the approval control when the route refuses", () => {
 
     expect(await screen.findByText(SUPPORT_REFERENCE_NOT_RECORDED)).toBeInTheDocument();
     expect(screen.getByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeInTheDocument();
+    expectDecisionStillOffered();
   });
 
   it("says the same thing when nothing answered at all", async () => {
@@ -114,22 +151,23 @@ describe("the approval control when the route refuses", () => {
       expect(screen.getByRole("status")).toHaveTextContent(userMessageSentence(undefined));
     });
     expect(screen.getByText(SUPPORT_REFERENCE_NOT_RECORDED)).toBeInTheDocument();
+    expectDecisionStillOffered();
+  });
+
+  it("keeps both controls, and does not refresh, when a send-back is refused", async () => {
+    stubRefusedFetch("CAMPAIGN_APPROVAL_CONFLICT", SUPPORT_REFERENCE, 409);
+    render(<CampaignApprovalControls {...APPROVABLE} />);
+
+    await sendBack();
+
+    expect(
+      await screen.findByText(userMessageSentence("CAMPAIGN_APPROVAL_CONFLICT")),
+    ).toBeVisible();
+    expectDecisionStillOffered();
   });
 
   it("leaves no support region behind on a decision that landed", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ decision: "approved", duplicate: false }), {
-            status: 200,
-            headers: {
-              "content-type": "application/json",
-              [SUPPORT_REFERENCE_HEADER]: SUPPORT_REFERENCE,
-            },
-          }),
-      ),
-    );
+    stubDecisionFetch({ decision: "approved", duplicate: false });
     render(<CampaignApprovalControls {...APPROVABLE} />);
 
     await approve();
@@ -144,37 +182,14 @@ describe("the approval control when the route refuses", () => {
 });
 
 /**
- * PRD-008b 008B-AC-004 and 008B-AC-005.
+ * PRD-008b 008B-AC-004.
  *
  * The card used to keep offering the decision it had just recorded until the page was reloaded, and
  * the regions around it kept saying "Ready for approval". A decision that landed now replaces both
  * controls with what was recorded and refreshes the page so the persisted state is what the rest of
- * the screen reads. A decision that did not land changes nothing about what the person can do.
+ * the screen reads. The cases where a decision did not land are the refusal tests above, which each
+ * end by checking that both controls are still offered (008B-AC-005).
  */
-
-const APPROVE_LABEL = "Approve this version";
-const SEND_BACK_LABEL = "Send back for changes";
-
-function stubDecisionFetch(body: { decision: "approved" | "rejected"; duplicate: boolean }): void {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(
-      async () =>
-        new Response(JSON.stringify(body), {
-          status: 200,
-          headers: {
-            "content-type": "application/json",
-            [SUPPORT_REFERENCE_HEADER]: SUPPORT_REFERENCE,
-          },
-        }),
-    ),
-  );
-}
-
-async function sendBack(): Promise<void> {
-  await userEvent.setup().click(screen.getByRole("button", { name: SEND_BACK_LABEL }));
-}
-
 describe("the approval control once a decision has been recorded", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -183,57 +198,41 @@ describe("the approval control once a decision has been recorded", () => {
   it("offers both controls before anyone has decided", () => {
     render(<CampaignApprovalControls {...APPROVABLE} />);
 
-    expect(screen.getByRole("button", { name: APPROVE_LABEL })).toBeEnabled();
-    expect(screen.getByRole("button", { name: SEND_BACK_LABEL })).toBeEnabled();
-    expect(mocked.refresh).not.toHaveBeenCalled();
+    expectDecisionStillOffered();
   });
 
   it.each([
     [
       "an approval",
+      approve,
       { decision: "approved", duplicate: false } as const,
       "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.",
     ],
     [
       "a duplicate approval",
+      approve,
       { decision: "approved", duplicate: true } as const,
       "Already approved.",
     ],
-  ])(
-    "replaces both controls with the outcome and refreshes after %s",
-    async (_label, body, sentence) => {
-      stubDecisionFetch(body);
-      render(<CampaignApprovalControls {...APPROVABLE} />);
-
-      await approve();
-
-      await waitFor(() => {
-        expect(screen.getByRole("status")).toHaveTextContent(sentence);
-      });
-      expect(screen.queryByRole("button", { name: APPROVE_LABEL })).toBeNull();
-      expect(screen.queryByRole("button", { name: SEND_BACK_LABEL })).toBeNull();
-      expect(mocked.refresh).toHaveBeenCalledTimes(1);
-    },
-  );
-
-  it.each([
     [
       "a send-back",
+      sendBack,
       { decision: "rejected", duplicate: false } as const,
       "Sent back for changes. The campaign creator can fix it and save a new version.",
     ],
     [
       "a duplicate send-back",
+      sendBack,
       { decision: "rejected", duplicate: true } as const,
       "Already sent back for changes.",
     ],
   ])(
     "replaces both controls with the outcome and refreshes after %s",
-    async (_label, body, sentence) => {
+    async (_label, decide, body, sentence) => {
       stubDecisionFetch(body);
       render(<CampaignApprovalControls {...APPROVABLE} />);
 
-      await sendBack();
+      await decide();
 
       await waitFor(() => {
         expect(screen.getByRole("status")).toHaveTextContent(sentence);
@@ -272,59 +271,5 @@ describe("the approval control once a decision has been recorded", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Approved.");
     expect(screen.queryByRole("button", { name: APPROVE_LABEL })).toBeNull();
     expect(screen.queryByRole("button", { name: SEND_BACK_LABEL })).toBeNull();
-  });
-});
-
-describe("the approval control when a decision did not land", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("keeps both controls, says why, and does not refresh, when the route refuses", async () => {
-    stubRefusedFetch("CAMPAIGN_ELEVENTH_HOUR_SURPRISE", SUPPORT_REFERENCE, 409);
-    render(<CampaignApprovalControls {...APPROVABLE} />);
-
-    await approve();
-
-    await waitFor(() => {
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "Something went wrong on our side. Try again, and contact support if it keeps happening.",
-      );
-    });
-    expect(screen.getByRole("button", { name: APPROVE_LABEL })).toBeEnabled();
-    expect(screen.getByRole("button", { name: SEND_BACK_LABEL })).toBeEnabled();
-    expect(screen.getByText(SUPPORT_REFERENCE)).toBeInTheDocument();
-    expect(mocked.refresh).not.toHaveBeenCalled();
-  });
-
-  it("keeps both controls, says why, and does not refresh, when a send-back is refused", async () => {
-    stubRefusedFetch("CAMPAIGN_APPROVAL_CONFLICT", SUPPORT_REFERENCE, 409);
-    render(<CampaignApprovalControls {...APPROVABLE} />);
-
-    await sendBack();
-
-    await waitFor(() => {
-      expect(screen.getByRole("status")).toHaveTextContent(
-        userMessageSentence("CAMPAIGN_APPROVAL_CONFLICT"),
-      );
-    });
-    expect(screen.getByRole("button", { name: APPROVE_LABEL })).toBeEnabled();
-    expect(screen.getByRole("button", { name: SEND_BACK_LABEL })).toBeEnabled();
-    expect(mocked.refresh).not.toHaveBeenCalled();
-  });
-
-  it("keeps both controls, says so, and does not refresh, when nothing answered", async () => {
-    stubUnreachedFetch();
-    render(<CampaignApprovalControls {...APPROVABLE} />);
-
-    await approve();
-
-    await waitFor(() => {
-      expect(screen.getByRole("status")).toHaveTextContent(userMessageSentence(undefined));
-    });
-    expect(screen.getByText(SUPPORT_REFERENCE_NOT_RECORDED)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: APPROVE_LABEL })).toBeEnabled();
-    expect(screen.getByRole("button", { name: SEND_BACK_LABEL })).toBeEnabled();
-    expect(mocked.refresh).not.toHaveBeenCalled();
   });
 });

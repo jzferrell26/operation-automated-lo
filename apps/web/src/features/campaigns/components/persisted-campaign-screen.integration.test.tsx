@@ -25,6 +25,26 @@ const APPROVER = {
   actorId: "00000000-0000-4000-8000-000000000812",
 };
 
+/** A fresh draft, read the way an approver reads it before anyone has decided. */
+async function awaitingApprovalView(): Promise<CampaignWorkspaceProjection> {
+  const compiled = await compileOpenHouseDraft(
+    OPEN_HOUSE_DRAFT_INPUT,
+    createLocalSyntheticPrincipal(),
+    LOCAL_SYNTHETIC_ENV,
+  );
+  return projectCampaignWorkspace(
+    {
+      version: compiled.version,
+      preflight: compiled.preflight,
+      state: "awaiting_approval" as const,
+      rowVersion: 1,
+      updatedAt: compiled.version.createdAt,
+    },
+    APPROVER,
+    "postgres",
+  );
+}
+
 describe("persisted campaign approval screen", () => {
   it("keeps approval unavailable for creators and shows evidence before enabling approvers", async () => {
     const compiled = await compileOpenHouseDraft(
@@ -90,24 +110,8 @@ describe("persisted campaign approval screen", () => {
    * stop saying an approver can sign off on it, and stop offering the approval as a next step.
    */
   it("stops saying an approved campaign is ready for approval", async () => {
-    const compiled = await compileOpenHouseDraft(
-      OPEN_HOUSE_DRAFT_INPUT,
-      createLocalSyntheticPrincipal(),
-      LOCAL_SYNTHETIC_ENV,
-    );
-    const awaiting = projectCampaignWorkspace(
-      {
-        version: compiled.version,
-        preflight: compiled.preflight,
-        state: "awaiting_approval" as const,
-        rowVersion: 1,
-        updatedAt: compiled.version.createdAt,
-      },
-      APPROVER,
-      "postgres",
-    );
     const approved: CampaignWorkspaceProjection = {
-      ...awaiting,
+      ...(await awaitingApprovalView()),
       state: "approved",
       rowVersion: 2,
       approval: {
@@ -131,24 +135,7 @@ describe("persisted campaign approval screen", () => {
   });
 
   it("still says an awaiting campaign is ready for approval", async () => {
-    const compiled = await compileOpenHouseDraft(
-      OPEN_HOUSE_DRAFT_INPUT,
-      createLocalSyntheticPrincipal(),
-      LOCAL_SYNTHETIC_ENV,
-    );
-    const awaiting = projectCampaignWorkspace(
-      {
-        version: compiled.version,
-        preflight: compiled.preflight,
-        state: "awaiting_approval" as const,
-        rowVersion: 1,
-        updatedAt: compiled.version.createdAt,
-      },
-      APPROVER,
-      "postgres",
-    );
-
-    render(<PersistedCampaignScreen campaign={awaiting} />);
+    render(<PersistedCampaignScreen campaign={await awaitingApprovalView()} />);
 
     expect(screen.getAllByText("Ready for approval").length).toBeGreaterThan(0);
     expect(screen.getByText(/An approver can sign off on it now/u)).toBeInTheDocument();

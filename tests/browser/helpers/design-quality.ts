@@ -647,6 +647,34 @@ export async function expectPanelFooterIsOnScreen(
       `at ${String(frame.width)} "${name}" ends inside the frame`,
     ).toBeLessThanOrEqual(frame.width);
   }
+  await expectNothingShowsBelowThePanelFooter(page, frame);
+}
+
+/**
+ * PRD-006c D7 and `03-components/sheet-and-dialog.md`, "the footer stays visible": the footer is
+ * pinned at the end of the panel's scroll box, so the panel ends with its controls.
+ *
+ * PRD-008d, the scored baseline review of 2026-10-01. The footer stuck to the scroll box's content
+ * edge, which sat the sheet's end padding inside the panel's border, and the progress list scrolled
+ * through that band: every capped panel showed a sliver of its next row below Continue. A picture
+ * of that is only compared on the runner that drew it, so this measures it everywhere: the
+ * footer's end is the panel's inner end, to the pixel.
+ */
+export async function expectNothingShowsBelowThePanelFooter(
+  page: Page,
+  frame: Readonly<{ width: number }>,
+): Promise<void> {
+  const gap = await page.getByRole("dialog").evaluate((panel) => {
+    const footer = panel.lastElementChild;
+    if (footer === null || footer.querySelector("button") === null) return undefined;
+    const innerEnd = panel.getBoundingClientRect().top + panel.clientTop + panel.clientHeight;
+    return innerEnd - footer.getBoundingClientRect().bottom;
+  });
+  expect(gap, `at ${String(frame.width)} the panel has a footer to measure`).toBeDefined();
+  expect(
+    Math.abs(gap ?? Number.POSITIVE_INFINITY),
+    `at ${String(frame.width)} the panel's body shows below its footer`,
+  ).toBeLessThan(1);
 }
 
 /**

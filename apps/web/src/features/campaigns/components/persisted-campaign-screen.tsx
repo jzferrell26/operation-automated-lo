@@ -109,8 +109,17 @@ export function PersistedCampaignScreen({
         </Card>
       </div>
 
-      <section className={styles.review} aria-labelledby="campaign-check-title">
-        <div className={styles.reviewHeading} data-tour={GUIDED_SETUP_ANCHORS.campaignCheckResult}>
+      {/* PRD-006c D3 step 5 points at the campaign check result, which is the verdict and what the
+          checks found, so the anchor is the whole section rather than its heading. PRD-008d, the
+          scored baseline review of 2026-10-01: anchored to the heading alone, the walkthrough
+          scrolled only the heading clear and dropped its panel straight onto the finding card
+          below it, so at 768 and 1180 the one thing the step is about was under the panel. */}
+      <section
+        className={styles.review}
+        aria-labelledby="campaign-check-title"
+        data-tour={GUIDED_SETUP_ANCHORS.campaignCheckResult}
+      >
+        <div className={styles.reviewHeading}>
           <div>
             <p className={styles.eyebrow}>Campaign check</p>
             <h2 id="campaign-check-title">

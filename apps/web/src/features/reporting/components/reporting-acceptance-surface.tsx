@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Card, FormField, Link, Stack, TextField } from "@oalo/ui";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import type { DeepReadonly } from "../../ui-foundation/model/synthetic-ui.js";
 import {
@@ -161,8 +161,8 @@ export function ReportingAcceptanceSurface({
                 <span>{exception.kind.replaceAll("_", " ")}</span>
               </div>
               <dl className={styles.inlineDetails}>
-                <Detail label="Last attempt" value={formatTimestamp(exception.lastAttempt)} />
-                <Detail label="Support reference" value={exception.correlationId} />
+                <Detail label="Last attempt" value={<Timestamp value={exception.lastAttempt} />} />
+                <Detail label="Support reference" tone="data" value={exception.correlationId} />
                 <Detail label="Next action" value={exception.nextAction} />
               </dl>
             </Card>
@@ -311,7 +311,7 @@ export function ReportingAcceptanceSurface({
               {[...projection.realtor.auditHistory, ...localAuditHistory].map((audit) => (
                 <li key={audit.id}>
                   <strong>{audit.event}</strong>, {audit.state}, {audit.source},{" "}
-                  <time dateTime={audit.occurredAt}>{formatTimestamp(audit.occurredAt)}</time>
+                  <Timestamp value={audit.occurredAt} />
                   {"target" in audit ? `, ${audit.target}` : null}
                 </li>
               ))}
@@ -328,7 +328,7 @@ function CampaignReportingCard({
   campaign,
 }: Readonly<{ campaign: DeepReadonly<ReportingCampaign> }>) {
   return (
-    <Card data-campaign-id={campaign.id} padding="md">
+    <Card className={styles.reportCard} data-campaign-id={campaign.id} padding="md">
       <div className={styles.sectionHeading}>
         <div>
           <h3>{campaign.title}</h3>
@@ -337,17 +337,32 @@ function CampaignReportingCard({
         <span>{campaign.status}</span>
       </div>
       <dl className={styles.inlineDetails}>
-        <Detail label="Current version" value={String(campaign.currentVersion)} />
+        <Detail label="Current version" tone="data" value={String(campaign.currentVersion)} />
         <Detail label="Realtor" value={campaign.realtor} />
         <Detail label="Approvers" value={campaign.approvers.join(", ")} />
         <Detail
           label="Publish time"
-          value={campaign.publishedAt ? formatTimestamp(campaign.publishedAt) : "Unavailable"}
+          value={
+            campaign.publishedAt === null ? (
+              "Unavailable"
+            ) : (
+              <Timestamp value={campaign.publishedAt} />
+            )
+          }
         />
         <Detail label="Budget" value={campaign.budget} />
-        <Detail label="Event date" value={campaign.eventDate} />
-        <Detail label="Generation date" value={campaign.generationDate} />
-        <Detail label="Publish date" value={campaign.publishDate ?? "Unavailable"} />
+        <Detail label="Event date" value={<DateValue value={campaign.eventDate} />} />
+        <Detail label="Generation date" value={<DateValue value={campaign.generationDate} />} />
+        <Detail
+          label="Publish date"
+          value={
+            campaign.publishDate === null ? (
+              "Unavailable"
+            ) : (
+              <DateValue value={campaign.publishDate} />
+            )
+          }
+        />
         <Detail label="Excluded test leads" value={String(campaign.excludedTestLeads)} />
       </dl>
       <div className={styles.metricGrid}>
@@ -356,7 +371,7 @@ function CampaignReportingCard({
             <strong>{metric.value ?? "Unavailable"}</strong>
             <span>{metric.label}</span>
             <small>{metric.source}</small>
-            <time dateTime={metric.lastUpdatedAt}>{formatTimestamp(metric.lastUpdatedAt)}</time>
+            <Timestamp value={metric.lastUpdatedAt} />
           </Card>
         ))}
       </div>
@@ -425,13 +440,32 @@ function DateFilter({
   );
 }
 
-function Detail({ label, value }: Readonly<{ label: string; value: string }>) {
+/**
+ * One labelled value. `tone="data"` is for an identifier or a version, which design brief
+ * section 10 puts in the data font. A timestamp or a date arrives as a `Timestamp` or a
+ * `DateValue`, whose `time` element carries the data font itself (`apps/web/src/app/globals.css`).
+ */
+function Detail({
+  label,
+  tone,
+  value,
+}: Readonly<{ label: string; tone?: "data"; value: ReactNode }>) {
   return (
     <div>
       <dt>{label}</dt>
-      <dd>{value}</dd>
+      <dd className={tone === "data" ? "oalo-data-text" : undefined}>{value}</dd>
     </div>
   );
+}
+
+/** A moment, written for a person and marked up for a machine, in the data font. */
+function Timestamp({ value }: Readonly<{ value: string }>) {
+  return <time dateTime={value}>{formatTimestamp(value)}</time>;
+}
+
+/** A calendar date exactly as the projection carries it, in the data font. */
+function DateValue({ value }: Readonly<{ value: string }>) {
+  return <time dateTime={value}>{value}</time>;
 }
 
 function unique(values: readonly string[]): readonly string[] {

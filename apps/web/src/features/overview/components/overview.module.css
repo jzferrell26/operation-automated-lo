@@ -127,9 +127,12 @@
   gap: var(--space-4);
 }
 
+/* Each action keeps its own height. Stretched to its row, a link beside an unavailable action and
+ * its explanation became a button some 200px tall (PRD-008d, second redraw, R-14). */
 .quickActions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: var(--space-3);
 }
 

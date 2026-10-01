@@ -13,10 +13,13 @@
   color: var(--tx-strong);
 }
 
+/* `time` joins the data elements because the brief puts timestamps in the data font, wherever a
+ * screen shows one (rubric axis 3). */
 code,
 kbd,
 samp,
 pre,
+time,
 [data-text-tone="data"] {
   font-family: var(--font-data);
 }
@@ -43,8 +46,38 @@ html[data-tenant-accent][data-theme="dark"] {
   box-sizing: border-box;
 }
 
+/* Design brief section 10 and rubric delta D-009, ruled 2026-10-01. The body step goes on `body`,
+ * the root of inheritance, so text no module sizes reads at 13px instead of the browser's 16px.
+ * It never goes on `:root` or `html`: every step is a `rem` token, so the root stays the browser's
+ * 16px and the six steps keep their values. */
 body {
   margin: 0;
+  font-size: var(--text-body-size);
+}
+
+/* Each heading level's step, as a floor rather than a role. An element selector loses to any
+ * module class, so a heading a module already sizes keeps its size, and a heading whose role
+ * differs from its level (a card titled with an `h2`) sets its own step in its module. */
+h1 {
+  font-size: var(--text-page-size);
+}
+
+h2 {
+  font-size: var(--text-section-size);
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--text-card-size);
+}
+
+/* The browser draws `small` one keyword smaller than its parent, which lands between the steps at
+ * any parent size (10.83px under the 13px body step). A `small` is a source, a freshness line, or
+ * a side note, so its floor is the caption step, as on the overview and in the canvases. */
+small {
+  font-size: var(--text-caption-size);
 }
 
 /* The bootstrap fallback for a `<main>` that brings no layout of its own. Every real screen's
@@ -55,10 +88,6 @@ main {
   min-height: 100vh;
   place-items: center;
   padding: var(--space-6);
-}
-
-section {
-  max-width: 44rem;
 }
 
 code {

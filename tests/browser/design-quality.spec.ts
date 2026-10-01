@@ -11,6 +11,7 @@ import {
   expectThePageFillsTheContentColumn,
   expectThePageOpensAtTheTopOfItsContent,
   expectThemeResolved,
+  expectTypographyOnBrief,
   expectZeroMotionUnderReducedMotion,
   screenshotName,
   settleForScreenshot,
@@ -134,6 +135,9 @@ for (const { screen, path } of SYNTHETIC_SCREENS.filter(
         // Axis 7.
         await expectNoHorizontalOverflow(page);
         await expectTargetsAreLargeEnough(page);
+        // Axis 3: the body step at the root, every text at a step, every timestamp in the data
+        // font (rubric section 5, D-009).
+        await expectTypographyOnBrief(page);
         // Axes 1, 2, 3, 8 and 10, as far as a machine can hold them: the whole composition is
         // compared against a committed baseline, so any of them moving is a failure with a picture.
         await warmFullPageCapture(page);
@@ -378,24 +382,212 @@ test("every notice title carries the informational tone, whatever order the styl
  * 1180 the overview's four metric cards are narrower than a title and a label side by side, so
  * "Not connected" was clipped and "Needs a refresh" ran outside its card. The page-level overflow
  * check cannot see either, because nothing scrolls sideways.
+ *
+ * Rubric section 5, D-010 (ruled 2026-10-01). The same holds for the value, measured by the glyphs
+ * it draws rather than by its box, because a value that overruns its card overruns inside a box
+ * that does not grow: the bootstrap `section { max-width: 44rem }` put four cards in 704px at 1440,
+ * and "Unavailable" painted over its card's border. The ruling asks for both themes, because each
+ * theme is its own rendering of every card. And the overview takes its whole content column, as
+ * the campaigns list does, instead of the 704px strip the cap centred in it.
  */
-test("every metric card keeps its state label inside the card at every frame", async ({ page }) => {
+for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
+  test(`every metric card keeps its state label and its value inside the card at every frame in ${theme}`, async ({
+    page,
+  }) => {
+    await blockAnythingOffOrigin(page);
+    await useStoredTheme(page, theme);
+    await page.goto("/overview");
+    await expectThemeResolved(page, theme);
+    for (const frame of REVIEW_FRAMES) {
+      await page.setViewportSize({ width: frame.width, height: frame.height });
+      await settleForScreenshot(page);
+      const escaped = await page.locator(".oalo-metric").evaluateAll((cards) =>
+        cards.flatMap((card) => {
+          const name = card.querySelector(".oalo-metric__label")?.textContent ?? "a metric";
+          const box = card.getBoundingClientRect();
+          const style = getComputedStyle(card);
+          const contentLeft =
+            box.left +
+            Number.parseFloat(style.borderLeftWidth) +
+            Number.parseFloat(style.paddingLeft);
+          const contentRight =
+            box.right -
+            Number.parseFloat(style.borderRightWidth) -
+            Number.parseFloat(style.paddingRight);
+          const labels = [...card.querySelectorAll(".oalo-state-label")]
+            .map((label) => label.getBoundingClientRect())
+            .filter((label) => label.left < box.left - 0.5 || label.right > box.right + 0.5)
+            .map(() => `${name}: its state label leaves the card`);
+          const values = [...card.querySelectorAll(".oalo-metric__value")]
+            .map((value) => {
+              const glyphs = document.createRange();
+              glyphs.selectNodeContents(value);
+              return { text: value.textContent ?? "", box: glyphs.getBoundingClientRect() };
+            })
+            .filter(
+              ({ box: drawn }) =>
+                drawn.left < contentLeft - 0.5 || drawn.right > contentRight + 0.5,
+            )
+            .map(({ text }) => `${name}: its value "${text}" leaves the card's content box`);
+          return [...labels, ...values];
+        }),
+      );
+      expect.soft(escaped, `at ${frame.name} in ${theme}`).toEqual([]);
+      await expectThePageFillsTheContentColumn(page);
+    }
+  });
+}
+
+/**
+ * Rubric axes 1 and 2. A link drawn as an action keeps its own height inside a grid.
+ *
+ * PRD-008d, the second redraw of 2026-10-01, finding R-14. The overview's action grids let every
+ * item stretch to its row, so beside an unavailable action and the sentences that explain it, "See
+ * your leads" was a button some 200px tall at 1440 and 1180, and the wider column D-010 gave the
+ * overview made it wider as well.
+ */
+test("the overview's action links keep their own height at every frame", async ({ page }) => {
   await blockAnythingOffOrigin(page);
   await useStoredTheme(page, "light");
   await page.goto("/overview");
   for (const frame of REVIEW_FRAMES) {
     await page.setViewportSize({ width: frame.width, height: frame.height });
     await settleForScreenshot(page);
-    const escaped = await page.locator(".oalo-metric").evaluateAll((cards) =>
-      cards.flatMap((card) => {
-        const box = card.getBoundingClientRect();
-        return [...card.querySelectorAll(".oalo-state-label")]
-          .map((label) => label.getBoundingClientRect())
-          .filter((label) => label.left < box.left - 0.5 || label.right > box.right + 0.5)
-          .map(() => card.querySelector(".oalo-metric__label")?.textContent ?? "a metric");
-      }),
-    );
-    expect(escaped, `at ${frame.name} a state label leaves its card`).toEqual([]);
+    const stretched = await page
+      .locator("main [class*='__quickActions'] > a")
+      .evaluateAll((links) =>
+        links
+          .filter((link) => {
+            const style = getComputedStyle(link);
+            const text = document.createRange();
+            text.selectNodeContents(link);
+            const natural =
+              text.getBoundingClientRect().height +
+              Number.parseFloat(style.paddingTop) +
+              Number.parseFloat(style.paddingBottom) +
+              Number.parseFloat(style.borderTopWidth) +
+              Number.parseFloat(style.borderBottomWidth);
+            const floor = Number.parseFloat(style.minHeight) || 0;
+            return link.getBoundingClientRect().height > Math.max(natural, floor) + 1;
+          })
+          .map((link) => link.textContent?.trim() ?? "a link"),
+      );
+    expect(stretched, `at ${frame.name} an action link is stretched to its row`).toEqual([]);
+  }
+});
+
+/**
+ * Rubric axis 1 in the rail. PRD-008d, the second redraw of 2026-10-01, finding R-19: the product's
+ * name at the top of the rail and the workspace's name at its foot carried no size of their own,
+ * so once D-009 put the body step on `body` they were drawn at the same size as every navigation
+ * link between them. Each is a title, at the card step, above the links' body step.
+ */
+test("the rail's titles are drawn above its navigation links", async ({ page }) => {
+  await blockAnythingOffOrigin(page);
+  await useStoredTheme(page, "light");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/overview");
+  await settleForScreenshot(page);
+  const sizes = await page.evaluate(() => {
+    const size = (selector: string): number => {
+      const element = document.querySelector(selector);
+      return element === null ? Number.NaN : Number.parseFloat(getComputedStyle(element).fontSize);
+    };
+    return {
+      brand: size("[class*='__brand'] strong"),
+      identity: size("[class*='__identity'] strong"),
+      link: size("[class*='__navigationLink']"),
+    };
+  });
+  expect(sizes.brand, "the product's name").toBeGreaterThan(sizes.link);
+  expect(sizes.identity, "the workspace's name").toBeGreaterThan(sizes.link);
+
+  /**
+   * R-21. At the card step the runner's face wrapped the product's name as "Operation Automated"
+   * over a lone "LO" (screen-baselines run 36841695906). Wherever it wraps, its last line is at
+   * least half as long as its longest, and the rule that keeps it so is in place, because a
+   * workstation's narrower face may not wrap it at all.
+   */
+  const lines = await page.locator("[class*='__brand'] strong").evaluate((title) => {
+    const text = document.createRange();
+    text.selectNodeContents(title);
+    const rows = new Map<number, number>();
+    for (const rect of text.getClientRects()) {
+      const row = Math.round(rect.top);
+      rows.set(row, Math.max(rows.get(row) ?? 0, rect.right));
+    }
+    const left = title.getBoundingClientRect().left;
+    const widths = [...rows.entries()].sort(([a], [b]) => a - b).map(([, right]) => right - left);
+    return { widths, wrap: getComputedStyle(title).getPropertyValue("text-wrap-style") };
+  });
+  expect(lines.wrap, "the product's name balances its lines").toBe("balance");
+  const longest = Math.max(...lines.widths);
+  expect(
+    lines.widths.at(-1) ?? longest,
+    `the product's name ends on a line ${lines.widths.map(Math.round).join(" and ")}px long`,
+  ).toBeGreaterThanOrEqual(longest / 2);
+});
+
+/**
+ * Rubric axes 1, 2, and 10 on the reports screen.
+ *
+ * PRD-008d, the second redraw of 2026-10-01. R-15: each group of actions laid its items out with
+ * `space-between`, so once D-010 gave the sections the whole column, "Open Public page v3" and
+ * "Open Feed creative v3", or "Open the campaign" and "See what went wrong", sat at opposite edges
+ * of their card instead of together. R-16: a campaign card's parts had no space between them, so
+ * its metric cards touched the line above and the details below, at every frame.
+ */
+test("the reports screen keeps its actions together and its campaign cards on the spacing scale", async ({
+  page,
+}) => {
+  await blockAnythingOffOrigin(page);
+  await useStoredTheme(page, "light");
+  await page.goto("/reports");
+  for (const frame of REVIEW_FRAMES) {
+    await page.setViewportSize({ width: frame.width, height: frame.height });
+    await settleForScreenshot(page);
+    const measured = await page.evaluate(() => {
+      const probe = document.createElement("span");
+      probe.style.display = "none";
+      probe.style.width = "var(--space-4)";
+      document.body.append(probe);
+      const space4 = Number.parseFloat(getComputedStyle(probe).width);
+      probe.remove();
+
+      const spread = [...document.querySelectorAll("main [class*='__inlineLinks']")].flatMap(
+        (group) => {
+          const gap = Number.parseFloat(getComputedStyle(group).columnGap) || 0;
+          const items = [...group.children].map((child) => child.getBoundingClientRect());
+          return items.slice(1).flatMap((item, index) => {
+            const before = items[index];
+            if (before === undefined || Math.abs(item.top - before.top) > 2) return [];
+            const between = item.left - before.right;
+            return between > gap + 1
+              ? [`${String(Math.round(between))}px between two actions`]
+              : [];
+          });
+        },
+      );
+
+      const cramped = [...document.querySelectorAll("main [data-campaign-id]")].flatMap((card) => {
+        const parts = [...card.children].map((child) => child.getBoundingClientRect());
+        return parts.slice(1).flatMap((part, index) => {
+          const before = parts[index];
+          if (before === undefined) return [];
+          const between = part.top - before.bottom;
+          return Math.abs(between - space4) > 1
+            ? [
+                `${card.getAttribute("data-campaign-id") ?? "a card"}: ${String(Math.round(between))}px`,
+              ]
+            : [];
+        });
+      });
+      return { spread, cramped };
+    });
+    expect.soft(measured.spread, `at ${frame.name} actions are pushed apart`).toEqual([]);
+    expect
+      .soft(measured.cramped, `at ${frame.name} a campaign card's parts are not --space-4 apart`)
+      .toEqual([]);
   }
 });
 
@@ -517,6 +709,33 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
     await fillTheOpenHouseDraft(page, FINISHED_OPEN_HOUSE);
     await page.getByRole("button", { name: "Save and run the checks" }).click();
     await expect(page.getByRole("heading", { name: "Needs changes" })).toBeVisible();
+
+    /**
+     * Rubric axis 2. PRD-008d, the second redraw of 2026-10-01, finding R-18: a finding's note
+     * ("Fix this before approving") ran inline and touched the support details under it. It keeps
+     * `--space-3` between itself and what follows, at every frame.
+     */
+    for (const frame of REVIEW_FRAMES) {
+      await page.setViewportSize({ width: frame.width, height: frame.height });
+      await settleForScreenshot(page);
+      const tight = await page.locator("main [class*='__findings'] article").evaluateAll((cards) =>
+        cards.flatMap((card) => {
+          const note = card.querySelector(":scope > small");
+          const next = note?.nextElementSibling;
+          if (note === null || note === undefined || next === null || next === undefined) return [];
+          const probe = document.createElement("span");
+          probe.style.display = "none";
+          probe.style.width = "var(--space-3)";
+          card.append(probe);
+          const space3 = Number.parseFloat(getComputedStyle(probe).width);
+          probe.remove();
+          const between = next.getBoundingClientRect().top - note.getBoundingClientRect().bottom;
+          return between < space3 - 0.5 ? [`${String(Math.round(between))}px`] : [];
+        }),
+      );
+      expect(tight, `at ${frame.name} a finding's note touches what follows it`).toEqual([]);
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
 
     await captureNamedState(page, {
       screen: "campaign-create",

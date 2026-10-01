@@ -162,6 +162,21 @@
   font-size: var(--text-caption-size);
 }
 
+/* The rail's two titles, the product's name and the workspace's, take the card step. Unsized,
+ * they took the body step once D-009 put it on `body`, the same size as every navigation link
+ * under them (PRD-008d, second redraw, R-19). */
+.brand strong,
+.identity strong {
+  font-size: var(--text-card-size);
+}
+
+/* When the product's name takes two lines, it breaks into two of a length rather than leaving
+ * "LO" alone on the second, as the runner's face did at the card step (PRD-008d, second redraw,
+ * R-21). */
+.brand strong {
+  text-wrap: balance;
+}
+
 /*
  * 2026-09-21. The workspace is a column that fills the viewport and hands the main landmark
  * whatever the topbar and the banner leave, instead of the main landmark carrying its own
@@ -301,10 +316,6 @@
 .shell[data-dashboard-preview="true"] .content {
   display: block;
   min-inline-size: 0;
-}
-
-.shell[data-dashboard-preview="true"] .content section {
-  max-inline-size: none;
 }
 
 /* PRD-006d 006D-AC-003. The drawer is the `Dialog` primitive at its

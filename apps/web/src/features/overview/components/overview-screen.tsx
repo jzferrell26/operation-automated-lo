@@ -315,7 +315,9 @@ function AttentionQueue({
               </div>
               <div>
                 <dt>Last tried</dt>
-                <dd>{formatTimestamp(item.lastAttempt)}</dd>
+                <dd>
+                  <time dateTime={item.lastAttempt}>{formatTimestamp(item.lastAttempt)}</time>
+                </dd>
               </div>
             </dl>
             {/*

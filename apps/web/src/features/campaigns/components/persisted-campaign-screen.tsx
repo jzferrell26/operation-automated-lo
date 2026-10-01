@@ -89,8 +89,13 @@ export function PersistedCampaignScreen({
         <Card padding="sm">
           <strong>Open house</strong>
           <p>
-            {new Date(campaign.openHouseStartsAt).toLocaleString("en-US")} to{" "}
-            {new Date(campaign.openHouseEndsAt).toLocaleString("en-US")}
+            <time dateTime={campaign.openHouseStartsAt}>
+              {new Date(campaign.openHouseStartsAt).toLocaleString("en-US")}
+            </time>{" "}
+            to{" "}
+            <time dateTime={campaign.openHouseEndsAt}>
+              {new Date(campaign.openHouseEndsAt).toLocaleString("en-US")}
+            </time>
           </p>
         </Card>
         <Card padding="sm">
@@ -172,7 +177,11 @@ export function PersistedCampaignScreen({
               {decisionLabel(campaign.approval.decision)} by{" "}
               {APPROVAL_ROLE_LABELS[campaign.approval.actorRole]}
             </strong>
-            <p>{new Date(campaign.approval.decidedAt).toLocaleString("en-US")}</p>
+            <p>
+              <time dateTime={campaign.approval.decidedAt}>
+                {new Date(campaign.approval.decidedAt).toLocaleString("en-US")}
+              </time>
+            </p>
             <small>{CAMPAIGN_NOT_AN_AD_YET}</small>
           </Card>
         </section>

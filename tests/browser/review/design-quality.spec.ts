@@ -9,7 +9,9 @@ import {
   expectNoHorizontalOverflow,
   expectPanelFooterIsOnScreen,
   expectTargetsAreLargeEnough,
+  expectThePageFillsTheContentColumn,
   expectThemeResolved,
+  expectTypographyOnBrief,
   expectZeroMotionUnderReducedMotion,
   parkThePointer,
   screenshotName,
@@ -179,6 +181,7 @@ for (const { screen, path } of ACCOUNT_SCREENS) {
         await expectAxeClean(page);
         await expectNoHorizontalOverflow(page);
         await expectTargetsAreLargeEnough(page);
+        await expectTypographyOnBrief(page);
         await expect(page).toHaveScreenshot(screenshotName(screen, frame.name, theme), {
           fullPage: true,
         });
@@ -269,6 +272,38 @@ test("a refused sign-in is announced and on screen at 390", async ({ page }) => 
 });
 
 /**
+ * Rubric axes 2 and 10 on the change-password page. PRD-008d, the second redraw of 2026-10-01,
+ * finding R-20: the page had no width of its own, so the shell centred it at the width of its
+ * title, and once D-009 drew the title at the page step the form shrank with it to some 296px at
+ * 1440. The page now fills the column, so its title starts where its siblings' titles start, and
+ * the form takes the account form's 26rem measure, or the whole column where that is narrower.
+ */
+async function expectTheFormKeepsTheAccountMeasure(page: Page, frame: ReviewFrame): Promise<void> {
+  await expectThePageFillsTheContentColumn(page);
+  const widths = await page.getByRole("main").evaluate((main) => {
+    const style = getComputedStyle(main);
+    const column =
+      main.clientWidth -
+      Number.parseFloat(style.paddingLeft) -
+      Number.parseFloat(style.paddingRight);
+    const probe = document.createElement("span");
+    probe.style.display = "none";
+    probe.style.width = "26rem";
+    main.append(probe);
+    const measure = Number.parseFloat(getComputedStyle(probe).width);
+    probe.remove();
+    return {
+      form: main.querySelector("form")?.getBoundingClientRect().width ?? 0,
+      expected: Math.min(measure, column),
+    };
+  });
+  expect(
+    Math.abs(widths.form - widths.expected),
+    `at ${frame.name} the form is ${String(Math.round(widths.form))}px, not the account measure`,
+  ).toBeLessThan(1);
+}
+
+/**
  * 006D-AC-008 and 006D-AC-012 for the change-password screen, which lives inside the signed-in
  * shell. One sign-in, then all eight frame-and-theme cells in place.
  */
@@ -296,6 +331,8 @@ test("change-password meets the design quality bar at every frame in both themes
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
       await expectTargetsAreLargeEnough(page);
+      await expectTypographyOnBrief(page);
+      await expectTheFormKeepsTheAccountMeasure(page, frame);
       await expect(page).toHaveScreenshot(screenshotName("change-password", frame.name, theme), {
         fullPage: true,
       });
@@ -372,6 +409,7 @@ test("the workspace after a saved password meets the design quality bar", async 
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
       await expectTargetsAreLargeEnough(page);
+      await expectTypographyOnBrief(page);
       await expect(page).toHaveScreenshot(
         screenshotName("reset-password", frame.name, theme, "saved-notice"),
         { fullPage: true },
@@ -479,6 +517,7 @@ test("the guided setup's steps 1 and 2 meet the bar at every frame, in both them
 
       await expectAxeClean(page);
       await expectTargetsAreLargeEnough(page);
+      await expectTypographyOnBrief(page);
       /**
        * PRD-006d's reopened row 2. The committed step-1 baseline at 1440 showed the panel's
        * footer controls below the fold, and nothing here said so: a screenshot that is only
@@ -497,6 +536,7 @@ test("the guided setup's steps 1 and 2 meet the bar at every frame, in both them
       await settleForScreenshot(page);
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
+      await expectTypographyOnBrief(page);
       await expectPanelFooterIsOnScreen(page, frame);
       await parkThePointer(page);
       await expect(page).toHaveScreenshot(

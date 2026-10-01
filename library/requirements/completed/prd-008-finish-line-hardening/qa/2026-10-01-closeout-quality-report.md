@@ -256,3 +256,308 @@ Then ship as the scope contract describes: the orchestrator's `pnpm verify` resu
 - `docs/`, `library/`, `README.md`, maps, ledgers (M, A, R): records, reviews, seeded READMEs, the PRD-008 move to `in-work/`.
 
 Model routing for this audit: opus, because it is the final quality gate and judges every criterion on the whole tree.
+
+## Re-check (2026-10-01) on `468e281`
+
+**Head:** `468e281` on `gauntlet/closeout-quality-2` (worktree `oalo-g-closeout-qa2`), the same commit as the pushed head of PR #74 (`claude/gauntlet-prd-008`).
+**Plan document:** the same PRD-008 set, now at `library/requirements/completed/prd-008-finish-line-hardening/` (moved by `bc86d8b`; the header above keeps the path it had on `99502dd`).
+**Auditor:** `quality-guardian`, armed with `quality-weapon` (model routing: opus, the last gate before ship).
+**Mode:** read-only except for this appended section. No test suite or build. Commands run: `git`, read-only `gh`, one `pnpm audit` (network), and scratch scripts that parse the ledger and check links.
+**Taken as given, not re-run:** the orchestrator's full `pnpm verify` on `5585ee9` (exit 0; no log is in the repository). CI on the final head is its independent confirmation.
+
+### Scope and ordering
+
+- Since `99502dd`: 12 commits (`b267fa6` to `468e281`) changing 35 files. All are Markdown except the terrain map, `.cursor/rules/core/the-map.mdc`.
+- `git diff --stat 5585ee9 468e281 -- apps packages supabase tests tooling pnpm-lock.yaml package.json pnpm-workspace.yaml` is empty.
+- The security final look on `311fd45` therefore still covers every line of code on this head, and the order (security, then quality) holds.
+- Nothing security-relevant changed. The one operational edit, checklist step 6a, names `CRON_SECRET` and `OALO_HOMEOWNER_CRON_SECRET` by name and never a value. No security re-run is needed.
+
+### Verdict
+
+**SHIP.**
+
+- **M-1 is fixed, and this section is the independent re-check of the fix:**
+  - all seven held `CRR` rows are VERIFIED, with citations that hold;
+  - `CRR-058` carries the 008A-AC-020 note;
+  - rows `FLR-071` and `FLR-072` have eight cells;
+  - the refreshed PRD-005 and PRD-006 status lines state the true counts and name every row that is not VERIFIED.
+- **008E-AC-004 and 008E-AC-001 now PASS.**
+- **The Lows chosen for fixing are fixed correctly.**
+- **No new finding is at Medium or above.** There are four new Lows (N-1 to N-4) and one Info (N-5); none blocks.
+
+Five ledger rows are not yet VERIFIED. Each is closed by this re-check or by the ship itself; see "FLH-001 recount" below. To ship:
+
+1. **One records commit.** It changes nothing but Markdown records. It writes `FLR-001`, `FLR-004`, `FLR-060`, and `FLR-070` to VERIFIED, citing this section. In the same commit, it updates every string under "Record drift" below. If the rows close and those strings stay, the records will claim "62 of 74" and "close at ship" over a fully VERIFIED ledger. That is the M-1 defect class again.
+2. **CI on the final head.** The four required checks are green on that commit, and `gh pr view 74` reports `MERGEABLE` (FLH-002). Then `FLR-002` moves to VERIFIED.
+3. **The PR #74 description.** Complete it at ship (N-4).
+
+This verdict covers Markdown record changes only. If anything else changes after this commit, it needs a new check.
+
+### Criteria not PASS in the first report
+
+| ID | First report on `99502dd` | Re-check on `468e281` | Evidence |
+|---|---|---|---|
+| FLH-001 | PENDING-SHIP | PENDING-SHIP, closes in the records commit | Every 008* row is VERIFIED by a pass other than its implementer, except `FLR-060` and `FLR-070`, which this re-check verifies. The orchestrator did the work behind `FLR-010` and `FLR-014` and also wrote them VERIFIED; this re-check is their independent pass (see 008A-AC-003 and 008A-AC-007 below). |
+| FLH-002 | PENDING-SHIP | PENDING-SHIP (CI on the final head) | Full `pnpm verify`, including `test:db`, exited 0 on `5585ee9` (`EXECUTION_LEDGER.md:762`, `:911`). No code, lockfile, or package file has changed since. CI run `36867017282` on `468e281`, when this was written: Application verification success; Release and recovery contract success; Real PostgreSQL migrations and pgTAP in progress; Preview smoke contract not yet started. `gh pr view 74`: OPEN, draft, head `468e281`, `MERGEABLE`, with `mergeStateStatus` BLOCKED while checks run. `origin/main` is still `36b58f1`. |
+| FLH-003 | PASS (conditional) | PASS | Its condition, a green `pnpm verify` with `test:db` on the final code, is met on `5585ee9`. The final look covered that code (see Ordering above). `FLR-003` is VERIFIED at `:763`. |
+| FLH-004 | FAIL on that pass | PASS | This section. Every criterion passes on `468e281` except FLH-002's CI half and FLH-001's last two rows. By the PRD's design, both close after this report. |
+| 008A-AC-003 | PENDING-SHIP | PASS | I ran `pnpm audit --audit-level=low` on `468e281` at 2026-10-01 13:18 UTC (Node 24.18.0, pnpm 11.15.1): "No known vulnerabilities found", exit 0. `--audit-level=moderate` also exits 0. The lockfile has not changed since `5585ee9`. The criterion is evaluated against the final head's day, so re-run the audit if that head lands on a later day. |
+| 008A-AC-007 | PENDING-SHIP | PASS | `gh pr view 70`: CLOSED at 2026-10-01T13:11:57Z, not merged. Comment `issuecomment-5932175925` (13:11:55Z) opens "Superseded by #74" and gives the reasons. The lockfile half is unchanged. |
+| 008E-AC-001 | PENDING-SHIP | PASS | See "Status lines (`0df8947`)" below. |
+| 008E-AC-004 | FAIL (M-1) | PASS | See "M-1 re-check" below. `FLR-060` now reads DONE, which is accurate; it moves to VERIFIED citing this section. |
+| 008E-AC-014 | PENDING-SHIP | PASS, with N-3 | See "Exit move and link check" below. |
+
+**Passing criteria re-checked because their ledger rows changed.** All still PASS:
+
+- **FLH-005:** nothing in the code changed after `5585ee9`, so `tests/security/provider-side-effect-default-off.test.ts` is untouched.
+- **FLH-006 and FLH-007:** see the FLH-005, FLH-006, and FLH-007 section below.
+- **008E-AC-006, 007, and 010:** `FLR-062`, `FLR-063`, and `FLR-066` are now VERIFIED and cite the first report, which was the independent pass it named for them.
+
+### M-1 re-check
+
+Each written-back row, checked against the line it cites:
+
+| Row | Status on `468e281` | Citation | Checked |
+|---|---|---|---|
+| `CRR-075` (`EXECUTION_LEDGER.md:486`) | VERIFIED | `FLR-025`; `route.ts:11-19` | `FLR-025` (008A-AC-019) is VERIFIED at `:785`. `apps/web/src/app/api/version/route.ts:11-19` returns exactly `environment`, `buildId`, and `commit`; the 503 `CONFIGURATION_INVALID` is at `:26-33`. Holds. |
+| `CRR-094` (`:593`) | VERIFIED | `FLR-050` to `FLR-056`; sign-off re-signed against `cad9bf6` from run `36844271868` | `:810-816` are all VERIFIED. `design-quality-signoff.md:10-12` names `cad9bf6` and run `36844271868`. `gh run view 36844271868`: Screen baselines, head `eaf34e6`, attempt 2, success. Holds. |
+| `CRR-096` (`:595`) | VERIFIED | OD-1; 008A-AC-015; the security re-audit and final look; this report; 008D-AC-011; the verify on `5585ee9` | OD-1 is at `prd-008-finish-line-hardening-index.md:140`. `closeout-security-audit.md:643` and `:716` record PASS. Also checked: the 008D-AC-011 row of this report and `FLR-002`. Holds, but two of its phrases were written before this re-check existed (N-5). |
+| `CRR-130` (`:629`) | VERIFIED | The verify and `test:db` on `5585ee9`; 47 definer bodies; allowlist entry `runtime.record-sign-in-without-account.v1` | `closeout-security-audit.md:490` counts 47 definer functions, all with `search_path = ''`. `:552` and `:624` approve the allowlist entry, and `:623` passes every definer body. The run counts match `FLR-002` and raid log `:911`. Holds. |
+| `CRR-167` (`:666`) | VERIFIED | `FLR-053` (008D-AC-008), `FLR-055` (008D-AC-010) | `:813` and `:815` are VERIFIED. Holds. |
+| `CRR-181` (`:680`) | VERIFIED | `FLR-050`, `051`, and `056`; run `36844271868`; CI `36848467698` | `:810`, `:811`, and `:816` are VERIFIED. CI run `36848467698` on `a37e238` passed all four jobs. `cad9bf6` is an ancestor of `a37e238`, and nothing under `tests/visual/` changes between them. Holds. |
+| `CRR-184` (`:683`) | VERIFIED | `FLR-055`; no not-photographed or asserted cell | `:815` was VERIFIED by an independent verifier. Holds. |
+| `CRR-058` (`:469`) | VERIFIED, status unchanged | The 008A-AC-020 note | The note states the new 403 ordering and names the re-pinned test. That test exists: `apps/web/src/server/campaign-approval-handler.correlation.postgres.test.ts:255`, "returns 403, not 409, when a creator attempts an already approved campaign". L-9 is fixed. |
+| `FLR-071`, `FLR-072` (`:831-832`) | VERIFIED | | Split the way GitHub renders tables (on every unescaped pipe), each row has eight cells; on `99502dd` each had ten. Status and Evidence now sit under their own headers. L-6 is fixed. `CRR-096` also went from nine cells to eight. |
+
+**`CRR` totals on `468e281`.** The 188 rows read 174 VERIFIED, 3 DONE, 11 BLOCKED (operator), and 0 OPEN. The three DONE rows are `CRR-036` to `CRR-038`, which PRD-006a superseded; each row says so. On `36b58f1` the same rows read 0, 176, 11, and 1. PRD-008 therefore wrote back 174 rows. A pass other than the orchestrator has now checked every one: 167 in the first report, and 7 here.
+
+**Status changes from `99502dd` to `468e281`.** The whole ledger, by ID:
+
+- `CRR-075`, `094`, `130`, `167`, `181`, and `184`: DONE to VERIFIED.
+- `CRR-096`: OPEN to VERIFIED.
+- `FLR-002`: OPEN to DONE.
+- `FLR-003`, `010`, `014`, `062`, `063`, and `066`: DONE to VERIFIED.
+- `FLR-006` and `007`: OPEN to VERIFIED.
+- `FLR-060`: VERIFIED to DONE.
+
+No BLOCKED, DEFERRED, or ACCEPTED CONSTRAINT row changed, and no `HOR` row changed.
+
+### Status lines (`0df8947`), 008E-AC-001
+
+I counted the ledger rows by source sub-PRD and compared each status line with the count:
+
+| Status line | Says | Ledger on `468e281` | Names every row not VERIFIED |
+|---|---|---|---|
+| PRD-005 index `:3` | 74 of 88. The other 14 are `CRR-036` to `038` (DONE, superseded) and 11 operator-blocked rows: `CRR-006`, `076` to `084`, and `088` | 74 VERIFIED, 3 DONE, 11 BLOCKED | Yes |
+| 005a `:4` | All 18 | 18 VERIFIED | Not needed |
+| 005b `:4` | 17 of 20; `CRR-036` to `038` superseded and DONE | 17 VERIFIED, 3 DONE | Yes |
+| 005c `:4` and 005d `:4` | All 13 each | 13 and 13 VERIFIED | Not needed |
+| 005e `:4` | 6 of 16; blocked: `CRR-076` to `084`, `088`, and the index row `CRR-006` | 6 VERIFIED, 10 BLOCKED, plus the index row | Yes |
+| PRD-006 index `:3` | All 100 | 100 VERIFIED | Not needed |
+| 006a, 006b, 006c, and 006d `:4` | All 34, 17, 22, and 19 | 34, 17, 22, and 19 VERIFIED | Not needed |
+
+- Every line cites PR #67 (`58d77fd`).
+- Both indexes stay In Work, with a one-line reason that names the operator-blocked rows.
+- `library/README.md`'s PRD-006 row agrees: "All 100 of its ledger rows are VERIFIED, including `FSG-008`".
+- No line in either PRD folder still says a written-back row is waiting. A `git grep` for "still DONE", "stays OPEN", "moves to VERIFIED", and similar wording finds nothing.
+
+PASS. `FLR-057`'s evidence cell has not caught up with the refresh (N-1).
+
+### Lows fixed since the first report
+
+| Low | Commit | Result | Check |
+|---|---|---|---|
+| L-5 | `eac8aca` | Fixed, with N-4 | `design-quality-signoff.md:13-17` records the re-check. `git diff cad9bf6 468e281 -- tests/visual` is empty, so the statement also holds on this head. |
+| L-6 | `fd8f9d5` | Fixed | See "M-1 re-check" above. |
+| L-7 | `8d8d49b` | Fixed | Step 6a's names and behaviour match the code. In `apps/web/src/server/homeowners/scheduler.ts`, `CronSecretsSchema` and `authorizedHomeCron` (`:38-54`) read `OALO_HOMEOWNER_CRON_SECRET ?? CRON_SECRET`. They refuse a secret shorter than 32 or longer than 512 characters, and they compare `Bearer <secret>` in constant time. The job answers 401 before it reads any other setting (`:131-133`). `apps/web/vercel.json` runs `/api/jobs/homeowner-reports` on the schedule `0 12 * * *`. The linked runbook section, "Optional monthly updates and HighLevel handoff", exists (`homeowner-avm-activation.md:54-56`). The source of "already present" is `2026-09-24-final-completion-audit.md:83`, and the checklist marks that claim UNVERIFIED. The checklist is now v1.5, with a changelog line. |
+| L-8 | `858b9ed` | Fixed | `system-runtime-contracts.md:69` lists the three fields and the 503 `CONFIGURATION_INVALID`, matching `route.ts:11-33`. The header reads v1.2, with a changelog line. |
+| L-9 | `fd8f9d5` | Fixed | See "M-1 re-check" above. |
+| L-11 | `a6e8d4c` | Fixed | `project-map.md:42` names the three newest files in `supabase/migrations/` as UNVERIFIED on the hosted database and links checklist step 0. |
+| L-12 | `caedd1c` | Fixed | The addendum is at `2026-10-01-independent-quality-review.md:264-295`, and the original findings are untouched. Its claims check out: `2de43cc` is an ancestor of both `a37e238` and `5585ee9`; `homeowner_reports.pgtap.sql:42` is `plan(244)`; CI run `36848467698` passed all four jobs. It correctly leaves the 429-against-a-built-server bullet UNVERIFIED. |
+| L-13 | `bc86d8b` | Fixed | The index and 008a to 008e no longer read Draft, and the index's sub-feature table reads Complete. |
+
+### Exit move and link check, 008E-AC-014
+
+`bc86d8b` moves the folder with `git mv` to the same depth, so links from inside the folder to the rest of the repository are unchanged.
+
+**Lifecycle labels.** All of these place PRD-008 in `completed/`:
+
+- the index and 008a to 008e, which read "Complete in draft PR #74";
+- `library/README.md:32`, which lists PRD-008 as Completed;
+- `completed/README.md:7-11`, which lists it;
+- `in-work/README.md:34`, which records it as moved out and keeps the PRD-007 entry;
+- `backlog/README.md:31`, now a lineage row that points to `completed/`;
+- these files, which point to `completed/`:
+  - the terrain map;
+  - `project-map.md:56` and `:85`;
+  - `NEXT_BATCH_LEDGER.md`;
+  - `README.md`;
+  - the checklist intro (`:5`);
+  - the user-language contract;
+  - the review rubric;
+  - the design sign-off.
+
+**My relative-link check.** Method: inline Markdown links outside code spans and fences, resolved against `git ls-files`, with the heading anchor checked wherever a link carries one.
+
+| File set | Relative links | Broken | Anchors checked | Bad anchors |
+|---|---|---|---|---|
+| The 25 files `git grep -l prd-008-finish-line-hardening` returns, including `EXECUTION_LEDGER.md` | 255 | 0 | 5 | 0 |
+| The 35 files changed since `99502dd` | 377 | 0 | 9 | 0 |
+
+- In the first set, 21 links, from 17 files, resolve into the PRD-008 folder.
+- `EXECUTION_LEDGER.md` has 5 relative links, none broken. Its four PRD-008 links point to `completed/`.
+- The raid log's "371 links, 0 broken" counts a different set of files. Both counts find nothing broken.
+
+**Text that still says `in-work/prd-008`.** None of these is a link:
+
+- `qa/2026-10-01-008d-baseline-review.md:260` and `:767`, the verbatim "Baseline change:" notes;
+- this report's header (`:3`);
+- `closeout-security-audit.md:421`, the report's own path when it was written;
+- `library/requirements/reports/2026-10-01-library-drift-report.md:14`, a dated snapshot.
+
+Each records where a file was at the time, so leaving them is correct.
+
+One gap: the ledger links were repointed one commit after the move (N-3).
+
+### Lows left as follow-ups
+
+| Low | Disposition | Acceptable? | Recorded where |
+|---|---|---|---|
+| L-1 (`--space-7`) | Next UI batch | Yes. Changing the value moves the sign-in, sign-up, verify, reset, and email-preview pictures, so it needs a redraw under 006D-AC-013. Doing that now would reopen 008D-AC-011 and the sign-off. Both uses remain (`email-preview.module.css:12`, `auth-form.module.css:10`). | This report (L-1) only |
+| L-2, L-3, L-4 (R4, R5, R7) | Copy follow-up | Yes. Replacement wording is already written (`008c-writing-review.md:184`, `:254`). Changing user-visible copy now would need another writing review and could move baselined pictures. | This report and the 008c writing review |
+| L-10 (eight "16.3.3" comments) | Leave the comments as they are | Yes. There are eight: `apps/web/src/app/api/auth/{change-password,choose,forgot-password,resend-verification,reset-password,sign-up,verify-email}/route.ts:14` and `password-authentication-handler.ts:281`, while `apps/web/package.json:21` pins `next` `16.3.6`. Editing auth files after the final security look would reopen the review order for a comment. The raid log entry at `EXECUTION_LEDGER.md:910` corrects the earlier "fixed at integration" claim at `:860`, which stays as written. | Raid log `:910`; this report |
+| L-14 to L-19 | A future PRD, an owner decision, or the next UI batch, as each finding states | Yes. Each is pre-existing or outside PRD-008's criteria, and the first report names an owner or a fix for each. | This report only |
+
+The dispositions are acceptable. The record is thin, though: see N-2.
+
+### FLH-001 recount on `468e281`
+
+`FLR-001` to `FLR-074`: 74 rows with 74 unique IDs and none missing. 69 are VERIFIED. These 5 are not:
+
+| Row | Criterion | Status | What closes it |
+|---|---|---|---|
+| `FLR-001` | FLH-001 | OPEN, no evidence | Writing `FLR-060` and `FLR-070` to VERIFIED, citing this section. Every 008* row is then VERIFIED by a pass other than its implementer. |
+| `FLR-002` | FLH-002 | DONE | The four required checks green on the final pushed head, and `MERGEABLE`. CI run `36867017282` on `468e281` previews that. The final head will be the records commit after this one. |
+| `FLR-004` | FLH-004 | OPEN, no evidence | This section, verdict SHIP. |
+| `FLR-060` | 008E-AC-004 | DONE | This section (M-1 re-check). In the same edit, replace its stale sentence (N-1). |
+| `FLR-070` | 008E-AC-014 | OPEN, no evidence | This section (Exit move and link check), with N-3 stated in the row's evidence. |
+
+These are the five rows the brief expected; there are no others.
+
+### FLH-005, FLH-006, and FLH-007 on `468e281`
+
+- **FLH-005 holds.** No code, test, or package file has changed since `5585ee9`.
+- **FLH-006 holds.** The status changes listed under "M-1 re-check" touch no protected status. The later write-backs are the citation-backed exception that 008e allows.
+- **FLH-007 holds.** I counted lines that contain U+2014 or U+2013:
+  - lines added in `36b58f1..468e281`, across all non-image files: 0;
+  - lines added since `99502dd`: 0;
+  - commit messages since `99502dd`: 0.
+
+  The scan is not blind: it finds the pre-existing dashes in lines nobody edited, for example four in `the-map.mdc`.
+
+### New findings
+
+None at Medium or above.
+
+- [ ] **N-1. Two ledger evidence cells are out of date.** Low.
+  - **Where:** `EXECUTION_LEDGER.md:820` (`FLR-060`) and `:817` (`FLR-057`, VERIFIED).
+  - **What is wrong:**
+    - `FLR-060` still says "CRR-096 and CRR-130 follow once the final `pnpm verify` on `5585ee9` is green". `211b519` has written both back.
+    - `FLR-057` still says "One refresh owed at ship when CRR-130 closes with FLH-003". The refresh is `0df8947`, and this section is its independent check.
+  - **Fix, in the records commit:**
+    - Rewrite `FLR-060`'s evidence: all seven rows written back (`fd8f9d5`, `211b519`) and re-checked here.
+    - Append to `FLR-057`: "refreshed in `0df8947`; re-checked by the close-out quality re-check".
+- [ ] **N-2. The deferred Lows have no forward-looking home.** Low.
+  - **What is wrong:** L-1 to L-4 and L-14 to L-19 exist only in this report. L-10 is also in the raid log. Once PRD-008 sits in `completed/`, no backlog, batch ledger, or open-questions list carries them, so the next UI batch has no pointer to L-1's redraw-bound fix or to the copy in L-2 to L-4.
+  - **Fix:** in the records commit, if convenient, add a short "Carried follow-ups" list to the PRD-008 index or to `NEXT_BATCH_LEDGER.md`:
+    - L-1: next UI batch, with a redraw;
+    - L-2 to L-4: copy;
+    - L-10 and L-19: the auth comments, after checklist step 8's deployed check;
+    - L-14 to L-18: a future PRD or an owner decision.
+
+    It does not block the ship.
+- [ ] **N-3. The ledger's PRD-008 links were repointed one commit after the move.** Low.
+  - **Where:** `EXECUTION_LEDGER.md` at `bc86d8b` and `f47a9f2`; repaired in `468e281`.
+  - **What is wrong:**
+    - 008E-AC-014 says every inbound link resolves "in the same commit" as the move.
+    - Lane commits may not touch the ledger, so `bc86d8b`, the lane's move commit, left it alone. The merge `f47a9f2`, which brought the move onto the run branch, did not repoint it either.
+    - At both commits, `EXECUTION_LEDGER.md` keeps four links to `library/requirements/in-work/prd-008-finish-line-hardening/`, which no longer exists. `468e281` repoints them.
+  - **Why Low:** the delivered tree resolves every link, so the criterion's purpose holds, and I pass it. The letter of the criterion was missed only at `f47a9f2`.
+  - **Fix:**
+    - Say this plainly in `FLR-070`'s evidence; do not claim the same commit.
+    - Merge with a squash. The repository allows only squash and rebase merges (`gh repo view`: `mergeCommitAllowed` false), and a squash keeps the broken intermediate state off `main`.
+- [ ] **N-4. The design sign-off and PR #74 do not yet agree.** Low.
+  - **Where:** `design-quality-signoff.md:13-17` and the PR #74 description.
+  - **What is wrong:**
+    - The sign-off says the re-check "is recorded in PR #74", and it calls `211b519` the run's final head. Its claim about `tests/visual/` also holds on `468e281`.
+    - The PR #74 description does not record the re-check:
+      - its screens section still reads "To be completed at ship";
+      - it says "70 acceptance criteria";
+      - it links `library/requirements/in-work/prd-008-finish-line-hardening/...`, a path that no longer exists;
+      - it describes the run as in progress.
+  - **Fix at ship:** complete the PR description, which the Gauntlet's ship step requires anyway. It needs:
+    - 74 criteria and the `completed/` path;
+    - the final ledger;
+    - the wave plan;
+    - the model selections;
+    - the guardian results;
+    - the design sign-off re-check.
+
+    The sign-off line can stay as it is, because it is tied to a named commit and is true.
+- **N-5. Two records claimed this re-check before it ran.** Info.
+  - **Where:** `CRR-096`'s evidence (`:595`) says the quality Medium was "fixed in `fd8f9d5`, independently re-checked". `qa/README.md:14` says "fixed in `fd8f9d5` and re-checked".
+  - **What is wrong:**
+    - Both were written before this re-check. They become true with this commit.
+    - The M-1 fix spans three commits, not `fd8f9d5` alone: `211b519` wrote back `CRR-096` and `CRR-130`, and `0df8947` refreshed the status lines.
+  - **Fix (optional):** name all three commits.
+
+### Record drift: strings to change when the last rows close
+
+Each string below is true today, because it is tied to `211b519` or describes rows as closing at ship. Each goes stale once `FLR-001`, `002`, `004`, `060`, and `070` close. Change them all in that records commit.
+
+1. `library/requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md:3`
+   - Now: "In `EXECUTION_LEDGER.md` 62 of the 74 `FLR` rows read VERIFIED at `211b519`. The other 12 close at ship and are listed under "Ledger status at the exit move" below."
+   - Change to: all 74 rows VERIFIED at the closing commit.
+2. The same file, `:68` (the 008a row)
+   - Now: "21 of 23 criteria VERIFIED; `008A-AC-003` and `008A-AC-007` close at ship".
+   - Change to: "All 23 criteria VERIFIED".
+3. The same file, `:72` (the 008e row)
+   - Now: "10 of 15 criteria VERIFIED; `008E-AC-004`, `008E-AC-006`, `008E-AC-007`, `008E-AC-010`, and `008E-AC-014` close at ship".
+   - Change to: "All 15 criteria VERIFIED".
+4. The same file, `:74-91`
+   - Now:
+     - the heading "Ledger status at the exit move";
+     - the paragraph at `:76`, which begins "Counted from `EXECUTION_LEDGER.md` at `211b519`: 62 of the 74 `FLR` rows are VERIFIED. The other 12 are below";
+     - the 12-row table at `:78-91`. Seven of its rows are already stale on `468e281`: `FLR-006`, `007`, `010`, `014`, `062`, `063`, and `066` are VERIFIED.
+   - Change to: one paragraph saying all 74 are VERIFIED. Keep the fact that the folder moved with 12 rows open, at the orchestrator's direction.
+5. `prd-008a-finish-line-hardening-security-and-dependency-closure.md:4`
+   - Now: "21 of its 23 criteria are VERIFIED", through "Two close at ship by the PRD's design", including "(it was clean at moderate and low on `6f24a14`)".
+   - Change to: all 23 VERIFIED, citing the audit on the final head and the close of PR #70.
+6. `prd-008e-finish-line-hardening-records-and-independent-review.md:4`
+   - Now: "10 of its 15 criteria are VERIFIED", "Five close at ship.", and the rest of that line.
+   - Change to: all 15 VERIFIED.
+7. `.cursor/rules/core/the-map.mdc:15`
+   - Now: "62 of its 74 ledger rows read VERIFIED at `211b519`; the other 12 close at ship, and the PRD's index lists them."
+   - Change to: all 74 ledger rows VERIFIED.
+8. `library/knowledge/private/product/project-map.md:85`
+   - Now: "62 of the 74 rows read VERIFIED at `211b519`, and the other 12 close at ship (the PRD's [index](...) lists them)."
+   - Change to: all 74 rows VERIFIED.
+   - Also bump the header at `:3` (now v1.15) and add a v1.16 changelog line. Leave the v1.15 line at `:308` as history.
+9. `library/requirements/completed/README.md:10`
+   - Now: "12 of its 74 ledger rows close at ship; the [index](...) lists them".
+   - Change to: all 74 ledger rows VERIFIED.
+10. `library/README.md:32` (the PRD-008 row)
+    - Now: "The ship-bound ledger rows are listed in the PRD's index."
+    - Change to: all 74 ledger rows are VERIFIED.
+11. `EXECUTION_LEDGER.md`
+    - Fill the empty evidence cells of `FLR-001`, `FLR-004`, and `FLR-070`.
+    - Rewrite the evidence of `FLR-060` (`:820`) and `FLR-057` (`:817`) (N-1).
+    - Add the final CI run and `MERGEABLE` to `FLR-002` (`:762`).
+    - Add one raid-log line.
+12. Optional: in `qa/README.md:14`, add "re-checked on `468e281`: SHIP".
+
+Outside the repository: the PR #74 description (N-4).
+
+**Searching for these strings.** `git grep -e "62 of" -e "of its 23" -e "of its 15"` finds items 1, 4, 5, 6, 7, and 8, plus the v1.15 changelog line, which stays. Items 2, 3, 9, and 10 use other words ("21 of 23", "10 of 15", "12 of its 74", "ship-bound"). Add `-e "close at ship" -e "ship-bound" -e "211b519"` to find them; the sign-off's `211b519` is tied to its commit and may stay.
+
+Model routing for this re-check: opus, because it is the last gate before ship.

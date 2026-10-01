@@ -22,6 +22,9 @@ export type PasswordChangeReason = "initial" | "reset" | "change";
  * resend control is only reachable with a valid session: the request already names exactly one
  * account, and an address-keyed window would let one office's shared address spend everybody's
  * budget. The keyed-hash rule is unchanged, so the counter table still holds no identifier.
+ *
+ * `change_password_user` (PRD-008a D2) is keyed by the person for the same reason: change-password
+ * is only reachable with a valid session, so the request already names exactly one account.
  */
 export type AuthRateLimitScope =
   | "sign_in_ip"
@@ -30,7 +33,8 @@ export type AuthRateLimitScope =
   | "forgot_email"
   | "reset_ip"
   | "verify_ip"
-  | "resend_verification_user";
+  | "resend_verification_user"
+  | "change_password_user";
 
 export interface PasswordCredential {
   readonly userId: string;

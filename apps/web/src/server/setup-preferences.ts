@@ -28,6 +28,7 @@ import {
 import {
   resolveAuthenticatedPrincipal,
   resolveAuthenticatedReadPrincipal,
+  UnauthenticatedPrincipalError,
   type CampaignCommandPorts,
 } from "./authenticated-principal.js";
 import { campaignCommandAuthErrorResponse, jsonCommandError } from "./campaign-command-http.js";
@@ -75,6 +76,17 @@ export type SetupPreferences = Readonly<{
    * walkthrough can never point at something the approval command would refuse.
    */
   awaitingDecision: SetupCampaignResult | undefined;
+  /**
+   * PRD-008b 008B-AC-009 to 008B-AC-011, writing review R6. True when the list of this workspace's
+   * campaigns was asked for and could not be read.
+   *
+   * `awaitingDecision` is `undefined` in that case too, and it cannot carry the difference: the
+   * walkthrough tells an approver that nothing is waiting for them when it is `undefined`, which is
+   * true of a list that was read and empty and not known of one that could not be read. This is what
+   * says which it was. It is `false` whenever the list was not asked for, because there is then no
+   * failure to report.
+   */
+  awaitingDecisionFailed: boolean;
 }>;
 
 function emptySetupPreferences(): SetupPreferences {
@@ -83,6 +95,7 @@ function emptySetupPreferences(): SetupPreferences {
     profile: undefined,
     campaign: undefined,
     awaitingDecision: undefined,
+    awaitingDecisionFailed: false,
   };
 }
 
@@ -170,22 +183,87 @@ export function selectCampaignAwaitingDecision<
 }
 
 /**
+ * What asking for the campaign waiting for a decision came back with. The two empty answers are
+ * different facts: `{ campaign: undefined, failed: false }` is a list that was read and had nothing
+ * waiting on it, and `failed: true` is a list that could not be read, about which nothing is known.
+ */
+type AwaitingDecisionRead = Readonly<{
+  campaign: SetupCampaignResult | undefined;
+  failed: boolean;
+}>;
+
+const NOTHING_WAITING: AwaitingDecisionRead = Object.freeze({ campaign: undefined, failed: false });
+const READ_FAILED: AwaitingDecisionRead = Object.freeze({ campaign: undefined, failed: true });
+
+/** A short word from an error, or nothing: used to log what kind of failure it was and no more. */
+function safeErrorToken(value: unknown, maxLength: number): string | undefined {
+  return typeof value === "string" && value.length <= maxLength && /^[A-Za-z0-9_.-]+$/u.test(value)
+    ? value
+    : undefined;
+}
+
+/**
+ * The kind of a failure, as a log line may carry it: the error's class and, when the driver gave
+ * one, its short code. It never carries the error's message, because a driver's message can quote a
+ * value from the query, and it never names the person, their session, or their workspace.
+ */
+function failureKind(error: unknown): string {
+  return error instanceof Error
+    ? [
+        safeErrorToken(error.name, 80) ?? "Error",
+        safeErrorToken((error as { code?: unknown }).code, 40),
+      ]
+        .filter((part) => part !== undefined)
+        .join(" ")
+    : typeof error;
+}
+
+/**
+ * The server's record that the list could not be read.
+ *
+ * The message a person reads is the walkthrough's own sentence; this line is for whoever watches the
+ * deployment's log and needs to tell a workspace whose list read keeps failing from one with nothing
+ * in it. It is written on every failure rather than once a process, because a failure of this read
+ * is an event on a request and not a standing fact about the deployment's configuration.
+ */
+function logAwaitingDecisionFailure(error: unknown): void {
+  console.error(
+    `setup-preferences: the campaign waiting for a decision could not be read (${failureKind(error)}); the guided setup says it could not look, and not that nothing is waiting.`,
+  );
+}
+
+/** The same record, for the layout's whole read of the setup failing before it got to the list. */
+function logSetupReadFailure(error: unknown): void {
+  console.error(
+    `setup-preferences: the guided setup's saved state could not be read (${failureKind(error)}); the guided setup starts again and says it could not look for a campaign waiting for a decision, and not that nothing is waiting.`,
+  );
+}
+
+/**
  * PRD-006c D5. The newest campaign in this workspace that this person could approve right now and
  * that nobody has decided. The role is checked first so that a creator, who is most people, never
  * pays for the list.
+ *
+ * Writing review R6. A read that fails is reported as a failure, in the result and in the log, and
+ * is not folded into "nothing is waiting". The read still cannot fail the page, because the layout
+ * performs it before the shell renders: what the person loses is the walkthrough's answer, and the
+ * walkthrough says so.
  */
 async function readCampaignAwaitingDecision(
   principal: Readonly<AuthenticatedPrincipal>,
   environment: unknown,
-): Promise<SetupCampaignResult | undefined> {
-  if (!principalHasCampaignApprovalRole(principal)) return undefined;
+): Promise<AwaitingDecisionRead> {
+  if (!principalHasCampaignApprovalRole(principal)) return NOTHING_WAITING;
   try {
     const newest = selectCampaignAwaitingDecision(
       await listWorkspaceCampaigns(principal, environment),
     );
-    return newest === undefined ? undefined : campaignResultFrom(newest);
-  } catch {
-    return undefined;
+    return newest === undefined
+      ? NOTHING_WAITING
+      : Object.freeze({ campaign: campaignResultFrom(newest), failed: false });
+  } catch (error: unknown) {
+    logAwaitingDecisionFailure(error);
+    return READ_FAILED;
   }
 }
 
@@ -268,19 +346,21 @@ export async function readSetupPreferences(
     progress.campaignRef === undefined || progress.status === "completed"
       ? undefined
       : await readCampaignResult(principal, progress.campaignRef, environment);
+  // Only for somebody with nothing of their own to read, and only once the walkthrough is far
+  // enough along to use it. A person who created a campaign in this walkthrough is looking at
+  // that one, and a second candidate would be a second answer to a question they have already
+  // settled; a person on the welcome step, or one who has finished, is not being handed anything
+  // and should not pay for the list on every page they open.
+  const awaiting =
+    campaign === undefined && wantsCampaignAwaitingDecision(progress)
+      ? await readCampaignAwaitingDecision(principal, environment)
+      : NOTHING_WAITING;
   return Object.freeze({
     progress,
     profile: profileRow === undefined ? undefined : parseStoredProfile(profileRow.value),
     campaign,
-    // Only for somebody with nothing of their own to read, and only once the walkthrough is far
-    // enough along to use it. A person who created a campaign in this walkthrough is looking at
-    // that one, and a second candidate would be a second answer to a question they have already
-    // settled; a person on the welcome step, or one who has finished, is not being handed anything
-    // and should not pay for the list on every page they open.
-    awaitingDecision:
-      campaign === undefined && wantsCampaignAwaitingDecision(progress)
-        ? await readCampaignAwaitingDecision(principal, environment)
-        : undefined,
+    awaitingDecision: awaiting.campaign,
+    awaitingDecisionFailed: awaiting.failed,
   });
 }
 
@@ -422,7 +502,19 @@ export async function handleSetupProfile(
 
 /**
  * The layout's read, from a request rather than a principal. It answers the empty value for an
- * unauthenticated or synthetic render, so the caller has one shape to handle.
+ * unauthenticated or synthetic render, so the caller has one shape to handle: nobody signed in is
+ * nobody to look for, and is not a failure to look.
+ *
+ * It also answers an empty value when the read fails, because the read cannot fail the page: the
+ * walkthrough starts again at its first step. Writing review R6, second half. That empty value says
+ * no campaign is waiting for anybody, and an approver who cannot create a campaign can still press
+ * Continue through the steps, because their saves are separate requests, and be told at step 6 that
+ * "nothing is waiting" about a workspace nobody looked at. So for somebody who is, or may be, an
+ * approver, the failure is the same failed state the campaign list read reports, and it is logged
+ * the same way. The person is not known when it was resolving them that failed, so that case counts
+ * as an approver: the provider only says anything different to somebody who can approve and cannot
+ * create. For somebody who is known not to be able to approve the empty value is what it always was,
+ * with no new state and no new log line, because nothing the walkthrough says to them depends on it.
  */
 export async function readSetupPreferencesForRequest(
   request: Request,
@@ -432,10 +524,16 @@ export async function readSetupPreferencesForRequest(
     return emptySetupPreferences();
   }
   const ports = resolveRuntimeCampaignCommandPorts(environment);
+  let principal: Readonly<AuthenticatedPrincipal> | undefined;
   try {
-    const principal = await resolveAuthenticatedReadPrincipal(request, environment, ports);
+    principal = await resolveAuthenticatedReadPrincipal(request, environment, ports);
     return await readSetupPreferences(principal, environment);
-  } catch {
-    return emptySetupPreferences();
+  } catch (error: unknown) {
+    if (error instanceof UnauthenticatedPrincipalError) return emptySetupPreferences();
+    if (principal !== undefined && !principalHasCampaignApprovalRole(principal)) {
+      return emptySetupPreferences();
+    }
+    logSetupReadFailure(error);
+    return { ...emptySetupPreferences(), awaitingDecisionFailed: true };
   }
 }

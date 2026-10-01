@@ -115,7 +115,10 @@ export type ApproveOrHandOffStep = Readonly<{
  *   the checks found. The copy-link card is not on that page either, and the approve control is
  *   blocked, so neither is somewhere this step can honestly point;
  * - none: an approver who cannot create a campaign and has none waiting says that nothing is, and
- *   points at nothing, because there is no campaign page for the panel to point at.
+ *   points at nothing, because there is no campaign page for the panel to point at;
+ * - campaigns_unread: the same approver, when the campaigns could not be loaded to look. It says
+ *   that it could not look and never that nothing is waiting, and points at nothing for the same
+ *   reason.
  */
 export function approveOrHandOffStep(
   input: Readonly<{ canApprove: boolean; standing: CampaignStanding }>,
@@ -142,6 +145,12 @@ export function approveOrHandOffStep(
       };
     case "none":
       return { anchor: PANEL_ANCHORED, body: words.noneBody, title: words.noneTitle };
+    case "campaigns_unread":
+      return {
+        anchor: PANEL_ANCHORED,
+        body: words.campaignsUnreadBody,
+        title: words.campaignsUnreadTitle,
+      };
     case "waiting":
     case "unknown":
       return input.canApprove
@@ -172,6 +181,8 @@ export function readTheResultBody(standing: CampaignStanding): string {
       return words.unknownBody;
     case "none":
       return words.noneBody;
+    case "campaigns_unread":
+      return words.campaignsUnreadBody;
     case "needs_changes":
       return words.needsChangesBody;
     case "waiting":
@@ -198,6 +209,8 @@ export function whatHappensNextBody(standing: CampaignStanding): string {
       return words.body;
     case "none":
       return `${words.noneLead} ${words.noneTail}`;
+    case "campaigns_unread":
+      return `${words.campaignsUnreadLead} ${words.noneTail}`;
     case "waiting":
       return `${words.waitingLead} ${words.tail}`;
     case "needs_changes":

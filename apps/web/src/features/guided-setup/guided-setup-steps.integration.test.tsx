@@ -78,6 +78,11 @@ type ProviderOptions = Readonly<{
   /** PRD-006c D5's other campaign: one waiting for this person's decision. */
   campaignAwaitingDecision?: SetupCampaignResult | undefined;
   /**
+   * PRD-008b 008B-AC-010, writing review R6. The server tried to read the campaigns waiting for this
+   * person and could not, which is a different fact from there being none.
+   */
+  campaignAwaitingDecisionFailed?: boolean;
+  /**
    * A `fetch` that answers differently from the recording one: held open, answering out of order,
    * refusing. The two F-23 cases supply their own; everything else uses the recorder and reads
    * `calls` from the returned view.
@@ -89,6 +94,7 @@ function setupProvider(options: ProviderOptions) {
   return (
     <GuidedSetupProvider
       campaignAwaitingDecision={options.campaignAwaitingDecision}
+      campaignAwaitingDecisionFailed={options.campaignAwaitingDecisionFailed}
       canApprove={options.canApprove ?? true}
       canCreate={options.canCreate ?? true}
       enabled={options.enabled ?? true}
@@ -731,6 +737,115 @@ describe("guided setup steps", () => {
       expect(panel()).not.toHaveTextContent(/Your campaign/u);
     });
 
+    /**
+     * Writing review R6. The server could not read the campaigns waiting for this approver, which
+     * is not the same as there being none. The walkthrough used to be told `undefined` for both, so
+     * it said "Nothing is waiting for you" about a workspace it had not been able to look at. Each
+     * of the three steps that would have said it now says that it could not look.
+     */
+    describe("when the campaigns waiting for them could not be loaded", () => {
+      const UNREAD_TITLE = "We couldn't load what's waiting for you";
+      const UNREAD_BODY =
+        "We couldn't load the campaigns waiting for your approval just now. Refresh the page to try again, or open your campaigns to see if one is waiting.";
+      const NOTHING_WAITING_CLAIMS = [
+        "Nothing is waiting for you",
+        "No campaign is waiting for your approval right now",
+      ] as const;
+
+      it("does not tell them nothing is waiting at step 6, and says what it could not do", async () => {
+        const { calls } = await continueFromTheRealtorStep({
+          campaignAwaitingDecisionFailed: true,
+        });
+
+        await screen.findByRole("dialog", { name: UNREAD_TITLE });
+        expect(panel()).toHaveAccessibleDescription(UNREAD_BODY);
+        for (const claim of NOTHING_WAITING_CLAIMS) {
+          expect(panel(), claim).not.toHaveTextContent(claim);
+        }
+        expect(panel()).not.toHaveTextContent("Choose Approve this version.");
+        // It is still the step that is theirs: an approver who cannot create is not sent to step 4.
+        expect(lastStoredProgress(calls).currentStep).toBe(6);
+        expect(push).not.toHaveBeenCalledWith("/marketing/campaigns/new");
+      });
+
+      it("does not tell them nothing is waiting at step 5 either", async () => {
+        renderSetup({
+          canApprove: true,
+          canCreate: false,
+          profile: SAMPLE_PROFILE,
+          progress: progressAt(5),
+          campaignAwaitingDecisionFailed: true,
+        });
+
+        await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.readTheResult.title });
+        expect(panel()).toHaveAccessibleDescription(
+          "We couldn't load the campaigns waiting for your approval just now. Refresh the page to try again.",
+        );
+        for (const claim of NOTHING_WAITING_CLAIMS) {
+          expect(panel(), claim).not.toHaveTextContent(claim);
+        }
+        expect(panel()).not.toHaveTextContent("ready for approval");
+      });
+
+      it("ends with the closing step saying it could not look, and still that nothing runs as an ad yet", async () => {
+        await continueFromTheRealtorStep({ campaignAwaitingDecisionFailed: true });
+        await screen.findByRole("dialog", { name: UNREAD_TITLE });
+
+        await pressContinue();
+
+        await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.whatHappensNext.title });
+        expect(panel()).toHaveAccessibleDescription(
+          "We couldn't load the campaigns waiting for your approval just now. A campaign won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch campaigns.",
+        );
+        for (const claim of NOTHING_WAITING_CLAIMS) {
+          expect(panel(), claim).not.toHaveTextContent(claim);
+        }
+      });
+
+      it("says nothing is waiting again once the next render reads the list and finds none", async () => {
+        const view = await continueFromTheRealtorStep({ campaignAwaitingDecisionFailed: true });
+        await screen.findByRole("dialog", { name: UNREAD_TITLE });
+
+        view.rerenderWith({ campaignAwaitingDecisionFailed: false });
+
+        await waitFor(() => {
+          expect(panel()).toHaveAccessibleName("Nothing is waiting for you");
+        });
+      });
+
+      it("hands them the campaign that is waiting when a later render does read one", async () => {
+        const view = await continueFromTheRealtorStep({ campaignAwaitingDecisionFailed: true });
+        await screen.findByRole("dialog", { name: UNREAD_TITLE });
+
+        view.rerenderWith({
+          campaignAwaitingDecision: WAITING,
+          campaignAwaitingDecisionFailed: false,
+        });
+
+        await waitFor(() => {
+          expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.approveOrHandOff.title);
+        });
+        expect(panel()).toHaveTextContent("Choose Approve this version.");
+      });
+
+      it.each([
+        ["a workspace owner, who can approve and create", true, true],
+        ["a campaign creator, who cannot approve", false, true],
+      ] as const)(
+        "changes nothing for %s, who is sent to create a campaign whatever the list said",
+        async (_who, canApprove, canCreate) => {
+          const { calls } = await continueFromTheRealtorStep({
+            campaignAwaitingDecisionFailed: true,
+            canApprove,
+            canCreate,
+          });
+
+          await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.createCampaign.title });
+          expect(lastStoredProgress(calls).currentStep).toBe(4);
+        },
+      );
+    });
+
     /** The branches that were there before are not touched: people who can create are sent to create. */
     it.each([
       ["a workspace owner, who can approve and create", true, true],
@@ -813,6 +928,28 @@ describe("guided setup steps", () => {
         ]);
       },
     );
+
+    /**
+     * The other half of R6. When the layout's whole read of the setup failed, the walkthrough is at
+     * its first step with the failed state set, and an approver who cannot create a campaign can
+     * still press Continue through the steps, because the saves are separate requests. They reach
+     * step 6, and it must say it could not look rather than that nothing is waiting.
+     */
+    it("takes an approver who cannot create from the welcome step to a step 6 that says it could not look", async () => {
+      const { calls } = await walkToTheStepAfterTheRealtor({
+        canApprove: true,
+        canCreate: false,
+        campaignAwaitingDecisionFailed: true,
+      });
+
+      await screen.findByRole("dialog", { name: "We couldn't load what's waiting for you" });
+      expect(panel()).not.toHaveTextContent("Nothing is waiting for you");
+      expect(storedMoves(calls)).toEqual([
+        [2, null],
+        [3, null],
+        [6, null],
+      ]);
+    });
 
     it.each([
       [

@@ -38,3 +38,24 @@ export type SetupCampaignResult = Readonly<{
    */
   decision?: "approved" | "rejected" | undefined;
 }>;
+
+/**
+ * PRD-008b 008B-AC-011. Where a campaign stands, as the walkthrough's steps need to say it.
+ *
+ * Steps 5, 6, and 7 each say something about the campaign, so one answer to "where does it stand"
+ * serves all three and none of them can disagree with another. A recorded decision comes first: it
+ * is the fact, and a decided version has already passed its checks. The check result comes next, so
+ * a version that fails them is `needs_changes` and not `waiting`, because it is waiting for its
+ * author and for nobody else. `unknown` is a campaign the walkthrough could not read, and the steps
+ * say less about it rather than guess.
+ */
+export type CampaignStanding = "unknown" | "needs_changes" | "waiting" | "approved" | "sent_back";
+
+export function campaignStanding(
+  campaign: Pick<SetupCampaignResult, "decision" | "ready"> | undefined,
+): CampaignStanding {
+  if (campaign === undefined) return "unknown";
+  if (campaign.decision === "approved") return "approved";
+  if (campaign.decision === "rejected") return "sent_back";
+  return campaign.ready ? "waiting" : "needs_changes";
+}

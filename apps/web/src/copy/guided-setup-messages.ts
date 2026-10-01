@@ -91,6 +91,14 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
      */
     unknownBody:
       "We couldn't read the result for this campaign just now. Open the campaign to see where it stands.",
+    /**
+     * PRD-008b 008B-AC-011. Step 5 says the campaign is ready for approval, which is true while it
+     * is waiting for somebody to decide it and not after: a version that was approved, or sent back,
+     * is past that. "Ready for approval" stays the answer for a version nobody has decided on.
+     */
+    approvedBody: "Your campaign is saved and approved. Nothing has been published or sent.",
+    sentBackBody:
+      "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it.",
   }),
   approveOrHandOff: Object.freeze({
     position: 6,
@@ -116,11 +124,35 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
     sentBackTitle: "This version was sent back",
     sentBackBody:
       "This version was sent back for changes, so it can't be approved as it is. It needs a new version before anyone can approve it.",
+    /**
+     * PRD-008b 008B-AC-011. A version whose checks need changes is waiting for its author, so there
+     * is nothing for an approver to approve and nothing for anyone to hand on. Both sentences are
+     * ones the campaign's own page already says: the first is the approve control's reason, and the
+     * second is the next step the page offers.
+     */
+    needsChangesTitle: "This version needs changes",
+    needsChangesBody:
+      "This version needs changes before anyone can approve it. Fix what the checks found, then save it again.",
   }),
   whatHappensNext: Object.freeze({
     position: 7,
     title: "What happens next",
-    body: "Your campaign is saved and approved. It won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it.",
+    /**
+     * PRD-006c 006C-AC-018 and PRD-008b 008B-AC-011. The last step has to say the campaign will not
+     * run as an ad until HighLevel and Meta are connected, and it has to say what is true of the
+     * campaign. It used to say "saved and approved" to everybody, including somebody whose campaign
+     * nobody had approved. The first sentence now follows where the campaign stands, and every
+     * version ends in the same `tail`, which is the part 006C-AC-018 asks for. `body` is the
+     * whole sentence for a campaign the walkthrough could not read, which says nothing about its
+     * state because it does not know it.
+     */
+    body: "Your campaign won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it.",
+    waitingLead: "Your campaign is saved and waiting for approval.",
+    approvedLead: "Your campaign is saved and approved.",
+    needsChangesLead: "Your campaign is saved, and the checks found things to fix first.",
+    sentBackLead:
+      "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it.",
+    tail: "It won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it.",
     primaryLabel: "Done",
   }),
 });

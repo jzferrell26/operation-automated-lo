@@ -567,6 +567,177 @@ describe("guided setup steps", () => {
     },
   );
 
+  /**
+   * PRD-008b 008B-AC-011. Step 5 says the campaign is "ready for approval". That is true of a
+   * version that passed its checks and is waiting for somebody to decide it, and of nothing else:
+   * a version somebody has decided is past that, and one whose checks need changes is not ready.
+   */
+  describe("step 5 and where the campaign stands", () => {
+    const CAMPAIGN_REF = READY_PREFLIGHT_RESPONSE.campaignRef;
+
+    it.each([
+      [
+        "approved",
+        "approved",
+        "Your campaign is saved and approved. Nothing has been published or sent.",
+      ],
+      [
+        "sent back",
+        "rejected",
+        "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it.",
+      ],
+    ] as const)(
+      "says a version that was %s was, and never that it is ready for approval",
+      (_outcome, decision, body) => {
+        renderSetup({
+          progress: progressAt(5, { campaignRef: CAMPAIGN_REF }),
+          savedCampaign: savedCampaignResult({ decision }),
+        });
+
+        expect(panel()).toHaveAccessibleDescription(body);
+        expect(screen.getAllByText(body)).toHaveLength(2);
+        expect(panel()).not.toHaveTextContent("ready for approval");
+      },
+    );
+
+    it("still says a version nobody has decided on is ready for approval", () => {
+      renderSetup({
+        progress: progressAt(5, { campaignRef: CAMPAIGN_REF }),
+        savedCampaign: savedCampaignResult(),
+      });
+
+      expect(panel()).toHaveAccessibleDescription(GUIDED_SETUP_STEPS.readTheResult.readyBody);
+      expect(screen.getAllByText(GUIDED_SETUP_STEPS.readTheResult.readyBody)).toHaveLength(2);
+    });
+
+    it("never says a version whose checks need changes is ready for approval", () => {
+      renderSetup({
+        progress: progressAt(5, { campaignRef: CAMPAIGN_REF }),
+        savedCampaign: blockedCampaignResult(),
+      });
+
+      expect(panel()).toHaveAccessibleDescription(
+        GUIDED_SETUP_STEPS.readTheResult.needsChangesBody,
+      );
+      expect(panel()).not.toHaveTextContent("ready for approval");
+    });
+  });
+
+  /**
+   * 008B-AC-011, step 6 for a version whose checks need changes. The step asked an approver to
+   * approve it and anybody else to hand the link on, and neither can be done: it is waiting for its
+   * author. It says so, and points at what the checks found.
+   */
+  describe("step 6 on a version whose checks need changes", () => {
+    it.each([
+      ["somebody who can approve", true],
+      ["somebody who cannot", false],
+    ] as const)(
+      "tells %s the version needs changes, and not to approve it or hand it off",
+      (_who, canApprove) => {
+        renderSetup({
+          canApprove,
+          progress: progressAt(6),
+          savedCampaign: blockedCampaignResult(),
+        });
+
+        expect(panel()).toHaveAccessibleName("This version needs changes");
+        expect(panel()).toHaveAccessibleDescription(
+          "This version needs changes before anyone can approve it. Fix what the checks found, then save it again.",
+        );
+        for (const untrue of [
+          GUIDED_SETUP_STEPS.approveOrHandOff.approveBody,
+          GUIDED_SETUP_STEPS.approveOrHandOff.handOffBody,
+          "Copy this link",
+        ]) {
+          expect(panel(), untrue).not.toHaveTextContent(untrue);
+        }
+      },
+    );
+
+    it("points at what the checks found, never at the copy-link card", async () => {
+      renderSetup({
+        canApprove: false,
+        children: (
+          <main>
+            <div data-tour={GUIDED_SETUP_ANCHORS.campaignCheckFindings}>What the checks found</div>
+            <div data-tour={GUIDED_SETUP_ANCHORS.campaignHandoffLink}>
+              <button type="button">Copy link</button>
+            </div>
+          </main>
+        ),
+        progress: progressAt(6),
+        savedCampaign: blockedCampaignResult(),
+      });
+
+      await waitFor(() => {
+        expect(
+          document.querySelector(anchorSelector(GUIDED_SETUP_ANCHORS.campaignCheckFindings)),
+        ).toHaveAttribute("data-guided-setup-highlight", "true");
+      });
+      expect(
+        document.querySelector(anchorSelector(GUIDED_SETUP_ANCHORS.campaignHandoffLink)),
+      ).not.toHaveAttribute("data-guided-setup-highlight");
+    });
+  });
+
+  /**
+   * 008B-AC-011, step 7. "What happens next" said "Your campaign is saved and approved" to
+   * everybody, including a person whose campaign nobody had approved. It now says what is true of
+   * the campaign, and every version of it still says the campaign will not run as an ad until
+   * HighLevel and Meta are connected (006C-AC-018).
+   */
+  describe("step 7 and where the campaign stands", () => {
+    const TAIL =
+      "It won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it.";
+
+    it.each([
+      [
+        "waiting for approval",
+        savedCampaignResult(),
+        `Your campaign is saved and waiting for approval. ${TAIL}`,
+      ],
+      [
+        "approved",
+        savedCampaignResult({ decision: "approved" }),
+        `Your campaign is saved and approved. ${TAIL}`,
+      ],
+      [
+        "sent back",
+        savedCampaignResult({ decision: "rejected" }),
+        `Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it. ${TAIL}`,
+      ],
+      [
+        "waiting on its checks",
+        blockedCampaignResult(),
+        `Your campaign is saved, and the checks found things to fix first. ${TAIL}`,
+      ],
+      [
+        "unknown",
+        undefined,
+        "Your campaign won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it.",
+      ],
+    ] as const)("says what is true of a campaign that is %s", (_what, savedCampaign, body) => {
+      renderSetup({ progress: progressAt(7), savedCampaign });
+
+      expect(panel()).toHaveAccessibleDescription(body);
+      expect(screen.getByText(body)).toBeInTheDocument();
+      expect(body).toContain("won't run as an ad yet");
+      expect(screen.getByText(NOT_CONNECTED_SOURCE)).toBeInTheDocument();
+    });
+
+    it.each([
+      ["nobody has decided on", savedCampaignResult()],
+      ["was sent back", savedCampaignResult({ decision: "rejected" })],
+      ["whose checks need changes", blockedCampaignResult()],
+      ["that could not be read", undefined],
+    ] as const)("never says approved of a campaign %s", (_what, savedCampaign) => {
+      renderSetup({ progress: progressAt(7), savedCampaign });
+
+      expect(panel()).not.toHaveTextContent(/\bapproved\b/u);
+    });
+  });
+
   it("closes by naming all three accounts and offering no connect, publish, or spend action", () => {
     renderSetup({ progress: progressAt(7) });
     expect(screen.getByText(GUIDED_SETUP_STEPS.whatHappensNext.body)).toBeInTheDocument();

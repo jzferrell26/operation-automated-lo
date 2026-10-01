@@ -17,7 +17,7 @@ import {
   type SavedCampaignReport,
 } from "./guided-setup-context.js";
 import { GuidedSetupStep } from "./guided-setup-step.js";
-import type { SetupCampaignResult } from "./model/campaign-result.js";
+import { campaignStanding, type SetupCampaignResult } from "./model/campaign-result.js";
 import {
   advanceTo,
   complete,
@@ -45,7 +45,9 @@ import { ResultStep } from "./steps/result-step.js";
 import {
   CAMPAIGN_FIELD_SEQUENCE,
   approveOrHandOffStep,
+  readTheResultBody,
   stepDefinition,
+  whatHappensNextBody,
 } from "./steps/step-model.js";
 
 /**
@@ -607,7 +609,7 @@ function CurrentStep(props: CurrentStepProps) {
       return (
         <GuidedSetupStep
           {...shared}
-          body={resultBody(campaign)}
+          body={readTheResultBody(campaignStanding(campaign))}
           onContinue={() => {
             onStep(6);
           }}
@@ -621,7 +623,7 @@ function CurrentStep(props: CurrentStepProps) {
       // campaign screen, so a user who dismissed the walkthrough still has them. 008B-AC-010 adds a
       // third answer for a version somebody has already decided on, for both kinds of person, and
       // `approveOrHandOffStep` is where the three are told apart.
-      const step = approveOrHandOffStep({ canApprove, decision: campaign?.decision });
+      const step = approveOrHandOffStep({ canApprove, standing: campaignStanding(campaign) });
       return (
         <GuidedSetupStep
           {...shared}
@@ -638,7 +640,7 @@ function CurrentStep(props: CurrentStepProps) {
       return (
         <GuidedSetupStep
           {...shared}
-          body={GUIDED_SETUP_STEPS.whatHappensNext.body}
+          body={whatHappensNextBody(campaignStanding(campaign))}
           continueLabel={GUIDED_SETUP_STEPS.whatHappensNext.primaryLabel}
           onContinue={onComplete}
         >
@@ -646,13 +648,6 @@ function CurrentStep(props: CurrentStepProps) {
         </GuidedSetupStep>
       );
   }
-}
-
-function resultBody(campaign: SetupCampaignResult | undefined): string {
-  if (campaign === undefined) return GUIDED_SETUP_STEPS.readTheResult.unknownBody;
-  return campaign.ready
-    ? GUIDED_SETUP_STEPS.readTheResult.readyBody
-    : GUIDED_SETUP_STEPS.readTheResult.needsChangesBody;
 }
 
 function renderProfileStep(

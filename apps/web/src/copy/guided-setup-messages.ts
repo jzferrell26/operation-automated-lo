@@ -99,6 +99,11 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
     approvedBody: "Your campaign is saved and approved. Nothing has been published or sent.",
     sentBackBody:
       "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it.",
+    /**
+     * PRD-008b 008B-AC-010. An approver who cannot create a campaign, with nothing waiting for them.
+     * There is no result to read, and the step says that instead of describing a campaign.
+     */
+    noneBody: "No campaign is waiting for your approval right now.",
   }),
   approveOrHandOff: Object.freeze({
     position: 6,
@@ -133,6 +138,16 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
     needsChangesTitle: "This version needs changes",
     needsChangesBody:
       "This version needs changes before anyone can approve it. Fix what the checks found, then save it again.",
+    /**
+     * PRD-008b 008B-AC-010. What step 6 says to an approver who cannot create a campaign when nobody
+     * has saved one for them to approve. It used to tell them to choose "Approve this version", which
+     * is not on a page that has no campaign, and before that it sent them to step 4, "Create the
+     * Open House Boost", which their role cannot do. It says nothing is waiting, and what to do when
+     * something is. "Your campaigns" is the list page's own heading.
+     */
+    noneTitle: "Nothing is waiting for you",
+    noneBody:
+      "No campaign is waiting for your approval right now. When somebody saves one, open it from your campaigns and approve it there.",
   }),
   whatHappensNext: Object.freeze({
     position: 7,
@@ -153,6 +168,15 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
     sentBackLead:
       "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it.",
     tail: "It won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it.",
+    /**
+     * For an approver who cannot create a campaign and has none to approve. There is no campaign to
+     * call "your campaign", so it says that nothing is waiting, and then what the last step is
+     * required to say (006C-AC-018): a campaign will not run as an ad until HighLevel and Meta are
+     * connected.
+     */
+    noneLead: "No campaign is waiting for your approval right now.",
+    noneTail:
+      "A campaign won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch campaigns.",
     /**
      * The same sentence without the promise of a launch, for a campaign that was sent back. "It needs
      * a new version before anyone can approve it" followed by "this is where you'll launch it" reads

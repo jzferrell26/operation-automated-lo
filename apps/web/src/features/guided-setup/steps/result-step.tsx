@@ -1,9 +1,9 @@
 "use client";
 
-import {
-  campaignStanding,
-  type SetupCampaignResult,
-  type SetupResultFinding,
+import type {
+  CampaignStanding,
+  SetupCampaignResult,
+  SetupResultFinding,
 } from "../model/campaign-result.js";
 import { readTheResultBody } from "./step-model.js";
 import styles from "../guided-setup.module.css";
@@ -29,13 +29,15 @@ export type ResultStepProps = Readonly<{
         }
       >
     | undefined;
+  /** Where the campaign stands, which the provider decides, so the panel and this block agree. */
+  standing: CampaignStanding;
 }>;
 
-export function ResultStep({ result }: ResultStepProps) {
+export function ResultStep({ result, standing }: ResultStepProps) {
   // PRD-008b 008B-AC-011. What the sentence says follows where the campaign stands, not the check
   // result alone, so a version somebody has decided is not described as ready for approval.
   if (result === undefined || result.findings.length === 0) {
-    return <p className={styles.stepBody}>{readTheResultBody(campaignStanding(result))}</p>;
+    return <p className={styles.stepBody}>{readTheResultBody(standing)}</p>;
   }
   return (
     <ul className={styles.findingList}>

@@ -48,8 +48,14 @@ export type SetupCampaignResult = Readonly<{
  * a version that fails them is `needs_changes` and not `waiting`, because it is waiting for its
  * author and for nobody else. `unknown` is a campaign the walkthrough could not read, and the steps
  * say less about it rather than guess.
+ *
+ * `none` is not about a campaign at all. It is an approver who cannot create one, with nothing
+ * waiting for them: there is no campaign to describe, and the steps say so rather than describe one
+ * that does not exist. The provider decides it, because it needs the person's role and the stored
+ * progress as well as the campaign, so `campaignStanding` never returns it.
  */
-export type CampaignStanding = "unknown" | "needs_changes" | "waiting" | "approved" | "sent_back";
+export type CampaignStanding =
+  "unknown" | "none" | "needs_changes" | "waiting" | "approved" | "sent_back";
 
 export function campaignStanding(
   campaign: Pick<SetupCampaignResult, "decision" | "ready"> | undefined,

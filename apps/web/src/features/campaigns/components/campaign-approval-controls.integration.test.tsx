@@ -273,3 +273,70 @@ describe("the approval control once a decision has been recorded", () => {
     expect(screen.queryByRole("button", { name: SEND_BACK_LABEL })).toBeNull();
   });
 });
+
+/**
+ * Finding H1 of the 2026-10-01 writing re-review, and the guard that nothing else moved with it.
+ *
+ * The control gives one reason for each state it can be in. A version whose checks need changes is
+ * not approvable by anyone, so `canApprove` is false for an approver there too; the reason has to be
+ * the checks, and it used to be the viewers
+
+/**
+ * Finding H1 of the 2026-10-01 writing re-review, and the guard that nothing else moved with it.
+ *
+ * The control gives one reason for each state it can be in. A version whose checks need changes is
+ * not approvable by anyone, so `canApprove` is false for an approver there too; the reason has to be
+ * the checks, and it used to be the viewer's permission. Every other row is what the control said
+ * before, so a change to the order of the tests cannot quietly change what it says for them.
+ */
+describe("what the approval control says in each state", () => {
+  const PERMISSION = "Only an approver or your workspace owner can approve a campaign.";
+  const SEND_IT_ON = "Send them this page and ask them to look at this version.";
+  const NEEDS_CHANGES = "This version needs changes before anyone can approve it.";
+  const FIX_IT = "Fix what the checks found, then save it again.";
+  const ALREADY_DECIDED = "Someone has already decided on this version.";
+  const READ_WHO_DECIDED = "Read who decided, above. Nothing else happens from this page.";
+  const READY =
+    "Read the wording, the budget, where the ad runs, the dates, and the disclosures before you approve.";
+
+  it.each([
+    ["an approver on a version waiting for a decision", { ...APPROVABLE }, [READY], [PERMISSION]],
+    [
+      "somebody who cannot approve a version waiting for a decision",
+      { ...APPROVABLE, canApprove: false },
+      [PERMISSION, SEND_IT_ON],
+      [NEEDS_CHANGES, READY],
+    ],
+    [
+      "somebody who cannot approve a version whose checks need changes",
+      { ...APPROVABLE, canApprove: false, blocking: true, state: "preflight_failed" },
+      [NEEDS_CHANGES, FIX_IT],
+      [PERMISSION, SEND_IT_ON],
+    ],
+    [
+      "an approving role on a version whose checks need changes",
+      { ...APPROVABLE, canApprove: true, blocking: true, state: "preflight_failed" },
+      [NEEDS_CHANGES, FIX_IT],
+      [PERMISSION, SEND_IT_ON],
+    ],
+    [
+      "anybody on a version that was approved",
+      { ...APPROVABLE, canApprove: false, alreadyDecided: "approved", state: "approved" },
+      [ALREADY_DECIDED, READ_WHO_DECIDED],
+      [PERMISSION, NEEDS_CHANGES],
+    ],
+    [
+      "anybody on a version that was sent back",
+      { ...APPROVABLE, canApprove: true, alreadyDecided: "rejected" },
+      [ALREADY_DECIDED, READ_WHO_DECIDED],
+      [PERMISSION, NEEDS_CHANGES],
+    ],
+  ] as const)("says the right reason to %s", (_who, props, present, absent) => {
+    render(<CampaignApprovalControls {...props} />);
+
+    for (const sentence of present)
+      expect(screen.getByText(sentence), sentence).toBeInTheDocument();
+    for (const sentence of absent) expect(screen.queryByText(sentence), sentence).toBeNull();
+    expect(screen.queryByText(/Read the decision below/u)).toBeNull();
+  });
+});

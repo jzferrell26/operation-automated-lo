@@ -136,7 +136,7 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
    * PRD-008b 008B-AC-006. The decision replaces the controls with what was recorded and refreshes
    * the page, so this waits for the refreshed page rather than for the card alone.
    *
-   * "Who signed off" is rendered by the server only once a decision is stored, so its arrival is
+   * "Who decided" is rendered by the server only once a decision is stored, so its arrival is
    * the proof that the refresh has landed. Until 2026-10-01 this state photographed the moment
    * before that: an approved card beside a screen that still said "Ready for approval", offered
    * "An approver can sign off on it now.", and re-offered the approval, which is the contradiction
@@ -144,8 +144,8 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
    * nothing in the shell or a closed walkthrough can satisfy or break them.
    */
   const main = page.getByRole("main");
-  const signedOffNow = page.getByRole("region", { name: "Who signed off" });
-  await expect(signedOffNow).toBeVisible();
+  const decidedNow = page.getByRole("region", { name: "Who decided" });
+  await expect(decidedNow).toBeVisible();
   await expect(main.getByText("Ready for approval", { exact: false })).toHaveCount(0);
   await expect(main.getByText("An approver can sign off on it now.", { exact: false })).toHaveCount(
     0,
@@ -158,7 +158,7 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
       "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.",
     ),
   ).toBeVisible();
-  await expect(signedOffNow).toContainText("Approved by");
+  await expect(decidedNow).toContainText("Approved by");
 
   /**
    * `approved` is the page after the decision landed and the refresh re-read the stored state: the
@@ -174,7 +174,7 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
       screen: "campaign-detail",
       state: "approved",
       theme,
-      mask: [signedOffNow.locator("p").last()],
+      mask: [decidedNow.locator("p").last()],
     });
   }
 
@@ -182,17 +182,17 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(campaignUrl);
     await chooseThemeFromTheHeader(page, theme);
-    // The decision is now the server's, so the screen carries the "Who signed off" region and the
+    // The decision is now the server's, so the screen carries the "Who decided" region and the
     // control is blocked against a version somebody has already decided on.
-    const signedOff = page.getByRole("region", { name: "Who signed off" });
-    await expect(signedOff).toBeVisible();
+    const decided = page.getByRole("region", { name: "Who decided" });
+    await expect(decided).toBeVisible();
     await captureNamedState(page, {
       screen: "campaign-detail",
       state: "already-decided",
       theme,
       // The moment the decision was recorded is a fact about this run, not about the design. It is
       // the last paragraph in the region; the first is the "Approval" eyebrow, which is copy.
-      mask: [signedOff.locator("p").last()],
+      mask: [decided.locator("p").last()],
     });
   }
 

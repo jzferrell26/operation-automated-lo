@@ -1,7 +1,7 @@
 # PRD-005b: Authenticated Review Runtime - Review Session Issuance and Session Store
 
 > **Parent:** [PRD-005](./prd-005-authenticated-review-runtime-index.md)
-> **Status:** Draft
+> **Status:** Done (PR #67, `58d77fd`, merged 2026-09-22). All 20 criteria are DONE in `EXECUTION_LEDGER.md` (`CRR-027` to `CRR-046`). `005B-AC-010`, `011`, and `012` (`CRR-036` to `CRR-038`) are superseded by PRD-006a D9, which removed the persona sign-in path, and keep their recorded DONE state. The 2026-09-21 [quality audit](./qa/2026-09-19-prd-005-qa-report.md) passes the other 17. No operator-blocked row.
 > **Priority:** P1 (dependency of completion review finding C1)
 > **Schema changes:** Additive (one table, one trigger, six `security definer` functions, RLS, grants, pgTAP)
 > **Owner Guardians:** `db-guardian` (migration, functions, pgTAP), `supabase-platform-guardian` (RLS and grant shape on the local stack), `auth-guardian` (issuance, cookie, CSRF delivery, revocation), `runbook-writing-guardian` (seeding procedure)

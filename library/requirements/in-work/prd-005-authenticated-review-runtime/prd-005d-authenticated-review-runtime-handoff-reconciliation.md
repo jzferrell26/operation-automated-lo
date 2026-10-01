@@ -1,7 +1,7 @@
 # PRD-005d: Authenticated Review Runtime - Handoff Documentation Reconciliation
 
 > **Parent:** [PRD-005](./prd-005-authenticated-review-runtime-index.md)
-> **Status:** Draft
+> **Status:** Done (PR #67, `58d77fd`, merged 2026-09-22). All 13 criteria are DONE in `EXECUTION_LEDGER.md` (`CRR-060` to `CRR-072`). The 2026-09-21 [quality audit](./qa/2026-09-19-prd-005-qa-report.md) passes 12 and marks `005D-AC-012` (`CRR-071`) partial for four em dashes in ledger prose, which the close-out replaced. No operator-blocked row.
 > **Priority:** P2 (completion review finding C3, execution and acceptance accuracy)
 > **Schema changes:** None
 > **Owner Guardians:** `library-guardian` (every document below), `technical-writing-craft-guardian` (writing review of the runbook and map diffs)

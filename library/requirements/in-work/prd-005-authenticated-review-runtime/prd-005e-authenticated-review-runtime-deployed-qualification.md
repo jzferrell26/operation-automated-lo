@@ -1,7 +1,7 @@
 # PRD-005e: Authenticated Review Runtime - Deployed Qualification of the Review URL
 
 > **Parent:** [PRD-005](./prd-005-authenticated-review-runtime-index.md)
-> **Status:** Draft
+> **Status:** In work. The agent-executable half is Done (PR #67, `58d77fd`, merged 2026-09-22): `005E-AC-001` to `003` and `013` to `015` (`CRR-073` to `CRR-075`, `CRR-085` to `CRR-087`). Blocked on the operator: `005E-AC-004` to `012` and `016` (`CRR-076` to `CRR-084`, `CRR-088`), and with them the index row `ARR-006` (`CRR-006`). The ask is restated under "Exact operator ask" below.
 > **Priority:** P1 for release acceptance (completion review finding C4), separate from C1's code work
 > **Schema changes:** None
 > **Owner Guardians:** `release-deploy-guardian` (preview deploy, env wiring verification, smoke), `devops-guardian` (Vercel project inspection, `/api/version` hardening), `security-guardian` and `quality-guardian` (close-out on the deployed SHA)

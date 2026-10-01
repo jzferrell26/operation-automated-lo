@@ -89,12 +89,15 @@ function emptySetupPreferences(): SetupPreferences {
 /**
  * The walkthrough's view of one campaign.
  *
- * Four facts cross the boundary: which campaign, where it lives, whether the checks let it
- * through, and what they found in the words a person reads. The rule codes the workspace
+ * Five facts cross the boundary: which campaign, where it lives, whether the checks let it
+ * through, what they found in the words a person reads, and, once somebody has decided, which way.
+ * The decision is there because step 6 asks a person to approve the version or hand it to an
+ * approver, and neither is a step on a version that already has a decision (008B-AC-010). Nothing
+ * else about the decision crosses: not who made it, and not when. The rule codes the workspace
  * projection carries stay on the server, because PRD-006b D5 puts a code inside the campaign
  * page's collapsed support region and the walkthrough panel is not that region.
  */
-function campaignResultFrom(campaign: CampaignWorkspaceProjection): SetupCampaignResult {
+export function campaignResultFrom(campaign: CampaignWorkspaceProjection): SetupCampaignResult {
   return Object.freeze({
     campaignRef: campaign.campaignRef,
     detailHref: campaign.detailHref,
@@ -104,6 +107,7 @@ function campaignResultFrom(campaign: CampaignWorkspaceProjection): SetupCampaig
         Object.freeze({ description: finding.description, remediation: finding.remediation }),
       ),
     ),
+    ...(campaign.approval === undefined ? {} : { decision: campaign.approval.decision }),
   });
 }
 
@@ -144,13 +148,31 @@ function wantsCampaignAwaitingDecision(progress: GuidedSetupProgress): boolean {
 }
 
 /**
- * PRD-006c D5. The newest campaign in this workspace that this person could approve right now.
+ * PRD-006c D5 and PRD-008b 008B-AC-010. The newest campaign in a list that is waiting for somebody
+ * to decide it.
  *
- * `canApprove` on the projection is the application layer's own answer to that question: the
- * person holds an approving role, the campaign is awaiting approval, and the checks found nothing
- * blocking. Asking it here rather than restating the rule is what keeps the walkthrough and the
- * approval command from ever disagreeing about who may approve what. The role is checked first so
- * that a creator, who is most people, never pays for the list.
+ * `canApprove` on the projection is the application layer's own answer to whether the approval
+ * command would accept a decision right now: the person holds an approving role, the campaign is
+ * awaiting approval, and the checks found nothing blocking. Asking it here rather than restating the
+ * rule is what keeps the walkthrough and the approval command from ever disagreeing about who may
+ * approve what. It is not enough on its own. A send-back leaves the campaign in the awaiting state,
+ * so `canApprove` stays true for a version that was just sent back, and handing that to an approver
+ * as the campaign waiting for them walks them to a control that is blocked. So the pick also asks
+ * that nobody has decided. `canApprove` keeps its meaning, because the approval card is drawn from
+ * it, and this is the second condition beside it.
+ */
+export function selectCampaignAwaitingDecision<
+  Candidate extends Pick<CampaignWorkspaceProjection, "approval" | "canApprove" | "updatedAt">,
+>(campaigns: readonly Candidate[]): Candidate | undefined {
+  return [...campaigns]
+    .filter((campaign) => campaign.canApprove && campaign.approval === undefined)
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
+}
+
+/**
+ * PRD-006c D5. The newest campaign in this workspace that this person could approve right now and
+ * that nobody has decided. The role is checked first so that a creator, who is most people, never
+ * pays for the list.
  */
 async function readCampaignAwaitingDecision(
   principal: Readonly<AuthenticatedPrincipal>,
@@ -158,10 +180,9 @@ async function readCampaignAwaitingDecision(
 ): Promise<SetupCampaignResult | undefined> {
   if (!principalHasCampaignApprovalRole(principal)) return undefined;
   try {
-    const campaigns = await listWorkspaceCampaigns(principal, environment);
-    const newest = [...campaigns]
-      .filter((campaign) => campaign.canApprove)
-      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
+    const newest = selectCampaignAwaitingDecision(
+      await listWorkspaceCampaigns(principal, environment),
+    );
     return newest === undefined ? undefined : campaignResultFrom(newest);
   } catch {
     return undefined;

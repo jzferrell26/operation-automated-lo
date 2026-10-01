@@ -36,11 +36,11 @@ export const REPORTING_EXCEPTION_EXPLANATIONS: Readonly<
   reporting_stale:
     "These numbers haven't updated recently. Check that your HighLevel and Meta connections are still working.",
   lead_route_failed:
-    "A new lead couldn't be sent to the right person. Check your routing settings.",
+    "A new lead couldn't be sent to the right person. Contact support so we can look into it.",
   mapping_missing:
-    "This campaign is missing a link to something in HighLevel, like a pipeline or a calendar. Check your routing settings.",
+    "This campaign is missing something it needs from HighLevel. Contact support so we can look into it.",
   approval_stale:
-    "This campaign changed after it was approved, so the approval no longer covers it. Approve the new version.",
+    "This campaign changed after it was approved, so the approval no longer covers it. Approve the new version, or ask an approver to.",
   reconciliation_gap:
     "What Meta or HighLevel shows doesn't match what's saved for this campaign. Contact support so we can look into it.",
 });
@@ -55,7 +55,7 @@ export const REPORTING_METRIC_DEFINITIONS: Readonly<Record<ReportingMetricKey, s
     spendCents: "What Meta says has been spent on this campaign's ads.",
     leads: "Leads this campaign brought in. Test leads aren't counted.",
     costPerLeadCents:
-      "What each lead cost, worked out as spend divided by leads. It stays blank until both numbers are available.",
+      "What each lead cost, worked out as spend divided by leads. It stays blank until the spend is known and there is at least one lead.",
     appointments: "Appointments in HighLevel that came from this campaign.",
     applications: "Applications in HighLevel that came from this campaign.",
     fundedOrClosed: "Loans marked funded or closed in HighLevel that came from this campaign.",

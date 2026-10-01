@@ -2,10 +2,10 @@ import { Card, EmptyState, Icon, Link, Metric, Stack, Surface } from "@oalo/ui";
 
 import {
   CAMPAIGN_NEXT_ACTION_LABELS,
-  CAMPAIGN_STATE_LABELS,
   NOT_CONNECTED_NEXT_STEP,
   NOT_CONNECTED_SOURCE,
   SUPPORT_DETAILS_LABELS,
+  campaignStateLabel,
 } from "../../../copy/user-language.js";
 import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
 import { SupportDetails } from "../../shell/components/support-details.js";
@@ -177,7 +177,7 @@ export function OverviewScreen({
             <Card key={campaign.campaignRef} padding="md">
               <p className={styles.itemMeta}>Campaign</p>
               <h3>{campaign.headline}</h3>
-              <p>{CAMPAIGN_STATE_LABELS[campaign.state]}</p>
+              <p>{campaignStateLabel(campaign.state, campaign.approval?.decision)}</p>
               <p>
                 <strong>What to do next:</strong> {campaignNextStep(campaign.nextActions)}
               </p>

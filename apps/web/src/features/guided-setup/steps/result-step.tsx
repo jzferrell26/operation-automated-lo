@@ -1,7 +1,11 @@
 "use client";
 
-import { GUIDED_SETUP_STEPS } from "../../../copy/guided-setup-messages.js";
-import type { SetupResultFinding } from "../model/campaign-result.js";
+import {
+  campaignStanding,
+  type SetupCampaignResult,
+  type SetupResultFinding,
+} from "../model/campaign-result.js";
+import { readTheResultBody } from "./step-model.js";
 import styles from "../guided-setup.module.css";
 
 /**
@@ -18,21 +22,20 @@ import styles from "../guided-setup.module.css";
  */
 
 export type ResultStepProps = Readonly<{
-  result: Readonly<{ ready: boolean; findings: readonly SetupResultFinding[] }> | undefined;
+  result:
+    | Readonly<
+        Pick<SetupCampaignResult, "decision" | "ready"> & {
+          findings: readonly SetupResultFinding[];
+        }
+      >
+    | undefined;
 }>;
 
 export function ResultStep({ result }: ResultStepProps) {
-  if (result === undefined) {
-    return <p className={styles.stepBody}>{GUIDED_SETUP_STEPS.readTheResult.unknownBody}</p>;
-  }
-  if (result.findings.length === 0) {
-    return (
-      <p className={styles.stepBody}>
-        {result.ready
-          ? GUIDED_SETUP_STEPS.readTheResult.readyBody
-          : GUIDED_SETUP_STEPS.readTheResult.needsChangesBody}
-      </p>
-    );
+  // PRD-008b 008B-AC-011. What the sentence says follows where the campaign stands, not the check
+  // result alone, so a version somebody has decided is not described as ready for approval.
+  if (result === undefined || result.findings.length === 0) {
+    return <p className={styles.stepBody}>{readTheResultBody(campaignStanding(result))}</p>;
   }
   return (
     <ul className={styles.findingList}>

@@ -3,10 +3,7 @@ import { redirect } from "next/navigation.js";
 
 import { Card, Link } from "@oalo/ui";
 
-import {
-  CAMPAIGN_NEXT_ACTION_LABELS,
-  CAMPAIGN_STATE_LABELS,
-} from "../../../../copy/user-language.js";
+import { CAMPAIGN_NEXT_ACTION_LABELS, campaignStateLabel } from "../../../../copy/user-language.js";
 import styles from "../../../../features/campaigns/components/open-house-draft-builder.module.css";
 import { readWorkspaceCampaignsForRequest } from "../../../../server/campaign-workspace-reads.js";
 import { SIGN_IN_PATH } from "../../../../server/runtime-authentication.js";
@@ -44,7 +41,9 @@ export default async function CampaignListPage() {
         <div className={styles.findings}>
           {campaigns.map((campaign) => (
             <Card key={campaign.campaignRef} padding="md">
-              <p className={styles.eyebrow}>{CAMPAIGN_STATE_LABELS[campaign.state]}</p>
+              <p className={styles.eyebrow}>
+                {campaignStateLabel(campaign.state, campaign.approval?.decision)}
+              </p>
               <h2>{campaign.headline}</h2>
               <p>{campaign.propertyAddress}</p>
               <p>{nextStepFor(campaign.nextActions)}</p>

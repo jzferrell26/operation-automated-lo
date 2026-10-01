@@ -13,37 +13,18 @@ import {
   OPEN_HOUSE_DRAFT_INPUT,
 } from "../../../server/campaign-command-test-support.js";
 import { compileOpenHouseDraft } from "../../../server/open-house-draft.js";
+import {
+  APPROVER,
+  awaitingApprovalProjection,
+  sentBackProjection,
+} from "./campaign-decision.test-support.js";
 import { PersistedCampaignScreen } from "./persisted-campaign-screen.js";
 
 // The approval card refreshes the page after a decision (PRD-008b D2), so it needs an app router.
 vi.mock("next/navigation.js", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
-const APPROVER = {
-  ...createLocalSyntheticPrincipal(),
-  role: "campaign_approver" as const,
-  actorRef: "principal_localApprover001",
-  actorId: "00000000-0000-4000-8000-000000000812",
-};
-
-/** A fresh draft, read the way an approver reads it before anyone has decided. */
-async function awaitingApprovalView(): Promise<CampaignWorkspaceProjection> {
-  const compiled = await compileOpenHouseDraft(
-    OPEN_HOUSE_DRAFT_INPUT,
-    createLocalSyntheticPrincipal(),
-    LOCAL_SYNTHETIC_ENV,
-  );
-  return projectCampaignWorkspace(
-    {
-      version: compiled.version,
-      preflight: compiled.preflight,
-      state: "awaiting_approval" as const,
-      rowVersion: 1,
-      updatedAt: compiled.version.createdAt,
-    },
-    APPROVER,
-    "postgres",
-  );
-}
+const SENT_BACK_NEEDS_NEW_VERSION =
+  "It was sent back for changes, so it needs a new version before anyone can approve it.";
 
 describe("persisted campaign approval screen", () => {
   it("keeps approval unavailable for creators and shows evidence before enabling approvers", async () => {
@@ -111,7 +92,7 @@ describe("persisted campaign approval screen", () => {
    */
   it("stops saying an approved campaign is ready for approval", async () => {
     const approved: CampaignWorkspaceProjection = {
-      ...(await awaitingApprovalView()),
+      ...(await awaitingApprovalProjection()),
       state: "approved",
       rowVersion: 2,
       approval: {
@@ -132,13 +113,83 @@ describe("persisted campaign approval screen", () => {
     expect(screen.getByRole("region", { name: "Who signed off" })).toHaveTextContent(
       "Approved by an approver",
     );
+    // A decision was recorded, but it was not a send-back, so the send-back sentence stays out.
+    expect(screen.queryByText(/It was sent back for changes/u)).toBeNull();
+    expect(screen.getByRole("heading", { name: "Checks passed" })).toBeInTheDocument();
   });
 
   it("still says an awaiting campaign is ready for approval", async () => {
-    render(<PersistedCampaignScreen campaign={await awaitingApprovalView()} />);
+    render(<PersistedCampaignScreen campaign={await awaitingApprovalProjection()} />);
 
     expect(screen.getAllByText("Ready for approval").length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "Ready for approval" })).toBeInTheDocument();
     expect(screen.getByText(/An approver can sign off on it now/u)).toBeInTheDocument();
     expect(screen.getByText("Approve this version.")).toBeInTheDocument();
+    // Nobody has decided, so nothing here may say a decision was made.
+    expect(screen.queryByText(/sent back/iu)).toBeNull();
+    expect(screen.queryByRole("region", { name: "Who signed off" })).toBeNull();
+  });
+
+  /**
+   * Finding S1b (B5 and B6) of the 2026-10-01 writing review. After "Send back for changes" the
+   * campaign stays in `awaiting_approval`, so a screen that keys only on the state keeps saying
+   * "Ready for approval" and "An approver can sign off on it now" about a version that was just
+   * sent back, beside an Approval section that says it was sent back and a control that says
+   * someone has already decided. The state badge and the next-steps card share the cause.
+   */
+  describe("after the version was sent back for changes", () => {
+    it("never says the campaign is ready for approval, in the badge, the card, or the heading", async () => {
+      render(<PersistedCampaignScreen campaign={await sentBackProjection()} />);
+
+      expect(screen.queryAllByText("Ready for approval")).toHaveLength(0);
+      expect(screen.queryByRole("heading", { name: "Ready for approval" })).toBeNull();
+      expect(screen.getByRole("heading", { name: "Checks passed" })).toBeInTheDocument();
+    });
+
+    it("says in the badge and in where it stands that it was sent back", async () => {
+      render(<PersistedCampaignScreen campaign={await sentBackProjection()} />);
+
+      // The header badge and the "Where it stands" card, as exact phrases on their own.
+      expect(screen.getAllByText("Sent back for changes")).toHaveLength(2);
+      expect(screen.getByRole("region", { name: "Who signed off" })).toHaveTextContent(
+        "Sent back for changes by an approver",
+      );
+    });
+
+    it("no longer says an approver can sign off, and says what it needs instead", async () => {
+      render(<PersistedCampaignScreen campaign={await sentBackProjection()} />);
+
+      expect(screen.queryByText(/An approver can sign off on it now/u)).toBeNull();
+      expect(screen.getByText(/This campaign meets every rule we check\./u)).toHaveTextContent(
+        `This campaign meets every rule we check. ${SENT_BACK_NEEDS_NEW_VERSION}`,
+      );
+    });
+
+    it.each([
+      ["an approver", APPROVER],
+      ["a campaign creator", createLocalSyntheticPrincipal()],
+    ])(
+      "does not offer approval, or wait for an approver, as a next step for %s",
+      async (_who, principal) => {
+        render(<PersistedCampaignScreen campaign={await sentBackProjection(principal)} />);
+
+        const nextSteps = screen.getByRole("region", { name: "Your next steps" });
+        expect(nextSteps).not.toHaveTextContent("Approve this version.");
+        expect(nextSteps).not.toHaveTextContent("Waiting for an approver");
+        expect(nextSteps).toHaveTextContent("Someone has already decided on this version.");
+      },
+    );
+
+    it("keeps the approve control blocked and says what was recorded", async () => {
+      render(<PersistedCampaignScreen campaign={await sentBackProjection()} />);
+
+      expect(screen.getByRole("button", { name: "Approve this version" })).toBeDisabled();
+      expect(screen.queryByRole("button", { name: "Send back for changes" })).toBeNull();
+      expect(
+        screen.getByText(
+          "Sent back for changes. The campaign creator can fix it and save a new version.",
+        ),
+      ).toBeInTheDocument();
+    });
   });
 });

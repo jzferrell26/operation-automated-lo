@@ -4,8 +4,11 @@ import { describe, expect, it } from "vitest";
 import { findVocabularyHits } from "./forbidden-vocabulary.js";
 import {
   CAMPAIGN_NEXT_ACTION_LABELS,
+  CAMPAIGN_SENT_BACK_LABEL,
   CAMPAIGN_STATE_LABELS,
+  CHECK_RESULT_PASSED,
   ROLE_LABELS,
+  campaignStateLabel,
 } from "./user-language.js";
 
 /**
@@ -45,6 +48,36 @@ describe("the campaign state phrases", () => {
   it("says the checks found something rather than naming the check", () => {
     expect(CAMPAIGN_STATE_LABELS.preflight_failed).toBe("Needs changes");
     expect(CAMPAIGN_STATE_LABELS.awaiting_approval).toBe("Ready for approval");
+  });
+});
+
+/**
+ * Finding S1b of the 2026-10-01 writing review. A send-back leaves a campaign in `awaiting_approval`,
+ * so where it stands has to read the recorded decision as well as the state, or a version that was
+ * just sent back is labelled "Ready for approval".
+ */
+describe("where a campaign stands once somebody has decided on it", () => {
+  it("says a version that waits and was sent back was sent back", () => {
+    expect(campaignStateLabel("awaiting_approval", "rejected")).toBe("Sent back for changes");
+    expect(CAMPAIGN_SENT_BACK_LABEL).toBe("Sent back for changes");
+  });
+
+  it("keeps every other state's phrase, with or without a decision", () => {
+    expect(campaignStateLabel("awaiting_approval", undefined)).toBe("Ready for approval");
+    for (const state of CampaignStateSchema.options) {
+      expect(campaignStateLabel(state, undefined), state).toBe(CAMPAIGN_STATE_LABELS[state]);
+      if (state !== "awaiting_approval") {
+        expect(campaignStateLabel(state, "rejected"), state).toBe(CAMPAIGN_STATE_LABELS[state]);
+        expect(campaignStateLabel(state, "approved"), state).toBe(CAMPAIGN_STATE_LABELS[state]);
+      }
+    }
+  });
+
+  it("carries no forbidden word and no stored token", () => {
+    for (const phrase of [CAMPAIGN_SENT_BACK_LABEL, CHECK_RESULT_PASSED]) {
+      expect(findVocabularyHits(phrase), phrase).toEqual([]);
+      expect(phrase).not.toContain("_");
+    }
   });
 });
 

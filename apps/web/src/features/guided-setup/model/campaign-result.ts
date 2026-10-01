@@ -27,4 +27,35 @@ export type SetupCampaignResult = Readonly<{
   /** Whether the latest check result let this version through to approval. */
   ready: boolean;
   findings: readonly SetupResultFinding[];
+  /**
+   * PRD-008b 008B-AC-010. The decision recorded on this version, when somebody has made one.
+   *
+   * Step 6 tells a person to approve the version or to hand it to an approver, and both are steps on
+   * a version nobody has decided on. The walkthrough is stored, so it can be reopened after a
+   * colleague has approved the campaign or sent it back, and it has to know that to say so. A
+   * send-back leaves the campaign in the waiting state, so the state cannot say it: only the
+   * decision can. Absent means nobody has decided, which is the shape this record always had.
+   */
+  decision?: "approved" | "rejected" | undefined;
 }>;
+
+/**
+ * PRD-008b 008B-AC-011. Where a campaign stands, as the walkthrough's steps need to say it.
+ *
+ * Steps 5, 6, and 7 each say something about the campaign, so one answer to "where does it stand"
+ * serves all three and none of them can disagree with another. A recorded decision comes first: it
+ * is the fact, and a decided version has already passed its checks. The check result comes next, so
+ * a version that fails them is `needs_changes` and not `waiting`, because it is waiting for its
+ * author and for nobody else. `unknown` is a campaign the walkthrough could not read, and the steps
+ * say less about it rather than guess.
+ */
+export type CampaignStanding = "unknown" | "needs_changes" | "waiting" | "approved" | "sent_back";
+
+export function campaignStanding(
+  campaign: Pick<SetupCampaignResult, "decision" | "ready"> | undefined,
+): CampaignStanding {
+  if (campaign === undefined) return "unknown";
+  if (campaign.decision === "approved") return "approved";
+  if (campaign.decision === "rejected") return "sent_back";
+  return campaign.ready ? "waiting" : "needs_changes";
+}

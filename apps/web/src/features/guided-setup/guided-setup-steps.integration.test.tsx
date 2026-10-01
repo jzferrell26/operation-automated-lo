@@ -400,6 +400,344 @@ describe("guided setup steps", () => {
     expect(screen.getByText(GUIDED_SETUP_STEPS.approveOrHandOff.handOffBody)).toBeInTheDocument();
   });
 
+  /**
+   * PRD-008b 008B-AC-010. Step 6 says to approve, or to copy the link and send it to an approver.
+   * Both are steps on a version nobody has decided on. The walkthrough is stored, so a person can
+   * come back to step 6 after a colleague has approved the campaign, or sent it back, and the
+   * panel has to say what happened instead of telling them to do what can no longer be done.
+   */
+  describe("step 6 on a version nobody has decided on", () => {
+    it.each([
+      ["somebody who can approve", true, "approveBody"],
+      ["everybody else", false, "handOffBody"],
+    ] as const)("keeps today's words for %s", (_who, canApprove, body) => {
+      renderSetup({
+        canApprove,
+        progress: progressAt(6),
+        savedCampaign: savedCampaignResult(),
+      });
+
+      expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.approveOrHandOff.title);
+      expect(screen.getByText(GUIDED_SETUP_STEPS.approveOrHandOff[body])).toBeInTheDocument();
+    });
+
+    it("still points the hand-off branch at the copy-link card, and the approve branch at the approve card", async () => {
+      const page = (
+        <main>
+          <div data-tour={GUIDED_SETUP_ANCHORS.campaignApproveControl}>
+            <button type="button">Approve this version</button>
+          </div>
+          <div data-tour={GUIDED_SETUP_ANCHORS.campaignHandoffLink}>
+            <button type="button">Copy link</button>
+          </div>
+        </main>
+      );
+      const creator = renderSetup({ canApprove: false, children: page, progress: progressAt(6) });
+      await waitFor(() => {
+        expect(
+          document.querySelector(anchorSelector(GUIDED_SETUP_ANCHORS.campaignHandoffLink)),
+        ).toHaveAttribute("data-guided-setup-highlight", "true");
+      });
+      creator.unmount();
+
+      renderSetup({ canApprove: true, children: page, progress: progressAt(6) });
+      await waitFor(() => {
+        expect(
+          document.querySelector(anchorSelector(GUIDED_SETUP_ANCHORS.campaignApproveControl)),
+        ).toHaveAttribute("data-guided-setup-highlight", "true");
+      });
+    });
+  });
+
+  describe.each([
+    [
+      "approved",
+      "approved",
+      "This version is approved",
+      "This version has been approved, so there is nothing left to approve or hand off. Nothing is published or sent.",
+    ],
+    [
+      "sent back",
+      "rejected",
+      "This version was sent back",
+      "This version was sent back for changes, so it can't be approved as it is. It needs a new version before anyone can approve it.",
+    ],
+  ] as const)("step 6 on a version that was %s", (_outcome, decision, title, body) => {
+    it.each([
+      ["somebody who can approve", true],
+      ["somebody who cannot", false],
+    ] as const)(
+      "says what was recorded to %s, and tells nobody to approve or hand it off",
+      (_who, canApprove) => {
+        renderSetup({
+          canApprove,
+          progress: progressAt(6),
+          savedCampaign: savedCampaignResult({ decision }),
+        });
+
+        expect(panel()).toHaveAccessibleName(title);
+        expect(screen.getByText(body)).toBeInTheDocument();
+        expect(screen.getByRole("status")).toHaveTextContent(
+          `Step 6 of ${String(GUIDED_SETUP_TOTAL_STEPS)}: ${title}`,
+        );
+        // The stepper beside the words lists all seven steps by their fixed names, so the old name
+        // is still there as a label. What the panel says in its own title and body is checked here.
+        for (const untrue of [
+          GUIDED_SETUP_STEPS.approveOrHandOff.approveBody,
+          GUIDED_SETUP_STEPS.approveOrHandOff.handOffBody,
+          "Copy this link",
+        ]) {
+          expect(panel(), untrue).not.toHaveTextContent(untrue);
+        }
+      },
+    );
+
+    it("points at the card that says what was recorded, never at the copy-link card", async () => {
+      renderSetup({
+        canApprove: false,
+        children: (
+          <main>
+            <div data-tour={GUIDED_SETUP_ANCHORS.campaignApproveControl}>
+              <button type="button">Approve this version</button>
+            </div>
+            <div data-tour={GUIDED_SETUP_ANCHORS.campaignHandoffLink}>
+              <button type="button">Copy link</button>
+            </div>
+          </main>
+        ),
+        progress: progressAt(6),
+        savedCampaign: savedCampaignResult({ decision }),
+      });
+
+      await waitFor(() => {
+        expect(
+          document.querySelector(anchorSelector(GUIDED_SETUP_ANCHORS.campaignApproveControl)),
+        ).toHaveAttribute("data-guided-setup-highlight", "true");
+      });
+      expect(
+        document.querySelector(anchorSelector(GUIDED_SETUP_ANCHORS.campaignHandoffLink)),
+      ).not.toHaveAttribute("data-guided-setup-highlight");
+    });
+
+    it("still carries on to what happens next", async () => {
+      const user = userEvent.setup();
+      renderSetup({
+        canApprove: false,
+        progress: progressAt(6),
+        savedCampaign: savedCampaignResult({ decision }),
+      });
+
+      await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+
+      await waitFor(() => {
+        expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.whatHappensNext.title);
+      });
+    });
+  });
+
+  /**
+   * 008B-AC-010, the approver's pick. The campaign handed to an approver at step 3 is one that is
+   * waiting for their decision. A version that was sent back is still in the waiting state, but it
+   * has a decision on it and cannot be approved as it is, so it is not waiting for anybody.
+   */
+  it.each(["approved", "rejected"] as const)(
+    "does not hand an approver a campaign that was %s as the one waiting for them",
+    async (decision) => {
+      const user = userEvent.setup();
+      const { calls } = renderSetup({
+        campaignAwaitingDecision: savedCampaignResult({ decision }),
+        canApprove: true,
+        profile: SAMPLE_PROFILE,
+        progress: progressAt(3),
+      });
+
+      await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+
+      // With nothing waiting, the approver's walkthrough asks for a campaign of their own, and the
+      // walkthrough does not take them to the one that was decided.
+      expect(
+        await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.createCampaign.title }),
+      ).toBeInTheDocument();
+      const lastStoredStep = calls
+        .filter((call) => call.path === "/api/setup/progress")
+        .map((call) => JSON.stringify(call.body))
+        .at(-1);
+      expect(lastStoredStep).toContain('"currentStep":4');
+      expect(push).not.toHaveBeenCalledWith(READY_PREFLIGHT_RESPONSE.detailHref);
+    },
+  );
+
+  /**
+   * PRD-008b 008B-AC-011. Step 5 says the campaign is "ready for approval". That is true of a
+   * version that passed its checks and is waiting for somebody to decide it, and of nothing else:
+   * a version somebody has decided is past that, and one whose checks need changes is not ready.
+   */
+  describe("step 5 and where the campaign stands", () => {
+    const CAMPAIGN_REF = READY_PREFLIGHT_RESPONSE.campaignRef;
+
+    it.each([
+      [
+        "approved",
+        "approved",
+        "Your campaign is saved and approved. Nothing has been published or sent.",
+      ],
+      [
+        "sent back",
+        "rejected",
+        "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it.",
+      ],
+    ] as const)(
+      "says a version that was %s was, and never that it is ready for approval",
+      (_outcome, decision, body) => {
+        renderSetup({
+          progress: progressAt(5, { campaignRef: CAMPAIGN_REF }),
+          savedCampaign: savedCampaignResult({ decision }),
+        });
+
+        expect(panel()).toHaveAccessibleDescription(body);
+        expect(screen.getAllByText(body)).toHaveLength(2);
+        expect(panel()).not.toHaveTextContent("ready for approval");
+      },
+    );
+
+    it("still says a version nobody has decided on is ready for approval", () => {
+      renderSetup({
+        progress: progressAt(5, { campaignRef: CAMPAIGN_REF }),
+        savedCampaign: savedCampaignResult(),
+      });
+
+      expect(panel()).toHaveAccessibleDescription(GUIDED_SETUP_STEPS.readTheResult.readyBody);
+      expect(screen.getAllByText(GUIDED_SETUP_STEPS.readTheResult.readyBody)).toHaveLength(2);
+    });
+
+    it("never says a version whose checks need changes is ready for approval", () => {
+      renderSetup({
+        progress: progressAt(5, { campaignRef: CAMPAIGN_REF }),
+        savedCampaign: blockedCampaignResult(),
+      });
+
+      expect(panel()).toHaveAccessibleDescription(
+        GUIDED_SETUP_STEPS.readTheResult.needsChangesBody,
+      );
+      expect(panel()).not.toHaveTextContent("ready for approval");
+    });
+  });
+
+  /**
+   * 008B-AC-011, step 6 for a version whose checks need changes. The step asked an approver to
+   * approve it and anybody else to hand the link on, and neither can be done: it is waiting for its
+   * author. It says so, and points at what the checks found.
+   */
+  describe("step 6 on a version whose checks need changes", () => {
+    it.each([
+      ["somebody who can approve", true],
+      ["somebody who cannot", false],
+    ] as const)(
+      "tells %s the version needs changes, and not to approve it or hand it off",
+      (_who, canApprove) => {
+        renderSetup({
+          canApprove,
+          progress: progressAt(6),
+          savedCampaign: blockedCampaignResult(),
+        });
+
+        expect(panel()).toHaveAccessibleName("This version needs changes");
+        expect(panel()).toHaveAccessibleDescription(
+          "This version needs changes before anyone can approve it. Fix what the checks found, then save it again.",
+        );
+        for (const untrue of [
+          GUIDED_SETUP_STEPS.approveOrHandOff.approveBody,
+          GUIDED_SETUP_STEPS.approveOrHandOff.handOffBody,
+          "Copy this link",
+        ]) {
+          expect(panel(), untrue).not.toHaveTextContent(untrue);
+        }
+      },
+    );
+
+    it("points at what the checks found, never at the copy-link card", async () => {
+      renderSetup({
+        canApprove: false,
+        children: (
+          <main>
+            <div data-tour={GUIDED_SETUP_ANCHORS.campaignCheckFindings}>What the checks found</div>
+            <div data-tour={GUIDED_SETUP_ANCHORS.campaignHandoffLink}>
+              <button type="button">Copy link</button>
+            </div>
+          </main>
+        ),
+        progress: progressAt(6),
+        savedCampaign: blockedCampaignResult(),
+      });
+
+      await waitFor(() => {
+        expect(
+          document.querySelector(anchorSelector(GUIDED_SETUP_ANCHORS.campaignCheckFindings)),
+        ).toHaveAttribute("data-guided-setup-highlight", "true");
+      });
+      expect(
+        document.querySelector(anchorSelector(GUIDED_SETUP_ANCHORS.campaignHandoffLink)),
+      ).not.toHaveAttribute("data-guided-setup-highlight");
+    });
+  });
+
+  /**
+   * 008B-AC-011, step 7. "What happens next" said "Your campaign is saved and approved" to
+   * everybody, including a person whose campaign nobody had approved. It now says what is true of
+   * the campaign, and every version of it still says the campaign will not run as an ad until
+   * HighLevel and Meta are connected (006C-AC-018).
+   */
+  describe("step 7 and where the campaign stands", () => {
+    const TAIL =
+      "It won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it.";
+
+    it.each([
+      [
+        "waiting for approval",
+        savedCampaignResult(),
+        `Your campaign is saved and waiting for approval. ${TAIL}`,
+      ],
+      [
+        "approved",
+        savedCampaignResult({ decision: "approved" }),
+        `Your campaign is saved and approved. ${TAIL}`,
+      ],
+      [
+        "sent back",
+        savedCampaignResult({ decision: "rejected" }),
+        `Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it. ${TAIL}`,
+      ],
+      [
+        "waiting on its checks",
+        blockedCampaignResult(),
+        `Your campaign is saved, and the checks found things to fix first. ${TAIL}`,
+      ],
+      [
+        "unknown",
+        undefined,
+        "Your campaign won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it.",
+      ],
+    ] as const)("says what is true of a campaign that is %s", (_what, savedCampaign, body) => {
+      renderSetup({ progress: progressAt(7), savedCampaign });
+
+      expect(panel()).toHaveAccessibleDescription(body);
+      expect(screen.getByText(body)).toBeInTheDocument();
+      expect(body).toContain("won't run as an ad yet");
+      expect(screen.getByText(NOT_CONNECTED_SOURCE)).toBeInTheDocument();
+    });
+
+    it.each([
+      ["nobody has decided on", savedCampaignResult()],
+      ["was sent back", savedCampaignResult({ decision: "rejected" })],
+      ["whose checks need changes", blockedCampaignResult()],
+      ["that could not be read", undefined],
+    ] as const)("never says approved of a campaign %s", (_what, savedCampaign) => {
+      renderSetup({ progress: progressAt(7), savedCampaign });
+
+      expect(panel()).not.toHaveTextContent(/\bapproved\b/u);
+    });
+  });
+
   it("closes by naming all three accounts and offering no connect, publish, or spend action", () => {
     renderSetup({ progress: progressAt(7) });
     expect(screen.getByText(GUIDED_SETUP_STEPS.whatHappensNext.body)).toBeInTheDocument();

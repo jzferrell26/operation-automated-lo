@@ -15,7 +15,7 @@
  * system stamped on it before 008b, which nobody supplied. The summary looks at each image first.
  */
 
-export const PROPERTY_PHOTO_LABEL = "Property photo";
+export const PROPERTY_PHOTO_LABEL = "Property photos";
 
 export const NO_PROPERTY_PHOTO_ATTACHED = "No property photo is attached yet.";
 

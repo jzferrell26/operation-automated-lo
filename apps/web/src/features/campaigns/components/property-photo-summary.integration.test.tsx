@@ -125,6 +125,11 @@ describe("the property photo summary with photos somebody supplied", () => {
 });
 
 describe("the sentences the summary uses", () => {
+  /** Finding S6. The sentence beneath it can count several, so the label over it is plural. */
+  it("labels the card in the plural, because what it holds can be more than one", () => {
+    expect(PROPERTY_PHOTO_LABEL).toBe("Property photos");
+  });
+
   it("are in the user's language: no forbidden term, no identifier, no dash", () => {
     for (const sentence of [
       NO_PROPERTY_PHOTO_ATTACHED,

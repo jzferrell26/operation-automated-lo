@@ -95,8 +95,23 @@ export function createHomeHighLevelPort(
       );
     }
   }
+  /**
+   * HighLevel's answer in the shape expected, or a refusal that says HighLevel's answer was the
+   * problem. A raw schema failure would reach a loan officer as "check the report fields", which is
+   * wrong: nothing they typed caused it, and it would name a field of HighLevel's answer.
+   */
+  function shaped<Shape>(schema: z.ZodType<Shape>, raw: unknown): Shape {
+    const parsed = schema.safeParse(raw);
+    if (!parsed.success)
+      throw new HomeownerError(
+        "CONTACT_UNAVAILABLE",
+        502,
+        "The HighLevel contact could not be verified. Check the connection and contact access.",
+      );
+    return parsed.data;
+  }
   function project(raw: unknown): HomeContact {
-    const contact = ContactSchema.parse(raw);
+    const contact = shaped(ContactSchema, raw);
     if (contact.locationId !== config.ghlLocationId)
       throw new HomeownerError(
         "CONTACT_NOT_ACCESSIBLE",
@@ -128,9 +143,10 @@ export function createHomeHighLevelPort(
   }
   async function read(id: string) {
     HomeContactIdSchema.parse(id);
-    const envelope = z
-      .object({ contact: ContactSchema })
-      .parse(await call(`/contacts/${encodeURIComponent(id)}`, "GET"));
+    const envelope = shaped(
+      z.object({ contact: ContactSchema }),
+      await call(`/contacts/${encodeURIComponent(id)}`, "GET"),
+    );
     return { raw: envelope.contact, contact: project(envelope.contact) };
   }
   return {
@@ -139,7 +155,8 @@ export function createHomeHighLevelPort(
     },
     async search(query) {
       const safe = z.string().trim().min(2).max(100).parse(query);
-      const envelope = z.object({ contacts: z.array(ContactSchema).max(100) }).parse(
+      const envelope = shaped(
+        z.object({ contacts: z.array(ContactSchema).max(100) }),
         await call("/contacts/search", "POST", {
           locationId: config.ghlLocationId,
           page: 1,
@@ -174,7 +191,14 @@ export function createHomeHighLevelPort(
       const result = await call(`/contacts/${encodeURIComponent(id)}`, "PUT", {
         customFields: [{ id: config.reportUrlFieldId, fieldValue: reportUrl }],
       });
-      z.object({ succeeded: z.literal(true) }).parse(result);
+      // A save answered without HighLevel's confirmation may still have been written, so it is held
+      // as uncertain, the same as an unconfirmed workflow request below, and never retried.
+      if (!z.object({ succeeded: z.literal(true) }).safeParse(result).success)
+        throw new HomeownerError(
+          "HANDOFF_UNCERTAIN",
+          502,
+          "HighLevel did not confirm the handoff. Check the contact before trying any further delivery.",
+        );
       const verified = await read(id);
       const field = verified.raw.customFields?.find((item) => item.id === config.reportUrlFieldId);
       if (

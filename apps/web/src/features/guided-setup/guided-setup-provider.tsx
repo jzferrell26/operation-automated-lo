@@ -17,7 +17,11 @@ import {
   type SavedCampaignReport,
 } from "./guided-setup-context.js";
 import { GuidedSetupStep } from "./guided-setup-step.js";
-import { campaignStanding, type SetupCampaignResult } from "./model/campaign-result.js";
+import {
+  campaignStanding,
+  type CampaignStanding,
+  type SetupCampaignResult,
+} from "./model/campaign-result.js";
 import {
   advanceTo,
   complete,
@@ -71,6 +75,12 @@ import {
 
 export type GuidedSetupProviderProps = Readonly<{
   canApprove: boolean;
+  /**
+   * PRD-008b 008B-AC-010. Whether this person can create a campaign. An approver who cannot has no
+   * campaign of their own to make, so the walkthrough does not send them to the step that asks for
+   * one. It defaults to true, which is the walkthrough as it was for everybody who can create.
+   */
+  canCreate?: boolean;
   children: ReactNode;
   /** False in a workspace with no database behind it, where there is nothing to save progress to. */
   enabled: boolean;
@@ -117,6 +127,7 @@ function reportSaveFailure(what: "profile" | "progress", cause: unknown): void {
 
 export function GuidedSetupProvider({
   canApprove,
+  canCreate = true,
   children,
   enabled,
   campaignAwaitingDecision,
@@ -133,6 +144,18 @@ export function GuidedSetupProvider({
   const [profile, setProfile] = useState<SetupProfile | undefined>(initialProfile);
   const [open, setOpen] = useState<boolean>(() => enabled && shouldAutoStart(initialProgress));
   const [campaign, setCampaign] = useState<SavedCampaignReport | undefined>(undefined);
+  /**
+   * PRD-008b 008B-AC-010. The campaign this person was handed to approve, kept from the moment the
+   * walkthrough stored it as theirs until the server reads it back.
+   *
+   * Storing the reference is what lets a later render read the campaign by it, decision included.
+   * But the layout does not render again when the walkthrough moves from step to step, so for that
+   * stretch the walkthrough has to hold the campaign itself, or the step it is on loses the thing it
+   * is about the instant it stores the reference.
+   */
+  const [handedCampaign, setHandedCampaign] = useState<SetupCampaignResult | undefined>(undefined);
+  /** The campaign being offered to this person right now, for `goToStep` to read without depending on it. */
+  const waitingRef = useRef<SetupCampaignResult | undefined>(undefined);
   const [dismissPending, setDismissPending] = useState(false);
   /**
    * PRD-006d D7, through 006D-AC-011 and PRD-006b D7. The refusal a failed profile or progress
@@ -257,7 +280,22 @@ export function GuidedSetupProvider({
     (step: number) => {
       openWalkthrough();
       setFieldIndex(0);
-      void persistProgress(advanceTo(progressRef.current, step));
+      const advanced = advanceTo(progressRef.current, step);
+      /*
+       * PRD-008b 008B-AC-010. An approver who is shown a campaign they did not create is bound to
+       * it as the first move on from it. Their progress names no campaign, because only the create
+       * screen writes one and their role cannot reach it, so without this the campaign is chosen
+       * again on every render from the ones still waiting. The moment they decide it, it stops
+       * waiting, drops out of that choice, and the walkthrough has nothing left to describe. Stored
+       * as theirs, it is read back by reference with the decision on it, as a creator's own is.
+       */
+      const handedOver = waitingRef.current;
+      if (handedOver !== undefined && advanced.campaignRef === undefined) {
+        setHandedCampaign(handedOver);
+        void persistProgress(withCampaign(advanced, handedOver.campaignRef));
+        return;
+      }
+      void persistProgress(advanced);
     },
     [openWalkthrough, persistProgress],
   );
@@ -403,7 +441,16 @@ export function GuidedSetupProvider({
     campaignAwaitingDecision?.decision === undefined
       ? campaignAwaitingDecision
       : undefined;
-  const stepCampaign = ownCampaign ?? waitingCampaign;
+  waitingRef.current = waitingCampaign;
+  const stepCampaign = ownCampaign ?? waitingCampaign ?? handedCampaign;
+  /**
+   * PRD-008b 008B-AC-010. An approver who cannot create a campaign, with none waiting for them and
+   * none stored as theirs. There is nothing to describe, and the steps say so. A person who can
+   * create a campaign is never in this state, because the walkthrough asks them for one.
+   */
+  const nothingWaiting =
+    canApprove && !canCreate && stepCampaign === undefined && progress.campaignRef === undefined;
+  const standing: CampaignStanding = nothingWaiting ? "none" : campaignStanding(stepCampaign);
   /**
    * On a resume the stored reference is all that survives when the campaign itself could not be
    * read, so the detail address is still rebuilt from it: the step says it does not know what the
@@ -419,7 +466,20 @@ export function GuidedSetupProvider({
    * created one does not need to create a second. Their step 3 hands them straight to the result,
    * which marks step 4 complete, because somebody did do it: the creator.
    */
-  const stepAfterTheRealtor = waitingCampaign === undefined ? 4 : 5;
+  const approverWhoCannotCreate = canApprove && !canCreate;
+  /*
+   * 008B-AC-010. Step 4 is for somebody who can create a campaign. An approver who cannot goes on to
+   * the result when they have a campaign, and otherwise to step 6, which tells them nothing is
+   * waiting. Everybody else is as they were.
+   */
+  const stepAfterTheRealtor =
+    waitingCampaign !== undefined
+      ? 5
+      : approverWhoCannotCreate
+        ? stepCampaign !== undefined || progress.campaignRef !== undefined
+          ? 5
+          : 6
+        : 4;
 
   /**
    * D5's auto-start navigation. The sheet opens at `currentStep`; if that step's work is on
@@ -490,6 +550,7 @@ export function GuidedSetupProvider({
         <CurrentStep
           campaign={stepCampaign}
           canApprove={canApprove}
+          standing={standing}
           dismissPending={dismissPending}
           fieldIndex={fieldIndex}
           onComplete={completeSetup}
@@ -523,6 +584,8 @@ function valuesFrom(profile: SetupProfile): Readonly<Record<string, string>> {
 type CurrentStepProps = Readonly<{
   campaign: SetupCampaignResult | undefined;
   canApprove: boolean;
+  /** Where the campaign stands, decided once by the provider so every step reads the same answer. */
+  standing: CampaignStanding;
   dismissPending: boolean;
   fieldIndex: number;
   onComplete: () => void;
@@ -544,7 +607,16 @@ type CurrentStepProps = Readonly<{
  * forget a prop the panel needs.
  */
 function CurrentStep(props: CurrentStepProps) {
-  const { campaign, canApprove, dismissPending, onComplete, onDismiss, onStep, progress } = props;
+  const {
+    campaign,
+    canApprove,
+    dismissPending,
+    onComplete,
+    onDismiss,
+    onStep,
+    progress,
+    standing,
+  } = props;
   const definition = stepDefinition(progress.currentStep);
   const shared = {
     anchor: definition.anchor,
@@ -609,12 +681,12 @@ function CurrentStep(props: CurrentStepProps) {
       return (
         <GuidedSetupStep
           {...shared}
-          body={readTheResultBody(campaignStanding(campaign))}
+          body={readTheResultBody(standing)}
           onContinue={() => {
             onStep(6);
           }}
         >
-          <ResultStep result={campaign} />
+          <ResultStep result={campaign} standing={standing} />
         </GuidedSetupStep>
       );
     case 6: {
@@ -623,7 +695,7 @@ function CurrentStep(props: CurrentStepProps) {
       // campaign screen, so a user who dismissed the walkthrough still has them. 008B-AC-010 adds a
       // third answer for a version somebody has already decided on, for both kinds of person, and
       // `approveOrHandOffStep` is where the three are told apart.
-      const step = approveOrHandOffStep({ canApprove, standing: campaignStanding(campaign) });
+      const step = approveOrHandOffStep({ canApprove, standing });
       return (
         <GuidedSetupStep
           {...shared}
@@ -640,7 +712,7 @@ function CurrentStep(props: CurrentStepProps) {
       return (
         <GuidedSetupStep
           {...shared}
-          body={whatHappensNextBody(campaignStanding(campaign))}
+          body={whatHappensNextBody(standing)}
           continueLabel={GUIDED_SETUP_STEPS.whatHappensNext.primaryLabel}
           onContinue={onComplete}
         >

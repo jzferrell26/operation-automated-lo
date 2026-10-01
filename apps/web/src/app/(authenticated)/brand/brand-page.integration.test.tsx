@@ -134,3 +134,56 @@ describe("the brand page in synthetic mode", () => {
     expect(mocked.workspacePageData).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * PRD-008b, the verifier's finding on the saved-branding editor. With the homeowner reports flag
+ * unset the editor still said the branding gives "a consistent identity on every new homeowner
+ * report" and is "used when you create a new homeowner report", and a workspace with reports off has
+ * nowhere to create one. The branding is real and is saved either way, so the page says that, and
+ * says what it is waiting for, in whichever state the workspace is in. The loader sets
+ * `reportsEnabled` from the same flag, so each case feeds the page what the loader would.
+ */
+describe("what the brand page says about homeowner reports", () => {
+  const ON_HEADING = "A consistent identity on every new homeowner report.";
+  const ON_EDITOR =
+    "Saved for your account in this workspace and used when you create a new homeowner report.";
+  const OFF_HEADING =
+    "Your branding is saved here for homeowner reports, which aren't turned on for this workspace yet.";
+  const OFF_EDITOR =
+    "Saved for your account in this workspace. It will be used on a new homeowner report once homeowner reports are turned on.";
+
+  it("keeps saying what the branding does when homeowner reports are on", async () => {
+    stubEnvironment("production", OALO_REVIEW_SURFACE_AUTHORIZED, "enabled");
+    mocked.workspacePageData.mockResolvedValue({ ...SAVED_PROFILE, reportsEnabled: true });
+
+    render(await BrandProfilePage());
+
+    expect(screen.getByText(ON_HEADING)).toBeInTheDocument();
+    expect(screen.getByText(ON_EDITOR)).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("aren't turned on");
+    expect(document.body.textContent).not.toContain(OFF_EDITOR);
+  });
+
+  it("says homeowner reports are not turned on, and promises nothing, when they are off", async () => {
+    stubEnvironment("production", OALO_REVIEW_SURFACE_AUTHORIZED, undefined);
+    mocked.workspacePageData.mockResolvedValue({ ...SAVED_PROFILE, reportsEnabled: false });
+
+    render(await BrandProfilePage());
+
+    expect(screen.getByText(OFF_HEADING)).toBeInTheDocument();
+    expect(screen.getByText(OFF_EDITOR)).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain(ON_HEADING);
+    expect(document.body.textContent).not.toContain(ON_EDITOR);
+    expect(document.body.textContent).not.toMatch(/on every new homeowner report/u);
+    expect(document.body.textContent).not.toMatch(/used when you create a new homeowner report/u);
+  });
+
+  it("still lets the person save their branding when homeowner reports are off", async () => {
+    stubEnvironment("production", OALO_REVIEW_SURFACE_AUTHORIZED, undefined);
+    mocked.workspacePageData.mockResolvedValue({ ...SAVED_PROFILE, reportsEnabled: false });
+
+    render(await BrandProfilePage());
+
+    expect(screen.getByRole("button", { name: "Save report branding" })).toBeEnabled();
+  });
+});

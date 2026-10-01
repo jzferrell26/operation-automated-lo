@@ -384,6 +384,11 @@ describe("user-language guard, source level", () => {
     expect(files.has("apps/web/src/server/homeowners/runtime.ts")).toBe(true);
     expect(files.has("apps/web/src/server/homeowners/http.ts")).toBe(true);
     expect(files.has("apps/web/src/copy/reporting-messages.ts")).toBe(true);
+    /**
+     * PRD-008b D1. The empty-images sentence lives in a copy file of its own, and is the one
+     * sentence a screen says about a version's images, so the guard has to be reading it.
+     */
+    expect(files.has("apps/web/src/copy/campaign-image-messages.ts")).toBe(true);
     expect(await collectSourceFiles("packages/application/src")).toContain(
       "packages/application/src/reporting.ts",
     );

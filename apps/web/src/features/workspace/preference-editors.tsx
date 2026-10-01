@@ -64,9 +64,12 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
         <form className={styles.stack} onSubmit={(event) => void submit(event)}>
           <div>
             <h2>Your report identity</h2>
+            {/* The branding is saved either way. Whether anything uses it yet depends on whether
+                homeowner reports are on for the workspace, and the sentence says which. */}
             <p>
-              Saved for your account in this workspace and used when you create a new homeowner
-              report.
+              {data.reportsEnabled
+                ? "Saved for your account in this workspace and used when you create a new homeowner report."
+                : "Saved for your account in this workspace. It will be used on a new homeowner report once homeowner reports are turned on."}
             </p>
           </div>
           <fieldset className={styles.fields} disabled={state.busy || !data.canEdit}>

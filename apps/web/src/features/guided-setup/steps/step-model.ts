@@ -95,7 +95,7 @@ export const GUIDED_SETUP_CEILING_SECONDS = 300;
 
 /** What step 6 shows: the panel's title and words, and the element it points at. */
 export type ApproveOrHandOffStep = Readonly<{
-  anchor: GuidedSetupAnchorId;
+  anchor: GuidedSetupAnchorId | typeof PANEL_ANCHORED;
   body: string;
   title: string;
 }>;
@@ -113,7 +113,9 @@ export type ApproveOrHandOffStep = Readonly<{
  *   campaign page and is why the approve control's anchor is the one used;
  * - needs changes: that the version cannot be approved yet and what to do about it, pointed at what
  *   the checks found. The copy-link card is not on that page either, and the approve control is
- *   blocked, so neither is somewhere this step can honestly point.
+ *   blocked, so neither is somewhere this step can honestly point;
+ * - none: an approver who cannot create a campaign and has none waiting says that nothing is, and
+ *   points at nothing, because there is no campaign page for the panel to point at.
  */
 export function approveOrHandOffStep(
   input: Readonly<{ canApprove: boolean; standing: CampaignStanding }>,
@@ -138,6 +140,8 @@ export function approveOrHandOffStep(
         body: words.needsChangesBody,
         title: words.needsChangesTitle,
       };
+    case "none":
+      return { anchor: PANEL_ANCHORED, body: words.noneBody, title: words.noneTitle };
     case "waiting":
     case "unknown":
       return input.canApprove
@@ -166,6 +170,8 @@ export function readTheResultBody(standing: CampaignStanding): string {
   switch (standing) {
     case "unknown":
       return words.unknownBody;
+    case "none":
+      return words.noneBody;
     case "needs_changes":
       return words.needsChangesBody;
     case "waiting":
@@ -190,6 +196,8 @@ export function whatHappensNextBody(standing: CampaignStanding): string {
   switch (standing) {
     case "unknown":
       return words.body;
+    case "none":
+      return `${words.noneLead} ${words.noneTail}`;
     case "waiting":
       return `${words.waitingLead} ${words.tail}`;
     case "needs_changes":

@@ -58,6 +58,11 @@ type ProviderOptions = Readonly<{
   answers?: Readonly<Record<string, unknown>>;
   canApprove?: boolean;
   /**
+   * Whether the person can create a campaign. True unless a test says otherwise, which is the
+   * workspace owner and the campaign creator; the approver who cannot create one passes false.
+   */
+  canCreate?: boolean;
+  /**
    * The page under the provider. `<main />` stands in for it almost everywhere, because almost
    * every case here is about the panel. The two Wave 7m cases pass the real create screen, because
    * what they are about is what the walkthrough does to the page beneath it.
@@ -78,13 +83,12 @@ type ProviderOptions = Readonly<{
   fetch?: typeof globalThis.fetch;
 }>;
 
-function renderSetup(options: ProviderOptions = {}) {
-  const recorder = recordingSetupFetch(options.answers);
-  vi.stubGlobal("fetch", options.fetch ?? recorder.fetch);
-  const view = render(
+function setupProvider(options: ProviderOptions) {
+  return (
     <GuidedSetupProvider
       campaignAwaitingDecision={options.campaignAwaitingDecision}
       canApprove={options.canApprove ?? true}
+      canCreate={options.canCreate ?? true}
       enabled={options.enabled ?? true}
       initialProfile={options.profile}
       initialProgress={options.progress ?? initialGuidedSetupProgress()}
@@ -96,9 +100,26 @@ function renderSetup(options: ProviderOptions = {}) {
       {/* The layout renders the shell controls beside the pages, so the harness does too. */}
       <GuidedSetupShellControls />
       {options.children ?? <main />}
-    </GuidedSetupProvider>,
+    </GuidedSetupProvider>
   );
-  return { ...view, calls: recorder.calls };
+}
+
+function renderSetup(options: ProviderOptions = {}) {
+  const recorder = recordingSetupFetch(options.answers);
+  vi.stubGlobal("fetch", options.fetch ?? recorder.fetch);
+  const view = render(setupProvider(options));
+  return {
+    ...view,
+    calls: recorder.calls,
+    /**
+     * What the layout does when the page refreshes: the same provider, mounted once, handed new
+     * props from the server. Whatever the provider holds in its own state, the progress it has
+     * written included, is kept, which is what a refresh does to it.
+     */
+    rerenderWith(next: ProviderOptions) {
+      view.rerender(setupProvider({ ...options, ...next }));
+    },
+  };
 }
 
 function panel() {
@@ -566,6 +587,162 @@ describe("guided setup steps", () => {
       expect(push).not.toHaveBeenCalledWith(READY_PREFLIGHT_RESPONSE.detailHref);
     },
   );
+
+  /**
+   * PRD-008b 008B-AC-010, the approver who cannot create a campaign. They never save one, so the
+   * walkthrough has no stored reference to read for them, and the campaign it hands them at step 3
+   * is chosen again on every render from the ones still waiting. The moment they decide it, it
+   * stops waiting, drops out of that choice, and the walkthrough was left with nothing to describe:
+   * step 6 went back to "Choose Approve this version." beside a page saying it was approved.
+   *
+   * The walkthrough therefore stores the campaign it handed them, the way it stores a creator's
+   * own, and the server reads it back by that reference, decision and all. The harness plays the
+   * server's part of that: it answers with a stored campaign only when the progress it was last
+   * sent names one, which is exactly when `readSetupPreferences` reads one.
+   */
+  describe("an approver who cannot create a campaign, and the campaign they were handed", () => {
+    const WAITING = savedCampaignResult();
+
+    /** The progress the walkthrough last asked the server to store. */
+    function lastStoredProgress(calls: readonly { path: string; body: unknown }[]) {
+      const written = calls.filter((call) => call.path === "/api/setup/progress").at(-1);
+      const body = written?.body as { progress: { campaignRef?: string; currentStep: number } };
+      return body.progress;
+    }
+
+    /** What a person does on every step: reads it, then presses Continue. */
+    async function pressContinue(): Promise<void> {
+      await userEvent
+        .setup()
+        .click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+    }
+
+    /**
+     * An approver who cannot create a campaign, on the step after their Realtor partner, with
+     * Continue pressed. Each case says only what it changes: the campaign the server offers, or who
+     * the person is.
+     */
+    async function continueFromTheRealtorStep(options: ProviderOptions = {}) {
+      const view = renderSetup({
+        canApprove: true,
+        canCreate: false,
+        profile: SAMPLE_PROFILE,
+        progress: progressAt(3),
+        ...options,
+      });
+      await pressContinue();
+      return view;
+    }
+
+    it("stores the campaign it handed them when it moves them on", async () => {
+      const { calls } = await continueFromTheRealtorStep({ campaignAwaitingDecision: WAITING });
+
+      await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.readTheResult.title });
+      expect(lastStoredProgress(calls)).toMatchObject({
+        campaignRef: WAITING.campaignRef,
+        currentStep: 5,
+      });
+    });
+
+    it("still reads them the result of that campaign before the server has read it back", async () => {
+      await continueFromTheRealtorStep({ campaignAwaitingDecision: WAITING });
+      await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.readTheResult.title });
+
+      // The layout has not rendered again, so there is no stored reading yet. The campaign they
+      // were handed is still the one the step is about, and the step must not say it cannot read it.
+      expect(panel()).toHaveAccessibleDescription(GUIDED_SETUP_STEPS.readTheResult.readyBody);
+      expect(panel()).not.toHaveTextContent("couldn't read the result");
+    });
+
+    it.each([
+      ["approved", "approved", "This version is approved"],
+      ["sent back", "rejected", "This version was sent back"],
+    ] as const)(
+      "says the version was %s once they decide it, and no longer tells them to approve it",
+      async (_outcome, decision, title) => {
+        const view = await continueFromTheRealtorStep({
+          campaignAwaitingDecision: WAITING,
+          progress: progressAt(5),
+        });
+        await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.approveOrHandOff.title });
+        expect(panel()).toHaveTextContent("Choose Approve this version.");
+
+        // They decide, and the page refreshes. The campaign is no longer waiting, so the layout
+        // offers none; it reads the one the walkthrough stored, by reference, with its decision.
+        const stored = lastStoredProgress(view.calls);
+        view.rerenderWith({
+          campaignAwaitingDecision: undefined,
+          savedCampaign:
+            stored.campaignRef === WAITING.campaignRef
+              ? savedCampaignResult({ decision })
+              : undefined,
+        });
+
+        await waitFor(() => {
+          expect(panel()).toHaveAccessibleName(title);
+        });
+        expect(panel()).not.toHaveTextContent("Choose Approve this version.");
+      },
+    );
+
+    /**
+     * 008B-AC-010 (b). Nobody has saved a campaign for them to approve, which is what a pure approver
+     * sees on a new workspace. The walkthrough used to send them to step 4, "Create the Open House
+     * Boost", which their role cannot do, and never told them nothing was waiting. It says so, and
+     * takes them to the step that is theirs.
+     */
+    it("tells an approver that nothing is waiting, instead of sending them to create a campaign", async () => {
+      const { calls } = await continueFromTheRealtorStep();
+
+      await screen.findByRole("dialog", { name: "Nothing is waiting for you" });
+      expect(panel()).toHaveAccessibleDescription(
+        "No campaign is waiting for your approval right now. When somebody saves one, open it from your campaigns and approve it there.",
+      );
+      expect(panel()).not.toHaveTextContent("Choose Approve this version.");
+      expect(lastStoredProgress(calls).currentStep).toBe(6);
+      expect(push).not.toHaveBeenCalledWith("/marketing/campaigns/new");
+    });
+
+    it.each(["approved", "rejected"] as const)(
+      "says the same when the only campaign offered was %s, because that is waiting for nobody",
+      async (decision) => {
+        await continueFromTheRealtorStep({
+          campaignAwaitingDecision: savedCampaignResult({ decision }),
+        });
+
+        expect(
+          await screen.findByRole("dialog", { name: "Nothing is waiting for you" }),
+        ).toBeInTheDocument();
+      },
+    );
+
+    it("ends with the closing step saying so, and that nothing runs as an ad yet", async () => {
+      await continueFromTheRealtorStep();
+      await screen.findByRole("dialog", { name: "Nothing is waiting for you" });
+
+      await pressContinue();
+
+      await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.whatHappensNext.title });
+      expect(panel()).toHaveAccessibleDescription(
+        "No campaign is waiting for your approval right now. A campaign won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch campaigns.",
+      );
+      expect(panel()).not.toHaveTextContent(/Your campaign/u);
+    });
+
+    /** The branches that were there before are not touched: people who can create are sent to create. */
+    it.each([
+      ["a workspace owner, who can approve and create", true, true],
+      ["a campaign creator, who cannot approve", false, true],
+    ] as const)(
+      "still sends %s to create a campaign when nothing is waiting",
+      async (_who, canApprove, canCreate) => {
+        const { calls } = await continueFromTheRealtorStep({ canApprove, canCreate });
+
+        await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.createCampaign.title });
+        expect(lastStoredProgress(calls).currentStep).toBe(4);
+      },
+    );
+  });
 
   /**
    * PRD-008b 008B-AC-011. Step 5 says the campaign is "ready for approval". That is true of a

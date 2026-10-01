@@ -287,6 +287,38 @@ describe("setup preference routes", () => {
   });
 
   /**
+   * PRD-008b 008B-AC-010. The walkthrough stores the campaign it hands an approver as theirs, so a
+   * later read finds it by that reference, with whatever has been decided on it since, instead of
+   * choosing again among the campaigns still waiting. The read does not look at the role: it is the
+   * read a creator's own campaign gets, and an approver in the same workspace may make it.
+   *
+   * Written against the same fixtures as the cases around it and not run in the offline gate, which
+   * has no database; it runs with `pnpm test:db`.
+   */
+  it("reads the campaign an approver was handed back by its stored reference", async () => {
+    const draft = await saveDraft(OPEN_HOUSE_DRAFT_INPUT);
+    expect(
+      (
+        await progressPost(
+          approverProgressRequest({
+            progress: { ...VALID_PROGRESS, campaignRef: draft.campaignRef },
+          }),
+        )
+      ).status,
+    ).toBe(200);
+
+    const approverView = await readSetupPreferences(
+      await principalForSession(approverSession, environment),
+      environment,
+    );
+
+    expect(approverView.campaign?.campaignRef).toBe(draft.campaignRef);
+    expect(approverView.campaign?.decision).toBeUndefined();
+    // With a campaign stored as theirs, the layout is not asked to choose a waiting one.
+    expect(approverView.awaitingDecision).toBeUndefined();
+  });
+
+  /**
    * The bodies are built inside the test rather than in the `it.each` table, because the table is
    * evaluated while the file is being collected and the seeded ids do not exist until `beforeAll`
    * has run.

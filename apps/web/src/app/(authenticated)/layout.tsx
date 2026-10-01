@@ -1,4 +1,4 @@
-import { CAMPAIGN_APPROVAL_ROLES } from "@oalo/application";
+import { CAMPAIGN_APPROVAL_ROLES, CAMPAIGN_MUTATION_ROLES } from "@oalo/application";
 import { Button, Link } from "@oalo/ui";
 import { headers } from "next/headers.js";
 import type { ReactNode } from "react";
@@ -68,6 +68,15 @@ const SIGNED_OUT_SESSION: WorkspaceSessionView = Object.freeze({
  */
 const APPROVER_CAPABLE_ROLE_LABELS: ReadonlySet<string> = new Set(
   CAMPAIGN_APPROVAL_ROLES.map((role) => ROLE_LABELS[role]),
+);
+
+/**
+ * PRD-008b 008B-AC-010. Who can create a campaign, in the same label space and from the same roles
+ * the create command enforces. An approver who cannot is not sent to the walkthrough's step 4,
+ * "Create the Open House Boost", which their role cannot complete.
+ */
+const CREATOR_CAPABLE_ROLE_LABELS: ReadonlySet<string> = new Set(
+  CAMPAIGN_MUTATION_ROLES.map((role) => ROLE_LABELS[role]),
 );
 
 /**
@@ -201,6 +210,7 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
         <GuidedSetupProvider
           campaignAwaitingDecision={preferences.awaitingDecision}
           canApprove={APPROVER_CAPABLE_ROLE_LABELS.has(session.user.roleLabel)}
+          canCreate={CREATOR_CAPABLE_ROLE_LABELS.has(session.user.roleLabel)}
           enabled
           initialProfile={preferences.profile}
           initialProgress={preferences.progress}

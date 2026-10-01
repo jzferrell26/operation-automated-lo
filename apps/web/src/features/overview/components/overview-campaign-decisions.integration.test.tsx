@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { CampaignWorkspaceProjection } from "@oalo/application";
 
 import {
+  approvedProjection,
   awaitingApprovalProjection,
   sentBackProjection,
 } from "../../campaigns/components/campaign-decision.test-support.js";
@@ -44,6 +45,20 @@ describe("the overview card for a campaign somebody has decided on", () => {
 
     expect(within(card).getByText("Sent back for changes")).toBeInTheDocument();
     expect(within(card).queryByText("Ready for approval")).toBeNull();
+    expect(within(card).queryByText(/Approve this version/u)).toBeNull();
+  });
+
+  /**
+   * 008B-AC-009, the approved half. An approval moves the state to `approved`, so the stored state
+   * already says so; this keeps the overview from describing an approved campaign as ready for
+   * approval or as sent back.
+   */
+  it("says an approved campaign is approved, and never that it is ready for approval", async () => {
+    const card = renderOverview(await approvedProjection());
+
+    expect(within(card).getByText("Approved")).toBeInTheDocument();
+    expect(within(card).queryByText("Ready for approval")).toBeNull();
+    expect(within(card).queryByText("Sent back for changes")).toBeNull();
     expect(within(card).queryByText(/Approve this version/u)).toBeNull();
   });
 

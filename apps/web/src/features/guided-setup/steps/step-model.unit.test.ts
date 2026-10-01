@@ -4,6 +4,7 @@ import { GUIDED_SETUP_STEPS } from "../../../copy/guided-setup-messages.js";
 import { GUIDED_SETUP_ANCHORS } from "../anchor-registry.js";
 import type { CampaignStanding } from "../model/campaign-result.js";
 import {
+  PANEL_ANCHORED,
   approveOrHandOffStep,
   readTheResultBody,
   stepDefinition,
@@ -75,8 +76,18 @@ describe("what step 6 shows", () => {
     }
   });
 
+  it("says nothing is waiting, and points at nothing, for an approver with no campaign to approve", () => {
+    for (const canApprove of [true, false]) {
+      expect(approveOrHandOffStep({ canApprove, standing: "none" })).toEqual({
+        anchor: PANEL_ANCHORED,
+        body: "No campaign is waiting for your approval right now. When somebody saves one, open it from your campaigns and approve it there.",
+        title: "Nothing is waiting for you",
+      });
+    }
+  });
+
   it("never gives a version that cannot be approved the approve or copy-link control", () => {
-    for (const standing of ["approved", "sent_back", "needs_changes"] as const) {
+    for (const standing of ["approved", "sent_back", "needs_changes", "none"] as const) {
       for (const canApprove of [true, false]) {
         const step = approveOrHandOffStep({ canApprove, standing });
         expect(step.anchor).not.toBe(GUIDED_SETUP_ANCHORS.campaignHandoffLink);
@@ -91,6 +102,7 @@ describe("what step 6 shows", () => {
 describe("what step 5 says", () => {
   it.each([
     ["unknown", GUIDED_SETUP_STEPS.readTheResult.unknownBody],
+    ["none", "No campaign is waiting for your approval right now."],
     ["needs_changes", GUIDED_SETUP_STEPS.readTheResult.needsChangesBody],
     ["waiting", GUIDED_SETUP_STEPS.readTheResult.readyBody],
     ["approved", "Your campaign is saved and approved. Nothing has been published or sent."],
@@ -105,6 +117,7 @@ describe("what step 5 says", () => {
   it("says a campaign is ready for approval only while it is waiting for approval", () => {
     const standings: readonly CampaignStanding[] = [
       "unknown",
+      "none",
       "needs_changes",
       "waiting",
       "approved",
@@ -124,6 +137,10 @@ describe("what step 7 says", () => {
 
   it.each([
     ["waiting", `Your campaign is saved and waiting for approval. ${TAIL}`],
+    [
+      "none",
+      "No campaign is waiting for your approval right now. A campaign won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch campaigns.",
+    ],
     ["needs_changes", `Your campaign is saved, and the checks found things to fix first. ${TAIL}`],
     ["approved", `Your campaign is saved and approved. ${TAIL}`],
     [
@@ -147,7 +164,7 @@ describe("what step 7 says", () => {
   });
 
   it("says the campaign is approved only when an approval is recorded", () => {
-    for (const standing of ["waiting", "needs_changes", "sent_back", "unknown"] as const) {
+    for (const standing of ["waiting", "needs_changes", "sent_back", "unknown", "none"] as const) {
       expect(whatHappensNextBody(standing), standing).not.toMatch(/\bapproved\b/u);
     }
   });
@@ -159,6 +176,7 @@ describe("what step 7 says", () => {
       "approved",
       "sent_back",
       "unknown",
+      "none",
     ] as const) {
       const body = whatHappensNextBody(standing);
       expect(body, standing).toContain("won't run as an ad yet");

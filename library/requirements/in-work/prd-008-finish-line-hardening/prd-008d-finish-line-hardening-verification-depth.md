@@ -85,3 +85,13 @@ Every migration has its own pgTAP suite. Every named design state has a photogra
 - [PRD-006d design quality bar](../../in-work/prd-006-first-party-sign-in-and-guided-experience/prd-006d-first-party-sign-in-and-guided-experience-design-quality-bar.md)
 - [`tests/visual/screens/README.md`](../../../../tests/visual/screens/README.md)
 - [PRD-007 index](../../in-work/prd-007-homeowner-reports/prd-007-homeowner-reports-index.md)
+
+## Amendments
+
+- **2026-10-01, how 008D-AC-005's precondition applies to four close-out criteria.** 008D-AC-005 asks that every Wave 1 criterion is VERIFIED before `screen-baselines.yml` is dispatched. Four Wave 1 criteria have a closing event that this PRD itself places after the dispatch:
+  - 008A-AC-003: the audit is re-run on the final head.
+  - 008A-AC-007: PR #70 is commented on and closed at ship.
+  - 008A-AC-015 and 008A-AC-022: each is recorded by the FLH-003 security report.
+
+  At the first dispatch (run 36823126319, 2026-10-01T06:07:26Z) each of the four had its implementation verified by a separate pass, and each waited only on its closing event (ledger rows FLR-010, FLR-014, FLR-021 and FLR-028). None of them changes rendered output. Every other Wave 1 criterion was VERIFIED. The precondition is read as applying to every Wave 1 criterion except those closing events. The independent verifier of 008D-AC-005 found this gap between the criterion's text and the run's order, and recommended recording it rather than redrawing.
+- **2026-10-01, where the redraws ran.** All three dispatches ran on the lane branch `gauntlet/008d-baselines`, which was cut from the integrated run tree `0cf31ab` and merged into `claude/gauntlet-prd-008` at `9b25e97`. The rendered code at the lane head equals the run head. The intent of "on the run branch" is one redraw of the run's code, and that is what happened.

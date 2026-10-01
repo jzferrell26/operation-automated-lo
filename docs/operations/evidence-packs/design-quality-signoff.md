@@ -10,11 +10,12 @@ fix moved 343 of the 376 pictures (see "How this was filled").
 - Commit reviewed: `cad9bf6`, the commit that installs the baselines drawn by screen-baselines run
   36844271868 from `eaf34e6` (the commit after it changes only this file, the review report, and
   the rubric's D-009 and D-010 rows and section 6)
-  - Re-checked at the run's final head, as 008D-AC-010 and 008D-AC-011 ask: no file under
-    `tests/visual/` and no baselined screen changed after `cad9bf6`. `git diff cad9bf6 211b519 -- tests/visual`
-    is empty, and the close-out quality report's 008D-AC-011 section accounts for every later
-    rendered-code change. The re-check is recorded in PR #74: UNVERIFIED here, because the pull
-    request body is outside this checkout.
+  - Re-checked at the ship head of PR #74, as 008D-AC-010 and 008D-AC-011 ask: no file under
+    `tests/visual/` and no baselined screen changed after `cad9bf6`, through that head.
+    `git diff --stat cad9bf6 HEAD -- tests/visual`, run on the ship head, is empty, and the
+    close-out quality report's 008D-AC-011 section accounts for every later rendered-code change.
+    The re-check is recorded in PR #74: UNVERIFIED here, because the pull request body is outside
+    this checkout.
 - Date: 2026-10-01 (first signed 2026-09-21 against `74999a8`; re-signed against `d7af15a` earlier
   on 2026-10-01)
 - Signed by: `ux-ui-guardian`, Gauntlet lane L6c (Claude Code), for the orchestrator

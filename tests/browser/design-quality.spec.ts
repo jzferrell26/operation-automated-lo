@@ -8,6 +8,7 @@ import {
   expectKeyboardReachesEveryControl,
   expectNoHorizontalOverflow,
   expectTargetsAreLargeEnough,
+  expectThePageFillsTheContentColumn,
   expectThePageOpensAtTheTopOfItsContent,
   expectThemeResolved,
   expectZeroMotionUnderReducedMotion,
@@ -565,6 +566,7 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
       );
       await expect(main.getByRole("link", { name: "Open campaign" })).toHaveCount(0);
       await expectThePageOpensAtTheTopOfItsContent(page);
+      await expectThePageFillsTheContentColumn(page);
       await expect(main.getByRole("link", { name: "Create an Open House Boost" })).toHaveAttribute(
         "href",
         "/marketing/campaigns/new",
@@ -619,6 +621,7 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
         await expect(cards.nth(index)).toContainText(campaign.verdict);
       }
       await expectThePageOpensAtTheTopOfItsContent(page);
+      await expectThePageFillsTheContentColumn(page);
       // Rubric axis 1: a card's title is never drawn larger than the page's own title.
       const [pageTitle, cardTitle] = await Promise.all(
         [main.getByRole("heading", { level: 1 }), cards.first().getByRole("heading")].map(

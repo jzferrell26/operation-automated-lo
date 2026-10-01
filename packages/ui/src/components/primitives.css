@@ -152,11 +152,16 @@
   border-radius: var(--radius-pill);
   color: var(--st-neutral-fg);
   display: inline-flex;
-  flex: none;
+  /* PRD-008d, the scored baseline review of 2026-10-01. A label that is wider than its card even
+   * on a line of its own ("Uncertain, reconciling" in the overview's narrowest metric card at 1440)
+   * may shrink to the card and wrap its words, rather than run past the card's edge. A label with
+   * room keeps its single line, so nothing that already fitted moves. */
+  flex: 0 1 auto;
   font-size: var(--text-caption-size);
   font-weight: var(--weight-medium);
   gap: var(--space-1);
   line-height: var(--leading-normal);
+  max-inline-size: 100%;
   padding-block: var(--space-1);
   padding-inline: var(--space-2);
 }

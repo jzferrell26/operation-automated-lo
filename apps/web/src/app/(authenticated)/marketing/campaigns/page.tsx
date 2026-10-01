@@ -21,7 +21,7 @@ export default async function CampaignListPage() {
   const campaigns = read.campaigns;
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${styles.campaignsPage}`}>
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Open House Boost</p>

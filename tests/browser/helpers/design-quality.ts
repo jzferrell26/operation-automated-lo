@@ -669,6 +669,27 @@ export async function expectThePageOpensAtTheTopOfItsContent(page: Page): Promis
 }
 
 /**
+ * Rubric axes 2 and 10. A page that fills the content column starts its title at the column's
+ * inline start, as its siblings do, whatever it currently holds. PRD-008d's baseline review: the
+ * campaigns list shrank to its contents and was centred, so its title moved with what it listed.
+ */
+export async function expectThePageFillsTheContentColumn(page: Page): Promise<void> {
+  const gap = await page.getByRole("main").evaluate((main) => {
+    const first = main.firstElementChild;
+    if (first === null) return undefined;
+    const paddingInlineStart = Number.parseFloat(getComputedStyle(main).paddingLeft);
+    return (
+      first.getBoundingClientRect().left - (main.getBoundingClientRect().left + paddingInlineStart)
+    );
+  });
+  expect(gap, "the main landmark has content").toBeDefined();
+  expect(
+    Math.abs(gap ?? Number.POSITIVE_INFINITY),
+    "the page starts at the column's edge",
+  ).toBeLessThan(1);
+}
+
+/**
  * PRD-006c D7 and `03-components/sheet-and-dialog.md`, "the footer stays visible": the footer is
  * pinned at the end of the panel's scroll box, so the panel ends with its controls.
  *

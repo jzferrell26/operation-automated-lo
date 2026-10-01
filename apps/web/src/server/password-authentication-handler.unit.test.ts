@@ -1,5 +1,12 @@
 import { createHash } from "node:crypto";
 
+import {
+  CSRF_REQUEST_HEADER,
+  FIRST_PARTY_SESSION_COOKIE,
+  createSessionBoundCsrfToken,
+  type EstablishedFirstPartySession,
+  type FirstPartySessionLookup,
+} from "@oalo/auth";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -10,8 +17,11 @@ import {
 import type { CredentialPort, PasswordCredential } from "./credential-ports.js";
 import type { TransactionalEmailMessage } from "./email/transactional-email.js";
 import {
+  AUTH_RATE_LIMITS,
   clientAddressFor,
+  handleChangePassword,
   handleForgotPassword,
+  rateLimitKeyHash,
   resetAuthHandlerProcessStateForTests,
   scheduleThroughNextAfter,
 } from "./password-authentication-handler.js";
@@ -19,7 +29,8 @@ import {
 /**
  * PRD-008a, the parts of the password handler a test can hold without a database: the address
  * the per-address limits key on (008A-AC-016), the level the missing-address line is logged at
- * (008A-AC-017), and the work forgot-password does before it answers (008A-AC-013 and 024).
+ * (008A-AC-017), the work forgot-password does before it answers (008A-AC-013 and 024), and the
+ * point at which change-password spends its per-person slot (008A-AC-012).
  *
  * The Postgres half of the same handler lives in `password-authentication-handler.postgres.test.ts`
  * and `password-recovery-handler.postgres.test.ts`; nothing here replaces either.
@@ -112,13 +123,17 @@ describe("the missing-address line (008A-AC-017)", () => {
 /**
  * A credential port that records every call it is given and answers each one only after a real
  * macrotask, the way a database round trip does. `before` is what the handler awaited before it
- * answered; anything recorded after that happened in work it scheduled.
+ * answered; anything recorded after that happened in work it scheduled. The limiter counts per
+ * scope and key the way `platform.consume_auth_rate_limit` does within one window, and `counters`
+ * exposes those counts.
  */
 function recordingCredentialPort(options: Readonly<{ issueToken?: () => Promise<string> }> = {}): {
   port: CredentialPort;
   calls: string[];
+  counters: Map<string, number>;
 } {
   const calls: string[] = [];
+  const counters = new Map<string, number>();
   const roundTrip = async <T>(name: string, value: T): Promise<T> => {
     calls.push(name);
     await new Promise((resolve) => setTimeout(resolve, 1));
@@ -132,10 +147,15 @@ function recordingCredentialPort(options: Readonly<{ issueToken?: () => Promise<
     emailVerified: true,
   });
   const refuse = (): never => {
-    throw new Error("forgot-password must not reach this port method");
+    throw new Error("this proof must not reach this port method");
   };
   const port: CredentialPort = {
-    consumeRateLimit: (input) => roundTrip(`consumeRateLimit:${input.scope}`, true),
+    consumeRateLimit: (input) => {
+      const key = `${input.scope}:${input.keyHash}`;
+      const count = (counters.get(key) ?? 0) + 1;
+      counters.set(key, count);
+      return roundTrip(`consumeRateLimit:${input.scope}`, count <= input.attemptLimit);
+    },
     lookupCredential: (email) =>
       roundTrip("lookupCredential", email === KNOWN_ADDRESS ? known : undefined),
     issueToken: async (input) => {
@@ -160,7 +180,7 @@ function recordingCredentialPort(options: Readonly<{ issueToken?: () => Promise<
     registerAccount: refuse,
     markEmailVerified: refuse,
   };
-  return { port, calls };
+  return { port, calls, counters };
 }
 
 function forgotPorts(
@@ -355,5 +375,164 @@ describe("a failed issuance leaks nothing (008A-AC-024)", () => {
     // No live token, so no link was sent and no delivery was recorded for one.
     expect(sent).toHaveLength(0);
     expect(run.calls.some((call) => call.startsWith("recordEmailDelivery"))).toBe(false);
+  });
+});
+
+/**
+ * PRD-008a D2 (008A-AC-012). The change-password slot is consumed as soon as the session names the
+ * person, before the body is read, so a request the route refuses for its body still spends one.
+ * Otherwise a stolen session could probe freely with malformed requests and the limit would count
+ * only the requests that reach a derivation. The Postgres proof of the eleventh attempt lives in
+ * `password-authentication-handler.postgres.test.ts`; this one holds the ordering without a
+ * database, through a counting limiter and an instrumented hasher.
+ */
+describe("change-password spends a slot on a refused body (008A-AC-012)", () => {
+  const limitedActorId = "00000000-0000-4000-8000-000000000c31";
+  const sessionSecret = "c".repeat(43);
+  const csrfServerSecret = Buffer.alloc(32, 5);
+
+  function changePasswordPorts(credentials: CredentialPort): CampaignCommandPorts {
+    const established: EstablishedFirstPartySession = {
+      sessionId: "session_limited",
+      userId: "user_limited",
+      locationId: "location_limited",
+      installationId: "installation_limited",
+      role: "location_admin",
+      roleVersion: 1,
+      expiresAtEpochSeconds: Math.floor(Date.now() / 1000) + 600,
+    };
+    const firstPartySessions: FirstPartySessionLookup = {
+      async getActive(secret) {
+        return secret === sessionSecret ? established : undefined;
+      },
+    };
+    return {
+      identityDirectory: createStaticIdentityDirectory([
+        {
+          locationRef: "location_limited",
+          locationId: "00000000-0000-4000-8000-000000000c01",
+          actorRef: "user_limited",
+          actorId: limitedActorId,
+        },
+      ]),
+      roleBindings: createStaticRoleBindingPort([
+        {
+          actorRef: "user_limited",
+          locationRef: "location_limited",
+          role: "location_admin",
+          roleVersion: 1,
+        },
+      ]),
+      mutation: { expectedHost: HOST, allowedBrowserOrigins: [ORIGIN], csrfServerSecret },
+      firstPartySessions,
+      credentials,
+    };
+  }
+
+  async function attempt(
+    body: string,
+    run: Readonly<{ ports: CampaignCommandPorts; derivations: string[] }>,
+  ): Promise<string> {
+    const response = await handleChangePassword(
+      new Request(`${ORIGIN}/api/auth/change-password`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: ORIGIN,
+          host: HOST,
+          cookie: `${FIRST_PARTY_SESSION_COOKIE}=${sessionSecret}`,
+          [CSRF_REQUEST_HEADER]: createSessionBoundCsrfToken({
+            serverSecret: csrfServerSecret,
+            sessionId: "session_limited",
+          }),
+        },
+        body,
+      }),
+      ENVIRONMENT,
+      run.ports,
+      {
+        passwordHasher: {
+          verify: () => {
+            run.derivations.push("verify");
+            return false;
+          },
+          hash: () => {
+            run.derivations.push("hash");
+            return "never-written";
+          },
+        },
+      },
+    );
+    const parsed = JSON.parse(await response.text()) as { error: string };
+    return `${String(response.status)} ${parsed.error}`;
+  }
+
+  function freshRun() {
+    const { port, counters } = recordingCredentialPort();
+    const counterKey = `change_password_user:${rateLimitKeyHash(
+      csrfServerSecret,
+      "change_password_user",
+      limitedActorId,
+    )}`;
+    return { ports: changePasswordPorts(port), derivations: [] as string[], counters, counterKey };
+  }
+
+  it("counts a malformed body, a schema failure, and a mismatched confirmation", async () => {
+    const run = freshRun();
+
+    const answers = [
+      await attempt("{not json", run),
+      await attempt(
+        JSON.stringify({
+          currentPassword: "a settled harbour lantern",
+          newPassword: "a brighter harbour lantern",
+          confirmPassword: "a brighter harbour lantern",
+          locationId: "00000000-0000-4000-8000-000000000c01",
+        }),
+        run,
+      ),
+      await attempt(
+        JSON.stringify({
+          currentPassword: "a settled harbour lantern",
+          newPassword: "a brighter harbour lantern",
+          confirmPassword: "a different harbour lantern",
+        }),
+        run,
+      ),
+    ];
+
+    expect(answers).toEqual([
+      "400 INVALID_AUTH_REQUEST",
+      "400 INVALID_AUTH_REQUEST",
+      "400 AUTH_PASSWORDS_DO_NOT_MATCH",
+    ]);
+    expect(run.counters.get(run.counterKey)).toBe(3);
+    expect(run.derivations).toEqual([]);
+  });
+
+  it("refuses the eleventh attempt after ten refused bodies, before reading it", async () => {
+    const run = freshRun();
+    const limit = AUTH_RATE_LIMITS.change_password_user;
+    expect(limit).toEqual({ attemptLimit: 10, windowSeconds: 900 });
+
+    const refusedBodies: string[] = [];
+    for (let index = 0; index < limit.attemptLimit; index += 1) {
+      refusedBodies.push(await attempt("{not json", run));
+    }
+    const eleventh = await attempt(
+      JSON.stringify({
+        currentPassword: "a settled harbour lantern",
+        newPassword: "a brighter harbour lantern",
+        confirmPassword: "a brighter harbour lantern",
+      }),
+      run,
+    );
+
+    expect(refusedBodies).toEqual(Array.from({ length: 10 }, () => "400 INVALID_AUTH_REQUEST"));
+    // A well-formed eleventh request is still refused, in the module's 429 shape, and nothing is
+    // derived for it: the credential lookup that precedes the derivation would throw here.
+    expect(eleventh).toBe("429 AUTH_RATE_LIMITED");
+    expect(run.counters.get(run.counterKey)).toBe(11);
+    expect(run.derivations).toEqual([]);
   });
 });

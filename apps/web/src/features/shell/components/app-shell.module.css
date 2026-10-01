@@ -170,6 +170,13 @@
   font-size: var(--text-card-size);
 }
 
+/* When the product's name takes two lines, it breaks into two of a length rather than leaving
+ * "LO" alone on the second, as the runner's face did at the card step (PRD-008d, second redraw,
+ * R-21). */
+.brand strong {
+  text-wrap: balance;
+}
+
 /*
  * 2026-09-21. The workspace is a column that fills the viewport and hands the main landmark
  * whatever the topbar and the banner leave, instead of the main landmark carrying its own

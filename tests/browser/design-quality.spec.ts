@@ -501,6 +501,31 @@ test("the rail's titles are drawn above its navigation links", async ({ page }) 
   });
   expect(sizes.brand, "the product's name").toBeGreaterThan(sizes.link);
   expect(sizes.identity, "the workspace's name").toBeGreaterThan(sizes.link);
+
+  /**
+   * R-21. At the card step the runner's face wrapped the product's name as "Operation Automated"
+   * over a lone "LO" (screen-baselines run 36841695906). Wherever it wraps, its last line is at
+   * least half as long as its longest, and the rule that keeps it so is in place, because a
+   * workstation's narrower face may not wrap it at all.
+   */
+  const lines = await page.locator("[class*='__brand'] strong").evaluate((title) => {
+    const text = document.createRange();
+    text.selectNodeContents(title);
+    const rows = new Map<number, number>();
+    for (const rect of text.getClientRects()) {
+      const row = Math.round(rect.top);
+      rows.set(row, Math.max(rows.get(row) ?? 0, rect.right));
+    }
+    const left = title.getBoundingClientRect().left;
+    const widths = [...rows.entries()].sort(([a], [b]) => a - b).map(([, right]) => right - left);
+    return { widths, wrap: getComputedStyle(title).getPropertyValue("text-wrap-style") };
+  });
+  expect(lines.wrap, "the product's name balances its lines").toBe("balance");
+  const longest = Math.max(...lines.widths);
+  expect(
+    lines.widths.at(-1) ?? longest,
+    `the product's name ends on a line ${lines.widths.map(Math.round).join(" and ")}px long`,
+  ).toBeGreaterThanOrEqual(longest / 2);
 });
 
 /**

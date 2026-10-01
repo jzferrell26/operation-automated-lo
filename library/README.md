@@ -35,7 +35,7 @@ New PRD folders contain an index, independently implementable sub-PRDs, and a `q
 
 - [Agent terrain map](../.cursor/rules/core/the-map.mdc): short resume brief for Codex / Claude / Cursor (done, pending, HighLevel park, next steps).
 - [Canonical project map](knowledge/private/product/project-map.md): the current cross-document status map for PRD-001, PRD-002, external evidence gates, hard boundaries, and core completion.
-- [Next batch: External Evidence Sprint](../NEXT_BATCH_LEDGER.md): Wave 1 G2 App Test is primary; currently parked on HighLevel app approval.
+- [Next batch: External Evidence Sprint](../NEXT_BATCH_LEDGER.md): Wave 1 G2 App Test is primary. It waits on an operator running the sandbox and Test Link, since prior Marketplace approval is not documented as required. Every remaining item that needs a person is in the [finish-line operator checklist](knowledge/private/operations/finish-line-operator-checklist.md), in dependency order.
 - [2026 build-readiness and research gate](knowledge/private/research/2026-build-readiness-and-research-gate.md): product and construction research are complete. Phase 0 scaffold and evidence-harness work is authorized, while production feature traffic remains blocked until the recorded App Test, compliance, billing, lead-path, and demand gates close.
 - [G8 discovery package](knowledge/private/discovery/README.md): G8 remains `ACCEPTED CONSTRAINT` (commercial validation unproven).
 - [Library Schema v2 raid ledger](../LIBRARY_SCHEMA_V2_RAID_LEDGER.md): documentation lifecycle migration authority for this Schema v2 shape.

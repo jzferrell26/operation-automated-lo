@@ -1068,6 +1068,12 @@ function scheduleVerificationEmail(
  * sending domain, and a provider that refused the message all produce byte-identical 200s. The
  * unknown-address path still generates and hashes a token so the work is the same; it just never
  * persists one.
+ *
+ * PRD-008a D3. Same answer, same time. Both branches await exactly the same three round trips
+ * before answering: the two limits and the credential lookup. Persisting the token used to be a
+ * fourth, awaited on the known branch alone, so the response time said whether the account
+ * existed. It now runs in the work already scheduled after the response, beside the send it
+ * exists for, and the unknown branch schedules nothing.
  */
 export async function handleForgotPassword(
   request: Request,
@@ -1112,18 +1118,28 @@ export async function handleForgotPassword(
     const port = context.ports.transactionalEmail;
     const origin = applicationOrigin(context.environment);
     const schedule = context.dependencies.afterResponse ?? detachBackgroundWork;
-    const tokenId = await context.credentials.issueToken({
-      userId,
-      purpose: "password_reset",
-      tokenHash,
-      lifetimeSeconds: PASSWORD_RESET_TOKEN_LIFETIME_SECONDS,
-      correlationRef: context.correlation.correlationRef,
-    });
 
     // 006A-AC-017. All three outcomes are audited, including the one where no sending domain is
     // configured. The token is still issued in that case, so an operator can hand the person a
     // reset link out of band, and the row says `not_configured` rather than nothing at all.
     schedule(async () => {
+      let tokenId: string;
+      try {
+        tokenId = await context.credentials.issueToken({
+          userId,
+          purpose: "password_reset",
+          tokenHash,
+          lifetimeSeconds: PASSWORD_RESET_TOKEN_LIFETIME_SECONDS,
+          correlationRef: context.correlation.correlationRef,
+        });
+      } catch {
+        // 008A-AC-024. A refused issuance ends the work here, with nothing logged, rethrown, or
+        // recorded. A database error on this path can name the token hash in its detail, and
+        // Next prints whatever an `after` task throws, so the error is dropped rather than
+        // passed on. No token is live, so there is no link to send and no delivery to audit,
+        // which is what the request path answered before issuance moved here as well.
+        return;
+      }
       if (port === undefined || !port.configured || origin === undefined) {
         await context.credentials.recordEmailDelivery({
           userId,

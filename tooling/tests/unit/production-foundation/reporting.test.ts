@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  REPORTING_METRIC_DEFINITIONS,
+  REPORTING_METRIC_KEYS,
   ReportingError,
   aggregateBlueprintMetrics,
   authorizeAgencyPortfolio,
@@ -70,7 +70,7 @@ function record(overrides: Partial<CampaignReportingInput> = {}): CampaignReport
 describe("campaign reporting", () => {
   it("documents metrics, excludes test leads, derives CPL, and preserves source freshness", () => {
     const result = record();
-    expect(Object.keys(REPORTING_METRIC_DEFINITIONS)).toEqual([
+    expect([...REPORTING_METRIC_KEYS]).toEqual([
       "spendCents",
       "leads",
       "costPerLeadCents",
@@ -187,7 +187,9 @@ describe("campaign reporting", () => {
       correlationRef: "correlation_01Alpha",
       nextAction: "retry_lead_route",
     });
-    expect(exception.explanation).toBe("A lead could not be delivered through the approved route.");
+    // The application layer returns the code and no English; the sentence lives in
+    // apps/web/src/copy/reporting-messages.ts, keyed by the same code (PRD-008c, 008C-AC-005).
+    expect(exception.explanation).toBe("lead_route_failed");
     expect(buildSafeSupportNotification(exception)).toEqual({
       code: "lead_route_failed",
       locationRef: "location_01Alpha",

@@ -194,7 +194,7 @@ export {
 } from "./onboarding-progress.js";
 
 export {
-  REPORTING_METRIC_DEFINITIONS,
+  REPORTING_METRIC_KEYS,
   ReportingError,
   aggregateBlueprintMetrics,
   authorizeAgencyPortfolio,
@@ -210,5 +210,6 @@ export {
   type CampaignReportingInput,
   type CohortSummary,
   type CollaboratorAuditPort,
+  type ReportingMetricKey,
   type ReportingTargetAuthorization,
 } from "./reporting.js";

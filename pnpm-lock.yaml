@@ -17,12 +17,10 @@ catalogs:
       version: 4.6.5
 
 overrides:
-  '@hono/node-server': 2.0.10
   '@opentelemetry/core': 2.8.0
   deepmerge-ts: '>=8.0.0'
   engine.io: 6.6.7
   esbuild: 0.25.0
-  hono: 4.13.5
   postcss: 8.5.23
   qs: 6.16.0
   sharp: 0.35.4
@@ -710,11 +708,11 @@ packages:
     resolution: {integrity: sha512-1TUx3KdaU3cN7nfCdNf+UVqA/PSX29Cjcox3fZZBtINlRrXVTmUkQnCKv2MbBUbCopbK4olAT1IHl76uZyCiVA==}
     engines: {node: '>=14.0.0'}
 
-  '@hono/node-server@2.0.10':
-    resolution: {integrity: sha512-ZcnNVhKTmyDJeg0UlnZjvM73JBsTAuhrH/J4fjwGOw59PwOW51r4J+p6CsKZWXdKSme4MFqU62CZMOsdDrU4CA==}
-    engines: {node: '>=20'}
+  '@hono/node-server@1.19.17':
+    resolution: {integrity: sha512-dSneS5qhiauZWGDCeK4o695Xd9nUNjviSZCMQrj10eetr8Uln1ucn6bbphOM6UynAMMtNIzZNSpL9vnASJwrPQ==}
+    engines: {node: '>=18.14.1'}
     peerDependencies:
-      hono: 4.13.5
+      hono: ^4
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -2155,8 +2153,8 @@ packages:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
 
-  hono@4.13.5:
-    resolution: {integrity: sha512-O6+/eCYRkzzzy0rPWwKLiGBR1nFuUPZynnwjxN1MBA62NNqbT0wQEzQyK2gSO5yDIDB336sXQleAhOHrzlYyKw==}
+  hono@4.13.11:
+    resolution: {integrity: sha512-/SMX/RQNJn7oNmFwH6DtwDqcrzZU2otm1FD6OJe2cWF6cfy/F8hq0XVBv7xW3FTJshRQwuBnXHDq2kNsdZnshg==}
     engines: {node: '>=16.9.0'}
 
   html-encoding-sniffer@6.0.0:
@@ -3530,9 +3528,9 @@ snapshots:
 
   '@google-cloud/precise-date@4.0.0': {}
 
-  '@hono/node-server@2.0.10(hono@4.13.5)':
+  '@hono/node-server@1.19.17(hono@4.13.11)':
     dependencies:
-      hono: 4.13.5
+      hono: 4.13.11
 
   '@img/colour@1.1.0': {}
 
@@ -3659,7 +3657,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.29.0(supports-color@10.2.2)(zod@4.5.4)':
     dependencies:
-      '@hono/node-server': 2.0.10(hono@4.13.5)
+      '@hono/node-server': 1.19.17(hono@4.13.11)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -3669,7 +3667,7 @@ snapshots:
       eventsource-parser: 3.1.0
       express: 5.2.1(supports-color@10.2.2)
       express-rate-limit: 8.6.0(express@5.2.1(supports-color@10.2.2))(supports-color@10.2.2)
-      hono: 4.13.5
+      hono: 4.13.11
       jose: 6.2.3
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
@@ -4851,7 +4849,7 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
-  hono@4.13.5: {}
+  hono@4.13.11: {}
 
   html-encoding-sniffer@6.0.0:
     dependencies:

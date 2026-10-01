@@ -391,6 +391,7 @@ function createOfflineCredentialPort(store: OfflineStore): CredentialPort {
       return Object.freeze([OFFLINE_BINDING]);
     },
     recordSignInFailure: () => unreachable("recordSignInFailure"),
+    recordSignInWithoutAccount: () => unreachable("recordSignInWithoutAccount"),
     recordSignInSuccess: () => unreachable("recordSignInSuccess"),
     async issueToken(input) {
       store.issuedTokens.push({ purpose: input.purpose, tokenHash: input.tokenHash });

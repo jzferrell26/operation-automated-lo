@@ -27,4 +27,14 @@ export type SetupCampaignResult = Readonly<{
   /** Whether the latest check result let this version through to approval. */
   ready: boolean;
   findings: readonly SetupResultFinding[];
+  /**
+   * PRD-008b 008B-AC-010. The decision recorded on this version, when somebody has made one.
+   *
+   * Step 6 tells a person to approve the version or to hand it to an approver, and both are steps on
+   * a version nobody has decided on. The walkthrough is stored, so it can be reopened after a
+   * colleague has approved the campaign or sent it back, and it has to know that to say so. A
+   * send-back leaves the campaign in the waiting state, so the state cannot say it: only the
+   * decision can. Absent means nobody has decided, which is the shape this record always had.
+   */
+  decision?: "approved" | "rejected" | undefined;
 }>;

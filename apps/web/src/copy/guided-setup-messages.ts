@@ -100,6 +100,22 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
       "Only an approver or your workspace owner can approve. Copy this link and send it to them.",
     copyLinkLabel: "Copy link",
     copiedNotice: "Link copied.",
+    /**
+     * PRD-008b 008B-AC-010. What step 6 says once somebody has decided on the version.
+     *
+     * The walkthrough is stored, so a person can come back to this step after a colleague has
+     * approved the campaign or sent it back. The title and the body above both tell them to approve
+     * it or hand it on, which can no longer be done, so a decided version gets its own title and body
+     * and says what happened and what follows from it. Both are for everybody, because what was
+     * recorded is the same for the person who can approve and the person who cannot. The sent-back
+     * body says what the campaign's own page says about it, in the same words.
+     */
+    approvedTitle: "This version is approved",
+    approvedBody:
+      "This version has been approved, so there is nothing left to approve or hand off. Nothing is published or sent.",
+    sentBackTitle: "This version was sent back",
+    sentBackBody:
+      "This version was sent back for changes, so it can't be approved as it is. It needs a new version before anyone can approve it.",
   }),
   whatHappensNext: Object.freeze({
     position: 7,

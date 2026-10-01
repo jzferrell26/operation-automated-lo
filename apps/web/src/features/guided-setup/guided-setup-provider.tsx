@@ -42,7 +42,11 @@ import {
   type ProfileFieldSpec,
 } from "./steps/profile-fields-step.js";
 import { ResultStep } from "./steps/result-step.js";
-import { CAMPAIGN_FIELD_SEQUENCE, stepDefinition } from "./steps/step-model.js";
+import {
+  CAMPAIGN_FIELD_SEQUENCE,
+  approveOrHandOffStep,
+  stepDefinition,
+} from "./steps/step-model.js";
 
 /**
  * PRD-006c D5. The walkthrough's one piece of state and the only thing that writes it.
@@ -388,8 +392,13 @@ export function GuidedSetupProvider({
       : savedCampaign?.campaignRef === campaign.campaignRef
         ? savedCampaign
         : campaign;
+  // 008B-AC-010. A campaign with a decision on it is waiting for nobody. The server does not offer
+  // one, and the check is repeated here because this is the place that would walk a person to it.
   const waitingCampaign: SetupCampaignResult | undefined =
-    ownCampaign === undefined && progress.campaignRef === undefined && canApprove
+    ownCampaign === undefined &&
+    progress.campaignRef === undefined &&
+    canApprove &&
+    campaignAwaitingDecision?.decision === undefined
       ? campaignAwaitingDecision
       : undefined;
   const stepCampaign = ownCampaign ?? waitingCampaign;
@@ -606,28 +615,25 @@ function CurrentStep(props: CurrentStepProps) {
           <ResultStep result={campaign} />
         </GuidedSetupStep>
       );
-    case 6:
+    case 6: {
       // D3. The two branches point at two different controls on the same page: the approve action
       // for someone who can approve, and the copy-link control for everyone else. Both live on the
-      // campaign screen, so a user who dismissed the walkthrough still has them.
+      // campaign screen, so a user who dismissed the walkthrough still has them. 008B-AC-010 adds a
+      // third answer for a version somebody has already decided on, for both kinds of person, and
+      // `approveOrHandOffStep` is where the three are told apart.
+      const step = approveOrHandOffStep({ canApprove, decision: campaign?.decision });
       return (
         <GuidedSetupStep
           {...shared}
-          anchor={
-            canApprove
-              ? GUIDED_SETUP_ANCHORS.campaignApproveControl
-              : GUIDED_SETUP_ANCHORS.campaignHandoffLink
-          }
-          body={
-            canApprove
-              ? GUIDED_SETUP_STEPS.approveOrHandOff.approveBody
-              : GUIDED_SETUP_STEPS.approveOrHandOff.handOffBody
-          }
+          anchor={step.anchor}
+          body={step.body}
           onContinue={() => {
             onStep(7);
           }}
+          title={step.title}
         />
       );
+    }
     default:
       return (
         <GuidedSetupStep

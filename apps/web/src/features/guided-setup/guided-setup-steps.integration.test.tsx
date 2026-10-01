@@ -400,6 +400,173 @@ describe("guided setup steps", () => {
     expect(screen.getByText(GUIDED_SETUP_STEPS.approveOrHandOff.handOffBody)).toBeInTheDocument();
   });
 
+  /**
+   * PRD-008b 008B-AC-010. Step 6 says to approve, or to copy the link and send it to an approver.
+   * Both are steps on a version nobody has decided on. The walkthrough is stored, so a person can
+   * come back to step 6 after a colleague has approved the campaign, or sent it back, and the
+   * panel has to say what happened instead of telling them to do what can no longer be done.
+   */
+  describe("step 6 on a version nobody has decided on", () => {
+    it.each([
+      ["somebody who can approve", true, "approveBody"],
+      ["everybody else", false, "handOffBody"],
+    ] as const)("keeps today's words for %s", (_who, canApprove, body) => {
+      renderSetup({
+        canApprove,
+        progress: progressAt(6),
+        savedCampaign: savedCampaignResult(),
+      });
+
+      expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.approveOrHandOff.title);
+      expect(screen.getByText(GUIDED_SETUP_STEPS.approveOrHandOff[body])).toBeInTheDocument();
+    });
+
+    it("still points the hand-off branch at the copy-link card, and the approve branch at the approve card", async () => {
+      const page = (
+        <main>
+          <div data-tour={GUIDED_SETUP_ANCHORS.campaignApproveControl}>
+            <button type="button">Approve this version</button>
+          </div>
+          <div data-tour={GUIDED_SETUP_ANCHORS.campaignHandoffLink}>
+            <button type="button">Copy link</button>
+          </div>
+        </main>
+      );
+      const creator = renderSetup({ canApprove: false, children: page, progress: progressAt(6) });
+      await waitFor(() => {
+        expect(
+          document.querySelector(anchorSelector(GUIDED_SETUP_ANCHORS.campaignHandoffLink)),
+        ).toHaveAttribute("data-guided-setup-highlight", "true");
+      });
+      creator.unmount();
+
+      renderSetup({ canApprove: true, children: page, progress: progressAt(6) });
+      await waitFor(() => {
+        expect(
+          document.querySelector(anchorSelector(GUIDED_SETUP_ANCHORS.campaignApproveControl)),
+        ).toHaveAttribute("data-guided-setup-highlight", "true");
+      });
+    });
+  });
+
+  describe.each([
+    [
+      "approved",
+      "approved",
+      "This version is approved",
+      "This version has been approved, so there is nothing left to approve or hand off. Nothing is published or sent.",
+    ],
+    [
+      "sent back",
+      "rejected",
+      "This version was sent back",
+      "This version was sent back for changes, so it can't be approved as it is. It needs a new version before anyone can approve it.",
+    ],
+  ] as const)("step 6 on a version that was %s", (_outcome, decision, title, body) => {
+    it.each([
+      ["somebody who can approve", true],
+      ["somebody who cannot", false],
+    ] as const)(
+      "says what was recorded to %s, and tells nobody to approve or hand it off",
+      (_who, canApprove) => {
+        renderSetup({
+          canApprove,
+          progress: progressAt(6),
+          savedCampaign: savedCampaignResult({ decision }),
+        });
+
+        expect(panel()).toHaveAccessibleName(title);
+        expect(screen.getByText(body)).toBeInTheDocument();
+        expect(screen.getByRole("status")).toHaveTextContent(
+          `Step 6 of ${String(GUIDED_SETUP_TOTAL_STEPS)}: ${title}`,
+        );
+        // The stepper beside the words lists all seven steps by their fixed names, so the old name
+        // is still there as a label. What the panel says in its own title and body is checked here.
+        for (const untrue of [
+          GUIDED_SETUP_STEPS.approveOrHandOff.approveBody,
+          GUIDED_SETUP_STEPS.approveOrHandOff.handOffBody,
+          "Copy this link",
+        ]) {
+          expect(panel(), untrue).not.toHaveTextContent(untrue);
+        }
+      },
+    );
+
+    it("points at the card that says what was recorded, never at the copy-link card", async () => {
+      renderSetup({
+        canApprove: false,
+        children: (
+          <main>
+            <div data-tour={GUIDED_SETUP_ANCHORS.campaignApproveControl}>
+              <button type="button">Approve this version</button>
+            </div>
+            <div data-tour={GUIDED_SETUP_ANCHORS.campaignHandoffLink}>
+              <button type="button">Copy link</button>
+            </div>
+          </main>
+        ),
+        progress: progressAt(6),
+        savedCampaign: savedCampaignResult({ decision }),
+      });
+
+      await waitFor(() => {
+        expect(
+          document.querySelector(anchorSelector(GUIDED_SETUP_ANCHORS.campaignApproveControl)),
+        ).toHaveAttribute("data-guided-setup-highlight", "true");
+      });
+      expect(
+        document.querySelector(anchorSelector(GUIDED_SETUP_ANCHORS.campaignHandoffLink)),
+      ).not.toHaveAttribute("data-guided-setup-highlight");
+    });
+
+    it("still carries on to what happens next", async () => {
+      const user = userEvent.setup();
+      renderSetup({
+        canApprove: false,
+        progress: progressAt(6),
+        savedCampaign: savedCampaignResult({ decision }),
+      });
+
+      await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+
+      await waitFor(() => {
+        expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.whatHappensNext.title);
+      });
+    });
+  });
+
+  /**
+   * 008B-AC-010, the approver's pick. The campaign handed to an approver at step 3 is one that is
+   * waiting for their decision. A version that was sent back is still in the waiting state, but it
+   * has a decision on it and cannot be approved as it is, so it is not waiting for anybody.
+   */
+  it.each(["approved", "rejected"] as const)(
+    "does not hand an approver a campaign that was %s as the one waiting for them",
+    async (decision) => {
+      const user = userEvent.setup();
+      const { calls } = renderSetup({
+        campaignAwaitingDecision: savedCampaignResult({ decision }),
+        canApprove: true,
+        profile: SAMPLE_PROFILE,
+        progress: progressAt(3),
+      });
+
+      await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+
+      // With nothing waiting, the approver's walkthrough asks for a campaign of their own, and the
+      // walkthrough does not take them to the one that was decided.
+      expect(
+        await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.createCampaign.title }),
+      ).toBeInTheDocument();
+      const lastStoredStep = calls
+        .filter((call) => call.path === "/api/setup/progress")
+        .map((call) => JSON.stringify(call.body))
+        .at(-1);
+      expect(lastStoredStep).toContain('"currentStep":4');
+      expect(push).not.toHaveBeenCalledWith(READY_PREFLIGHT_RESPONSE.detailHref);
+    },
+  );
+
   it("closes by naming all three accounts and offering no connect, publish, or spend action", () => {
     renderSetup({ progress: progressAt(7) });
     expect(screen.getByText(GUIDED_SETUP_STEPS.whatHappensNext.body)).toBeInTheDocument();

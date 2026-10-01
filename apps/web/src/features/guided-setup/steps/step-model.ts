@@ -92,6 +92,54 @@ export const GUIDED_SETUP_TOTAL_BUDGET_SECONDS =
 /** D3's ceiling: the owner's five minutes, from account creation to a saved first campaign. */
 export const GUIDED_SETUP_CEILING_SECONDS = 300;
 
+/** What step 6 shows: the panel's title and words, and the element it points at. */
+export type ApproveOrHandOffStep = Readonly<{
+  anchor: GuidedSetupAnchorId;
+  body: string;
+  title: string;
+}>;
+
+/**
+ * PRD-006c D3 step 6 and PRD-008b 008B-AC-010. Which of step 6's three answers a person gets.
+ *
+ * Undecided, there are two, and they are the two this step has always had: somebody who can approve
+ * is pointed at the approve control, and everybody else at the control that copies the link for an
+ * approver. Decided, there is one, for everybody. The approve control and the copy-link control are
+ * for a version nobody has decided on, and the copy-link control is not on a decided version's page
+ * at all, so the panel points at the card that says what was recorded and says it too. That card is
+ * on every campaign page, which is why the approve control's anchor is the one used.
+ */
+export function approveOrHandOffStep(
+  input: Readonly<{ canApprove: boolean; decision: "approved" | "rejected" | undefined }>,
+): ApproveOrHandOffStep {
+  const words = GUIDED_SETUP_STEPS.approveOrHandOff;
+  if (input.decision === "approved") {
+    return {
+      anchor: GUIDED_SETUP_ANCHORS.campaignApproveControl,
+      body: words.approvedBody,
+      title: words.approvedTitle,
+    };
+  }
+  if (input.decision === "rejected") {
+    return {
+      anchor: GUIDED_SETUP_ANCHORS.campaignApproveControl,
+      body: words.sentBackBody,
+      title: words.sentBackTitle,
+    };
+  }
+  return input.canApprove
+    ? {
+        anchor: GUIDED_SETUP_ANCHORS.campaignApproveControl,
+        body: words.approveBody,
+        title: words.title,
+      }
+    : {
+        anchor: GUIDED_SETUP_ANCHORS.campaignHandoffLink,
+        body: words.handOffBody,
+        title: words.title,
+      };
+}
+
 export function stepDefinition(position: number): GuidedSetupStepDefinition {
   const found = GUIDED_SETUP_STEP_DEFINITIONS.find((step) => step.position === position);
   if (found === undefined) {

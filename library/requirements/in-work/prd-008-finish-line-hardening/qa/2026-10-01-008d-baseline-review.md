@@ -246,6 +246,9 @@ redraw land, the pictures each reaches are below 3 on the axes the ruling names 
 D-010 axes 2, 7, and 10 at 1440 and 1180), and 008D-AC-006 closes on them only through the review of
 the redrawn set.
 
+**Fixed and closed 2026-10-01** by lane L6c: see "Second redraw: D-009 and D-010 (008D-AC-011)"
+below, which reviews the redrawn set and records the gates red and green.
+
 Two observations that are not deltas against the brief or a specification, for the screens'
 owners: the decided campaign page says "won't run as an ad yet" in four places (PRD-008b's copy,
 which the 008c writing review read); and the walkthrough panel puts the progress track before a
@@ -524,3 +527,597 @@ with their cause, R-5; a removed picture is not installed, so it carries no scor
 | `review/verify-email--confirmed--390--light.png` | new | S-1 (L6a) | 3 on every axis | pass |
 | `review/verify-email--confirmed--768--dark.png` | new | S-1 (L6a) | 3 on every axis | pass |
 | `review/verify-email--confirmed--768--light.png` | new | S-1 (L6a) | 3 on every axis | pass |
+
+## Second redraw: D-009 and D-010 (008D-AC-011)
+
+**Armed:** `ux-ui-guardian` read its Weapon at
+`C:/Users/jzfer/.local/share/the-neeson/cutover-20260923/runtime/claude/skills/ux-ui-weapon/`
+(`SKILL.md`, `upstream-v2/GUIDE.md`, `guides/00-principles.md`, `guides/11-wcag-2-2-baseline.md`),
+then the design-system folder: `06-review-rubric.md` (the scale, the axes, the finding form, and
+section 5's "The rulings of 2026-10-01"), `00-design-brief.md` sections 9, 10, 14, 18, and 20,
+`04-screens/platform-overview.md`, `03-components/onboarding-checklist.md`, the approved canvases'
+previews, and the first half of this report, whose method and table format this half follows.
+
+**Reviewer:** `ux-ui-guardian`, Gauntlet lane L6c, worktree `oalo-g-008d-fix`, branch
+`gauntlet/008d-fix`, cut from the run branch `claude/gauntlet-prd-008` at `814939f`. **Verdict:**
+D-009 and D-010 are fixed as ruled, with the timestamps of brief section 10 in the same commit; every
+gate the ruling asked for ran red on the unfixed tree and green on the fixed one; eight defects
+(R-14 to R-21) were found on the way and fixed with tests; every installed picture scores 3 on every
+axis. D-009 and D-010 close by the conditions section 5 set for them.
+
+### Scope and runs
+
+| Item | Value |
+| --- | --- |
+| Criteria | 008D-AC-011, which re-opens 008D-AC-005, 008D-AC-006, and 008D-AC-010 for the pictures the fix reaches |
+| Tree | `814939f` plus this lane's commits `2687100` (the fix), `c3ab3ec` (R-14 to R-18), `83095a1` (R-19, R-20), `eaf34e6` (R-21) |
+| First dispatch (008D-AC-011) | screen-baselines run 36838168997 on `c3ab3ec`: synthetic 140 passed (26 skipped, the dashboard-preview specs), review 104 passed |
+| Second dispatch (008D-AC-011) | run 36841695906 on `83095a1`: synthetic 141 passed (26 skipped), review 104 passed; R-20's check passed on the runner |
+| Third dispatch (008D-AC-011) | run 36844271868 on `eaf34e6`: synthetic 141 passed (26 skipped), review 104 passed on the run's second attempt. The first attempt's review job stopped inside `pnpm test:db` on `apps/web/src/server/password-authentication-handler.postgres.test.ts:1616` (a rate-limit test expected the twenty-first sign-in to be refused, and it was not) before any picture was drawn; the job was re-run once with nothing changed, and the test passed. **Its pictures are the ones installed.** |
+| Rubric | `library/knowledge/private/ux-ui/06-review-rubric.md`, 0 to 3 on ten axes per picture |
+
+### What the fix is
+
+All three parts are in `2687100`.
+
+- **D-009**, exactly as ruled. `apps/web/src/app/globals.css` gives `body` `font-size:
+  var(--text-body-size)` and never sizes `:root` or `html`; `h1` takes `--text-page-size`, `h2`
+  `--text-section-size`, `h3` to `h6` `--text-card-size`; `.campaignCard h2`
+  (`open-house-draft-builder.module.css:72`) takes `var(--text-card-size)` in place of `inherit`.
+  One addition, for the same reason the headings needed theirs: the browser draws `small` one
+  keyword smaller than its parent, 10.83px under the new body step, which is between the steps, so
+  `small` takes the caption step. The overview already sized its own `small` there, and the
+  canvases draw their side notes at 10.5px.
+- **D-010**, exactly as ruled. `section { max-width: 44rem; }` is deleted from `globals.css`, with
+  the four declarations that only undid it, each read before it was deleted:
+  `app-shell.module.css:306-308`, `product-shell.module.css:309-311`, `brand-profile.module.css:81`,
+  and `onboarding.module.css:117`. The bootstrap `main` rule and the metric primitive are untouched.
+- **Timestamps.** Brief section 10 reads "Data, provider IDs, versions, hashes, timestamps, and
+  correlation IDs: Geist Mono", and rubric axis 3 repeats it, so the brief clearly requires it. `time`
+  joins the data elements in `globals.css`, and every timestamp and date a photographed screen shows
+  outside a data table is a `time` element: the reports' details, metric cards, and audit log
+  (`reporting-acceptance-surface.tsx`, `Timestamp` and `DateValue`), the overview's attention queue
+  (`overview-screen.tsx:319`), onboarding's evidence (`packages/ui/src/components/onboarding-checklist.tsx:131`),
+  the synthetic campaign's launch schedule (`campaign-launch-review.tsx:150-160`), and the saved
+  campaign's open-house window and decision time (`persisted-campaign-screen.tsx:92-99`, `:181`).
+  The reports' version and support reference carry `oalo-data-text`, the primitive's data class.
+
+### The gates, red and green
+
+Each gate was run against the unfixed tree (the product files of `2687100` stashed, its tests in
+place) and then against the fix. Screenshot comparisons are skipped on a workstation by design, so
+everything below is an assertion, not a picture.
+
+| Gate | Red, on the unfixed tree | Green |
+| --- | --- | --- |
+| `expectTypographyOnBrief` (`tests/browser/helpers/design-quality.ts`), wherever either suite takes a picture: `html` 16px, `body` 13px, every text at one of the six steps, every date in the data font | 72 of 72 synthetic matrix cells: "body carries the 13px body step", 16 received. Overview at 1440 in Light: 68 texts between the steps (`h2` "How things stand" at 24px, every overview `h3` at 18.72px, the lead at 16px) and 8 dates in the interface face; reports at 1440 in Light: 194 and 22 | 138 synthetic passed on the workstation; on the runner, 140 or 141 synthetic and 104 review passed in all three dispatches, so every account screen, guided-setup step, and shell state measured at the steps |
+| `apps/web/src/theme/global-element-defaults.unit.test.ts` | 5 of 5 failed: `section { max-width }` found; no body step on `body`; no heading steps; `small` unsized; `time` not in the data font | 5 of 5 passed |
+| The metric check (`tests/browser/design-quality.spec.ts:394`), now in both themes and holding the value inside the card's content box | Light and Dark at 1440: "Funded or closed outcome: its value 'Unavailable' leaves the card's content box" | passed at every frame in both themes |
+| `expectThePageFillsTheContentColumn` on the overview | 208px from the column's edge at 1440, in both themes | passed at every frame in both themes |
+| The reports' timestamps (`reporting-screen.integration.test.tsx`) | 16 dates outside a `time` element | passed |
+| R-14 to R-19's and R-21's checks (below) | each failed on the tree before its fix | each passed |
+| R-20's check (below) | the review project only runs on the runner; measured on run 36838168997's pictures, where the form is 296px and centred | passed on the runner in runs 36841695906 and 36844271868 |
+
+### Method
+
+As in the first half: every picture of each run was compared with the committed baseline pixel by
+pixel (the differing pixels, their share, the box that holds them, and the page length), and each
+later run with the run before it, so the reach of R-19, R-20, and R-21 was measured rather than
+assumed. Run 36841695906 differs from run 36838168997 only inside the rail and on change password,
+and by under 30 pixels of rasterisation on four account pictures and three 390 walkthrough
+pictures. Run 36844271868 differs from run 36841695906 only in the rail's product name, the box
+from 71,24 to 242,50, on 192 pictures (three of them change-password pictures that also carry under
+60 pixels of rasterisation), and by under 31 pixels of rasterisation on nine others. Every
+changed picture was read on a labelled contact sheet, eight to a sheet, both themes and all four
+frames. Every picture whose change was more than rasterisation was read at full size or cropped to
+its regions beside the committed picture. Before the first dispatch the synthetic screens were also
+photographed on the workstation (`OALO_SCREEN_SNAPSHOT_DIR`, outside the repository) and read at
+full size, which is how R-14 to R-18 were found and fixed before any runner time was spent on them.
+
+Each change is attributed to D-009, D-010, the timestamps, R-14 to R-21, or rasterisation, by
+screen and frame: D-010 reaches only the 1440 and 1180 frames, and only where a `<section>` was
+wider than 44rem once freed (measured on the fixed build: the overview, both campaign pages, reports,
+onboarding, the campaigns list's empty state, and create's two result states; never brand, whose
+sections had already undone the cap, nor settings, nor create's form).
+
+### Counts
+
+| Kind | Pictures |
+| --- | --- |
+| Changed | 343: 110 synthetic, 233 review |
+| New | 0 |
+| Removed | 0 |
+| Identical to the committed baseline to the pixel | 33 |
+
+A changed picture usually has more than one cause, so the reach of each cause is counted on its own:
+
+| Cause | Reach | Pictures |
+| --- | --- | --- |
+| D-009, the body step on `body` and each heading level's step | every in-shell picture and every account screen whose text no module sized | 340 |
+| D-010, the section cap deleted | 1440 and 1180 only: the overview and every shell and saved-notice picture over it, both campaign pages, reports, onboarding, the campaigns list's empty state, create's result states, and walkthrough steps 1 to 3 and 5 to 7 | 92 |
+| Timestamps in the data font | the synthetic overview, onboarding, reports, both campaign pages, and step 7 | 72 |
+| R-14, action links keep their own height | the overview at 1440 and 1180, and the shell and saved-notice pictures over it | 20 |
+| R-15, actions stay together | reports at 1440 and 1180 | 4 |
+| R-16, a campaign card on the spacing scale | reports, every frame | 8 |
+| R-17, legends at the card step and a defined weight | create, every state, and step 4 | 46 |
+| R-18, a finding's note clear of what follows | create needs changes and step 5 needs changes | 16 |
+| R-19, the rail's titles at the card step | every picture with the rail open, and the mobile drawer's identity card | 194 |
+| R-20, the account page's measure | change password, both states | 16 |
+| R-21, the rail's product name balanced | every picture with the rail open | 192 |
+| Text rasterisation only, under 100 pixels | step 4's first field at 390 in both themes, reset password's expired link at 1440 in Dark | 3 |
+
+### Findings, in the rubric's finding form
+
+Each names the screen, the frame, the theme, the state, the file and line on the tree before its
+fix, the value, the rule it must be, and the axis; then the fix and its test.
+
+**R-14.** Overview, default, 1440 and 1180, Light and Dark (and every shell and saved-notice picture
+taken over it). "See your leads" in "More quick actions" was a button about 200px tall, stretched to
+the height of the unavailable action and its explanation beside it, because `.quickActions`
+(`apps/web/src/features/overview/components/overview.module.css:130-134`) let every item stretch to
+its row; D-010's wider column made it wider too. Rule: rubric axes 1 and 2. Fixed in `c3ab3ec`:
+`align-items: start`. Test: "the overview's action links keep their own height at every frame",
+red on `2687100` ("See your leads" at 1440).
+
+**R-15.** Reports, default, 1440 and 1180, Light and Dark. Each group of actions was laid out with
+`space-between` from the shared heading rule (`reporting.module.css:9-19`), so once the sections took
+the column, "Open Public page v3" and "Open Feed creative v3", "Stage approved link share" and its
+pair, and "Open the campaign" and "See what went wrong" sat at opposite edges of their cards, and an
+unavailable target's note hung right-aligned under the details. Rule: rubric axes 1 and 10, one
+group of actions reads as one group. Fixed in `c3ab3ec`: `.inlineLinks { justify-content:
+flex-start }`. Test: "the reports screen keeps its actions together and its campaign cards on the
+spacing scale", red on `2687100` (56px to 775px between two actions at 1440).
+
+**R-16.** Reports, default, every frame, Light and Dark. A campaign card stacked its heading,
+details, metric cards, details, and actions with 0px between them
+(`reporting-acceptance-surface.tsx:331`, a `Card` with no rhythm of its own), so the metric cards
+touched "Excluded test leads" above and "Page" below. Pre-existing, and read for the first time at
+the new width. Rule: rubric axis 2, every gap a `--space-*` token. Fixed in `c3ab3ec`: the card is a
+grid at `--space-4` (`.reportCard`). Test: the same, red on `2687100` (0px, eight times at 1440).
+
+**R-17.** Create, every state, every frame, Light and Dark (and guided setup step 4 over it). The
+fieldset legends ("The property and the open house") were drawn at weight 400, lighter than the
+field labels under them, because `.form legend` (`open-house-draft-builder.module.css:99-102`)
+named `var(--weight-semibold)`, which only the dashboard preview's `product-tokens.css` defines.
+The browser's 16px had hidden it; at the body step it read as the weakest text in its card. The
+workspace choice's `.choicesLegend` (`auth-form.module.css:126`) named the same missing token. Rule:
+rubric axis 3, "the weights come from the tokens", and axis 1, the legend titles its card. Fixed in
+`c3ab3ec`: both take the card step at `--weight-bold`. Test:
+`apps/web/src/theme/type-tokens-defined.unit.test.ts` fails any font, size, or weight token the
+token layer does not define; red with exactly those two.
+
+**R-18.** Create, needs changes, every frame, Light and Dark (and guided setup step 5's needs-changes
+picture). A finding's note, "Fix this before approving", ran inline and touched the support details
+under it, 0px apart (`open-house-draft-builder.tsx:803`, styled by nothing). Rule: rubric axis 2.
+Fixed in `c3ab3ec`: `.findings small` is its own line, `--space-3` above what follows. Test: the
+needs-changes case measures it at every frame, red on `2687100` (0px).
+
+**R-19.** Every in-shell picture with the rail open, 1440, 1180, and 768, Light and Dark, and the
+mobile drawer at 390. The rail's two titles, "Operation Automated LO" and the workspace's name in
+its identity card (`app-shell.tsx:213`, `:364`), carried no size, so D-009 drew them at 13px, the
+size of every navigation link between them, where the canvases draw the product's name in their
+rails at 15px in most frames and never below 13px bold. Found on run 36838168997's pictures. Rule: rubric axes 1 and 10. Fixed in `83095a1`: both take
+the card step. Test: "the rail's titles are drawn above its navigation links", red on `c3ab3ec`
+(13 against 13).
+
+**R-20.** Change password, default and saved, every frame, Light and Dark. The page was a bare
+`section` (`apps/web/src/app/(authenticated)/settings/account/page.tsx:26-29`), so the shell centred
+it at the width of its title; once D-009 drew the title at the page step, the form shrank from 412px
+to 296px at 1440 and the title floated mid-column, unlike every sibling page. Found on run
+36838168997's pictures. Rule: rubric axes 2 and 10, and the account form's own 26rem measure. Fixed
+in `83095a1`: the page fills the column (`.accountPage`) and holds the account `panel` and
+`header`. Test: `expectTheFormKeepsTheAccountMeasure` in the review suite, at every frame and theme.
+
+**R-21.** Every in-shell picture with the rail open, 1440, 1180, and 768, Light and Dark. At the card
+step R-19 gave it, the runner's face wrapped the product's name as "Operation Automated" over a lone
+"LO" (`app-shell.tsx:213`; run 36841695906's pictures), where the committed pictures had broken it
+into two lines of a length. Rule: rubric axis 3, a title does not leave a word alone. Fixed in
+`eaf34e6`: `.brand strong { text-wrap: balance }`. Test: the rail test requires the rule and a last
+line at least half as long as the longest; red on `83095a1` for the rule (`auto`), and the runner's
+picture is the evidence for the lone word, since a workstation's narrower face does not wrap it.
+
+### What D-009 and D-010 close on
+
+- **D-009** closes. The fix and its redraw are in, the gate passes on every picture both suites
+  take, and every redrawn picture scores 3 on axes 1 and 3. The steps are the right steps for their
+  roles: page titles 23px, section titles 17px (the overview's "How things stand" no longer outranks
+  "Good morning, Alex"), card titles 14px (the campaigns list's cards, the overview's lists, the
+  legends after R-17, the rail's titles after R-19 and R-21), body 13px, secondary 11.5px, captions and
+  `small` 10.5px.
+- **D-010** closes. The rule and its four undoing declarations are gone, the three gates pass, and
+  every redrawn 1440 and 1180 picture scores 3 on axes 2, 7, and 10: the overview fills its column
+  with four metric cards about 270px wide at 1440, "Unavailable" sits inside its card, campaign
+  detail and reports are drawn at one width, and the campaigns list's empty state spans the list.
+
+### The two surfaces with no baseline
+
+Read at 1440 and 390 on the workstation, before and after, as the ruling asks.
+
+- **The synthetic public open-house page** (`apps/web/src/app/public/synthetic-open-house-v3/page.tsx`).
+  Its paragraphs moved from 16px to the 13px body step and its title from the browser's 32px to the
+  23px page step; nothing on it is meant to be larger than the body step, so nothing is sized in a
+  module. D-010 moves it too: the page is one `<section>` with no measure of its own, and it now
+  spans the viewport at 1440 where the cap held it to 704px. It had no page padding before or after.
+  It is a stand-in for a published page, served only in local and preview builds, and has no rubric
+  row; recorded below for its owner rather than designed here.
+- **The homeowner reports.** The workspace list and the report, created through the sample flow on
+  the dashboard-preview server, are identical to the pixel before and after at 1440 and 390: they
+  size every text in `homeowners.module.css`, and their sections were already freed by the
+  dashboard preview's `.content section` rule. The shared report (`/home-report/[secret]`) needs the
+  database and was read from its code: `.workspace` sets the body step itself, so its type does not
+  move, and its sections, which the cap held to 704px inside a 1050px page, now take that page's
+  measure, as the in-app report already did.
+
+### Observations that are not deltas, for the screens' owners
+
+- Onboarding's evidence shows "Checked on" as a raw ISO timestamp (`2026-07-21T14:30:00.000Z`). It
+  is now in the data font; how it is worded is the user-language contract's question, not the
+  rubric's.
+- At 1440, step 5 of the walkthrough now places its panel below the check result rather than beside
+  it, because the result section takes the whole column. The highlighted result stays clear and
+  under the header, which is the rule (`expectTheStepPointsAtSomethingOnScreen` passes); the panel
+  covers part of "Your next steps", which is step 6's subject.
+- The rail scrolls (`.desktopSidebar`, `overflow-y: auto`). In the review composition its identity
+  card is the last thing in a 900px rail and meets the fold, as it did in the committed pictures.
+- The synthetic public open-house page has no padding or measure of its own (above).
+
+### Baseline change note for pull request #74
+
+```text
+Baseline change (second redraw): PRD-008d 008D-AC-011 redraw of every screen baseline after the D-009 and D-010 fix (screen-baselines runs 36838168997, 36841695906, and 36844271868; the installed set is run 36844271868's). 343 pictures changed, none is new, none is removed, each reviewed against 06-review-rubric.md in library/requirements/in-work/prd-008-finish-line-hardening/qa/2026-10-01-008d-baseline-review.md, "Second redraw". Causes: D-009, the 13px body step on body and each heading level's step (every in-shell screen and the account screens); D-010, the bootstrap section cap deleted (the overview, both campaign pages, reports, onboarding, the campaigns list's empty state, create's result states, and the walkthrough and shell pictures over them, at 1440 and 1180); timestamps in the data font (reports, the overview, onboarding, campaign detail); and the review's fixes R-14 to R-21 (the overview's action links at their own height, reports' actions kept together and its campaign cards on the spacing scale, the create legends at the card step, a finding's note clear of the details, the rail's titles at the card step and balanced, and the change-password page at the account measure).
+```
+
+### Per-picture table
+
+Every picture of the installed set (run 36844271868) whose pixels differ from the baseline committed
+at `814939f`. "3 on every axis" is the rubric's top score on all ten axes at that frame and theme.
+No picture is new and none is removed. The 33 pictures that match their committed baselines
+to the pixel keep their scores: the email preview's eight, the boundary page's two at 390, reset
+password's default in all eight cells and its expired link in seven, and verify email's confirmed
+state in all eight.
+
+| Picture | Change against the committed baseline | Cause | Score | Verdict |
+| --- | --- | --- | --- | --- |
+| `chromium/brand--default--1180--dark.png` | changed, page length 2697 to 2356px, 1718332 px (53.994%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/brand--default--1180--light.png` | changed, page length 2697 to 2356px, 1663150 px (52.260%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/brand--default--1440--dark.png` | changed, page length 2625 to 2356px, 1891700 px (50.045%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/brand--default--1440--light.png` | changed, page length 2625 to 2356px, 1805108 px (47.754%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/brand--default--390--dark.png` | changed, page length 4448 to 3740px, 1043498 px (60.154%) | D-009 | 3 on every axis | pass |
+| `chromium/brand--default--390--light.png` | changed, page length 4448 to 3740px, 1010101 px (58.228%) | D-009 | 3 on every axis | pass |
+| `chromium/brand--default--768--dark.png` | changed, page length 4178 to 3591px, 1404270 px (43.764%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/brand--default--768--light.png` | changed, page length 4178 to 3591px, 1352278 px (42.144%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--default--1180--dark.png` | changed, page length 1796 to 1759px, 507154 px (23.930%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--default--1180--light.png` | changed, page length 1796 to 1759px, 498772 px (23.535%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--default--1440--dark.png` | changed, page length 1796 to 1759px, 575518 px (22.253%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--default--1440--light.png` | changed, page length 1796 to 1759px, 566595 px (21.908%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--default--390--dark.png` | changed, page length 2487 to 2413px, 237430 px (24.479%) | D-009; R-17 | 3 on every axis | pass |
+| `chromium/campaign-create--default--390--light.png` | changed, page length 2487 to 2413px, 232516 px (23.972%) | D-009; R-17 | 3 on every axis | pass |
+| `chromium/campaign-create--default--768--dark.png` | changed, page length 2429 to 2378px, 289181 px (15.502%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--default--768--light.png` | changed, page length 2429 to 2378px, 282869 px (15.163%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--needs-changes--1180--dark.png` | changed, page length 2469 to 2334px, 830386 px (28.502%) | D-009; D-010; R-17; R-18; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--needs-changes--1180--light.png` | changed, page length 2469 to 2334px, 806781 px (27.692%) | D-009; D-010; R-17; R-18; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--needs-changes--1440--dark.png` | changed, page length 2469 to 2334px, 940945 px (26.466%) | D-009; D-010; R-17; R-18; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--needs-changes--1440--light.png` | changed, page length 2469 to 2334px, 914469 px (25.721%) | D-009; D-010; R-17; R-18; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--needs-changes--390--dark.png` | changed, page length 3406 to 3239px, 432544 px (32.563%) | D-009; R-17; R-18 | 3 on every axis | pass |
+| `chromium/campaign-create--needs-changes--390--light.png` | changed, page length 3406 to 3239px, 421930 px (31.764%) | D-009; R-17; R-18 | 3 on every axis | pass |
+| `chromium/campaign-create--needs-changes--768--dark.png` | changed, page length 3347 to 3170px, 569535 px (22.157%) | D-009; R-17; R-18; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--needs-changes--768--light.png` | changed, page length 3347 to 3170px, 555068 px (21.594%) | D-009; R-17; R-18; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--ready-for-approval--1180--dark.png` | changed, page length 2394 to 2272px, 772844 px (27.358%) | D-009; D-010; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--ready-for-approval--1180--light.png` | changed, page length 2394 to 2272px, 753048 px (26.657%) | D-009; D-010; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--ready-for-approval--1440--dark.png` | changed, page length 2394 to 2253px, 1186910 px (34.430%) | D-009; D-010; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--ready-for-approval--1440--light.png` | changed, page length 2394 to 2253px, 1160340 px (33.659%) | D-009; D-010; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--ready-for-approval--390--dark.png` | changed, page length 3331 to 3143px, 431593 px (33.223%) | D-009; R-17 | 3 on every axis | pass |
+| `chromium/campaign-create--ready-for-approval--390--light.png` | changed, page length 3331 to 3143px, 421215 px (32.424%) | D-009; R-17 | 3 on every axis | pass |
+| `chromium/campaign-create--ready-for-approval--768--dark.png` | changed, page length 3248 to 3108px, 526567 px (21.109%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--ready-for-approval--768--light.png` | changed, page length 3248 to 3108px, 515177 px (20.653%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--saving--1180--dark.png` | changed, page length 1796 to 1759px, 509308 px (24.032%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--saving--1180--light.png` | changed, page length 1796 to 1759px, 501339 px (23.656%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--saving--1440--dark.png` | changed, page length 1796 to 1759px, 577610 px (22.334%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--saving--1440--light.png` | changed, page length 1796 to 1759px, 569156 px (22.007%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--saving--390--dark.png` | changed, page length 2487 to 2413px, 238463 px (24.586%) | D-009; R-17 | 3 on every axis | pass |
+| `chromium/campaign-create--saving--390--light.png` | changed, page length 2487 to 2413px, 233595 px (24.084%) | D-009; R-17 | 3 on every axis | pass |
+| `chromium/campaign-create--saving--768--dark.png` | changed, page length 2429 to 2378px, 288223 px (15.450%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-create--saving--768--light.png` | changed, page length 2429 to 2378px, 283355 px (15.189%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-detail--default--1180--dark.png` | changed, page length 3388 to 3087px, 1978024 px (49.477%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-detail--default--1180--light.png` | changed, page length 3388 to 3087px, 1870091 px (46.778%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-detail--default--1440--dark.png` | changed, page length 3364 to 3087px, 1987730 px (41.034%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-detail--default--1440--light.png` | changed, page length 3364 to 3087px, 1867710 px (38.556%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-detail--default--390--dark.png` | changed, page length 5510 to 5035px, 1141973 px (53.142%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `chromium/campaign-detail--default--390--light.png` | changed, page length 5510 to 5035px, 1104723 px (51.409%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `chromium/campaign-detail--default--768--dark.png` | changed, page length 5369 to 4950px, 1579916 px (38.316%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-detail--default--768--light.png` | changed, page length 5369 to 4950px, 1520052 px (36.864%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-detail--permission-restricted--1180--dark.png` | changed, page length 1920 to 1641px, 1035419 px (45.702%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-detail--permission-restricted--1180--light.png` | changed, page length 1920 to 1641px, 998225 px (44.060%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-detail--permission-restricted--1440--dark.png` | changed, page length 1877 to 1602px, 1286350 px (47.592%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-detail--permission-restricted--1440--light.png` | changed, page length 1877 to 1602px, 1240978 px (45.913%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-detail--permission-restricted--390--dark.png` | changed, page length 2678 to 2276px, 498625 px (47.742%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `chromium/campaign-detail--permission-restricted--390--light.png` | changed, page length 2678 to 2276px, 486952 px (46.624%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `chromium/campaign-detail--permission-restricted--768--dark.png` | changed, page length 2521 to 2188px, 681786 px (35.214%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaign-detail--permission-restricted--768--light.png` | changed, page length 2521 to 2188px, 653893 px (33.773%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaigns--empty--1180--dark.png` | changed, 69664 px (6.560%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaigns--empty--1180--light.png` | changed, 68936 px (6.491%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaigns--empty--1440--dark.png` | changed, 117244 px (9.047%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaigns--empty--1440--light.png` | changed, 116516 px (8.990%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaigns--empty--390--dark.png` | changed, 35307 px (10.726%) | D-009 | 3 on every axis | pass |
+| `chromium/campaigns--empty--390--light.png` | changed, 34575 px (10.504%) | D-009 | 3 on every axis | pass |
+| `chromium/campaigns--empty--768--dark.png` | changed, 58874 px (7.486%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaigns--empty--768--light.png` | changed, 58485 px (7.437%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaigns--populated--1180--dark.png` | changed, 129537 px (12.197%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaigns--populated--1180--light.png` | changed, 102648 px (9.666%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaigns--populated--1440--dark.png` | changed, 130254 px (10.050%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaigns--populated--1440--light.png` | changed, 96588 px (7.453%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaigns--populated--390--dark.png` | changed, 82881 px (25.180%) | D-009 | 3 on every axis | pass |
+| `chromium/campaigns--populated--390--light.png` | changed, 75989 px (23.086%) | D-009 | 3 on every axis | pass |
+| `chromium/campaigns--populated--768--dark.png` | changed, 118544 px (15.074%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/campaigns--populated--768--light.png` | changed, 100343 px (12.759%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/design-surfaces--default--1180--dark.png` | changed, 6198 px (0.584%) | D-009 (the rail's unsized text); R-19, R-21 | 3 on every axis | pass |
+| `chromium/design-surfaces--default--1180--light.png` | changed, 6200 px (0.584%) | D-009 (the rail's unsized text); R-19, R-21 | 3 on every axis | pass |
+| `chromium/design-surfaces--default--1440--dark.png` | changed, 6198 px (0.478%) | D-009 (the rail's unsized text); R-19, R-21 | 3 on every axis | pass |
+| `chromium/design-surfaces--default--1440--light.png` | changed, 6200 px (0.478%) | D-009 (the rail's unsized text); R-19, R-21 | 3 on every axis | pass |
+| `chromium/design-surfaces--default--768--dark.png` | changed, 6198 px (0.788%) | D-009 (the rail's unsized text); R-19, R-21 | 3 on every axis | pass |
+| `chromium/design-surfaces--default--768--light.png` | changed, 6200 px (0.788%) | D-009 (the rail's unsized text); R-19, R-21 | 3 on every axis | pass |
+| `chromium/onboarding--default--1180--dark.png` | changed, page length 3768 to 3625px, 1367243 px (30.751%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/onboarding--default--1180--light.png` | changed, page length 3768 to 3625px, 1336000 px (30.048%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/onboarding--default--1440--dark.png` | changed, page length 3745 to 3605px, 2074189 px (38.462%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/onboarding--default--1440--light.png` | changed, page length 3745 to 3605px, 2028646 px (37.618%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/onboarding--default--390--dark.png` | changed, page length 4492 to 4247px, 662924 px (37.841%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `chromium/onboarding--default--390--light.png` | changed, page length 4492 to 4247px, 648060 px (36.992%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `chromium/onboarding--default--768--dark.png` | changed, page length 4233 to 4122px, 709189 px (21.815%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/onboarding--default--768--light.png` | changed, page length 4233 to 4122px, 692804 px (21.311%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/overview--default--1180--dark.png` | changed, page length 6888 to 6260px, 3905739 px (48.054%) | D-009; D-010; timestamps in the data font; R-14; R-19, R-21 | 3 on every axis | pass |
+| `chromium/overview--default--1180--light.png` | changed, page length 6888 to 6260px, 3732648 px (45.924%) | D-009; D-010; timestamps in the data font; R-14; R-19, R-21 | 3 on every axis | pass |
+| `chromium/overview--default--1440--dark.png` | changed, page length 6511 to 5591px, 5478087 px (58.428%) | D-009; D-010; timestamps in the data font; R-14; R-19, R-21 | 3 on every axis | pass |
+| `chromium/overview--default--1440--light.png` | changed, page length 6511 to 5591px, 5261671 px (56.119%) | D-009; D-010; timestamps in the data font; R-14; R-19, R-21 | 3 on every axis | pass |
+| `chromium/overview--default--390--dark.png` | changed, page length 11893 to 11203px, 2254923 px (48.616%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `chromium/overview--default--390--light.png` | changed, page length 11893 to 11203px, 2208933 px (47.624%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `chromium/overview--default--768--dark.png` | changed, page length 11554 to 10952px, 2821012 px (31.792%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/overview--default--768--light.png` | changed, page length 11554 to 10952px, 2722230 px (30.678%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `chromium/reports--default--1180--dark.png` | changed, page length 9431 to 7226px, 5716534 px (51.368%) | D-009; D-010; timestamps in the data font; R-15, R-16; R-19, R-21 | 3 on every axis | pass |
+| `chromium/reports--default--1180--light.png` | changed, page length 9431 to 7226px, 5464347 px (49.102%) | D-009; D-010; timestamps in the data font; R-15, R-16; R-19, R-21 | 3 on every axis | pass |
+| `chromium/reports--default--1440--dark.png` | changed, page length 9383 to 6739px, 8312083 px (61.518%) | D-009; D-010; timestamps in the data font; R-15, R-16; R-19, R-21 | 3 on every axis | pass |
+| `chromium/reports--default--1440--light.png` | changed, page length 9383 to 6739px, 7981715 px (59.073%) | D-009; D-010; timestamps in the data font; R-15, R-16; R-19, R-21 | 3 on every axis | pass |
+| `chromium/reports--default--390--dark.png` | changed, page length 14137 to 12288px, 2352604 px (42.670%) | D-009; timestamps in the data font; R-16 | 3 on every axis | pass |
+| `chromium/reports--default--390--light.png` | changed, page length 14137 to 12288px, 2247546 px (40.765%) | D-009; timestamps in the data font; R-16 | 3 on every axis | pass |
+| `chromium/reports--default--768--dark.png` | changed, page length 13356 to 11946px, 2787780 px (27.178%) | D-009; timestamps in the data font; R-16; R-19, R-21 | 3 on every axis | pass |
+| `chromium/reports--default--768--light.png` | changed, page length 13356 to 11946px, 2650751 px (25.842%) | D-009; timestamps in the data font; R-16; R-19, R-21 | 3 on every axis | pass |
+| `chromium/settings-connections--default--1180--dark.png` | changed, page length 1281 to 1041px, 825973 px (54.643%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/settings-connections--default--1180--light.png` | changed, page length 1281 to 1041px, 790399 px (52.290%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/settings-connections--default--1440--dark.png` | changed, page length 1171 to 1011px, 818618 px (48.547%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/settings-connections--default--1440--light.png` | changed, page length 1171 to 1011px, 785251 px (46.568%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/settings-connections--default--390--dark.png` | changed, page length 2365 to 1984px, 594289 px (64.432%) | D-009 | 3 on every axis | pass |
+| `chromium/settings-connections--default--390--light.png` | changed, page length 2365 to 1984px, 570304 px (61.832%) | D-009 | 3 on every axis | pass |
+| `chromium/settings-connections--default--768--dark.png` | changed, page length 2178 to 1795px, 788808 px (47.158%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `chromium/settings-connections--default--768--light.png` | changed, page length 2178 to 1795px, 747966 px (44.716%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--already-decided--1180--dark.png` | changed, page length 2124 to 1827px, 1147109 px (45.769%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--already-decided--1180--light.png` | changed, page length 2124 to 1827px, 1081760 px (43.161%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--already-decided--1440--dark.png` | changed, page length 2021 to 1747px, 1440607 px (49.501%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--already-decided--1440--light.png` | changed, page length 2021 to 1747px, 1386775 px (47.652%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--already-decided--390--dark.png` | changed, page length 2998 to 2575px, 573238 px (49.027%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `review/campaign-detail--already-decided--390--light.png` | changed, page length 2998 to 2575px, 549043 px (46.958%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `review/campaign-detail--already-decided--768--dark.png` | changed, page length 2770 to 2400px, 798269 px (37.524%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--already-decided--768--light.png` | changed, page length 2770 to 2400px, 763808 px (35.904%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--approved--1180--dark.png` | changed, page length 1888 to 1601px, 988512 px (44.371%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--approved--1180--light.png` | changed, page length 1888 to 1601px, 930043 px (41.746%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--approved--1440--dark.png` | changed, page length 1785 to 1522px, 1219208 px (47.433%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--approved--1440--light.png` | changed, page length 1785 to 1522px, 1172484 px (45.615%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--approved--390--dark.png` | changed, page length 2709 to 2300px, 525463 px (49.736%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `review/campaign-detail--approved--390--light.png` | changed, page length 2709 to 2300px, 503313 px (47.639%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `review/campaign-detail--approved--768--dark.png` | changed, page length 2515 to 2159px, 736445 px (38.128%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--approved--768--light.png` | changed, page length 2515 to 2159px, 708803 px (36.697%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--ready--1180--dark.png` | changed, page length 1893 to 1618px, 1013762 px (45.384%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--ready--1180--light.png` | changed, page length 1893 to 1618px, 976648 px (43.723%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--ready--1440--dark.png` | changed, page length 1790 to 1519px, 1263193 px (49.007%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--ready--1440--light.png` | changed, page length 1790 to 1519px, 1217887 px (47.249%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--ready--390--dark.png` | changed, page length 2669 to 2319px, 463879 px (44.565%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `review/campaign-detail--ready--390--light.png` | changed, page length 2669 to 2319px, 452221 px (43.445%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `review/campaign-detail--ready--768--dark.png` | changed, page length 2501 to 2176px, 659803 px (34.351%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/campaign-detail--ready--768--light.png` | changed, page length 2501 to 2176px, 632358 px (32.922%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/change-password--default--1180--dark.png` | changed, 151490 px (14.265%) | D-009 (the title at the page step); R-20 (the account measure at the column's start); R-19, R-21 | 3 on every axis | pass |
+| `review/change-password--default--1180--light.png` | changed, 149891 px (14.114%) | D-009 (the title at the page step); R-20 (the account measure at the column's start); R-19, R-21 | 3 on every axis | pass |
+| `review/change-password--default--1440--dark.png` | changed, 167022 px (12.887%) | D-009 (the title at the page step); R-20 (the account measure at the column's start); R-19, R-21 | 3 on every axis | pass |
+| `review/change-password--default--1440--light.png` | changed, 164993 px (12.731%) | D-009 (the title at the page step); R-20 (the account measure at the column's start); R-19, R-21 | 3 on every axis | pass |
+| `review/change-password--default--390--dark.png` | changed, 91827 px (27.897%) | D-009 (the title at the page step); R-20 (the account measure at the column's start) | 3 on every axis | pass |
+| `review/change-password--default--390--light.png` | changed, 90224 px (27.410%) | D-009 (the title at the page step); R-20 (the account measure at the column's start) | 3 on every axis | pass |
+| `review/change-password--default--768--dark.png` | changed, 123128 px (15.657%) | D-009 (the title at the page step); R-20 (the account measure at the column's start); R-19, R-21 | 3 on every axis | pass |
+| `review/change-password--default--768--light.png` | changed, 122213 px (15.540%) | D-009 (the title at the page step); R-20 (the account measure at the column's start); R-19, R-21 | 3 on every axis | pass |
+| `review/change-password--saved--1180--dark.png` | changed, 166700 px (15.697%) | D-009 (the title at the page step); R-20 (the account measure at the column's start); R-19, R-21 | 3 on every axis | pass |
+| `review/change-password--saved--1180--light.png` | changed, 164692 px (15.508%) | D-009 (the title at the page step); R-20 (the account measure at the column's start); R-19, R-21 | 3 on every axis | pass |
+| `review/change-password--saved--1440--dark.png` | changed, 205215 px (15.834%) | D-009 (the title at the page step); R-20 (the account measure at the column's start); R-19, R-21 | 3 on every axis | pass |
+| `review/change-password--saved--1440--light.png` | changed, 203031 px (15.666%) | D-009 (the title at the page step); R-20 (the account measure at the column's start); R-19, R-21 | 3 on every axis | pass |
+| `review/change-password--saved--390--dark.png` | changed, page length 872 to 844px, 132898 px (39.078%) | D-009 (the title at the page step); R-20 (the account measure at the column's start) | 3 on every axis | pass |
+| `review/change-password--saved--390--light.png` | changed, page length 872 to 844px, 131583 px (38.692%) | D-009 (the title at the page step); R-20 (the account measure at the column's start) | 3 on every axis | pass |
+| `review/change-password--saved--768--dark.png` | changed, 157781 px (20.063%) | D-009 (the title at the page step); R-20 (the account measure at the column's start); R-19, R-21 | 3 on every axis | pass |
+| `review/change-password--saved--768--light.png` | changed, 156849 px (19.944%) | D-009 (the title at the page step); R-20 (the account measure at the column's start); R-19, R-21 | 3 on every axis | pass |
+| `review/choose-workspace--default--1180--dark.png` | changed, 28396 px (2.674%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/choose-workspace--default--1180--light.png` | changed, 23731 px (2.235%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/choose-workspace--default--1440--dark.png` | changed, 28396 px (2.191%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/choose-workspace--default--1440--light.png` | changed, 23731 px (1.831%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/choose-workspace--default--390--dark.png` | changed, 45356 px (13.779%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/choose-workspace--default--390--light.png` | changed, 34893 px (10.601%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/choose-workspace--default--768--dark.png` | changed, 28396 px (3.611%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/choose-workspace--default--768--light.png` | changed, 23732 px (3.018%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--confirmation--1180--dark.png` | changed, 36077 px (3.397%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--confirmation--1180--light.png` | changed, 31997 px (3.013%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--confirmation--1440--dark.png` | changed, 36077 px (2.784%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--confirmation--1440--light.png` | changed, 31997 px (2.469%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--confirmation--390--dark.png` | changed, 33061 px (10.044%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--confirmation--390--light.png` | changed, 29660 px (9.011%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--confirmation--768--dark.png` | changed, 36077 px (4.587%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--confirmation--768--light.png` | changed, 31997 px (4.069%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--default--1180--dark.png` | changed, 31410 px (2.958%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--default--1180--light.png` | changed, 27415 px (2.581%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--default--1440--dark.png` | changed, 31410 px (2.424%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--default--1440--light.png` | changed, 27415 px (2.115%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--default--390--dark.png` | changed, 28261 px (8.586%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--default--390--light.png` | changed, 24925 px (7.572%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--default--768--dark.png` | changed, 31410 px (3.994%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/forgot-password--default--768--light.png` | changed, 27415 px (3.486%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/guided-setup--step-1-welcome--1180--dark.png` | changed, 257529 px (24.249%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-1-welcome--1180--light.png` | changed, 243280 px (22.908%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-1-welcome--1440--dark.png` | changed, 524036 px (40.435%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-1-welcome--1440--light.png` | changed, 473785 px (36.557%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-1-welcome--390--dark.png` | changed, 23040 px (7.000%) | D-009 | 3 on every axis | pass |
+| `review/guided-setup--step-1-welcome--390--light.png` | changed, 21817 px (6.628%) | D-009 | 3 on every axis | pass |
+| `review/guided-setup--step-1-welcome--768--dark.png` | changed, 60608 px (7.707%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-1-welcome--768--light.png` | changed, 58274 px (7.410%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-2-your-details--1180--dark.png` | changed, 164749 px (15.513%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-2-your-details--1180--light.png` | changed, 162726 px (15.323%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-2-your-details--1440--dark.png` | changed, 298429 px (23.027%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-2-your-details--1440--light.png` | changed, 286406 px (22.099%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-2-your-details--390--dark.png` | changed, 11405 px (3.465%) | D-009 | 3 on every axis | pass |
+| `review/guided-setup--step-2-your-details--390--light.png` | changed, 11312 px (3.437%) | D-009 | 3 on every axis | pass |
+| `review/guided-setup--step-2-your-details--768--dark.png` | changed, 55199 px (7.019%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-2-your-details--768--light.png` | changed, 54947 px (6.987%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-3-your-realtor-partner--1180--dark.png` | changed, 159335 px (15.003%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-3-your-realtor-partner--1180--light.png` | changed, 157314 px (14.813%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-3-your-realtor-partner--1440--dark.png` | changed, 293015 px (22.609%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-3-your-realtor-partner--1440--light.png` | changed, 280994 px (21.682%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-3-your-realtor-partner--390--dark.png` | changed, 12928 px (3.928%) | D-009 | 3 on every axis | pass |
+| `review/guided-setup--step-3-your-realtor-partner--390--light.png` | changed, 12834 px (3.899%) | D-009 | 3 on every axis | pass |
+| `review/guided-setup--step-3-your-realtor-partner--768--dark.png` | changed, 53380 px (6.788%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-3-your-realtor-partner--768--light.png` | changed, 53128 px (6.756%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-first-field--1180--dark.png` | changed, 212162 px (19.978%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-first-field--1180--light.png` | changed, 186034 px (17.517%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-first-field--1440--dark.png` | changed, 250722 px (19.346%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-first-field--1440--light.png` | changed, 224061 px (17.289%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-first-field--390--dark.png` | changed, 31 px (0.009%) | text rasterisation only | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-first-field--390--light.png` | changed, 30 px (0.009%) | text rasterisation only | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-first-field--768--dark.png` | changed, 11930 px (1.517%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-first-field--768--light.png` | changed, 10645 px (1.354%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-last-field--1180--dark.png` | changed, 172953 px (16.286%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-last-field--1180--light.png` | changed, 151095 px (14.227%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-last-field--1440--dark.png` | changed, 209298 px (16.150%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-last-field--1440--light.png` | changed, 186426 px (14.385%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-last-field--390--dark.png` | changed, 10965 px (3.331%) | D-009; R-17 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-last-field--390--light.png` | changed, 10775 px (3.273%) | D-009; R-17 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-last-field--768--dark.png` | changed, 21408 px (2.722%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-4-create-the-campaign-last-field--768--light.png` | changed, 21174 px (2.692%) | D-009; R-17; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result--1180--dark.png` | changed, 406613 px (38.287%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result--1180--light.png` | changed, 363775 px (34.254%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result--1440--dark.png` | changed, 653893 px (50.455%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result--1440--light.png` | changed, 606778 px (46.819%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result--390--dark.png` | changed, 65388 px (19.865%) | D-009 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result--390--light.png` | changed, 54385 px (16.522%) | D-009 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result--768--dark.png` | changed, 103692 px (13.185%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result--768--light.png` | changed, 87184 px (11.086%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result-needs-changes--1180--dark.png` | changed, 398527 px (37.526%) | D-009; D-010; R-18; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result-needs-changes--1180--light.png` | changed, 355466 px (33.471%) | D-009; D-010; R-18; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result-needs-changes--1440--dark.png` | changed, 632351 px (48.793%) | D-009; D-010; R-18; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result-needs-changes--1440--light.png` | changed, 570947 px (44.055%) | D-009; D-010; R-18; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result-needs-changes--390--dark.png` | changed, 49702 px (15.100%) | D-009; R-18 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result-needs-changes--390--light.png` | changed, 41266 px (12.537%) | D-009; R-18 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result-needs-changes--768--dark.png` | changed, 105078 px (13.361%) | D-009; R-18; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-5-read-the-result-needs-changes--768--light.png` | changed, 100605 px (12.793%) | D-009; R-18; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-6-approve--1180--dark.png` | changed, 133405 px (12.562%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-6-approve--1180--light.png` | changed, 123481 px (11.627%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-6-approve--1440--dark.png` | changed, 181449 px (14.001%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-6-approve--1440--light.png` | changed, 157727 px (12.170%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-6-approve--390--dark.png` | changed, 29955 px (9.100%) | D-009 | 3 on every axis | pass |
+| `review/guided-setup--step-6-approve--390--light.png` | changed, 30040 px (9.126%) | D-009 | 3 on every axis | pass |
+| `review/guided-setup--step-6-approve--768--dark.png` | changed, 62770 px (7.982%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-6-approve--768--light.png` | changed, 60145 px (7.648%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-6-hand-off--1180--dark.png` | changed, 141165 px (13.292%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-6-hand-off--1180--light.png` | changed, 125179 px (11.787%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-6-hand-off--1440--dark.png` | changed, 150005 px (11.574%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-6-hand-off--1440--light.png` | changed, 133499 px (10.301%) | D-009; D-010; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-6-hand-off--390--dark.png` | changed, 30879 px (9.381%) | D-009 | 3 on every axis | pass |
+| `review/guided-setup--step-6-hand-off--390--light.png` | changed, 29774 px (9.045%) | D-009 | 3 on every axis | pass |
+| `review/guided-setup--step-6-hand-off--768--dark.png` | changed, 56998 px (7.248%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-6-hand-off--768--light.png` | changed, 54637 px (6.947%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-7-what-happens-next--1180--dark.png` | changed, 217904 px (20.518%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-7-what-happens-next--1180--light.png` | changed, 203368 px (19.150%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-7-what-happens-next--1440--dark.png` | changed, 310139 px (23.930%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-7-what-happens-next--1440--light.png` | changed, 298628 px (23.042%) | D-009; D-010; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-7-what-happens-next--390--dark.png` | changed, 13402 px (4.072%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `review/guided-setup--step-7-what-happens-next--390--light.png` | changed, 12262 px (3.725%) | D-009; timestamps in the data font | 3 on every axis | pass |
+| `review/guided-setup--step-7-what-happens-next--768--dark.png` | changed, 64536 px (8.206%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/guided-setup--step-7-what-happens-next--768--light.png` | changed, 59692 px (7.590%) | D-009; timestamps in the data font; R-19, R-21 | 3 on every axis | pass |
+| `review/reset-password--link-expired--1440--dark.png` | changed, 16 px (0.001%) | text rasterisation only | 3 on every axis | pass |
+| `review/reset-password--saved-notice--1180--dark.png` | changed, page length 6331 to 5847px, 3410737 px (45.656%) | D-009; D-010; R-14; R-19, R-21 | 3 on every axis | pass |
+| `review/reset-password--saved-notice--1180--light.png` | changed, page length 6331 to 5847px, 3279490 px (43.899%) | D-009; D-010; R-14; R-19, R-21 | 3 on every axis | pass |
+| `review/reset-password--saved-notice--1440--dark.png` | changed, page length 5964 to 5097px, 4744588 px (55.246%) | D-009; D-010; R-14; R-19, R-21 | 3 on every axis | pass |
+| `review/reset-password--saved-notice--1440--light.png` | changed, page length 5964 to 5097px, 4580147 px (53.331%) | D-009; D-010; R-14; R-19, R-21 | 3 on every axis | pass |
+| `review/reset-password--saved-notice--390--dark.png` | changed, page length 10803 to 10327px, 2069489 px (49.120%) | D-009 | 3 on every axis | pass |
+| `review/reset-password--saved-notice--390--light.png` | changed, page length 10803 to 10327px, 2030267 px (48.189%) | D-009 | 3 on every axis | pass |
+| `review/reset-password--saved-notice--768--dark.png` | changed, page length 10354 to 9935px, 2502478 px (31.470%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/reset-password--saved-notice--768--light.png` | changed, page length 10354 to 9935px, 2427015 px (30.521%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/shell--collapsed-rail--1180--dark.png` | changed, page length 6204 to 5525px, 4284023 px (58.519%) | D-009; D-010; R-14 | 3 on every axis | pass |
+| `review/shell--collapsed-rail--1180--light.png` | changed, page length 6204 to 5525px, 4138038 px (56.525%) | D-009; D-010; R-14 | 3 on every axis | pass |
+| `review/shell--collapsed-rail--1440--dark.png` | changed, page length 5879 to 4945px, 5366786 px (63.394%) | D-009; D-010; R-14 | 3 on every axis | pass |
+| `review/shell--collapsed-rail--1440--light.png` | changed, page length 5879 to 4945px, 5190256 px (61.309%) | D-009; D-010; R-14 | 3 on every axis | pass |
+| `review/shell--collapsed-rail--768--dark.png` | changed, page length 9766 to 9412px, 3403889 px (45.383%) | D-009 | 3 on every axis | pass |
+| `review/shell--collapsed-rail--768--light.png` | changed, page length 9766 to 9412px, 3251619 px (43.353%) | D-009 | 3 on every axis | pass |
+| `review/shell--finish-setup-chip--1180--dark.png` | changed, page length 6264 to 5779px, 3411605 px (46.156%) | D-009; D-010; R-14; R-19, R-21 | 3 on every axis | pass |
+| `review/shell--finish-setup-chip--1180--light.png` | changed, page length 6264 to 5779px, 3280350 px (44.380%) | D-009; D-010; R-14; R-19, R-21 | 3 on every axis | pass |
+| `review/shell--finish-setup-chip--1440--dark.png` | changed, page length 5896 to 5030px, 4741515 px (55.847%) | D-009; D-010; R-14; R-19, R-21 | 3 on every axis | pass |
+| `review/shell--finish-setup-chip--1440--light.png` | changed, page length 5896 to 5030px, 4576735 px (53.906%) | D-009; D-010; R-14; R-19, R-21 | 3 on every axis | pass |
+| `review/shell--finish-setup-chip--390--dark.png` | changed, page length 10736 to 10260px, 2069407 px (49.424%) | D-009 | 3 on every axis | pass |
+| `review/shell--finish-setup-chip--390--light.png` | changed, page length 10736 to 10260px, 2030677 px (48.499%) | D-009 | 3 on every axis | pass |
+| `review/shell--finish-setup-chip--768--dark.png` | changed, page length 10286 to 9867px, 2502460 px (31.678%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/shell--finish-setup-chip--768--light.png` | changed, page length 10286 to 9867px, 2426524 px (30.717%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/shell--help-menu-open--1180--dark.png` | changed, page length 6264 to 5779px, 3411605 px (46.156%) | D-009; D-010; R-14; R-19, R-21 | 3 on every axis | pass |
+| `review/shell--help-menu-open--1180--light.png` | changed, page length 6264 to 5779px, 3280350 px (44.380%) | D-009; D-010; R-14; R-19, R-21 | 3 on every axis | pass |
+| `review/shell--help-menu-open--1440--dark.png` | changed, page length 5896 to 5030px, 4741515 px (55.847%) | D-009; D-010; R-14; R-19, R-21 | 3 on every axis | pass |
+| `review/shell--help-menu-open--1440--light.png` | changed, page length 5896 to 5030px, 4576735 px (53.906%) | D-009; D-010; R-14; R-19, R-21 | 3 on every axis | pass |
+| `review/shell--help-menu-open--390--dark.png` | changed, page length 10736 to 10260px, 2069407 px (49.424%) | D-009 | 3 on every axis | pass |
+| `review/shell--help-menu-open--390--light.png` | changed, page length 10736 to 10260px, 2030677 px (48.499%) | D-009 | 3 on every axis | pass |
+| `review/shell--help-menu-open--768--dark.png` | changed, page length 10286 to 9867px, 2502460 px (31.678%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/shell--help-menu-open--768--light.png` | changed, page length 10286 to 9867px, 2426524 px (30.717%) | D-009; R-19, R-21 | 3 on every axis | pass |
+| `review/shell--mobile-drawer--390--dark.png` | changed, 8691 px (2.640%) | D-009 (the drawer's titles and the page behind it); R-19 | 3 on every axis | pass |
+| `review/shell--mobile-drawer--390--light.png` | changed, 8683 px (2.638%) | D-009 (the drawer's titles and the page behind it); R-19 | 3 on every axis | pass |
+| `review/sign-in--default--1180--dark.png` | changed, 71540 px (6.736%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--default--1180--light.png` | changed, 59125 px (5.567%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--default--1440--dark.png` | changed, 71544 px (5.520%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--default--1440--light.png` | changed, 59127 px (4.562%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--default--390--dark.png` | changed, 39057 px (11.866%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--default--390--light.png` | changed, 34938 px (10.614%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--default--768--dark.png` | changed, 71545 px (9.097%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--default--768--light.png` | changed, 59127 px (7.518%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--refused--1180--dark.png` | changed, 90528 px (8.524%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--refused--1180--light.png` | changed, 78404 px (7.383%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--refused--1440--dark.png` | changed, 90532 px (6.985%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--refused--1440--light.png` | changed, 78406 px (6.050%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--refused--390--dark.png` | changed, 48243 px (14.656%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--refused--390--light.png` | changed, 44631 px (13.559%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--refused--768--dark.png` | changed, 90532 px (11.512%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--refused--768--light.png` | changed, 78406 px (9.970%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--signed-out--1180--dark.png` | changed, 94169 px (8.867%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--signed-out--1180--light.png` | changed, 79580 px (7.493%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--signed-out--1440--dark.png` | changed, 94171 px (7.266%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--signed-out--1440--light.png` | changed, 79581 px (6.141%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--signed-out--390--dark.png` | changed, 58935 px (17.905%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--signed-out--390--light.png` | changed, 51018 px (15.499%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--signed-out--768--dark.png` | changed, 94171 px (11.974%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-in--signed-out--768--light.png` | changed, 79581 px (10.119%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--address-already-has-an-account--1180--dark.png` | changed, 58551 px (5.513%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--address-already-has-an-account--1180--light.png` | changed, 53790 px (5.065%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--address-already-has-an-account--1440--dark.png` | changed, 58553 px (4.518%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--address-already-has-an-account--1440--light.png` | changed, 53791 px (4.151%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--address-already-has-an-account--390--dark.png` | changed, 53996 px (16.404%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--address-already-has-an-account--390--light.png` | changed, 49963 px (15.179%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--address-already-has-an-account--768--dark.png` | changed, 58553 px (7.445%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--address-already-has-an-account--768--light.png` | changed, 53791 px (6.840%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--default--1180--dark.png` | changed, 45023 px (4.239%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--default--1180--light.png` | changed, 40514 px (3.815%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--default--1440--dark.png` | changed, 45027 px (3.474%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--default--1440--light.png` | changed, 40517 px (3.126%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--default--390--dark.png` | changed, 41070 px (12.477%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--default--390--light.png` | changed, 37289 px (11.329%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--default--768--dark.png` | changed, 45026 px (5.725%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/sign-up--default--768--light.png` | changed, 40515 px (5.152%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--default--1180--dark.png` | changed, 18911 px (1.781%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--default--1180--light.png` | changed, 16670 px (1.570%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--default--1440--dark.png` | changed, 18911 px (1.459%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--default--1440--light.png` | changed, 16670 px (1.286%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--default--390--dark.png` | changed, 16875 px (5.127%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--default--390--light.png` | changed, 14988 px (4.553%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--default--768--dark.png` | changed, 18909 px (2.404%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--default--768--light.png` | changed, 16668 px (2.119%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--link-expired--1180--dark.png` | changed, 23060 px (2.171%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--link-expired--1180--light.png` | changed, 20791 px (1.958%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--link-expired--1440--dark.png` | changed, 23060 px (1.779%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--link-expired--1440--light.png` | changed, 20791 px (1.604%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--link-expired--390--dark.png` | changed, 20850 px (6.334%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--link-expired--390--light.png` | changed, 18930 px (5.751%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--link-expired--768--dark.png` | changed, 23060 px (2.932%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |
+| `review/verify-email--link-expired--768--light.png` | changed, 20791 px (2.644%) | D-009 (the lead and the checkbox and helper text at the body step) | 3 on every axis | pass |

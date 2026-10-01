@@ -1,15 +1,18 @@
 # Design quality sign-off
 
-PRD-006d D9 and acceptance criterion 006D-AC-015, re-signed for PRD-008d 008D-AC-010. **Status:
-SIGNED.** `ux-ui-guardian` prepared the skeleton; the orchestrator filled it in from real
-screenshots of the running application and signed it on 2026-09-21. On 2026-10-01 `ux-ui-guardian`
-re-signed every row against the PRD-008d tree, from the baselines the `ubuntu-24.04` runner drew
-for it (see "How this was filled").
+PRD-006d D9 and acceptance criterion 006D-AC-015, re-signed for PRD-008d 008D-AC-010 and
+008D-AC-011. **Status: SIGNED.** `ux-ui-guardian` prepared the skeleton; the orchestrator filled it
+in from real screenshots of the running application and signed it on 2026-09-21. On 2026-10-01
+`ux-ui-guardian` re-signed every row against the PRD-008d tree, from the baselines the
+`ubuntu-24.04` runner drew for it, and re-signed it again the same day after the D-009 and D-010
+fix moved 343 of the 376 pictures (see "How this was filled").
 
-- Commit reviewed: `d7af15a`, the commit that installs the baselines drawn by screen-baselines run
-  36828316006 (the commit after it changes only this file and the review report)
-- Date: 2026-10-01 (first signed 2026-09-21 against `74999a8`)
-- Signed by: `ux-ui-guardian`, Gauntlet lane L6b (Claude Code), for the orchestrator
+- Commit reviewed: `cad9bf6`, the commit that installs the baselines drawn by screen-baselines run
+  36844271868 from `eaf34e6` (the commit after it changes only this file, the review report, and
+  the rubric's D-009 and D-010 rows and section 6)
+- Date: 2026-10-01 (first signed 2026-09-21 against `74999a8`; re-signed against `d7af15a` earlier
+  on 2026-10-01)
+- Signed by: `ux-ui-guardian`, Gauntlet lane L6c (Claude Code), for the orchestrator
 
 The screenshots themselves are retained outside git. They are large, some come from the deployed
 review URL, and none of them is needed to read the result: the table below is the result. Every
@@ -163,7 +166,9 @@ failed, 12.8 minutes**, with the eight submissions above and none refused. On 20
 runner's `pnpm test:db` in screen-baselines run 36828316006 is **104 passed, 0 failed**, with the same
 eight submissions: PRD-008d's verify-email confirmed state spends two confirmations against the
 verify limit and no sign-up, steps 1 and 2 sign the seeded creator in, and step 5's refusal is
-walked on the approver's path with no new sign-in.
+walked on the approver's path with no new sign-in. The second redraw's three runs, 36838168997,
+36841695906, and 36844271868, each ran the review project at **104 passed, 0 failed** with the same
+eight submissions.
 
 ### Frames a state does not have
 
@@ -226,6 +231,66 @@ PRD-006d 006D-AC-018 and the rubric's section 5, entries D-004 and D-005.
 | Checkbox and radio controls | Native controls inside an associated label on sign-in, the workspace choice, and the create screen. | PRD-006d D4 ships no primitive for either. They are allowed by name in `tooling/tests/unit/design-quality/governed-controls.test.ts`, not hidden. |
 
 ## How this was filled
+
+### The second re-sign of 2026-10-01 (D-009 and D-010, 008D-AC-011)
+
+Re-signed by `ux-ui-guardian`, Gauntlet lane L6c, after `design-system-guardian` ruled D-009 and
+D-010 "fix now" in the rubric's section 5. The fix (`2687100`) puts the body step on `body` and each
+heading level's step on its element, deletes the bootstrap `section { max-width: 44rem }` with the
+four declarations that only undid it, and draws every timestamp in the data font, as brief section
+10 asks. The redraw was dispatched three times under 008D-AC-011, each for fixes the review of the
+run before it caused: run 36838168997 on `c3ab3ec`, run 36841695906 on `83095a1`, and run
+36844271868 on `eaf34e6`, **whose pictures are installed**. The scored review, with every picture
+that changed, its cause, and its verdict, is the second half of
+`library/requirements/in-work/prd-008-finish-line-hardening/qa/2026-10-01-008d-baseline-review.md`,
+"Second redraw: D-009 and D-010 (008D-AC-011)".
+
+Against the baselines the first re-sign installed (`d7af15a`, unchanged at `814939f`), 343 of the
+376 pictures changed (110 synthetic, 233 review), none is new, and none is removed. The 33 that
+did not change are the email preview's eight, the boundary page's two at 390, reset password's
+default and expired-link states (fifteen cells), and verify email's confirmed state (eight); each
+keeps its pass from the first re-sign.
+
+**What the machine asserted for every cell.** On the runner, run 36844271868: the synthetic suite
+**141 passed, 0 failed** (26 dashboard-preview specs skipped by project) and the review project
+**104 passed, 0 failed**, the latter on the run's second attempt after the first stopped in
+`pnpm test:db` on an unrelated rate-limit test before any picture was drawn, with every check the
+first re-sign lists. The fix added these, so they hold on every platform and not
+only in a picture: wherever either suite takes a picture, `html` computes 16px, `body` the 13px body
+step, every visible text and field value one of the six steps, and every visible date the data font
+(`expectTypographyOnBrief`); every metric card keeps its state label and its value inside the card
+at every frame in both themes; the overview fills its column as the campaigns list does; the
+overview's action links keep their own height; the reports screen keeps each group of actions
+together and its campaign cards at `--space-4`; a finding's note stands `--space-3` clear of what
+follows it; the rail's titles are larger than its links and its product name balances its lines;
+the change-password form keeps the account measure at the column's start. On `pnpm test:unit`,
+`global-element-defaults.unit.test.ts` holds the stylesheet's element defaults and the guard
+against an element-selector width, and `type-tokens-defined.unit.test.ts` fails any type token the
+token layer does not define.
+
+**Findings of the second redraw, and what happened to them.** Each is in the review report in the
+rubric's finding form with its file and line, and each was fixed with a test before the pictures
+were installed.
+
+- R-14, fixed (`c3ab3ec`). The overview's "See your leads" was stretched to a button some 200px tall
+  beside an unavailable action (axes 1 and 2).
+- R-15, fixed (`c3ab3ec`). Reports pushed each pair of actions to opposite edges of its card once
+  its sections took the column (axes 1 and 10).
+- R-16, fixed (`c3ab3ec`). A reports campaign card's metric cards touched the lines above and below
+  them (axis 2).
+- R-17, fixed (`c3ab3ec`). The create screen's legends named a weight token only the dashboard
+  preview defines and were drawn lighter than their own labels (axes 1 and 3).
+- R-18, fixed (`c3ab3ec`). A finding's note touched the support details under it (axis 2).
+- R-19, fixed (`83095a1`). The rail's two titles were drawn at the size of its links (axes 1
+  and 10).
+- R-20, fixed (`83095a1`). The change-password form shrank with its title to some 296px and floated
+  mid-column (axes 2 and 10).
+- R-21, fixed (`eaf34e6`). The runner's face left "LO" alone on the rail title's second line
+  (axis 3).
+
+**D-009 and D-010 are closed**, by the conditions the rubric's section 5 set: the fix and its redraw
+are in, every gate passes, and every redrawn picture scores 3 on the axes each names (D-009 axes 1
+and 3; D-010 axes 2, 7, and 10 at 1440 and 1180). They are no longer this sign-off's open debts.
 
 ### The re-sign of 2026-10-01 (PRD-008d)
 
@@ -310,6 +375,9 @@ debts, not passes by agreement.
   value "Unavailable" in the synthetic overview's "More numbers" runs into its card's end padding.
   Axis 7, the overview row and every shell row whose picture is of the overview.
 
+Both were ruled "fix now" by `design-system-guardian` the same day, and both are fixed and closed by
+the second re-sign above.
+
 ### The first fill, 2026-09-21
 
 Filled and signed by the orchestrator on 2026-09-21 from a capture of `74999a8` written outside git
@@ -373,4 +441,5 @@ Since 2026-10-01 there are no "asserted" and no "not photographed" cells. Until 
   outside 768, the drawer outside 390).
 
 Signed: every cell of every row is photographed and passes on all ten axes on the tree named
-above, with D-009 and D-010 carried as open, owned debts as "The re-sign of 2026-10-01" describes.
+above. D-009 and D-010 are fixed and closed, as "The second re-sign of 2026-10-01" describes, and no
+open debt is carried.

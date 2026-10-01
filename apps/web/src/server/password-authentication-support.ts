@@ -36,6 +36,11 @@ export function authEnvironment(
   return routeEnvironment(overrides);
 }
 
+/**
+ * The opt-in a deployment makes deliberately. Security Ruling 1 (PRD-005/006 batch security audit,
+ * 2026-09-19): sign-up's duplicate-email disclosure is acceptable only while sign-up is off by
+ * default, and turning it on by default requires moving to the emailed path first.
+ */
 export function signUpEnabledEnvironment(
   overrides: Readonly<Record<string, string>> = {},
 ): RoutePostgresEnvironment {

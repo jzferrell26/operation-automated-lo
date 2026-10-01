@@ -189,7 +189,13 @@ export function assertAuthSurface(input: unknown): AuthSurfaceEnvironment {
   return parsed.data;
 }
 
-/** D5. Sign-up is off unless the operator turns it on, by name, on the deployment. */
+/**
+ * D5. Sign-up is off unless the operator turns it on, by name, on the deployment.
+ *
+ * Security Ruling 1 (PRD-005/006 batch security audit, 2026-09-19) keeps sign-up's deliberate
+ * duplicate-email disclosure on one condition: it is acceptable only while sign-up is off by
+ * default, and turning it on by default requires moving to the emailed path first.
+ */
 export function selfServeSignUpEnabled(environment: AuthSurfaceEnvironment): boolean {
   return environment.OALO_SELF_SERVE_SIGNUP?.trim() === "enabled";
 }

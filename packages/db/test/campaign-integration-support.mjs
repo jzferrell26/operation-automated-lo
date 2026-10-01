@@ -896,6 +896,29 @@ export async function cleanupCredentialFixture(pool, input) {
   });
 }
 
+/**
+ * The database's own wall clock, in epoch milliseconds.
+ *
+ * `platform.consume_auth_rate_limit` opens its fixed window at
+ * `floor(epoch(now()) / window_seconds) * window_seconds`, so where a window starts is a fact about
+ * this clock and not about the test process's: the two can differ by whole seconds on a developer
+ * machine whose database runs in a VM. A proof that has to know where an edge is asks here.
+ */
+export async function readDatabaseClockMilliseconds(pool) {
+  const connection = await pool.connect();
+  try {
+    const result = await connection.execute(
+      request(
+        "test.database-clock",
+        "select (extract(epoch from clock_timestamp()) * 1000)::bigint::text as epoch_ms",
+      ),
+    );
+    return Number(result.rows[0].epoch_ms);
+  } finally {
+    await connection.release();
+  }
+}
+
 /** PRD-006a 006A-AC-009. The counter rows themselves, so a proof can see the window it made. */
 export async function readAuthRateLimitRows(pool, scope) {
   return withMigrationOwnerTransaction(pool, async (connection) => {

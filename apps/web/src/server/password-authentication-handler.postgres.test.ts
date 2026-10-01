@@ -11,6 +11,7 @@ import {
   countAuditEventsForActor,
   readAuditEventsForCorrelation,
   readAuthRateLimitRows,
+  readDatabaseClockMilliseconds,
   readFirstPartySessionsForUser,
   readReviewCredential,
   revokeReviewBinding,
@@ -33,6 +34,7 @@ import {
   type SeededLocation,
 } from "./campaign-route-postgres-support.js";
 import {
+  AUTH_RATE_LIMITS,
   UNKNOWN_CLIENT_ADDRESS_BUCKET,
   flushAuthBackgroundWork,
   handleChangePassword,
@@ -57,6 +59,7 @@ import {
   seedCredential,
   sessionCookieFrom,
   withCapturedLogLines,
+  withinOneRateLimitWindow,
 } from "./password-authentication-support.js";
 import {
   resolveRuntimeCampaignCommandPorts,
@@ -702,28 +705,37 @@ describe("the rate limiter through the composed port (006A-AC-009)", () => {
 describe("rate limits (006A-AC-015)", () => {
   it("refuses the twenty-first sign-in from one client address inside the window", async () => {
     const address = nextClientAddress();
-    const statuses: number[] = [];
-    for (let attempt = 0; attempt < 22; attempt += 1) {
-      const response = await signIn(
-        { email: "rate-limit-probe@oalo.invalid", password: PASSWORD },
-        { clientAddress: address },
-      );
-      statuses.push(response.status);
-    }
+    // Every request from this address has to be counted in one window, which opens on the database
+    // clock: a run that crossed an edge would restart the count and never reach its 429.
+    const { statuses, refused } = await withinOneRateLimitWindow(
+      pool,
+      AUTH_RATE_LIMITS.sign_in_ip.windowSeconds,
+      async () => {
+        const answered: number[] = [];
+        for (let attempt = 0; attempt < 22; attempt += 1) {
+          const response = await signIn(
+            { email: "rate-limit-probe@oalo.invalid", password: PASSWORD },
+            { clientAddress: address },
+          );
+          answered.push(response.status);
+        }
+        const refusedAfterwards = await signIn(
+          { email: CREATOR_EMAIL, password: PASSWORD },
+          { clientAddress: address },
+        );
+        return { statuses: answered, refused: refusedAfterwards };
+      },
+    );
 
     // The first twenty attempts are answered on their merits; the twenty-first is refused before
     // the deployment derives another hash.
     expect(statuses.indexOf(429)).toBe(20);
     expect(statuses.slice(0, 20).every((status) => status === 401)).toBe(true);
 
-    const refused = await signIn(
-      { email: CREATOR_EMAIL, password: PASSWORD },
-      { clientAddress: address },
-    );
     expect(refused.status).toBe(429);
     expect(await refused.text()).toBe('{"error":"AUTH_RATE_LIMITED"}');
     expect(refused.headers.get("set-cookie")).toBeNull();
-  });
+  }, 30_000);
 
   it("keeps a separate window per client address", async () => {
     const address = nextClientAddress();
@@ -1196,20 +1208,35 @@ describe("the per-person change-password limit (008A-AC-012)", () => {
         { passwordHasher },
       );
 
+    // All eleven are counted in one window, which opens on the database clock: a run that crossed
+    // an edge would restart the count and never reach its 429.
+    const { answered, derivedForTen, eleventh } = await withinOneRateLimitWindow(
+      pool,
+      AUTH_RATE_LIMITS.change_password_user.windowSeconds,
+      async () => {
+        const answeredInWindow: string[] = [];
+        for (let attempt = 0; attempt < 10; attempt += 1) {
+          const response = await attemptWith(WRONG_PASSWORD_SAME_LENGTH);
+          answeredInWindow.push(`${String(response.status)} ${await response.text()}`);
+        }
+        // Taken before the eleventh, so the one derivation apiece is judged on the ten alone.
+        const derivedBeforeEleventh = [...derivations];
+        return {
+          answered: answeredInWindow,
+          derivedForTen: derivedBeforeEleventh,
+          eleventh: await attemptWith(PASSWORD),
+        };
+      },
+    );
+
     // Ten wrong guesses are each answered on their merits, with one derivation apiece.
-    const answered: string[] = [];
-    for (let attempt = 0; attempt < 10; attempt += 1) {
-      const response = await attemptWith(WRONG_PASSWORD_SAME_LENGTH);
-      answered.push(`${String(response.status)} ${await response.text()}`);
-    }
     expect(answered).toEqual(
       Array.from({ length: 10 }, () => '401 {"error":"AUTH_CURRENT_PASSWORD_REJECTED"}'),
     );
-    expect(derivations).toEqual(Array.from({ length: 10 }, () => "verify"));
+    expect(derivedForTen).toEqual(Array.from({ length: 10 }, () => "verify"));
 
     // The eleventh carries the right password and is still refused, before any derivation, in
     // the shape every other limited route in the module answers with.
-    const eleventh = await attemptWith(PASSWORD);
     expect(eleventh.status).toBe(429);
     expect(await eleventh.text()).toBe('{"error":"AUTH_RATE_LIMITED"}');
     expect(eleventh.headers.get("content-type")).toBe("application/json");
@@ -1234,7 +1261,7 @@ describe("the per-person change-password limit (008A-AC-012)", () => {
       { clientAddress: nextClientAddress() },
     );
     expect(after.status).toBe(200);
-  });
+  }, 30_000);
 });
 
 describe("the shell after a password sign-in (006A-AC-028)", () => {
@@ -1604,14 +1631,23 @@ describe("the per-address limit when no address is presented (D4)", () => {
     // not fresh by construction. It is cleared here, and by nothing else.
     await resetRateLimitKey(pool, keyHash);
 
-    const statuses: number[] = [];
-    for (let attempt = 0; attempt < 21; attempt += 1) {
-      const response = await signIn(
-        { email: "no-address-probe@oalo.invalid", password: PASSWORD },
-        { withoutClientAddress: true },
-      );
-      statuses.push(response.status);
-    }
+    // All twenty-one have to be counted in one window. The window opens on the database clock, so
+    // a run that crossed an edge would restart the count and never reach its 429.
+    const statuses = await withinOneRateLimitWindow(
+      pool,
+      AUTH_RATE_LIMITS.sign_in_ip.windowSeconds,
+      async () => {
+        const answered: number[] = [];
+        for (let attempt = 0; attempt < 21; attempt += 1) {
+          const response = await signIn(
+            { email: "no-address-probe@oalo.invalid", password: PASSWORD },
+            { withoutClientAddress: true },
+          );
+          answered.push(response.status);
+        }
+        return answered;
+      },
+    );
 
     expect(statuses.slice(0, 20).every((status) => status === 401)).toBe(true);
     expect(statuses.indexOf(429)).toBe(20);
@@ -1620,7 +1656,61 @@ describe("the per-address limit when no address is presented (D4)", () => {
       (row) => row.keyHash === keyHash,
     );
     expect(stored.map((row) => row.attemptCount)).toEqual([21]);
-  });
+  }, 30_000);
+});
+
+describe("the window alignment the rate-limit proofs stand on", () => {
+  /**
+   * `platform.consume_auth_rate_limit` opens its window on the database clock, and no dependency of
+   * the handler reaches that clock, so a proof cannot pin the window. It can only decline to start
+   * spending where an edge is close. A 900 second window has an edge once in fifteen minutes, so
+   * this forces one on a three second window instead: it waits until the database clock is a few
+   * hundred milliseconds from the end of its window, which is where the sign-in proof above stood
+   * when it failed on 2026-10-01 at 09:45:00 UTC, and then asks for a run that needs a full second.
+   */
+  it("moves a run that would cross an edge into the next window, where the database counts it", async () => {
+    const credentials = resolveRuntimeCampaignCommandPorts(environment).credentials;
+    expect(credentials).toBeDefined();
+    const windowSeconds = 3;
+    const windowMs = windowSeconds * 1_000;
+    const budgetMs = 1_000;
+    const keyHash = createHash("sha256").update("window-alignment-proof").digest("hex");
+    await resetRateLimitKey(pool, keyHash);
+
+    let forcedAt = await readDatabaseClockMilliseconds(pool);
+    while (windowMs - (forcedAt % windowMs) > 400 || windowMs - (forcedAt % windowMs) < 150) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      forcedAt = await readDatabaseClockMilliseconds(pool);
+    }
+    const forcedWindow = forcedAt - (forcedAt % windowMs);
+
+    const startedAt = await withinOneRateLimitWindow(
+      pool,
+      windowSeconds,
+      async () => {
+        const at = await readDatabaseClockMilliseconds(pool);
+        await credentials?.consumeRateLimit({
+          scope: "sign_in_ip",
+          keyHash,
+          attemptLimit: 100,
+          windowSeconds,
+        });
+        return at;
+      },
+      budgetMs,
+    );
+
+    // It waited the edge out, so the run began in the window after the one it was asked in, ...
+    const startedWindow = startedAt - (startedAt % windowMs);
+    expect(startedWindow).toBe(forcedWindow + windowMs);
+    // ... with the whole budget still ahead of it, ...
+    expect(windowMs - (startedAt - startedWindow)).toBeGreaterThanOrEqual(budgetMs);
+    // ... and the window it reasons about is the one the database function actually used.
+    const stored = (await readAuthRateLimitRows(pool, "sign_in_ip")).filter(
+      (row) => row.keyHash === keyHash,
+    );
+    expect(stored.map((row) => Date.parse(row.windowStart))).toEqual([startedWindow]);
+  }, 15_000);
 });
 
 /**

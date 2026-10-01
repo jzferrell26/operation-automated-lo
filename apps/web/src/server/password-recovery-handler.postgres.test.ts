@@ -19,6 +19,7 @@ import {
   type SeededLocation,
 } from "./campaign-route-postgres-support.js";
 import {
+  AUTH_RATE_LIMITS,
   SIGN_IN_CHOICE_AFTER_PASSWORD_RESET_PATH,
   flushAuthBackgroundWork,
   handleForgotPassword,
@@ -45,6 +46,7 @@ import {
   tokenHashOf,
   verificationLinkTokenFrom,
   withCapturedLogLines,
+  withinOneRateLimitWindow,
   type RouteEnvironmentSwapper,
 } from "./password-authentication-support.js";
 import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
@@ -345,18 +347,28 @@ describe("POST /api/auth/forgot-password (006A-AC-017)", () => {
       countCredentialTokens(pool, { userId: limitUserId, purpose: "password_reset" });
     expect(await tokens()).toBe(0);
 
-    const issued: number[] = [];
-    for (let attempt = 0; attempt < 7; attempt += 1) {
-      const response = await forgot(LIMIT_EMAIL, nextClientAddress());
-      expect(response.status).toBe(200);
-      expect(await response.text()).toBe('{"state":"sent"}');
-      await flushAuthBackgroundWork();
-      issued.push(await tokens());
-    }
+    // The counter that binds is the per-email one, so all seven have to be counted in one of its
+    // windows, which opens on the database clock: a run that crossed an edge would restart the
+    // count and a sixth link would be issued.
+    const issued = await withinOneRateLimitWindow(
+      pool,
+      AUTH_RATE_LIMITS.forgot_email.windowSeconds,
+      async () => {
+        const issuedInWindow: number[] = [];
+        for (let attempt = 0; attempt < 7; attempt += 1) {
+          const response = await forgot(LIMIT_EMAIL, nextClientAddress());
+          expect(response.status).toBe(200);
+          expect(await response.text()).toBe('{"state":"sent"}');
+          await flushAuthBackgroundWork();
+          issuedInWindow.push(await tokens());
+        }
+        return issuedInWindow;
+      },
+    );
 
     // Five links in an hour, then nothing more, and the body never changes.
     expect(issued).toEqual([1, 2, 3, 4, 5, 5, 5]);
-  });
+  }, 30_000);
 });
 
 describe("POST /api/auth/reset-password (006A-AC-018)", () => {
@@ -765,31 +777,35 @@ describe("POST /api/auth/sign-up (006A-AC-020 and 021)", () => {
   it("refuses the eleventh sign-up from one client address in an hour (006A-AC-015)", async () => {
     await deployment.swap(signUpEnabledEnvironment(), async () => {
       const address = nextClientAddress();
-      for (let attempt = 0; attempt < 10; attempt += 1) {
-        const allowed = await handlePasswordSignUp(
+      // All eleven have to be counted in one window, which opens on the database clock: a run
+      // that crossed an edge would restart the count and the eleventh would not be refused.
+      await withinOneRateLimitWindow(pool, AUTH_RATE_LIMITS.sign_up_ip.windowSeconds, async () => {
+        for (let attempt = 0; attempt < 10; attempt += 1) {
+          const allowed = await handlePasswordSignUp(
+            authRequest(
+              "/api/auth/sign-up",
+              {
+                name: "Rate Probe",
+                email: `rate-probe-${String(attempt)}@oalo.invalid`,
+                password: "short",
+              },
+              { clientAddress: address },
+            ),
+          );
+          expect(allowed.status).toBe(400);
+        }
+
+        const refused = await handlePasswordSignUp(
           authRequest(
             "/api/auth/sign-up",
-            {
-              name: "Rate Probe",
-              email: `rate-probe-${String(attempt)}@oalo.invalid`,
-              password: "short",
-            },
+            { name: "Rate Probe", email: "rate-probe-10@oalo.invalid", password: PASSWORD },
             { clientAddress: address },
           ),
         );
-        expect(allowed.status).toBe(400);
-      }
-
-      const refused = await handlePasswordSignUp(
-        authRequest(
-          "/api/auth/sign-up",
-          { name: "Rate Probe", email: "rate-probe-10@oalo.invalid", password: PASSWORD },
-          { clientAddress: address },
-        ),
-      );
-      expect(refused.status).toBe(429);
+        expect(refused.status).toBe(429);
+      });
     });
-  });
+  }, 30_000);
 
   it("sends and confirms an email only when a sending domain is configured (006A-AC-021)", async () => {
     const recorder = createFetchRecorder();

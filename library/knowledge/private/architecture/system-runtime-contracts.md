@@ -1,6 +1,6 @@
 # System Runtime Contracts
 
-> Category: Architecture | Version: 1.0 | Date: July 2026 | Status: Active
+> Category: Architecture | Version: 1.2 | Date: October 2026 | Status: Active
 
 The exact HTTP, command, event, task, provider-operation, session, and failure contracts that connect the Operation Automated LO runtime.
 
@@ -66,7 +66,7 @@ Provider bodies, stack traces, SQL details, secret identifiers, and cross-tenant
 | --- | --- | --- |
 | `GET /api/health/live` | Process liveness, no dependency checks | `200` |
 | `GET /api/health/ready` | Safe readiness summary for web dependencies | `200` or `503` |
-| `GET /api/version` | Commit, schema compatibility, and build metadata without secrets | `200` |
+| `GET /api/version` | The environment, the build id, and the commit, and nothing else, to every caller. The route takes no request and resolves no principal (`apps/web/src/app/api/version/route.ts`, PRD-008a `008A-AC-019`) | `200`, or `503` with `CONFIGURATION_INVALID` when the runtime environment fails validation |
 
 Readiness is deployment and monitoring infrastructure, not a public database diagnostic.
 
@@ -395,5 +395,6 @@ Every database read returns an explicit response DTO, not an unrestricted ORM re
 
 ## Changelog
 
+- v1.2 (2026-10-01): `GET /api/version` now lists the three fields the route returns (`environment`, `buildId`, `commit`) and its `503` answer, replacing "schema compatibility", which the route stopped returning in PRD-008a (`008A-AC-019`). The header version read 1.0 although this changelog already recorded v1.1; it now reads 1.2.
 - v1.1 (2026-07): Added pinned embedded-token verification, per-handler authorization, CSRF, origin, handoff, rate-limit, and server-to-client DTO contracts.
 - v1.0 (2026-07): Defined HTTP surfaces, command and event envelopes, task catalog, provider error taxonomy, sessions, approvals, lead routing, and billing contracts.

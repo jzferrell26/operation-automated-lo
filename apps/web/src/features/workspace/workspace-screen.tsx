@@ -307,7 +307,7 @@ function Routing({ data }: { data: WorkspacePageData }) {
             title: "Property valuations",
             ready: data.valuationConfigured,
             detail: data.valuationConfigured
-              ? "A valuation adapter is configured for this workspace. Each new lookup still requires an allowance and a confirmed request."
+              ? "Your valuation connection is set up for this workspace. Each new lookup counts against your monthly allowance, and you confirm each one before it runs."
               : "A valuation connection and an approved workspace allowance are needed before requesting live values.",
           },
           {

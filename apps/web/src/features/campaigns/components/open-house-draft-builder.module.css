@@ -69,7 +69,7 @@
   margin: 0;
 }
 .campaignCard h2 {
-  font-size: inherit;
+  font-size: var(--text-card-size);
   font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
 }

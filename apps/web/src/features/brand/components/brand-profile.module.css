@@ -78,7 +78,6 @@
 
 .section {
   display: grid;
-  max-inline-size: none;
   gap: var(--space-4);
 }
 

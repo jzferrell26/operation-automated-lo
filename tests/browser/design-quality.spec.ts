@@ -11,6 +11,7 @@ import {
   expectThePageFillsTheContentColumn,
   expectThePageOpensAtTheTopOfItsContent,
   expectThemeResolved,
+  expectTypographyOnBrief,
   expectZeroMotionUnderReducedMotion,
   screenshotName,
   settleForScreenshot,
@@ -134,6 +135,9 @@ for (const { screen, path } of SYNTHETIC_SCREENS.filter(
         // Axis 7.
         await expectNoHorizontalOverflow(page);
         await expectTargetsAreLargeEnough(page);
+        // Axis 3: the body step at the root, every text at a step, every timestamp in the data
+        // font (rubric section 5, D-009).
+        await expectTypographyOnBrief(page);
         // Axes 1, 2, 3, 8 and 10, as far as a machine can hold them: the whole composition is
         // compared against a committed baseline, so any of them moving is a failure with a picture.
         await warmFullPageCapture(page);
@@ -378,26 +382,61 @@ test("every notice title carries the informational tone, whatever order the styl
  * 1180 the overview's four metric cards are narrower than a title and a label side by side, so
  * "Not connected" was clipped and "Needs a refresh" ran outside its card. The page-level overflow
  * check cannot see either, because nothing scrolls sideways.
+ *
+ * Rubric section 5, D-010 (ruled 2026-10-01). The same holds for the value, measured by the glyphs
+ * it draws rather than by its box, because a value that overruns its card overruns inside a box
+ * that does not grow: the bootstrap `section { max-width: 44rem }` put four cards in 704px at 1440,
+ * and "Unavailable" painted over its card's border. The ruling asks for both themes, because each
+ * theme is its own rendering of every card. And the overview takes its whole content column, as
+ * the campaigns list does, instead of the 704px strip the cap centred in it.
  */
-test("every metric card keeps its state label inside the card at every frame", async ({ page }) => {
-  await blockAnythingOffOrigin(page);
-  await useStoredTheme(page, "light");
-  await page.goto("/overview");
-  for (const frame of REVIEW_FRAMES) {
-    await page.setViewportSize({ width: frame.width, height: frame.height });
-    await settleForScreenshot(page);
-    const escaped = await page.locator(".oalo-metric").evaluateAll((cards) =>
-      cards.flatMap((card) => {
-        const box = card.getBoundingClientRect();
-        return [...card.querySelectorAll(".oalo-state-label")]
-          .map((label) => label.getBoundingClientRect())
-          .filter((label) => label.left < box.left - 0.5 || label.right > box.right + 0.5)
-          .map(() => card.querySelector(".oalo-metric__label")?.textContent ?? "a metric");
-      }),
-    );
-    expect(escaped, `at ${frame.name} a state label leaves its card`).toEqual([]);
-  }
-});
+for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
+  test(`every metric card keeps its state label and its value inside the card at every frame in ${theme}`, async ({
+    page,
+  }) => {
+    await blockAnythingOffOrigin(page);
+    await useStoredTheme(page, theme);
+    await page.goto("/overview");
+    await expectThemeResolved(page, theme);
+    for (const frame of REVIEW_FRAMES) {
+      await page.setViewportSize({ width: frame.width, height: frame.height });
+      await settleForScreenshot(page);
+      const escaped = await page.locator(".oalo-metric").evaluateAll((cards) =>
+        cards.flatMap((card) => {
+          const name = card.querySelector(".oalo-metric__label")?.textContent ?? "a metric";
+          const box = card.getBoundingClientRect();
+          const style = getComputedStyle(card);
+          const contentLeft =
+            box.left +
+            Number.parseFloat(style.borderLeftWidth) +
+            Number.parseFloat(style.paddingLeft);
+          const contentRight =
+            box.right -
+            Number.parseFloat(style.borderRightWidth) -
+            Number.parseFloat(style.paddingRight);
+          const labels = [...card.querySelectorAll(".oalo-state-label")]
+            .map((label) => label.getBoundingClientRect())
+            .filter((label) => label.left < box.left - 0.5 || label.right > box.right + 0.5)
+            .map(() => `${name}: its state label leaves the card`);
+          const values = [...card.querySelectorAll(".oalo-metric__value")]
+            .map((value) => {
+              const glyphs = document.createRange();
+              glyphs.selectNodeContents(value);
+              return { text: value.textContent ?? "", box: glyphs.getBoundingClientRect() };
+            })
+            .filter(
+              ({ box: drawn }) =>
+                drawn.left < contentLeft - 0.5 || drawn.right > contentRight + 0.5,
+            )
+            .map(({ text }) => `${name}: its value "${text}" leaves the card's content box`);
+          return [...labels, ...values];
+        }),
+      );
+      expect.soft(escaped, `at ${frame.name} in ${theme}`).toEqual([]);
+      await expectThePageFillsTheContentColumn(page);
+    }
+  });
+}
 
 /**
  * PRD-006d D3's named states on the create screen and on a campaign a person has actually saved.

@@ -303,10 +303,6 @@
   min-inline-size: 0;
 }
 
-.shell[data-dashboard-preview="true"] .content section {
-  max-inline-size: none;
-}
-
 /* PRD-006d 006D-AC-003. The drawer is the `Dialog` primitive at its
  * `inline-start` placement, so the layer, the scrim, the trap, the scroll lock
  * and the close control are all the primitive's. This wrapper is nothing but

@@ -241,6 +241,151 @@ export async function expectTargetsAreLargeEnough(page: Page): Promise<void> {
   expect(undersized).toEqual([]);
 }
 
+/**
+ * Design brief section 10's six type steps, in CSS pixels at the browser's 16px root: page title,
+ * section title, card title, body, secondary, and caption. The tokens are `rem`, so these are the
+ * values they compute to while the root stays 16px, which the check below also asserts.
+ */
+export const TYPE_STEP_PIXELS = Object.freeze([23, 17, 14, 13, 11.5, 10.5] as const);
+
+/**
+ * Text the type-step check does not hold to the six steps, each named with the reason, the way
+ * `tooling/tests/unit/design-quality/governed-controls.test.ts` names its exceptions. A selector
+ * here has to be argued for once and is then visible to the next reviewer; nothing is exempt by
+ * default. It is empty: after the D-009 fix every visible text measured at a step, on the synthetic
+ * screens on a workstation and on the review project's screens on the runner.
+ */
+export const TEXT_OFF_THE_TYPE_STEPS: readonly Readonly<{ selector: string; because: string }>[] =
+  Object.freeze([]);
+
+/**
+ * Rubric axis 3 and rubric section 5, D-009 (ruled 2026-10-01): the body step is applied at the
+ * root of inheritance and every text on the screen is at one of the brief's six steps.
+ *
+ * Three claims. `html` computes 16px, because every step is a `rem` token and a smaller root would
+ * shrink all six. `body` computes 13px, the body step, so text no module sizes reads at the body
+ * step instead of the browser's 16px. And every visible element that carries text of its own (a
+ * text node with a box on screen, or a field showing a value) renders at one of the six steps.
+ *
+ * Before the fix the overview's section titles were 24px, above its 23px page title, and the
+ * campaigns list's lead was 16px, above every card title on the page. A picture is only compared
+ * on the runner that drew it, so this measures the sizes everywhere. The check proves a size is a
+ * step; the review still proves it is the right step for its role.
+ */
+export async function expectTextAtTheTypeSteps(page: Page): Promise<void> {
+  const measured = await page.evaluate(
+    ({ steps, exceptions }) => {
+      const size = (element: Element): number =>
+        Number.parseFloat(getComputedStyle(element).fontSize);
+      const describe = (element: Element, text: string): string =>
+        `${element.tagName.toLowerCase()}${element.className.toString() === "" ? "" : `.${element.className.toString().split(" ")[0] ?? ""}`} "${text.trim().slice(0, 40)}"`;
+      const exempt = (element: Element): boolean =>
+        exceptions.some((exception) => element.closest(exception) !== null);
+      const offStep = new Set<string>();
+      const check = (element: Element, text: string): void => {
+        if (exempt(element)) return;
+        const pixels = size(element);
+        if (steps.some((step) => Math.abs(step - pixels) < 0.01)) return;
+        offStep.add(`${describe(element, text)} at ${String(pixels)}px`);
+      };
+
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      const seen = new Set<Element>();
+      for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+        const text = node.textContent ?? "";
+        const element = node.parentElement;
+        if (text.trim() === "" || element === null || seen.has(element)) continue;
+        seen.add(element);
+        if (!element.checkVisibility({ visibilityProperty: true })) continue;
+        // Text that draws no glyph box (a closed disclosure's body, an empty layout) is not text a
+        // person reads, so it is not measured.
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const drawn = [...range.getClientRects()].some(
+          (rect) => rect.width > 0.5 && rect.height > 0.5,
+        );
+        if (drawn) check(element, text);
+      }
+
+      // A field shows its value as text, but the value is not a text node, so the walk above never
+      // meets it.
+      for (const field of document.querySelectorAll(
+        "input:not([type='hidden']):not([type='checkbox']):not([type='radio']), select, textarea",
+      )) {
+        if (!field.checkVisibility({ visibilityProperty: true })) continue;
+        check(field, field.getAttribute("aria-label") ?? field.getAttribute("name") ?? "a field");
+      }
+
+      return {
+        html: size(document.documentElement),
+        body: size(document.body),
+        offStep: [...offStep],
+      };
+    },
+    {
+      steps: [...TYPE_STEP_PIXELS],
+      exceptions: TEXT_OFF_THE_TYPE_STEPS.map((exception) => exception.selector),
+    },
+  );
+
+  expect.soft(measured.html, "html stays at the browser's 16px root").toBe(16);
+  expect.soft(measured.body, "body carries the 13px body step").toBe(13);
+  expect.soft(measured.offStep, "text rendered between the brief's six type steps").toEqual([]);
+}
+
+/**
+ * A date as this product writes one: "Jul 21, 2026", "7/21/2026", or "2026-07-21", each with or
+ * without a time after it.
+ */
+const TIMESTAMP_PATTERN =
+  /\b(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2})\b/u;
+
+/**
+ * Design brief section 10 and rubric axis 3: timestamps use the data font.
+ *
+ * PRD-008d, the second redraw of 2026-10-01. Outside its two tables the reports screen wrote every
+ * timestamp and date ("Jul 21, 2026, 2:30 PM", "2026-07-27") in the interface face, 22 of them at
+ * 1440; the overview's activity and attention queue, onboarding's evidence, and campaign detail's
+ * launch schedule did the same, and the saved campaign's open-house window and decision time sat in
+ * running text. Every one is now a `time` element, which the global stylesheet sets in the data
+ * font. This holds the rule from the outside, on every photographed screen: any visible text that
+ * reads as a date is drawn in the data font, whichever element carries it.
+ */
+export async function expectTimestampsInTheDataFont(page: Page): Promise<void> {
+  const sans = await page.evaluate((source) => {
+    const pattern = new RegExp(source, "u");
+    const probe = document.createElement("span");
+    probe.style.fontFamily = "var(--font-data)";
+    probe.style.display = "none";
+    document.body.append(probe);
+    const dataFamily = getComputedStyle(probe).fontFamily;
+    probe.remove();
+
+    const found = new Set<string>();
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+      const text = node.textContent ?? "";
+      const element = node.parentElement;
+      if (element === null || !pattern.test(text)) continue;
+      if (!element.checkVisibility({ visibilityProperty: true })) continue;
+      if (getComputedStyle(element).fontFamily === dataFamily) continue;
+      found.add(`${element.tagName.toLowerCase()} "${text.trim().slice(0, 60)}"`);
+    }
+    return [...found];
+  }, TIMESTAMP_PATTERN.source);
+
+  expect.soft(sans, "a timestamp drawn in the interface face").toEqual([]);
+}
+
+/**
+ * Rubric axis 3, the two typography gates together, so every place that takes a picture runs both
+ * with one call and none of them can run one and forget the other.
+ */
+export async function expectTypographyOnBrief(page: Page): Promise<void> {
+  await expectTextAtTheTypeSteps(page);
+  await expectTimestampsInTheDataFont(page);
+}
+
 /** Everything the browser's own sequential navigation can land on. */
 const FOCUSABLE_SELECTOR = [
   "a[href]",
@@ -911,6 +1056,7 @@ export async function captureNamedState(
     await expectAxeClean(page, input.axe ?? {});
     await expectNoHorizontalOverflow(page);
     await expectTargetsAreLargeEnough(page);
+    await expectTypographyOnBrief(page);
     const fullPage = input.fullPage ?? true;
     if (fullPage) await warmFullPageCapture(page);
     await expect(page).toHaveScreenshot(

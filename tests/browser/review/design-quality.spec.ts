@@ -10,6 +10,7 @@ import {
   expectPanelFooterIsOnScreen,
   expectTargetsAreLargeEnough,
   expectThemeResolved,
+  expectTypographyOnBrief,
   expectZeroMotionUnderReducedMotion,
   parkThePointer,
   screenshotName,
@@ -179,6 +180,7 @@ for (const { screen, path } of ACCOUNT_SCREENS) {
         await expectAxeClean(page);
         await expectNoHorizontalOverflow(page);
         await expectTargetsAreLargeEnough(page);
+        await expectTypographyOnBrief(page);
         await expect(page).toHaveScreenshot(screenshotName(screen, frame.name, theme), {
           fullPage: true,
         });
@@ -296,6 +298,7 @@ test("change-password meets the design quality bar at every frame in both themes
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
       await expectTargetsAreLargeEnough(page);
+      await expectTypographyOnBrief(page);
       await expect(page).toHaveScreenshot(screenshotName("change-password", frame.name, theme), {
         fullPage: true,
       });
@@ -372,6 +375,7 @@ test("the workspace after a saved password meets the design quality bar", async 
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
       await expectTargetsAreLargeEnough(page);
+      await expectTypographyOnBrief(page);
       await expect(page).toHaveScreenshot(
         screenshotName("reset-password", frame.name, theme, "saved-notice"),
         { fullPage: true },
@@ -479,6 +483,7 @@ test("the guided setup's steps 1 and 2 meet the bar at every frame, in both them
 
       await expectAxeClean(page);
       await expectTargetsAreLargeEnough(page);
+      await expectTypographyOnBrief(page);
       /**
        * PRD-006d's reopened row 2. The committed step-1 baseline at 1440 showed the panel's
        * footer controls below the fold, and nothing here said so: a screenshot that is only
@@ -497,6 +502,7 @@ test("the guided setup's steps 1 and 2 meet the bar at every frame, in both them
       await settleForScreenshot(page);
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
+      await expectTypographyOnBrief(page);
       await expectPanelFooterIsOnScreen(page, frame);
       await parkThePointer(page);
       await expect(page).toHaveScreenshot(

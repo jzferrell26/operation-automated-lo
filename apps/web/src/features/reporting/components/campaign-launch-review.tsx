@@ -146,11 +146,19 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
               </div>
               <div>
                 <dt>Start date</dt>
-                <dd>{campaign.launchSummary.schedule.startDate}</dd>
+                <dd>
+                  <time dateTime={campaign.launchSummary.schedule.startDate}>
+                    {campaign.launchSummary.schedule.startDate}
+                  </time>
+                </dd>
               </div>
               <div>
                 <dt>End date</dt>
-                <dd>{campaign.launchSummary.schedule.endDate}</dd>
+                <dd>
+                  <time dateTime={campaign.launchSummary.schedule.endDate}>
+                    {campaign.launchSummary.schedule.endDate}
+                  </time>
+                </dd>
               </div>
               <div>
                 <dt>Timezone</dt>

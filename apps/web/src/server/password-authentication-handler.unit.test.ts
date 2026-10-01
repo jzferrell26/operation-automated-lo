@@ -16,6 +16,7 @@ import {
   type CampaignCommandPorts,
   type FirstPartySessionIssuancePort,
 } from "./authenticated-principal.js";
+import { CORRELATION_REFERENCE_HEADER } from "./correlation-boundary.js";
 import type { CredentialPort, PasswordCredential } from "./credential-ports.js";
 import type { TransactionalEmailMessage } from "./email/transactional-email.js";
 import {
@@ -555,17 +556,13 @@ describe("sign-in does the same awaited work for every address (M-1)", () => {
   /**
    * Deploy order. If this code reaches the hosted app before the migration that creates
    * `platform.record_sign_in_without_account`, the no-account write fails with PostgreSQL's
-   * undefined-function error. The answer must still be the one 401, nothing may be logged, and
-   * a known account must be untouched: it never calls the new function, so its failure count
-   * still lands before the answer and its correct password still signs it in.
+   * undefined-function error. The answer must still be the one 401, the failure must leave exactly
+   * the one fixed line of L-15 and nothing else, and a known account must be untouched: it never
+   * calls the new function, so its failure count still lands before the answer and its correct
+   * password still signs it in.
    */
   it("still answers the one 401 before the migration lands, and a known account still signs in", async () => {
-    const lines: string[] = [];
-    for (const level of ["debug", "error", "info", "log", "warn"] as const) {
-      vi.spyOn(console, level).mockImplementation((...args: unknown[]) => {
-        lines.push(args.map(String).join(" "));
-      });
-    }
+    const logged = captureConsoleLines();
     const missingFunction = async (): Promise<void> => {
       throw Object.assign(
         new Error("function platform.record_sign_in_without_account(text) does not exist"),
@@ -601,8 +598,198 @@ describe("sign-in does the same awaited work for every address (M-1)", () => {
     expect(cookie).toContain("SameSite=Lax");
     expect(signedIn.calls).not.toContain("recordSignInWithoutAccount");
 
-    expect(lines).toEqual([]);
-    vi.restoreAllMocks();
+    // Only the unknown branch failed a write, and it left the one line L-15 asks for.
+    expect(logged.all).toHaveLength(1);
+    expect(logged.error).toEqual([noAccountFailureLine("42883")]);
+  });
+});
+
+/**
+ * L-15 of the PRD-008 close-out security audit. The no-account write's failure is swallowed, so
+ * the 401 never changes, but a persistent failure (step 0 skipped, a lost grant, a key the
+ * definer refuses) would otherwise leave no signal while the sign-in timing protection degrades.
+ * The catch leaves one fixed line per process, at error level, carrying a short SQLSTATE token and
+ * nothing else. The thrown error below carries every value the line must not: the client address,
+ * the key hash, the email that was tried, the correlation reference, and a driver message.
+ */
+const NO_ACCOUNT_KEY_HASH = rateLimitKeyHash(
+  CSRF_SERVER_SECRET,
+  "sign_in_no_account",
+  CLIENT_ADDRESS,
+);
+const DRIVER_DETAIL = "driver-detail-that-must-stay-out-of-the-log";
+const DRIVER_MESSAGE = `permission denied for function record_sign_in_without_account, key ${NO_ACCOUNT_KEY_HASH}, address ${CLIENT_ADDRESS}, email ${UNKNOWN_ADDRESS}, ${DRIVER_DETAIL}`;
+
+function noAccountFailureLine(token: string): string {
+  return `password-authentication: the sign-in no-account write (platform.record_sign_in_without_account) failed with SQLSTATE ${token}; sign-in timing protection is degraded until the database function works.`;
+}
+
+interface CapturedConsole {
+  /** Every line any level received, in order. */
+  readonly all: string[];
+  /** The lines written at error level. */
+  readonly error: string[];
+  /** The raw arguments of each error-level call. */
+  readonly errorArguments: unknown[][];
+}
+
+/**
+ * Captures into arrays of its own rather than reading `mock.calls`, so a spy left over from an
+ * earlier test in this file can never add calls to what a proof counts.
+ */
+function captureConsoleLines(): CapturedConsole {
+  const captured: CapturedConsole = { all: [], error: [], errorArguments: [] };
+  for (const level of ["debug", "error", "info", "log", "warn"] as const) {
+    vi.spyOn(console, level).mockImplementation((...args: unknown[]) => {
+      const line = args.map(String).join(" ");
+      captured.all.push(line);
+      if (level === "error") {
+        captured.error.push(line);
+        captured.errorArguments.push(args);
+      }
+    });
+  }
+  return captured;
+}
+
+function failingNoAccountWrite(failure: unknown): () => Promise<void> {
+  return async () => {
+    throw failure;
+  };
+}
+
+function driverError(code?: unknown): Error {
+  return Object.assign(new Error(DRIVER_MESSAGE), code === undefined ? {} : { code });
+}
+
+describe("a failed no-account write leaves one fixed line per process (L-15)", () => {
+  it("logs once for the first failure and not again for the second in the same process", async () => {
+    const logged = captureConsoleLines();
+    const write = failingNoAccountWrite(driverError("42501"));
+
+    await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD, { recordSignInWithoutAccount: write });
+    expect(logged.all).toHaveLength(1);
+    await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD, { recordSignInWithoutAccount: write });
+    await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD, { recordSignInWithoutAccount: write });
+
+    expect(logged.all).toHaveLength(1);
+    expect(logged.error).toHaveLength(1);
+  });
+
+  it("is one error-level argument naming the operation, the token, and the degraded protection", async () => {
+    const logged = captureConsoleLines();
+
+    await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD, {
+      recordSignInWithoutAccount: failingNoAccountWrite(driverError("42501")),
+    });
+
+    expect(logged.errorArguments).toEqual([[noAccountFailureLine("42501")]]);
+    expect(logged.all).toEqual(logged.error);
+    const line = logged.error[0] ?? "";
+    expect(line).toContain("record_sign_in_without_account");
+    expect(line).toContain("SQLSTATE 42501");
+    expect(line).toContain(
+      "sign-in timing protection is degraded until the database function works",
+    );
+  });
+
+  it("carries none of the address, the key hash, the email, the correlation reference, or the driver message", async () => {
+    const logged = captureConsoleLines();
+
+    const run = await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD, {
+      recordSignInWithoutAccount: failingNoAccountWrite(driverError("42883")),
+    });
+
+    const correlationRef = run.response.headers.get(CORRELATION_REFERENCE_HEADER);
+    expect(correlationRef).toMatch(/^correlation_signIn_[0-9a-f]{24}$/u);
+    expect(logged.all).toHaveLength(1);
+    const line = logged.all[0] ?? "";
+    for (const forbidden of [
+      CLIENT_ADDRESS,
+      NO_ACCOUNT_KEY_HASH,
+      rateLimitKeyHash(CSRF_SERVER_SECRET, "sign_in_ip", CLIENT_ADDRESS),
+      UNKNOWN_ADDRESS,
+      UNKNOWN_ADDRESS.split("@")[0] ?? UNKNOWN_ADDRESS,
+      WRONG_PASSWORD,
+      correlationRef ?? "unreachable",
+      "sign-in-unit-proof",
+      DRIVER_MESSAGE,
+      DRIVER_DETAIL,
+      "permission denied",
+    ]) {
+      expect(line).not.toContain(forbidden);
+    }
+    expect(line).toBe(noAccountFailureLine("42883"));
+  });
+
+  it("falls back to the fixed word unknown unless the code is a five-character alphanumeric string", async () => {
+    const tokens: string[] = [];
+    const cases: readonly unknown[] = [
+      driverError(),
+      driverError("ECONNRESET"),
+      driverError("42 83"),
+      driverError("4288"),
+      driverError(42883),
+      driverError("42883\nforged log line"),
+      new Error(DRIVER_MESSAGE),
+      DRIVER_MESSAGE,
+      null,
+      undefined,
+    ];
+    for (const failure of cases) {
+      const logged = captureConsoleLines();
+      await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD, {
+        recordSignInWithoutAccount: failingNoAccountWrite(failure),
+      });
+      tokens.push(logged.error.join("|"));
+      resetAuthHandlerProcessStateForTests();
+      vi.restoreAllMocks();
+    }
+
+    expect(tokens).toEqual(cases.map(() => noAccountFailureLine("unknown")));
+  });
+
+  it("logs again in a fresh process", async () => {
+    const logged = captureConsoleLines();
+    const write = failingNoAccountWrite(driverError("42883"));
+
+    await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD, { recordSignInWithoutAccount: write });
+    resetAuthHandlerProcessStateForTests();
+    await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD, { recordSignInWithoutAccount: write });
+
+    expect(logged.error).toEqual([noAccountFailureLine("42883"), noAccountFailureLine("42883")]);
+  });
+
+  it("logs nothing when the write succeeds, and nothing for a known account's refusal", async () => {
+    const logged = captureConsoleLines();
+
+    await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD);
+    await runSignIn(KNOWN_ADDRESS, WRONG_PASSWORD, {
+      recordSignInWithoutAccount: failingNoAccountWrite(driverError("42883")),
+    });
+
+    expect(logged.all).toEqual([]);
+  });
+
+  it("answers the same 401 as a known account's wrong password, and still awaits the same work", async () => {
+    captureConsoleLines();
+    const failing = failingNoAccountWrite(driverError("42883"));
+
+    const unknown = await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD, {
+      recordSignInWithoutAccount: failing,
+    });
+    const wrong = await runSignIn(KNOWN_ADDRESS, WRONG_PASSWORD);
+
+    expect(unknown.response.status).toBe(401);
+    expect(unknown.body).toBe('{"error":"AUTH_CREDENTIALS_REJECTED"}');
+    expect(unknown.body).toBe(wrong.body);
+    expect(unknown.response.headers.get("set-cookie")).toBeNull();
+    expect([...unknown.response.headers.entries()]).toEqual([...wrong.response.headers.entries()]);
+    expect(unknown.awaitedBeforeAnswer).toEqual([
+      ...SHARED_SIGN_IN_WORK,
+      "recordSignInWithoutAccount",
+    ]);
+    expect(unknown.scheduled).toEqual([]);
   });
 });
 

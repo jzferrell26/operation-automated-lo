@@ -363,6 +363,7 @@ export function rateLimitKeyHash(
 }
 
 let loggedMissingClientAddressHeader = false;
+let loggedSignInWithoutAccountFailure = false;
 
 /**
  * D4. The one bucket every request with no recognised forwarded address is counted in.
@@ -417,6 +418,7 @@ export function clientAddressFor(request: Request): string | undefined {
 
 export function resetAuthHandlerProcessStateForTests(): void {
   loggedMissingClientAddressHeader = false;
+  loggedSignInWithoutAccountFailure = false;
 }
 
 /**
@@ -747,7 +749,16 @@ function schemaRefusal(issues: unknown): Response {
  * `supabase/migrations/20261001120000_sign_in_without_account.sql`, the call fails with
  * PostgreSQL's undefined-function error, after the same round trip, and the route still answers the
  * same 401. A known account never calls this, so its lockout and its sign-in are untouched in that
- * window. Nothing is logged, so no line can carry the address that was tried.
+ * window.
+ *
+ * L-15 of the same audit: a swallowed failure must not be a silent one, because a persistent
+ * failure (step 0 skipped, a lost grant, a key the definer refuses) leaves the response correct
+ * while the timing protection quietly degrades, and the `sign_in_no_account` counter stays empty.
+ * The catch leaves one fixed line per process, at error level so it reaches the stream a
+ * deployment watches, and it names the operation so an alert can match it. The line carries a
+ * SQLSTATE token and nothing else. The address that was tried, the key hash, the email, the
+ * correlation reference, and the driver's message are never in it: a driver message can quote the
+ * key or the statement's arguments, so only the short code is read from the error.
  */
 async function recordSignInWithoutAccount(request: Request, context: AuthContext): Promise<void> {
   const gate = context.ports.mutation;
@@ -761,8 +772,27 @@ async function recordSignInWithoutAccount(request: Request, context: AuthContext
       ),
     });
   } catch (failure) {
-    void failure;
+    if (!loggedSignInWithoutAccountFailure) {
+      loggedSignInWithoutAccountFailure = true;
+      console.error(
+        `password-authentication: the sign-in no-account write (platform.record_sign_in_without_account) failed with SQLSTATE ${sqlStateTokenFor(failure)}; sign-in timing protection is degraded until the database function works.`,
+      );
+    }
   }
+}
+
+const SQLSTATE_TOKEN_PATTERN = /^[0-9A-Za-z]{5}$/u;
+
+/**
+ * The only thing taken from a failed database call for the L-15 line: its `code`, when that is a
+ * five-character alphanumeric string, which is the shape of a SQLSTATE. Anything else, including a
+ * longer code such as `ECONNRESET`, a non-string, or a value that is not an error at all, is the
+ * fixed word `unknown`, so the token cannot carry text from the failure.
+ */
+function sqlStateTokenFor(failure: unknown): string {
+  if (typeof failure !== "object" || failure === null || !("code" in failure)) return "unknown";
+  const { code } = failure;
+  return typeof code === "string" && SQLSTATE_TOKEN_PATTERN.test(code) ? code : "unknown";
 }
 
 /**

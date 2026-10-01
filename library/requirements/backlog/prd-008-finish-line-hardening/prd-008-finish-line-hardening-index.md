@@ -114,12 +114,12 @@ Module-level criteria. Sub-PRD criteria use the `008X-AC-NNN` scheme inside each
 
 ## Owner decisions (defaults applied)
 
-The repository records two choices as the product owner's. This PRD applies the conservative default for each so the run can reach 100%. To override one, edit the named criterion before the Gauntlet starts.
+The repository records two choices as the product owner's. This PRD applies the conservative default for each so the run can reach 100%. **The product owner confirmed both defaults on 2026-09-30.** Treat them as decided, not as open overrides.
 
 | Decision | Default applied | Alternative | Criteria affected |
 |---|---|---|---|
-| OD-1. `FSG-008` (`CRR-096`) requires no unresolved Medium finding, and the batch audit left two. | **Fix both Mediums** (008a). `FSG-008` then closes on its own wording. | Amend `FSG-008` to `ARR-008`'s Critical/High wording and track the Mediums as follow-ups. | `008A-AC-010` to `008A-AC-015`, `008E-AC-004` |
-| OD-2. The password denylist is generated, not observed (Low). | **Record the Low as an accepted residual** with the rationale already in the audit. Nothing is downloaded. | Approve fetching SecLists `10-million-password-list-top-10000.txt` (MIT) and replacing the generated list. | `008A-AC-022` |
+| OD-1. `FSG-008` (`CRR-096`) requires no unresolved Medium finding, and the batch audit left two. | **Fix both Mediums** (008a). `FSG-008` then closes on its own wording. Confirmed by the product owner, 2026-09-30. | Amend `FSG-008` to `ARR-008`'s Critical/High wording and track the Mediums as follow-ups. | `008A-AC-010` to `008A-AC-015`, `008E-AC-004` |
+| OD-2. The password denylist is generated, not observed (Low). | **Record the Low as an accepted residual** with the rationale already in the audit. Nothing is downloaded. Confirmed by the product owner, 2026-09-30. | Approve fetching SecLists `10-million-password-list-top-10000.txt` (MIT) and replacing the generated list. | `008A-AC-022` |
 
 ---
 
@@ -131,8 +131,8 @@ This section is the Phase 0 input for `/the-gauntlet-glove` or `/the-raid`. A ru
 |---|---|
 | In-scope PRDs | PRD-008 only (this folder). Move it to `library/requirements/in-work/` as the run's first commit, and repair every inbound link and lifecycle label in the same commit (`008E-AC-014`). |
 | Honest completion bound | 100% of PRD-008's criteria can be closed in the repository. No criterion depends on an operator, a credential, or a live provider. A run that ends with an open PRD-008 criterion has failed. It may park a criterion as externally blocked only by naming a new fact this PRD did not know. |
-| Base | The branch that carries PRD-008, `claude/finish-line-prep-2026-09-30`, and its draft pull request. That pull request is documentation only, and it fails `Application verification` at `audit:dependencies` for exactly the reason 008a fixes. So the run continues on that branch and ships the documents and the fixes as one pull request, which ends green. The exception is when the owner has already merged the authoring pull request with the ruleset bypass (operator checklist item 0.4): then the run branches from `origin/main`. Either way, fetch `origin/main` first. If it has moved, rebase and re-check the open-item list in the Overview. |
-| Local prerequisites | Node `24.18.0` (pinned in `.nvmrc`), pnpm `11.15.1` through Corepack, and Docker Desktop with the engine running. On 2026-09-30 the authoring machine had Node `22.19.0` and no running Docker engine, and the README forbids continuing on a mismatched toolchain. If Docker is unavailable, the `Real PostgreSQL migrations and pgTAP` CI check is the authoritative `pnpm test:db` proof, and the run says so in the ledger. `gh` must be authenticated with `repo` and `workflow` scope and push rights to `jzferrell26/operation-automated-lo`, because the run pushes, dispatches `screen-baselines.yml`, and comments on and closes PR #70. Phase 0 checks this before Wave 1. |
+| Base | `origin/main`. On 2026-09-30 the product owner chose operator checklist item 0.4: the authoring pull request (#73, documentation only) merges to `main` with the ruleset bypass. Its `Application verification` check fails at `audit:dependencies` for exactly the reason 008a fixes. Branch the run from `origin/main` after #73 merges. Fetch first, and if `main` has moved beyond #73, rebase and re-check the open-item list in the Overview. If #73 is somehow still open when the run starts, continue on its branch instead and ship the documents and the fixes as one pull request. |
+| Local prerequisites | Node `24.18.0` (pinned in `.nvmrc`), pnpm `11.15.1` through Corepack, and Docker Desktop with the engine running. The README forbids continuing on a mismatched toolchain.<br><br>**Status on the authoring machine (2026-09-30):**<br>- Docker Desktop is running.<br>- Node `24.18.0` is installed through `fnm`, with Corepack enabled for it.<br>- `~/.bashrc` and the PowerShell profile select it automatically inside this repository; every other folder keeps the system Node `22.19.0`.<br>- A shell or agent session started before that setup does not see it. Phase 0 runs `node --version` inside the repository, and if it is not `v24.18.0`, starts a fresh session or runs `source ~/.bashrc` before every command.<br><br>If Docker is unavailable, the `Real PostgreSQL migrations and pgTAP` CI check is the authoritative `pnpm test:db` proof, and the run says so in the ledger. `gh` must be authenticated with `repo` and `workflow` scope and push rights to `jzferrell26/operation-automated-lo`, because the run pushes, dispatches `screen-baselines.yml`, and comments on and closes PR #70. Phase 0 checks this before Wave 1. |
 | Ledger | Append a section to `EXECUTION_LEDGER.md` titled "Gauntlet raid: finish-line hardening (PRD-008)", with one row per criterion using the row prefix `FLR-`. Do not create a new root ledger file. |
 | Actions authorized during the run | Commit and push the run branch after each wave, keeping one draft pull request open from Wave 1 onward. `FLH-002`, `008A-AC-007`, and `008D-AC-009` need that pull request, and `Preview smoke contract` runs only on pull requests. Dispatch `screen-baselines.yml` on the branch and download its artifacts. Comment on PR #70 and close it as superseded at ship, once the run's pull request number exists. Mark the pull request ready for review at ship. A Vercel Preview build that a push triggers automatically is not a deployment this PRD performs. |
 | Actions not authorized | Merging the pull request. Any write to Vercel, Supabase, Resend, RentCast, HighLevel, Meta, or Stripe. Changing any deployment environment variable. Running `supabase link`, a linked command, or `supabase config push`. Dismissing a Dependabot alert by hand. |
@@ -197,7 +197,7 @@ flowchart TD
 
 ## Open questions
 
-- [ ] None blocking. OD-1 and OD-2 have defaults applied above.
+- [x] None blocking. The product owner confirmed OD-1 and OD-2 on 2026-09-30.
 
 ---
 

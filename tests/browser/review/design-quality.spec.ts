@@ -11,6 +11,7 @@ import {
   expectTargetsAreLargeEnough,
   expectThemeResolved,
   expectZeroMotionUnderReducedMotion,
+  parkThePointer,
   screenshotName,
   settleForScreenshot,
   useStoredTheme,
@@ -486,6 +487,7 @@ test("the guided setup's steps 1 and 2 meet the bar at every frame, in both them
        */
       await expectPanelFooterIsOnScreen(page, frame, ["Let's go", "Not now"]);
       await expectTheStepPointsAtSomethingOnScreen(page, frame);
+      await parkThePointer(page);
       await expect(page).toHaveScreenshot(
         screenshotName("guided-setup", frame.name, theme, "step-1-welcome"),
       );
@@ -496,6 +498,7 @@ test("the guided setup's steps 1 and 2 meet the bar at every frame, in both them
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
       await expectPanelFooterIsOnScreen(page, frame);
+      await parkThePointer(page);
       await expect(page).toHaveScreenshot(
         screenshotName("guided-setup", frame.name, theme, "step-2-your-details"),
       );

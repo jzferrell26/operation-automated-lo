@@ -8,6 +8,7 @@ import {
   expectKeyboardReachesEveryControl,
   expectNoHorizontalOverflow,
   expectTargetsAreLargeEnough,
+  expectThePageOpensAtTheTopOfItsContent,
   expectThemeResolved,
   expectZeroMotionUnderReducedMotion,
   screenshotName,
@@ -328,6 +329,76 @@ test("no screen links to the demo route", async ({ page }) => {
 });
 
 /**
+ * Brief section 9, "blue means informational", and the notice pattern `onboarding.module.css`
+ * pinned: every "nothing goes out" notice title carries the informational tone, on every screen.
+ *
+ * PRD-008d, the scored baseline review of 2026-10-01. The title's colour was decided by the order
+ * the bundle loaded two equally specific rules in, so it was blue on some screens and dark on
+ * others, and the dependency group's Next.js swapped which. A picture is only compared on the
+ * runner that drew it, so the colour is measured here, against the token, in both themes.
+ */
+test("every notice title carries the informational tone, whatever order the styles load in", async ({
+  page,
+}) => {
+  await blockAnythingOffOrigin(page);
+  await page.setViewportSize({ width: 1180, height: 900 });
+  const notices = [
+    { path: "/marketing/campaigns/new", title: "Nothing goes out from this page" },
+    { path: "/reports", title: "Sample data, nothing live" },
+    { path: "/brand", title: "Suggestions only. You decide what's saved." },
+    { path: "/onboarding", title: "We only mark a step done after we've checked it." },
+  ] as const;
+  for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
+    await useStoredTheme(page, theme);
+    for (const notice of notices) {
+      await page.goto(notice.path);
+      await expectThemeResolved(page, theme);
+      await settleForScreenshot(page);
+      const title = page.getByRole("main").locator("strong", { hasText: notice.title }).first();
+      await expect(title, `${notice.path} in ${theme}`).toBeVisible();
+      const [actual, informational] = await title.evaluate((element) => {
+        const probe = document.createElement("span");
+        probe.style.color = "var(--st-info-fg)";
+        element.append(probe);
+        const expected = getComputedStyle(probe).color;
+        probe.remove();
+        return [getComputedStyle(element).color, expected];
+      });
+      expect(actual, `${notice.path} in ${theme}: the notice title's colour`).toBe(informational);
+    }
+  }
+});
+
+/**
+ * Rubric axis 7, layout at every frame, inside a component as well as across the page. A metric
+ * card's state label stays inside its card.
+ *
+ * PRD-008d, the scored baseline review of 2026-10-01: the label does not shrink, and at 1440 and
+ * 1180 the overview's four metric cards are narrower than a title and a label side by side, so
+ * "Not connected" was clipped and "Needs a refresh" ran outside its card. The page-level overflow
+ * check cannot see either, because nothing scrolls sideways.
+ */
+test("every metric card keeps its state label inside the card at every frame", async ({ page }) => {
+  await blockAnythingOffOrigin(page);
+  await useStoredTheme(page, "light");
+  await page.goto("/overview");
+  for (const frame of REVIEW_FRAMES) {
+    await page.setViewportSize({ width: frame.width, height: frame.height });
+    await settleForScreenshot(page);
+    const escaped = await page.locator(".oalo-metric").evaluateAll((cards) =>
+      cards.flatMap((card) => {
+        const box = card.getBoundingClientRect();
+        return [...card.querySelectorAll(".oalo-state-label")]
+          .map((label) => label.getBoundingClientRect())
+          .filter((label) => label.left < box.left - 0.5 || label.right > box.right + 0.5)
+          .map(() => card.querySelector(".oalo-metric__label")?.textContent ?? "a metric");
+      }),
+    );
+    expect(escaped, `at ${frame.name} a state label leaves its card`).toEqual([]);
+  }
+});
+
+/**
  * PRD-006d D3's named states on the create screen and on a campaign a person has actually saved.
  *
  * The draft itself, and the two open-house windows that separate a ready campaign from one that
@@ -488,7 +559,12 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
       const main = page.getByRole("main");
       await expect(main.getByRole("heading", { level: 1, name: "Your campaigns" })).toBeVisible();
       await expect(main.getByText("No campaigns yet.")).toBeVisible();
+      // Rubric axis 9: the shared `empty` state, not a card assembled on the page.
+      await expect(main.locator(".oalo-async-state[data-state='empty']")).toContainText(
+        "No campaigns yet.",
+      );
       await expect(main.getByRole("link", { name: "Open campaign" })).toHaveCount(0);
+      await expectThePageOpensAtTheTopOfItsContent(page);
       await expect(main.getByRole("link", { name: "Create an Open House Boost" })).toHaveAttribute(
         "href",
         "/marketing/campaigns/new",
@@ -542,6 +618,17 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
         await expect(cards.nth(index)).toContainText(campaign.address);
         await expect(cards.nth(index)).toContainText(campaign.verdict);
       }
+      await expectThePageOpensAtTheTopOfItsContent(page);
+      // Rubric axis 1: a card's title is never drawn larger than the page's own title.
+      const [pageTitle, cardTitle] = await Promise.all(
+        [main.getByRole("heading", { level: 1 }), cards.first().getByRole("heading")].map(
+          async (heading) =>
+            heading.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize)),
+        ),
+      );
+      expect(cardTitle, "the card title is smaller than the page title").toBeLessThan(
+        pageTitle ?? 0,
+      );
 
       await captureNamedState(page, { screen: "campaigns", state: "populated", theme });
 

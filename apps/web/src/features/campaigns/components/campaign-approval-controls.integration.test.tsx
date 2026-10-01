@@ -239,6 +239,8 @@ describe("the approval control once a decision has been recorded", () => {
       });
       expect(screen.queryByRole("button", { name: APPROVE_LABEL })).toBeNull();
       expect(screen.queryByRole("button", { name: SEND_BACK_LABEL })).toBeNull();
+      // The card keeps its own title once a decision replaces its controls.
+      expect(screen.getByText("Approve this campaign")).toBeInTheDocument();
       expect(mocked.refresh).toHaveBeenCalledTimes(1);
     },
   );

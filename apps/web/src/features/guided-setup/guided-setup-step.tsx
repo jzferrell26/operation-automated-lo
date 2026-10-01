@@ -131,6 +131,7 @@ function focusFirstControl(element: HTMLElement): void {
  * read before its height is believed.
  */
 function stickyHeaderInset(): number {
+  if (typeof document === "undefined") return 0;
   const header = document.querySelector<HTMLElement>("[data-shell-sticky-header]");
   if (header === null) return 0;
   const { position } = window.getComputedStyle(header);
@@ -414,10 +415,16 @@ export function GuidedSetupStep({
     });
   }
 
+  /**
+   * D7, "the panel never obscures the focused element or the shell's sticky header". The panel is
+   * placed against the same floor the scroll uses, so a panel beside an element near the top of the
+   * frame stops at the header's end instead of rising over its controls.
+   */
   const placement: PanelPlacement | undefined =
     typeof window === "undefined"
       ? undefined
       : resolvePanelPlacement(anchorRect, panelSize, {
+          blockStart: stickyHeaderInset(),
           height: window.innerHeight,
           width: window.innerWidth,
         });

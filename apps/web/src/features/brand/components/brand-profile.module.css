@@ -63,6 +63,13 @@
   gap: var(--space-3);
 }
 
+/* Brand's "Suggestions only" title stays in the informational tone on every build. PRD-008d's
+ * baseline review of 2026-10-01 found it drawn dark here and blue on its siblings, because two
+ * equally specific colour rules met and the bundle's order chose; the title now names its own. */
+.safetyNotice strong {
+  color: var(--st-info-fg);
+}
+
 .safetyNotice p,
 .fieldGrid p,
 .suggestionGrid p {

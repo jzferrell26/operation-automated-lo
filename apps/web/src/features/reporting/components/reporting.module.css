@@ -80,6 +80,13 @@
   margin-block: var(--space-1) 0;
 }
 
+/* The reports "Sample data, nothing live" title, pinned to the informational tone the onboarding
+ * notice already uses. Without it the dependency group's Next.js decided this title's colour by
+ * loading order (PRD-008d, baseline review of 2026-10-01). */
+.safetyNotice strong {
+  color: var(--st-info-fg);
+}
+
 .versionPicker,
 .artifactActions,
 .inlineLinks {

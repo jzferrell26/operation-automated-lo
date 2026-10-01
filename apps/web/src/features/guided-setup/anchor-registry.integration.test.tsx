@@ -92,6 +92,24 @@ describe("guided setup anchors on the screens the registry names", () => {
     }
   });
 
+  /**
+   * PRD-006c D3 step 5 and PRD-008d's scored baseline review of 2026-10-01.
+   *
+   * Step 5 explains "the campaign check result": the verdict and what the checks found. Anchored to
+   * the verdict's heading alone, the walkthrough scrolled only the heading clear and placed its
+   * panel directly below it, which is exactly where the finding cards are, so at 768 and 1180 the
+   * finding the step was explaining sat under the panel. The anchor is the section that holds both,
+   * so the scroll brings both above the panel.
+   */
+  it("points step 5 at the verdict and what the checks found together", async () => {
+    const { container } = render(<PersistedCampaignScreen campaign={await campaignProjection()} />);
+    const result = container.querySelector(anchorSelector("campaign.check.result"));
+    expect(result?.tagName).toBe("SECTION");
+    expect(result?.getAttribute("aria-labelledby")).toBe("campaign-check-title");
+    expect(result?.querySelector("#campaign-check-title")).not.toBeNull();
+    expect(result?.querySelector(anchorSelector("campaign.check.findings"))).not.toBeNull();
+  });
+
   it("renders the hand-off anchor only for someone who cannot approve", async () => {
     const approver = render(
       <PersistedCampaignScreen campaign={await campaignProjection("campaign_approver")} />,

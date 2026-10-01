@@ -98,17 +98,39 @@ export function resolvePanelPlacement(
   return {
     left: clamp(left, VIEWPORT_MARGIN, viewport.width - panel.width - VIEWPORT_MARGIN),
     side,
-    top: clamp(top, VIEWPORT_MARGIN, viewport.height - blockSize - VIEWPORT_MARGIN),
+    top: clamp(top, blockStartFloor(viewport), viewport.height - blockSize - VIEWPORT_MARGIN),
   };
+}
+
+/**
+ * The highest anything the walkthrough places may sit: the end of the shell's sticky header plus
+ * the margin, or the margin alone where there is no header.
+ *
+ * PRD-008d, the scored baseline review of 2026-10-01. The panel used to be clamped against the
+ * viewport's own edge, so a panel beside an element near the top of the frame rose over the sticky
+ * header: at 1440 on step 5 it covered the header's theme control and "Sign out", which is D7's
+ * "the panel never obscures ... the shell's sticky header" broken by the panel itself. The scroll
+ * already measured its floor from the header; the panel now uses the same floor.
+ */
+function blockStartFloor(viewport: Viewport): number {
+  return (viewport.blockStart ?? 0) + VIEWPORT_MARGIN;
 }
 
 /**
  * How far the page must scroll for the anchored element to sit clear of the panel.
  *
- * On a wide frame with room beside the element, nothing moves: the panel is not in the way. In
- * every other case the panel is below the element or across the bottom of the screen, so the
- * element has to end up above it. When the element is taller than the space that leaves, its top
- * is what stays visible: something has to go, and the first field is worth more than the last.
+ * On a wide frame with room beside the element, the panel is not in the way, so the element only
+ * has to be on screen: between the sticky header and the viewport's end, and nothing moves when it
+ * already is. In every other case the panel is below the element or across the bottom of the
+ * screen, so the element has to end up above it. When the element is taller than the space it has,
+ * its top is what stays visible: something has to go, and the first field is worth more than the
+ * last.
+ *
+ * **The beside case used to answer zero without looking.** PRD-008d, the scored baseline review of
+ * 2026-10-01: at 1440 on step 5 the result's heading sat under the sticky header with only the
+ * bottom edge of its ring showing, and the panel beside it pointed at nothing a person could read.
+ * "The panel is not in the way" was true and was not the whole promise; D7 also says the anchored
+ * element is brought into view and is never under the sticky header, at every frame.
  *
  * **This has to use the same block size `resolvePanelPlacement` clamps against, measured or not.**
  * The scroll runs once, when the step attaches, and the placement is computed on every render
@@ -127,20 +149,26 @@ export function resolveAnchorScroll(
   viewport: Viewport,
 ): number {
   const placement = resolvePanelPlacement(anchor, panel, viewport);
-  if (placement?.side === "inline-end") return 0;
-
-  const panelHeight =
-    viewport.width < SIDE_ANCHOR_MIN_WIDTH
-      ? dockedSheetBlockSize(panel, viewport)
-      : panelBlockSize(panel ?? { height: 0, width: 0 }, viewport);
-  const ceiling = viewport.height - panelHeight - PANEL_GAP - VIEWPORT_MARGIN;
   /**
    * The lowest the element's top may go. The panel owns the end of the viewport and the shell's
    * sticky topbar owns the start of it, so the space the element has is between them. Before the
    * floor took the topbar into account, an element taller than that space had its top put at the
    * margin, which is underneath the topbar, and the first control inside it was unreachable.
    */
-  const floor = (viewport.blockStart ?? 0) + VIEWPORT_MARGIN;
+  const floor = blockStartFloor(viewport);
+  /**
+   * Where the element's end may reach. Beside the panel that is the viewport's own end, less the
+   * margin; below or above a panel it is where the panel begins, less the gap.
+   */
+  const ceiling =
+    placement?.side === "inline-end"
+      ? viewport.height - VIEWPORT_MARGIN
+      : viewport.height -
+        (viewport.width < SIDE_ANCHOR_MIN_WIDTH
+          ? dockedSheetBlockSize(panel, viewport)
+          : panelBlockSize(panel ?? { height: 0, width: 0 }, viewport)) -
+        PANEL_GAP -
+        VIEWPORT_MARGIN;
 
   if (anchor.height > ceiling - floor) return anchor.top - floor;
   if (anchor.top < floor) return anchor.top - floor;

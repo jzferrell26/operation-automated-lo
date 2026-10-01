@@ -647,6 +647,73 @@ export async function expectPanelFooterIsOnScreen(
       `at ${String(frame.width)} "${name}" ends inside the frame`,
     ).toBeLessThanOrEqual(frame.width);
   }
+  await expectNothingShowsBelowThePanelFooter(page, frame);
+}
+
+/**
+ * Rubric axis 2, "vertical rhythm is consistent ... across sibling screens". A page in the shell
+ * opens at the top of the main landmark, whatever its length.
+ *
+ * PRD-008d, the scored baseline review of 2026-10-01: the bootstrap `main` rule centred a short
+ * page in the frame, so the campaigns list's title sat about 200px below every sibling page's.
+ */
+export async function expectThePageOpensAtTheTopOfItsContent(page: Page): Promise<void> {
+  const offset = await page.getByRole("main").evaluate((main) => {
+    const first = main.firstElementChild;
+    if (first === null) return undefined;
+    const paddingTop = Number.parseFloat(getComputedStyle(main).paddingTop);
+    return first.getBoundingClientRect().top - (main.getBoundingClientRect().top + paddingTop);
+  });
+  expect(offset, "the main landmark has content").toBeDefined();
+  expect(Math.abs(offset ?? Number.POSITIVE_INFINITY), "the page opens at the top").toBeLessThan(1);
+}
+
+/**
+ * Rubric axes 2 and 10. A page that fills the content column starts its title at the column's
+ * inline start, as its siblings do, whatever it currently holds. PRD-008d's baseline review: the
+ * campaigns list shrank to its contents and was centred, so its title moved with what it listed.
+ */
+export async function expectThePageFillsTheContentColumn(page: Page): Promise<void> {
+  const gap = await page.getByRole("main").evaluate((main) => {
+    const first = main.firstElementChild;
+    if (first === null) return undefined;
+    const paddingInlineStart = Number.parseFloat(getComputedStyle(main).paddingLeft);
+    return (
+      first.getBoundingClientRect().left - (main.getBoundingClientRect().left + paddingInlineStart)
+    );
+  });
+  expect(gap, "the main landmark has content").toBeDefined();
+  expect(
+    Math.abs(gap ?? Number.POSITIVE_INFINITY),
+    "the page starts at the column's edge",
+  ).toBeLessThan(1);
+}
+
+/**
+ * PRD-006c D7 and `03-components/sheet-and-dialog.md`, "the footer stays visible": the footer is
+ * pinned at the end of the panel's scroll box, so the panel ends with its controls.
+ *
+ * PRD-008d, the scored baseline review of 2026-10-01. The footer stuck to the scroll box's content
+ * edge, which sat the sheet's end padding inside the panel's border, and the progress list scrolled
+ * through that band: every capped panel showed a sliver of its next row below Continue. A picture
+ * of that is only compared on the runner that drew it, so this measures it everywhere: the
+ * footer's end is the panel's inner end, to the pixel.
+ */
+export async function expectNothingShowsBelowThePanelFooter(
+  page: Page,
+  frame: Readonly<{ width: number }>,
+): Promise<void> {
+  const gap = await page.getByRole("dialog").evaluate((panel) => {
+    const footer = panel.lastElementChild;
+    if (footer === null || footer.querySelector("button") === null) return undefined;
+    const innerEnd = panel.getBoundingClientRect().top + panel.clientTop + panel.clientHeight;
+    return innerEnd - footer.getBoundingClientRect().bottom;
+  });
+  expect(gap, `at ${String(frame.width)} the panel has a footer to measure`).toBeDefined();
+  expect(
+    Math.abs(gap ?? Number.POSITIVE_INFINITY),
+    `at ${String(frame.width)} the panel's body shows below its footer`,
+  ).toBeLessThan(1);
 }
 
 /**
@@ -798,6 +865,20 @@ export async function warmFullPageCapture(page: Page): Promise<void> {
  * rather than once per cell is what keeps a review suite from spending the sign-up, sign-in, and
  * password-reset budgets that the specs sharing the run need.
  */
+/**
+ * Parks the pointer at the frame's top-left corner, which is the rail's brand block at the wide
+ * frames and the top bar's own padding at 390: nothing there reacts to a pointer.
+ *
+ * PRD-008d, the scored baseline review of 2026-10-01. The pointer stays wherever the last click
+ * left it, and a viewport change moves the layout under it, so a picture could carry an incidental
+ * hover on whatever control the resize slid under the cursor: the help-menu picture at 1180 showed
+ * the theme control's "Dark" option hovered on one run and not on the run before. A baseline that
+ * depends on where the cursor happened to be is not a baseline.
+ */
+export async function parkThePointer(page: Page): Promise<void> {
+  await page.mouse.move(0, 0);
+}
+
 export async function captureNamedState(
   page: Page,
   input: Readonly<{
@@ -819,6 +900,7 @@ export async function captureNamedState(
     axe?: Readonly<{ exclude?: readonly string[]; disableRules?: readonly string[] }>;
   }>,
 ): Promise<void> {
+  await parkThePointer(page);
   for (const frame of input.frames ?? REVIEW_FRAMES) {
     await page.setViewportSize({ width: frame.width, height: frame.height });
     await settleForScreenshot(page, {

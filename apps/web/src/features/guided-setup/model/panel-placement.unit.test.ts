@@ -315,6 +315,77 @@ describe("panel placement", () => {
     expect(resolveAnchorScroll(tall, PANEL, EMBEDDED)).toBe(tall.top - VIEWPORT_MARGIN);
   });
 
+  /**
+   * PRD-008d, the scored baseline review of 2026-10-01, and D7's "the anchored element is brought
+   * into view" at the frames where the panel sits beside it.
+   *
+   * The beside case used to answer zero without looking at the element at all. At 1440 on step 5
+   * the result sat at the top of the frame, under the 78px sticky header, with only the bottom edge
+   * of its ring showing, and the panel beside it pointed at nothing a person could read. Beside the
+   * panel the element still has to be between the header and the viewport's end.
+   */
+  describe("an element the panel sits beside", () => {
+    const stickyHeader = 78;
+    const withHeader = { ...DESKTOP, blockStart: stickyHeader } as const;
+    const floor = stickyHeader + VIEWPORT_MARGIN;
+
+    it("is the case under test: the panel goes beside it", () => {
+      expect(resolvePanelPlacement(rect(296, 0, 708, 64), PANEL, withHeader)?.side).toBe(
+        "inline-end",
+      );
+    });
+
+    it("is pulled out from under the sticky header", () => {
+      const underTheHeader = rect(296, 0, 708, 64);
+      expect(underTheHeader.top - resolveAnchorScroll(underTheHeader, PANEL, withHeader)).toBe(
+        floor,
+      );
+    });
+
+    it("is brought up into the viewport from below the fold", () => {
+      const belowTheFold = rect(296, 1200, 708, 64);
+      const delta = resolveAnchorScroll(belowTheFold, PANEL, withHeader);
+      expect(delta).toBeGreaterThan(0);
+      expect(belowTheFold.top + belowTheFold.height - delta).toBe(DESKTOP.height - VIEWPORT_MARGIN);
+    });
+
+    it("keeps its top when it is taller than the space between the header and the end", () => {
+      const tall = rect(296, 300, 708, 1200);
+      expect(tall.top - resolveAnchorScroll(tall, PANEL, withHeader)).toBe(floor);
+    });
+
+    it("is left where it is when it is already on screen", () => {
+      expect(resolveAnchorScroll(rect(296, 400, 708, 64), PANEL, withHeader)).toBe(0);
+    });
+  });
+
+  /**
+   * PRD-006c D7, "the panel never obscures ... the shell's sticky header", and the same review.
+   *
+   * The panel was clamped against the viewport's edge, so a panel beside an element near the top of
+   * the frame rose over the header: at 1440 on step 5 it covered the theme control and "Sign out".
+   * It is placed against the scroll's own floor now, beside an element and below one.
+   */
+  it("never places the panel over the shell's sticky header", () => {
+    const stickyHeader = 78;
+    for (const viewport of [DESKTOP, EMBEDDED, TABLET]) {
+      const withHeader = { ...viewport, blockStart: stickyHeader } as const;
+      for (const anchor of [
+        rect(120, 0, 320, 64),
+        rect(120, -200, 320, 64),
+        rect(96, -40, viewport.width - 192, 64),
+      ]) {
+        const placement = resolvePanelPlacement(anchor, PANEL, withHeader);
+        expect(
+          placement?.top,
+          `${String(viewport.width)} ${placement?.side ?? "unplaced"} at ${String(anchor.top)}`,
+        ).toBeGreaterThanOrEqual(stickyHeader + VIEWPORT_MARGIN);
+      }
+    }
+    // With no header declared the floor is the margin, as it always was.
+    expect(resolvePanelPlacement(rect(120, 0, 320, 64), PANEL, DESKTOP)?.top).toBe(VIEWPORT_MARGIN);
+  });
+
   it("scrolls a wide-frame element above a panel that had to go below it", () => {
     const anchor = rect(96, 700, 1000, 64);
     const delta = resolveAnchorScroll(anchor, PANEL, EMBEDDED);

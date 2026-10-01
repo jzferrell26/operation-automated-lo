@@ -93,8 +93,24 @@
 .sheet .footer {
   position: sticky;
   inset-block-end: 0;
-  padding-block-start: var(--space-3);
+  padding-block: var(--space-3) var(--space-5);
   background: var(--sf-card);
+}
+
+/* The sheet's own end padding belongs to its footer, so "the box's end" is the
+ * panel's end.
+ *
+ * A sticky box sticks to the scroll container's content edge, which sits the
+ * container's padding inside its border. With the sheet's `--space-5` of end
+ * padding outside the footer, the footer stopped `--space-5` short of the panel's
+ * edge and the body scrolled through that band: every guided-setup panel taller
+ * than its cap showed a sliver of the next progress row below Continue. Measured
+ * in the PRD-008d baseline review of 2026-10-01 on step 1 and step 5 at 1440 and
+ * on the docked sheet at 390. Moving the padding into the footer keeps the same
+ * space under the controls and leaves no band for the body to show through. A
+ * sheet without a footer keeps its padding. */
+.sheet:has(> .footer) {
+  padding-block-end: 0;
 }
 
 /* Sheet: a non-modal panel anchored beside the control that opened it. */
@@ -165,6 +181,11 @@
     padding-block-end: calc(var(--space-5) + env(safe-area-inset-bottom));
     border-end-end-radius: 0;
     border-end-start-radius: 0;
+  }
+
+  /* The safe-area inset moves with the end padding, onto the footer. */
+  .sheet .footer {
+    padding-block-end: calc(var(--space-5) + env(safe-area-inset-bottom));
   }
 }
 

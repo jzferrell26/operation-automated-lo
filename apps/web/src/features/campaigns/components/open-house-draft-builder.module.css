@@ -37,6 +37,46 @@
 .notice p {
   margin-block: var(--space-1) 0;
 }
+/* The notice title keeps its informational tone whichever stylesheet loads last, the way
+ * `onboarding.module.css` already pins its own notice.
+ *
+ * `Card`'s global `.oalo-surface` colour and `.notice` above have the same specificity, so the
+ * bundle's stylesheet order decided the title's colour. PRD-008d's baseline review of 2026-10-01
+ * found it flipping with the dependency group's Next.js: blue on the create screen, the campaign
+ * page, and reports, dark on brand, and the other way round in the committed pictures. A rule on
+ * the title itself does not depend on order. */
+.notice strong {
+  color: var(--st-info-fg);
+}
+/* The campaigns list's cards. PRD-008d's baseline review of 2026-10-01: the card title was a bare
+ * `h2` at the browser's own size and margins, which drew it larger than the page's title. It is a
+ * card title now, the same size and weight as every other card title in the workspace, and the
+ * card's rhythm comes from spacing tokens rather than from default margins. */
+/* The campaigns list takes the whole content column, so its title starts where every sibling
+ * page's title starts whether the list is empty or full. The shell centres a page that is
+ * narrower than the column, and the list's width followed its contents: the empty state drew a
+ * narrow column with its title some 300px right of the populated list's (PRD-008d, baseline
+ * review of 2026-10-01). */
+.campaignsPage {
+  inline-size: 100%;
+}
+.campaignCard {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+.campaignCard :is(h2, p) {
+  margin: 0;
+}
+.campaignCard h2 {
+  font-size: inherit;
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+}
+.campaignCard p:not(.eyebrow) {
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+}
 .form {
   display: grid;
   gap: var(--space-5);

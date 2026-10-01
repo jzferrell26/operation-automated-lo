@@ -1,0 +1,68 @@
+/* The synthetic public open-house page: a measure, a centre, and a page padding.
+ *
+ * Rubric delta D-010, ruled 2026-10-01 (`06-review-rubric.md` section 5): "A section takes its
+ * page's width, and the page keeps its own measure." This page never had one. It was held to 44rem
+ * by the bootstrap `section { max-width: 44rem }` rule, by accident, and that rule is gone, so
+ * without this module it spans the frame and its text touches the frame's edge.
+ *
+ * Design brief section 10 sets the type: the 13px body step and each heading level's step come
+ * from the global element defaults and are not restated here, and the one thing this page adds is
+ * the leading, `--leading-normal`, because it is read rather than scanned. Section 11 sets the
+ * spacing scale, so every gap and every padding below is a `--space-*` step.
+ *
+ * Neither section fixes a reading measure, and the brief has no rule for a public page's column,
+ * so the measure is the one number here that is chosen rather than looked up. 30rem is 480px, which
+ * less the card's two `--space-6` paddings and its two borders leaves 430px of text: about 74
+ * characters of the 13px body step in the system face measured on the workstation, and fewer in a
+ * wider face. That is the top of the 45 to 75 a reader holds comfortably. It is a `rem` and not a
+ * `ch` because the product states every measure in `rem` (the account form 26rem, the design
+ * surfaces 44rem), and a `ch` would move with whichever face the platform falls back to.
+ *
+ * The padding is the shell's own page padding, so a person who goes from the workspace to this page
+ * meets the same edge: `--space-6` from the tablet frame up and `--space-4` below it, where brief
+ * section 14's 390px mobile frame lives (`features/shell/components/app-shell.module.css`,
+ * `.content`, and its 767.98px breakpoint).
+ *
+ * The `<main>` brings its own layout, so the bootstrap `main` rule in `globals.css` has nothing
+ * left to decide here: a published page starts at the top of the frame instead of floating to the
+ * middle of it (`align-content`), and it does not hold the frame open at 100vh (`min-block-size`).
+ *
+ * This page declares no motion and cannot gain any (brief section 12).
+ */
+.page {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  min-block-size: 0;
+  padding: var(--space-6);
+}
+
+.column {
+  display: grid;
+  gap: var(--space-4);
+  inline-size: 100%;
+  max-inline-size: 30rem;
+  line-height: var(--leading-normal);
+}
+
+/* The browser's own paragraph and heading margins would add a second, unscaled gap on top of the
+ * `gap` above and the card's padding. */
+.column p,
+.card h1 {
+  margin: 0;
+}
+
+.card {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.card h1 {
+  line-height: var(--leading-tight);
+}
+
+@media (max-width: 767.98px) {
+  .page {
+    padding: var(--space-4);
+  }
+}

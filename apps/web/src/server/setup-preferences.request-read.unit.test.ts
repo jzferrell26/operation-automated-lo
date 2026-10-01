@@ -10,6 +10,14 @@ import {
 } from "./authenticated-principal.js";
 import { listWorkspaceCampaigns } from "./campaign-workspace-reads.js";
 import { readSetupPreferencesForRequest } from "./setup-preferences.js";
+import {
+  driverFailure,
+  expectNoPersonSessionOrDriverWords,
+  firstLoggedLine,
+  spyOnServerLog,
+  transactionWithNothingStored,
+  type ServerLogSpy,
+} from "./setup-preferences.test-support.js";
 
 /**
  * PRD-008b 008B-AC-009 to 008B-AC-011, the other half of writing review R6.
@@ -30,10 +38,10 @@ const mocks = vi.hoisted(() => ({
   authenticatedWorkspaceMode: vi.fn(),
 }));
 
-vi.mock("./campaign-workspace-reads.js", () => ({
-  listWorkspaceCampaigns: vi.fn(),
-  loadWorkspaceCampaign: vi.fn(),
-}));
+// A `vi.mock` factory is hoisted above the imports, so what it shares is loaded inside it.
+vi.mock("./campaign-workspace-reads.js", async () =>
+  (await import("./setup-preferences.test-support.js")).campaignWorkspaceReadsDouble(),
+);
 
 vi.mock("@oalo/db", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@oalo/db")>()),
@@ -63,7 +71,7 @@ vi.mock("./campaign-persistence-runtime.js", async (importOriginal) => ({
 const REQUEST = new Request("https://oalo.local/overview");
 const ENVIRONMENT = {};
 
-let logged: ReturnType<typeof vi.spyOn>;
+let logged: ServerLogSpy;
 
 beforeEach(() => {
   vi.mocked(listWorkspaceCampaigns).mockReset();
@@ -73,30 +81,16 @@ beforeEach(() => {
   mocks.authenticatedWorkspaceMode.mockReturnValue("review");
   mocks.resolveAuthenticatedReadPrincipal.mockResolvedValue(APPROVER);
   // The person has stored nothing, so the walkthrough is at its start.
-  mocks.withTenantTransaction.mockImplementation(
-    async (
-      _pool: unknown,
-      _authority: unknown,
-      work: (transaction: { read: () => Promise<readonly unknown[]> }) => Promise<unknown>,
-    ) => work({ read: () => Promise.resolve([]) }),
-  );
-  logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  mocks.withTenantTransaction.mockImplementation(transactionWithNothingStored);
+  logged = spyOnServerLog();
 });
 
 afterEach(() => {
   logged.mockRestore();
 });
 
-/** What a driver says when it fails: a message that may carry anything, and a short code. */
-function driverFailure(): Error {
-  return Object.assign(
-    new Error("connection terminated while reading for dana.reyes@example.test"),
-    { code: "57P01" },
-  );
-}
-
 function loggedLine(): string {
-  return String(logged.mock.calls[0]?.join(" "));
+  return firstLoggedLine(logged);
 }
 
 describe("the guided setup's state, when an approver's read of it fails", () => {
@@ -121,13 +115,7 @@ describe("the guided setup's state, when an approver's read of it fails", () => 
     expect(line).toContain("setup-preferences");
     expect(line).toContain("Error");
     expect(line).toContain("57P01");
-    expect(line).not.toContain("dana.reyes");
-    expect(line).not.toContain("connection terminated");
-    expect(line).not.toContain(APPROVER.actorId);
-    expect(line).not.toContain(APPROVER.sessionId);
-    expect(line).not.toContain(APPROVER.locationId);
-    expect(line).not.toContain(APPROVER.actorRef);
-    expect(line).not.toContain(APPROVER.locationRef);
+    expectNoPersonSessionOrDriverWords(line, APPROVER);
   });
 
   it("is the failed state when the person could not be resolved, because an approver cannot be ruled out", async () => {

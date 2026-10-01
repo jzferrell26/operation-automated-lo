@@ -256,6 +256,20 @@ from platform.record_password_sign_in_failure($1::uuid, $2::text) as failure
   decode: decodeLock,
 });
 
+/**
+ * M-1 of the PRD-008 close-out security audit. The no-account sign-in refusal's one write: a
+ * counter row keyed on the hash of the client address, so the unknown branch awaits a definer
+ * write exactly as the known branch awaits `record_password_sign_in_failure`.
+ */
+export const recordSignInWithoutAccountContract = defineSqlContract<Record<string, never>>({
+  name: "runtime.record-sign-in-without-account.v1",
+  access: "read",
+  text: "select platform.record_sign_in_without_account($1::text)",
+  decode(): Record<string, never> {
+    return Object.freeze({});
+  },
+});
+
 export const recordPasswordSignInSuccessContract = defineSqlContract<Record<string, never>>({
   name: "runtime.record-password-sign-in-success.v1",
   access: "read",
@@ -415,6 +429,11 @@ export function createPostgresCredentialPort(pool: DatabasePool): CredentialPort
       const values: readonly SqlScalar[] = [input.userId, input.correlationRef];
       const rows = await queryRuntimeFunction(pool, recordPasswordSignInFailureContract, values);
       return rows[0]?.lockedUntilEpochSeconds;
+    },
+
+    async recordSignInWithoutAccount(input) {
+      const values: readonly SqlScalar[] = [input.keyHash];
+      await queryRuntimeFunction(pool, recordSignInWithoutAccountContract, values);
     },
 
     async recordSignInSuccess(input) {

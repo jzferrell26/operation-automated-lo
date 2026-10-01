@@ -7,10 +7,13 @@ import {
   CAMPAIGN_NEXT_ACTION_LABELS,
   CAMPAIGN_NOT_AN_AD_YET,
   CAMPAIGN_SAVED_NOTICE,
-  CAMPAIGN_STATE_LABELS,
+  CAMPAIGN_SENT_BACK_LABEL,
+  CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION,
   CHECK_RESULT_NEEDS_CHANGES,
+  CHECK_RESULT_PASSED,
   CHECK_RESULT_READY,
   SUPPORT_DETAILS_LABELS,
+  campaignStateLabel,
 } from "../../../copy/user-language.js";
 import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
 import { SupportDetails } from "../../shell/components/support-details.js";
@@ -20,6 +23,22 @@ import styles from "./open-house-draft-builder.module.css";
 export function PersistedCampaignScreen({
   campaign,
 }: Readonly<{ campaign: CampaignWorkspaceProjection }>) {
+  /*
+   * PRD-008b D2. "Ready for approval" and "An approver can sign off on it now" are true only while
+   * the campaign is waiting for that approval, which means waiting with nobody having decided. Once
+   * it has been approved the same checks still passed, so the result says that instead, and the
+   * screen no longer invites a sign-off that has already happened.
+   *
+   * A send-back is the case the stored state cannot tell apart. It leaves the campaign in
+   * `awaiting_approval` with a rejection recorded against it, so the state alone would keep saying
+   * "Ready for approval" about a version that was just sent back. The recorded decision is what
+   * says so, and the state badge, the check result, and the next steps all read it.
+   */
+  const awaitingApproval =
+    campaign.state === "awaiting_approval" && campaign.approval === undefined;
+  const sentBack =
+    campaign.state === "awaiting_approval" && campaign.approval?.decision === "rejected";
+  const standing = campaignStateLabel(campaign.state, campaign.approval?.decision);
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -28,7 +47,7 @@ export function PersistedCampaignScreen({
           <h1>{campaign.headline}</h1>
           <p>{campaign.propertyAddress}</p>
         </div>
-        <span>{CAMPAIGN_STATE_LABELS[campaign.state]}</span>
+        <span>{standing}</span>
       </header>
 
       <Card className={styles.notice} padding="md">
@@ -48,7 +67,7 @@ export function PersistedCampaignScreen({
         </Card>
         <Card padding="sm">
           <strong>Where it stands</strong>
-          <p>{CAMPAIGN_STATE_LABELS[campaign.state]}</p>
+          <p>{standing}</p>
         </Card>
         <Card padding="sm">
           <strong>Daily budget</strong>
@@ -70,8 +89,13 @@ export function PersistedCampaignScreen({
         <Card padding="sm">
           <strong>Open house</strong>
           <p>
-            {new Date(campaign.openHouseStartsAt).toLocaleString("en-US")} to{" "}
-            {new Date(campaign.openHouseEndsAt).toLocaleString("en-US")}
+            <time dateTime={campaign.openHouseStartsAt}>
+              {new Date(campaign.openHouseStartsAt).toLocaleString("en-US")}
+            </time>{" "}
+            to{" "}
+            <time dateTime={campaign.openHouseEndsAt}>
+              {new Date(campaign.openHouseEndsAt).toLocaleString("en-US")}
+            </time>
           </p>
         </Card>
         <Card padding="sm">
@@ -90,12 +114,25 @@ export function PersistedCampaignScreen({
         </Card>
       </div>
 
-      <section className={styles.review} aria-labelledby="campaign-check-title">
-        <div className={styles.reviewHeading} data-tour={GUIDED_SETUP_ANCHORS.campaignCheckResult}>
+      {/* PRD-006c D3 step 5 points at the campaign check result, which is the verdict and what the
+          checks found, so the anchor is the whole section rather than its heading. PRD-008d, the
+          scored baseline review of 2026-10-01: anchored to the heading alone, the walkthrough
+          scrolled only the heading clear and dropped its panel straight onto the finding card
+          below it, so at 768 and 1180 the one thing the step is about was under the panel. */}
+      <section
+        className={styles.review}
+        aria-labelledby="campaign-check-title"
+        data-tour={GUIDED_SETUP_ANCHORS.campaignCheckResult}
+      >
+        <div className={styles.reviewHeading}>
           <div>
             <p className={styles.eyebrow}>Campaign check</p>
             <h2 id="campaign-check-title">
-              {campaign.preflight.blocking ? CHECK_RESULT_NEEDS_CHANGES : CHECK_RESULT_READY}
+              {campaign.preflight.blocking
+                ? CHECK_RESULT_NEEDS_CHANGES
+                : awaitingApproval
+                  ? CHECK_RESULT_READY
+                  : CHECK_RESULT_PASSED}
             </h2>
           </div>
         </div>
@@ -106,7 +143,11 @@ export function PersistedCampaignScreen({
           {campaign.preflight.findings.length === 0 ? (
             <Card padding="md">
               <strong>Nothing to fix.</strong>
-              <p>This campaign meets every rule we check. An approver can sign off on it now.</p>
+              <p>
+                This campaign meets every rule we check.
+                {awaitingApproval ? " An approver can sign off on it now." : ""}
+                {sentBack ? ` ${CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION}` : ""}
+              </p>
             </Card>
           ) : (
             campaign.preflight.findings.map((finding) => (
@@ -128,7 +169,7 @@ export function PersistedCampaignScreen({
           <div className={styles.reviewHeading}>
             <div>
               <p className={styles.eyebrow}>Approval</p>
-              <h2 id="campaign-approval-title">Who signed off</h2>
+              <h2 id="campaign-approval-title">Who decided</h2>
             </div>
           </div>
           <Card padding="md">
@@ -136,7 +177,11 @@ export function PersistedCampaignScreen({
               {decisionLabel(campaign.approval.decision)} by{" "}
               {APPROVAL_ROLE_LABELS[campaign.approval.actorRole]}
             </strong>
-            <p>{new Date(campaign.approval.decidedAt).toLocaleString("en-US")}</p>
+            <p>
+              <time dateTime={campaign.approval.decidedAt}>
+                {new Date(campaign.approval.decidedAt).toLocaleString("en-US")}
+              </time>
+            </p>
             <small>{CAMPAIGN_NOT_AN_AD_YET}</small>
           </Card>
         </section>
@@ -185,7 +230,7 @@ export function PersistedCampaignScreen({
 
 /** "Approved" or "Sent back for changes". The stored decision word is not the user's word. */
 function decisionLabel(decision: "approved" | "rejected"): string {
-  return decision === "approved" ? "Approved" : "Sent back for changes";
+  return decision === "approved" ? "Approved" : CAMPAIGN_SENT_BACK_LABEL;
 }
 
 function dollars(minor: number): string {

@@ -57,7 +57,7 @@ function createPool(behaviour: { failOn?: string } = {}) {
 }
 
 describe("context-free runtime function helper", () => {
-  it("recognises exactly the twenty-six allowlisted contract names (006A-AC-003)", () => {
+  it("recognises exactly the twenty-seven allowlisted contract names (006A-AC-003, M-1)", () => {
     expect([...RUNTIME_FUNCTION_CONTRACT_NAMES]).toEqual([
       "runtime.location-is-active.v1",
       "runtime.actor-is-active.v1",
@@ -74,6 +74,8 @@ describe("context-free runtime function helper", () => {
       "runtime.list-sign-in-bindings.v1",
       "runtime.record-password-sign-in-failure.v1",
       "runtime.record-password-sign-in-success.v1",
+      // M-1 of the PRD-008 close-out security audit: the no-account sign-in refusal's write.
+      "runtime.record-sign-in-without-account.v1",
       "runtime.issue-credential-token.v1",
       "runtime.consume-credential-token.v1",
       "runtime.revoke-all-first-party-sessions-for-user.v1",

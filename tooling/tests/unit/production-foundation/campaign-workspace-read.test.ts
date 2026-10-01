@@ -302,6 +302,54 @@ describe("campaign workspace read projection", () => {
   });
 
   /**
+   * Finding S1b of the 2026-10-01 writing review. A send-back leaves the campaign in
+   * `awaiting_approval` (the approval command sets that state again for a rejected decision), so the
+   * state alone cannot tell a version nobody has looked at from one that was just sent back. The
+   * recorded decision can, and the next steps read it: a decided version is never offered for
+   * approval and never waited on, whoever is looking at it.
+   */
+  it("does not offer a sent-back version for approval or wait for an approver on it", () => {
+    for (const canApprove of [true, false]) {
+      expect(
+        deriveCampaignNextActions("awaiting_approval", canApprove, "rejected"),
+        String(canApprove),
+      ).toEqual([
+        { id: "review_evidence", available: true },
+        { id: "already_decided", available: false },
+        { id: "provider_publish", available: false },
+      ]);
+    }
+    // With no decision the steps are the ones they always were.
+    expect(
+      deriveCampaignNextActions("awaiting_approval", true, undefined).map((action) => action.id),
+    ).toEqual(["review_evidence", "approve_version", "provider_publish"]);
+    expect(deriveCampaignNextActions("awaiting_approval", true)).toEqual(
+      deriveCampaignNextActions("awaiting_approval", true, undefined),
+    );
+  });
+
+  it("reads the recorded decision when it projects a version that was sent back", () => {
+    const passing = { ...preflight, blocking: false, findings: [], resultHash: sha("8") };
+    const sentBack = projectCampaignWorkspace(
+      record({
+        state: "awaiting_approval",
+        preflight: passing,
+        approval: { ...approval, decision: "rejected" },
+      }),
+      approver,
+      "postgres",
+    );
+
+    expect(sentBack.state).toBe("awaiting_approval");
+    expect(sentBack.approval?.decision).toBe("rejected");
+    expect(sentBack.nextActions.map((action) => action.id)).toEqual([
+      "review_evidence",
+      "already_decided",
+      "provider_publish",
+    ]);
+  });
+
+  /**
    * PRD-006b D1 and D5. The application layer names steps; it does not write sentences.
    *
    * Every step used to travel with its own English, written in this package, where the
@@ -325,13 +373,15 @@ describe("campaign workspace read projection", () => {
     ];
     for (const state of states) {
       for (const canApprove of [true, false]) {
-        for (const action of deriveCampaignNextActions(state, canApprove)) {
-          expect(Object.keys(action).toSorted(), `${state}/${String(canApprove)}`).toEqual([
-            "available",
-            "id",
-          ]);
-          // A key is one token. A sentence has a space in it, and that is the whole difference.
-          expect(action.id).not.toMatch(/\s/u);
+        for (const decision of [undefined, "approved", "rejected"] as const) {
+          for (const action of deriveCampaignNextActions(state, canApprove, decision)) {
+            expect(
+              Object.keys(action).toSorted(),
+              `${state}/${String(canApprove)}/${String(decision)}`,
+            ).toEqual(["available", "id"]);
+            // A key is one token. A sentence has a space in it, and that is the whole difference.
+            expect(action.id).not.toMatch(/\s/u);
+          }
         }
       }
     }

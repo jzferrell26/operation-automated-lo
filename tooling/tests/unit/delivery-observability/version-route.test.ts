@@ -80,31 +80,33 @@ function environmentInput(environment: "preview" | "staging" | "production") {
   };
 }
 
+/**
+ * PRD-008a D4 (008A-AC-019). The evidence is exactly what the deployed proof reads, so these use
+ * `toEqual` rather than `toMatchObject`: an extra field is a failure, not a pass. The release
+ * manifest is still parsed and validated on the way in (the last case below), it is only no
+ * longer echoed back to an unauthenticated caller.
+ */
 describe("version route evidence", () => {
   it("returns validated local evidence without a release manifest", () => {
-    expect(versionEvidenceForEnvironment({})).toMatchObject({
+    expect(versionEvidenceForEnvironment({})).toEqual({
       environment: "local",
       buildId: "local",
       commit: "local",
-      releaseVersions: null,
     });
   });
 
   it.each(["preview", "staging", "production"] as const)(
-    "returns validated %s release evidence",
+    "returns validated %s release evidence and nothing else",
     (environment) => {
       const evidence = versionEvidenceForEnvironment(environmentInput(environment));
 
-      expect(evidence).toMatchObject({
+      expect(evidence).toEqual({
         environment,
         buildId: `build-${environment}-001`,
         commit,
-        releaseVersions: {
-          web: `build-${environment}-001`,
-          databaseMigration: "migration-001",
-          contract: "contract-001",
-        },
       });
+      expect(JSON.stringify(evidence)).not.toContain("migration-001");
+      expect(JSON.stringify(evidence)).not.toContain("contract-001");
     },
   );
 

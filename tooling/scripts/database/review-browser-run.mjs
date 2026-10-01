@@ -72,6 +72,9 @@ export function reviewServerEnvironment(databaseUrl) {
     OALO_PRODUCTION_TRAFFIC: "disabled",
     OALO_SYNTHETIC_DATA_ONLY: "true",
     OALO_REVIEW_SURFACE: "authorized",
+    // An opt-in for this disposable run only. Security Ruling 1 (PRD-005/006 batch security audit,
+    // 2026-09-19): sign-up's duplicate-email disclosure is acceptable only while sign-up is off by
+    // default, and turning it on by default requires moving to the emailed path first.
     OALO_SELF_SERVE_SIGNUP: "enabled",
     OALO_DATABASE_URL: databaseUrl,
     OALO_DATABASE_SSL_MODE: "disable",

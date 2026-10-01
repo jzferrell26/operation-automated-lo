@@ -28,6 +28,7 @@ import {
   type RequestCorrelation,
 } from "./correlation-boundary.js";
 import type {
+  AuthAttemptCounterScope,
   AuthRateLimitScope,
   CredentialPort,
   EmailDeliveryAction,
@@ -129,6 +130,14 @@ export const AUTH_RATE_LIMITS: Readonly<
   // the person is known exactly and an address-keyed window would make one office share one
   // budget.
   resend_verification_user: Object.freeze({ attemptLimit: 5, windowSeconds: 3_600 }),
+  // PRD-008a D2. Change-password, counted per person for the same reason as the resend control.
+  // Ten in fifteen minutes is ample for somebody retyping a password, and it bounds what a stolen
+  // session can make the deployment derive to about ten Argon2id hashes per person per window.
+  //
+  // PRD-008a D1a. It deliberately does not count toward the ten-failure sign-in lockout. If it
+  // did, anyone holding a stolen session could lock the real person out of their own account,
+  // which is a worse outcome than the bounded current-password guessing this limit leaves.
+  change_password_user: Object.freeze({ attemptLimit: 10, windowSeconds: 900 }),
 });
 
 const AuthSurfaceEnvironmentSchema = z
@@ -181,7 +190,13 @@ export function assertAuthSurface(input: unknown): AuthSurfaceEnvironment {
   return parsed.data;
 }
 
-/** D5. Sign-up is off unless the operator turns it on, by name, on the deployment. */
+/**
+ * D5. Sign-up is off unless the operator turns it on, by name, on the deployment.
+ *
+ * Security Ruling 1 (PRD-005/006 batch security audit, 2026-09-19) keeps sign-up's deliberate
+ * duplicate-email disclosure on one condition: it is acceptable only while sign-up is off by
+ * default, and turning it on by default requires moving to the emailed path first.
+ */
 export function selfServeSignUpEnabled(environment: AuthSurfaceEnvironment): boolean {
   return environment.OALO_SELF_SERVE_SIGNUP?.trim() === "enabled";
 }
@@ -269,7 +284,23 @@ export interface AuthHandlerDependencies {
    * context.
    */
   readonly afterResponse?: (task: () => Promise<void>) => void;
+  /**
+   * PRD-008a D2. The Argon2id derivations change-password runs. The default is `@oalo/auth`'s own
+   * pair; a proof passes an instrumented one so "the limited attempt derived nothing" is a count
+   * rather than an inference from timing.
+   */
+  readonly passwordHasher?: Readonly<PasswordHasher>;
 }
+
+export interface PasswordHasher {
+  verify(storedHash: string, password: string): boolean;
+  hash(password: string): string;
+}
+
+const DEFAULT_PASSWORD_HASHER: Readonly<PasswordHasher> = Object.freeze({
+  verify: verifyPassword,
+  hash: hashPassword,
+});
 
 const pendingBackgroundWork = new Set<Promise<void>>();
 
@@ -320,17 +351,19 @@ function sha256Hex(value: string): string {
 
 /**
  * D4. The counter table never holds a client address or an email address, only a keyed hash of
- * one. Rotating `OALO_CSRF_SERVER_SECRET` therefore discards every window and nothing else.
+ * one. Rotating `OALO_CSRF_SERVER_SECRET` therefore discards every window and nothing else. M-1's
+ * no-account counter lives in the same table under the same rule.
  */
 export function rateLimitKeyHash(
   serverSecret: Uint8Array,
-  scope: AuthRateLimitScope,
+  scope: AuthRateLimitScope | AuthAttemptCounterScope,
   value: string,
 ): string {
   return createHmac("sha256", serverSecret).update(`rate-limit\0${scope}\0${value}`).digest("hex");
 }
 
 let loggedMissingClientAddressHeader = false;
+let loggedSignInWithoutAccountFailure = false;
 
 /**
  * D4. The one bucket every request with no recognised forwarded address is counted in.
@@ -343,26 +376,41 @@ let loggedMissingClientAddressHeader = false;
  */
 export const UNKNOWN_CLIENT_ADDRESS_BUCKET = "\u0000unknown-address";
 
+/** The headers the client address is read from, most-specific first. */
+const CLIENT_ADDRESS_HEADERS = Object.freeze([
+  "x-vercel-forwarded-for",
+  "x-forwarded-for",
+  "x-real-ip",
+] as const);
+
 /**
- * D4, open question. The platform presents the client address in a forwarded header, and the
- * exact header on Vercel is the one thing about this rate limiter the author could not verify
- * against Vercel's own documentation: the agent that wrote it had no network access. Both
- * conventional spellings are read, most-specific first.
+ * D4. The platform presents the client address in a forwarded header, and these are Vercel's.
  *
- * When neither is present the address is unknown. The absence is logged once per process, by
- * header name and never by value, so a deployment that never presents one is visible rather than
- * silent; `consumeAddressLimit` is what decides where an unknown address is counted.
+ * Checked against <https://vercel.com/docs/headers/request-headers> on 2026-09-19 (PRD-005/006
+ * batch security audit, Ruling 6; the page was last updated 2025-12-13). Vercel sets and
+ * overwrites all three, so a caller cannot choose the value; `x-real-ip` and
+ * `x-vercel-forwarded-for` are documented as identical to `x-forwarded-for`, which is the one
+ * Vercel says could be overwritten by a proxy placed on top of Vercel. Reading
+ * `x-vercel-forwarded-for` first therefore keeps the limits keyed on the platform's value even
+ * under such a proxy, and it is simply absent anywhere else.
+ *
+ * This precedence is correct for Vercel, the only supported host. Hosting anywhere else requires
+ * revisiting which header that platform sets and overwrites before any of these is trusted.
+ *
+ * When none is present the address is unknown. The absence is logged once per process, at error
+ * level so it reaches the stream a deployment watches, by header name and never by value, because
+ * it means every caller on the deployment is sharing one window (Ruling 5);
+ * `consumeAddressLimit` is what decides where an unknown address is counted.
  */
 export function clientAddressFor(request: Request): string | undefined {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const first = forwarded?.split(",")[0]?.trim();
-  if (first !== undefined && first.length > 0 && first.length <= 100) return first;
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  if (realIp !== undefined && realIp.length > 0 && realIp.length <= 100) return realIp;
+  for (const name of CLIENT_ADDRESS_HEADERS) {
+    const first = request.headers.get(name)?.split(",")[0]?.trim();
+    if (first !== undefined && first.length > 0 && first.length <= 100) return first;
+  }
   if (!loggedMissingClientAddressHeader) {
     loggedMissingClientAddressHeader = true;
-    console.warn(
-      "password-authentication: neither x-forwarded-for nor x-real-ip is present; per-address rate limits are not applied on this deployment.",
+    console.error(
+      "password-authentication: none of x-vercel-forwarded-for, x-forwarded-for, or x-real-ip is present; every caller on this deployment shares one per-address rate-limit window.",
     );
   }
   return undefined;
@@ -370,6 +418,15 @@ export function clientAddressFor(request: Request): string | undefined {
 
 export function resetAuthHandlerProcessStateForTests(): void {
   loggedMissingClientAddressHeader = false;
+  loggedSignInWithoutAccountFailure = false;
+}
+
+/**
+ * The value every per-address counter is keyed on: the platform's forwarded address, or the one
+ * fixed bucket when there is none (`consumeAddressLimit` says why that bucket binds).
+ */
+function countedClientAddress(request: Request): string {
+  return clientAddressFor(request) ?? UNKNOWN_CLIENT_ADDRESS_BUCKET;
 }
 
 interface AuthContext {
@@ -461,7 +518,7 @@ async function consumeAddressLimit(
 ): Promise<void> {
   const gate = context.ports.mutation;
   if (gate === undefined) throw new UnauthenticatedPrincipalError();
-  const address = clientAddressFor(request) ?? UNKNOWN_CLIENT_ADDRESS_BUCKET;
+  const address = countedClientAddress(request);
   const limit = AUTH_RATE_LIMITS[scope];
   const allowed = await context.credentials.consumeRateLimit({
     scope,
@@ -470,6 +527,28 @@ async function consumeAddressLimit(
     windowSeconds: limit.windowSeconds,
   });
   if (!allowed) throw new AuthRateLimitedError();
+}
+
+/**
+ * The per-person limits, for the two routes that are only reachable with a verified session. The
+ * person is named by the session and never by the request, and the counter still holds only a
+ * keyed hash of them. Answers false once the window's limit is exceeded.
+ */
+async function consumePersonLimit(
+  credentials: CredentialPort,
+  ports: CampaignCommandPorts,
+  scope: "resend_verification_user" | "change_password_user",
+  actorId: string,
+): Promise<boolean> {
+  const gate = ports.mutation;
+  if (gate === undefined) throw new UnauthenticatedPrincipalError();
+  const limit = AUTH_RATE_LIMITS[scope];
+  return credentials.consumeRateLimit({
+    scope,
+    keyHash: rateLimitKeyHash(gate.csrfServerSecret, scope, actorId),
+    attemptLimit: limit.attemptLimit,
+    windowSeconds: limit.windowSeconds,
+  });
 }
 
 function jsonResponse(
@@ -646,11 +725,86 @@ function schemaRefusal(issues: unknown): Response {
 // ---------------------------------------------------------------------------
 
 /**
+ * M-1 of the PRD-008 close-out security audit (2026-10-01). The awaited write that makes a refusal
+ * for an address with no account cost what a refusal for a known one costs.
+ *
+ * A known address with a wrong password, or with an open lock, awaits
+ * `platform.record_password_sign_in_failure` before its 401. The unknown branch used to await
+ * nothing after the lookup, so it answered one database round trip sooner and the response time
+ * said whether the account existed. This is that round trip on the unknown branch: one definer
+ * call that writes one counter row, keyed on the client address under `sign_in_no_account`, and on
+ * nothing derived from the email that was tried. PRD-006a D4 says unknown-address attempts cannot
+ * be audited, having no actor and no location, and are to be counted instead; this is that count,
+ * and it is the signal the credential-stuffing alert of security Ruling 4 needs for them.
+ *
+ * Why a matching write here, rather than moving the known branch's write after the response the
+ * way PRD-008a D3 moved forgot-password's token issuance. The failure write is what counts toward
+ * the ten-failure lock. Deferred, the 401 for attempt n would leave before failure n was counted,
+ * so a client sending its attempts one after another could have attempt n+1 read before the lock
+ * from attempt n had landed, and a parallel burst could run well past ten guesses. D4's lock would
+ * then be "about ten", not ten. The audit preferred this route for the same reason.
+ *
+ * A failure here is swallowed, because the answer is the one 401 whatever this write does. That
+ * covers deploy order: if this code reaches the hosted app before
+ * `supabase/migrations/20261001120000_sign_in_without_account.sql`, the call fails with
+ * PostgreSQL's undefined-function error, after the same round trip, and the route still answers the
+ * same 401. A known account never calls this, so its lockout and its sign-in are untouched in that
+ * window.
+ *
+ * L-15 of the same audit: a swallowed failure must not be a silent one, because a persistent
+ * failure (step 0 skipped, a lost grant, a key the definer refuses) leaves the response correct
+ * while the timing protection quietly degrades, and the `sign_in_no_account` counter stays empty.
+ * The catch leaves one fixed line per process, at error level so it reaches the stream a
+ * deployment watches, and it names the operation so an alert can match it. The line carries a
+ * SQLSTATE token and nothing else. The address that was tried, the key hash, the email, the
+ * correlation reference, and the driver's message are never in it: a driver message can quote the
+ * key or the statement's arguments, so only the short code is read from the error.
+ */
+async function recordSignInWithoutAccount(request: Request, context: AuthContext): Promise<void> {
+  const gate = context.ports.mutation;
+  if (gate === undefined) throw new UnauthenticatedPrincipalError();
+  try {
+    await context.credentials.recordSignInWithoutAccount({
+      keyHash: rateLimitKeyHash(
+        gate.csrfServerSecret,
+        "sign_in_no_account",
+        countedClientAddress(request),
+      ),
+    });
+  } catch (failure) {
+    if (!loggedSignInWithoutAccountFailure) {
+      loggedSignInWithoutAccountFailure = true;
+      console.error(
+        `password-authentication: the sign-in no-account write (platform.record_sign_in_without_account) failed with SQLSTATE ${sqlStateTokenFor(failure)}; sign-in timing protection is degraded until the database function works.`,
+      );
+    }
+  }
+}
+
+const SQLSTATE_TOKEN_PATTERN = /^[0-9A-Za-z]{5}$/u;
+
+/**
+ * The only thing taken from a failed database call for the L-15 line: its `code`, when that is a
+ * five-character alphanumeric string, which is the shape of a SQLSTATE. Anything else, including a
+ * longer code such as `ECONNRESET`, a non-string, or a value that is not an error at all, is the
+ * fixed word `unknown`, so the token cannot carry text from the failure.
+ */
+function sqlStateTokenFor(failure: unknown): string {
+  if (typeof failure !== "object" || failure === null || !("code" in failure)) return "unknown";
+  const { code } = failure;
+  return typeof code === "string" && SQLSTATE_TOKEN_PATTERN.test(code) ? code : "unknown";
+}
+
+/**
  * 006A-AC-012 through 016. `POST /api/auth/sign-in`.
  *
- * Exactly one Argon2id derivation runs on every credential path, including the unknown-address
- * one, which derives against the fixed dummy hash. That is what makes "no account" and "wrong
- * password" indistinguishable in time as well as in the response body.
+ * Every refusal from the credential lookup onwards does the same work before it answers: the
+ * address limit, the lookup, exactly one Argon2id derivation, and exactly one awaited definer
+ * write. A known address derives against its stored hash and records the failure against the
+ * account; an address with no account derives against the fixed dummy hash and records the
+ * attempt in the no-account counter (M-1). The derivation alone did not make the two
+ * indistinguishable in time, because only the known branch then waited on the database.
+ * `password-authentication-handler.unit.test.ts` holds both branches to the same awaited calls.
  */
 export async function handlePasswordSignIn(
   request: Request,
@@ -675,9 +829,10 @@ export async function handlePasswordSignIn(
       normalizeEmailAddress(parsed.data.email),
     );
     if (credential === undefined) {
-      // One derivation against a hash no password matches, so this path costs what the
-      // wrong-password path costs.
+      // One derivation against a hash no password matches, then one awaited definer write, so
+      // this path costs what the wrong-password path costs: its derivation, then its failure write.
       verifyPassword(DUMMY_PASSWORD_HASH, parsed.data.password);
+      await recordSignInWithoutAccount(request, context);
       throw new UnauthenticatedPrincipalError();
     }
 
@@ -695,6 +850,9 @@ export async function handlePasswordSignIn(
      * writes the denied row and leaves both values alone while the lock is open. A guard here
      * instead would be the weaker half of the pair, since it would protect only the callers that
      * remembered to ask.
+     *
+     * The write is awaited before the answer so the lock lands before the next attempt is read,
+     * and the unknown branch above awaits a write of its own to match it (M-1).
      */
     if (!matched || locked) {
       await context.credentials.recordSignInFailure({
@@ -1007,6 +1165,12 @@ function scheduleVerificationEmail(
  * sending domain, and a provider that refused the message all produce byte-identical 200s. The
  * unknown-address path still generates and hashes a token so the work is the same; it just never
  * persists one.
+ *
+ * PRD-008a D3. Same answer, same time. Both branches await exactly the same three round trips
+ * before answering: the two limits and the credential lookup. Persisting the token used to be a
+ * fourth, awaited on the known branch alone, so the response time said whether the account
+ * existed. It now runs in the work already scheduled after the response, beside the send it
+ * exists for, and the unknown branch schedules nothing.
  */
 export async function handleForgotPassword(
   request: Request,
@@ -1051,18 +1215,28 @@ export async function handleForgotPassword(
     const port = context.ports.transactionalEmail;
     const origin = applicationOrigin(context.environment);
     const schedule = context.dependencies.afterResponse ?? detachBackgroundWork;
-    const tokenId = await context.credentials.issueToken({
-      userId,
-      purpose: "password_reset",
-      tokenHash,
-      lifetimeSeconds: PASSWORD_RESET_TOKEN_LIFETIME_SECONDS,
-      correlationRef: context.correlation.correlationRef,
-    });
 
     // 006A-AC-017. All three outcomes are audited, including the one where no sending domain is
     // configured. The token is still issued in that case, so an operator can hand the person a
     // reset link out of band, and the row says `not_configured` rather than nothing at all.
     schedule(async () => {
+      let tokenId: string;
+      try {
+        tokenId = await context.credentials.issueToken({
+          userId,
+          purpose: "password_reset",
+          tokenHash,
+          lifetimeSeconds: PASSWORD_RESET_TOKEN_LIFETIME_SECONDS,
+          correlationRef: context.correlation.correlationRef,
+        });
+      } catch {
+        // 008A-AC-024. A refused issuance ends the work here, with nothing logged, rethrown, or
+        // recorded. A database error on this path can name the token hash in its detail, and
+        // Next prints whatever an `after` task throws, so the error is dropped rather than
+        // passed on. No token is live, so there is no link to send and no delivery to audit,
+        // which is what the request path answered before issuance moved here as well.
+        return;
+      }
       if (port === undefined || !port.configured || origin === undefined) {
         await context.credentials.recordEmailDelivery({
           userId,
@@ -1308,22 +1482,16 @@ export async function handleResendVerificationEmail(
   const correlation = correlationReferenceForRequest(request, "resendVerification");
   try {
     const credentials = requiredCredentialPort(ports);
-    const gate = ports.mutation;
-    if (gate === undefined) throw new UnauthenticatedPrincipalError();
+    if (ports.mutation === undefined) throw new UnauthenticatedPrincipalError();
     const gated = await withPromotedCsrfHeader(request);
     const principal = await resolveAuthenticatedPrincipal(gated, environment, ports);
 
-    const limit = AUTH_RATE_LIMITS.resend_verification_user;
-    const withinLimit = await credentials.consumeRateLimit({
-      scope: "resend_verification_user",
-      keyHash: rateLimitKeyHash(
-        gate.csrfServerSecret,
-        "resend_verification_user",
-        principal.actorId,
-      ),
-      attemptLimit: limit.attemptLimit,
-      windowSeconds: limit.windowSeconds,
-    });
+    const withinLimit = await consumePersonLimit(
+      credentials,
+      ports,
+      "resend_verification_user",
+      principal.actorId,
+    );
     if (!withinLimit) return withCorrelationHeaders(rateLimitedResponse(), correlation);
 
     const context: AuthContext = Object.freeze({
@@ -1466,6 +1634,11 @@ export async function handleSignOut(
  * rather than by address, so nothing in the request can point the verification at somebody else's
  * account. The session doing the change survives it; every other session the person holds is
  * revoked.
+ *
+ * PRD-008a D2. The per-person limit is consumed as soon as the session names the person, before
+ * the body is read and so before any derivation, and a refused attempt answers the module's one
+ * 429 body. A wrong current password is still not a sign-in failure: D1a keeps this route out of
+ * the lockout on purpose (see `AUTH_RATE_LIMITS.change_password_user`).
  */
 export async function handleChangePassword(
   request: Request,
@@ -1482,6 +1655,14 @@ export async function handleChangePassword(
   try {
     const credentials = requiredCredentialPort(ports);
     const principal = await resolveAuthenticatedPrincipal(request, environment, ports);
+    const withinLimit = await consumePersonLimit(
+      credentials,
+      ports,
+      "change_password_user",
+      principal.actorId,
+    );
+    if (!withinLimit) return withCorrelationHeaders(rateLimitedResponse(), correlation);
+    const hasher = dependencies.passwordHasher ?? DEFAULT_PASSWORD_HASHER;
     const parsed = ChangePasswordRequestSchema.safeParse(await readJsonBody(request));
     if (!parsed.success) {
       return withCorrelationHeaders(schemaRefusal(parsed.error.issues), correlation);
@@ -1495,7 +1676,7 @@ export async function handleChangePassword(
 
     const credential = await credentials.lookupCredentialForUser(principal.actorId);
     if (credential === undefined) throw new UnauthenticatedPrincipalError();
-    if (!verifyPassword(credential.passwordHash, parsed.data.currentPassword)) {
+    if (!hasher.verify(credential.passwordHash, parsed.data.currentPassword)) {
       return withCorrelationHeaders(
         jsonResponse(401, { error: "AUTH_CURRENT_PASSWORD_REJECTED" }),
         correlation,
@@ -1515,12 +1696,11 @@ export async function handleChangePassword(
 
     await credentials.setPassword({
       userId: principal.actorId,
-      passwordHash: hashPassword(parsed.data.newPassword),
+      passwordHash: hasher.hash(parsed.data.newPassword),
       reason: "change",
       correlationRef: correlation.correlationRef,
       keepSessionId: parseSessionRef(principal.sessionId),
     });
-    void dependencies;
     return withCorrelationHeaders(jsonResponse(200, { state: "changed" }), correlation);
   } catch (error) {
     if (error instanceof AuthRequestBodyError) {

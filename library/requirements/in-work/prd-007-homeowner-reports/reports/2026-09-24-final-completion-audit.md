@@ -8,7 +8,7 @@
 
 ## Summary
 
-The approved dashboard, authenticated-page and homeowner-report implementation is complete after correcting the concurrent share-link replacement defect found in this audit. The correction passes its local database, unit, security and language checks; its complete CI and production deployment remain the final release actions and are recorded on the corrective pull request. External valuation, account-email and optional HighLevel delivery require user configuration and controlled live qualification.
+The approved dashboard, authenticated-page and homeowner-report implementation is complete after correcting the concurrent share-link replacement defect found in this audit. The correction passes its local database, unit, security and language checks; its post-merge CI gate and Production deployment are recorded under "Post-merge release record for `131c7f4`" below. External valuation, account-email and optional HighLevel delivery require user configuration and controlled live qualification.
 
 This is not a claim that all future PRD-002 modules, live paid advertising, CRM routing or subscription billing have been activated. Those remain outside this report release's acceptance boundary. Historical external-evidence ledgers are not changed by this audit.
 
@@ -28,7 +28,7 @@ None unresolved in the audited implementation. The share-rotation finding is rem
 
 ## Warnings (should fix)
 
-None requiring another code change identified within this release's scope. The complete gate and deployment must qualify the correction before it is described as shipped.
+None requiring another code change identified within this release's scope. The post-merge gate and Production deployment of the correction are recorded below, so it can be described as shipped.
 
 ## Suggestions (consider improving)
 
@@ -58,7 +58,21 @@ PR71's complete release run `35966032930` passed all four jobs on `39edc05`; its
 
 Existing Production evidence confirms all sixteen routes, saved-brand consumption, partner selection/removal, separate drafts and sign-out denial. Its synthetic account was retired with audit history preserved. These successful operations were not replayed during the audit, and the retired credentials were not reused.
 
-After the concurrency fix, all 25 related PostgreSQL tests, 28 homeowner unit tests and 87 contract/security tests passed. Type checking, lint, secret, product-type, package-boundary and diff checks passed. The corrective pull request records the complete new-head CI result, deployed commit and fresh Production smoke results when finished.
+After the concurrency fix, all 25 related PostgreSQL tests, 28 homeowner unit tests and 87 contract/security tests passed. Type checking, lint, secret, product-type, package-boundary and diff checks passed. The corrective pull request's merge commit is `131c7f4`; its post-merge CI result and Production deployment state are recorded next.
+
+### Post-merge release record for `131c7f4`
+
+Added 2026-10-01 by `library-guardian` (PRD-008e `008E-AC-008`), read with `gh` on that date. Every call was read-only and nothing in GitHub was changed. The full commit is `131c7f42ff1cc9b1b2c2c43c1c7c561fb8efe760`, the merge of PR #72 (merged 2026-09-24T07:56:35Z).
+
+| Item | What GitHub shows |
+| --- | --- |
+| Post-merge canonical gate | Run `35972386828`, workflow "Phase 0 CI", `push` event, head `131c7f42ff1cc9b1b2c2c43c1c7c561fb8efe760`. Created 2026-09-24T07:56:38Z, completed 2026-09-24T08:18:51Z. Conclusion `success`. Jobs: Application verification `success`, Real PostgreSQL migrations and pgTAP `success`, Release and recovery contract `success`, Preview smoke contract `skipped` (the preview-only job is intentionally skipped on main, as for run `35967797588` above). |
+| Commit status | Combined state `success`, one status. Context `Vercel`, description "Deployment has completed", created 2026-09-24T07:57:07Z, target `https://vercel.com/jonathan-ferrell/operation-automated-lo-web/HiQb4LGfTYh8QteQMJTTh6J9FyKD`. |
+| Deployment | One deployment for this SHA: id `6632971599`, environment `Production`, created 2026-09-24T07:57:07Z by `vercel[bot]`. GitHub's own `production_environment` flag on it reads false. |
+| Deployment status | One status: `success`, description "Deployment has completed", created 2026-09-24T07:57:07Z, environment URL `https://operation-automated-lo-2oduo5rl5-jonathan-ferrell.vercel.app`. No later status exists for this deployment. |
+| Later Production deployments | The next Production deployment GitHub lists is for `36b58f1`, created 2026-10-01T01:29:20Z. |
+
+So GitHub does determine the Production state of this commit: Vercel reported a Production deployment of `131c7f4` complete at 2026-09-24T07:57:07Z, and GitHub lists a later Production deployment created on 2026-10-01. It does not show whether that deployment was healthy after it completed. GitHub carries no smoke result for this commit. PR #72's body, which is the implementing agent's own text and not a commit status or deployment, says a fresh Production smoke passed at 07:58:08 UTC; this record does not rely on that statement. GitHub also lists five check runs named Dependabot on this SHA, from separate runs started 2026-09-28 and 2026-09-29 (three `success`, two `failure`); none is a Phase 0 CI job.
 
 ## User configuration required
 

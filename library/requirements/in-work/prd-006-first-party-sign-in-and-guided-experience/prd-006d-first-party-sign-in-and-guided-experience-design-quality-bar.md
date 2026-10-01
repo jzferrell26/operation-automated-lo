@@ -1,7 +1,7 @@
 # PRD-006d: First-Party Sign-In and Guided Experience - Design Quality Bar, 10 of 10
 
 > **Parent:** [PRD-006](./prd-006-first-party-sign-in-and-guided-experience-index.md)
-> **Status:** Draft
+> **Status:** Done in the ledger (PR #67, `58d77fd`, merged 2026-09-22). All 19 criteria are VERIFIED in `EXECUTION_LEDGER.md` (`CRR-170` to `CRR-188`), written back on 2026-10-01; none is operator-blocked. The 2026-09-21 [quality audit](./qa/2026-09-19-prd-006-qa-report.md) passes 16 and marks three partial. `006D-AC-019` (`CRR-188`; the database gate had not finished when the audit ran) is VERIFIED on the green full gate at `347177e`. `006D-AC-012` (`CRR-181`) and `006D-AC-015` (`CRR-184`) were the other two, because three named states carried no screenshot. PRD-008d redrew and installed the baselines (screen-baselines run `36844271868`, `cad9bf6`, compared green by CI run `36848467698`) and re-signed the design sign-off against `cad9bf6` with no not-photographed or asserted cell, and both rows were written to VERIFIED on that evidence on 2026-10-01.
 > **Priority:** P0 (owner requirement 4: if it does not look good, that is a defect)
 > **Schema changes:** None
 > **Owner Guardians:** `ux-ui-guardian` (the scored review of every screen), `design-system-guardian` (the new primitives and the token reconciliation, system-level change per the source-of-truth README), `react-guardian` (component work), `typography-font-guardian` (the font pipeline repair), the orchestrator (the final visual sign-off with real screenshots)
@@ -180,10 +180,10 @@ No pull request in PRD-006 that adds or changes a user-visible screen merges wit
 
 ## Open questions
 
-- [ ] Self-hosted Geist versus the system stack: depends on the licence check and the font pipeline; `typography-font-guardian` rules.
-- [ ] Whether the baseline-note check is a unit test over the pull request body (needs the body as an input) or a CI step using `gh pr view`; either satisfies 006D-AC-013.
-- [ ] Whether the email preview route should exist at all or the email templates should be screenshotted from a static file; recommendation: the route, because it renders through the same template code.
-- [ ] Whether to score the `/demo` route now that it is out of review mode; recommendation: no, record and defer.
+- [x] Self-hosted Geist versus the system stack: depends on the licence check and the font pipeline; `typography-font-guardian` rules. **Answered (2026-10-01):** the system stack in this batch; Geist self-hosting is deferred with its procedure recorded (`apps/web/public/fonts/README.md`, `006D-AC-004`).
+- [x] Whether the baseline-note check is a unit test over the pull request body (needs the body as an input) or a CI step using `gh pr view`; either satisfies 006D-AC-013. **Answered (2026-10-01):** neither. It is a unit test that diffs against the base ref (the 2026-09-20 amendment above; `tooling/tests/unit/design-quality/baseline-note.test.ts`).
+- [x] Whether the email preview route should exist at all or the email templates should be screenshotted from a static file; recommendation: the route, because it renders through the same template code. **Answered (2026-10-01):** the route exists (`apps/web/src/app/(public)/email-preview/page.tsx`), and PRD-008a `008A-AC-021` sandboxes its frame.
+- [x] Whether to score the `/demo` route now that it is out of review mode; recommendation: no, record and defer. **Answered (2026-10-01):** no, record and defer. `006D-AC-018` lists `/demo` as out of scope with its drift, and the Non-Goals exclude redesigning it.
 
 ## Exact operator ask
 

@@ -1,7 +1,7 @@
 # PRD-006c: First-Party Sign-In and Guided Experience - Guided Setup
 
 > **Parent:** [PRD-006](./prd-006-first-party-sign-in-and-guided-experience-index.md)
-> **Status:** Draft
+> **Status:** Done in the ledger (PR #67, `58d77fd`, merged 2026-09-22). All 22 criteria are VERIFIED in `EXECUTION_LEDGER.md` (`CRR-148` to `CRR-169`), written back on 2026-10-01; none is operator-blocked. The 2026-09-21 [quality audit](./qa/2026-09-19-prd-006-qa-report.md) passes 20 and marks two partial. `006C-AC-022` (`CRR-169`; the database gate had not finished when the audit ran) is VERIFIED on the green full gate at `347177e`. `006C-AC-020` (`CRR-167`) was the other: guided setup steps 1 and 2 at 1180 and 390 were asserted rather than photographed, and step 5's needs-changes branch was not photographed. PRD-008d photographed and compared them (`008D-AC-007`, `008D-AC-008`) and re-signed the design sign-off against `cad9bf6` (`008D-AC-010`), and the row was written to VERIFIED on that evidence on 2026-10-01.
 > **Priority:** P0 (owner requirement 3, and the owner's five-minute account setup rule)
 > **Schema changes:** Additive (one table, `platform.user_preferences`)
 > **Owner Guardians:** `product-tour-onboarding-ui-guardian` (anchor discipline, trigger rules, maintenance), `react-guardian` (the components), `ux-ui-guardian` (every step against the brief), `db-guardian` (the preferences table), `typescript-node-guardian` (the progress and profile routes), `technical-writing-craft-guardian` (step copy)
@@ -201,10 +201,10 @@ The `verify` CI job keeps `pnpm test:browser` in synthetic mode; the `database` 
 
 ## Open questions
 
-- [ ] Whether the `database` CI job's 20-minute timeout is enough once the review browser run is added; measure and raise as needed.
-- [ ] Whether the seven-day chip window should be configurable or fixed. Recommendation: fixed.
-- [ ] Whether step 2 should ask for the NMLS number at all in this release, since nothing renders it yet. Recommendation: ask, mark optional, because the FAQ already promises partner and brand details are captured during setup for later.
-- [ ] Whether the starter text for headline, body, and disclosure should come from a template registry rather than constants, so a compliance owner can change it later. Recommendation: constants now, one file, easy to move.
+- [x] Whether the `database` CI job's 20-minute timeout is enough once the review browser run is added; measure and raise as needed. **Answered (2026-10-01):** raised to 60 minutes (`timeout-minutes: 60`, `.github/workflows/ci.yml:97`; it was 20 at `c140f11`).
+- [x] Whether the seven-day chip window should be configurable or fixed. Recommendation: fixed. **Answered (2026-10-01):** fixed at seven days (`FINISH_SETUP_CHIP_DAYS = 7`, `apps/web/src/features/guided-setup/model/progress.ts:18`).
+- [x] Whether step 2 should ask for the NMLS number at all in this release, since nothing renders it yet. Recommendation: ask, mark optional, because the FAQ already promises partner and brand details are captured during setup for later. **Answered (2026-10-01):** step 2 asks for it and marks it optional ("NMLS number (optional)" in `apps/web/src/copy/guided-setup-messages.ts`; `nmlsNumber` is an optional field in `apps/web/src/features/guided-setup/model/profile.ts`).
+- [x] Whether the starter text for headline, body, and disclosure should come from a template registry rather than constants, so a compliance owner can change it later. Recommendation: constants now, one file, easy to move. **Answered (2026-10-01):** constants in one file, as recommended (`CAMPAIGN_STARTER_TEXT`, `apps/web/src/features/guided-setup/model/profile.ts`). A template registry stays a later option.
 
 ## Exact operator ask
 
@@ -239,3 +239,4 @@ None for the code. The deployed walkthrough is exercised during PRD-005e's seven
 - [Application shell and navigation spec](../../../knowledge/private/ux-ui/03-components/application-shell-and-navigation.md) (dialog and drawer rules)
 - [Campaign lifecycle spec](../../../knowledge/private/ux-ui/04-screens/campaign-lifecycle.md) (the create screen must not ask for canonical data twice)
 - [Onboarding checklist spec](../../../knowledge/private/ux-ui/03-components/onboarding-checklist.md) (what the walkthrough does not replace)
+- **2026-09-30, D9, the sign-up switch the review browser run sets (PRD-008a 008A-AC-023).** No wording changes. D9's step 2 sets `OALO_SELF_SERVE_SIGNUP=enabled` for one disposable run. Security Ruling 1 of the PRD-005/006 batch security audit (2026-09-19) keeps sign-up's duplicate-email disclosure only while sign-up is off by default; turning it on by default requires moving to the emailed path first. A per-run opt-in on a disposable database is within that condition. Touches: D9 (no wording change).

@@ -350,3 +350,75 @@ export async function saveTheCampaign(
   await page.waitForURL(/\/marketing\/campaigns\/(?!new$)[^/]+$/u);
   return page.url();
 }
+
+/**
+ * The step has placed itself for this frame, from a canonical start, and the page has stopped
+ * moving.
+ *
+ * The walkthrough scrolls the page when a step attaches and again whenever the frame or the
+ * layout around the element changes. Measured on 2026-09-21: the runner's comparison of step 6
+ * at 1440 caught the picture between the attach and that later scroll, with the approve card
+ * still under the panel, and a wait on the element's geometry proved wrong at step 5, whose
+ * element is taller than the space beside the panel by design (the model keeps its top). So the
+ * capture asks the step to settle for the frame it is in (a resize is a placement change) and
+ * then waits for the scroll position to hold still for six frames, which is what the picture
+ * needs: the same scroll every time, taken after the last movement.
+ *
+ * Two canonical starts, because the product has two ways of arriving at a step.
+ *
+ * - `element`: the highlighted element at the top of the frame, under the header, so the step's
+ *   own scroll decides the final position from the same place every time. Without this the model
+ *   answers zero for an element that is already clear, and where it is clear depends on what the
+ *   layout did between the attach and the picture (measured on 2026-09-21: the runner's step 6 at
+ *   1440 differed from its baseline by the height the header gained when its font arrived). A step
+ *   that points at nothing on the page (step 7 is anchored to its own panel) scrolls nothing
+ *   itself, so it starts from the top of the page, the one start that does not depend on the
+ *   page's length (measured on 2026-09-21: the runner's step 7 at 1440 sat 426 pixels below its
+ *   baseline, at the very end of the page).
+ * - `top`: the top of the page, then the step's own scroll. This is how a person meets step 1: the
+ *   walkthrough opens on the overview as the page loads, and the product scrolls the quick actions
+ *   clear of the panel. PRD-008d, the scored baseline review of 2026-10-01: the step-1 pictures
+ *   were taken from the top of the page with that scroll undone, so at 1180, 768, and 390 the
+ *   walkthrough pointed at quick actions below the fold, which is a picture of a state nobody
+ *   using the product is ever in.
+ */
+export async function letTheStepPlaceItself(
+  page: Page,
+  start: "element" | "top" = "element",
+): Promise<void> {
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await page.evaluate(
+    (fromTheTop) =>
+      new Promise<void>((resolve, reject) => {
+        const highlighted = document.querySelector("[data-guided-setup-highlight='true']");
+        if (fromTheTop || highlighted === null) {
+          window.scrollTo({ behavior: "instant", top: 0 });
+        } else {
+          highlighted.scrollIntoView({ behavior: "instant", block: "start" });
+        }
+        window.dispatchEvent(new Event("resize"));
+        const started = performance.now();
+        let last = window.scrollY;
+        let still = 0;
+        const tick = (): void => {
+          if (window.scrollY === last) {
+            still += 1;
+          } else {
+            still = 0;
+            last = window.scrollY;
+          }
+          if (still >= 6) {
+            resolve();
+            return;
+          }
+          if (performance.now() - started > 10_000) {
+            reject(new Error("the walkthrough kept scrolling for ten seconds"));
+            return;
+          }
+          window.requestAnimationFrame(tick);
+        };
+        window.requestAnimationFrame(tick);
+      }),
+    start === "top",
+  );
+}

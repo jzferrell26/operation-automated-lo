@@ -2,17 +2,24 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   captureNamedState,
+  expectNothingShowsBelowThePanelFooter,
   REVIEW_FRAMES,
   settleForScreenshot,
 } from "../helpers/design-quality.js";
-import { READY_OPEN_HOUSE, fillTheOpenHouseDraft } from "../helpers/open-house-draft.js";
+import {
+  FINISHED_OPEN_HOUSE,
+  READY_OPEN_HOUSE,
+  fillTheOpenHouseDraft,
+} from "../helpers/open-house-draft.js";
 import {
   continueToPanel,
   expectNoExternalRequests,
   freshEmail,
   guardLocalOrigin,
+  letTheStepPlaceItself,
   pointThePanelAtTheSubmitControl,
   restartGuidedSetup,
+  runTheChecksFromTheWalkthrough,
   saveTheCampaign,
   seededCredentials,
   signInExisting,
@@ -28,10 +35,11 @@ import {
 /**
  * PRD-006d D3 and D8, for the five guided-setup steps nothing photographed.
  *
- * `design-quality.spec.ts` takes steps 1 and 2 at 1440 and 768. Steps 3 through 7 were scored by
+ * `design-quality.spec.ts` takes steps 1 and 2 at all four frames. Steps 3 through 7 were scored by
  * eye and never captured, because reaching them needs the whole journey: a saved campaign, a
  * person who can approve it, and a person who cannot. They are taken here, at all four frames in
- * both themes, with the same four checks every other named state gets.
+ * both themes, with the same four checks every other named state gets. So is step 5's second
+ * answer, the one a campaign the checks refuse gets (PRD-008d, S-3).
  *
  * **Nothing writes progress into the database.** Every state below is reached by walking the
  * walkthrough with the controls a person uses. A spec that inserted a `guided_setup.v1` row to
@@ -64,68 +72,6 @@ function panel(page: Page) {
 }
 
 /**
- * The step has finished scrolling for this frame.
- *
- * The walkthrough scrolls the page when a step attaches and again whenever the frame or the
- * layout around the element changes. Measured on 2026-09-21: the runner's comparison of step 6
- * at 1440 caught the picture between the attach and that later scroll, with the approve card
- * still under the panel, and a wait on the element's geometry proved wrong at step 5, whose
- * element is taller than the space beside the panel by design (the model keeps its top). So the
- * capture asks the step to settle for the frame it is in (a resize is a placement change) and
- * then waits for the scroll position to hold still for six frames, which is what the picture
- * needs: the same scroll every time, taken after the last movement.
- */
-async function expectStepHasSettled(page: Page): Promise<void> {
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve, reject) => {
-        // From a canonical start: the element at the top of the frame, under the header, so the
-        // step's own scroll decides the final position from the same place every time. Without
-        // this the model answers zero for an element that is already clear, and where it is clear
-        // depends on what the layout did between the attach and the picture (measured on
-        // 2026-09-21: the runner's step 6 at 1440 differed from its baseline by the height the
-        // header gained when its font arrived).
-        const highlighted = document.querySelector("[data-guided-setup-highlight='true']");
-        if (highlighted === null) {
-          // A step that points at nothing on the page (step 7 is anchored to its own panel)
-          // scrolls nothing itself, so the frame would hold whatever the previous step left and
-          // whatever the browser's clamp did to it when the page's length changed: the room the
-          // panel reserves below the content follows the panel's measured size, which arrives
-          // after the step opens. Measured on 2026-09-21: the runner's step 7 at 1440 sat 426
-          // pixels below its baseline, at the very end of the page. The top of the page is the
-          // one start that does not depend on the page's length.
-          window.scrollTo({ behavior: "instant", top: 0 });
-        } else {
-          highlighted.scrollIntoView({ behavior: "instant", block: "start" });
-        }
-        window.dispatchEvent(new Event("resize"));
-        const started = performance.now();
-        let last = window.scrollY;
-        let still = 0;
-        const tick = (): void => {
-          if (window.scrollY === last) {
-            still += 1;
-          } else {
-            still = 0;
-            last = window.scrollY;
-          }
-          if (still >= 6) {
-            resolve();
-            return;
-          }
-          if (performance.now() - started > 10_000) {
-            reject(new Error("the walkthrough kept scrolling for ten seconds"));
-            return;
-          }
-          window.requestAnimationFrame(tick);
-        };
-        window.requestAnimationFrame(tick);
-      }),
-  );
-}
-
-/**
  * One step, at all four frames, in both themes.
  *
  * The capture is of the viewport rather than the whole page. The panel is a fixed layer placed
@@ -138,7 +84,7 @@ async function captureStep(page: Page, state: string): Promise<void> {
     await page.setViewportSize({ width: 1440, height: 900 });
     await chooseThemeFromTheHeader(page, theme);
     await expect(panel(page)).toBeVisible();
-    await expectStepHasSettled(page);
+    await letTheStepPlaceItself(page);
     for (const frame of REVIEW_FRAMES) {
       await page.setViewportSize({ width: frame.width, height: frame.height });
       await settleForScreenshot(page, { keepScroll: true });
@@ -146,7 +92,8 @@ async function captureStep(page: Page, state: string): Promise<void> {
       // A valid scroll position from the tablet frame is not a canonical mobile
       // capture position. Reset only this boundary, then let the product place its
       // highlighted element; all the existing screenshots and assertions remain.
-      if (frame.width < 768) await expectStepHasSettled(page);
+      if (frame.width < 768) await letTheStepPlaceItself(page);
+      await expectNothingShowsBelowThePanelFooter(page, frame);
       await captureNamedState(page, {
         screen: "guided-setup",
         state,
@@ -160,10 +107,11 @@ async function captureStep(page: Page, state: string): Promise<void> {
   await page.setViewportSize({ width: 1440, height: 900 });
 }
 
-test("the guided setup's steps 3 through 7 meet the bar on the approver's path", async ({
+test("the guided setup's steps 3 through 7, and step 5's refusal, meet the bar on the approver's path", async ({
   page,
 }) => {
-  // One journey of seven steps with deliberate typing, forty screenshots, and two themes.
+  // One journey of seven steps with deliberate typing, forty screenshots, and two themes, then a
+  // second walk to step 5 for eight more.
   /**
    * Wave 7m. A budget, not a place to hang.
    *
@@ -173,8 +121,12 @@ test("the guided setup's steps 3 through 7 meet the bar on the approver's path",
    * here is now the measured duration with room on top. Measured on 2026-09-20 against the
    * review composition with the processor throttled 4x, which is slower than the `ubuntu-24.04`
    * runner's own numbers for the same tests: 132 s here, 90 s on the runner.
+   *
+   * PRD-008d added the second walk. Measured on 2026-10-01 in the review composition on a Windows
+   * workstation: the first journey alone took 66 s and the second walk about 25 s, so the budget
+   * grows by the same proportion.
    */
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   const guard = await guardLocalOrigin(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await signUpFreshAccount(page, freshEmail());
@@ -232,6 +184,40 @@ test("the guided setup's steps 3 through 7 meet the bar on the approver's path",
   await page.getByRole("button", { name: "Done" }).click();
   await expect(panel(page)).toBeHidden();
 
+  /**
+   * PRD-008d 008D-AC-007, S-3: step 5's needs-changes answer, the sign-off's "Guided setup step 5,
+   * read the result, needs changes" row.
+   *
+   * The journey above saves a campaign the checks accept, because that is the journey PRD-006c
+   * D3's budget is written against, so it photographs step 5's ready answer only. The other answer
+   * needs a draft the checks refuse, and the refusal is the product's own: an open house that
+   * finished years ago is the blocking finding `OPEN_HOUSE_DATES_INVALID`
+   * (`tests/browser/helpers/open-house-draft.ts`), the one rule this draft fails. Everything else in
+   * it is the draft the ready picture saved.
+   *
+   * It is the same person, walked again from step 1 with the control a person uses to start over,
+   * and saved from inside the walkthrough. That is deliberate twice over. The two step-5 pictures
+   * then differ by the answer and not by the workspace or the page behind it. And it costs the run
+   * no sign-in: a separate case for it signed the seeded creator in once more, and on 2026-10-01
+   * that was the twenty-first sign-in from this address inside fifteen minutes
+   * (`AUTH_RATE_LIMITS.sign_in_ip`), so the last spec in the run was refused "Too many attempts".
+   *
+   * The answer is asserted in words before anything is photographed, because the picture is only
+   * compared on the runner that drew it: the needs-changes sentence, the finding's own description,
+   * and no ready sentence anywhere in the panel.
+   */
+  await restartGuidedSetup(page);
+  await walkToTheCreateStep(page);
+  await fillTheOpenHouseDraft(page, FINISHED_OPEN_HOUSE);
+  await runTheChecksFromTheWalkthrough(page);
+
+  const refusedResult = page.getByRole("dialog", { name: "Read the result" });
+  await expect(refusedResult).toContainText("the checks found things to fix first");
+  await expect(refusedResult).toContainText("The open-house dates are expired or out of order.");
+  await expect(refusedResult).not.toContainText("ready for approval");
+  await captureStep(page, "step-5-read-the-result-needs-changes");
+
+  await putTheWalkthroughAside(page);
   expectNoExternalRequests(guard);
 });
 

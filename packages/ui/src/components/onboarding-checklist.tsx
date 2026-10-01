@@ -127,7 +127,9 @@ function OnboardingEvidenceDetails({ evidence }: { evidence: OnboardingEvidence 
       </div>
       <div>
         <dt>Checked on</dt>
-        <dd>{evidence.verifiedAt}</dd>
+        <dd>
+          <time dateTime={evidence.verifiedAt}>{evidence.verifiedAt}</time>
+        </dd>
       </div>
     </dl>
   );

@@ -35,16 +35,22 @@ const repositoryRoot = resolve(import.meta.dirname, "../../../..");
  * `packages/application/src` widened in, 2026-09-20: it is where a campaign's role-aware next
  * step is written (`campaign-workspace-read.ts`'s `label` fields, consumed by
  * `persisted-campaign-screen.tsx` and `open-house-draft-builder.tsx`), so a word banned in the
- * component that renders it was still legal one layer down. See the EXCLUDED entries below for
- * the one file this widening reaches that is still mid-migration. The campaign next-step copy
- * moved into apps/web/src/copy/user-language.ts on 2026-09-21 (the application layer returns
- * keys), so campaign-workspace-read.ts is scanned like any other file.
+ * component that renders it was still legal one layer down. The campaign next-step copy moved
+ * into apps/web/src/copy/user-language.ts on 2026-09-21 (the application layer returns keys), so
+ * campaign-workspace-read.ts is scanned like any other file, and the reporting sentences moved
+ * into apps/web/src/copy/reporting-messages.ts on 2026-09-30 for the same reason, which closed the
+ * last temporary exclusion this widening needed (PRD-008c, 008C-AC-005).
+ *
+ * `apps/web/src/server/homeowners` widened in on 2026-09-30 (PRD-008c, 008C-AC-001): its refusals
+ * reach the screen through `homeError` in `http.ts`, and the `HomeownerError` messages in it were
+ * exempt as thrown errors until `USER_FACING_ERRORS` below named that class as one a person reads.
  */
 const SCANNED_ROOTS: readonly string[] = [
   "apps/web/src/app",
   "apps/web/src/copy",
   "apps/web/src/features",
   "apps/web/src/server/email",
+  "apps/web/src/server/homeowners",
   "packages/application/src",
   "packages/ui/src/components",
 ];
@@ -91,11 +97,6 @@ const EXCLUDED: readonly Readonly<{ path: string; because: string }>[] = [
     because:
       "Local hash-computation fixture data for `projectApproval`'s deterministic evidence, same Non-Goals class as synthetic-ui.ts. Reviewed 2026-09-20: it has no import outside its own unit test, so nothing in it reaches a screen.",
   },
-  {
-    path: "packages/application/src/reporting.ts",
-    because:
-      'Added 2026-09-20 with the packages/application/src widening above, temporarily: this file\'s provider-connection and reporting-exception sentences ("The provider connection has expired.", "A lead could not be delivered through the approved route.", and the rest) fail D2 today ("provider", "route"). Same removal condition as the campaign-workspace-read.ts entry that was removed on 2026-09-21 once its copy moved: this entry goes the moment reporting.ts renders through the copy module.',
-  },
 ];
 
 /**
@@ -138,6 +139,18 @@ const COPY_KEYS: readonly string[] = [
   "title",
   "value",
 ];
+
+/**
+ * Error classes whose message a person reads, so the diagnostic exemption below does not apply.
+ *
+ * `HomeownerError` is how the homeowner report server refuses a request: `homeError` in
+ * `apps/web/src/server/homeowners/http.ts` puts its message in the response body, and
+ * `use-home-workspace.ts` shows that message in the alert on the screen. Read as a thrown error it
+ * would be exempt, which is how "Set the report website address before sharing." reached a loan
+ * officer without the guard ever looking at it (PRD-008c, 008C-AC-001). A class joins this list
+ * only when something renders its message; most errors in this product are log text and stay exempt.
+ */
+const USER_FACING_ERRORS: readonly string[] = ["HomeownerError"];
 
 type CopyString = Readonly<{ file: string; line: number; text: string }>;
 
@@ -229,7 +242,11 @@ function assignedKey(node: ts.Node): string | undefined {
  */
 function isDiagnosticMessage(node: ts.Node): boolean {
   for (let current = node.parent; current !== undefined; current = current.parent) {
-    if (ts.isNewExpression(current) && current.expression.getText().endsWith("Error")) {
+    if (
+      ts.isNewExpression(current) &&
+      current.expression.getText().endsWith("Error") &&
+      !USER_FACING_ERRORS.includes(current.expression.getText())
+    ) {
       return true;
     }
     if (
@@ -358,10 +375,45 @@ describe("user-language guard, source level", () => {
      * one URL in the product that needs no sign-in to read.
      */
     expect(files.has("apps/web/src/app/public/synthetic-open-house-v3/page.tsx")).toBe(true);
+    /**
+     * PRD-008c. The homeowner report server's refusals reach the screen, so the directory is read
+     * (008C-AC-001). The reporting sentences left the application layer, so `reporting.ts` is read
+     * like any other file rather than excused, and holds no English at all (008C-AC-005): it is in
+     * the scan, and it contributes no copy string to it.
+     */
+    expect(files.has("apps/web/src/server/homeowners/runtime.ts")).toBe(true);
+    expect(files.has("apps/web/src/server/homeowners/http.ts")).toBe(true);
+    expect(files.has("apps/web/src/copy/reporting-messages.ts")).toBe(true);
+    /**
+     * PRD-008b D1. The empty-images sentence lives in a copy file of its own, and is the one
+     * sentence a screen says about a version's images, so the guard has to be reading it.
+     */
+    expect(files.has("apps/web/src/copy/campaign-image-messages.ts")).toBe(true);
+    expect(await collectSourceFiles("packages/application/src")).toContain(
+      "packages/application/src/reporting.ts",
+    );
+    expect(files.has("packages/application/src/reporting.ts")).toBe(false);
   }, 30_000);
 
   it("states a reason for every path it does not read", () => {
     expect(EXCLUDED.every((entry) => entry.because.length > 20)).toBe(true);
+  });
+
+  /**
+   * PRD-008c 008C-AC-005: "no other temporary exclusion remains". An exclusion that waits on a
+   * migration says so in its reason, so the claim can be read off the list instead of remembered.
+   * The permanent ones (the word list itself, and demo fixture data the PRD-006b Non-Goals carve
+   * out) say why they are permanent and never describe themselves as a stopgap.
+   */
+  it("holds no temporary exclusion", () => {
+    expect(EXCLUDED.map((entry) => entry.path)).not.toContain(
+      "packages/application/src/reporting.ts",
+    );
+    expect(
+      EXCLUDED.filter((entry) =>
+        /temporar|removal condition|goes the moment/iu.test(entry.because),
+      ),
+    ).toEqual([]);
   });
 
   it("reads the syntax tree, so a comment is never mistaken for copy", () => {
@@ -406,6 +458,109 @@ describe("user-language guard, source level", () => {
       "d.tsx:4 dash",
       "e.tsx:5 identifier",
     ]);
+  });
+
+  /**
+   * PRD-008c 008C-AC-001 and 008C-AC-002, the red half of red-then-green.
+   *
+   * These are the three sentences exactly as `131c7f4` shipped them, planted in the same shapes
+   * the real files held: two refusals thrown as `HomeownerError` from the homeowner report server,
+   * and one status line chosen in a ternary on the workspace routing card. Before the guard read
+   * `apps/web/src/server/homeowners` and before it knew `HomeownerError` is a message a person
+   * reads, the first two were invisible to it; before "adapter" and "origin" were on the list the
+   * second and third passed it even where it could see them. The recorded run that failed on the
+   * real files is quoted in the PRD-008c lane report; this case keeps the same proof in the suite,
+   * so removing the extension turns it red again.
+   */
+  it("fails on the 131c7f4 text of the homeowner refusals and the workspace valuation line", () => {
+    const runtime = collectCopyStrings(
+      "apps/web/src/server/homeowners/runtime.ts",
+      [
+        "throw new HomeownerError(",
+        '  "REPORT_URL_NOT_CONFIGURED",',
+        "  503,",
+        '  "Set the report website address before sharing.",',
+        ");",
+        "throw new HomeownerError(",
+        '  "REPORT_URL_NOT_CONFIGURED",',
+        "  503,",
+        '  "The report website address must be a secure origin.",',
+        ");",
+      ].join("\n"),
+    );
+    const workspace = collectCopyStrings(
+      "apps/web/src/features/workspace/workspace-screen.tsx",
+      [
+        "const detail = valuationConfigured",
+        '  ? "A valuation adapter is configured for this workspace. Each new lookup still requires an allowance and a confirmed request."',
+        '  : "A valuation connection and an approved workspace allowance are needed before requesting live values.";',
+      ].join("\n"),
+    );
+
+    expect(report([...runtime, ...workspace])).toEqual([
+      'apps/web/src/server/homeowners/runtime.ts:4 phrase "setup instruction for an administrator: Set the report website address" in "Set the report website address before sharing."',
+      'apps/web/src/server/homeowners/runtime.ts:9 term "origin" in "The report website address must be a secure origin."',
+      'apps/web/src/features/workspace/workspace-screen.tsx:2 term "adapter" in "A valuation adapter is configured for this workspace. Each new lookup still requires an allowance and a confirmed request."',
+    ]);
+  });
+
+  /**
+   * The exemption `USER_FACING_ERRORS` carves out is narrow. A thrown `Error` is still log text, and
+   * so is a `HomeownerError`-shaped class nobody renders, so only the named class is read.
+   */
+  it("still treats an ordinary thrown error as log text rather than copy", () => {
+    expect(
+      collectCopyStrings(
+        "planted.ts",
+        [
+          'throw new Error("The review surface is not connected to any provider.");',
+          'throw new ReportingError("Cross-tenant minimum sample size must be at least two.");',
+        ].join("\n"),
+      ),
+    ).toEqual([]);
+  });
+
+  /**
+   * "adapter" and "origin" are banned in the sense a loan officer never meets, which is the only
+   * sense this product uses them in. The matcher stops at the word, so a word that merely starts
+   * with "origin" is not caught, in the same way "regional" is not caught by a ban on "region".
+   */
+  it("bans adapter and origin without banning a word that merely starts with origin", () => {
+    expect(
+      report([
+        { file: "j.tsx", line: 1, text: "Open the valuation adapters for this workspace." },
+        { file: "j.tsx", line: 2, text: "Links must start with a secure origin." },
+      ]).map((entry) => entry.split(" ").slice(0, 3).join(" ")),
+    ).toEqual(['j.tsx:1 term "adapter"', 'j.tsx:2 term "origin"']);
+    expect(
+      report([
+        { file: "k.tsx", line: 1, text: "We kept the original photo and every original file." },
+        { file: "k.tsx", line: 2, text: "This lead originated from your open house." },
+      ]),
+    ).toEqual([]);
+  });
+
+  /**
+   * The administrator-task shape. A word list cannot tell that a perfectly plain sentence is
+   * addressed to the wrong person, so the guard also bans the imperative to set or configure a named
+   * piece of deployment configuration. It must leave alone every "set" a loan officer can act on.
+   */
+  it("bans a setup instruction for an administrator without banning a step a loan officer can take", () => {
+    expect(
+      report([
+        { file: "l.tsx", line: 1, text: "Configure the sender address before sending." },
+        { file: "l.tsx", line: 2, text: "Set the API key for this workspace." },
+      ]).map((entry) => entry.split(" ").slice(0, 3).join(" ")),
+    ).toEqual(['l.tsx:1 phrase "setup', 'l.tsx:2 phrase "setup']);
+    expect(
+      report([
+        { file: "m.tsx", line: 1, text: "Set a budget for the campaign." },
+        { file: "m.tsx", line: 2, text: "Set your company name and NMLS number." },
+        { file: "m.tsx", line: 3, text: "Set the date and time of the open house." },
+        { file: "m.tsx", line: 4, text: "Contact support to get it set up." },
+        { file: "m.tsx", line: 5, text: "Your settings are saved." },
+      ]),
+    ).toEqual([]);
   });
 
   /**

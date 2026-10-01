@@ -73,6 +73,16 @@ const headings: Record<WorkspaceView, { title: string; description: string }> = 
     description: "Review valuation usage separately from subscription or lookup charges.",
   },
 };
+/**
+ * What the report branding page says when homeowner reports are not turned on for the workspace.
+ *
+ * The branding is real and is saved either way, so the page keeps saying so. What it cannot say is
+ * that the branding gives "every new homeowner report" an identity, because a workspace with the
+ * reports module off has nowhere to create one. This is the sentence for that state; the one in the
+ * map above is for the state where they are on.
+ */
+const REPORT_BRANDING_WHILE_REPORTS_ARE_OFF =
+  "Your branding is saved here for homeowner reports, which aren't turned on for this workspace yet.";
 type ToolCard = { title: string; detail: string; href: string; icon: IconName };
 const marketingTools: ToolCard[] = [
   {
@@ -307,7 +317,7 @@ function Routing({ data }: { data: WorkspacePageData }) {
             title: "Property valuations",
             ready: data.valuationConfigured,
             detail: data.valuationConfigured
-              ? "A valuation adapter is configured for this workspace. Each new lookup still requires an allowance and a confirmed request."
+              ? "Your valuation connection is set up for this workspace. Each new lookup counts against your monthly allowance. You confirm the ones you start, and monthly updates, if you turn them on, run without asking each time."
               : "A valuation connection and an approved workspace allowance are needed before requesting live values.",
           },
           {
@@ -379,7 +389,11 @@ export function WorkspaceScreen({ data }: { data: WorkspacePageData }) {
         <div>
           <span className={styles.eyebrow}>{data.identity.company}</span>
           <h1>{heading.title}</h1>
-          <p>{heading.description}</p>
+          <p>
+            {data.view === "profile" && !data.reportsEnabled
+              ? REPORT_BRANDING_WHILE_REPORTS_ARE_OFF
+              : heading.description}
+          </p>
         </div>
         {!["profile", "partners", "messaging"].includes(data.view) ? (
           <Button variant="outline" onClick={() => router.refresh()}>

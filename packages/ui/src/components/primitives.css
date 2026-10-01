@@ -108,6 +108,11 @@
 .oalo-checklist__heading {
   align-items: flex-start;
   display: flex;
+  /* PRD-008d, the scored baseline review of 2026-10-01. The state label does not shrink, so in a
+   * card narrower than its title and label together it ran past the card's edge: at 1440 and 1180
+   * the overview's metric cards clipped "Not connected" and pushed "Needs a refresh" outside the
+   * card. When the two do not fit side by side, the label takes the next line. */
+  flex-wrap: wrap;
   gap: var(--space-3);
   justify-content: space-between;
 }
@@ -147,11 +152,16 @@
   border-radius: var(--radius-pill);
   color: var(--st-neutral-fg);
   display: inline-flex;
-  flex: none;
+  /* PRD-008d, the scored baseline review of 2026-10-01. A label that is wider than its card even
+   * on a line of its own ("Uncertain, reconciling" in the overview's narrowest metric card at 1440)
+   * may shrink to the card and wrap its words, rather than run past the card's edge. A label with
+   * room keeps its single line, so nothing that already fitted moves. */
+  flex: 0 1 auto;
   font-size: var(--text-caption-size);
   font-weight: var(--weight-medium);
   gap: var(--space-1);
   line-height: var(--leading-normal);
+  max-inline-size: 100%;
   padding-block: var(--space-1);
   padding-inline: var(--space-2);
 }

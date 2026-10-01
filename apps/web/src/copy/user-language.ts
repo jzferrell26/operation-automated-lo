@@ -183,9 +183,26 @@ export const SUPPORT_DETAILS_LABELS = Object.freeze({
  */
 export const SUPPORT_REFERENCE_NOT_RECORDED = "Not recorded";
 
-/** The two words the campaign check ends in. Never "passed" or "blocked". */
+/**
+ * What the campaign check ends in. Never "blocked".
+ *
+ * Two results are the check's own: "Ready for approval" when it passed and a decision is still to
+ * be made, and "Needs changes" when it found something to fix. The third is what the heading says
+ * once the version is no longer waiting for that decision, because somebody approved it or sent it
+ * back: the checks still passed, and "Ready for approval" would be false.
+ */
 export const CHECK_RESULT_READY = "Ready for approval";
 export const CHECK_RESULT_NEEDS_CHANGES = "Needs changes";
+export const CHECK_RESULT_PASSED = "Checks passed";
+
+/**
+ * A sent-back version stays in `awaiting_approval`, because the approval command records the
+ * rejection and sets that state again. These two say what is true of it, and the second is the
+ * check card's sentence for it: the checks passed, and the way forward is a new version.
+ */
+export const CAMPAIGN_SENT_BACK_LABEL = "Sent back for changes";
+export const CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION =
+  "It was sent back for changes, so it needs a new version before anyone can approve it.";
 
 /**
  * PRD-006d 006D-AC-011. What a field says when a save comes back naming it.
@@ -230,6 +247,24 @@ export const CAMPAIGN_STATE_LABELS: Readonly<Record<CampaignState, string>> = Ob
   completed: "Finished",
   archived: "Archived",
 });
+
+/**
+ * Where a campaign stands, given what has been decided on it.
+ *
+ * `CAMPAIGN_STATE_LABELS` is keyed by the stored state, and a send-back does not change the stored
+ * state: the campaign stays in `awaiting_approval` with a rejection recorded against it. Read on its
+ * own the state says "Ready for approval" about a version that was just sent back. The recorded
+ * decision is what tells the two apart, so a screen that shows where a campaign stands asks here
+ * with the decision it has, and gets the state's phrase unless that decision is a send-back.
+ */
+export function campaignStateLabel(
+  state: CampaignState,
+  decision: "approved" | "rejected" | undefined,
+): string {
+  return state === "awaiting_approval" && decision === "rejected"
+    ? CAMPAIGN_SENT_BACK_LABEL
+    : CAMPAIGN_STATE_LABELS[state];
+}
 
 /**
  * What to do next about one campaign, keyed by the step the application layer named.

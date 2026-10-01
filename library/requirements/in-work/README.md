@@ -25,3 +25,10 @@ Current in-work PRDs:
   - moved from `backlog/` to `in-work/` on 2026-09-19 when the gauntlet raid took it on; ledger rows follow the PRD-005 section in [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md)
   - 006a email and password sign-in with sign-up, forgot-password, and reset; 006b user language; 006c guided setup under five minutes; 006d design quality bar (10 of 10)
   - supersedes PRD-005b design decision D4 (persona plus operator secret); reuses the PRD-005b session store
+- PRD-007 Homeowner reports (the authorized homeowner-intelligence slice of PRD-002e)
+  - implementation merged in PRs #69, #71, and #72; live valuation and HighLevel delivery wait on operator configuration (finish-line operator checklist steps 6a and 6b)
+  - its evidence lives in `reports/` rather than `qa/`
+
+Moved out of `in-work/`:
+
+- PRD-008 Finish-Line Hardening moved to [`completed/`](../completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) on 2026-10-01, at the end of the Gauntlet run on branch `claude/gauntlet-prd-008`. It is complete in pull request #74, and the merge waits for the owner.

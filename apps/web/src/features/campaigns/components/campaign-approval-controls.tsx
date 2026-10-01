@@ -1,7 +1,8 @@
 "use client";
 
 import { Button, Card, SafeAction, type SafeActionDecision } from "@oalo/ui";
-import { useState } from "react";
+import { useRouter } from "next/navigation.js";
+import { useEffect, useRef, useState } from "react";
 
 import {
   APPROVER_OR_OWNER,
@@ -9,6 +10,7 @@ import {
   WORKSPACE_OWNER_PARTY,
 } from "../../../copy/user-language.js";
 import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
+import { useGuidedSetup } from "../../guided-setup/guided-setup-context.js";
 import { CampaignHandOff } from "./campaign-hand-off.js";
 import { userMessageSentence } from "../../http/user-messages.js";
 import {
@@ -67,6 +69,25 @@ export function CampaignApprovalControls({
     alreadyDecided === undefined ? null : recorded(decisionStatus(alreadyDecided, false)),
   );
   const [busy, setBusy] = useState(false);
+  /**
+   * PRD-008b D2. True once the route has answered 200 to a decision made on this card, a duplicate
+   * included. It is local on purpose: the refreshed page hands this component `alreadyDecided`, but
+   * the person who just decided should see the outcome they caused rather than the blocked control
+   * a later visitor sees, and the same instance keeps this state across the refresh.
+   */
+  const [decided, setDecided] = useState(false);
+  const router = useRouter();
+  const guidedSetup = useGuidedSetup();
+  const outcomeRef = useRef<HTMLParagraphElement | null>(null);
+
+  /*
+   * The control that had focus (the confirm button, or Send back) is gone once the outcome replaces
+   * it, and focus would fall to the top of the document. The outcome is where the person's
+   * attention belongs, and it is already the page's status announcement.
+   */
+  useEffect(() => {
+    if (decided) outcomeRef.current?.focus();
+  }, [decided]);
 
   const decision: SafeActionDecision = resolveDecision({
     canApprove,
@@ -105,6 +126,17 @@ export function CampaignApprovalControls({
         duplicate?: boolean;
       };
       setStatus(recorded(decisionStatus(body.decision, body.duplicate === true)));
+      setDecided(true);
+      // 008B-AC-010. The guided walkthrough, when there is one, hears what was recorded now, so its
+      // step agrees with this card without waiting for the refreshed page to carry the decision.
+      guidedSetup?.reportCampaignDecided({ campaignRef, decision: body.decision });
+      /*
+       * The server-rendered regions around this card (where the campaign stands, the check result,
+       * what to do next, who signed off) were written before the decision existed. Refreshing
+       * re-reads them through the same session-scoped server path as any page load; nothing is
+       * fetched from the browser, and a refused or unreachable answer never gets here.
+       */
+      router.refresh();
     } catch {
       // Nothing answered, so there is no code to map and no reference to quote. Both are said.
       setStatus({
@@ -114,6 +146,22 @@ export function CampaignApprovalControls({
     } finally {
       setBusy(false);
     }
+  }
+
+  if (decided) {
+    // PRD-008b D2. A recorded decision is not offered again. The card keeps its walkthrough anchor
+    // so the guided step that points at it still finds it, and says only what was recorded.
+    // PRD-008d's baseline review of 2026-10-01: it also keeps its title, so the card a person has
+    // just decided on is the same card, by name, as the one a later visit shows, and not the only
+    // untitled card on the page.
+    return (
+      <Card data-tour={GUIDED_SETUP_ANCHORS.campaignApproveControl} padding="md">
+        <strong>Approve this campaign</strong>
+        <p ref={outcomeRef} role="status" tabIndex={-1}>
+          {status?.sentence}
+        </p>
+      </Card>
+    );
   }
 
   return (
@@ -150,7 +198,17 @@ export function CampaignApprovalControls({
           Send back for changes
         </Button>
       ) : null}
-      {canApprove ? null : <CampaignHandOff campaignHref={campaignHref} />}
+      {/*
+        PRD-008b 008B-AC-010 and 008B-AC-011. The card asks somebody who cannot approve to send the
+        link to an approver, which is a step on a version that is waiting for one: the checks passed
+        and nobody has decided. Once a version was approved, or sent back, there is nothing for an
+        approver to do with the link. And a version whose checks need changes is waiting for its
+        author, so nothing about it can be approved yet and an approver has nothing to do with the
+        link either.
+      */}
+      {canApprove || alreadyDecided !== undefined || blocking ? null : (
+        <CampaignHandOff campaignHref={campaignHref} />
+      )}
       <p role="status">{status?.sentence ?? "Nobody has approved this version yet."}</p>
       <SupportReference refusal={status?.refusal} />
     </Card>
@@ -167,6 +225,18 @@ function decisionStatus(decision: "approved" | "rejected", duplicate: boolean): 
   return duplicate
     ? "Already approved."
     : "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.";
+}
+
+/** A version nobody can approve yet: it is waiting for the person who wrote it. */
+function needsChanges(): SafeActionDecision {
+  return {
+    state: "blocked",
+    explanation: "This version needs changes before anyone can approve it.",
+    requiredRole: APPROVER_OR_OWNER,
+    prerequisite: "A version where the checks find nothing to fix",
+    responsibleParty: CAMPAIGN_CREATOR_PARTY,
+    nextAction: "Fix what the checks found, then save it again.",
+  };
 }
 
 function resolveDecision(input: {
@@ -193,9 +263,18 @@ function resolveDecision(input: {
       requiredRole: APPROVER_OR_OWNER,
       prerequisite: "A new version, after someone changes the campaign",
       responsibleParty: CAMPAIGN_CREATOR_PARTY,
-      nextAction: "Read the decision below. Nothing else happens from this page.",
+      // The section that says who decided is above this card on the campaign page.
+      nextAction: "Read who decided, above. Nothing else happens from this page.",
     };
   }
+  /*
+   * The checks come before the viewer's permission. A version whose checks need changes is not
+   * approvable by anyone, so `canApprove` is false for an approver as well as for a creator, and
+   * testing it first told an approver they lacked the permission they hold, and told everybody to
+   * send the page to an approver, who could do nothing with it. The reason is the checks, and the
+   * person who can act on it is whoever wrote the campaign.
+   */
+  if (input.blocking) return needsChanges();
   if (!input.canApprove) {
     return {
       state: "permission_restricted",
@@ -205,16 +284,7 @@ function resolveDecision(input: {
       nextAction: "Send them this page and ask them to look at this version.",
     };
   }
-  if (input.blocking || input.state !== "awaiting_approval") {
-    return {
-      state: "blocked",
-      explanation: "This version needs changes before anyone can approve it.",
-      requiredRole: APPROVER_OR_OWNER,
-      prerequisite: "A version where the checks find nothing to fix",
-      responsibleParty: CAMPAIGN_CREATOR_PARTY,
-      nextAction: "Fix what the checks found, then save it again.",
-    };
-  }
+  if (input.state !== "awaiting_approval") return needsChanges();
   return {
     state: "ready",
     explanation:

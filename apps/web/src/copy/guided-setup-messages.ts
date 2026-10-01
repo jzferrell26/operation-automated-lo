@@ -91,6 +91,28 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
      */
     unknownBody:
       "We couldn't read the result for this campaign just now. Open the campaign to see where it stands.",
+    /**
+     * PRD-008b 008B-AC-011. Step 5 says the campaign is ready for approval, which is true while it
+     * is waiting for somebody to decide it and not after: a version that was approved, or sent back,
+     * is past that. "Ready for approval" stays the answer for a version nobody has decided on.
+     */
+    approvedBody: "Your campaign is saved and approved. Nothing has been published or sent.",
+    sentBackBody:
+      "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it.",
+    /**
+     * PRD-008b 008B-AC-010. An approver who cannot create a campaign, with nothing waiting for them.
+     * There is no result to read, and the step says that instead of describing a campaign.
+     */
+    noneBody: "No campaign is waiting for your approval right now.",
+    /**
+     * PRD-008b 008B-AC-009 to 008B-AC-011, writing review R6. The same approver, when the
+     * workspace's campaigns could not be loaded to look for one. "No campaign is waiting" is a claim
+     * about the workspace, and a list that could not be read says nothing about it, so this says
+     * what is true: the product could not look, and the page can be loaded again. It does not offer
+     * "Open the campaign" as `unknownBody` does, because there is no campaign to open.
+     */
+    campaignsUnreadBody:
+      "We couldn't load the campaigns waiting for your approval just now. Refresh the page to try again.",
   }),
   approveOrHandOff: Object.freeze({
     position: 6,
@@ -100,11 +122,92 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
       "Only an approver or your workspace owner can approve. Copy this link and send it to them.",
     copyLinkLabel: "Copy link",
     copiedNotice: "Link copied.",
+    /**
+     * PRD-008b 008B-AC-010. What step 6 says once somebody has decided on the version.
+     *
+     * The walkthrough is stored, so a person can come back to this step after a colleague has
+     * approved the campaign or sent it back. The title and the body above both tell them to approve
+     * it or hand it on, which can no longer be done, so a decided version gets its own title and body
+     * and says what happened and what follows from it. Both are for everybody, because what was
+     * recorded is the same for the person who can approve and the person who cannot. The sent-back
+     * body says what the campaign's own page says about it, in the same words.
+     */
+    approvedTitle: "This version is approved",
+    approvedBody:
+      "This version has been approved, so there is nothing left to approve or hand off. Nothing is published or sent.",
+    sentBackTitle: "This version was sent back",
+    sentBackBody:
+      "This version was sent back for changes, so it can't be approved as it is. It needs a new version before anyone can approve it.",
+    /**
+     * PRD-008b 008B-AC-011. A version whose checks need changes is waiting for its author, so there
+     * is nothing for an approver to approve and nothing for anyone to hand on. Both sentences are
+     * ones the campaign's own page already says: the first is the approve control's reason, and the
+     * second is the next step the page offers.
+     */
+    needsChangesTitle: "This version needs changes",
+    needsChangesBody:
+      "This version needs changes before anyone can approve it. Fix what the checks found, then save it again.",
+    /**
+     * PRD-008b 008B-AC-010. What step 6 says to an approver who cannot create a campaign when nobody
+     * has saved one for them to approve. It used to tell them to choose "Approve this version", which
+     * is not on a page that has no campaign, and before that it sent them to step 4, "Create the
+     * Open House Boost", which their role cannot do. It says nothing is waiting, and what to do when
+     * something is. "Your campaigns" is the list page's own heading.
+     */
+    noneTitle: "Nothing is waiting for you",
+    noneBody:
+      "No campaign is waiting for your approval right now. When somebody saves one, open it from your campaigns and approve it there.",
+    /**
+     * Writing review R6. What step 6 says to that same approver when the campaigns could not be
+     * loaded, so it is not known whether one is waiting. It says that it could not look, and gives
+     * the two things a person can do: load the page again, or open the list themselves, which is the
+     * page that names every campaign in the workspace. It never says that nothing is waiting.
+     */
+    campaignsUnreadTitle: "We couldn't load what's waiting for you",
+    campaignsUnreadBody:
+      "We couldn't load the campaigns waiting for your approval just now. Refresh the page to try again, or open your campaigns to see if one is waiting.",
   }),
   whatHappensNext: Object.freeze({
     position: 7,
     title: "What happens next",
-    body: "Your campaign is saved and approved. It won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it.",
+    /**
+     * PRD-006c 006C-AC-018 and PRD-008b 008B-AC-011. The last step has to say the campaign will not
+     * run as an ad until HighLevel and Meta are connected, and it has to say what is true of the
+     * campaign. It used to say "saved and approved" to everybody, including somebody whose campaign
+     * nobody had approved. The first sentence now follows where the campaign stands, and every
+     * version ends in the same `tail`, which is the part 006C-AC-018 asks for. `body` is the
+     * whole sentence for a campaign the walkthrough could not read, which says nothing about its
+     * state because it does not know it.
+     */
+    body: "Your campaign won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it.",
+    waitingLead: "Your campaign is saved and waiting for approval.",
+    approvedLead: "Your campaign is saved and approved.",
+    needsChangesLead: "Your campaign is saved, and the checks found things to fix first.",
+    sentBackLead:
+      "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it.",
+    tail: "It won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it.",
+    /**
+     * For an approver who cannot create a campaign and has none to approve. There is no campaign to
+     * call "your campaign", so it says that nothing is waiting, and then what the last step is
+     * required to say (006C-AC-018): a campaign will not run as an ad until HighLevel and Meta are
+     * connected.
+     */
+    noneLead: "No campaign is waiting for your approval right now.",
+    noneTail:
+      "A campaign won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch campaigns.",
+    /**
+     * Writing review R6. The first sentence for that approver when the campaigns could not be
+     * loaded. It is followed by `noneTail`, which says nothing about whether a campaign is waiting
+     * and is the part 006C-AC-018 requires of the last step.
+     */
+    campaignsUnreadLead: "We couldn't load the campaigns waiting for your approval just now.",
+    /**
+     * The same sentence without the promise of a launch, for a campaign that was sent back. "It needs
+     * a new version before anyone can approve it" followed by "this is where you'll launch it" reads
+     * as though the next thing that happens is a launch. 006C-AC-018 asks the last step to say that
+     * nothing runs as an ad and that HighLevel and Meta are not connected, and this still does.
+     */
+    tailWithoutLaunch: "It won't run as an ad yet: HighLevel and Meta aren't connected.",
     primaryLabel: "Done",
   }),
 });

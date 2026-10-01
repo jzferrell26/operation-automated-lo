@@ -1,7 +1,7 @@
 # PRD-005e: Authenticated Review Runtime - Deployed Qualification of the Review URL
 
 > **Parent:** [PRD-005](./prd-005-authenticated-review-runtime-index.md)
-> **Status:** Draft
+> **Status:** In work. The agent-executable half is Done (PR #67, `58d77fd`, merged 2026-09-22): `005E-AC-001`, `002`, and `013` to `015` (`CRR-073`, `CRR-074`, `CRR-085` to `CRR-087`) are VERIFIED in `EXECUTION_LEDGER.md`, written back on 2026-10-01 from the 2026-09-21 [quality audit](./qa/2026-09-19-prd-005-qa-report.md). `005E-AC-003` (`CRR-075`) was written back to VERIFIED on 2026-10-01 on `008A-AC-019`'s evidence, not on the 2026-09-21 report: `GET /api/version` returns only `environment`, `buildId`, and `commit`. That makes 6 of the 16 criteria VERIFIED. Blocked on the operator: `005E-AC-004` to `012` and `016` (`CRR-076` to `CRR-084`, `CRR-088`), and with them the index row `ARR-006` (`CRR-006`). The ask is restated under "Exact operator ask" below.
 > **Priority:** P1 for release acceptance (completion review finding C4), separate from C1's code work
 > **Schema changes:** None
 > **Owner Guardians:** `release-deploy-guardian` (preview deploy, env wiring verification, smoke), `devops-guardian` (Vercel project inspection, `/api/version` hardening), `security-guardian` and `quality-guardian` (close-out on the deployed SHA)
@@ -99,8 +99,8 @@ Prove, on one recorded deployment SHA of the existing Vercel project backed by a
 
 ## Open questions
 
-- [ ] Preview URL versus the production alias of the same project for the review deployment (the OAuth callback in PRD-004b depends on this). Either is "no second project".
-- [ ] Whether the optional HTTP proof script is worth writing, or whether curl transcripts pasted into the outside-git log are enough. Recommendation: curl, unless the proof must be repeated more than twice.
+- [ ] Preview URL versus the production alias of the same project for the review deployment (the OAuth callback in PRD-004b depends on this). Either is "no second project". **Still open (2026-10-01):** needs the owner. Same question as the PRD-005 index; see the operator checklist's D-1 and D-2.
+- [ ] Whether the optional HTTP proof script is worth writing, or whether curl transcripts pasted into the outside-git log are enough. Recommendation: curl, unless the proof must be repeated more than twice. **Still open (2026-10-01):** decided when the seven-point proof runs, which is blocked on the operator (`CRR-076` to `CRR-084`). No proof script exists, and this is not an owner decision.
 
 ## Exact operator ask
 
@@ -134,3 +134,8 @@ Amended 2026-09-21 at the batch close-out (quality finding C-1): asks 2 to 5 res
 - [Database runtime role activation](../../../../docs/operations/database-runtime-role.md)
 - [Cloud environment setup runbook](../../../../docs/operations/cloud-environment-setup.md)
 - [Go-live raid ledger](../../../../EXECUTION_LEDGER.md#gauntlet-raid-go-live-remaining-in-repo-code) (`GGL-B01` through `GGL-B03`)
+
+## Amendments
+
+- **2026-09-30, 005E-AC-003, the `/api/version` body (PRD-008a D4, 008A-AC-019).** Text said: with a valid environment, `/api/version` is unchanged: 200 with `environment`, `buildId`, `commit`, `contractVersion`, `phase`, and `releaseVersions`; the existing e2e-preview and unit coverage for the route passes. Amended to: with a valid environment, `/api/version` returns 200 with exactly `environment`, `buildId`, and `commit` and no other field, to every caller (the route takes no request and resolves no principal, and no authenticated variant exists); a configuration failure still answers the handled 503 of 005E-AC-002; `apps/web/src/app/api/version/route.unit.test.ts` and `tooling/tests/unit/delivery-observability/version-route.test.ts` pass. Code does: `apps/web/src/app/api/version/route.ts` still parses and validates the whole runtime environment, release manifest included, and returns only those three fields. Why: the PRD-005/006 batch security audit (2026-09-19) recorded unauthenticated build metadata on this route as a Low finding; the deployed proof reads only `commit` and `environment`, and the build id identifies the deployment, so the contract version, the phase, and the release manifest's versions are no longer returned to anybody. `tooling/tests/e2e-preview/` holds no `/api/version` test, so "the existing e2e-preview coverage" named nothing. Touches: 005E-AC-003 (ledger row `CRR-075`, whose criterion text changes to match; its status does not). 005E-AC-004 (`CRR-076`) is unchanged and still provable as written, because it reads only `commit` and `environment: "preview"`, both of which the route still returns.
+- **2026-09-30, operator ask 3, the self-serve sign-up condition (PRD-008a 008A-AC-023).** Ask 3 names `OALO_SELF_SERVE_SIGNUP`. Security Ruling 1 of the PRD-005/006 batch security audit (2026-09-19) keeps sign-up's duplicate-email disclosure (`200 { state: "existing" }`) only on this condition: the disclosure is acceptable only while sign-up is off by default, and turning it on by default requires moving to the emailed path first. Setting the variable on one review deployment is the opt-in the ruling accepts; making it a default is not. Touches: no acceptance criterion.

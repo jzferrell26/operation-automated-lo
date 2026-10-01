@@ -1,5 +1,6 @@
 import { GUIDED_SETUP_STEPS } from "../../../copy/guided-setup-messages.js";
 import { GUIDED_SETUP_ANCHORS, type GuidedSetupAnchorId } from "../anchor-registry.js";
+import type { CampaignStanding } from "../model/campaign-result.js";
 
 /**
  * PRD-006c D3. The seven steps as data: their position, their title, the element they point at,
@@ -91,6 +92,135 @@ export const GUIDED_SETUP_TOTAL_BUDGET_SECONDS =
   GUIDED_SETUP_STEP_DEFINITIONS.reduce((total, step) => total + step.budgetSeconds, 0);
 /** D3's ceiling: the owner's five minutes, from account creation to a saved first campaign. */
 export const GUIDED_SETUP_CEILING_SECONDS = 300;
+
+/** What step 6 shows: the panel's title and words, and the element it points at. */
+export type ApproveOrHandOffStep = Readonly<{
+  anchor: GuidedSetupAnchorId | typeof PANEL_ANCHORED;
+  body: string;
+  title: string;
+}>;
+
+/**
+ * PRD-006c D3 step 6 and PRD-008b 008B-AC-010 and 008B-AC-011. Which answer step 6 gives.
+ *
+ * A campaign nobody has decided on, and one the walkthrough could not read, get the two answers
+ * this step has always had: somebody who can approve is pointed at the approve control, and
+ * everybody else at the control that copies the link for an approver. They are the only campaigns
+ * either control is for. Every other standing gets one answer for everybody, because what is true
+ * of the campaign does not depend on who is looking:
+ *
+ * - approved or sent back: what was recorded, pointed at the card that says it, which is on every
+ *   campaign page and is why the approve control's anchor is the one used;
+ * - needs changes: that the version cannot be approved yet and what to do about it, pointed at what
+ *   the checks found. The copy-link card is not on that page either, and the approve control is
+ *   blocked, so neither is somewhere this step can honestly point;
+ * - none: an approver who cannot create a campaign and has none waiting says that nothing is, and
+ *   points at nothing, because there is no campaign page for the panel to point at;
+ * - campaigns_unread: the same approver, when the campaigns could not be loaded to look. It says
+ *   that it could not look and never that nothing is waiting, and points at nothing for the same
+ *   reason.
+ */
+export function approveOrHandOffStep(
+  input: Readonly<{ canApprove: boolean; standing: CampaignStanding }>,
+): ApproveOrHandOffStep {
+  const words = GUIDED_SETUP_STEPS.approveOrHandOff;
+  switch (input.standing) {
+    case "approved":
+      return {
+        anchor: GUIDED_SETUP_ANCHORS.campaignApproveControl,
+        body: words.approvedBody,
+        title: words.approvedTitle,
+      };
+    case "sent_back":
+      return {
+        anchor: GUIDED_SETUP_ANCHORS.campaignApproveControl,
+        body: words.sentBackBody,
+        title: words.sentBackTitle,
+      };
+    case "needs_changes":
+      return {
+        anchor: GUIDED_SETUP_ANCHORS.campaignCheckFindings,
+        body: words.needsChangesBody,
+        title: words.needsChangesTitle,
+      };
+    case "none":
+      return { anchor: PANEL_ANCHORED, body: words.noneBody, title: words.noneTitle };
+    case "campaigns_unread":
+      return {
+        anchor: PANEL_ANCHORED,
+        body: words.campaignsUnreadBody,
+        title: words.campaignsUnreadTitle,
+      };
+    case "waiting":
+    case "unknown":
+      return input.canApprove
+        ? {
+            anchor: GUIDED_SETUP_ANCHORS.campaignApproveControl,
+            body: words.approveBody,
+            title: words.title,
+          }
+        : {
+            anchor: GUIDED_SETUP_ANCHORS.campaignHandoffLink,
+            body: words.handOffBody,
+            title: words.title,
+          };
+  }
+}
+
+/**
+ * PRD-008b 008B-AC-011. What step 5 says about the campaign.
+ *
+ * "Ready for approval" is the answer for a version waiting for somebody to decide it, and for
+ * nothing else. A version whose checks need changes is not ready, and one that was approved, or sent
+ * back, is past ready.
+ */
+export function readTheResultBody(standing: CampaignStanding): string {
+  const words = GUIDED_SETUP_STEPS.readTheResult;
+  switch (standing) {
+    case "unknown":
+      return words.unknownBody;
+    case "none":
+      return words.noneBody;
+    case "campaigns_unread":
+      return words.campaignsUnreadBody;
+    case "needs_changes":
+      return words.needsChangesBody;
+    case "waiting":
+      return words.readyBody;
+    case "approved":
+      return words.approvedBody;
+    case "sent_back":
+      return words.sentBackBody;
+  }
+}
+
+/**
+ * PRD-006c 006C-AC-018 and PRD-008b 008B-AC-011. What step 7 says.
+ *
+ * The first sentence is about the campaign and follows where it stands. The last is the same for
+ * every campaign, and it is the one the final step is required to carry: the campaign will not run
+ * as an ad until HighLevel and Meta are connected. A campaign the walkthrough could not read gets
+ * the sentence that says only that, because it says nothing about a state it does not know.
+ */
+export function whatHappensNextBody(standing: CampaignStanding): string {
+  const words = GUIDED_SETUP_STEPS.whatHappensNext;
+  switch (standing) {
+    case "unknown":
+      return words.body;
+    case "none":
+      return `${words.noneLead} ${words.noneTail}`;
+    case "campaigns_unread":
+      return `${words.campaignsUnreadLead} ${words.noneTail}`;
+    case "waiting":
+      return `${words.waitingLead} ${words.tail}`;
+    case "needs_changes":
+      return `${words.needsChangesLead} ${words.tail}`;
+    case "approved":
+      return `${words.approvedLead} ${words.tail}`;
+    case "sent_back":
+      return `${words.sentBackLead} ${words.tailWithoutLaunch}`;
+  }
+}
 
 export function stepDefinition(position: number): GuidedSetupStepDefinition {
   const found = GUIDED_SETUP_STEP_DEFINITIONS.find((step) => step.position === position);

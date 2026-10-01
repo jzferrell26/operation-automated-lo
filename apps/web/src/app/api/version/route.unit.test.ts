@@ -11,7 +11,13 @@ const VALID_LOCAL_ENVIRONMENT: Readonly<Record<string, string>> = Object.freeze(
 });
 
 describe("GET /api/version", () => {
-  it("returns the version evidence shape unchanged for a valid environment", async () => {
+  /**
+   * PRD-008a D4 (008A-AC-019, amending 005E-AC-003). The route answers every caller, signed in or
+   * not, so it returns only what the deployed proof reads: the environment, the build id, and the
+   * commit. The contract version, the phase, and the release manifest's versions are no longer
+   * returned to anybody.
+   */
+  it("returns only environment, buildId, and commit for a valid environment", async () => {
     const originalEnv = process.env;
     process.env = VALID_LOCAL_ENVIRONMENT as unknown as NodeJS.ProcessEnv;
 
@@ -21,10 +27,7 @@ describe("GET /api/version", () => {
       expect(response.headers.get("Cache-Control")).toBe("no-store, max-age=0");
 
       const body = (await response.json()) as Record<string, unknown>;
-      expect(Object.keys(body).sort()).toEqual(
-        ["buildId", "commit", "contractVersion", "environment", "phase", "releaseVersions"].sort(),
-      );
-      expect(body.environment).toBe("local");
+      expect(body).toEqual({ environment: "local", buildId: "local", commit: "local" });
     } finally {
       process.env = originalEnv;
     }

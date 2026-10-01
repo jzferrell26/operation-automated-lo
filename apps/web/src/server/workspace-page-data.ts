@@ -14,7 +14,11 @@ import {
 import { listWorkspaceCampaigns } from "./campaign-workspace-reads.js";
 import { readSetupPreferences } from "./setup-preferences.js";
 import { resolveRuntimeShellSession, SIGN_IN_PATH } from "./runtime-authentication.js";
-import { HomeEnvironmentSchema, homeConnectionsFor } from "./homeowners/runtime.js";
+import {
+  HomeEnvironmentSchema,
+  homeConnectionsFor,
+  homeReportsEnabled,
+} from "./homeowners/runtime.js";
 import {
   readWorkspacePreferences,
   workspacePrincipal,
@@ -33,8 +37,12 @@ export async function loadWorkspacePageData(
   const pool = campaignDatabasePool(environment);
   const needsPreferences = ["settings", "profile", "partners", "messaging"].includes(view);
   const needsCampaigns = ["marketing", "property-sites", "creative", "ads"].includes(view);
-  const config = HomeEnvironmentSchema.parse(environment);
-  const reportsEnabled = config.OALO_HOMEOWNER_REPORTS === "enabled";
+  // A homeowner setting that cannot be read means the valuation and HighLevel connections are
+  // unavailable, which these pages already say. It must not stop every destination from opening, so
+  // whether reports are switched on is read on its own, as the public report routes read it.
+  const parsedConfig = HomeEnvironmentSchema.safeParse(environment);
+  const config = parsedConfig.success ? parsedConfig.data : null;
+  const reportsEnabled = homeReportsEnabled(environment);
   const needsReports =
     reportsEnabled &&
     ["marketing", "property-sites", "creative", "automations", "routing", "billing"].includes(view);
@@ -50,7 +58,9 @@ export async function loadWorkspacePageData(
     needsPreferences ? readSetupPreferences(principal, environment) : undefined,
     needsCampaigns ? listWorkspaceCampaigns(principal, environment) : [],
     needsReports ? reportRepository.summaries() : [],
-    reportsEnabled ? homeConnectionsFor(principal.locationId, reportRepository, config) : null,
+    reportsEnabled && config
+      ? homeConnectionsFor(principal.locationId, reportRepository, config)
+      : null,
     needsReports ? reportRepository.usage() : 0,
   ]);
   const defaultBrand = preferences.brand?.value ?? {
@@ -90,11 +100,11 @@ export async function loadWorkspacePageData(
     valuationConfigured: connections?.valuation !== null && connections?.valuation !== undefined,
     contactConfigured: connections?.contacts !== null && connections?.contacts !== undefined,
     deliveryEnabled:
-      config.OALO_HOMEOWNER_DELIVERY_ENABLED === "enabled" &&
+      config?.OALO_HOMEOWNER_DELIVERY_ENABLED === "enabled" &&
       connections?.contacts !== null &&
       connections?.contacts !== undefined,
     lookupsUsed: usage,
-    lookupLimit: config.OALO_HOMEOWNER_MONTHLY_LOOKUP_LIMIT,
+    lookupLimit: config?.OALO_HOMEOWNER_MONTHLY_LOOKUP_LIMIT ?? 0,
   };
 }
 export async function workspacePageData(view: WorkspaceView): Promise<WorkspacePageData> {

@@ -1,7 +1,7 @@
 # PRD-005c: Authenticated Review Runtime - Correlation Reference Boundary and Approval Retry Idempotency
 
 > **Parent:** [PRD-005](./prd-005-authenticated-review-runtime-index.md)
-> **Status:** Draft
+> **Status:** Done (PR #67, `58d77fd`, merged 2026-09-22). All 13 criteria are VERIFIED in `EXECUTION_LEDGER.md` (`CRR-047` to `CRR-059`), written back on 2026-10-01 from the 2026-09-21 [quality audit](./qa/2026-09-19-prd-005-qa-report.md), which passes all 13. No operator-blocked row.
 > **Priority:** P2 (completion review finding C2, correctness defect, plus the retry ordering the review flagged as an additional regression target)
 > **Schema changes:** None
 > **Owner Guardians:** `typescript-node-guardian` (handler, command, and validator changes), `http-rest-fundamentals-guardian` (header semantics and status-code honesty), `db-guardian` (validator adoption in the transaction context)
@@ -113,7 +113,7 @@ In `executeHumanCampaignApproval`, after the location check (`:165-167`) and bef
 
 ## Open questions
 
-- [ ] Whether the observability correlation context (`corr_<hex>`) should be seeded from the canonical reference so logs and audit rows share one value. Recommended, but it touches `packages/observability` and is not required to close C2.
+- [ ] Whether the observability correlation context (`corr_<hex>`) should be seeded from the canonical reference so logs and audit rows share one value. Recommended, but it touches `packages/observability` and is not required to close C2. **Still open (2026-10-01):** not done. `packages/observability/src/correlation.ts:53` still mints its own `corr_` value. An optional engineering follow-up, not an owner decision.
 
 ## Exact operator ask
 

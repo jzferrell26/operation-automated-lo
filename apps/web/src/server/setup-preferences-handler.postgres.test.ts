@@ -1,12 +1,14 @@
 import type { PostgresDatabasePool } from "@oalo/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { POST as approvePost } from "../app/api/campaigns/approve/route.js";
 import { POST as preflightPost } from "../app/api/campaigns/preflight/route.js";
 import { POST as profilePost } from "../app/api/setup/profile/route.js";
 import { POST as progressPost } from "../app/api/setup/progress/route.js";
 import { OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
 import {
   applyRouteEnvironment,
+  approvalPayload,
   browserRequest,
   createDraftThroughPreflight,
   createRouteTestPool,
@@ -285,6 +287,87 @@ describe("setup preference routes", () => {
     );
     expect(creatorView.awaitingDecision).toBeUndefined();
   });
+
+  /**
+   * PRD-008b 008B-AC-010. The walkthrough stores the campaign it hands an approver as theirs, so a
+   * later read finds it by that reference, with whatever has been decided on it since, instead of
+   * choosing again among the campaigns still waiting. The read does not look at the role: it is the
+   * read a creator's own campaign gets, and an approver in the same workspace may make it.
+   *
+   * Written against the same fixtures as the cases around it and not run in the offline gate, which
+   * has no database; it runs with `pnpm test:db`.
+   */
+  it("reads the campaign an approver was handed back by its stored reference", async () => {
+    const draft = await saveDraft(OPEN_HOUSE_DRAFT_INPUT);
+    expect(
+      (
+        await progressPost(
+          approverProgressRequest({
+            progress: { ...VALID_PROGRESS, campaignRef: draft.campaignRef },
+          }),
+        )
+      ).status,
+    ).toBe(200);
+
+    const approverView = await readSetupPreferences(
+      await principalForSession(approverSession, environment),
+      environment,
+    );
+
+    expect(approverView.campaign?.campaignRef).toBe(draft.campaignRef);
+    expect(approverView.campaign?.decision).toBeUndefined();
+    // With a campaign stored as theirs, the layout is not asked to choose a waiting one.
+    expect(approverView.awaitingDecision).toBeUndefined();
+  });
+
+  /**
+   * 008B-AC-010, the half that matters after a decision. Once the approver decides the campaign it
+   * is no longer waiting, so the only way the walkthrough can still describe it is to read it by
+   * the reference it stored, and the reading has to carry the decision: "approved" once it was
+   * approved, and "rejected" once it was sent back, which leaves the campaign in the waiting state
+   * with a rejection recorded against it. The decision is made through the real approval route, as
+   * the approval card makes it.
+   *
+   * Written against the same fixtures as the cases around it and not run in the offline gate; it
+   * runs with `pnpm test:db`.
+   */
+  it.each(["approved", "rejected"] as const)(
+    "reads the decision back on the campaign an approver stored as theirs, once it was %s",
+    async (decision) => {
+      const draft = await saveDraft(OPEN_HOUSE_DRAFT_INPUT);
+      expect(
+        (
+          await progressPost(
+            approverProgressRequest({
+              progress: { ...VALID_PROGRESS, campaignRef: draft.campaignRef },
+            }),
+          )
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await approvePost(
+            browserRequest({
+              path: "/api/campaigns/approve",
+              body: approvalPayload(draft, decision),
+              session: approverSession,
+              csrfServerSecret,
+            }),
+          )
+        ).status,
+      ).toBe(200);
+
+      const approverView = await readSetupPreferences(
+        await principalForSession(approverSession, environment),
+        environment,
+      );
+
+      expect(approverView.campaign?.campaignRef).toBe(draft.campaignRef);
+      expect(approverView.campaign?.decision).toBe(decision);
+      // Decided, it is waiting for nobody, so nothing is offered in its place either.
+      expect(approverView.awaitingDecision).toBeUndefined();
+    },
+  );
 
   /**
    * The bodies are built inside the test rather than in the `it.each` table, because the table is

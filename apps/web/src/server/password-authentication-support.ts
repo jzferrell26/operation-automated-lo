@@ -5,6 +5,7 @@ import type { PostgresDatabasePool } from "@oalo/db";
 
 import {
   clearAuthRateLimitsForKey,
+  readDatabaseClockMilliseconds,
   seedReviewCredential,
 } from "../../../../packages/db/test/route-seeding-bridge.js";
 import {
@@ -36,6 +37,11 @@ export function authEnvironment(
   return routeEnvironment(overrides);
 }
 
+/**
+ * The opt-in a deployment makes deliberately. Security Ruling 1 (PRD-005/006 batch security audit,
+ * 2026-09-19): sign-up's duplicate-email disclosure is acceptable only while sign-up is off by
+ * default, and turning it on by default requires moving to the emailed path first.
+ */
 export function signUpEnabledEnvironment(
   overrides: Readonly<Record<string, string>> = {},
 ): RoutePostgresEnvironment {
@@ -239,6 +245,64 @@ export async function resetRateLimitKey(
   keyHash: string,
 ): Promise<void> {
   await clearAuthRateLimitsForKey(pool, keyHash);
+}
+
+/**
+ * The longest a run inside `withinOneRateLimitWindow` may take. The proofs that use it spend between
+ * eleven and twenty-two requests, which took about 0.8 to 1.0 seconds on a developer machine and
+ * on CI, so this is about ten times that. A start with less than this left in its window waits for
+ * the next window instead, which costs at most this long, so a test that uses it needs a timeout
+ * that covers the wait and the run: the callers here give theirs 30 seconds.
+ */
+export const RATE_LIMIT_RUN_BUDGET_MS = 10_000;
+
+/**
+ * Runs `work`, which spends one rate-limit counter across several requests, so that every request
+ * lands in one window.
+ *
+ * `platform.consume_auth_rate_limit` opens a fixed window at `floor(epoch / windowSeconds) *
+ * windowSeconds`, read from `now()` on the database, and the handler's injectable clock never
+ * reaches it. A proof cannot pin the window, and a run that happens to cross an edge has its count
+ * restart, so "the twenty-first is refused" never comes: that is how the no-address proof failed in
+ * CI on 2026-10-01, which ran from just before 09:45:00 to 09:45:00.85 UTC across an edge of the 900
+ * second window (expected -1 to be 20). The chance of that per run is the run's length over the
+ * window's, about one in a thousand, which is why it passed on the re-run.
+ *
+ * So this waits, when fewer than `budgetMs` remain in the current window, until the next one opens,
+ * and refuses to report a result from a run that left its window anyway, naming that as the
+ * cause instead of leaving a missing 429 to be read as a defect in the limiter.
+ */
+export async function withinOneRateLimitWindow<T>(
+  pool: PostgresDatabasePool,
+  windowSeconds: number,
+  work: () => Promise<T>,
+  budgetMs: number = RATE_LIMIT_RUN_BUDGET_MS,
+): Promise<T> {
+  const windowMs = windowSeconds * 1_000;
+  if (budgetMs >= windowMs) {
+    // A budget the window cannot hold would wait for an edge forever, so refuse it up front.
+    throw new Error(
+      `A ${String(budgetMs)} ms budget does not fit in a ${String(windowSeconds)} second window`,
+    );
+  }
+  const windowStartOf = (epochMs: number): number => epochMs - (epochMs % windowMs);
+
+  let startedAt = await readDatabaseClockMilliseconds(pool);
+  while (windowMs - (startedAt % windowMs) < budgetMs) {
+    // Sleep to just past the edge, then read the clock again: the next window has all of its time.
+    await new Promise((resolve) => setTimeout(resolve, windowMs - (startedAt % windowMs) + 25));
+    startedAt = await readDatabaseClockMilliseconds(pool);
+  }
+
+  const result = await work();
+
+  const endedAt = await readDatabaseClockMilliseconds(pool);
+  if (windowStartOf(endedAt) !== windowStartOf(startedAt)) {
+    throw new Error(
+      `The run left its ${String(windowSeconds)} second rate-limit window: it started at ${new Date(startedAt).toISOString()} and ended at ${new Date(endedAt).toISOString()}, so the counter restarted partway through and no count it produced can be trusted.`,
+    );
+  }
+  return result;
 }
 
 /**

@@ -41,6 +41,7 @@ import {
   seedCredential,
   sessionCookieFrom,
   verificationLinkTokenFrom,
+  withinOneRateLimitWindow,
   type RouteEnvironmentSwapper,
 } from "./password-authentication-support.js";
 
@@ -387,13 +388,20 @@ describe("POST /api/auth/resend-verification (006A-AC-021, PRD-006b D10)", () =>
     const limit = AUTH_RATE_LIMITS.resend_verification_user;
     expect(limit).toEqual({ attemptLimit: 5, windowSeconds: 3_600 });
 
-    const answers: number[] = [];
-    for (let attempt = 0; attempt < limit.attemptLimit + 1; attempt += 1) {
-      const response = await handleResendVerificationEmail(resendRequest(browser, "resend.limit"));
-      answers.push(response.status);
-    }
+    // All six have to be counted in one window, which opens on the database clock: a run that
+    // crossed an edge would restart the count and the sixth would not be refused.
+    const answers = await withinOneRateLimitWindow(pool, limit.windowSeconds, async () => {
+      const answeredInWindow: number[] = [];
+      for (let attempt = 0; attempt < limit.attemptLimit + 1; attempt += 1) {
+        const response = await handleResendVerificationEmail(
+          resendRequest(browser, "resend.limit"),
+        );
+        answeredInWindow.push(response.status);
+      }
+      return answeredInWindow;
+    });
     await flushAuthBackgroundWork();
 
     expect(answers).toEqual([303, 303, 303, 303, 303, 429]);
-  });
+  }, 30_000);
 });

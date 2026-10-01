@@ -1,7 +1,7 @@
 # User Language Contract
 
-> Category: Standard | Version: 1.0 | Date: September 2026 | Status: Approved
-> Source: [PRD-006b](../../../requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/prd-006b-first-party-sign-in-and-guided-experience-user-language.md) D1 through D4 and D8
+> Category: Standard | Version: 1.1 | Date: October 2026 | Status: Approved
+> Source: [PRD-006b](../../../requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/prd-006b-first-party-sign-in-and-guided-experience-user-language.md) D1 through D4 and D8, extended by [PRD-008c](../../../requirements/completed/prd-008-finish-line-hardening/prd-008c-finish-line-hardening-user-language-completion.md) (`adapter`, `origin`, the administrator-instruction phrase rule, and the user-facing error classes) and recorded here under PRD-008e `008E-AC-015`
 
 Every word a user reads in Operation Automated LO is written for a mortgage loan officer who has never seen this codebase. This document is the rule. It governs product copy, page titles, the site description, accessible names, placeholders, help text, error messages, and the account emails. It does not govern code identifiers, database column names, log lines, test names, or anything else a user never sees.
 
@@ -39,6 +39,7 @@ Never rendered to a user, in any case, tense, or compound, in text nodes, `aria-
 | People and access | operator, persona, principal, tenant, resolver, authorized resolver, seat, entitlement, capability (as an access noun), grant state |
 | Sessions and security | session ref, session id, first-party session, verified session, CSRF, correlation, correlation ID, exception code, idempotent, row version, manifest hash, preflight result hash, canonical, definer |
 | Data words | provider (say the name: HighLevel, Meta, Stripe), provider mode, preflight (say "checks" or "campaign check"), persisted, persist, immutable, frozen, freeze, compile, mutation, read-only projection, observation, no live observation |
+| Connections and addresses | adapter, origin |
 | Identifiers | any `location_`, `actor_`, `principal_`, `installation_`, `session_`, `campaign_`, `correlation_`, `syn-` or `synthetic-` prefixed reference; any UUID; any 64-hex hash; any `OALO_*` or `NEXT_PUBLIC_*` name; any `SCREAMING_SNAKE` code; any `snake_case` state or role token |
 
 ### How the automated guard reads this table
@@ -46,6 +47,12 @@ Never rendered to a user, in any case, tense, or compound, in text nodes, `aria-
 Most terms are banned outright and matched case-insensitively on a word boundary. Five entries carry a qualifier in the table ("as a software noun", "as a noun for a page", "as a noun for a page area", "as an access noun", and the instruction to name the provider). Those are still banned outright in user copy, because none of them has a user-facing sense in this product. The one word with a real user-facing sense is the geographic sense of "region" in ad targeting; the product says "area" there instead, so the ban holds without an exception. Where the guard cannot decide, the contract decides, and the guard is narrowed with a comment naming this section.
 
 "Route" carries the same qualifier ("as a noun for a page") and gets the same narrow treatment for a different reason: the guard bans only the exact word "route" (and its plural), not every inflection, because "routing" is the name HighLevel gives to sending a lead to the right person, and this product has a "Routing" health area and a `/settings/routing` page that name that feature, not a page. A loan officer reads "routing" as the feature's name, the same way "regional" is not read as a ban on "region". Both narrowings are pinned in `tooling/tests/unit/user-language/forbidden-vocabulary.test.ts` so neither can move without the other being considered.
+
+"Adapter" and "origin" are matched like the other terms: case-insensitive, on a word boundary, with the regular plural and verb endings. A word that merely starts with "origin", such as "original" or "originated", is not caught, in the same way "regional" is not caught by a ban on "region". The product says "connection" where an engineer would say adapter, and "web address" where an engineer would say origin. PRD-008c added both after a valuation status line and a report-link refusal used them in front of loan officers.
+
+**The administrator-instruction phrase rule.** A word list cannot see a sentence made of plain words that is addressed to the wrong person. "Set the report website address before sharing." contains no banned word, but it hands an administrator's job to a loan officer, who has no control to set it with, and an instruction the reader cannot follow is not a next step (section 5, rule 3). So the guard also bans one shape, which it reports as a `phrase` hit named "setup instruction for an administrator": the verb "set" or "configure" (optionally followed by "up"), then "the" or "this", then up to three words, then one of address, url, origin, key, secret, token, variable, environment, or setting(s). It is narrow on purpose. "Set a budget for the campaign", "Set your company name and NMLS number", "Set the date and time of the open house", "Contact support to get it set up", and "Your settings are saved" all pass. The replacement says what is true and sends the reader to support: "We can't create a report link yet because its web address isn't set up. Contact support so we can finish the setup." Both guards in section 8 apply the rule.
+
+**User-facing error classes.** The source guard reads the TypeScript syntax tree. It treats text inside a thrown `Error`, a `console` call, or a class whose name ends in `Error` as log text and does not hold it to this contract, because a route that throws renders the page boundary's own sentence and never the error's text. One list carves a narrow exception: `USER_FACING_ERRORS` in `tooling/tests/unit/user-language/forbidden-vocabulary.test.ts` names the error classes whose message a person does read. Today it holds `HomeownerError`: `homeError` in `apps/web/src/server/homeowners/http.ts` puts its message in the response body, and the homeowner report screen shows it (`apps/web/src/features/homeowners/use-home-workspace.ts`). A class joins the list only when something renders its message, and any other thrown error stays exempt. The guard's scanned roots include `apps/web/src/server/homeowners` for the same reason.
 
 ## 4. Preferred vocabulary
 
@@ -64,6 +71,8 @@ Most terms are banned outright and matched case-insensitively on a word boundary
 | preflight passed / blocked | Ready for approval / Needs changes |
 | finding, rule code | what to fix (with the plain explanation first) |
 | provider publication remains disabled | This campaign won't run as an ad yet. HighLevel and Meta aren't connected. |
+| adapter | connection ("Your valuation connection is set up for this workspace.") |
+| origin | web address |
 | not connected (kept), no live observation | not connected yet, not live yet |
 | synthetic data, demo fixtures | not live data (on the deployed workspace, before anything is connected), sample data (local demo only) |
 | review surface | this workspace (with the not-connected notice) |
@@ -126,8 +135,8 @@ No `SCREAMING_SNAKE` code ever reaches a status line. Every code a route can ret
 
 | Guard | What it catches |
 |---|---|
-| `tooling/tests/unit/user-language/forbidden-vocabulary.test.ts` | A forbidden term, an identifier pattern, or a dash in a user-facing string in the source, reported with file and line. Ships with a self-test that plants one string and asserts the guard reports it. |
-| `apps/web/src/app/(authenticated)/review-surface-sweep.ts` and the six review-surface integration suites | A forbidden term or identifier in what a page actually renders, including its accessible names, described-by targets, and `<code>` content. |
+| `tooling/tests/unit/user-language/forbidden-vocabulary.test.ts` | A forbidden term, an identifier pattern, a setup instruction for an administrator (the phrase rule in section 3), or a dash in a user-facing string in the source, reported with file and line. It also reads the messages of the error classes a person sees (`USER_FACING_ERRORS`, today `HomeownerError`) and the homeowner report server directory. Ships with a self-test that plants one string and asserts the guard reports it. |
+| `apps/web/src/app/(authenticated)/review-surface-sweep.ts` and the six review-surface integration suites | A forbidden term, identifier, or administrator-instruction phrase in what a page actually renders, including its accessible names, described-by targets, and `<code>` content. |
 | `technical-writing-craft-guardian` | The reader lens. A string can pass both guards and still be written for the wrong person. A blocking finding stops the merge. |
 
 The guards are a floor, not the contract. When a guard and this document disagree, this document wins and the guard is fixed.

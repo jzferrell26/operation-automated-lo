@@ -241,6 +241,151 @@ export async function expectTargetsAreLargeEnough(page: Page): Promise<void> {
   expect(undersized).toEqual([]);
 }
 
+/**
+ * Design brief section 10's six type steps, in CSS pixels at the browser's 16px root: page title,
+ * section title, card title, body, secondary, and caption. The tokens are `rem`, so these are the
+ * values they compute to while the root stays 16px, which the check below also asserts.
+ */
+export const TYPE_STEP_PIXELS = Object.freeze([23, 17, 14, 13, 11.5, 10.5] as const);
+
+/**
+ * Text the type-step check does not hold to the six steps, each named with the reason, the way
+ * `tooling/tests/unit/design-quality/governed-controls.test.ts` names its exceptions. A selector
+ * here has to be argued for once and is then visible to the next reviewer; nothing is exempt by
+ * default. It is empty: after the D-009 fix every visible text measured at a step, on the synthetic
+ * screens on a workstation and on the review project's screens on the runner.
+ */
+export const TEXT_OFF_THE_TYPE_STEPS: readonly Readonly<{ selector: string; because: string }>[] =
+  Object.freeze([]);
+
+/**
+ * Rubric axis 3 and rubric section 5, D-009 (ruled 2026-10-01): the body step is applied at the
+ * root of inheritance and every text on the screen is at one of the brief's six steps.
+ *
+ * Three claims. `html` computes 16px, because every step is a `rem` token and a smaller root would
+ * shrink all six. `body` computes 13px, the body step, so text no module sizes reads at the body
+ * step instead of the browser's 16px. And every visible element that carries text of its own (a
+ * text node with a box on screen, or a field showing a value) renders at one of the six steps.
+ *
+ * Before the fix the overview's section titles were 24px, above its 23px page title, and the
+ * campaigns list's lead was 16px, above every card title on the page. A picture is only compared
+ * on the runner that drew it, so this measures the sizes everywhere. The check proves a size is a
+ * step; the review still proves it is the right step for its role.
+ */
+export async function expectTextAtTheTypeSteps(page: Page): Promise<void> {
+  const measured = await page.evaluate(
+    ({ steps, exceptions }) => {
+      const size = (element: Element): number =>
+        Number.parseFloat(getComputedStyle(element).fontSize);
+      const describe = (element: Element, text: string): string =>
+        `${element.tagName.toLowerCase()}${element.className.toString() === "" ? "" : `.${element.className.toString().split(" ")[0] ?? ""}`} "${text.trim().slice(0, 40)}"`;
+      const exempt = (element: Element): boolean =>
+        exceptions.some((exception) => element.closest(exception) !== null);
+      const offStep = new Set<string>();
+      const check = (element: Element, text: string): void => {
+        if (exempt(element)) return;
+        const pixels = size(element);
+        if (steps.some((step) => Math.abs(step - pixels) < 0.01)) return;
+        offStep.add(`${describe(element, text)} at ${String(pixels)}px`);
+      };
+
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      const seen = new Set<Element>();
+      for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+        const text = node.textContent ?? "";
+        const element = node.parentElement;
+        if (text.trim() === "" || element === null || seen.has(element)) continue;
+        seen.add(element);
+        if (!element.checkVisibility({ visibilityProperty: true })) continue;
+        // Text that draws no glyph box (a closed disclosure's body, an empty layout) is not text a
+        // person reads, so it is not measured.
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const drawn = [...range.getClientRects()].some(
+          (rect) => rect.width > 0.5 && rect.height > 0.5,
+        );
+        if (drawn) check(element, text);
+      }
+
+      // A field shows its value as text, but the value is not a text node, so the walk above never
+      // meets it.
+      for (const field of document.querySelectorAll(
+        "input:not([type='hidden']):not([type='checkbox']):not([type='radio']), select, textarea",
+      )) {
+        if (!field.checkVisibility({ visibilityProperty: true })) continue;
+        check(field, field.getAttribute("aria-label") ?? field.getAttribute("name") ?? "a field");
+      }
+
+      return {
+        html: size(document.documentElement),
+        body: size(document.body),
+        offStep: [...offStep],
+      };
+    },
+    {
+      steps: [...TYPE_STEP_PIXELS],
+      exceptions: TEXT_OFF_THE_TYPE_STEPS.map((exception) => exception.selector),
+    },
+  );
+
+  expect.soft(measured.html, "html stays at the browser's 16px root").toBe(16);
+  expect.soft(measured.body, "body carries the 13px body step").toBe(13);
+  expect.soft(measured.offStep, "text rendered between the brief's six type steps").toEqual([]);
+}
+
+/**
+ * A date as this product writes one: "Jul 21, 2026", "7/21/2026", or "2026-07-21", each with or
+ * without a time after it.
+ */
+const TIMESTAMP_PATTERN =
+  /\b(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2})\b/u;
+
+/**
+ * Design brief section 10 and rubric axis 3: timestamps use the data font.
+ *
+ * PRD-008d, the second redraw of 2026-10-01. Outside its two tables the reports screen wrote every
+ * timestamp and date ("Jul 21, 2026, 2:30 PM", "2026-07-27") in the interface face, 22 of them at
+ * 1440; the overview's activity and attention queue, onboarding's evidence, and campaign detail's
+ * launch schedule did the same, and the saved campaign's open-house window and decision time sat in
+ * running text. Every one is now a `time` element, which the global stylesheet sets in the data
+ * font. This holds the rule from the outside, on every photographed screen: any visible text that
+ * reads as a date is drawn in the data font, whichever element carries it.
+ */
+export async function expectTimestampsInTheDataFont(page: Page): Promise<void> {
+  const sans = await page.evaluate((source) => {
+    const pattern = new RegExp(source, "u");
+    const probe = document.createElement("span");
+    probe.style.fontFamily = "var(--font-data)";
+    probe.style.display = "none";
+    document.body.append(probe);
+    const dataFamily = getComputedStyle(probe).fontFamily;
+    probe.remove();
+
+    const found = new Set<string>();
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+      const text = node.textContent ?? "";
+      const element = node.parentElement;
+      if (element === null || !pattern.test(text)) continue;
+      if (!element.checkVisibility({ visibilityProperty: true })) continue;
+      if (getComputedStyle(element).fontFamily === dataFamily) continue;
+      found.add(`${element.tagName.toLowerCase()} "${text.trim().slice(0, 60)}"`);
+    }
+    return [...found];
+  }, TIMESTAMP_PATTERN.source);
+
+  expect.soft(sans, "a timestamp drawn in the interface face").toEqual([]);
+}
+
+/**
+ * Rubric axis 3, the two typography gates together, so every place that takes a picture runs both
+ * with one call and none of them can run one and forget the other.
+ */
+export async function expectTypographyOnBrief(page: Page): Promise<void> {
+  await expectTextAtTheTypeSteps(page);
+  await expectTimestampsInTheDataFont(page);
+}
+
 /** Everything the browser's own sequential navigation can land on. */
 const FOCUSABLE_SELECTOR = [
   "a[href]",
@@ -647,6 +792,73 @@ export async function expectPanelFooterIsOnScreen(
       `at ${String(frame.width)} "${name}" ends inside the frame`,
     ).toBeLessThanOrEqual(frame.width);
   }
+  await expectNothingShowsBelowThePanelFooter(page, frame);
+}
+
+/**
+ * Rubric axis 2, "vertical rhythm is consistent ... across sibling screens". A page in the shell
+ * opens at the top of the main landmark, whatever its length.
+ *
+ * PRD-008d, the scored baseline review of 2026-10-01: the bootstrap `main` rule centred a short
+ * page in the frame, so the campaigns list's title sat about 200px below every sibling page's.
+ */
+export async function expectThePageOpensAtTheTopOfItsContent(page: Page): Promise<void> {
+  const offset = await page.getByRole("main").evaluate((main) => {
+    const first = main.firstElementChild;
+    if (first === null) return undefined;
+    const paddingTop = Number.parseFloat(getComputedStyle(main).paddingTop);
+    return first.getBoundingClientRect().top - (main.getBoundingClientRect().top + paddingTop);
+  });
+  expect(offset, "the main landmark has content").toBeDefined();
+  expect(Math.abs(offset ?? Number.POSITIVE_INFINITY), "the page opens at the top").toBeLessThan(1);
+}
+
+/**
+ * Rubric axes 2 and 10. A page that fills the content column starts its title at the column's
+ * inline start, as its siblings do, whatever it currently holds. PRD-008d's baseline review: the
+ * campaigns list shrank to its contents and was centred, so its title moved with what it listed.
+ */
+export async function expectThePageFillsTheContentColumn(page: Page): Promise<void> {
+  const gap = await page.getByRole("main").evaluate((main) => {
+    const first = main.firstElementChild;
+    if (first === null) return undefined;
+    const paddingInlineStart = Number.parseFloat(getComputedStyle(main).paddingLeft);
+    return (
+      first.getBoundingClientRect().left - (main.getBoundingClientRect().left + paddingInlineStart)
+    );
+  });
+  expect(gap, "the main landmark has content").toBeDefined();
+  expect(
+    Math.abs(gap ?? Number.POSITIVE_INFINITY),
+    "the page starts at the column's edge",
+  ).toBeLessThan(1);
+}
+
+/**
+ * PRD-006c D7 and `03-components/sheet-and-dialog.md`, "the footer stays visible": the footer is
+ * pinned at the end of the panel's scroll box, so the panel ends with its controls.
+ *
+ * PRD-008d, the scored baseline review of 2026-10-01. The footer stuck to the scroll box's content
+ * edge, which sat the sheet's end padding inside the panel's border, and the progress list scrolled
+ * through that band: every capped panel showed a sliver of its next row below Continue. A picture
+ * of that is only compared on the runner that drew it, so this measures it everywhere: the
+ * footer's end is the panel's inner end, to the pixel.
+ */
+export async function expectNothingShowsBelowThePanelFooter(
+  page: Page,
+  frame: Readonly<{ width: number }>,
+): Promise<void> {
+  const gap = await page.getByRole("dialog").evaluate((panel) => {
+    const footer = panel.lastElementChild;
+    if (footer === null || footer.querySelector("button") === null) return undefined;
+    const innerEnd = panel.getBoundingClientRect().top + panel.clientTop + panel.clientHeight;
+    return innerEnd - footer.getBoundingClientRect().bottom;
+  });
+  expect(gap, `at ${String(frame.width)} the panel has a footer to measure`).toBeDefined();
+  expect(
+    Math.abs(gap ?? Number.POSITIVE_INFINITY),
+    `at ${String(frame.width)} the panel's body shows below its footer`,
+  ).toBeLessThan(1);
 }
 
 /**
@@ -798,6 +1010,20 @@ export async function warmFullPageCapture(page: Page): Promise<void> {
  * rather than once per cell is what keeps a review suite from spending the sign-up, sign-in, and
  * password-reset budgets that the specs sharing the run need.
  */
+/**
+ * Parks the pointer at the frame's top-left corner, which is the rail's brand block at the wide
+ * frames and the top bar's own padding at 390: nothing there reacts to a pointer.
+ *
+ * PRD-008d, the scored baseline review of 2026-10-01. The pointer stays wherever the last click
+ * left it, and a viewport change moves the layout under it, so a picture could carry an incidental
+ * hover on whatever control the resize slid under the cursor: the help-menu picture at 1180 showed
+ * the theme control's "Dark" option hovered on one run and not on the run before. A baseline that
+ * depends on where the cursor happened to be is not a baseline.
+ */
+export async function parkThePointer(page: Page): Promise<void> {
+  await page.mouse.move(0, 0);
+}
+
 export async function captureNamedState(
   page: Page,
   input: Readonly<{
@@ -819,6 +1045,7 @@ export async function captureNamedState(
     axe?: Readonly<{ exclude?: readonly string[]; disableRules?: readonly string[] }>;
   }>,
 ): Promise<void> {
+  await parkThePointer(page);
   for (const frame of input.frames ?? REVIEW_FRAMES) {
     await page.setViewportSize({ width: frame.width, height: frame.height });
     await settleForScreenshot(page, {
@@ -829,6 +1056,7 @@ export async function captureNamedState(
     await expectAxeClean(page, input.axe ?? {});
     await expectNoHorizontalOverflow(page);
     await expectTargetsAreLargeEnough(page);
+    await expectTypographyOnBrief(page);
     const fullPage = input.fullPage ?? true;
     if (fullPage) await warmFullPageCapture(page);
     await expect(page).toHaveScreenshot(

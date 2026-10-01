@@ -156,6 +156,8 @@ export declare function readUserIdForEmail(
 
 export declare function suspendReviewActor(pool: DatabasePool, actorId: string): Promise<void>;
 
+export declare function readDatabaseClockMilliseconds(pool: DatabasePool): Promise<number>;
+
 export declare function readAuthRateLimitRows(
   pool: DatabasePool,
   scope?: string,

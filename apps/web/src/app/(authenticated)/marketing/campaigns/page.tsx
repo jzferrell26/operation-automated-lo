@@ -1,12 +1,9 @@
 import { headers } from "next/headers.js";
 import { redirect } from "next/navigation.js";
 
-import { Card, Link } from "@oalo/ui";
+import { Card, EmptyState, Link } from "@oalo/ui";
 
-import {
-  CAMPAIGN_NEXT_ACTION_LABELS,
-  CAMPAIGN_STATE_LABELS,
-} from "../../../../copy/user-language.js";
+import { CAMPAIGN_NEXT_ACTION_LABELS, campaignStateLabel } from "../../../../copy/user-language.js";
 import styles from "../../../../features/campaigns/components/open-house-draft-builder.module.css";
 import { readWorkspaceCampaignsForRequest } from "../../../../server/campaign-workspace-reads.js";
 import { SIGN_IN_PATH } from "../../../../server/runtime-authentication.js";
@@ -24,7 +21,7 @@ export default async function CampaignListPage() {
   const campaigns = read.campaigns;
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${styles.campaignsPage}`}>
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Open House Boost</p>
@@ -33,18 +30,26 @@ export default async function CampaignListPage() {
         </div>
       </header>
       {campaigns.length === 0 ? (
-        <Card padding="md">
-          <strong>No campaigns yet.</strong>
-          <p>Create your first Open House Boost. It&apos;s saved as you go.</p>
-          <Link href="/marketing/campaigns/new" variant="action">
-            Create an Open House Boost
-          </Link>
-        </Card>
+        /* PRD-008d, the scored baseline review of 2026-10-01, rubric axis 9: an empty list is the
+           shared `empty` state, as the overview's empty campaign region already is, not a card
+           assembled on this page. It carries the state's own label and glyph, the title at the card
+           step, and the one creation action the variant contract allows. */
+        <EmptyState
+          description="Create your first Open House Boost. It's saved as you go."
+          primaryAction={
+            <Link href="/marketing/campaigns/new" variant="action">
+              Create an Open House Boost
+            </Link>
+          }
+          title="No campaigns yet."
+        />
       ) : (
         <div className={styles.findings}>
           {campaigns.map((campaign) => (
-            <Card key={campaign.campaignRef} padding="md">
-              <p className={styles.eyebrow}>{CAMPAIGN_STATE_LABELS[campaign.state]}</p>
+            <Card className={styles.campaignCard} key={campaign.campaignRef} padding="md">
+              <p className={styles.eyebrow}>
+                {campaignStateLabel(campaign.state, campaign.approval?.decision)}
+              </p>
               <h2>{campaign.headline}</h2>
               <p>{campaign.propertyAddress}</p>
               <p>{nextStepFor(campaign.nextActions)}</p>

@@ -27,4 +27,47 @@ export type SetupCampaignResult = Readonly<{
   /** Whether the latest check result let this version through to approval. */
   ready: boolean;
   findings: readonly SetupResultFinding[];
+  /**
+   * PRD-008b 008B-AC-010. The decision recorded on this version, when somebody has made one.
+   *
+   * Step 6 tells a person to approve the version or to hand it to an approver, and both are steps on
+   * a version nobody has decided on. The walkthrough is stored, so it can be reopened after a
+   * colleague has approved the campaign or sent it back, and it has to know that to say so. A
+   * send-back leaves the campaign in the waiting state, so the state cannot say it: only the
+   * decision can. Absent means nobody has decided, which is the shape this record always had.
+   */
+  decision?: "approved" | "rejected" | undefined;
 }>;
+
+/**
+ * PRD-008b 008B-AC-011. Where a campaign stands, as the walkthrough's steps need to say it.
+ *
+ * Steps 5, 6, and 7 each say something about the campaign, so one answer to "where does it stand"
+ * serves all three and none of them can disagree with another. A recorded decision comes first: it
+ * is the fact, and a decided version has already passed its checks. The check result comes next, so
+ * a version that fails them is `needs_changes` and not `waiting`, because it is waiting for its
+ * author and for nobody else. `unknown` is a campaign the walkthrough could not read, and the steps
+ * say less about it rather than guess.
+ *
+ * `none` is not about a campaign at all. It is an approver who cannot create one, with nothing
+ * waiting for them: there is no campaign to describe, and the steps say so rather than describe one
+ * that does not exist. The provider decides it, because it needs the person's role and the stored
+ * progress as well as the campaign, so `campaignStanding` never returns it.
+ *
+ * `campaigns_unread` is the same person in the same place, when the server tried to read the
+ * campaigns waiting for them and could not. It is not `none`: "nothing is waiting" is a claim about
+ * the workspace, and a failed read is not evidence of it. It is not `unknown` either, which is a
+ * campaign that exists and could not be read, so the steps have a campaign to point at; here there
+ * is none to point at. The provider decides this one too, and `campaignStanding` never returns it.
+ */
+export type CampaignStanding =
+  "unknown" | "none" | "campaigns_unread" | "needs_changes" | "waiting" | "approved" | "sent_back";
+
+export function campaignStanding(
+  campaign: Pick<SetupCampaignResult, "decision" | "ready"> | undefined,
+): CampaignStanding {
+  if (campaign === undefined) return "unknown";
+  if (campaign.decision === "approved") return "approved";
+  if (campaign.decision === "rejected") return "sent_back";
+  return campaign.ready ? "waiting" : "needs_changes";
+}

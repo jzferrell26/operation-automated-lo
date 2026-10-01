@@ -301,4 +301,45 @@ describe("synthetic reporting screens", () => {
     ).not.toBeInTheDocument();
     expect(within(rerenderedHistory).getByText("Lakeview Buyer Seminar")).toBeInTheDocument();
   });
+
+  /**
+   * Design brief section 10: timestamps, versions, and correlation IDs use the data font. PRD-008d's
+   * second redraw found every timestamp outside the two tables drawn in the interface face, because
+   * each was plain text in a `dd` or a bare `time` the stylesheet did not reach. A timestamp is now
+   * a `time` element, which the global stylesheet sets in the data font, and an identifier carries
+   * `oalo-data-text`. The table cells already take the data font from `reporting.module.css`.
+   */
+  it("marks every timestamp as a time element and every identifier as data", () => {
+    const reporting = loadSyntheticReporting();
+    const { container } = render(<ReportsScreen reporting={reporting} />);
+
+    const datePattern =
+      /\b(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}|\d{4}-\d{2}-\d{2})\b/u;
+    const unmarked: string[] = [];
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+      const text = node.textContent ?? "";
+      if (!datePattern.test(text)) continue;
+      const time = node.parentElement?.closest("time");
+      if (node.parentElement?.closest("td") !== null) continue;
+      if (time === null || time === undefined || time.getAttribute("dateTime") === null) {
+        unmarked.push(text.trim());
+      }
+    }
+    expect(unmarked).toEqual([]);
+    expect(container.querySelectorAll("time[datetime]").length).toBeGreaterThan(0);
+
+    const history = screen.getByRole("region", { name: "Campaign history" });
+    const cedar = within(history)
+      .getByRole("heading", { name: "Cedar Street Open House Boost" })
+      .closest("article");
+    if (!cedar) throw new Error("Expected the Cedar Street campaign card.");
+    const version = within(cedar).getByText("Current version").nextElementSibling;
+    expect(version).toHaveClass("oalo-data-text");
+
+    const exceptions = screen.getByRole("region", { name: "Health and reporting exceptions" });
+    for (const reference of within(exceptions).getAllByText("Support reference")) {
+      expect(reference.nextElementSibling).toHaveClass("oalo-data-text");
+    }
+  });
 });

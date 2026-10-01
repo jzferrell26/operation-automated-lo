@@ -89,11 +89,28 @@ export default async function EmailPreviewPage() {
             focus ring inside it belongs to the framed document, which is the email itself and is
             not this product's to style; the keyboard check in
             `tests/browser/helpers/design-quality.ts` says so and says why.
+
+            PRD-008a 008A-AC-021, the sandbox. The most restrictive value, `sandbox=""`, blocks
+            scripts in the frame, and axe can only check a frame by running inside it, so axe
+            cannot complete a run there. Measured with @axe-core/playwright: against this page,
+            AxeBuilder did not return within 170 seconds under `sandbox=""` (the browser suite's
+            ceiling is 30 seconds per test; PRD-008 Wave 1 verifier, 2026-09-30); against a
+            minimal page it did return, with `frame-tested` reported as incomplete rather than as
+            a violation and every check of the email document itself (its language, its title,
+            its link's name, its contrast) silently absent, so a planted contrast failure inside
+            the frame went unreported (2026-09-30). Under `allow-scripts` the same failure was
+            caught. So the frame gets `allow-scripts` and nothing else, the most restrictive
+            value under which the suite's axe run completes and still means something; the
+            integration test beside this page pins it. It must never be combined with
+            `allow-same-origin`: together they let framed content remove its own sandbox. Alone,
+            the email still runs in an opaque origin with no access to this page, its cookies, or
+            its storage, and with no forms, popups, or navigation of this page.
           */}
           <div className={styles.viewport}>
             <iframe
               className={styles.frame}
               data-email-preview={email.id}
+              sandbox="allow-scripts"
               srcDoc={email.message.html}
               title={`${email.message.subject}, as a mail client renders it`}
             />

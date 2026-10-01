@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { SIGN_UP } from "../../../apps/web/src/copy/auth-messages.js";
+import { SIGN_UP, VERIFY_EMAIL } from "../../../apps/web/src/copy/auth-messages.js";
 import {
   REVIEW_FRAMES,
   captureNamedState,
@@ -9,8 +9,11 @@ import {
   expectNoHorizontalOverflow,
   expectPanelFooterIsOnScreen,
   expectTargetsAreLargeEnough,
+  expectThePageFillsTheContentColumn,
   expectThemeResolved,
+  expectTypographyOnBrief,
   expectZeroMotionUnderReducedMotion,
+  parkThePointer,
   screenshotName,
   settleForScreenshot,
   useStoredTheme,
@@ -19,6 +22,7 @@ import {
 import {
   expectNoExternalRequests,
   guardLocalOrigin,
+  letTheStepPlaceItself,
   restartGuidedSetup,
   seededCredentials,
   signInExisting,
@@ -28,6 +32,7 @@ import {
   putTheWalkthroughAside,
   REVIEW_THEMES,
 } from "./helpers/review-session.js";
+import { issueVerificationTokenForTheSeededOutsider } from "./helpers/verification-token.js";
 
 /**
  * PRD-006d 006D-AC-007 through 006D-AC-012, for the screens only a real session reaches.
@@ -176,6 +181,7 @@ for (const { screen, path } of ACCOUNT_SCREENS) {
         await expectAxeClean(page);
         await expectNoHorizontalOverflow(page);
         await expectTargetsAreLargeEnough(page);
+        await expectTypographyOnBrief(page);
         await expect(page).toHaveScreenshot(screenshotName(screen, frame.name, theme), {
           fullPage: true,
         });
@@ -266,6 +272,38 @@ test("a refused sign-in is announced and on screen at 390", async ({ page }) => 
 });
 
 /**
+ * Rubric axes 2 and 10 on the change-password page. PRD-008d, the second redraw of 2026-10-01,
+ * finding R-20: the page had no width of its own, so the shell centred it at the width of its
+ * title, and once D-009 drew the title at the page step the form shrank with it to some 296px at
+ * 1440. The page now fills the column, so its title starts where its siblings' titles start, and
+ * the form takes the account form's 26rem measure, or the whole column where that is narrower.
+ */
+async function expectTheFormKeepsTheAccountMeasure(page: Page, frame: ReviewFrame): Promise<void> {
+  await expectThePageFillsTheContentColumn(page);
+  const widths = await page.getByRole("main").evaluate((main) => {
+    const style = getComputedStyle(main);
+    const column =
+      main.clientWidth -
+      Number.parseFloat(style.paddingLeft) -
+      Number.parseFloat(style.paddingRight);
+    const probe = document.createElement("span");
+    probe.style.display = "none";
+    probe.style.width = "26rem";
+    main.append(probe);
+    const measure = Number.parseFloat(getComputedStyle(probe).width);
+    probe.remove();
+    return {
+      form: main.querySelector("form")?.getBoundingClientRect().width ?? 0,
+      expected: Math.min(measure, column),
+    };
+  });
+  expect(
+    Math.abs(widths.form - widths.expected),
+    `at ${frame.name} the form is ${String(Math.round(widths.form))}px, not the account measure`,
+  ).toBeLessThan(1);
+}
+
+/**
  * 006D-AC-008 and 006D-AC-012 for the change-password screen, which lives inside the signed-in
  * shell. One sign-in, then all eight frame-and-theme cells in place.
  */
@@ -293,6 +331,8 @@ test("change-password meets the design quality bar at every frame in both themes
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
       await expectTargetsAreLargeEnough(page);
+      await expectTypographyOnBrief(page);
+      await expectTheFormKeepsTheAccountMeasure(page, frame);
       await expect(page).toHaveScreenshot(screenshotName("change-password", frame.name, theme), {
         fullPage: true,
       });
@@ -369,6 +409,7 @@ test("the workspace after a saved password meets the design quality bar", async 
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
       await expectTargetsAreLargeEnough(page);
+      await expectTypographyOnBrief(page);
       await expect(page).toHaveScreenshot(
         screenshotName("reset-password", frame.name, theme, "saved-notice"),
         { fullPage: true },
@@ -396,15 +437,70 @@ test("the workspace after a saved password meets the design quality bar", async 
 });
 
 /**
- * 006C-AC-020's review half at the two frames PRD-006c's own accessibility matrix leaves out, and
- * 006D-AC-018 from the review side.
+ * PRD-008d, the scored baseline review of 2026-10-01: the picture of a step that points at the page
+ * shows what it points at. The element is on screen, below the sticky header, above the viewport's
+ * end, and clear of the panel, before the picture is taken, because a picture is only compared on
+ * the runner that drew it and this has to hold everywhere.
+ */
+async function expectTheStepPointsAtSomethingOnScreen(
+  page: Page,
+  frame: ReviewFrame,
+): Promise<void> {
+  const highlighted = page.locator("[data-guided-setup-highlight='true']").first();
+  await expect(highlighted, `at ${frame.name} the step points at something`).toBeVisible();
+  const target = await highlighted.boundingBox();
+  const panelBox = await page.getByRole("dialog").boundingBox();
+  const header = await page.getByRole("banner").boundingBox();
+  expect(target, `at ${frame.name} the element has a box`).not.toBeNull();
+  expect(panelBox, `at ${frame.name} the panel has a box`).not.toBeNull();
+  if (target === null || panelBox === null) return;
+  expect(
+    target.y,
+    `at ${frame.name} the element starts below the sticky header`,
+  ).toBeGreaterThanOrEqual(header === null ? 0 : header.y + header.height - 1);
+  expect(
+    target.y + target.height,
+    `at ${frame.name} the element ends inside the viewport`,
+  ).toBeLessThanOrEqual(frame.height);
+  const overlaps =
+    panelBox.x < target.x + target.width &&
+    panelBox.x + panelBox.width > target.x &&
+    panelBox.y < target.y + target.height &&
+    panelBox.y + panelBox.height > target.y;
+  expect(overlaps, `at ${frame.name} the panel covers what it is pointing at`).toBe(false);
+}
+
+/**
+ * 006C-AC-020's review half for steps 1 and 2, at all four frames, and 006D-AC-018 from the review
+ * side.
+ *
+ * PRD-008d 008D-AC-008, the sign-off's A-1 cells. Until 2026-10-01 this took 1440 and 768 only, the
+ * two frames PRD-006c's own accessibility matrix leaves out, and the sign-off recorded steps 1 and
+ * 2 at 1180 and 390 as "pass, asserted (A-1)": `guided-setup.accessibility.spec.ts` runs axe, the
+ * motion check, the target sizes, the ring, and the panel clearance there, and draws no picture.
+ * An assertion holds a rule; it does not hold a composition. So the same cell procedure now runs
+ * at all four frames and every cell has a baseline. Each cell starts the walkthrough again from
+ * the top of the overview, which is where a person meets step 1.
+ *
+ * Step 1 is photographed where the product puts it, not at the top of the page. PRD-008d's scored
+ * baseline review of 2026-10-01 found the earlier cells scrolling back to the top after the
+ * walkthrough had scrolled the quick actions clear of its panel, so at 1180, 768, and 390 the
+ * pictures showed the panel pointing at quick actions below the fold: a state nobody using the
+ * product is in, signed as if it were. The cell now starts at the top and lets the step's own
+ * scroll run (`letTheStepPlaceItself`). Step 2 points at nothing on the page, so the top of the
+ * page stays its canonical start.
  *
  * It signs in as the seeded creator and restarts the walkthrough rather than creating an account,
  * so the run's sign-up budget stays where PRD-006c's specs need it. `restartGuidedSetup` is what a
  * person would use, and using it here is what makes a spec about a seeded person repeatable.
  */
-test("the guided setup meets the bar at 1440 and 768, in both themes", async ({ page }) => {
-  test.setTimeout(240_000);
+test("the guided setup's steps 1 and 2 meet the bar at every frame, in both themes", async ({
+  page,
+}) => {
+  // Twice the cells it had, each a restart, two pictures, and a dismissal. Measured on 2026-10-01
+  // in the review composition on a Windows workstation: 40 s. The budget is the old one scaled
+  // with the cells, which leaves the runner's throttled processor several times that.
+  test.setTimeout(360_000);
   const guard = await guardLocalOrigin(page);
   const { creatorEmail, password } = seededCredentials();
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -412,15 +508,16 @@ test("the guided setup meets the bar at 1440 and 768, in both themes", async ({ 
 
   for (const theme of REVIEW_THEMES) {
     await chooseThemeFromTheHeader(page, theme);
-    for (const frame of REVIEW_FRAMES.filter((candidate) =>
-      ["1440", "768"].includes(candidate.name),
-    )) {
+    for (const frame of REVIEW_FRAMES) {
       await page.setViewportSize({ width: frame.width, height: frame.height });
       await restartGuidedSetup(page);
       await settleForScreenshot(page);
+      await letTheStepPlaceItself(page, "top");
+      await settleForScreenshot(page, { keepScroll: true });
 
       await expectAxeClean(page);
       await expectTargetsAreLargeEnough(page);
+      await expectTypographyOnBrief(page);
       /**
        * PRD-006d's reopened row 2. The committed step-1 baseline at 1440 showed the panel's
        * footer controls below the fold, and nothing here said so: a screenshot that is only
@@ -428,6 +525,8 @@ test("the guided setup meets the bar at 1440 and 768, in both themes", async ({ 
        * The controls are measured before the picture is taken, at both frames.
        */
       await expectPanelFooterIsOnScreen(page, frame, ["Let's go", "Not now"]);
+      await expectTheStepPointsAtSomethingOnScreen(page, frame);
+      await parkThePointer(page);
       await expect(page).toHaveScreenshot(
         screenshotName("guided-setup", frame.name, theme, "step-1-welcome"),
       );
@@ -437,7 +536,9 @@ test("the guided setup meets the bar at 1440 and 768, in both themes", async ({ 
       await settleForScreenshot(page);
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
+      await expectTypographyOnBrief(page);
       await expectPanelFooterIsOnScreen(page, frame);
+      await parkThePointer(page);
       await expect(page).toHaveScreenshot(
         screenshotName("guided-setup", frame.name, theme, "step-2-your-details"),
       );
@@ -517,7 +618,11 @@ test("the boundary review page is not served in review mode", async ({ page }) =
 type PublicNamedState = Readonly<{
   screen: string;
   state: string;
-  path: string;
+  /**
+   * Where the state starts. A function for the one state whose address has to be made fresh for
+   * each theme: a link that can be spent once is spent by the first theme's confirmation.
+   */
+  path: string | (() => Promise<string>);
   reach?: (page: Page) => Promise<void>;
 }>;
 
@@ -575,6 +680,32 @@ const PUBLIC_NAMED_STATES: readonly PublicNamedState[] = Object.freeze([
       await expect(page.locator("form").getByRole("alert")).toContainText("This link has expired.");
     },
   },
+  /**
+   * PRD-008d 008D-AC-007, S-1, the sign-off's "Verify email, confirmed" row.
+   *
+   * The one state here that needs a live link. The review composition has no sending domain, so
+   * the product never issues one (`helpers/verification-token.ts` says why and what that helper
+   * replaces). A fresh token is minted per theme, because confirming spends it, and the person then
+   * presses Confirm on the product's own page and the real route answers. The confirmed sentence
+   * and the page's way onward are asserted here rather than left to the picture, which is only
+   * compared on the runner that drew it.
+   *
+   * Two confirmations per run against the verify limit of twenty an hour per address
+   * (`apps/web/src/server/password-authentication-handler.ts`, `AUTH_RATE_LIMITS.verify_ip`), on
+   * top of the link-expired state's two. No sign-up is spent.
+   */
+  {
+    screen: "verify-email",
+    state: "confirmed",
+    path: async () =>
+      `/verify-email?token=${encodeURIComponent(await issueVerificationTokenForTheSeededOutsider())}`,
+    reach: async (page) => {
+      await page.getByRole("button", { name: "Confirm", exact: true }).click();
+      await expect(page.getByRole("status")).toContainText(VERIFY_EMAIL.successNotice);
+      await expect(page.getByRole("button", { name: "Confirm", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
+    },
+  },
 ]);
 
 for (const named of PUBLIC_NAMED_STATES) {
@@ -586,7 +717,7 @@ for (const named of PUBLIC_NAMED_STATES) {
       const guard = await guardLocalOrigin(page);
       await useStoredTheme(page, theme);
       await page.setViewportSize({ width: 1440, height: 900 });
-      await page.goto(named.path);
+      await page.goto(typeof named.path === "string" ? named.path : await named.path());
       await expectThemeResolved(page, theme);
       await settleForScreenshot(page);
       await named.reach?.(page);

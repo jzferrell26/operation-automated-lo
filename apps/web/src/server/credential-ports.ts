@@ -22,6 +22,9 @@ export type PasswordChangeReason = "initial" | "reset" | "change";
  * resend control is only reachable with a valid session: the request already names exactly one
  * account, and an address-keyed window would let one office's shared address spend everybody's
  * budget. The keyed-hash rule is unchanged, so the counter table still holds no identifier.
+ *
+ * `change_password_user` (PRD-008a D2) is keyed by the person for the same reason: change-password
+ * is only reachable with a valid session, so the request already names exactly one account.
  */
 export type AuthRateLimitScope =
   | "sign_in_ip"
@@ -30,7 +33,20 @@ export type AuthRateLimitScope =
   | "forgot_email"
   | "reset_ip"
   | "verify_ip"
-  | "resend_verification_user";
+  | "resend_verification_user"
+  | "change_password_user";
+
+/**
+ * M-1 of the PRD-008 close-out security audit. A counter that records and limits nothing.
+ *
+ * `sign_in_no_account` counts sign-in attempts for an address with no active account, per client
+ * address and fifteen-minute window, under the same keyed-hash rule as every limit above. It is
+ * not an `AuthRateLimitScope` because nothing consumes it as a limit:
+ * `platform.consume_auth_rate_limit` refuses it, and `platform.record_sign_in_without_account` is
+ * its only writer. Refusing a caller on it would itself be an answer only an unknown address can
+ * earn.
+ */
+export type AuthAttemptCounterScope = "sign_in_no_account";
 
 export interface PasswordCredential {
   readonly userId: string;
@@ -110,6 +126,13 @@ export interface CredentialPort {
   recordSignInFailure(
     input: Readonly<{ userId: string; correlationRef: string }>,
   ): Promise<number | undefined>;
+  /**
+   * M-1. The refused sign-in for an address with no active account, recorded with the same kind
+   * of awaited definer write `recordSignInFailure` makes for a known one, so the two refusals cost
+   * the same before the answer. `keyHash` is the keyed hash of the client address under
+   * `sign_in_no_account`. Nothing derived from the email address that was tried crosses here.
+   */
+  recordSignInWithoutAccount(input: Readonly<{ keyHash: string }>): Promise<void>;
   recordSignInSuccess(input: Readonly<{ userId: string; correlationRef: string }>): Promise<void>;
   issueToken(
     input: Readonly<{

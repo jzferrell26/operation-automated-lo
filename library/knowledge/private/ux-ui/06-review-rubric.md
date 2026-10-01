@@ -106,6 +106,8 @@ acceptance; it is a debt with an address.
 | D-007 | A frame's focus ring cannot be painted by the parent document. The email preview's frame is a keyboard focus stop, and the ring a person sees inside it is the framed document's own. | Measured by `tests/browser/design-quality.spec.ts` on 2026-09-19. | Recorded, not a debt | The alternative, `tabindex="-1"` on the frame, was tried and is a WCAG failure: the email contains a link, and axe's `frame-focusable-content` catches it. The bordered viewport around the frame carries `:focus-within`, and the keyboard check states the exception. |
 | D-005 | The `/demo` route carries a private nine-token palette, 76 hex values, a `backdrop-filter`, and no Dark block. | `apps/web/src/components/demo/founding-offer-demo.module.css`. | Recorded, not fixed | Out of scope by PRD-006d Non-Goals. It never renders in review mode. Nothing in review mode links to it. |
 | ~~D-008~~ | ~~The tablet and embedded frames now open with the full 17rem rail and collapse to the 5rem compact rail.~~ **Ruled and closed 2026-09-20** by `design-system-guardian`: the collapsible rail as shipped is confirmed, and brief section 14 now states it with its content-column consequence. | `apps/web/src/features/shell/components/app-shell.module.css`, the tablet block, removed by the PRD-006d named-state review's F-19 on 2026-09-20. | Closed | Brief section 14 and `03-components/application-shell-and-navigation.md` now say what the stylesheet does, including the 496px column the expanded rail leaves at 768. See the ruling below this table. |
+| ~~D-009~~ | ~~Text that no module sizes renders at the browser's 16px, not brief section 10's 13px body step, and a heading that no module sizes renders at the browser's multiple of that 16px.~~ Ruled 2026-10-01 by `design-system-guardian`, fix now. **Fixed and closed 2026-10-01** by the PRD-008d second redraw. | Confirmed on the committed pictures and in the code, and wider than proposed: the campaigns list's lead is 16px, larger than every card title on the page, and the overview's section titles are 24px, above the 23px page title. | Closed | `body` carries `--text-body-size`, each heading level carries its step, and `.campaignCard h2` takes the card step (`2687100`); the redraw is screen-baselines run 36844271868; `expectTypographyOnBrief` holds the steps on every picture. Closed by the review of the redrawn set, the second half of `library/requirements/completed/prd-008-finish-line-hardening/qa/2026-10-01-008d-baseline-review.md`. See the ruling below this table. |
+| ~~D-010~~ | ~~The bootstrap `section { max-width: 44rem }` (`apps/web/src/app/globals.css:60-62`) caps every `<section>` in the shell.~~ Ruled 2026-10-01 by `design-system-guardian`, fix now. **Fixed and closed 2026-10-01** by the PRD-008d second redraw. | Confirmed with two corrections: "Unavailable" does not stop 2px inside its card's border, it crosses it, and four cards share 704px at 1440 only. The cap also draws the whole overview as a 704px strip centred in a 1120px column and splits campaign detail and reports into two widths. | Closed | The rule and the four declarations that only undid it are deleted (`2687100`); the value-containment check, the column-fill check on the overview, and the guard against the rule's return all pass; the redraw is screen-baselines run 36844271868. Closed by the same review. See the ruling below this table. |
 
 ### The rulings of 2026-09-20
 
@@ -252,6 +254,221 @@ re-litigate them:
   made. If a future screen makes the re-collapse tedious, that is a new
   requirement with an owner, not a defect against this ruling.
 
+### The rulings of 2026-10-01
+
+Recorded 2026-10-01 by `design-system-guardian`, the owner README.md names for
+system-level change to this folder, on the two deltas the PRD-008d baseline
+review handed over
+(`library/requirements/completed/prd-008-finish-line-hardening/qa/2026-10-01-008d-baseline-review.md`,
+"Recorded, not fixed here") and the re-signed sign-off carries as open debts
+(`docs/operations/evidence-packs/design-quality-signoff.md`, D-009 and D-010
+proposed). Each was measured again on the committed pictures of `b902193` and in
+the code rather than taken from the proposal.
+
+Both are ruled **fix now**. Each is a defect a loan officer sees on most
+screens, and neither is an error in the brief. Both fixes land in **one commit
+and one redraw**: each moves the overview and every picture taken over it, and
+two redraws would review the same pictures twice. This ruling changes no
+product file; the orchestrator dispatches the fix, the redraw, and the review
+of the redrawn set against this rubric.
+
+#### D-009, ruled: the body step goes on `body`, and every heading level carries its step
+
+**Measured.** The proposal is right and understates the delta.
+
+- The cause is the root of inheritance. `apps/web/src/app/globals.css:10-14`
+  gives `:root` its family and colours and `:46-48` gives `body` only its
+  margin, so no element sets a size and every unsized element takes the
+  browser's 16px. Module rules such as `.header p`
+  (`open-house-draft-builder.module.css:15-21`), the account screens'
+  `.header p` (`auth-form.module.css:29-33`), and `.oalo-surface`
+  (`packages/ui/src/components/primitives.css:1-3`) set colour and leading,
+  never size.
+- Paragraphs. On `campaigns--empty--1440--light.png` the lead sentence's
+  capital is 12px tall, against 17px for the 23px page title, 10px for the 14px
+  card title, and 9px for the 13px empty-state description below it. The lead
+  is 16px text, as proposed, and larger than every card title on the page.
+- Headings, which the proposal did not name. An unsized heading takes the
+  browser's multiple of the same 16px. On `overview--default--1440--light.png`
+  "How things stand" and "Your numbers" have an 18px capital, which is 24px
+  text, larger than the 23px "Good morning, Alex" above them, because
+  `.sectionHeading h2` (`overview.module.css:16-21`) sets only its margin. The
+  overview's `.listGrid h3` and `.workspaceGrid h3` are the browser's 18.72px,
+  above the 17px section step. Change password's title
+  (`apps/web/src/app/(authenticated)/settings/account/page.tsx:26`) is a bare
+  `h1` with a 23px capital on `review/change-password--default--1440--light.png`,
+  which is 32px text. So the delta is axis 1 as well as axis 3: on the overview
+  and campaign detail the section titles outrank the page title.
+- R-9's fix depends on the bug. `.campaignCard h2 { font-size: inherit }`
+  (`open-house-draft-builder.module.css:71-75`) inherits the 16px today and
+  would drop to 13px, below the card step, the moment `body` alone is fixed.
+
+**Ruled. Fix now, not a brief correction.** The 13px figure is not the error.
+Across the fourteen approved canvases no regular-weight text is larger than
+14px, running text sits at 12.5px to 13px (the Campaigns canvas's lead is
+12.5px), and 16px or larger appears only at weights 500 to 700, never as
+running text. `--text-body-size` is
+`0.8125rem` in both token files, and every primitive and the shell rail already
+use it. What is missing is the step at the root of inheritance. A uniform 16px
+is legible, but it is off brief and it inverts the hierarchy the six steps
+exist to make, so it qualifies for neither a deferral nor a brief change.
+
+**The change.** In `apps/web/src/app/globals.css`:
+
+```css
+body {
+  margin: 0;
+  font-size: var(--text-body-size);
+}
+
+h1 {
+  font-size: var(--text-page-size);
+}
+
+h2 {
+  font-size: var(--text-section-size);
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--text-card-size);
+}
+```
+
+and in `apps/web/src/features/campaigns/components/open-house-draft-builder.module.css:72`,
+`.campaignCard h2` takes `font-size: var(--text-card-size)` in place of
+`inherit`. Three rules hold it:
+
+1. The size goes on `body`, never on `:root` or `html`. Every step is a `rem`
+   token, so the root stays the browser's 16px; a 13px root would shrink the
+   23px page title to 18.7px and every other step with it.
+2. The element defaults are a floor, not a role. An element selector loses to
+   any module class, so every heading a module already sizes is untouched, and a
+   heading whose role differs from its level's default (a card titled with an
+   `h2`) sets its step in its module, as `.campaignCard h2` now does.
+3. No token moves. The six steps are applied, not re-tuned, so
+   `01-master-tokens.css` and `packages/ui/src/tokens.css` are unchanged.
+
+**What it moves.** Every picture with text no module sizes. By the code and the
+pictures that is every in-shell screen (the overview, the campaigns list in
+both states, create in its four states, campaign detail in its five states,
+reports, brand, onboarding, settings and connections, design surfaces, change
+password, the four shell rows, and every guided-setup step) and the account
+screens (sign in, sign up, choose workspace, forgot and reset password, verify
+email). Redraw all 376 committed pictures once, the 120 under
+`tests/visual/screens/chromium/` and the 256 under
+`tests/visual/screens/review/`, and let the run-to-run comparison name the set
+that moved. The email preview's email is its own framed document and does not
+move; the page around it may. The two surfaces with no baseline, the synthetic
+public open-house page (`apps/web/src/app/public/synthetic-open-house-v3/page.tsx`)
+and the homeowner reports, are read at 1440 and 390 by the fix lane, and any
+text there meant to be larger than the body step is sized in its own module.
+
+One consequence to watch rather than pre-empt: a paragraph on the browser's
+`1em` margin now has 13px above and below it instead of 16px. Every
+module-sized paragraph in the primitives already has exactly that, and the
+PRD-008d review scored them, so it is not a new kind of gap. A gap the redraw
+shows reading wrong is a finding for its screen, fixed with a `--space-*`
+token in its module, not a global paragraph margin that would move every
+primitive.
+
+**The gate**, added in the fix commit and to section 6. On every screen the two
+design-quality suites photograph, the computed size of `html` is 16px and of
+`body` is 13px, and every visible element that carries its own text renders at
+one of the six steps, 23, 17, 14, 13, 11.5, or 10.5px, with any exception named
+with a reason, as `governed-controls.test.ts` names its exceptions. The gate
+proves a size is a step; the review still proves it is the right step for its
+role, a card title at 14px and not 13px.
+
+**Closes when** the fix and the single redraw land, the gate passes, and the
+review of the redrawn set scores every picture 3 on axes 1 and 3.
+
+#### D-010, ruled: the bootstrap section cap is deleted
+
+**Measured.** The rule is real and reaches further than proposed, with two
+corrections.
+
+- `section { max-width: 44rem }` dates from the Phase 0 evidence harness
+  (`1b207e0`, 2026-07-20). It is a scaffold measure, not a design decision:
+  nothing in the brief, the component specs, or the screen specs asks for it,
+  the Overview canvas lays its metric row out as `repeat(4, 1fr)` with no cap,
+  and four declarations in the product exist only to undo it.
+- The overrun is worse than recorded. On `overview--default--1440--light.png`
+  the "Funded or closed outcome" card has its borders at columns 504 and 670, so
+  it is 167px wide with a 133px content box, and "Unavailable" in the data font
+  at 23px bold is about 148px. Its last glyph fills the whole 16px end padding,
+  paints over the border at column 670, and anti-aliases past it at 671. It does
+  not stop 2px inside the border; it crosses it.
+- Four cards share 704px at 1440 only. At 1180 `overview.module.css:181-189`
+  already gives the metric grid two 346px columns, so nothing overruns there,
+  but the cap still holds the overview to 704px of an 860px column.
+- The composition cost is larger than the metric grid. The shell's `main` keeps
+  its inline centring (R-7 kept it on purpose), so at 1440 the whole overview is
+  a 704px strip centred in the 1120px column with 208px empty on each side, and
+  the six health-strip cards are 107px wide, which is why "Brand version" and
+  "Team and approvals" break. Campaign detail is drawn at two widths: its summary
+  cards span the column and its "Campaign check" and "Your next steps" sections
+  stop at 704px (`review/campaign-detail--ready--1440--light.png`). Reports does
+  the same under its wider header (`reports--default--1440--light.png`). The
+  campaigns list's empty state, an `AsyncState` and so a `<section>`, stops at
+  704px inside the list R-13 made fill the column.
+
+**Ruled. Fix now.** A word running over its card's border is a defect a loan
+officer sees, and a dashboard drawn as a narrow centred strip is not a sibling
+of the canvas it implements (axes 7 and 10). Nothing argues for keeping the cap:
+no specification asks for it, and the screens that need a measure already set
+their own (design surfaces at 44rem, the email preview at 38rem, the account
+form at 26rem, the create, brand, and reports pages at 72rem).
+
+**The change.**
+
+- Delete `section { max-width: 44rem; }` from
+  `apps/web/src/app/globals.css:60-62`. A section takes its page's width, and
+  the page keeps its own measure.
+- In the same commit, delete the four declarations that exist only to undo it
+  and then do nothing: `.shell[data-dashboard-preview="true"] .content section`
+  (`apps/web/src/features/shell/components/app-shell.module.css:306-308`),
+  `.content section`
+  (`apps/web/src/features/dashboard-preview/product-shell.module.css:309-311`),
+  `max-inline-size: none` in `.section`
+  (`apps/web/src/features/brand/components/brand-profile.module.css:81`), and
+  `max-inline-size: none` in `.permissionGroups section`
+  (`apps/web/src/features/onboarding/components/onboarding.module.css:117`). No
+  picture moves because of these four.
+- Leave the bootstrap `main` rule alone. Its inline centring is R-7's decision,
+  and once its sections are free the overview fills the column on its own.
+- Leave the metric primitive alone. Without the cap the narrowest four-column
+  card, at a 1181px viewport with the rail expanded, is about 206px wide with a
+  172px content box, which holds the 148px value. The containment check below
+  keeps it that way; a wrap rule would break "Unavailable" mid-word instead.
+
+**What it moves.** Only 1440 and 1180 pictures: at 768 the in-shell column is
+at most 640px even with the rail collapsed, and the account screens hold their
+content in the account form's 26rem. At those two frames: the overview,
+campaign detail in all five states, create wherever its check result shows,
+reports, onboarding's evidence summary, the campaigns list's empty state, the
+review not-connected screen wherever a picture shows it, and every
+guided-setup and shell picture taken over those screens. D-009's single redraw
+covers all of them.
+
+**The gates**, added in the fix commit and to section 6:
+
+1. R-10's "every metric card keeps its state label inside the card at every
+   frame" (`tests/browser/design-quality.spec.ts:382`) also holds the value:
+   the box of `.oalo-metric__value` stays inside its card's content box at every
+   frame, in both themes.
+2. `expectThePageFillsTheContentColumn`
+   (`tests/browser/helpers/design-quality.ts:676`) runs on the overview as well
+   as the campaigns list.
+3. A unit test beside `delivered-semantic-surfaces.unit.test.ts` fails if
+   `apps/web/src/app/globals.css` sets `max-width` or `max-inline-size` on any
+   element selector, so the scaffold measure cannot return.
+
+**Closes when** the fix and the redraw land, the three gates pass, and the
+review of the redrawn 1440 and 1180 pictures scores 3 on axes 2, 7, and 10.
+
 ## 6. What the automated gates already prove, so a reviewer does not re-check it
 
 A reviewer scores what a machine cannot. These run on every change:
@@ -267,6 +484,9 @@ A reviewer scores what a machine cannot. These run on every change:
 | 7, responsiveness | The browser suite runs the matrix at 1180, 768, and 390, asserts no horizontal overflow, and fails any visible interactive element under 44 by 44. |
 | 8, Dark and Light | The browser suite chooses each theme and asserts the theme resolves before first paint with no Light flash. |
 | 4 and 9, accessibility | `AxeBuilder` runs unfiltered on each route, at each frame, in each theme, and requires an empty violation list. |
+| 3, typography | Since the D-009 fix on 2026-10-01, `expectTypographyOnBrief` (`tests/browser/helpers/design-quality.ts`) runs wherever either design-quality suite takes a picture: `html` computes 16px and `body` 13px, every visible text and every field's value renders at one of the six steps (exceptions are named with a reason in `TEXT_OFF_THE_TYPE_STEPS`; there are none), and every visible date or timestamp is drawn in the data font. `apps/web/src/theme/global-element-defaults.unit.test.ts` holds the source on `pnpm test:unit`: the body step on `body`, no size on `:root` or `html`, each heading level's step, `small` at the caption step, and `time` in the data font. |
+| 7, responsiveness, inside a card and across the column | Since the D-010 fix on 2026-10-01, "every metric card keeps its state label and its value inside the card at every frame" (`tests/browser/design-quality.spec.ts`) runs in both themes and measures the value's glyphs against the card's content box, and `expectThePageFillsTheContentColumn` runs on the overview at every frame as it does on the campaigns list. `global-element-defaults.unit.test.ts` fails if `apps/web/src/app/globals.css` sets `max-width` or `max-inline-size` on an element selector. |
+| 1, 2, and 10, inside a screen's parts | Since the PRD-008d second redraw of 2026-10-01 (findings R-14 to R-21 in its review): the overview's action links keep their own height; the reports screen keeps each group of actions together and its campaign cards at `--space-4`; a finding's note stands `--space-3` clear of what follows it; the rail's titles are larger than its links and its product name balances its lines; the change-password form keeps the account measure at the column's start. `apps/web/src/theme/type-tokens-defined.unit.test.ts` fails any font, size, or weight token the token layer does not define. |
 
 A reviewer who finds something one of these gates should have caught files a
 finding against the gate, not only against the screen.

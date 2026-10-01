@@ -306,9 +306,6 @@
   max-inline-size: 1720px;
   margin-inline: auto;
 }
-.content section {
-  max-width: none;
-}
 .content
   :where(input, textarea, button, [role="combobox"], [tabindex], fieldset, [id^="campaign-"]) {
   scroll-margin-block-start: calc(var(--product-header-height, 72px) + 24px);

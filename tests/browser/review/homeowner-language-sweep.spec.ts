@@ -5,6 +5,10 @@ import {
   userLanguageForbiddenStrings,
 } from "../../../apps/web/src/app/(authenticated)/review-surface-sweep.js";
 import {
+  SHARED_REPORT_UNAVAILABLE_BODY,
+  SHARED_REPORT_UNAVAILABLE_TITLE,
+} from "../../../apps/web/src/copy/shared-report-messages.js";
+import {
   expectNoExternalRequests,
   guardLocalOrigin,
   seededCredentials,
@@ -84,6 +88,14 @@ test.describe.serial("the homeowner report screens on the review deployment", ()
     // Next.js may already have streamed a parent boundary with status 200; the document that
     // replaces it is the not-found page either way.
     expect([200, 404]).toContain(response?.status());
+
+    // The product's own page, not the framework's default 404 this link used to get (thirty-odd
+    // characters that told a homeowner nothing). Next delivers a not-found page's body through the
+    // client payload, so wait for the heading rather than read the document the moment it loads.
+    await expect(
+      page.getByRole("heading", { name: SHARED_REPORT_UNAVAILABLE_TITLE, level: 1 }),
+    ).toBeVisible();
+    await expect(page.getByText(SHARED_REPORT_UNAVAILABLE_BODY)).toBeVisible();
 
     await expectReadsInTheContractsVocabulary(page.locator("body"), path);
   });

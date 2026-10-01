@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import { createSessionBoundCsrfToken, hashPassword, verifyPassword } from "@oalo/auth";
 import { formatSessionRef } from "@oalo/contracts";
-import type { PostgresDatabasePool } from "@oalo/db";
+import { defineSqlContract, queryRuntimeFunction, type PostgresDatabasePool } from "@oalo/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
@@ -21,6 +21,7 @@ import { POST as signInRoutePost } from "../app/api/auth/sign-in/route.js";
 import { POST as preflightPost } from "../app/api/campaigns/preflight/route.js";
 import type { CampaignCommandPorts } from "./authenticated-principal.js";
 import { OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
+import type { CredentialPort } from "./credential-ports.js";
 import {
   REVIEW_HOST,
   REVIEW_ORIGIN,
@@ -1710,4 +1711,134 @@ describe("the window alignment the rate-limit proofs stand on", () => {
     );
     expect(stored.map((row) => Date.parse(row.windowStart))).toEqual([startedWindow]);
   }, 15_000);
+});
+
+/**
+ * M-1 of the PRD-008 close-out security audit, through the real composition. The unit proof in
+ * `password-authentication-handler.unit.test.ts` holds both refusal branches to the same awaited
+ * calls; these hold the database to what those calls are said to do.
+ */
+describe("an address with no account does a write of its own before answering (M-1)", () => {
+  const NO_ACCOUNT_EMAIL = "m1-no-account-probe@oalo.invalid";
+
+  function noAccountKeyFor(address: string): string {
+    return rateLimitKeyHash(csrfServerSecret, "sign_in_no_account", address);
+  }
+
+  /** Summed across rows, so a window boundary inside the proof cannot split the count. */
+  async function noAccountAttemptsFor(keyHash: string): Promise<number> {
+    return (await readAuthRateLimitRows(pool, "sign_in_no_account"))
+      .filter((row) => row.keyHash === keyHash)
+      .reduce((total, row) => total + row.attemptCount, 0);
+  }
+
+  it("counts the attempt against the client address before answering, and names no email", async () => {
+    const address = nextClientAddress();
+    const keyHash = noAccountKeyFor(address);
+    const csrfKeyed = (scope: "sign_in_ip" | "sign_in_no_account") =>
+      rateLimitKeyHash(csrfServerSecret, scope, NO_ACCOUNT_EMAIL);
+
+    const unknownAttempts = [
+      await signIn({ email: NO_ACCOUNT_EMAIL, password: PASSWORD }, { clientAddress: address }),
+      await signIn(
+        { email: NO_ACCOUNT_EMAIL, password: WRONG_PASSWORD_SAME_LENGTH },
+        { clientAddress: address },
+      ),
+    ];
+    // Read as soon as the handler has answered: the rows are there because the write was awaited.
+    expect(await noAccountAttemptsFor(keyHash)).toBe(2);
+
+    // A known account's refusal from the same address is counted against the account, never as a
+    // no-account attempt.
+    const knownRefusal = await signIn(
+      { email: CREATOR_EMAIL, password: WRONG_PASSWORD_SAME_LENGTH },
+      { clientAddress: address },
+    );
+    expect(await noAccountAttemptsFor(keyHash)).toBe(2);
+
+    for (const response of [...unknownAttempts, knownRefusal]) {
+      expect(response.status).toBe(401);
+      expect(await response.clone().text()).toBe('{"error":"AUTH_CREDENTIALS_REJECTED"}');
+      expect(response.headers.get("set-cookie")).toBeNull();
+    }
+
+    // Nothing in the database names the email that was tried: no audit row for either attempt,
+    // and no counter keyed on the address under any scope this route writes.
+    for (const response of unknownAttempts) {
+      const reference = response.headers.get("x-oalo-correlation-ref") ?? "";
+      expect(reference.length).toBeGreaterThan(0);
+      expect(await readAuditEventsForCorrelation(pool, reference)).toEqual([]);
+    }
+    const everyCounter = (await readAuthRateLimitRows(pool)).map((row) => row.keyHash);
+    expect(everyCounter).not.toContain(csrfKeyed("sign_in_ip"));
+    expect(everyCounter).not.toContain(csrfKeyed("sign_in_no_account"));
+  });
+
+  /**
+   * Deploy order. The new code may reach the hosted app before
+   * `supabase/migrations/20261001120000_sign_in_without_account.sql` is applied. This drives the
+   * real composition with one change: the no-account write runs the allowlisted statement against a
+   * function the database does not have, so PostgreSQL answers with the undefined-function error
+   * the hosted database would give before the migration.
+   */
+  it("fails closed with the same 401 before the migration, and known accounts keep working", async () => {
+    const composed = resolveRuntimeCampaignCommandPorts(process.env);
+    const credentials = composed.credentials;
+    if (credentials === undefined) throw new Error("The composition must supply credentials");
+    const notYetMigrated = defineSqlContract<Record<string, never>>({
+      name: "runtime.record-sign-in-without-account.v1",
+      access: "read",
+      text: "select platform.record_sign_in_without_account_not_yet_migrated($1::text)",
+      decode: () => Object.freeze({}),
+    });
+    const sqlStates: unknown[] = [];
+    const beforeMigration: CredentialPort = {
+      ...credentials,
+      async recordSignInWithoutAccount(input) {
+        try {
+          await queryRuntimeFunction(pool, notYetMigrated, [input.keyHash]);
+        } catch (error: unknown) {
+          sqlStates.push((error as Readonly<{ code?: unknown }>).code);
+          throw error;
+        }
+      },
+    };
+    const ports: CampaignCommandPorts = { ...composed, credentials: beforeMigration };
+    const signInBeforeMigration = (body: unknown, address: string) =>
+      handlePasswordSignIn(
+        authRequest("/api/auth/sign-in", body, { clientAddress: address }),
+        process.env,
+        ports,
+      );
+    const address = nextClientAddress();
+    const failuresBefore = (await readReviewCredential(pool, creatorId))?.failedAttemptCount ?? -1;
+
+    const { value: noAccount, logLines } = await withCapturedLogLines(async () =>
+      signInBeforeMigration({ email: NO_ACCOUNT_EMAIL, password: PASSWORD }, address),
+    );
+    const wrong = await signInBeforeMigration(
+      { email: CREATOR_EMAIL, password: WRONG_PASSWORD_SAME_LENGTH },
+      address,
+    );
+    const failuresAfter = (await readReviewCredential(pool, creatorId))?.failedAttemptCount;
+    const signedIn = await signInBeforeMigration(
+      { email: CREATOR_EMAIL, password: PASSWORD },
+      address,
+    );
+
+    expect(sqlStates).toEqual(["42883"]);
+    expect(noAccount.status).toBe(401);
+    expect(await noAccount.clone().text()).toBe(await wrong.clone().text());
+    expect(noAccount.headers.get("set-cookie")).toBeNull();
+    expect(logLines).not.toContain(NO_ACCOUNT_EMAIL);
+    expect(await noAccountAttemptsFor(noAccountKeyFor(address))).toBe(0);
+
+    // The known account is untouched by the missing function: its failure still counts toward the
+    // lock before the answer, and its correct password still signs it in.
+    expect(wrong.status).toBe(401);
+    expect(failuresAfter).toBe(failuresBefore + 1);
+    expect(signedIn.status).toBe(200);
+    expect(await signedIn.clone().json()).toEqual({ next: "/overview" });
+    expect(sessionCookieFrom(signedIn)).toBeDefined();
+  });
 });

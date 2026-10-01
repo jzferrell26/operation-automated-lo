@@ -28,6 +28,7 @@ import {
   type RequestCorrelation,
 } from "./correlation-boundary.js";
 import type {
+  AuthAttemptCounterScope,
   AuthRateLimitScope,
   CredentialPort,
   EmailDeliveryAction,
@@ -350,11 +351,12 @@ function sha256Hex(value: string): string {
 
 /**
  * D4. The counter table never holds a client address or an email address, only a keyed hash of
- * one. Rotating `OALO_CSRF_SERVER_SECRET` therefore discards every window and nothing else.
+ * one. Rotating `OALO_CSRF_SERVER_SECRET` therefore discards every window and nothing else. M-1's
+ * no-account counter lives in the same table under the same rule.
  */
 export function rateLimitKeyHash(
   serverSecret: Uint8Array,
-  scope: AuthRateLimitScope,
+  scope: AuthRateLimitScope | AuthAttemptCounterScope,
   value: string,
 ): string {
   return createHmac("sha256", serverSecret).update(`rate-limit\0${scope}\0${value}`).digest("hex");
@@ -415,6 +417,14 @@ export function clientAddressFor(request: Request): string | undefined {
 
 export function resetAuthHandlerProcessStateForTests(): void {
   loggedMissingClientAddressHeader = false;
+}
+
+/**
+ * The value every per-address counter is keyed on: the platform's forwarded address, or the one
+ * fixed bucket when there is none (`consumeAddressLimit` says why that bucket binds).
+ */
+function countedClientAddress(request: Request): string {
+  return clientAddressFor(request) ?? UNKNOWN_CLIENT_ADDRESS_BUCKET;
 }
 
 interface AuthContext {
@@ -506,7 +516,7 @@ async function consumeAddressLimit(
 ): Promise<void> {
   const gate = context.ports.mutation;
   if (gate === undefined) throw new UnauthenticatedPrincipalError();
-  const address = clientAddressFor(request) ?? UNKNOWN_CLIENT_ADDRESS_BUCKET;
+  const address = countedClientAddress(request);
   const limit = AUTH_RATE_LIMITS[scope];
   const allowed = await context.credentials.consumeRateLimit({
     scope,
@@ -713,11 +723,58 @@ function schemaRefusal(issues: unknown): Response {
 // ---------------------------------------------------------------------------
 
 /**
+ * M-1 of the PRD-008 close-out security audit (2026-10-01). The awaited write that makes a refusal
+ * for an address with no account cost what a refusal for a known one costs.
+ *
+ * A known address with a wrong password, or with an open lock, awaits
+ * `platform.record_password_sign_in_failure` before its 401. The unknown branch used to await
+ * nothing after the lookup, so it answered one database round trip sooner and the response time
+ * said whether the account existed. This is that round trip on the unknown branch: one definer
+ * call that writes one counter row, keyed on the client address under `sign_in_no_account`, and on
+ * nothing derived from the email that was tried. PRD-006a D4 says unknown-address attempts cannot
+ * be audited, having no actor and no location, and are to be counted instead; this is that count,
+ * and it is the signal the credential-stuffing alert of security Ruling 4 needs for them.
+ *
+ * Why a matching write here, rather than moving the known branch's write after the response the
+ * way PRD-008a D3 moved forgot-password's token issuance. The failure write is what counts toward
+ * the ten-failure lock. Deferred, the 401 for attempt n would leave before failure n was counted,
+ * so a client sending its attempts one after another could have attempt n+1 read before the lock
+ * from attempt n had landed, and a parallel burst could run well past ten guesses. D4's lock would
+ * then be "about ten", not ten. The audit preferred this route for the same reason.
+ *
+ * A failure here is swallowed, because the answer is the one 401 whatever this write does. That
+ * covers deploy order: if this code reaches the hosted app before
+ * `supabase/migrations/20261001120000_sign_in_without_account.sql`, the call fails with
+ * PostgreSQL's undefined-function error, after the same round trip, and the route still answers the
+ * same 401. A known account never calls this, so its lockout and its sign-in are untouched in that
+ * window. Nothing is logged, so no line can carry the address that was tried.
+ */
+async function recordSignInWithoutAccount(request: Request, context: AuthContext): Promise<void> {
+  const gate = context.ports.mutation;
+  if (gate === undefined) throw new UnauthenticatedPrincipalError();
+  try {
+    await context.credentials.recordSignInWithoutAccount({
+      keyHash: rateLimitKeyHash(
+        gate.csrfServerSecret,
+        "sign_in_no_account",
+        countedClientAddress(request),
+      ),
+    });
+  } catch (failure) {
+    void failure;
+  }
+}
+
+/**
  * 006A-AC-012 through 016. `POST /api/auth/sign-in`.
  *
- * Exactly one Argon2id derivation runs on every credential path, including the unknown-address
- * one, which derives against the fixed dummy hash. That is what makes "no account" and "wrong
- * password" indistinguishable in time as well as in the response body.
+ * Every refusal from the credential lookup onwards does the same work before it answers: the
+ * address limit, the lookup, exactly one Argon2id derivation, and exactly one awaited definer
+ * write. A known address derives against its stored hash and records the failure against the
+ * account; an address with no account derives against the fixed dummy hash and records the
+ * attempt in the no-account counter (M-1). The derivation alone did not make the two
+ * indistinguishable in time, because only the known branch then waited on the database.
+ * `password-authentication-handler.unit.test.ts` holds both branches to the same awaited calls.
  */
 export async function handlePasswordSignIn(
   request: Request,
@@ -742,9 +799,10 @@ export async function handlePasswordSignIn(
       normalizeEmailAddress(parsed.data.email),
     );
     if (credential === undefined) {
-      // One derivation against a hash no password matches, so this path costs what the
-      // wrong-password path costs.
+      // One derivation against a hash no password matches, then one awaited definer write, so
+      // this path costs what the wrong-password path costs: its derivation, then its failure write.
       verifyPassword(DUMMY_PASSWORD_HASH, parsed.data.password);
+      await recordSignInWithoutAccount(request, context);
       throw new UnauthenticatedPrincipalError();
     }
 
@@ -762,6 +820,9 @@ export async function handlePasswordSignIn(
      * writes the denied row and leaves both values alone while the lock is open. A guard here
      * instead would be the weaker half of the pair, since it would protect only the callers that
      * remembered to ask.
+     *
+     * The write is awaited before the answer so the lock lands before the next attempt is read,
+     * and the unknown branch above awaits a write of its own to match it (M-1).
      */
     if (!matched || locked) {
       await context.credentials.recordSignInFailure({

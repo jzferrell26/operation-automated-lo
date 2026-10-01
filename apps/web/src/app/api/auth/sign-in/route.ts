@@ -11,9 +11,11 @@ import { resolveRuntimeCampaignCommandPorts } from "../../../../server/runtime-a
  * production, and hands the request to the exported handler.
  */
 export async function POST(request: Request) {
-  // `after` is exported by `next/server` on the pinned Next 16.3.3, confirmed against the
-  // installed package. It runs the email send once the response is committed, so response time
-  // never depends on whether an account exists.
+  // `after` is exported by `next/server` on the pinned Next release, confirmed against the
+  // installed package. Sign-in schedules nothing after the response today; the scheduler is
+  // installed as on the other auth routes that use one. What keeps sign-in's response time
+  // independent of whether an account exists is in the handler: every refusal awaits the same
+  // database work before answering (M-1, `handlePasswordSignIn`).
   return handlePasswordSignIn(
     request,
     process.env,

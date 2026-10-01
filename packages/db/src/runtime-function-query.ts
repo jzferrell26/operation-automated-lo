@@ -57,6 +57,12 @@ import { DatabaseContextError, shouldAssumeRuntimeRole } from "./transaction-con
  *   policy failure to leave the link usable.
  * - `resolve-review-persona` is gone: PRD-006a D9 drops the function with the persona selector
  *   that was its only caller.
+ * - `record-sign-in-without-account` (M-1 of the PRD-008 close-out security audit): the sign-in
+ *   exchange again, on the branch where the address has no active account. It writes one counter
+ *   row keyed on a keyed hash of the client address, so that branch awaits the same kind of
+ *   definer write the known branch awaits in `record-password-sign-in-failure` and response time
+ *   stops saying whether an account exists. It takes nothing derived from the email address,
+ *   writes no audit row, and returns nothing.
  *
  * Adding a name to `RUNTIME_FUNCTION_CONTRACT_NAMES` widens the only unscoped database path in the
  * product, so it is a security change and needs `security-guardian` review, not a routine edit.
@@ -78,6 +84,7 @@ export const RUNTIME_FUNCTION_CONTRACT_NAMES = Object.freeze([
   "runtime.list-sign-in-bindings.v1",
   "runtime.record-password-sign-in-failure.v1",
   "runtime.record-password-sign-in-success.v1",
+  "runtime.record-sign-in-without-account.v1",
   "runtime.issue-credential-token.v1",
   "runtime.consume-credential-token.v1",
   "runtime.revoke-all-first-party-sessions-for-user.v1",

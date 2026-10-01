@@ -4,6 +4,7 @@ import {
   CSRF_REQUEST_HEADER,
   FIRST_PARTY_SESSION_COOKIE,
   createSessionBoundCsrfToken,
+  hashPassword,
   type EstablishedFirstPartySession,
   type FirstPartySessionLookup,
 } from "@oalo/auth";
@@ -13,6 +14,7 @@ import {
   createStaticIdentityDirectory,
   createStaticRoleBindingPort,
   type CampaignCommandPorts,
+  type FirstPartySessionIssuancePort,
 } from "./authenticated-principal.js";
 import type { CredentialPort, PasswordCredential } from "./credential-ports.js";
 import type { TransactionalEmailMessage } from "./email/transactional-email.js";
@@ -21,6 +23,7 @@ import {
   clientAddressFor,
   handleChangePassword,
   handleForgotPassword,
+  handlePasswordSignIn,
   rateLimitKeyHash,
   resetAuthHandlerProcessStateForTests,
   scheduleThroughNextAfter,
@@ -30,7 +33,8 @@ import {
  * PRD-008a, the parts of the password handler a test can hold without a database: the address
  * the per-address limits key on (008A-AC-016), the level the missing-address line is logged at
  * (008A-AC-017), the work forgot-password does before it answers (008A-AC-013 and 024), and the
- * point at which change-password spends its per-person slot (008A-AC-012).
+ * point at which change-password spends its per-person slot (008A-AC-012). The close-out security
+ * audit's M-1 adds the same work-before-the-answer proof for sign-in.
  *
  * The Postgres half of the same handler lives in `password-authentication-handler.postgres.test.ts`
  * and `password-recovery-handler.postgres.test.ts`; nothing here replaces either.
@@ -43,6 +47,12 @@ const KNOWN_ADDRESS = "known-person@oalo.invalid";
 const UNKNOWN_ADDRESS = "nobody-here@oalo.invalid";
 const URL_TOKEN = "fixed-url-token-for-the-unit-proof-0000000000";
 const TOKEN_HASH = createHash("sha256").update(URL_TOKEN).digest("hex");
+const CLIENT_ADDRESS = "203.0.113.50";
+const CSRF_SERVER_SECRET = Buffer.alloc(32, 7);
+const KNOWN_PASSWORD = "a settled harbour lantern";
+const WRONG_PASSWORD = "a settled harbour lantErn";
+/** A real Argon2id string, so the known account's derivation is the one production runs. */
+const KNOWN_PASSWORD_HASH = hashPassword(KNOWN_PASSWORD);
 
 afterEach(() => {
   resetAuthHandlerProcessStateForTests();
@@ -120,20 +130,31 @@ describe("the missing-address line (008A-AC-017)", () => {
   });
 });
 
+interface RecordingPortOptions {
+  readonly issueToken?: () => Promise<string>;
+  /** Sign-in: the instant the known account's lock is open until, when it has one. */
+  readonly lockedUntilEpochSeconds?: number;
+  /** Sign-in: what the no-account write does instead of answering, for the deploy-order proof. */
+  readonly recordSignInWithoutAccount?: () => Promise<void>;
+}
+
 /**
  * A credential port that records every call it is given and answers each one only after a real
  * macrotask, the way a database round trip does. `before` is what the handler awaited before it
  * answered; anything recorded after that happened in work it scheduled. The limiter counts per
  * scope and key the way `platform.consume_auth_rate_limit` does within one window, and `counters`
- * exposes those counts.
+ * exposes those counts. `noAccountWrites` holds exactly what the sign-in handler handed the
+ * no-account write, so a proof can say what that row is keyed on.
  */
-function recordingCredentialPort(options: Readonly<{ issueToken?: () => Promise<string> }> = {}): {
+function recordingCredentialPort(options: RecordingPortOptions = {}): {
   port: CredentialPort;
   calls: string[];
   counters: Map<string, number>;
+  noAccountWrites: unknown[];
 } {
   const calls: string[] = [];
   const counters = new Map<string, number>();
+  const noAccountWrites: unknown[] = [];
   const roundTrip = async <T>(name: string, value: T): Promise<T> => {
     calls.push(name);
     await new Promise((resolve) => setTimeout(resolve, 1));
@@ -141,8 +162,8 @@ function recordingCredentialPort(options: Readonly<{ issueToken?: () => Promise<
   };
   const known: PasswordCredential = Object.freeze({
     userId: "00000000-0000-4000-8000-000000000a11",
-    passwordHash: "not-read-by-forgot-password",
-    lockedUntilEpochSeconds: undefined,
+    passwordHash: KNOWN_PASSWORD_HASH,
+    lockedUntilEpochSeconds: options.lockedUntilEpochSeconds,
     failedAttemptCount: 0,
     emailVerified: true,
   });
@@ -167,11 +188,26 @@ function recordingCredentialPort(options: Readonly<{ issueToken?: () => Promise<
     },
     recordEmailDelivery: (input) =>
       roundTrip(`recordEmailDelivery:${input.action}:${input.result}:${input.subjectId}`, true),
+    recordSignInFailure: () => roundTrip("recordSignInFailure", undefined),
+    recordSignInWithoutAccount: (input) => {
+      noAccountWrites.push(input);
+      if (options.recordSignInWithoutAccount === undefined) {
+        return roundTrip("recordSignInWithoutAccount", undefined);
+      }
+      calls.push("recordSignInWithoutAccount");
+      return options.recordSignInWithoutAccount();
+    },
+    recordSignInSuccess: () => roundTrip("recordSignInSuccess", undefined),
+    listSignInBindings: () =>
+      roundTrip("listSignInBindings", [
+        Object.freeze({
+          locationId: "00000000-0000-4000-8000-000000000a01",
+          locationDisplayName: "Unit proof workspace",
+          bindingRole: "location_admin" as const,
+        }),
+      ]),
     lookupCredentialForUser: refuse,
     unverifiedEmailDisplayForUser: refuse,
-    listSignInBindings: refuse,
-    recordSignInFailure: refuse,
-    recordSignInSuccess: refuse,
     consumeToken: refuse,
     passwordPolicyIdentityForUser: refuse,
     passwordPolicyIdentityForResetToken: refuse,
@@ -180,7 +216,7 @@ function recordingCredentialPort(options: Readonly<{ issueToken?: () => Promise<
     registerAccount: refuse,
     markEmailVerified: refuse,
   };
-  return { port, calls, counters };
+  return { port, calls, counters, noAccountWrites };
 }
 
 function forgotPorts(
@@ -193,7 +229,7 @@ function forgotPorts(
     mutation: {
       expectedHost: HOST,
       allowedBrowserOrigins: [ORIGIN],
-      csrfServerSecret: Buffer.alloc(32, 7),
+      csrfServerSecret: CSRF_SERVER_SECRET,
     },
     credentials,
     ...(sent === undefined
@@ -211,22 +247,26 @@ function forgotPorts(
 }
 
 /**
- * Both branches carry the same tracing id. Without one each request mints a random correlation
- * reference, so the header comparison below would be comparing two random values rather than the
- * two answers.
+ * Every branch of one proof carries the same tracing id. Without one each request mints a random
+ * correlation reference, so the header comparisons below would be comparing two random values
+ * rather than the two answers.
  */
-function forgotRequest(email: string): Request {
-  return new Request(`${ORIGIN}/api/auth/forgot-password`, {
+function browserJsonRequest(path: string, body: unknown, correlationId: string): Request {
+  return new Request(`${ORIGIN}${path}`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       origin: ORIGIN,
       host: HOST,
-      "x-vercel-forwarded-for": "203.0.113.50",
-      "x-correlation-id": "forgot-password-unit-proof",
+      "x-vercel-forwarded-for": CLIENT_ADDRESS,
+      "x-correlation-id": correlationId,
     },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify(body),
   });
+}
+
+function forgotRequest(email: string): Request {
+  return browserJsonRequest("/api/auth/forgot-password", { email }, "forgot-password-unit-proof");
 }
 
 interface ForgotRun {
@@ -375,6 +415,194 @@ describe("a failed issuance leaks nothing (008A-AC-024)", () => {
     // No live token, so no link was sent and no delivery was recorded for one.
     expect(sent).toHaveLength(0);
     expect(run.calls.some((call) => call.startsWith("recordEmailDelivery"))).toBe(false);
+  });
+});
+
+/**
+ * M-1 of the PRD-008 close-out security audit, the sign-in counterpart of 008A-AC-013.
+ *
+ * A known address with a wrong password, and a known address whose lock is open, both await the
+ * failure write before the 401, because the ten-failure lock has to land before the next attempt
+ * is read. An address with no account used to await nothing after the lookup, so the response
+ * time said whether the account existed. These proofs hold every refusal branch to one shape of
+ * work before the answer: the same number of awaited round trips, in the same order, each one a
+ * single definer call, and the last one a write.
+ *
+ * The classification below is this proof's statement of what each port call costs. Each name maps
+ * to exactly one `security definer` call through `postgres-credential-ports.ts`, and pgTAP proves
+ * that each of the two final calls writes a row: `platform.record_password_sign_in_failure`
+ * (`supabase/tests/password_credentials.pgtap.sql`) and `platform.record_sign_in_without_account`
+ * (`supabase/tests/sign_in_without_account.pgtap.sql`).
+ */
+const SIGN_IN_ROUND_TRIP_KIND: Readonly<Record<string, "read" | "write">> = Object.freeze({
+  "consumeRateLimit:sign_in_ip": "write",
+  lookupCredential: "read",
+  recordSignInFailure: "write",
+  recordSignInWithoutAccount: "write",
+});
+
+const SHARED_SIGN_IN_WORK = ["consumeRateLimit:sign_in_ip", "lookupCredential"] as const;
+
+interface SignInRun {
+  readonly response: Response;
+  readonly body: string;
+  readonly awaitedBeforeAnswer: readonly string[];
+  readonly calls: string[];
+  readonly scheduled: (() => Promise<void>)[];
+  readonly noAccountWrites: unknown[];
+}
+
+async function runSignIn(
+  email: string,
+  password: string,
+  options: RecordingPortOptions = {},
+): Promise<SignInRun> {
+  const recording = recordingCredentialPort(options);
+  const issuance: FirstPartySessionIssuancePort = {
+    issue: async () => "session_unit_proof",
+    revoke: async () => false,
+    recordDeniedAttempt: async () => true,
+  };
+  const scheduled: (() => Promise<void>)[] = [];
+  const response = await handlePasswordSignIn(
+    browserJsonRequest("/api/auth/sign-in", { email, password }, "sign-in-unit-proof"),
+    ENVIRONMENT,
+    { ...forgotPorts(recording.port, undefined), sessionIssuance: issuance },
+    { afterResponse: (task) => void scheduled.push(task) },
+  );
+  return {
+    response,
+    body: await response.clone().text(),
+    awaitedBeforeAnswer: Object.freeze([...recording.calls]),
+    calls: recording.calls,
+    scheduled,
+    noAccountWrites: recording.noAccountWrites,
+  };
+}
+
+function roundTripKinds(run: SignInRun): readonly string[] {
+  return run.awaitedBeforeAnswer.map((call) => SIGN_IN_ROUND_TRIP_KIND[call] ?? `unknown ${call}`);
+}
+
+/** Ten minutes from now, so the known account's lock is open for the whole proof. */
+function openLock(): number {
+  return Math.floor(Date.now() / 1000) + 600;
+}
+
+describe("sign-in does the same awaited work for every address (M-1)", () => {
+  it("awaits three round trips of the same kind, in the same order, on every refusal branch", async () => {
+    const unknown = await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD);
+    const wrong = await runSignIn(KNOWN_ADDRESS, WRONG_PASSWORD);
+    // D4: a correct password during an open lock is refused exactly like a wrong one.
+    const locked = await runSignIn(KNOWN_ADDRESS, KNOWN_PASSWORD, {
+      lockedUntilEpochSeconds: openLock(),
+    });
+
+    expect(wrong.awaitedBeforeAnswer).toEqual([...SHARED_SIGN_IN_WORK, "recordSignInFailure"]);
+    expect(locked.awaitedBeforeAnswer).toEqual([...SHARED_SIGN_IN_WORK, "recordSignInFailure"]);
+    expect(unknown.awaitedBeforeAnswer).toEqual([
+      ...SHARED_SIGN_IN_WORK,
+      "recordSignInWithoutAccount",
+    ]);
+    expect(roundTripKinds(unknown)).toEqual(["write", "read", "write"]);
+    expect(roundTripKinds(wrong)).toEqual(roundTripKinds(unknown));
+    expect(roundTripKinds(locked)).toEqual(roundTripKinds(unknown));
+  });
+
+  it("answers with byte-identical status, body, and headers on every refusal branch", async () => {
+    const unknown = await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD);
+    const wrong = await runSignIn(KNOWN_ADDRESS, WRONG_PASSWORD);
+    const locked = await runSignIn(KNOWN_ADDRESS, KNOWN_PASSWORD, {
+      lockedUntilEpochSeconds: openLock(),
+    });
+
+    expect(wrong.response.status).toBe(401);
+    expect(wrong.body).toBe('{"error":"AUTH_CREDENTIALS_REJECTED"}');
+    expect(wrong.response.headers.get("set-cookie")).toBeNull();
+    for (const run of [unknown, locked]) {
+      expect(run.response.status).toBe(wrong.response.status);
+      expect(run.body).toBe(wrong.body);
+      expect([...run.response.headers.entries()]).toEqual([...wrong.response.headers.entries()]);
+    }
+  });
+
+  it("writes before answering, keyed on the client address and on nothing from the email", async () => {
+    const unknown = await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD);
+    const wrong = await runSignIn(KNOWN_ADDRESS, WRONG_PASSWORD);
+
+    // Nothing is left for after the response on either branch: the failure count and the
+    // no-account count have both landed before the 401 leaves.
+    expect(unknown.scheduled).toEqual([]);
+    expect(wrong.scheduled).toEqual([]);
+    expect(unknown.calls).toEqual(unknown.awaitedBeforeAnswer);
+    expect(wrong.calls).toEqual(wrong.awaitedBeforeAnswer);
+
+    // The row is keyed on the address the per-address limit already keys on, under a scope of its
+    // own, and the email that was tried reaches it in no form.
+    expect(unknown.noAccountWrites).toEqual([
+      { keyHash: rateLimitKeyHash(CSRF_SERVER_SECRET, "sign_in_no_account", CLIENT_ADDRESS) },
+    ]);
+    const written = JSON.stringify(unknown.noAccountWrites);
+    expect(written).not.toContain(UNKNOWN_ADDRESS);
+    expect(written).not.toContain(UNKNOWN_ADDRESS.split("@")[0]);
+    expect(written).not.toContain(
+      rateLimitKeyHash(CSRF_SERVER_SECRET, "sign_in_no_account", UNKNOWN_ADDRESS),
+    );
+    // A known account's refusal is counted against the account, never as a no-account attempt.
+    expect(wrong.noAccountWrites).toEqual([]);
+  });
+
+  /**
+   * Deploy order. If this code reaches the hosted app before the migration that creates
+   * `platform.record_sign_in_without_account`, the no-account write fails with PostgreSQL's
+   * undefined-function error. The answer must still be the one 401, nothing may be logged, and
+   * a known account must be untouched: it never calls the new function, so its failure count
+   * still lands before the answer and its correct password still signs it in.
+   */
+  it("still answers the one 401 before the migration lands, and a known account still signs in", async () => {
+    const lines: string[] = [];
+    for (const level of ["debug", "error", "info", "log", "warn"] as const) {
+      vi.spyOn(console, level).mockImplementation((...args: unknown[]) => {
+        lines.push(args.map(String).join(" "));
+      });
+    }
+    const missingFunction = async (): Promise<void> => {
+      throw Object.assign(
+        new Error("function platform.record_sign_in_without_account(text) does not exist"),
+        { code: "42883" },
+      );
+    };
+
+    const unknown = await runSignIn(UNKNOWN_ADDRESS, WRONG_PASSWORD, {
+      recordSignInWithoutAccount: missingFunction,
+    });
+    const wrong = await runSignIn(KNOWN_ADDRESS, WRONG_PASSWORD, {
+      recordSignInWithoutAccount: missingFunction,
+    });
+    const signedIn = await runSignIn(KNOWN_ADDRESS, KNOWN_PASSWORD, {
+      recordSignInWithoutAccount: missingFunction,
+    });
+
+    expect(unknown.awaitedBeforeAnswer).toEqual([
+      ...SHARED_SIGN_IN_WORK,
+      "recordSignInWithoutAccount",
+    ]);
+    expect(unknown.response.status).toBe(401);
+    expect(unknown.body).toBe(wrong.body);
+    expect([...unknown.response.headers.entries()]).toEqual([...wrong.response.headers.entries()]);
+    expect(wrong.awaitedBeforeAnswer).toEqual([...SHARED_SIGN_IN_WORK, "recordSignInFailure"]);
+
+    expect(signedIn.response.status).toBe(200);
+    expect(signedIn.body).toBe('{"next":"/overview"}');
+    const cookie = signedIn.response.headers.get("set-cookie") ?? "";
+    expect(cookie).toContain(`${FIRST_PARTY_SESSION_COOKIE}=`);
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie).toContain("Secure");
+    expect(cookie).toContain("SameSite=Lax");
+    expect(signedIn.calls).not.toContain("recordSignInWithoutAccount");
+
+    expect(lines).toEqual([]);
+    vi.restoreAllMocks();
   });
 });
 

@@ -135,6 +135,8 @@ Set these on the review deployment, all server-side, never with a `NEXT_PUBLIC_`
 | `OALO_RESEND_API_KEY` | the API key from your Resend account | **secret** |
 | `OALO_EMAIL_FROM` | an address on a domain you have verified in Resend | not secret |
 
+Setting `OALO_SELF_SERVE_SIGNUP` is an opt-in for this one deployment, never a default. Security Ruling 1 of the PRD-005/006 batch security audit (2026-09-19) keeps sign-up's duplicate-email disclosure ("That email already has an account") only on that condition: the disclosure is acceptable only while sign-up is off by default, and turning it on by default requires moving to the emailed path first.
+
 `OALO_RESEND_API_KEY` and `OALO_EMAIL_FROM` are a pair. Set both or neither. Setting exactly one is a configuration failure: the deployment logs the missing variable by name and refuses every request, which is deliberate, because a half-configured sending domain would otherwise look like working email that silently goes nowhere.
 
 Redeploy after setting them. Vercel does not apply environment changes to a running deployment.

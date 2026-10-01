@@ -50,7 +50,7 @@ Email and password sign-in server variables (PRD-006a D7, all server-only, never
 
 - `OALO_RESEND_API_KEY` (new, secret), the Resend API key the password-reset and email-confirmation messages are sent with. Never shared with an agent, never written to this repository, and never included in a log line or an error.
 - `OALO_EMAIL_FROM` (new, server-only, not secret), the address those messages are sent from. It must be on a domain verified in Resend.
-- `OALO_SELF_SERVE_SIGNUP` (new, server-only), the exact value `enabled` to serve `/sign-up` and `POST /api/auth/sign-up`. Unset, both answer 404 and the deployment admits no new accounts.
+- `OALO_SELF_SERVE_SIGNUP` (new, server-only), the exact value `enabled` to serve `/sign-up` and `POST /api/auth/sign-up`. Unset, both answer 404 and the deployment admits no new accounts. Security Ruling 1 of the PRD-005/006 batch security audit (2026-09-19) keeps sign-up's duplicate-email disclosure only on one condition: it is acceptable only while sign-up is off by default, and turning it on by default requires moving to the emailed path first. Set it per deployment as an opt-in, never as a default.
 
 The two email variables are a set: both present composes the Resend adapter, both absent composes the not-configured adapter, which makes no network request at all, and exactly one present is a composition failure logged by variable name. Until both are set, a password reset is performed by re-running the seeding script for that person; see `docs/operations/review-session-seeding.md`.
 

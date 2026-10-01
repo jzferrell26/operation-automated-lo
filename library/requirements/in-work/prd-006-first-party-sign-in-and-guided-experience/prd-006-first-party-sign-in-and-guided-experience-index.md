@@ -99,7 +99,7 @@ For the ledger's reconciliation. Nothing here changes a status in PRD-005; the o
 
 **Superseded design decision.** PRD-005b D4, "Sign-in path": the `GET /review/sign-in` persona form, `POST /api/review/session` with a `persona` enum and a shared secret compared in constant time, the persona-to-location mapping through `OALO_REVIEW_LOCATION_ID` and `OALO_REVIEW_OUTSIDER_LOCATION_ID`, and `platform.resolve_review_persona`. Replaced by PRD-006a D1 through D5 and D9: an email and password exchange through `platform.lookup_password_credential`, scrypt verification in server code, `platform.list_sign_in_bindings`, and the same `platform.issue_first_party_session` call with `issued_by 'password_sign_in'`.
 
-**Superseded environment variables.** PRD-005b D6's `OALO_REVIEW_SIGNIN_SECRET` (removed), `OALO_REVIEW_LOCATION_ID` and `OALO_REVIEW_OUTSIDER_LOCATION_ID` (removed from the application; the seeding script still prints the seeded ids for PRD-005e's proof). Added: `OALO_RESEND_API_KEY`, `OALO_EMAIL_FROM`, `OALO_SELF_SERVE_SIGNUP` (006a D7).
+**Superseded environment variables.** PRD-005b D6's `OALO_REVIEW_SIGNIN_SECRET` (removed), `OALO_REVIEW_LOCATION_ID` and `OALO_REVIEW_OUTSIDER_LOCATION_ID` (removed from the application; the seeding script still prints the seeded ids for PRD-005e's proof). Added: `OALO_RESEND_API_KEY`, `OALO_EMAIL_FROM`, `OALO_SELF_SERVE_SIGNUP` (006a D7). Security Ruling 1 of the PRD-005/006 batch security audit (2026-09-19) keeps sign-up's duplicate-email disclosure only while `OALO_SELF_SERVE_SIGNUP` is off by default; turning it on by default requires moving to the emailed path first (see 006a's Amendments).
 
 **Superseded criteria and ledger rows.**
 

@@ -195,6 +195,37 @@ export async function executeHumanCampaignApproval(
     if (evidence === undefined || evidence.version.locationRef !== frozen.locationRef) {
       throw new CampaignResourceNotAccessibleError();
     }
+
+    const inputHash = canonicalCampaignHash({
+      campaignRef: input.campaignRef,
+      decision: input.decision,
+      expectedCampaignVersionRef: input.expectedCampaignVersionRef ?? null,
+      expectedManifestHash: input.expectedManifestHash ?? null,
+      expectedPreflightResultHash: input.expectedPreflightResultHash ?? null,
+      expectedRowVersion: input.expectedRowVersion ?? null,
+    });
+
+    // PRD-008a 008A-AC-020. The role is consulted before anything else about the campaign,
+    // including the idempotent retry below: somebody whose approving role was revoked after they
+    // decided gets the role refusal rather than their own decision read back, and a principal who
+    // may not approve learns nothing about staleness or state either. Every such attempt is
+    // recorded as denied, exactly as before.
+    if (
+      !(CAMPAIGN_APPROVAL_ROLES as readonly AuthenticatedPrincipal["role"][]).includes(frozen.role)
+    ) {
+      await transaction.recordDeniedAttempt({
+        campaignRef: evidence.version.campaignRef,
+        correlationId: input.correlationRef,
+        inputHash,
+        beforeHash: evidenceHash({
+          state: evidence.state,
+          rowVersion: evidence.rowVersion,
+          campaignVersionRef: evidence.version.campaignVersionRef,
+        }),
+      });
+      return Object.freeze({ kind: "denied" as const });
+    }
+
     if (matchesExistingApproval(input, frozen, evidence)) {
       return Object.freeze({
         kind: "committed" as const,
@@ -220,31 +251,6 @@ export async function executeHumanCampaignApproval(
       actorRef: frozen.actorRef,
       decision: input.decision,
     });
-    const inputHash = canonicalCampaignHash({
-      campaignRef: input.campaignRef,
-      decision: input.decision,
-      expectedCampaignVersionRef: input.expectedCampaignVersionRef ?? null,
-      expectedManifestHash: input.expectedManifestHash ?? null,
-      expectedPreflightResultHash: input.expectedPreflightResultHash ?? null,
-      expectedRowVersion: input.expectedRowVersion ?? null,
-    });
-    const beforeHash = evidenceHash({
-      state: evidence.state,
-      rowVersion: evidence.rowVersion,
-      campaignVersionRef: evidence.version.campaignVersionRef,
-    });
-
-    if (
-      !(CAMPAIGN_APPROVAL_ROLES as readonly AuthenticatedPrincipal["role"][]).includes(frozen.role)
-    ) {
-      await transaction.recordDeniedAttempt({
-        campaignRef: evidence.version.campaignRef,
-        correlationId: input.correlationRef,
-        inputHash,
-        beforeHash,
-      });
-      return Object.freeze({ kind: "denied" as const });
-    }
     const actorRole = approvalActorRoleForPrincipal(frozen);
 
     let decision: ApprovalDecision;

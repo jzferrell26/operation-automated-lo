@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { createSessionBoundCsrfToken } from "@oalo/auth";
+import { createSessionBoundCsrfToken, hashPassword, verifyPassword } from "@oalo/auth";
 import { formatSessionRef } from "@oalo/contracts";
 import type { PostgresDatabasePool } from "@oalo/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -1127,6 +1127,112 @@ describe("POST /api/auth/change-password (006A-AC-023)", () => {
     );
 
     expect(response.status).toBe(401);
+  });
+});
+
+/**
+ * PRD-008a D2 and D1a (008A-AC-012). Change-password is counted per person, ten attempts in nine
+ * hundred seconds, and the count is taken before any Argon2id derivation. The derivations are
+ * observed through an instrumented hasher passed as a handler dependency, so "performs no
+ * derivation" is a count rather than an inference from timing.
+ *
+ * The person is seeded here and touched by no other case, because the window is keyed on the
+ * person: a shared account would make "the eleventh" mean the eleventh across several cases.
+ */
+describe("the per-person change-password limit (008A-AC-012)", () => {
+  const LIMITED_EMAIL = "route-change-limit@oalo.invalid";
+  let limitedId: string;
+
+  beforeAll(async () => {
+    limitedId = (
+      await seedActor(pool, location, {
+        displayName: "Change limit person",
+        bindingRole: "creator",
+        sessionRole: "campaign_creator",
+      })
+    ).actorId;
+    await seedCredential(pool, { userId: limitedId, email: LIMITED_EMAIL, password: PASSWORD });
+  });
+
+  it("answers the eleventh attempt in the window with 429 and derives nothing for it", async () => {
+    const signedIn = await signIn(
+      { email: LIMITED_EMAIL, password: PASSWORD },
+      { clientAddress: nextClientAddress() },
+    );
+    expect(signedIn.status).toBe(200);
+    const session = {
+      cookie: sessionCookieFrom(signedIn),
+      csrfToken: createSessionBoundCsrfToken({
+        serverSecret: csrfServerSecret,
+        sessionId: await newestSessionRefFor(limitedId),
+      }),
+    };
+
+    const derivations: string[] = [];
+    const passwordHasher = Object.freeze({
+      verify(storedHash: string, candidate: string): boolean {
+        derivations.push("verify");
+        return verifyPassword(storedHash, candidate);
+      },
+      hash(candidate: string): string {
+        derivations.push("hash");
+        return hashPassword(candidate);
+      },
+    });
+    const attemptWith = (currentPassword: string): Promise<Response> =>
+      handleChangePassword(
+        authRequest(
+          "/api/auth/change-password",
+          {
+            currentPassword,
+            newPassword: "a limited harbour lantern",
+            confirmPassword: "a limited harbour lantern",
+          },
+          session,
+        ),
+        process.env,
+        resolveRuntimeCampaignCommandPorts(process.env),
+        { passwordHasher },
+      );
+
+    // Ten wrong guesses are each answered on their merits, with one derivation apiece.
+    const answered: string[] = [];
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const response = await attemptWith(WRONG_PASSWORD_SAME_LENGTH);
+      answered.push(`${String(response.status)} ${await response.text()}`);
+    }
+    expect(answered).toEqual(
+      Array.from({ length: 10 }, () => '401 {"error":"AUTH_CURRENT_PASSWORD_REJECTED"}'),
+    );
+    expect(derivations).toEqual(Array.from({ length: 10 }, () => "verify"));
+
+    // The eleventh carries the right password and is still refused, before any derivation, in
+    // the shape every other limited route in the module answers with.
+    const eleventh = await attemptWith(PASSWORD);
+    expect(eleventh.status).toBe(429);
+    expect(await eleventh.text()).toBe('{"error":"AUTH_RATE_LIMITED"}');
+    expect(eleventh.headers.get("content-type")).toBe("application/json");
+    expect(eleventh.headers.get("cache-control")).toBe("no-store");
+    expect(eleventh.headers.get("set-cookie")).toBeNull();
+    expect(derivations).toHaveLength(10);
+
+    // One counter row, keyed by a hash of the person and never by the person, carries the window.
+    const counters = (await readAuthRateLimitRows(pool, "change_password_user")).filter(
+      (row) =>
+        row.keyHash === rateLimitKeyHash(csrfServerSecret, "change_password_user", limitedId),
+    );
+    expect(counters.map((row) => row.attemptCount)).toEqual([11]);
+
+    // D1a. None of it fed the sign-in lockout, and the password the eleventh attempt carried is
+    // still the one that signs in.
+    const credential = await readReviewCredential(pool, limitedId);
+    expect(credential?.failedAttemptCount).toBe(0);
+    expect(credential?.locked).toBe(false);
+    const after = await signIn(
+      { email: LIMITED_EMAIL, password: PASSWORD },
+      { clientAddress: nextClientAddress() },
+    );
+    expect(after.status).toBe(200);
   });
 });
 

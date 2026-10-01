@@ -234,6 +234,23 @@ describe("POST /api/auth/forgot-password (006A-AC-017)", () => {
         liveOnly: true,
       }),
     ).toBe(1);
+
+    // PRD-008a D3 (008A-AC-014). Issuance now runs after the response, so "none for an unknown
+    // one" is asserted after the scheduled work has drained: an unknown address leaves no token
+    // and no audit row of any kind under its own correlation reference. A token row is always
+    // written beside an `auth.reset-requested` row, so no row at all means no token.
+    const unknown = await handleForgotPassword(
+      authRequest(
+        "/api/auth/forgot-password",
+        { email: "nobody-at-all@oalo.invalid" },
+        { clientAddress: nextClientAddress(), tracingId: "recovery-unknown-address-008a" },
+      ),
+    );
+    await flushAuthBackgroundWork();
+    expect(unknown.status).toBe(200);
+    const unknownRef = unknown.headers.get("x-oalo-correlation-ref") ?? "";
+    expect(unknownRef).not.toBe("");
+    expect(await readAuditEventsForCorrelation(pool, unknownRef)).toEqual([]);
   });
 
   it("records a not-configured delivery when no sending domain is set (006A-AC-017)", async () => {

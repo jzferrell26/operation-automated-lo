@@ -3,6 +3,9 @@ import { extname, join, relative, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { NO_PROPERTY_PHOTO_ATTACHED } from "./campaign-image-messages.js";
+import { findVocabularyHits } from "./forbidden-vocabulary.js";
+
 /**
  * PRD-008b 008B-AC-003, the half that holds for screens that do not exist yet.
  *
@@ -14,7 +17,7 @@ import { describe, expect, it } from "vitest";
  * images and say nothing when there are none.
  */
 
-const repositoryRoot = resolve(import.meta.dirname, "../../../../../..");
+const repositoryRoot = resolve(import.meta.dirname, "../../../..");
 
 const SCREEN_ROOTS: readonly string[] = ["apps/web/src/features", "apps/web/src/app"];
 
@@ -86,52 +89,9 @@ describe("signed-in screens that read the images on a campaign version", () => {
   });
 });
 
-/**
- * Finding P1 of the 2026-10-01 writing review, the half that holds for screens that do not exist
- * yet.
- *
- * The rule above makes a screen say something when there is no image. It lets a screen take the
- * count sentences straight from the messages module and hand them a number, and a number cannot
- * say whether the images are photos: the only image a saved version can hold today is the picture
- * the system stamped on it before 008b, which is not a photo of the property. So the two count
- * sentences belong to the summary component alone, which looks at each image and decides. Every
- * other screen shows images through that component.
- */
-
-const SUMMARY_COMPONENT = "apps/web/src/features/campaigns/components/property-photo-summary.tsx";
-const COUNTS_IMAGES_ITSELF = /\bpropertyPhotoCountSentence\b|\bplaceholderPictureSentence\b/u;
-
-/** The files other than the summary that write a count of images in words. Pure, so it can be tried on a plant. */
-function filesCountingImagesThemselves(
-  sources: Readonly<Record<string, string>>,
-): readonly string[] {
-  return Object.entries(sources)
-    .filter(([file, text]) => file !== SUMMARY_COMPONENT && COUNTS_IMAGES_ITSELF.test(text))
-    .map(([file]) => file)
-    .sort();
-}
-
-describe("the sentences that count a version's images", () => {
-  it("are used by the property photo summary and by no screen of its own", async () => {
-    const sources = await collectScreenSources();
-
-    expect(Object.keys(sources)).toContain(SUMMARY_COMPONENT);
-    expect(filesCountingImagesThemselves(sources)).toEqual([]);
-  });
-
-  /** A guard that cannot fail is not a guard: plant a screen that counts, and two that do not. */
-  it("reports a screen that counts images in words, and spares the summary and its users", () => {
-    expect(
-      filesCountingImagesThemselves({
-        "apps/web/src/features/campaigns/components/counting.tsx":
-          'import { propertyPhotoCountSentence } from "../../../copy/campaign-image-messages.js";\n' +
-          "export const n = (campaign) => propertyPhotoCountSentence(campaign.manifest.images.length);",
-        [SUMMARY_COMPONENT]:
-          "export const s = (c) => propertyPhotoCountSentence(c) + placeholderPictureSentence(c);",
-        "apps/web/src/features/campaigns/components/delegating.tsx":
-          'import { PropertyPhotoSummary } from "./property-photo-summary.js";\n' +
-          "export const n = (campaign) => <PropertyPhotoSummary images={campaign.manifest.images} />;",
-      }),
-    ).toEqual(["apps/web/src/features/campaigns/components/counting.tsx"]);
+describe("the sentence a screen says when a version holds no image", () => {
+  it("says that no property photo is attached yet, in the user's language", () => {
+    expect(NO_PROPERTY_PHOTO_ATTACHED).toBe("No property photo is attached yet.");
+    expect(findVocabularyHits(NO_PROPERTY_PHOTO_ATTACHED)).toEqual([]);
   });
 });

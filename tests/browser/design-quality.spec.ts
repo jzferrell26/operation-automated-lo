@@ -16,6 +16,7 @@ import {
   warmFullPageCapture,
   type ReviewTheme,
 } from "./helpers/design-quality.js";
+import { withAnEmptyCampaignWorkspace } from "./helpers/empty-campaign-workspace.js";
 import {
   FINISHED_OPEN_HOUSE,
   READY_OPEN_HOUSE,
@@ -433,6 +434,51 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
     await page.setViewportSize({ width: 1180, height: 900 });
     await settleForScreenshot(page);
     await expectKeyboardReachesEveryControl(page);
+
+    expect(externalRequests).toEqual([]);
+  });
+
+  /**
+   * PRD-008d 008D-AC-007, S-2: the campaigns list's empty state, the sign-off's "Campaigns list,
+   * empty" row.
+   *
+   * The tests above save campaigns into the synthetic workspace, so the list a later picture sees
+   * depends on the order the suite ran in. The empty state is therefore taken from a fixture
+   * workspace with no campaigns (`helpers/empty-campaign-workspace.ts`), which swaps the synthetic
+   * store for an empty one around this test alone and puts it back afterwards, so no other picture
+   * in the suite changes.
+   *
+   * The state's words and its way onward are asserted before anything is photographed: "No
+   * campaigns yet." is a claim about the workspace, and the one control on the card is the thing
+   * the state exists to offer.
+   */
+  test(`the campaigns list's empty state meets the bar at every frame in ${theme}`, async ({
+    page,
+  }) => {
+    test.setTimeout(240_000);
+    const externalRequests = await blockAnythingOffOrigin(page);
+    await withAnEmptyCampaignWorkspace(async () => {
+      await useStoredTheme(page, theme);
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto("/marketing/campaigns");
+      await expectThemeResolved(page, theme);
+      await settleForScreenshot(page);
+
+      const main = page.getByRole("main");
+      await expect(main.getByRole("heading", { level: 1, name: "Your campaigns" })).toBeVisible();
+      await expect(main.getByText("No campaigns yet.")).toBeVisible();
+      await expect(main.getByRole("link", { name: "Open campaign" })).toHaveCount(0);
+      await expect(main.getByRole("link", { name: "Create an Open House Boost" })).toHaveAttribute(
+        "href",
+        "/marketing/campaigns/new",
+      );
+
+      await captureNamedState(page, { screen: "campaigns", state: "empty", theme });
+
+      await page.setViewportSize({ width: 1180, height: 900 });
+      await settleForScreenshot(page);
+      await expectKeyboardReachesEveryControl(page);
+    });
 
     expect(externalRequests).toEqual([]);
   });

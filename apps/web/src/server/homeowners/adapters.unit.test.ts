@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createRentCastValuationPort, normalizeRentCastValuation } from "./rentcast.js";
 import { createHomeHighLevelPort, type HomeGhlConnection } from "./highlevel.js";
 import { homeownerInput, rentCastFixture } from "./homeowner-fixtures.js";
+import { HomeownerError } from "./errors.js";
 const config: HomeGhlConnection = {
   ghlLocationId: "location-one",
   accessToken: "fixture-server-token-never-live",
@@ -183,5 +184,58 @@ describe("HighLevel report handoff", () => {
       ),
     ).rejects.toMatchObject({ code: "INVALID_REPORT_LINK" });
     expect(fetcher).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("an answer from HighLevel that is not the shape it was expected in", () => {
+  const url = `https://app.example.test/home-report/${"a".repeat(64)}`;
+  const unexpected = async (promise: Promise<unknown>) => {
+    const failure = await promise.then(
+      () => null,
+      (error: unknown) => error,
+    );
+    // HighLevel's answer is HighLevel's fault, never the caller's mistake in the report details,
+    // so it must not surface as a validation error that tells a loan officer to check their fields.
+    expect(failure).toBeInstanceOf(HomeownerError);
+    return failure as HomeownerError;
+  };
+
+  it("is reported as a contact that could not be verified, with no field named", async () => {
+    const answers = [
+      Response.json({ contact: { id: "contact-one" } }),
+      Response.json({ contact: contact({ locationId: 7 }) }),
+      Response.json({ unexpected: true }),
+    ];
+    for (const answer of answers) {
+      const failure = await unexpected(
+        createHomeHighLevelPort(config, vi.fn<typeof fetch>().mockResolvedValue(answer)).get(
+          "contact-one",
+        ),
+      );
+      expect(failure.code).toBe("CONTACT_UNAVAILABLE");
+      expect(failure.message).toBe(
+        "The HighLevel contact could not be verified. Check the connection and contact access.",
+      );
+    }
+    const search = await unexpected(
+      createHomeHighLevelPort(
+        config,
+        vi.fn<typeof fetch>().mockResolvedValue(Response.json({ contacts: "none" })),
+      ).search("fictional"),
+    );
+    expect(search.code).toBe("CONTACT_UNAVAILABLE");
+  });
+
+  it("holds a handoff as uncertain when the save is answered without the confirmation", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({ contact: contact() }))
+      .mockResolvedValueOnce(Response.json({ saved: "yes" }));
+    const failure = await unexpected(
+      createHomeHighLevelPort(config, fetcher).handoff("contact-one", url),
+    );
+    expect(failure.code).toBe("HANDOFF_UNCERTAIN");
+    // The link may or may not have been written, so no workflow starts and nothing is retried.
+    expect(fetcher).toHaveBeenCalledTimes(2);
   });
 });

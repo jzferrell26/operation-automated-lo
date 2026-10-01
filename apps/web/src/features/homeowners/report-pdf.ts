@@ -1,9 +1,18 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { homeReportFreshness } from "@oalo/application/homeowner-reports";
 import { HomeReportSchema, type HomeReport } from "@oalo/contracts";
 import { homeAddressText, homeDate, homeMoney } from "./model.js";
 
-/** Pure snapshot rendering. No data lookup or network request occurs when a PDF is opened. */
-export async function createHomeReportPdf(input: HomeReport): Promise<Uint8Array> {
+/**
+ * Pure snapshot rendering. No data lookup or network request occurs when a PDF is opened.
+ *
+ * `now` is only the moment the age of the sources is judged against, the same judgement the report
+ * on screen makes, so the file says when a source is more than 35 days old (PRD-007 item 6).
+ */
+export async function createHomeReportPdf(
+  input: HomeReport,
+  now: Date = new Date(),
+): Promise<Uint8Array> {
   const report = HomeReportSchema.parse(input);
   const document = await PDFDocument.create();
   const regular = await document.embedFont(StandardFonts.Helvetica);
@@ -137,6 +146,13 @@ export async function createHomeReportPdf(input: HomeReport): Promise<Uint8Array
       `Source: ${report.valuation.source === "sample" ? "Fictional demonstration data" : "RentCast automated valuation"}. Retrieved ${homeDate(report.valuation.retrievedAt)}. This is not an appraisal or a guaranteed sale value.`,
       { size: 9, color: muted },
     );
+    // The same notice, in the same words, that the report shows on screen when a source has aged.
+    const freshness = homeReportFreshness(report, now);
+    if (freshness.valuationStale || freshness.mortgageStale)
+      paragraph(
+        `${freshness.valuationStale ? "This valuation is more than 35 days old. " : ""}${freshness.mortgageStale ? "The mortgage information is more than 35 days old. " : ""}Review the source dates before making plans.`,
+        { size: 10, strong: true, color: navy },
+      );
     section("Your equity picture");
     row("Estimated property value", homeMoney(report.valuation.valueMinor));
     row("First mortgage balance", homeMoney(report.financials.firstBalanceMinor));

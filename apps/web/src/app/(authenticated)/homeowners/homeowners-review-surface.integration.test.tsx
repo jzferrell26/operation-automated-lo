@@ -56,6 +56,8 @@ vi.mock("next/navigation.js", () => ({
     throw new Error("The page was not found.");
   },
 }));
+// The shared report page reads the caller's address from the request, which a direct call has no scope for.
+vi.mock("next/headers.js", () => ({ headers: async () => new Headers() }));
 vi.mock("../../../server/homeowners/page-brand.js", () => ({
   homePageBrand: async () => ({
     name: "Casey Example",

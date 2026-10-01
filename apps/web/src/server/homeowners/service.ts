@@ -185,6 +185,10 @@ export async function handoffHomeReport(
       409,
       "Update the value and mortgage information before delivery.",
     );
+  // The report's one handoff is spent when it is reserved. A link that cannot be made, because the
+  // deployment's web address is missing or wrong, fails before anything is written or sent, so it
+  // must fail before the attempt is taken too, or fixing the setting would not let it be tried again.
+  reportOrigin(config);
   if (!(await repository.reserveDelivery(id)))
     throw new HomeownerError(
       "DELIVERY_ALREADY_ATTEMPTED",

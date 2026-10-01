@@ -12,8 +12,9 @@ import { z } from "zod";
 import { campaignCommandAuthErrorResponse } from "../campaign-command-http.js";
 import { campaignDatabasePool } from "../campaign-persistence-runtime.js";
 import { HOME_REPORT_HEADERS, HomeownerError, readBoundedJson } from "./errors.js";
-import { canWriteHomeReports, homeHash, homeRuntime, HomeEnvironmentSchema } from "./runtime.js";
+import { canWriteHomeReports, homeHash, homeReportsEnabled, homeRuntime } from "./runtime.js";
 import { generateHomeReport, handoffHomeReport, shareHomeReport } from "./service.js";
+import { consumeSharedReportBudget } from "./share-throttle.js";
 
 const ActionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("create"), input: HomeReportInputSchema }).strict(),
@@ -82,8 +83,12 @@ const ActionSchema = z.discriminatedUnion("action", [
     })
     .strict(),
 ]);
-export function homeJson(value: unknown, status = 200): Response {
-  return Response.json(value, { status, headers: HOME_REPORT_HEADERS });
+export function homeJson(
+  value: unknown,
+  status = 200,
+  extraHeaders: Readonly<Record<string, string>> = {},
+): Response {
+  return Response.json(value, { status, headers: { ...HOME_REPORT_HEADERS, ...extraHeaders } });
 }
 export function homeError(error: unknown): Response {
   if (error instanceof HomeownerError)
@@ -343,8 +348,20 @@ export async function handleSharedHomeReport(
   try {
     if (!/^[a-f0-9]{64}$/u.test(secret))
       return homeJson({ message: "This report link is unavailable or expired." }, 404);
-    if (HomeEnvironmentSchema.parse(environment).OALO_HOMEOWNER_REPORTS !== "enabled")
+    if (!homeReportsEnabled(environment))
       return homeJson({ message: "This report link is unavailable or expired." }, 404);
+    // Anyone can ask, and a well-shaped link costs a database lookup whether or not it is real, so a
+    // caller that asks too often is refused before that work starts (independent review, M-1).
+    const budget = consumeSharedReportBudget(
+      request.headers,
+      request.method === "GET" ? "read" : "event",
+    );
+    if (!budget.allowed)
+      return homeJson(
+        { message: "Too many attempts from your connection. Please wait a minute and try again." },
+        429,
+        { "Retry-After": String(budget.retryAfterSeconds) },
+      );
     const pool = campaignDatabasePool(environment);
     const report = await readSharedHomeReport(pool, homeHash(secret));
     if (!report) return homeJson({ message: "This report link is unavailable or expired." }, 404);

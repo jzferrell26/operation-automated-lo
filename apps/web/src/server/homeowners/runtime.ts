@@ -41,6 +41,17 @@ export const HomeEnvironmentSchema = z
   })
   .passthrough();
 export type HomeEnvironment = z.infer<typeof HomeEnvironmentSchema>;
+/**
+ * Whether homeowner reports are switched on, read without validating any other homeowner setting.
+ *
+ * The public report routes answer anyone and need only this one answer. Reading it through the full
+ * schema meant one mistyped operator setting, such as an entry in the paid-lookup allowlist, made every
+ * shared link fail, and the failure named the setting to whoever asked (independent review, M-2).
+ */
+export function homeReportsEnabled(environment: unknown): boolean {
+  const parsed = z.object({ OALO_HOMEOWNER_REPORTS: z.string().optional() }).safeParse(environment);
+  return parsed.success && parsed.data.OALO_HOMEOWNER_REPORTS === "enabled";
+}
 export const homeHash = (value: string) => createHash("sha256").update(value).digest("hex");
 export const homeSecret = () => randomBytes(32).toString("hex");
 export function canWriteHomeReports(principal: Readonly<AuthenticatedPrincipal>): boolean {
@@ -65,7 +76,16 @@ export async function homeRuntime(
       403,
       "Your role cannot perform this report action. Ask your workspace owner.",
     );
-  const config = HomeEnvironmentSchema.parse(environment);
+  // A setting that cannot be read is the operator's fault to fix, not the caller's. A raw validation
+  // error here would tell a loan officer to "check the required report fields" and name the setting.
+  const parsedConfig = HomeEnvironmentSchema.safeParse(environment);
+  if (!parsedConfig.success)
+    throw new HomeownerError(
+      "REPORTS_UNAVAILABLE",
+      503,
+      "Homeowner reports are unavailable right now. Your existing data has not been replaced.",
+    );
+  const config = parsedConfig.data;
   if (config.OALO_HOMEOWNER_REPORTS !== "enabled")
     throw new HomeownerError(
       "REPORTS_NOT_CONFIGURED",

@@ -189,7 +189,14 @@ export function CampaignApprovalControls({
           Send back for changes
         </Button>
       ) : null}
-      {canApprove ? null : <CampaignHandOff campaignHref={campaignHref} />}
+      {/*
+        PRD-008b 008B-AC-010. The card asks somebody who cannot approve to send the link to an
+        approver, which is a step on a version nobody has decided on. Once a version was approved,
+        or sent back, there is nothing for an approver to do with the link, so it is not offered.
+      */}
+      {canApprove || alreadyDecided !== undefined ? null : (
+        <CampaignHandOff campaignHref={campaignHref} />
+      )}
       <p role="status">{status?.sentence ?? "Nobody has approved this version yet."}</p>
       <SupportReference refusal={status?.refusal} />
     </Card>

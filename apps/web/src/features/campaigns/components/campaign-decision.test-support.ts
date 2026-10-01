@@ -20,6 +20,7 @@ import { compileOpenHouseDraft } from "../../../server/open-house-draft.js";
  * the record that says it happened is the decision, so the sent-back view is built through the real
  * projection with that decision attached, the way a page reads it after the refresh. Every screen
  * that names a campaign's state is tried against it, because each one used to read the state alone.
+ * An approval does move the state, to `approved`, and records its decision the same way.
  */
 
 /** Somebody who may approve, which is the case where a stale "ready" is most misleading. */
@@ -56,9 +57,10 @@ export async function awaitingApprovalProjection(
   );
 }
 
-/** The same draft after somebody pressed "Send back for changes". */
-export async function sentBackProjection(
-  principal: AuthenticatedPrincipal = APPROVER,
+/** The same draft after somebody recorded a decision on it, read by `principal`. */
+async function decidedProjection(
+  decision: "approved" | "rejected",
+  principal: AuthenticatedPrincipal,
 ): Promise<CampaignWorkspaceProjection> {
   const compiled = await compiledDraft();
   const { artifacts } = compiled.version.manifest;
@@ -66,12 +68,13 @@ export async function sentBackProjection(
     {
       version: compiled.version,
       preflight: compiled.preflight,
-      state: "awaiting_approval" as const,
+      // An approval moves the campaign on; a send-back leaves it waiting, with the rejection on it.
+      state: decision === "approved" ? ("approved" as const) : ("awaiting_approval" as const),
       rowVersion: 2,
       updatedAt: compiled.version.createdAt,
       approval: ApprovalDecisionSchema.parse({
         schemaVersion: 1,
-        approvalRef: "approval_sentBack001",
+        approvalRef: "approval_decided001",
         locationRef: compiled.version.locationRef,
         campaignRef: compiled.version.campaignRef,
         campaignVersionRef: compiled.version.campaignVersionRef,
@@ -82,7 +85,7 @@ export async function sentBackProjection(
         actorRole: "approver",
         decidedAt: "2026-10-01T12:00:00.000Z",
         ipAuditHash: "e".repeat(64),
-        decision: "rejected",
+        decision,
         snapshot: {
           pageVersionRef: artifacts.pageVersionRef,
           pdfVersionRef: artifacts.pdfVersionRef,
@@ -102,4 +105,18 @@ export async function sentBackProjection(
     principal,
     "postgres",
   );
+}
+
+/** The same draft after somebody pressed "Send back for changes". */
+export async function sentBackProjection(
+  principal: AuthenticatedPrincipal = APPROVER,
+): Promise<CampaignWorkspaceProjection> {
+  return decidedProjection("rejected", principal);
+}
+
+/** The same draft after somebody approved it. */
+export async function approvedProjection(
+  principal: AuthenticatedPrincipal = APPROVER,
+): Promise<CampaignWorkspaceProjection> {
+  return decidedProjection("approved", principal);
 }

@@ -99,8 +99,8 @@ Prove, on one recorded deployment SHA of the existing Vercel project backed by a
 
 ## Open questions
 
-- [ ] Preview URL versus the production alias of the same project for the review deployment (the OAuth callback in PRD-004b depends on this). Either is "no second project".
-- [ ] Whether the optional HTTP proof script is worth writing, or whether curl transcripts pasted into the outside-git log are enough. Recommendation: curl, unless the proof must be repeated more than twice.
+- [ ] Preview URL versus the production alias of the same project for the review deployment (the OAuth callback in PRD-004b depends on this). Either is "no second project". **Still open (2026-10-01):** needs the owner. Same question as the PRD-005 index; see the operator checklist's D-1 and D-2.
+- [ ] Whether the optional HTTP proof script is worth writing, or whether curl transcripts pasted into the outside-git log are enough. Recommendation: curl, unless the proof must be repeated more than twice. **Still open (2026-10-01):** decided when the seven-point proof runs, which is blocked on the operator (`CRR-076` to `CRR-084`). No proof script exists, and this is not an owner decision.
 
 ## Exact operator ask
 

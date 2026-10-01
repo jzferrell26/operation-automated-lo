@@ -180,10 +180,10 @@ No pull request in PRD-006 that adds or changes a user-visible screen merges wit
 
 ## Open questions
 
-- [ ] Self-hosted Geist versus the system stack: depends on the licence check and the font pipeline; `typography-font-guardian` rules.
-- [ ] Whether the baseline-note check is a unit test over the pull request body (needs the body as an input) or a CI step using `gh pr view`; either satisfies 006D-AC-013.
-- [ ] Whether the email preview route should exist at all or the email templates should be screenshotted from a static file; recommendation: the route, because it renders through the same template code.
-- [ ] Whether to score the `/demo` route now that it is out of review mode; recommendation: no, record and defer.
+- [x] Self-hosted Geist versus the system stack: depends on the licence check and the font pipeline; `typography-font-guardian` rules. **Answered (2026-10-01):** the system stack in this batch; Geist self-hosting is deferred with its procedure recorded (`apps/web/public/fonts/README.md`, `006D-AC-004`).
+- [x] Whether the baseline-note check is a unit test over the pull request body (needs the body as an input) or a CI step using `gh pr view`; either satisfies 006D-AC-013. **Answered (2026-10-01):** neither. It is a unit test that diffs against the base ref (the 2026-09-20 amendment above; `tooling/tests/unit/design-quality/baseline-note.test.ts`).
+- [x] Whether the email preview route should exist at all or the email templates should be screenshotted from a static file; recommendation: the route, because it renders through the same template code. **Answered (2026-10-01):** the route exists (`apps/web/src/app/(public)/email-preview/page.tsx`), and PRD-008a `008A-AC-021` sandboxes its frame.
+- [x] Whether to score the `/demo` route now that it is out of review mode; recommendation: no, record and defer. **Answered (2026-10-01):** no, record and defer. `006D-AC-018` lists `/demo` as out of scope with its drift, and the Non-Goals exclude redesigning it.
 
 ## Exact operator ask
 

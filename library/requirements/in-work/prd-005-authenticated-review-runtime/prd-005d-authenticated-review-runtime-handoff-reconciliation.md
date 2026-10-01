@@ -122,7 +122,7 @@ Not changed: `PRODUCTION_EXECUTION_LEDGER.md`, `EXECUTION_LEDGER.md` criterion r
 
 ## Open questions
 
-- [ ] Whether to record the PRD-005 batch in `EXECUTION_LEDGER.md` as a new raid section (the orchestrator's decision at raid start) or only in the raid log. Either is fine for this sub-PRD; the criterion is that GGL rows do not change.
+- [x] Whether to record the PRD-005 batch in `EXECUTION_LEDGER.md` as a new raid section (the orchestrator's decision at raid start) or only in the raid log. Either is fine for this sub-PRD; the criterion is that GGL rows do not change. **Answered (2026-10-01):** as a new raid section. `EXECUTION_LEDGER.md` carries "Gauntlet raid: completion review C1 through C4 (PRD-005)", with rows `CRR-001` to `CRR-088`.
 
 ## Exact operator ask
 

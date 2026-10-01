@@ -140,13 +140,13 @@ Additive, owned by 006a: `platform.user_credentials`, `platform.credential_token
 
 ## Open questions
 
-- [ ] 006a: Argon2 availability on the pinned Node 24.18.0 (the author could only run 22.19.0); the scrypt cost on the deployed runtime; the client-address header on Vercel; `after()` on Next 16.3.3. Each is marked UNVERIFIED in 006a.
-- [ ] 006a: whether `security-guardian` ratifies the deliberate "that email already has an account" disclosure on sign-up (sign-in and forgot-password stay generic).
-- [ ] 006a and 006b: terms of service and privacy policy links on sign-up; no such pages exist in the repository.
-- [ ] 006b: whether the onboarding checklist phase names, fixed in the design brief and pinned by the browser suite, change to user language in this batch.
-- [ ] 006c: the `database` CI job's timeout once the review-mode browser run is added.
-- [ ] 006d: self-hosted Geist versus the system font stack, pending the licence check and `typography-font-guardian`'s ruling.
-- [ ] PRD-005e: whether the review deployment is the production alias or a preview URL of the same project (unchanged from PRD-005's open question; the reset link's `OALO_APP_URL` depends on it).
+- [x] 006a: Argon2 availability on the pinned Node 24.18.0 (the author could only run 22.19.0); the scrypt cost on the deployed runtime; the client-address header on Vercel; `after()` on Next 16.3.3. Each is marked UNVERIFIED in 006a. **Answered (2026-10-01):** Argon2id is available on the pinned Node and is what ships, so the scrypt cost question is moot (006a Amendment 2026-09-19, hashing algorithm; Ruling 3 of the [batch security audit](./qa/2026-09-19-batch-security-audit.md)). The client-address header is verified against Vercel's documentation (Ruling 6) and read `x-vercel-forwarded-for` first (PRD-008a `008A-AC-016`). `after()` is the post-response scheduler on every `/api/auth/*` route (`scheduleThroughNextAfter` in `apps/web/src/server/password-authentication-handler.ts`), with `next` pinned at 16.3.6 (`apps/web/package.json`).
+- [x] 006a: whether `security-guardian` ratifies the deliberate "that email already has an account" disclosure on sign-up (sign-in and forgot-password stay generic). **Answered (2026-10-01):** Ruling 1 of the [batch security audit](./qa/2026-09-19-batch-security-audit.md) keeps the disclosure on one condition: `OALO_SELF_SERVE_SIGNUP` stays off by default. The condition is recorded in 006a's Amendments (2026-09-30) and as D-4 in the [operator checklist](../../../knowledge/private/operations/finish-line-operator-checklist.md).
+- [ ] 006a and 006b: terms of service and privacy policy links on sign-up; no such pages exist in the repository. **Still open (2026-10-01):** needs the owner. No terms or privacy page or link exists in the product, and the owner decides whether they gate sign-up.
+- [x] 006b: whether the onboarding checklist phase names, fixed in the design brief and pinned by the browser suite, change to user language in this batch. **Answered (2026-10-01):** yes. The overview's phase headings read "Connect your accounts" and "Ready to launch" (`apps/web/src/features/onboarding/components/onboarding-screen.tsx`).
+- [x] 006c: the `database` CI job's timeout once the review-mode browser run is added. **Answered (2026-10-01):** raised to 60 minutes (`timeout-minutes: 60` on the `database` job, `.github/workflows/ci.yml:97`; it was 20 at `c140f11`).
+- [x] 006d: self-hosted Geist versus the system font stack, pending the licence check and `typography-font-guardian`'s ruling. **Answered (2026-10-01):** the system stack in this batch, with Geist self-hosting deferred and its procedure recorded (`apps/web/public/fonts/README.md`, `006D-AC-004`).
+- [ ] PRD-005e: whether the review deployment is the production alias or a preview URL of the same project (unchanged from PRD-005's open question; the reset link's `OALO_APP_URL` depends on it). **Still open (2026-10-01):** needs the owner. Same question as the PRD-005 index; the reset link's `OALO_APP_URL` depends on it.
 
 ---
 

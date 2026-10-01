@@ -299,9 +299,9 @@ Exact strings for PRD-006a's pages and emails (PRD-006c's step copy follows the 
 
 ## Open questions
 
-- [ ] Whether "evidence" may remain in the one heading "Approval" as "Approval record", or whether every use goes. Recommendation: "Approval" for the section and "Approved by <role> on <date>" for the body.
-- [ ] Whether the onboarding checklist phase names "Get Connected" and "Launch Readiness" (fixed in the design brief and pinned by `ui-foundation-ux.spec.ts:207-218`) change to "Connect your accounts" and "Ready to launch". Recommendation: yes, with `design-system-guardian` updating `03-components/onboarding-checklist.md:17-18`.
-- [ ] Terms and privacy links on sign-up (shared with PRD-006a).
+- [x] Whether "evidence" may remain in the one heading "Approval" as "Approval record", or whether every use goes. Recommendation: "Approval" for the section and "Approved by <role> on <date>" for the body. **Answered (2026-10-01):** every use goes. "evidence" is on the forbidden list (`apps/web/src/copy/forbidden-vocabulary.ts`, section 3 of the [user-language contract](../../../knowledge/private/standards/user-language-contract.md)), and the contract's preferred wording is "what was checked" (section 4).
+- [x] Whether the onboarding checklist phase names "Get Connected" and "Launch Readiness" (fixed in the design brief and pinned by `ui-foundation-ux.spec.ts:207-218`) change to "Connect your accounts" and "Ready to launch". Recommendation: yes, with `design-system-guardian` updating `03-components/onboarding-checklist.md:17-18`. **Answered (2026-10-01):** yes. The headings read "Connect your accounts" and "Ready to launch" (`apps/web/src/features/onboarding/components/onboarding-screen.tsx`). The recommended update to `library/knowledge/private/ux-ui/03-components/onboarding-checklist.md:17-18` has not been made; that spec still names the old phases.
+- [ ] Terms and privacy links on sign-up (shared with PRD-006a). **Still open (2026-10-01):** needs the owner. See the PRD-006 index.
 
 ## Exact operator ask
 

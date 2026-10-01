@@ -201,10 +201,10 @@ The `verify` CI job keeps `pnpm test:browser` in synthetic mode; the `database` 
 
 ## Open questions
 
-- [ ] Whether the `database` CI job's 20-minute timeout is enough once the review browser run is added; measure and raise as needed.
-- [ ] Whether the seven-day chip window should be configurable or fixed. Recommendation: fixed.
-- [ ] Whether step 2 should ask for the NMLS number at all in this release, since nothing renders it yet. Recommendation: ask, mark optional, because the FAQ already promises partner and brand details are captured during setup for later.
-- [ ] Whether the starter text for headline, body, and disclosure should come from a template registry rather than constants, so a compliance owner can change it later. Recommendation: constants now, one file, easy to move.
+- [x] Whether the `database` CI job's 20-minute timeout is enough once the review browser run is added; measure and raise as needed. **Answered (2026-10-01):** raised to 60 minutes (`timeout-minutes: 60`, `.github/workflows/ci.yml:97`; it was 20 at `c140f11`).
+- [x] Whether the seven-day chip window should be configurable or fixed. Recommendation: fixed. **Answered (2026-10-01):** fixed at seven days (`FINISH_SETUP_CHIP_DAYS = 7`, `apps/web/src/features/guided-setup/model/progress.ts:18`).
+- [x] Whether step 2 should ask for the NMLS number at all in this release, since nothing renders it yet. Recommendation: ask, mark optional, because the FAQ already promises partner and brand details are captured during setup for later. **Answered (2026-10-01):** step 2 asks for it and marks it optional ("NMLS number (optional)" in `apps/web/src/copy/guided-setup-messages.ts`; `nmlsNumber` is an optional field in `apps/web/src/features/guided-setup/model/profile.ts`).
+- [x] Whether the starter text for headline, body, and disclosure should come from a template registry rather than constants, so a compliance owner can change it later. Recommendation: constants now, one file, easy to move. **Answered (2026-10-01):** constants in one file, as recommended (`CAMPAIGN_STARTER_TEXT`, `apps/web/src/features/guided-setup/model/profile.ts`). A template registry stays a later option.
 
 ## Exact operator ask
 

@@ -176,8 +176,8 @@ Verified paths and line ranges at `c140f11`; new files are marked.
 
 ## Open questions
 
-- [ ] Should the unauthenticated read branch redirect to `/review/sign-in` or render an inline "not signed in" screen? Redirect is the recommendation because it keeps the fixture shell out of the review path entirely; either satisfies 005A-AC-010.
-- [ ] Whether `/api/health/ready` should carry a `session-runtime` check (listed as a should in the test plan).
+- [x] Should the unauthenticated read branch redirect to `/review/sign-in` or render an inline "not signed in" screen? Redirect is the recommendation because it keeps the fixture shell out of the review path entirely; either satisfies 005A-AC-010. **Answered (2026-10-01):** redirect. The overview and both campaign pages redirect an unauthenticated read to the sign-in page (`redirect(SIGN_IN_PATH)` at `apps/web/src/app/(authenticated)/overview/page.tsx:36`, `marketing/campaigns/page.tsx:20`, and `marketing/campaigns/[campaignRef]/page.tsx:34`). PRD-006a D9 moved the path from `/review/sign-in` to `/sign-in`.
+- [ ] Whether `/api/health/ready` should carry a `session-runtime` check (listed as a should in the test plan). **Still open (2026-10-01):** same as the PRD-005 index question: not implemented, an engineering choice.
 
 ## Exact operator ask
 

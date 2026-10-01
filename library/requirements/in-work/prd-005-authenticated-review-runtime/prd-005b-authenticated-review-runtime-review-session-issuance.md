@@ -178,9 +178,9 @@ All three are added to `docs/production-environments.md`. The secret name carrie
 
 ## Open questions
 
-- [ ] Rate limiting on `POST /api/review/session` beyond secret entropy and audited failures. Recommendation: not required for a review surface with a 32-byte secret; `security-guardian` rules at close-out.
-- [ ] The managed review database may be named `postgres`. D5's guard uses an explicit `--confirm-database` and the foreign-active-location check instead of a name prefix. Confirm with the operator.
-- [ ] Session lifetime: 12 hours is chosen so a reviewer's day fits in one session and an abandoned session dies overnight. Confirm or adjust; the bound is 30 days by the existing cookie serializer.
+- [x] Rate limiting on `POST /api/review/session` beyond secret entropy and audited failures. Recommendation: not required for a review surface with a 32-byte secret; `security-guardian` rules at close-out. **Answered (2026-10-01):** that route was removed by PRD-006a D9. The replacement sign-in is rate limited per address and per account, and security Ruling 4 of the [batch security audit](../prd-006-first-party-sign-in-and-guided-experience/qa/2026-09-19-batch-security-audit.md) rules those limits adequate for a review deployment.
+- [x] The managed review database may be named `postgres`. D5's guard uses an explicit `--confirm-database` and the foreign-active-location check instead of a name prefix. Confirm with the operator. **Answered (2026-10-01):** security Ruling 2 of the [batch security audit](../prd-006-first-party-sign-in-and-guided-experience/qa/2026-09-19-batch-security-audit.md) ratifies D5's guard as written.
+- [ ] Session lifetime: 12 hours is chosen so a reviewer's day fits in one session and an abandoned session dies overnight. Confirm or adjust; the bound is 30 days by the existing cookie serializer. **Still open (2026-10-01):** shipped as 12 hours by default and 30 days behind "Keep me signed in" (`DEFAULT_SESSION_LIFETIME_SECONDS` and `EXTENDED_SESSION_LIFETIME_SECONDS`, `apps/web/src/server/password-authentication-handler.ts:108-109`). The owner has not confirmed the two values (PRD-006a "Exact operator ask", item 4).
 
 ## Exact operator ask
 

@@ -113,7 +113,7 @@ In `executeHumanCampaignApproval`, after the location check (`:165-167`) and bef
 
 ## Open questions
 
-- [ ] Whether the observability correlation context (`corr_<hex>`) should be seeded from the canonical reference so logs and audit rows share one value. Recommended, but it touches `packages/observability` and is not required to close C2.
+- [ ] Whether the observability correlation context (`corr_<hex>`) should be seeded from the canonical reference so logs and audit rows share one value. Recommended, but it touches `packages/observability` and is not required to close C2. **Still open (2026-10-01):** not done. `packages/observability/src/correlation.ts:53` still mints its own `corr_` value. An optional engineering follow-up, not an owner decision.
 
 ## Exact operator ask
 

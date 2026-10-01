@@ -49,6 +49,16 @@ export interface GuidedSetupContextValue {
   restartSetup(): void;
   completeSetup(): void;
   reportCampaignSaved(report: SavedCampaignReport): void;
+  /**
+   * PRD-008b 008B-AC-010. The approval card tells the walkthrough what it recorded, as soon as the
+   * route says it landed. The layout re-reads the campaign with its decision after the page
+   * refreshes, but until that read arrives, or if it fails, the walkthrough holds the campaign as it
+   * was, and a step that said "choose Approve this version" would sit beside a card that says it was
+   * approved.
+   */
+  reportCampaignDecided(
+    report: Readonly<{ campaignRef: string; decision: "approved" | "rejected" }>,
+  ): void;
 }
 
 export const GuidedSetupContext = createContext<GuidedSetupContextValue | undefined>(undefined);

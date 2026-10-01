@@ -157,6 +157,16 @@ export function GuidedSetupProvider({
    * is about the instant it stores the reference.
    */
   const [handedCampaign, setHandedCampaign] = useState<SetupCampaignResult | undefined>(undefined);
+  /**
+   * PRD-008b 008B-AC-010. The decisions the approval card has recorded in this browser, by campaign.
+   *
+   * They fill in a campaign the walkthrough is holding from before the decision, so the step agrees
+   * with the card at once rather than when the layout next reads the campaign, which can be a
+   * refresh away or never. The server's own reading wins as soon as it carries a decision.
+   */
+  const [localDecisions, setLocalDecisions] = useState<
+    Readonly<Record<string, "approved" | "rejected">>
+  >({});
   /** The campaign being offered to this person right now, for `goToStep` to read without depending on it. */
   const waitingRef = useRef<SetupCampaignResult | undefined>(undefined);
   const [dismissPending, setDismissPending] = useState(false);
@@ -427,6 +437,13 @@ export function GuidedSetupProvider({
     [persistProgress],
   );
 
+  const reportCampaignDecided = useCallback(
+    (report: Readonly<{ campaignRef: string; decision: "approved" | "rejected" }>) => {
+      setLocalDecisions((current) => ({ ...current, [report.campaignRef]: report.decision }));
+    },
+    [],
+  );
+
   /**
    * PRD-006c D3 step 5 and D5. Which campaign steps 5 and 6 are about, and what is known about it.
    *
@@ -455,7 +472,13 @@ export function GuidedSetupProvider({
       ? campaignAwaitingDecision
       : undefined;
   waitingRef.current = waitingCampaign;
-  const stepCampaign = ownCampaign ?? waitingCampaign ?? handedCampaign;
+  const heldCampaign = ownCampaign ?? waitingCampaign ?? handedCampaign;
+  const decidedHere =
+    heldCampaign === undefined ? undefined : localDecisions[heldCampaign.campaignRef];
+  const stepCampaign: SetupCampaignResult | undefined =
+    heldCampaign !== undefined && heldCampaign.decision === undefined && decidedHere !== undefined
+      ? { ...heldCampaign, decision: decidedHere }
+      : heldCampaign;
   /**
    * PRD-008b 008B-AC-010. An approver who cannot create a campaign, with none waiting for them and
    * none stored as theirs. There is nothing to describe, and the steps say so. A person who can
@@ -526,6 +549,7 @@ export function GuidedSetupProvider({
       open,
       profile,
       progress,
+      reportCampaignDecided,
       reportCampaignSaved,
       restartSetup,
       resumeSetup,
@@ -542,6 +566,7 @@ export function GuidedSetupProvider({
       open,
       profile,
       progress,
+      reportCampaignDecided,
       reportCampaignSaved,
       restartSetup,
       resumeSetup,

@@ -15,6 +15,8 @@ import {
   SUPPORT_REFERENCE_NOT_RECORDED,
 } from "../../copy/user-language.js";
 import { SUPPORT_REFERENCE_HEADER } from "../http/internal-api.js";
+import { stubRefusedFetch } from "../http/refusal.test-support.js";
+import { CampaignApprovalControls } from "../campaigns/components/campaign-approval-controls.js";
 import { OpenHouseDraftBuilder } from "../campaigns/components/open-house-draft-builder.js";
 import { fillAndSaveOpenHouseDraft } from "../campaigns/components/open-house-draft.test-support.js";
 import { anchorSelector, GUIDED_SETUP_ANCHORS } from "./anchor-registry.js";
@@ -39,7 +41,7 @@ const push = vi.fn();
 
 vi.mock("next/navigation.js", () => ({
   usePathname: () => "/overview",
-  useRouter: () => ({ push, replace: vi.fn() }),
+  useRouter: () => ({ push, refresh: vi.fn(), replace: vi.fn() }),
 }));
 
 /**
@@ -861,6 +863,104 @@ describe("guided setup steps", () => {
         [3, null],
         [4, null],
       ]);
+    });
+  });
+
+  /**
+   * PRD-008b 008B-AC-010, a decision made on the page. The approval card refreshes the page, and
+   * the layout re-reads the campaign with its decision on it. Until that read lands, or if it fails,
+   * the walkthrough holds the campaign as it was before the decision, and step 6 went on telling the
+   * person to choose "Approve this version" beside a card saying they had. The card now tells the
+   * walkthrough what it recorded, so the panel agrees with it at once.
+   *
+   * No case here hands the provider a decided campaign. That is the point: they model the moment
+   * before the server has read the decision back, or a read that never arrives.
+   */
+  describe("a decision made on the page, before the server has read it back", () => {
+    const WAITING = savedCampaignResult();
+
+    /** The card as the campaign page renders it for somebody who can approve what is waiting. */
+    const approvalCard = (
+      <CampaignApprovalControls
+        blocking={false}
+        campaignHref={WAITING.detailHref}
+        campaignRef={WAITING.campaignRef}
+        campaignVersionRef="version_7m4f6a1c2e0000400080000000000001"
+        canApprove
+        manifestHash={"0".repeat(64)}
+        preflightResultHash={"1".repeat(64)}
+        rowVersion={1}
+        state="awaiting_approval"
+      />
+    );
+
+    /** Step 6, for an approver who cannot create a campaign, with the card on the page beneath it. */
+    async function atStepSixWithTheCard(answers: Record<string, unknown>, extra: ProviderOptions) {
+      const user = userEvent.setup();
+      renderSetup({
+        answers,
+        canApprove: true,
+        canCreate: false,
+        children: approvalCard,
+        profile: SAMPLE_PROFILE,
+        progress: progressAt(5),
+        ...extra,
+      });
+      await user.click(screen.getByRole("button", { name: GUIDED_SETUP_CONTROLS.continueLabel }));
+      await screen.findByRole("dialog", { name: GUIDED_SETUP_STEPS.approveOrHandOff.title });
+      expect(panel()).toHaveTextContent("Choose Approve this version.");
+      return user;
+    }
+
+    it.each([
+      ["approves", "approved", "Approve this version", "This version is approved"],
+      ["sends it back", "rejected", "Send back for changes", "This version was sent back"],
+    ] as const)(
+      "says so on the panel as soon as the approver %s, with no read of the campaign at all",
+      async (_does, decision, control, title) => {
+        const user = await atStepSixWithTheCard(
+          { "/api/campaigns/approve": { decision, duplicate: false } },
+          { campaignAwaitingDecision: WAITING },
+        );
+
+        await user.click(screen.getByRole("button", { name: control }));
+        if (decision === "approved") {
+          await user.click(await screen.findByRole("button", { name: "Yes, approve" }));
+        }
+
+        await waitFor(() => {
+          expect(panel()).toHaveAccessibleName(title);
+        });
+        expect(panel()).not.toHaveTextContent("Choose Approve this version.");
+      },
+    );
+
+    it("does the same for a campaign the server read before the decision and has not read since", async () => {
+      const user = await atStepSixWithTheCard(
+        { "/api/campaigns/approve": { decision: "approved", duplicate: false } },
+        { campaignAwaitingDecision: undefined, savedCampaign: WAITING, progress: progressAt(5) },
+      );
+
+      await user.click(screen.getByRole("button", { name: "Approve this version" }));
+      await user.click(await screen.findByRole("button", { name: "Yes, approve" }));
+
+      await waitFor(() => {
+        expect(panel()).toHaveAccessibleName("This version is approved");
+      });
+    });
+
+    it("leaves the panel alone when the decision was refused, because nothing was recorded", async () => {
+      const user = await atStepSixWithTheCard({}, { campaignAwaitingDecision: WAITING });
+      stubRefusedFetch("CAMPAIGN_APPROVAL_REFUSED", "correlation_approve_refused001", 409);
+
+      await user.click(screen.getByRole("button", { name: "Approve this version" }));
+      await user.click(await screen.findByRole("button", { name: "Yes, approve" }));
+
+      await waitFor(() => {
+        expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
+      });
+      expect(panel()).toHaveAccessibleName(GUIDED_SETUP_STEPS.approveOrHandOff.title);
+      expect(panel()).toHaveTextContent("Choose Approve this version.");
     });
   });
 

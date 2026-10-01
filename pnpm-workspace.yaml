@@ -16,7 +16,6 @@ linkWorkspacePackages: true
 minimumReleaseAgeExclude:
   - tar@7.5.21
   - postcss@8.5.23
-  - hono@4.12.34
   - nanoid@3.3.16 || 3.3.17
 allowBuilds:
   "@depot/cli@0.0.1-cli.2.80.0": true
@@ -24,12 +23,10 @@ allowBuilds:
   esbuild@0.25.0: true
   sharp@0.35.4: true
 overrides:
-  "@hono/node-server": 2.0.10
   "@opentelemetry/core": 2.8.0
   deepmerge-ts: ">=8.0.0"
   engine.io: 6.6.7
   esbuild: 0.25.0
-  hono: 4.13.5
   postcss: 8.5.23
   qs: 6.16.0
   sharp: 0.35.4

@@ -111,6 +111,11 @@ const REVIEW_EVIDENCE_ACTION: CampaignWorkspaceNextAction = Object.freeze({
   available: true,
 });
 
+const ALREADY_DECIDED_ACTION: CampaignWorkspaceNextAction = Object.freeze({
+  id: "already_decided",
+  available: false,
+});
+
 export function principalHasCampaignApprovalRole(
   principal: Readonly<AuthenticatedPrincipal>,
 ): boolean {
@@ -129,9 +134,19 @@ export function campaignMayBeApprovedBy(
   );
 }
 
+/**
+ * What a campaign can do next, from where it stands and what has been decided on it.
+ *
+ * `decision` is the recorded approval decision, when there is one. It is needed because a send-back
+ * does not change the state: `executeHumanCampaignApproval` records the rejection and sets the state
+ * to `awaiting_approval` again. The state alone cannot tell a version nobody has looked at from one
+ * that was just sent back, and offering the second for approval, or waiting for an approver on it,
+ * says something that is no longer true. A decided version is not offered for approval.
+ */
 export function deriveCampaignNextActions(
   state: CampaignState,
   canApprove: boolean,
+  decision?: ApprovalDecision["decision"],
 ): readonly CampaignWorkspaceNextAction[] {
   switch (state) {
     case "preflight_failed":
@@ -144,6 +159,13 @@ export function deriveCampaignNextActions(
         PROVIDER_PUBLISH_ACTION,
       ]);
     case "awaiting_approval":
+      if (decision !== undefined) {
+        return Object.freeze([
+          REVIEW_EVIDENCE_ACTION,
+          ALREADY_DECIDED_ACTION,
+          PROVIDER_PUBLISH_ACTION,
+        ]);
+      }
       return Object.freeze([
         REVIEW_EVIDENCE_ACTION,
         canApprove
@@ -160,10 +182,7 @@ export function deriveCampaignNextActions(
     case "approved":
       return Object.freeze([
         REVIEW_EVIDENCE_ACTION,
-        Object.freeze({
-          id: "already_decided",
-          available: false,
-        }),
+        ALREADY_DECIDED_ACTION,
         PROVIDER_PUBLISH_ACTION,
       ]);
     case "draft":
@@ -230,7 +249,7 @@ export function projectCampaignWorkspace(
             actorRole: record.approval.actorRole,
           }),
         }),
-    nextActions: deriveCampaignNextActions(record.state, canApprove),
+    nextActions: deriveCampaignNextActions(record.state, canApprove, record.approval?.decision),
     canApprove,
     persistenceKind,
     detailHref: `/marketing/campaigns/${record.version.campaignRef}`,

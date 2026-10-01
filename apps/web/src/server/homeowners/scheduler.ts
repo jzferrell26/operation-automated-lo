@@ -6,6 +6,7 @@ import {
 } from "@oalo/db";
 import { nextMonthlyRefresh } from "@oalo/application/homeowner-reports";
 import type { HomeMortgage, HomeProperty } from "@oalo/contracts";
+import { z } from "zod";
 import { authenticatedWorkspaceMode } from "../authenticated-workspace-data.js";
 import { campaignDatabasePool } from "../campaign-persistence-runtime.js";
 import { HomeownerError } from "./errors.js";
@@ -34,7 +35,15 @@ export function scheduledMortgage(mortgage: HomeMortgage, now: Date): HomeMortga
     };
   return mortgage;
 }
-export function authorizedHomeCron(request: Request, config: HomeEnvironment): boolean {
+/** The only two settings that decide who may start the monthly job. */
+const CronSecretsSchema = z.object({
+  OALO_HOMEOWNER_CRON_SECRET: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
+});
+export function authorizedHomeCron(
+  request: Request,
+  config: z.infer<typeof CronSecretsSchema>,
+): boolean {
   const secret = config.OALO_HOMEOWNER_CRON_SECRET ?? config.CRON_SECRET;
   const supplied = request.headers.get("authorization");
   if (!secret || secret.length < 32 || secret.length > 512 || !supplied || supplied.length > 600)
@@ -117,8 +126,12 @@ export async function handleHomeSchedule(
   environment: unknown = process.env,
 ): Promise<Response> {
   try {
+    // Who is asking is settled before any other setting is read, so a caller without the secret learns
+    // nothing about how the deployment is configured, not even which setting is mistyped.
+    const secrets = CronSecretsSchema.safeParse(environment);
+    if (!secrets.success || !authorizedHomeCron(request, secrets.data))
+      return homeJson({ error: "UNAUTHORIZED" }, 401);
     const config = HomeEnvironmentSchema.parse(environment);
-    if (!authorizedHomeCron(request, config)) return homeJson({ error: "UNAUTHORIZED" }, 401);
     if (
       config.OALO_HOMEOWNER_REPORTS !== "enabled" ||
       config.OALO_HOMEOWNER_LIVE_DATA !== "enabled" ||

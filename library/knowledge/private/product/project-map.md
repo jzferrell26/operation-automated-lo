@@ -82,7 +82,7 @@ The checklist covers:
 
 No criterion status changed with this split.
 
-**October 1 update.** A Gauntlet run executed PRD-008 on branch `claude/gauntlet-prd-008`. PRD-008 is complete in draft pull request #74 (74 acceptance criteria), which is open and not merged and waits for the owner's merge, while `main` stays at `36b58f1` (PR #73). Its folder moved to `library/requirements/completed/`. Per-criterion results are in the PRD-008 section of [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md): all 74 rows read VERIFIED (the PRD's [index](../../../requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) says what closed the last five). This map claims no PRD-001 criterion as changed. The remaining work is the [finish-line operator checklist](../operations/finish-line-operator-checklist.md), and its step 0 comes first: apply the three PRD-008 migrations to the hosted database before the merge.
+**October 1 update.** A Gauntlet run executed PRD-008 on branch `claude/gauntlet-prd-008`. PRD-008 is complete in pull request #74 (74 acceptance criteria), which is open and not merged and waits for the owner's merge, while `main` stays at `36b58f1` (PR #73). Its folder moved to `library/requirements/completed/`. Per-criterion results are in the PRD-008 section of [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md): all 74 rows read VERIFIED (the PRD's [index](../../../requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) says what closed the last five). This map claims no PRD-001 criterion as changed. The remaining work is the [finish-line operator checklist](../operations/finish-line-operator-checklist.md), and its step 0 comes first: apply the three PRD-008 migrations to the hosted database before the merge.
 
 ## Historical September 16 status snapshot
 
@@ -234,7 +234,7 @@ The detailed capture requirements and unblock procedures remain authoritative in
 
 ## Prioritized next steps (librarian)
 
-**Start with the [finish-line operator checklist](../operations/finish-line-operator-checklist.md).** It lists every remaining item that needs a person (a decision, an account, a credential, or a live provider) in dependency order, with the runbook for each. The sections below are the older sequencing it consolidates: its steps 3 to 5 are items 1 to 3 under "Now", step 7 is Wave 1 G2, and step 9 is Waves 2 to 7. The agent-executable work was [PRD-008](../../../requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md), which is complete in draft pull request #74 and waits for the owner's merge.
+**Start with the [finish-line operator checklist](../operations/finish-line-operator-checklist.md).** It lists every remaining item that needs a person (a decision, an account, a credential, or a live provider) in dependency order, with the runbook for each. The sections below are the older sequencing it consolidates: its steps 3 to 5 are items 1 to 3 under "Now", step 7 is Wave 1 G2, and step 9 is Waves 2 to 7. The agent-executable work was [PRD-008](../../../requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md), which is complete in pull request #74 and waits for the owner's merge.
 
 Authoritative batch plan: [External Evidence Sprint](../../../../NEXT_BATCH_LEDGER.md). Packs: [`docs/operations/evidence-packs/`](../../../../docs/operations/evidence-packs/README.md). Agent brief: [the-map.mdc](../../../../.cursor/rules/core/the-map.mdc).
 

@@ -1,7 +1,7 @@
 # PRD-008a: Finish-Line Hardening - Security and Dependency Closure
 
 > **Parent:** [PRD-008](./prd-008-finish-line-hardening-index.md)
-> **Status:** Complete in draft pull request #74 (merge pending the owner). All 23 of its criteria are VERIFIED in `EXECUTION_LEDGER.md` (`FLR-008` to `FLR-030`; `008A-AC-009` is intentionally unused). `008A-AC-003` (`FLR-010`) closed on a clean `pnpm audit` at the final head's code: the close-out quality re-check ran it on `468e281`, which has code identical to the final head, and it was clean at low and at moderate. `008A-AC-007` (`FLR-014`) closed when PR #70 was commented on and closed as superseded by PR #74; its lockfile half was verified earlier.
+> **Status:** Complete in pull request #74 (merge pending the owner). All 23 of its criteria are VERIFIED in `EXECUTION_LEDGER.md` (`FLR-008` to `FLR-030`; `008A-AC-009` is intentionally unused). `008A-AC-003` (`FLR-010`) closed on a clean `pnpm audit` at the final head's code: the close-out quality re-check ran it on `468e281`, which has code identical to the final head, and it was clean at low and at moderate. `008A-AC-007` (`FLR-014`) closed when PR #70 was commented on and closed as superseded by PR #74; its lockfile half was verified earlier.
 > **Priority:** P0. The dependency gate fails every pull request today.
 > **Schema changes:** Additive (one migration widening a rate-limit scope list)
 > **Owner Guardians:**

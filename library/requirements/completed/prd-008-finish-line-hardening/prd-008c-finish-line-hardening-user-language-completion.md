@@ -1,7 +1,7 @@
 # PRD-008c: Finish-Line Hardening - User-Language Completion
 
 > **Parent:** [PRD-008](./prd-008-finish-line-hardening-index.md)
-> **Status:** Complete in draft pull request #74 (merge pending the owner). All 7 criteria are VERIFIED in `EXECUTION_LEDGER.md` (`FLR-039` to `FLR-045`).
+> **Status:** Complete in pull request #74 (merge pending the owner). All 7 criteria are VERIFIED in `EXECUTION_LEDGER.md` (`FLR-039` to `FLR-045`).
 > **Priority:** P1
 > **Schema changes:** None
 > **Owner Guardians:** `technical-writing-craft-guardian` (the copy), `typescript-node-guardian` (the guard and the key-based copy move)

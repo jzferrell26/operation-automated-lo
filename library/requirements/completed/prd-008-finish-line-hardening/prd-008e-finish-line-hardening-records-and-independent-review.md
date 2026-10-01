@@ -1,7 +1,7 @@
 # PRD-008e: Finish-Line Hardening - Records and Independent Review
 
 > **Parent:** [PRD-008](./prd-008-finish-line-hardening-index.md)
-> **Status:** Complete in draft pull request #74 (merge pending the owner). All 15 of its criteria are VERIFIED in `EXECUTION_LEDGER.md` (`FLR-057` to `FLR-070`, and `FLR-074` for `008E-AC-015`). `008E-AC-004` (`FLR-060`) and `008E-AC-014` (`FLR-070`) closed on the final quality re-check, [`qa/2026-10-01-closeout-quality-report.md`](./qa/2026-10-01-closeout-quality-report.md), section "Re-check (2026-10-01) on `468e281`", verdict SHIP. `008E-AC-006`, `008E-AC-007`, and `008E-AC-010` (`FLR-062`, `FLR-063`, `FLR-066`) closed citing the first close-out quality report in the same folder, which recorded each as PASS.
+> **Status:** Complete in pull request #74 (merge pending the owner). All 15 of its criteria are VERIFIED in `EXECUTION_LEDGER.md` (`FLR-057` to `FLR-070`, and `FLR-074` for `008E-AC-015`). `008E-AC-004` (`FLR-060`) and `008E-AC-014` (`FLR-070`) closed on the final quality re-check, [`qa/2026-10-01-closeout-quality-report.md`](./qa/2026-10-01-closeout-quality-report.md), section "Re-check (2026-10-01) on `468e281`", verdict SHIP. `008E-AC-006`, `008E-AC-007`, and `008E-AC-010` (`FLR-062`, `FLR-063`, `FLR-066`) closed citing the first close-out quality report in the same folder, which recorded each as PASS.
 > **Priority:** P1
 > **Schema changes:** None
 > **Owner Guardians:** `library-guardian` (reconciliation, ledger, maps, README, library hygiene); `security-guardian` then `quality-guardian` (the PRD-007 independent review and the 004E re-audit)

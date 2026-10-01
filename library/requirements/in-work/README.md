@@ -31,4 +31,4 @@ Current in-work PRDs:
 
 Moved out of `in-work/`:
 
-- PRD-008 Finish-Line Hardening moved to [`completed/`](../completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) on 2026-10-01, at the end of the Gauntlet run on branch `claude/gauntlet-prd-008`. It is complete in draft pull request #74, and the merge waits for the owner.
+- PRD-008 Finish-Line Hardening moved to [`completed/`](../completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) on 2026-10-01, at the end of the Gauntlet run on branch `claude/gauntlet-prd-008`. It is complete in pull request #74, and the merge waits for the owner.

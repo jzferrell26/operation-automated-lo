@@ -1,7 +1,7 @@
 # PRD-008b: Finish-Line Hardening - Product Correctness
 
 > **Parent:** [PRD-008](./prd-008-finish-line-hardening-index.md)
-> **Status:** Draft
+> **Status:** Complete in draft pull request #74 (merge pending the owner). All 11 criteria are VERIFIED in `EXECUTION_LEDGER.md` (`FLR-031` to `FLR-038`, and `FLR-071` to `FLR-073` for `008B-AC-009` to `011`, the decision-aware surfaces added during the run).
 > **Priority:** P0. Two of these items make the product say something untrue about a campaign.
 > **Schema changes:** None
 > **Owner Guardians:** `react-guardian` (all four items); `typescript-node-guardian` (the draft server module)

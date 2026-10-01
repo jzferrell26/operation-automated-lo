@@ -1,7 +1,7 @@
 # PRD-008d: Finish-Line Hardening - Verification Depth
 
 > **Parent:** [PRD-008](./prd-008-finish-line-hardening-index.md)
-> **Status:** Draft
+> **Status:** Complete in draft pull request #74 (merge pending the owner). All 11 criteria are VERIFIED in `EXECUTION_LEDGER.md` (`FLR-046` to `FLR-056`): the homeowner pgTAP suite, the baseline redraws (the installed set is screen-baselines run `36844271868`, commit `cad9bf6`), the three named states and the A-1 rows, and the design sign-off re-signed against `cad9bf6`.
 > **Priority:** P1
 > **Schema changes:** None (adds a pgTAP suite)
 > **Owner Guardians:** `db-guardian` (the pgTAP suite), `ux-ui-guardian` (the baseline redraw, the missing states, and the re-signed sign-off)

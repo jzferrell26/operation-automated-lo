@@ -247,7 +247,7 @@ four declarations that only undid it, and draws every timestamp in the data font
 run before it caused: run 36838168997 on `c3ab3ec`, run 36841695906 on `83095a1`, and run
 36844271868 on `eaf34e6`, **whose pictures are installed**. The scored review, with every picture
 that changed, its cause, and its verdict, is the second half of
-`library/requirements/in-work/prd-008-finish-line-hardening/qa/2026-10-01-008d-baseline-review.md`,
+`library/requirements/completed/prd-008-finish-line-hardening/qa/2026-10-01-008d-baseline-review.md`,
 "Second redraw: D-009 and D-010 (008D-AC-011)".
 
 Against the baselines the first re-sign installed (`d7af15a`, unchanged at `814939f`), 343 of the
@@ -303,7 +303,7 @@ Re-signed by `ux-ui-guardian` from the baselines the `ubuntu-24.04` runner drew 
 tree. The redraw was dispatched once for the Wave 1 change set and the capture fixes (run
 36823126319), and twice more under 008D-AC-011 for fixes its review caused (runs 36825957221 and
 36828316006). The scored review, with every changed or new picture, its cause, and its verdict, is
-`library/requirements/in-work/prd-008-finish-line-hardening/qa/2026-10-01-008d-baseline-review.md`.
+`library/requirements/completed/prd-008-finish-line-hardening/qa/2026-10-01-008d-baseline-review.md`.
 
 Every picture was compared with the committed baseline pixel by pixel; every changed picture was
 read on a labelled contact sheet, and every one whose change was more than rasterisation was read

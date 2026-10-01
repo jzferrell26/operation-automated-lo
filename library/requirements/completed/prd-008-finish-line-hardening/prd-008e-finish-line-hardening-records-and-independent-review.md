@@ -1,7 +1,7 @@
 # PRD-008e: Finish-Line Hardening - Records and Independent Review
 
 > **Parent:** [PRD-008](./prd-008-finish-line-hardening-index.md)
-> **Status:** Draft
+> **Status:** Complete in draft pull request #74 (merge pending the owner). 10 of its 15 criteria are VERIFIED in `EXECUTION_LEDGER.md` (`FLR-057` to `FLR-070`, and `FLR-074` for `008E-AC-015`). Five close at ship. `008E-AC-004` (`FLR-060`): the write-back of the held `CRR` rows is done and waits for a re-check by a pass other than the orchestrator. `008E-AC-006`, `008E-AC-007`, and `008E-AC-010` (`FLR-062`, `FLR-063`, `FLR-066`): the close-out quality report records each as PASS, and the orchestrator writes the rows. `008E-AC-014` (`FLR-070`): the move of this folder to `completed/`.
 > **Priority:** P1
 > **Schema changes:** None
 > **Owner Guardians:** `library-guardian` (reconciliation, ledger, maps, README, library hygiene); `security-guardian` then `quality-guardian` (the PRD-007 independent review and the 004E re-audit)

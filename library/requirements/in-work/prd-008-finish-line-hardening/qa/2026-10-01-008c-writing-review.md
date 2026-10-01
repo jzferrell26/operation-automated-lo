@@ -79,3 +79,77 @@ For S1b, the same root cause also leaves the page's state badge ("Ready for appr
 ## Closing the criterion
 
 008C-AC-007 closes when W1 (A3) is replaced and that sentence is re-reviewed with no blocking finding. Re-review needs the single changed sentence, not the whole set.
+
+## Re-review 2026-10-01
+
+**Armed (re-review):** the same Weapon files as above (`guides/03-voice-and-tone.md`, `guides/04-reader-lens.md`, `guides/07-scorecard.md`) and the same house style (the user-language contract). **Tree:** `C:\Users\jzfer\Projects\operation-automated-lo-finish`, branch `claude/gauntlet-prd-008`, HEAD `851585a`, range `99eb1af..HEAD`, user-visible strings only. Code was read, not edited. A scan of added lines in `apps` and `packages` for U+2013 and U+2014 found none. The other changes in the range (sign-in handler, version route, email preview, setup preferences) add no user-visible sentence.
+
+### Re-review 1: 008C-AC-007 (A3 and S1 to S4)
+
+| Ref | file:line | Sentence | Verdict | Reason | Proposed replacement |
+|---|---|---|---|---|---|
+| A3 | `apps/web/src/features/workspace/workspace-screen.tsx:310` | "Your valuation connection is set up for this workspace. Each new lookup counts against your monthly allowance. You confirm the ones you start, and monthly updates, if you turn them on, run without asking each time." | PASS | Every clause checks against the code. A lookup a person starts needs their confirmation: the create form requires the box "I have confirmed the property address and authorize this valuation lookup" (`builder.tsx:351`), and a refresh requires its own confirmation checkbox. Monthly updates run unprompted: `scheduler.ts` (`refreshScheduledProperty`) makes the lookups once "Monthly valuation refresh" is saved, against the same monthly limit. "Monthly updates" is the badge the product shows for a property on that schedule. The claim no longer promises control the product does not give. | None |
+| S1 | `apps/web/src/copy/reporting-messages.ts:38-39` | "A new lead couldn't be sent to the right person. Contact support so we can look into it." | PASS | The routing pointer is gone. The sentence is true and gives the one action open to the reader, in the house phrasing. | None |
+| S2 | `reporting-messages.ts:40-41` | "This campaign is missing something it needs from HighLevel. Contact support so we can look into it." | PASS | The unverified examples and the pointer are gone. It claims only what the code states: a required HighLevel mapping is missing. | None |
+| S3 | `reporting-messages.ts:42-43` | "This campaign changed after it was approved, so the approval no longer covers it. Approve the new version, or ask an approver to." | PASS | Works for both readers: an approver or the workspace owner can approve, and anyone else is told to ask one, which they can do. Different from the wording proposed, and fine. | None |
+| S4 | `reporting-messages.ts:57-58` | "What each lead cost, worked out as spend divided by leads. It stays blank until the spend is known and there is at least one lead." | PASS | Matches `buildCampaignReportingRecord`: the cost is blank when spend is unknown, leads are unknown, or leads are zero. | None |
+| S5 | `packages/application/src/reporting.ts:162` | `explanation: input.code` | SUGGESTION (still open, unchanged) | No screen reads an exception yet, so nothing leaks. It stays a hazard for the first screen that does. Carried forward from the first pass. | As before: look the sentence up by `code` and add a rendered-output assertion when the first screen lands. |
+
+**Re-review 1 verdict.** Blocking: 0. The five sentences re-checked pass; S5 stays a non-blocking suggestion.
+
+**008C-AC-007: PASS (no blocking finding)**
+
+### Re-review 2: Part B (B1 to B8 and B10, the placeholder sentences, the decision-aware sentences)
+
+| Ref | file:line | Sentence | Verdict | Reason | Proposed replacement |
+|---|---|---|---|---|---|
+| B1 | `apps/web/src/copy/campaign-image-messages.ts:18` | "Property photos" | PASS | Plural label, fixed. It now fits an empty list, a placeholder, and a count. | None |
+| B3 | `campaign-image-messages.ts:30` | "This version has a placeholder picture, not a photo of your property." | PASS | True for the only image a saved version can hold today, the system's own placeholder. It says what the picture is and does not invite a search for an upload control. | None |
+| B4 | `campaign-image-messages.ts:31` | "This version has N placeholder pictures, not photos of your property." | PASS | Same, in the plural. | None |
+| B3a | `campaign-image-messages.ts:41-42` and `property-photo-summary.tsx` | "1 property photo is saved with this version." and "N property photos are saved with this version." | PASS | Now written only for an image that is approved and not a placeholder, which today no version holds. The component looks at each image, so the false case from the first pass cannot be produced. Nothing mounts the component yet. | None |
+| B2 | `campaign-image-messages.ts:20` | "No property photo is attached yet." | PASS | Unchanged. One edge: an image that is neither placeholder nor approved is counted nowhere, so the summary would say no photo is attached while one is waiting. It cannot happen until photo intake exists. | None |
+| B5 | `persisted-campaign-screen.tsx:36-41,119-121` | Check heading "Ready for approval" and "Checks passed", now keyed on state and the recorded decision | PASS | Fixed. `awaitingApproval` now needs no recorded decision, so a sent-back version reads "Checks passed". Needs changes still wins. I confirmed the send-back keeps the state `awaiting_approval` (`campaign-approval-command.ts`). | None |
+| B6 | `persisted-campaign-screen.tsx:134-135` | "This campaign meets every rule we check." followed, for a sent-back version, by "It was sent back for changes, so it needs a new version before anyone can approve it." | PASS | True and consistent with the recorded decision. The same sentence is reused in steps 5, 6, and 7, so the screen and the walkthrough cannot disagree. | None |
+| B7 | `apps/web/src/copy/user-language.ts:196` | "Checks passed" | PASS | Moved into the copy module beside the other two results, and the module's comment now matches what the file does. | None |
+| B8 | `user-language.ts` (`campaignStateLabel`), used at `marketing/campaigns/page.tsx:45` and `overview-screen.tsx:180` | "Sent back for changes" in place of "Ready for approval" | PASS | The list eyebrow and the overview line read the decision, so a sent-back campaign is no longer called ready. The next step beside it ("Look over this version and what the checks found.") is generic but true, because `deriveCampaignNextActions` now returns "already decided" for a decided version. | None |
+| B10 | `persisted-campaign-screen.tsx:158` | Section heading "Who signed off" over "Sent back for changes by an approver" | SUGGESTION (R1) | Unchanged heading. "Signed off" means approved, so it describes a send-back wrongly, and the new decision-aware states make a send-back easier to reach. Not blocking: the line beneath is exact. | "Who decided" |
+
+**Re-review 2 verdict.** Blocking: 0. Suggestions: 1 (R1). B1 to B8 pass.
+
+### Re-review 3: 008B-AC-010 and 008B-AC-011 (guided steps 5, 6, 7 and the hand-off card)
+
+Each branch was checked against `campaignStanding` (decision first, then the check result) and against the card that renders on the same page for the same state.
+
+| Ref | file:line | Sentence | Verdict | Reason | Proposed replacement |
+|---|---|---|---|---|---|
+| G1 | `apps/web/src/copy/guided-setup-messages.ts:79` | Step 5, undecided and ready: "Your campaign is saved and ready for approval. Nothing has been published or sent." | PASS | `waiting` means no decision and a passing check. True. | None |
+| G2 | `guided-setup-messages.ts:80-81` | Step 5, checks need changes: "Your campaign is saved, and the checks found things to fix first. Each one says what it means and how to fix it." | PASS | True for a blocking result, and it is no longer called ready. | None |
+| G3 | `guided-setup-messages.ts:99` | Step 5, approved: "Your campaign is saved and approved. Nothing has been published or sent." | PASS | A recorded approval is the fact. | None |
+| G4 | `guided-setup-messages.ts:100-101` | Step 5, sent back: "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it." | PASS | True, and word for word what the campaign page says. | None |
+| G5 | `guided-setup-messages.ts:106` | Step 6, waiting and can approve: "Choose Approve this version. Nothing is published or sent." | PASS | The approve control is live in exactly that state. | None |
+| G6 | `guided-setup-messages.ts:107-108` | Step 6, waiting and cannot approve: "Only an approver or your workspace owner can approve. Copy this link and send it to them." | PASS | The hand-off card renders only when the viewer cannot approve, no decision exists, and the checks do not block (`campaign-approval-controls.tsx`). That is the same state this step names. | None |
+| G7 | `guided-setup-messages.ts:121-123` | Step 6, approved: title "This version is approved", body "This version has been approved, so there is nothing left to approve or hand off. Nothing is published or sent." | PASS | True for everyone. It points at the card that records the outcome, which exists on a decided page. | None |
+| G8 | `guided-setup-messages.ts:124-126` | Step 6, sent back: title "This version was sent back", body "This version was sent back for changes, so it can't be approved as it is. It needs a new version before anyone can approve it." | PASS | True, and the control is blocked in this state. | None |
+| G9 | `guided-setup-messages.ts:133-135` | Step 6, needs changes: title "This version needs changes", body "This version needs changes before anyone can approve it. Fix what the checks found, then save it again." | PASS | True, and it points at what the checks found. The step is right. The approval card on the same page contradicts it, see H1. | None |
+| G10 | `guided-setup-messages.ts:149` | Step 7, unknown: "Your campaign won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it." | PASS | Says nothing about a state it does not know. | None |
+| G11 | `guided-setup-messages.ts:150-155` | Step 7, waiting, needs changes, and approved leads, each followed by the shared tail "It won't run as an ad yet: HighLevel and Meta aren't connected. When they are, this is where you'll launch it." | PASS | Each lead matches its standing, and no unapproved campaign is called approved. "Fix first" in the needs-changes lead keeps the launch line coherent. | None |
+| G12 | `guided-setup-messages.ts:153-155` | Step 7, sent back: lead "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it." then the tail | SUGGESTION (R2) | The lead is true. The tail's last line, "this is where you'll launch it", reads as if this campaign will be launched once accounts connect, right after being told it cannot be approved as it is. Minor, and it is the only standing where it over-reaches. | For a sent-back campaign end after the first tail sentence: "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it. It won't run as an ad yet: HighLevel and Meta aren't connected." |
+| H1 | `apps/web/src/features/campaigns/components/campaign-approval-controls.tsx:251,254` | On a version whose checks need changes, the approval card says "Only an approver or your workspace owner can approve a campaign." and, under "How to get access", "Send them this page and ask them to look at this version." | **BLOCKING** (finding H1) | The sentences are unchanged, but 008B-AC-011 now puts them in the one state where they are false. `canApprove` is `campaignMayBeApprovedBy`, which requires the checks not to block, so for a needs-changes version it is false for everybody. `resolveDecision` tests `!canApprove` first, so the card shows the permission message to an approver too, who is told they may not approve, and everyone is told to send the page to an approver, which is the hand-off 008B-AC-011 removed. The intended message, "This version needs changes before anyone can approve it", is in the next branch and cannot be reached. The page then contradicts step 6 (G9) and its own heading "Needs changes". The new test checks the hand-off card and the disabled button, not these words. | Move the `input.blocking` branch above the `!input.canApprove` branch in `resolveDecision`. That uses strings already in the file: "This version needs changes before anyone can approve it." with "First you need: A version where the checks find nothing to fix", "Ask: The campaign creator", and "What to do next: Fix what the checks found, then save it again." Add an assertion that the permission sentence is absent for a creator and for an approver on a needs-changes version, and still present for a creator on a waiting version. |
+| H2 | `campaign-approval-controls.tsx:245` | Decided versions: "Read the decision below. Nothing else happens from this page." | SUGGESTION (R3) | The decision, "Who signed off", is rendered above the approval card, not below it. Unchanged text, but it shows on every decided version AC-010 covers. | "Read who decided, above. Nothing else happens from this page." |
+
+**Re-review 3 verdict.** Blocking: **1** (H1). Suggestions: 2 (R2, R3). G1 to G11 pass.
+
+### Observed, not counted
+
+1. No screen lets a loan officer save a new version of an existing campaign; the routes are create, list, and view. "Needs a new version" and "Fix what the checks found, then save it again" are true statements, and the PRD asks for them, but the reader is not told which control to use. Two sentences passed in the first pass say "save a new version" (A7 in `reporting-messages.ts`, and B9 of the first pass in `campaign-approval-controls.tsx`) and have the same gap, which I did not verify at the time. A pointer to "Create an Open House Boost" is the true action today if the product owner wants one.
+2. Step 6 for an unread campaign (`unknown`) keeps the two long-standing answers ("Choose Approve this version" or "Copy this link"). That is rare, because step 6 needs a campaign page to point at, so I treated it as acceptable.
+
+### Summary of this section
+
+| Part | Verdict | Blocking | Suggestions |
+|---|---|---|---|
+| 008C-AC-007 (A3, S1 to S4) | **PASS (no blocking finding)** | 0 | 1 carried (S5) |
+| Part B (B1 to B8) | No blocking finding | 0 | 1 (R1) |
+| 008B-AC-010 and 008B-AC-011 (G1 to G12, H1, H2) | **1 blocking (H1)** | 1 | 2 (R2, R3) |
+
+H1 does not affect 008C-AC-007. It blocks the 008B-AC-011 truthfulness claim until `resolveDecision` is reordered and a re-review of those strings finds no blocking finding.

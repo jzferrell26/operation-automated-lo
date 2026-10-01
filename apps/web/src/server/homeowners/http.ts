@@ -12,7 +12,7 @@ import { z } from "zod";
 import { campaignCommandAuthErrorResponse } from "../campaign-command-http.js";
 import { campaignDatabasePool } from "../campaign-persistence-runtime.js";
 import { HOME_REPORT_HEADERS, HomeownerError, readBoundedJson } from "./errors.js";
-import { canWriteHomeReports, homeHash, homeRuntime, HomeEnvironmentSchema } from "./runtime.js";
+import { canWriteHomeReports, homeHash, homeReportsEnabled, homeRuntime } from "./runtime.js";
 import { generateHomeReport, handoffHomeReport, shareHomeReport } from "./service.js";
 import { consumeSharedReportBudget } from "./share-throttle.js";
 
@@ -348,7 +348,7 @@ export async function handleSharedHomeReport(
   try {
     if (!/^[a-f0-9]{64}$/u.test(secret))
       return homeJson({ message: "This report link is unavailable or expired." }, 404);
-    if (HomeEnvironmentSchema.parse(environment).OALO_HOMEOWNER_REPORTS !== "enabled")
+    if (!homeReportsEnabled(environment))
       return homeJson({ message: "This report link is unavailable or expired." }, 404);
     // Anyone can ask, and a well-shaped link costs a database lookup whether or not it is real, so a
     // caller that asks too often is refused before that work starts (independent review, M-1).

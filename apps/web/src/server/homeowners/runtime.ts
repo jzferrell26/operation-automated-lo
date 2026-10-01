@@ -41,6 +41,17 @@ export const HomeEnvironmentSchema = z
   })
   .passthrough();
 export type HomeEnvironment = z.infer<typeof HomeEnvironmentSchema>;
+/**
+ * Whether homeowner reports are switched on, read without validating any other homeowner setting.
+ *
+ * The public report routes answer anyone and need only this one answer. Reading it through the full
+ * schema meant one mistyped operator setting, such as an entry in the paid-lookup allowlist, made every
+ * shared link fail, and the failure named the setting to whoever asked (independent review, M-2).
+ */
+export function homeReportsEnabled(environment: unknown): boolean {
+  const parsed = z.object({ OALO_HOMEOWNER_REPORTS: z.string().optional() }).safeParse(environment);
+  return parsed.success && parsed.data.OALO_HOMEOWNER_REPORTS === "enabled";
+}
 export const homeHash = (value: string) => createHash("sha256").update(value).digest("hex");
 export const homeSecret = () => randomBytes(32).toString("hex");
 export function canWriteHomeReports(principal: Readonly<AuthenticatedPrincipal>): boolean {

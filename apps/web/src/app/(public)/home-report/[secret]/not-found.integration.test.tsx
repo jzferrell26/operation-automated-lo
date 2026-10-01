@@ -178,3 +178,27 @@ describe("the report page, for a caller that asks too often", () => {
     await expect(open(goodShape)).resolves.toBeTruthy();
   });
 });
+
+describe("the report page, while another homeowner setting is mistyped", () => {
+  const goodShape = "b2".repeat(32);
+
+  async function open(secret: string) {
+    return SharedReportPage({ params: Promise.resolve({ secret }) });
+  }
+
+  it("still shows a live link, because only the on-or-off setting decides whether it is answered", async () => {
+    vi.stubEnv("OALO_HOMEOWNER_ALLOWED_LOCATION_IDS", "00000000-0000-4000-8000-00000000000");
+    vi.stubEnv("OALO_HOMEOWNER_MONTHLY_LOOKUP_LIMIT", "many");
+    lookup.report.mockResolvedValue({ id: "hreport_real" });
+
+    await expect(open(goodShape)).resolves.toBeTruthy();
+  });
+
+  it("sends a link with no report behind it to the usual page rather than an error", async () => {
+    vi.stubEnv("OALO_HOMEOWNER_ALLOWED_LOCATION_IDS", "00000000-0000-4000-8000-00000000000");
+    lookup.report.mockResolvedValue(null);
+
+    await expect(open(goodShape)).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(lookup.report).toHaveBeenCalledTimes(1);
+  });
+});

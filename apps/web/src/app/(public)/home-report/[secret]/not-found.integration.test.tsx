@@ -9,6 +9,10 @@ import {
   SHARED_REPORT_UNAVAILABLE_BODY,
   SHARED_REPORT_UNAVAILABLE_TITLE,
 } from "../../../../copy/shared-report-messages.js";
+import {
+  resetSharedReportBudgetsForTests,
+  SHARED_REPORT_READS_PER_MINUTE,
+} from "../../../../server/homeowners/share-throttle.js";
 import SharedReportPage from "./page.js";
 import SharedReportNotFound, { metadata } from "./not-found.js";
 
@@ -37,10 +41,15 @@ vi.mock("next/navigation.js", () => ({
     throw new Error("NEXT_NOT_FOUND");
   },
 }));
+// The page reads the caller's address from the request, which a direct call has no scope for.
+const incoming = vi.hoisted(() => ({ headers: new Headers() }));
+vi.mock("next/headers.js", () => ({ headers: async () => incoming.headers }));
 
 beforeEach(() => {
   vi.resetAllMocks();
   vi.stubEnv("OALO_HOMEOWNER_REPORTS", "enabled");
+  incoming.headers = new Headers();
+  resetSharedReportBudgetsForTests();
 });
 
 afterEach(() => {
@@ -124,5 +133,48 @@ describe("the report page, for a link it cannot show", () => {
     await expect(open(goodShape)).rejects.toThrow("NEXT_NOT_FOUND");
     await expect(open("0".repeat(64))).rejects.toThrow("NEXT_NOT_FOUND");
     expect(lookup.report).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("the report page, for a caller that asks too often", () => {
+  const goodShape = "b2".repeat(32);
+  const caller = () => new Headers({ "x-vercel-forwarded-for": "203.0.113.7" });
+
+  async function open(secret: string) {
+    return SharedReportPage({ params: Promise.resolve({ secret }) });
+  }
+
+  it("sends a caller past its limit to the same page, without looking anything up", async () => {
+    incoming.headers = caller();
+    lookup.report.mockResolvedValue(null);
+    for (let used = 0; used < SHARED_REPORT_READS_PER_MINUTE; used += 1)
+      await expect(open(goodShape)).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(lookup.report).toHaveBeenCalledTimes(SHARED_REPORT_READS_PER_MINUTE);
+
+    await expect(open(goodShape)).rejects.toThrow("NEXT_NOT_FOUND");
+    await expect(open("0".repeat(64))).rejects.toThrow("NEXT_NOT_FOUND");
+
+    expect(lookup.report).toHaveBeenCalledTimes(SHARED_REPORT_READS_PER_MINUTE);
+  });
+
+  it("keeps one caller's refusal from reaching a homeowner on another connection", async () => {
+    incoming.headers = caller();
+    lookup.report.mockResolvedValue(null);
+    for (let used = 0; used <= SHARED_REPORT_READS_PER_MINUTE; used += 1)
+      await open(goodShape).catch(() => undefined);
+
+    incoming.headers = new Headers({ "x-vercel-forwarded-for": "198.51.100.9" });
+    lookup.report.mockResolvedValue({ id: "hreport_other" });
+
+    await expect(open(goodShape)).resolves.toBeTruthy();
+  });
+
+  it("does not spend an allowance on a link that is not shaped like one", async () => {
+    incoming.headers = caller();
+    lookup.report.mockResolvedValue({ id: "hreport_real" });
+    for (let used = 0; used < SHARED_REPORT_READS_PER_MINUTE * 2; used += 1)
+      await expect(open("not-a-link")).rejects.toThrow("NEXT_NOT_FOUND");
+
+    await expect(open(goodShape)).resolves.toBeTruthy();
   });
 });

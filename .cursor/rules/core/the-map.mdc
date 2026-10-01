@@ -9,6 +9,16 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
+### September 30, 2026 finish-line prep
+
+- `main` is unchanged at `131c7f4` (PR #72). The canonical gate passed there on 2026-09-24 (run `35972386828`).
+- **The dependency gate now fails for every new pull request.** Advisories published after that run put 21 findings on the lockfile (1 Critical, 6 High), and `pnpm verify` runs `pnpm audit --audit-level=high` with no CI path filter.
+  - The Critical (GHSA-vcvr-r3jv-pc5j, `next/og` `ImageResponse`) does not reach this app: there is no `next/og` import and no OG image route.
+  - PRD-008a fixes all 21.
+- **Remaining agent-executable work** is authored as [PRD-008 Finish-Line Hardening](../../../library/requirements/backlog/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md). Its "Gauntlet scope contract" is the Phase 0 input for a run, which can reach 100% with no operator dependency.
+- **Remaining human-only work**, in dependency order, is the [finish-line operator checklist](../../../library/knowledge/private/operations/finish-line-operator-checklist.md). Start there for anything that needs an account, a credential, or a decision.
+- No acceptance-criterion status changed in this update.
+
 ### September 24, 2026 release update
 
 - The authenticated runtime and password/onboarding work merged as PR #67 (`58d77fd`) on September 22. The older C1/unmerged statements below describe the September 16 checkpoint, not the current code.

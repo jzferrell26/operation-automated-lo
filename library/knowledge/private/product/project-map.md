@@ -1,6 +1,6 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.12 | Date: September 24, 2026 | Status: Active
+> Category: Product Operations | Version: 1.13 | Date: September 30, 2026 | Status: Active
 
 The canonical internal map of the product boundary, system flow, implementation status, external gates, and next work for Operation Automated LO.
 
@@ -45,6 +45,41 @@ The following September 24 update supersedes the older tip, uncomposed-authentic
 | Add-on authority | PRD-007 implements the authorized homeowner-intelligence slice from PRD-002e. Other future-option PRD-002 modules remain backlog. |
 
 Operational detail: [Homeowner AVM activation](../../../../docs/operations/homeowner-avm-activation.md). Implementation and review evidence: [PRD-007](../../../requirements/in-work/prd-007-homeowner-reports/prd-007-homeowner-reports-index.md). The formal PRD-001 ledger remains the source for external acceptance, and its counts are not implicitly changed by this map update.
+
+### September 30 finish-line split
+
+The remaining work now splits into two documents. A Gauntlet run can finish the first with no operator.
+
+| Remaining work | Owner | Where |
+| --- | --- | --- |
+| Agent-executable | Gauntlet run | [PRD-008 Finish-Line Hardening](../../../requirements/backlog/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) |
+| Human-only | Operator and product owner | [Finish-line operator checklist](../operations/finish-line-operator-checklist.md) |
+
+PRD-008 covers:
+
+- the dependency audit, which fails for every new pull request since advisories were published after 2026-09-24 (1 Critical, 6 High);
+- the PR #70 group;
+- two Medium and six Low security findings;
+- the fabricated approved property image in saved campaign versions;
+- the approve control that stays live after a decision;
+- user-language gaps in homeowner report messages;
+- the missing homeowner pgTAP suite;
+- three design states that were never photographed;
+- records that still say Draft after merging;
+- an independent review of PRD-007.
+
+The checklist covers:
+
+- owner decisions;
+- password-recovery email on the hosted app;
+- the PRD-005e deployed proof;
+- preview smoke, portal, Test Link, and listing;
+- live valuations;
+- the HighLevel App Test;
+- credential-stuffing controls before real customer accounts;
+- the External Evidence Sprint waves.
+
+No criterion status changed with this split.
 
 ## Historical September 16 status snapshot
 
@@ -265,6 +300,7 @@ PRD-001 core is complete only when all of the following are true:
 
 ## Changelog
 
+- v1.13 (2026-09-30): Finish-line split. Added PRD-008 (agent-executable finish-line hardening, in backlog) and the finish-line operator checklist (human-only items in dependency order). Recorded that the dependency audit now fails on the `131c7f4` lockfile because of advisories published after the 2026-09-24 green run, and that the Critical `next/og` advisory does not reach this app. Documentation only: no criterion status changed. The v1.12 entry for the 2026-09-24 release update is still missing from this changelog; PRD-008e (008E-AC-011) restores it.
 - v1.11 (2026-09-19): Handoff reconciliation (PRD-005d). Recorded PRD-004d Complete: `GGL-008` and `GGL-009` VERIFIED (PR #65, `c140f11`, CI run `35058370796`, head `dab2ec6`); PR #66 closed and unmerged; pull request #67 opened 2026-09-21, not the gate's proof. Recorded completion review finding C1: on `main` the exported campaign routes and authenticated pages still compose their authentication ports from a static local synthetic default outside synthetic mode; closing it is owned by PRD-005 (005a, 005b), in progress on branch `claude/completion-review-2026-09-19`, unmerged. No acceptance-criterion status changed; `GGL-B01` through `GGL-B03` stay BLOCKED, now sequenced behind PRD-005a and 005b.
 - v1.10 (2026-09-16): Copy-overclaim remediation on the PRD-004e listing content after a quality audit reopened three criteria: collateral and present-tense identity-enforcement claims removed from the customer FAQ, three distribution-implying phrases removed from the customer overview and replaced with an explicit "this release does not publish or distribute" statement, and the claim audit rebuilt with per-claim gates. `004E-AC-004` unchanged. Re-audit owed; nothing claimed verified.
 - v1.9 (2026-09-16): Production-tonight requirements authoring. Added PRD-004d (real-Postgres command gate, owns `GGL-B16`) and PRD-004e (listing content and demo script), the operator runbook under private `operations/`, the internal listing copy pack, and the first customer-facing drafts under `knowledge/public/`. Recorded Standard as the listing-type default for a new app entry. Documentation only: no acceptance-criterion status changed, no deferred G2 row flipped, no G1/G4/G8 reopened, no production traffic claimed.

@@ -367,26 +367,41 @@ let loggedMissingClientAddressHeader = false;
  */
 export const UNKNOWN_CLIENT_ADDRESS_BUCKET = "\u0000unknown-address";
 
+/** The headers the client address is read from, most-specific first. */
+const CLIENT_ADDRESS_HEADERS = Object.freeze([
+  "x-vercel-forwarded-for",
+  "x-forwarded-for",
+  "x-real-ip",
+] as const);
+
 /**
- * D4, open question. The platform presents the client address in a forwarded header, and the
- * exact header on Vercel is the one thing about this rate limiter the author could not verify
- * against Vercel's own documentation: the agent that wrote it had no network access. Both
- * conventional spellings are read, most-specific first.
+ * D4. The platform presents the client address in a forwarded header, and these are Vercel's.
  *
- * When neither is present the address is unknown. The absence is logged once per process, by
- * header name and never by value, so a deployment that never presents one is visible rather than
- * silent; `consumeAddressLimit` is what decides where an unknown address is counted.
+ * Checked against <https://vercel.com/docs/headers/request-headers> on 2026-09-19 (PRD-005/006
+ * batch security audit, Ruling 6; the page was last updated 2025-12-13). Vercel sets and
+ * overwrites all three, so a caller cannot choose the value; `x-real-ip` and
+ * `x-vercel-forwarded-for` are documented as identical to `x-forwarded-for`, which is the one
+ * Vercel says could be overwritten by a proxy placed on top of Vercel. Reading
+ * `x-vercel-forwarded-for` first therefore keeps the limits keyed on the platform's value even
+ * under such a proxy, and it is simply absent anywhere else.
+ *
+ * This precedence is correct for Vercel, the only supported host. Hosting anywhere else requires
+ * revisiting which header that platform sets and overwrites before any of these is trusted.
+ *
+ * When none is present the address is unknown. The absence is logged once per process, at error
+ * level so it reaches the stream a deployment watches, by header name and never by value, because
+ * it means every caller on the deployment is sharing one window (Ruling 5);
+ * `consumeAddressLimit` is what decides where an unknown address is counted.
  */
 export function clientAddressFor(request: Request): string | undefined {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const first = forwarded?.split(",")[0]?.trim();
-  if (first !== undefined && first.length > 0 && first.length <= 100) return first;
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  if (realIp !== undefined && realIp.length > 0 && realIp.length <= 100) return realIp;
+  for (const name of CLIENT_ADDRESS_HEADERS) {
+    const first = request.headers.get(name)?.split(",")[0]?.trim();
+    if (first !== undefined && first.length > 0 && first.length <= 100) return first;
+  }
   if (!loggedMissingClientAddressHeader) {
     loggedMissingClientAddressHeader = true;
-    console.warn(
-      "password-authentication: neither x-forwarded-for nor x-real-ip is present; per-address rate limits are not applied on this deployment.",
+    console.error(
+      "password-authentication: none of x-vercel-forwarded-for, x-forwarded-for, or x-real-ip is present; every caller on this deployment shares one per-address rate-limit window.",
     );
   }
   return undefined;

@@ -4,10 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 import {
   deriveCampaignNextActions,
   projectCampaignWorkspace,
-  type AuthenticatedPrincipal,
   type CampaignWorkspaceProjection,
 } from "@oalo/application";
-import { ApprovalDecisionSchema } from "@oalo/contracts";
 
 import { createLocalSyntheticPrincipal } from "../../../server/authenticated-principal.js";
 import {
@@ -15,97 +13,15 @@ import {
   OPEN_HOUSE_DRAFT_INPUT,
 } from "../../../server/campaign-command-test-support.js";
 import { compileOpenHouseDraft } from "../../../server/open-house-draft.js";
+import {
+  APPROVER,
+  awaitingApprovalProjection,
+  sentBackProjection,
+} from "./campaign-decision.test-support.js";
 import { PersistedCampaignScreen } from "./persisted-campaign-screen.js";
 
 // The approval card refreshes the page after a decision (PRD-008b D2), so it needs an app router.
 vi.mock("next/navigation.js", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
-
-const APPROVER = {
-  ...createLocalSyntheticPrincipal(),
-  role: "campaign_approver" as const,
-  actorRef: "principal_localApprover001",
-  actorId: "00000000-0000-4000-8000-000000000812",
-};
-
-/** A fresh draft, read the way an approver reads it before anyone has decided. */
-async function awaitingApprovalView(): Promise<CampaignWorkspaceProjection> {
-  const compiled = await compileOpenHouseDraft(
-    OPEN_HOUSE_DRAFT_INPUT,
-    createLocalSyntheticPrincipal(),
-    LOCAL_SYNTHETIC_ENV,
-  );
-  return projectCampaignWorkspace(
-    {
-      version: compiled.version,
-      preflight: compiled.preflight,
-      state: "awaiting_approval" as const,
-      rowVersion: 1,
-      updatedAt: compiled.version.createdAt,
-    },
-    APPROVER,
-    "postgres",
-  );
-}
-
-/**
- * The same draft after somebody pressed "Send back for changes".
- *
- * A send-back does not move the campaign out of `awaiting_approval`: the approval command records
- * the decision and sets the state to `awaiting_approval` again (`campaign-approval-command.ts`,
- * `toState`). The only thing on the record that says it happened is the decision, so the view is
- * built through the real projection with that decision attached, the way the page reads it after
- * the refresh.
- */
-async function sentBackView(
-  principal: AuthenticatedPrincipal = APPROVER,
-): Promise<CampaignWorkspaceProjection> {
-  const compiled = await compileOpenHouseDraft(
-    OPEN_HOUSE_DRAFT_INPUT,
-    createLocalSyntheticPrincipal(),
-    LOCAL_SYNTHETIC_ENV,
-  );
-  const { artifacts } = compiled.version.manifest;
-  return projectCampaignWorkspace(
-    {
-      version: compiled.version,
-      preflight: compiled.preflight,
-      state: "awaiting_approval" as const,
-      rowVersion: 2,
-      updatedAt: compiled.version.createdAt,
-      approval: ApprovalDecisionSchema.parse({
-        schemaVersion: 1,
-        approvalRef: "approval_sentBack001",
-        locationRef: compiled.version.locationRef,
-        campaignRef: compiled.version.campaignRef,
-        campaignVersionRef: compiled.version.campaignVersionRef,
-        manifestHash: compiled.version.manifestHash,
-        preflightResultHash: compiled.preflight.resultHash,
-        actorRef: "principal_localApprover001",
-        actorKind: "human",
-        actorRole: "approver",
-        decidedAt: "2026-10-01T12:00:00.000Z",
-        ipAuditHash: "e".repeat(64),
-        decision: "rejected",
-        snapshot: {
-          pageVersionRef: artifacts.pageVersionRef,
-          pdfVersionRef: artifacts.pdfVersionRef,
-          creativeVersionRef: artifacts.creativeVersionRef,
-          copyVersionRef: artifacts.copyVersionRef,
-          emailPackageVersionRef: artifacts.emailPackageVersionRef,
-          smsPackageVersionRef: artifacts.smsPackageVersionRef,
-          disclosureVersionRef: artifacts.disclosureVersionRef,
-          targetingHash: "1".repeat(64),
-          budgetHash: "2".repeat(64),
-          datesHash: "3".repeat(64),
-          formVersionRef: artifacts.formVersionRef,
-          destinationVersionRef: artifacts.destinationVersionRef,
-        },
-      }),
-    },
-    principal,
-    "postgres",
-  );
-}
 
 const SENT_BACK_NEEDS_NEW_VERSION =
   "It was sent back for changes, so it needs a new version before anyone can approve it.";
@@ -176,7 +92,7 @@ describe("persisted campaign approval screen", () => {
    */
   it("stops saying an approved campaign is ready for approval", async () => {
     const approved: CampaignWorkspaceProjection = {
-      ...(await awaitingApprovalView()),
+      ...(await awaitingApprovalProjection()),
       state: "approved",
       rowVersion: 2,
       approval: {
@@ -203,7 +119,7 @@ describe("persisted campaign approval screen", () => {
   });
 
   it("still says an awaiting campaign is ready for approval", async () => {
-    render(<PersistedCampaignScreen campaign={await awaitingApprovalView()} />);
+    render(<PersistedCampaignScreen campaign={await awaitingApprovalProjection()} />);
 
     expect(screen.getAllByText("Ready for approval").length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "Ready for approval" })).toBeInTheDocument();
@@ -223,7 +139,7 @@ describe("persisted campaign approval screen", () => {
    */
   describe("after the version was sent back for changes", () => {
     it("never says the campaign is ready for approval, in the badge, the card, or the heading", async () => {
-      render(<PersistedCampaignScreen campaign={await sentBackView()} />);
+      render(<PersistedCampaignScreen campaign={await sentBackProjection()} />);
 
       expect(screen.queryAllByText("Ready for approval")).toHaveLength(0);
       expect(screen.queryByRole("heading", { name: "Ready for approval" })).toBeNull();
@@ -231,7 +147,7 @@ describe("persisted campaign approval screen", () => {
     });
 
     it("says in the badge and in where it stands that it was sent back", async () => {
-      render(<PersistedCampaignScreen campaign={await sentBackView()} />);
+      render(<PersistedCampaignScreen campaign={await sentBackProjection()} />);
 
       // The header badge and the "Where it stands" card, as exact phrases on their own.
       expect(screen.getAllByText("Sent back for changes")).toHaveLength(2);
@@ -241,7 +157,7 @@ describe("persisted campaign approval screen", () => {
     });
 
     it("no longer says an approver can sign off, and says what it needs instead", async () => {
-      render(<PersistedCampaignScreen campaign={await sentBackView()} />);
+      render(<PersistedCampaignScreen campaign={await sentBackProjection()} />);
 
       expect(screen.queryByText(/An approver can sign off on it now/u)).toBeNull();
       expect(screen.getByText(/This campaign meets every rule we check\./u)).toHaveTextContent(
@@ -255,7 +171,7 @@ describe("persisted campaign approval screen", () => {
     ])(
       "does not offer approval, or wait for an approver, as a next step for %s",
       async (_who, principal) => {
-        render(<PersistedCampaignScreen campaign={await sentBackView(principal)} />);
+        render(<PersistedCampaignScreen campaign={await sentBackProjection(principal)} />);
 
         const nextSteps = screen.getByRole("region", { name: "Your next steps" });
         expect(nextSteps).not.toHaveTextContent("Approve this version.");
@@ -265,7 +181,7 @@ describe("persisted campaign approval screen", () => {
     );
 
     it("keeps the approve control blocked and says what was recorded", async () => {
-      render(<PersistedCampaignScreen campaign={await sentBackView()} />);
+      render(<PersistedCampaignScreen campaign={await sentBackProjection()} />);
 
       expect(screen.getByRole("button", { name: "Approve this version" })).toBeDisabled();
       expect(screen.queryByRole("button", { name: "Send back for changes" })).toBeNull();

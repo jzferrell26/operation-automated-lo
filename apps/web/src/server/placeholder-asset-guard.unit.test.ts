@@ -74,7 +74,9 @@ async function findPlaceholderAssetHits(
   base: string,
   roots: readonly string[],
 ): Promise<readonly string[]> {
-  const files = (await Promise.all(roots.map((root) => collectSourceFiles(join(base, root))))).flat();
+  const files = (
+    await Promise.all(roots.map((root) => collectSourceFiles(join(base, root))))
+  ).flat();
   const hits = await Promise.all(
     files.map(async (file) => {
       const lines = (await readFile(file, "utf8")).split(/\r?\n/u);

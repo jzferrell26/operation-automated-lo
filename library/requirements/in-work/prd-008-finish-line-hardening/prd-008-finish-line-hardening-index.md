@@ -1,6 +1,6 @@
 # PRD-008: Finish-Line Hardening
 
-> **Status:** Backlog (authored 2026-09-30; moves to `in-work/` at Gauntlet start)
+> **Status:** In Work (authored 2026-09-30; moved from `backlog/` to `in-work/` at Gauntlet start, 2026-10-01, branch `claude/gauntlet-prd-008`)
 > **Priority:** P0. Every item here is open on `main` at `131c7f4`. One of them, the dependency audit, currently fails the canonical gate for every new pull request. All of them can be closed inside the repository.
 > **Effort:** L (1-3d of agent time across five sub-PRDs, no operator time)
 > **Schema changes:** Additive (008a widens one rate-limit scope list; 008d adds a pgTAP suite and no schema)

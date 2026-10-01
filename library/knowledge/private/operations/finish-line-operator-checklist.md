@@ -2,7 +2,7 @@
 
 > Category: Operations | Version: 1.0 | Date: September 30, 2026 | Status: Active
 
-This page lists every remaining item that only a person can close: a decision, an account, a credential, or a live provider. Items are in dependency order. Agent-executable work is in [PRD-008](../../../requirements/backlog/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md), which a Gauntlet run can finish without anything on this page.
+This page lists every remaining item that only a person can close: a decision, an account, a credential, or a live provider. Items are in dependency order. Agent-executable work is in [PRD-008](../../../requirements/in-work/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md), which a Gauntlet run can finish without anything on this page.
 
 **Related:** [Project map](../product/project-map.md) · [Agent terrain map](../../../../.cursor/rules/core/the-map.mdc) · [Production-tonight operator runbook](production-tonight-operator-runbook.md) · [External Evidence Sprint](../../../../NEXT_BATCH_LEDGER.md)
 

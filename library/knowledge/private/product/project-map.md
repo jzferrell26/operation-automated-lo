@@ -52,7 +52,7 @@ The remaining work now splits into two documents. A Gauntlet run can finish the 
 
 | Remaining work | Owner | Where |
 | --- | --- | --- |
-| Agent-executable | Gauntlet run | [PRD-008 Finish-Line Hardening](../../../requirements/backlog/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) |
+| Agent-executable | Gauntlet run | [PRD-008 Finish-Line Hardening](../../../requirements/in-work/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) |
 | Human-only | Operator and product owner | [Finish-line operator checklist](../operations/finish-line-operator-checklist.md) |
 
 PRD-008 covers:

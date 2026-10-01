@@ -5,7 +5,11 @@ import {
   REVIEW_FRAMES,
   settleForScreenshot,
 } from "../helpers/design-quality.js";
-import { READY_OPEN_HOUSE, fillTheOpenHouseDraft } from "../helpers/open-house-draft.js";
+import {
+  FINISHED_OPEN_HOUSE,
+  READY_OPEN_HOUSE,
+  fillTheOpenHouseDraft,
+} from "../helpers/open-house-draft.js";
 import {
   continueToPanel,
   expectNoExternalRequests,
@@ -13,6 +17,7 @@ import {
   guardLocalOrigin,
   pointThePanelAtTheSubmitControl,
   restartGuidedSetup,
+  runTheChecksFromTheWalkthrough,
   saveTheCampaign,
   seededCredentials,
   signInExisting,
@@ -28,10 +33,11 @@ import {
 /**
  * PRD-006d D3 and D8, for the five guided-setup steps nothing photographed.
  *
- * `design-quality.spec.ts` takes steps 1 and 2 at 1440 and 768. Steps 3 through 7 were scored by
+ * `design-quality.spec.ts` takes steps 1 and 2 at all four frames. Steps 3 through 7 were scored by
  * eye and never captured, because reaching them needs the whole journey: a saved campaign, a
  * person who can approve it, and a person who cannot. They are taken here, at all four frames in
- * both themes, with the same four checks every other named state gets.
+ * both themes, with the same four checks every other named state gets. So is step 5's second
+ * answer, the one a campaign the checks refuse gets (PRD-008d, S-3).
  *
  * **Nothing writes progress into the database.** Every state below is reached by walking the
  * walkthrough with the controls a person uses. A spec that inserted a `guided_setup.v1` row to
@@ -263,6 +269,53 @@ test("the guided setup's step 6 meets the bar on the hand-off path", async ({ pa
   const handOffStep = page.getByRole("dialog", { name: "Approve, or hand it to an approver" });
   await expect(handOffStep).toContainText("Only an approver or your workspace owner can approve.");
   await captureStep(page, "step-6-hand-off");
+
+  await putTheWalkthroughAside(page);
+  expectNoExternalRequests(guard);
+});
+
+/**
+ * PRD-008d 008D-AC-007, S-3: step 5's needs-changes answer, the sign-off's "Guided setup step 5,
+ * read the result, needs changes" row.
+ *
+ * The approver's path above saves a campaign the checks accept, because that is the journey
+ * PRD-006c D3's budget is written against, so it photographs step 5's ready answer only. The other
+ * answer needs a draft the checks refuse, and the refusal is the product's own: an open house that
+ * finished years ago is the blocking finding `OPEN_HOUSE_DATES_INVALID`
+ * (`tests/browser/helpers/open-house-draft.ts`), the one rule this draft fails. Everything else in
+ * it is the draft the ready picture saved, so the two pictures differ by the answer and not by the
+ * page behind it.
+ *
+ * It is the seeded creator, walked from step 1 with the controls a person uses and saved from
+ * inside the walkthrough, so no sign-up is spent and nothing writes progress into the database. It
+ * runs after the hand-off case, which leaves the same person's walkthrough put aside, and before
+ * `review-campaign-decision.spec.ts`, which restarts and dismisses it again before it does anything.
+ *
+ * The answer is asserted in words before anything is photographed, because the picture is only
+ * compared on the runner that drew it: the needs-changes sentence, the finding's own description,
+ * and no ready sentence anywhere in the panel.
+ */
+test("the guided setup's step 5 meets the bar when the checks refuse the campaign", async ({
+  page,
+}) => {
+  // The hand-off case's journey and one picture group. Measured on 2026-10-01 in the review
+  // composition on a Windows workstation: 27 s. The budget is the hand-off case's.
+  test.setTimeout(240_000);
+  const guard = await guardLocalOrigin(page);
+  const { creatorEmail, password } = seededCredentials();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await signInExisting(page, creatorEmail, password);
+
+  await restartGuidedSetup(page);
+  await walkToTheCreateStep(page);
+  await fillTheOpenHouseDraft(page, FINISHED_OPEN_HOUSE);
+  await runTheChecksFromTheWalkthrough(page);
+
+  const resultStep = page.getByRole("dialog", { name: "Read the result" });
+  await expect(resultStep).toContainText("the checks found things to fix first");
+  await expect(resultStep).toContainText("The open-house dates are expired or out of order.");
+  await expect(resultStep).not.toContainText("ready for approval");
+  await captureStep(page, "step-5-read-the-result-needs-changes");
 
   await putTheWalkthroughAside(page);
   expectNoExternalRequests(guard);

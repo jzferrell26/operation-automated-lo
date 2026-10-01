@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { SIGN_UP } from "../../../apps/web/src/copy/auth-messages.js";
+import { SIGN_UP, VERIFY_EMAIL } from "../../../apps/web/src/copy/auth-messages.js";
 import {
   REVIEW_FRAMES,
   captureNamedState,
@@ -28,6 +28,7 @@ import {
   putTheWalkthroughAside,
   REVIEW_THEMES,
 } from "./helpers/review-session.js";
+import { issueVerificationTokenForTheSeededOutsider } from "./helpers/verification-token.js";
 
 /**
  * PRD-006d 006D-AC-007 through 006D-AC-012, for the screens only a real session reaches.
@@ -396,15 +397,32 @@ test("the workspace after a saved password meets the design quality bar", async 
 });
 
 /**
- * 006C-AC-020's review half at the two frames PRD-006c's own accessibility matrix leaves out, and
- * 006D-AC-018 from the review side.
+ * 006C-AC-020's review half for steps 1 and 2, at all four frames, and 006D-AC-018 from the review
+ * side.
+ *
+ * PRD-008d 008D-AC-008, the sign-off's A-1 cells. Until 2026-10-01 this took 1440 and 768 only, the
+ * two frames PRD-006c's own accessibility matrix leaves out, and the sign-off recorded steps 1 and
+ * 2 at 1180 and 390 as "pass, asserted (A-1)": `guided-setup.accessibility.spec.ts` runs axe, the
+ * motion check, the target sizes, the ring, and the panel clearance there, and draws no picture.
+ * An assertion holds a rule; it does not hold a composition. So the same cell procedure now runs
+ * at all four frames and every cell has a baseline. Each cell starts the walkthrough again and
+ * photographs from the top of the page, which is how the 1440 and 768 cells were drawn and signed:
+ * the top is the canonical start for step 2, which points at nothing on the page, and it is the
+ * opening of the overview for step 1, whose quick actions sit further down. That the panel is
+ * clear of those quick actions once the product has scrolled to them stays asserted where it was,
+ * in the accessibility spec.
  *
  * It signs in as the seeded creator and restarts the walkthrough rather than creating an account,
  * so the run's sign-up budget stays where PRD-006c's specs need it. `restartGuidedSetup` is what a
  * person would use, and using it here is what makes a spec about a seeded person repeatable.
  */
-test("the guided setup meets the bar at 1440 and 768, in both themes", async ({ page }) => {
-  test.setTimeout(240_000);
+test("the guided setup's steps 1 and 2 meet the bar at every frame, in both themes", async ({
+  page,
+}) => {
+  // Twice the cells it had, each a restart, two pictures, and a dismissal. Measured on 2026-10-01
+  // in the review composition on a Windows workstation: 40 s. The budget is the old one scaled
+  // with the cells, which leaves the runner's throttled processor several times that.
+  test.setTimeout(360_000);
   const guard = await guardLocalOrigin(page);
   const { creatorEmail, password } = seededCredentials();
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -412,9 +430,7 @@ test("the guided setup meets the bar at 1440 and 768, in both themes", async ({ 
 
   for (const theme of REVIEW_THEMES) {
     await chooseThemeFromTheHeader(page, theme);
-    for (const frame of REVIEW_FRAMES.filter((candidate) =>
-      ["1440", "768"].includes(candidate.name),
-    )) {
+    for (const frame of REVIEW_FRAMES) {
       await page.setViewportSize({ width: frame.width, height: frame.height });
       await restartGuidedSetup(page);
       await settleForScreenshot(page);
@@ -517,7 +533,11 @@ test("the boundary review page is not served in review mode", async ({ page }) =
 type PublicNamedState = Readonly<{
   screen: string;
   state: string;
-  path: string;
+  /**
+   * Where the state starts. A function for the one state whose address has to be made fresh for
+   * each theme: a link that can be spent once is spent by the first theme's confirmation.
+   */
+  path: string | (() => Promise<string>);
   reach?: (page: Page) => Promise<void>;
 }>;
 
@@ -575,6 +595,32 @@ const PUBLIC_NAMED_STATES: readonly PublicNamedState[] = Object.freeze([
       await expect(page.locator("form").getByRole("alert")).toContainText("This link has expired.");
     },
   },
+  /**
+   * PRD-008d 008D-AC-007, S-1, the sign-off's "Verify email, confirmed" row.
+   *
+   * The one state here that needs a live link. The review composition has no sending domain, so
+   * the product never issues one (`helpers/verification-token.ts` says why and what that helper
+   * replaces). A fresh token is minted per theme, because confirming spends it, and the person then
+   * presses Confirm on the product's own page and the real route answers. The confirmed sentence
+   * and the page's way onward are asserted here rather than left to the picture, which is only
+   * compared on the runner that drew it.
+   *
+   * Two confirmations per run against the verify limit of twenty an hour per address
+   * (`apps/web/src/server/password-authentication-handler.ts`, `AUTH_RATE_LIMITS.verify_ip`), on
+   * top of the link-expired state's two. No sign-up is spent.
+   */
+  {
+    screen: "verify-email",
+    state: "confirmed",
+    path: async () =>
+      `/verify-email?token=${encodeURIComponent(await issueVerificationTokenForTheSeededOutsider())}`,
+    reach: async (page) => {
+      await page.getByRole("button", { name: "Confirm", exact: true }).click();
+      await expect(page.getByRole("status")).toContainText(VERIFY_EMAIL.successNotice);
+      await expect(page.getByRole("button", { name: "Confirm", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
+    },
+  },
 ]);
 
 for (const named of PUBLIC_NAMED_STATES) {
@@ -586,7 +632,7 @@ for (const named of PUBLIC_NAMED_STATES) {
       const guard = await guardLocalOrigin(page);
       await useStoredTheme(page, theme);
       await page.setViewportSize({ width: 1440, height: 900 });
-      await page.goto(named.path);
+      await page.goto(typeof named.path === "string" ? named.path : await named.path());
       await expectThemeResolved(page, theme);
       await settleForScreenshot(page);
       await named.reach?.(page);

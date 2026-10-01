@@ -1,11 +1,15 @@
 # Design quality sign-off
 
-PRD-006d D9 and acceptance criterion 006D-AC-015. **Status: SIGNED.** `ux-ui-guardian` prepared the skeleton; the orchestrator filled it in
-from real screenshots of the running application and signed it (see "How this was filled").
+PRD-006d D9 and acceptance criterion 006D-AC-015, re-signed for PRD-008d 008D-AC-010. **Status:
+SIGNED.** `ux-ui-guardian` prepared the skeleton; the orchestrator filled it in from real
+screenshots of the running application and signed it on 2026-09-21. On 2026-10-01 `ux-ui-guardian`
+re-signed every row against the PRD-008d tree, from the baselines the `ubuntu-24.04` runner drew
+for it (see "How this was filled").
 
-- Commit reviewed: `74999a8` (the merged tree `b3cdae0` differs from it only by the 211 Linux screenshot baselines redrawn for the rail and banner fixes this sign-off found; no rendering code differs)
-- Date: 2026-09-21
-- Signed by: the orchestrator (Claude Code, the raid's orchestrating session)
+- Commit reviewed: `d7af15a`, the commit that installs the baselines drawn by screen-baselines run
+  36828316006 (the commit after it changes only this file and the review report)
+- Date: 2026-10-01 (first signed 2026-09-21 against `74999a8`)
+- Signed by: `ux-ui-guardian`, Gauntlet lane L6b (Claude Code), for the orchestrator
 
 The screenshots themselves are retained outside git. They are large, some come from the deployed
 review URL, and none of them is needed to read the result: the table below is the result. Every
@@ -52,7 +56,7 @@ with a finding reference. A row is signed only when all eight are `pass` on all 
 | Reset password | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Reset password | link expired | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Verify email | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Verify email | confirmed | review | not photographed (S-1) | not photographed (S-1) | not photographed (S-1) | not photographed (S-1) | not photographed (S-1) | not photographed (S-1) | not photographed (S-1) | not photographed (S-1) |
+| Verify email | confirmed | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Verify email | link expired | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Change password | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Change password | saved | review | pass | pass | pass | pass | pass | pass | pass | pass |
@@ -65,7 +69,7 @@ with a finding reference. A row is signed only when all eight are `pass` on all 
 | Shell | "Finish setup" chip | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Shell | help menu | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Overview | default | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Campaigns list | empty | synthetic | not photographed (S-2) | not photographed (S-2) | not photographed (S-2) | not photographed (S-2) | not photographed (S-2) | not photographed (S-2) | not photographed (S-2) | not photographed (S-2) |
+| Campaigns list | empty | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
 | Campaigns list | populated | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
 | Create | empty | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
 | Create | prefilled | review | pass | pass | pass | pass | pass | pass | pass | pass |
@@ -80,13 +84,13 @@ with a finding reference. A row is signed only when all eight are `pass` on all 
 | Onboarding | default | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
 | Settings and connections | default | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
 | Brand | default | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Guided setup step 1 | welcome | review | pass | pass | pass, asserted (A-1) | pass, asserted (A-1) | pass | pass | pass, asserted (A-1) | pass, asserted (A-1) |
-| Guided setup step 2 | your details | review | pass | pass | pass, asserted (A-1) | pass, asserted (A-1) | pass | pass | pass, asserted (A-1) | pass, asserted (A-1) |
+| Guided setup step 1 | welcome | review | pass | pass | pass | pass | pass | pass | pass | pass |
+| Guided setup step 2 | your details | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Guided setup step 3 | your Realtor partner | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Guided setup step 4 | create the campaign, first field | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Guided setup step 4 | create the campaign, last field | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Guided setup step 5 | read the result, ready | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Guided setup step 5 | read the result, needs changes | review | not photographed (S-3) | not photographed (S-3) | not photographed (S-3) | not photographed (S-3) | not photographed (S-3) | not photographed (S-3) | not photographed (S-3) | not photographed (S-3) |
+| Guided setup step 5 | read the result, needs changes | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Guided setup step 6 | approve | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Guided setup step 6 | hand off | review | pass | pass | pass | pass | pass | pass | pass | pass |
 | Guided setup step 7 | what happens next | review | pass | pass | pass | pass | pass | pass | pass | pass |
@@ -111,11 +115,22 @@ The two screenshot suites capture one picture per row, frame, and theme, named
 `<screen>--<state>--<frame>--<theme>.png` with the state as this table's state word in lower case
 with hyphens. `tests/visual/screens/README.md` says how to take a set without touching a baseline.
 A row whose picture the suites take is a row the orchestrator can check against
-`tests/visual/screens/` rather than re-stage by hand.
+`tests/visual/screens/` rather than re-stage by hand. Since 2026-10-01 every row in the table has
+its picture there.
 
-One picture carries a painted-over region. On campaign detail's already-decided row the moment the
-decision was recorded is blanked, because it is a fact about the run rather than about the design
-and a baseline that changed with the clock would fail every time. It is the only such region in
+The campaigns list's two rows come from two fixture workspaces rather than from whatever the
+synthetic store held when the suite reached the screen: `campaigns--empty` from
+`tests/browser/helpers/empty-campaign-workspace.ts` (no campaigns) and `campaigns--populated` from
+`tests/browser/helpers/populated-campaign-workspace.ts` (two campaigns saved through the create
+screen, one ready for approval and one that needs changes). There is no `campaigns--default`. Until
+2026-10-01 the matrix took one, and on the runner, whose workspace is empty when the matrix runs, it
+was always the empty list, so the populated row had been signed from a workstation capture that no
+committed picture matched.
+
+Two pictures carry a painted-over region. On campaign detail's approved and already-decided rows
+the moment the decision was recorded is blanked, because it is a fact about the run rather than
+about the design and a baseline that changed with the clock would fail every time. PRD-008b's
+"Who decided" card put that moment on the approved row too. They are the only such regions in
 either suite, and the loud colour is Playwright's own, chosen so nobody reads it as a surface.
 
 ### Rows whose server column changed
@@ -144,7 +159,11 @@ sign-ups it spends is part of its coverage. Since the named-state review's F-22:
 | **Total** | **8 of 10** | Six accounts created and two refusals. The limit is ten an hour per client address (`apps/web/src/server/password-authentication-handler.ts:118`), counted before the body is parsed (the same file, line 771). The gate drops and recreates the disposable database on every run, so the budget is per run rather than per hour of wall clock. |
 
 Measured on 2026-09-20 against the seeded review database: the review project is **82 passed, 0
-failed, 12.8 minutes**, with the eight submissions above and none refused.
+failed, 12.8 minutes**, with the eight submissions above and none refused. On 2026-10-01 the
+runner's `pnpm test:db` in screen-baselines run 36828316006 is **104 passed, 0 failed**, with the same
+eight submissions: PRD-008d's verify-email confirmed state spends two confirmations against the
+verify limit and no sign-up, steps 1 and 2 sign the seeded creator in, and step 5's refusal is
+walked on the approver's path with no new sign-in.
 
 ### Frames a state does not have
 
@@ -156,7 +175,14 @@ at the others. This is the brief's own frame rule, not a gap.
 | Shell, collapsed rail | 1440, 1180, 768 | The rail exists at three frames and the toggle reaches all three, which is what design brief section 14 and `03-components/application-shell-and-navigation.md:26` mean by a collapsible tablet rail. Until F-19 it was a 1440 state only, because the stylesheet hid the toggle from 1180 down and forced the rail compact there. At 390 there is no rail to collapse: it is replaced by the drawer, which is the row below. |
 | Shell, mobile drawer | 390 only | The drawer trigger is `display: none` above 767.98px (`apps/web/src/features/shell/components/app-shell.module.css`, the mobile block), which PRD-006d D5 moved deliberately so the 768 frame keeps the rail. |
 
-### Rows no automated suite can take, which the orchestrator stages by hand
+### Rows no automated suite could take, which the orchestrator used to stage by hand
+
+None remains. The last two left on 2026-10-01 with PRD-008d: verify email's confirmed state is
+taken by `tests/browser/review/design-quality.spec.ts` with a token minted for the seeded outsider
+through the product's own credential port (`tests/browser/review/helpers/verification-token.ts`),
+and step 5's needs-changes answer is taken at the end of the approver's journey in
+`tests/browser/review/guided-setup.walkthrough-captures.spec.ts`, from a draft whose open house has
+already finished. The table below is kept as the record of why each row was once staged by hand.
 
 Three rows left this table on 2026-09-20. Campaign detail's ready and approved states were
 blocked by a control that failed the target-size check, and F-18 moved that control onto the
@@ -200,6 +226,91 @@ PRD-006d 006D-AC-018 and the rubric's section 5, entries D-004 and D-005.
 | Checkbox and radio controls | Native controls inside an associated label on sign-in, the workspace choice, and the create screen. | PRD-006d D4 ships no primitive for either. They are allowed by name in `tooling/tests/unit/design-quality/governed-controls.test.ts`, not hidden. |
 
 ## How this was filled
+
+### The re-sign of 2026-10-01 (PRD-008d)
+
+Re-signed by `ux-ui-guardian` from the baselines the `ubuntu-24.04` runner drew for the PRD-008d
+tree. The redraw was dispatched once for the Wave 1 change set and the capture fixes (run
+36823126319), and twice more under 008D-AC-011 for fixes its review caused (runs 36825957221 and
+36828316006). The scored review, with every changed or new picture, its cause, and its verdict, is
+`library/requirements/in-work/prd-008-finish-line-hardening/qa/2026-10-01-008d-baseline-review.md`.
+
+Every picture was compared with the committed baseline pixel by pixel; every changed picture was
+read on a labelled contact sheet, and every one whose change was more than rasterisation was read
+at full size, cropped to the change. The causes were the dependency group (React 19.3, Next 16.3.6,
+Playwright 1.63), PRD-008b's decision-aware copy, PRD-008c's copy (no homeowner screen is a row of
+this table, so none of its pictures exists to change), the email preview's sandbox, the new states
+S-1, S-2, S-3, and A-1, and the fixes below.
+
+**What the machine asserted for every cell.** On the runner, run 36828316006: the synthetic suite
+**137 passed, 0 failed** and the review project **104 passed, 0 failed**, each with axe, overflow, the
+44 by 44 targets, the keyboard walk and ring, reduced motion, and the theme before paint, as the
+first fill describes. PRD-008d added these, so they hold on every platform and not only in a
+picture: the walkthrough's highlighted element is on screen, below the header, and clear of the
+panel (step 1, every frame and theme); nothing in a panel shows below its footer (every captured
+step); every notice title is the informational tone in both themes; every metric card keeps its
+state label inside the card at every frame; the campaigns list opens at the top of the content and
+at the column's edge, its empty state is the shared `empty` state, and a card title is smaller than
+the page title.
+
+**Findings of 2026-10-01, and what happened to them.** Each is in the review report in the rubric's
+finding form with its file and line.
+
+- R-1, fixed (`c2c51fe`). Step 5 at 1440: the result sat under the sticky header with only its
+  ring's edge showing, and the panel beside it rose over the header's theme control and "Sign out"
+  (axes 5 and 7). The beside-the-element case of `resolveAnchorScroll` now keeps the element
+  between the header and the viewport's end, and the panel is placed against the same floor.
+- R-2, fixed (`c2c51fe`). Step 5 at 768 and 1180: the panel covered the finding card the step was
+  explaining (axis 7). The step points at the whole check result, the verdict and what the checks
+  found, so both are scrolled above the panel.
+- R-3, fixed (`c2c51fe`). Every guided-setup panel taller than its cap showed a band of its next
+  progress row below Continue: the sticky footer stopped the sheet's end padding short of the
+  panel's edge (axes 2 and 10). The padding is the footer's own now.
+- R-4, fixed (`d788f35`). The new pictures of step 1 were taken from the top of the page with the
+  walkthrough's own scroll undone, so at 1180, 768, and 390 the panel pointed at quick actions below
+  the fold. The cell now photographs what the product shows after its scroll from the top of the
+  overview.
+- R-5, fixed (`d788f35`, `2cadc3e`). The populated row had no populated picture (above).
+- R-6, fixed (`0392b64`). The "nothing goes out" notice title on create, campaign detail, reports,
+  and brand took its colour from whichever of two equally specific rules the bundle loaded last,
+  and the dependency group's Next.js swapped which, so it was blue on some screens and dark on
+  others (axes 4 and 10). It is pinned to the informational tone the onboarding notice already
+  pins.
+- R-7, fixed (`0392b64`). The bootstrap `main` rule centred a short page in the frame, so the
+  campaigns list, change password, and the boundary page floated about 200px below where every
+  sibling page starts (axis 2).
+- R-8, fixed (`0392b64`). The campaigns list's empty state was a card built on the page rather than
+  the shared `empty` state (axis 9).
+- R-9, fixed (`0392b64`). The campaigns list's card titles were drawn at the browser's own heading
+  size, larger than the page title, with default margins (axes 1, 2, and 3).
+- R-10, fixed (`0392b64`, `02ea08a`). A metric card's state label ran past the card's edge on
+  the overview at 1440 and 1180 (axis 7).
+- R-11, fixed (`2be0385`). Right after a decision the approval card lost its title, while the same
+  campaign loaded later shows it (axes 1 and 10).
+- R-12, fixed (`a414eae`). Pictures carried incidental hovers wherever the last click left the
+  pointer, which differed between runs (the theme control at 1180 on most walkthrough pictures and
+  on the help menu, a button on sign-up and reset password). The pointer is parked before a
+  picture.
+- R-13, fixed (`02ea08a`). The campaigns list's width followed its contents, so its title moved
+  about 300px between the empty and the populated state (axes 2 and 10).
+
+**Recorded, not fixed, with an owner.** Two deltas hold on rows other than the ones that changed,
+were on the tree the first fill signed, and are system-level by the folder's own rule (they move
+every screen), so they are handed to `design-system-guardian` with the evidence in the review
+report rather than rebuilt from inside one lane. They are proposed for the rubric's section 5 as
+D-009 and D-010, to be recorded there by their owner; until then they are this sign-off's open
+debts, not passes by agreement.
+
+- D-009 (proposed). Page paragraphs that no module sizes render at the browser's 16px default, not
+  brief section 10's 13px body step (measured from the pictures by cap height: for example the
+  campaigns list's lead sentence and its cards, campaign detail's cards, and the overview's lead).
+  Axis 3, every in-shell row and the account screens.
+- D-010 (proposed). The bootstrap `section { max-width: 44rem }` rule caps every section in the
+  shell, so the overview's metric grids squeeze four cards into 704px at 1440 and 1180; the word
+  value "Unavailable" in the synthetic overview's "More numbers" runs into its card's end padding.
+  Axis 7, the overview row and every shell row whose picture is of the overview.
+
+### The first fill, 2026-09-21
 
 Filled and signed by the orchestrator on 2026-09-21 from a capture of `74999a8` written outside git
 (`OALO_SCREEN_SNAPSHOT_DIR`, `OALO_UPDATE_SCREEN_BASELINES=all`, both suites, 112 synthetic and
@@ -247,23 +358,19 @@ responsiveness of the composition, and consistency with the canvases (axes 1, 2,
 
 **Cells that are not a plain `pass`.**
 
-- `pass, asserted (A-1)`: guided-setup steps 1 and 2 at 1180 and 390 are asserted by
-  `tests/browser/review/guided-setup.accessibility.spec.ts` (axe, motion, target size, ring,
-  panel clearance) in both themes but no picture is drawn there; the pictures of those steps
-  exist at 1440 and 768.
-- `not photographed (S-1)`: the verify-email confirmed state. A confirmed link lands the person on the sign-in page with the confirmation notice and the confirmed flag is proven at the route level (password-recovery-handler.postgres.test.ts, 006A-AC-021); the review suite draws the default and link-expired states only. Follow-up: a named confirmed capture.
-- `not photographed (S-2)`: the campaigns list's empty state. The synthetic workspace always
-  seeds campaigns, so no capture shows the empty list; the state renders through the same
-  primitives (`apps/web/src/app/(authenticated)/marketing/campaigns/page.tsx`) and is covered
-  by `campaigns-review-surface.integration.test.tsx`. Follow-up: a named empty state in the
-  synthetic screenshot suite.
-- `not photographed (S-3)`: step 5's needs-changes answer. Asserted by
-  `tests/browser/review/guided-setup.resume.spec.ts` in a second browser context (the sentence
-  and the finding's description); the walkthrough capture draws the ready answer. Follow-up: a
-  needs-changes capture at step 5.
+Since 2026-10-01 there are no "asserted" and no "not photographed" cells. Until then:
+
+- `pass, asserted (A-1)`: guided-setup steps 1 and 2 at 1180 and 390 were asserted by
+  `tests/browser/review/guided-setup.accessibility.spec.ts` but not photographed. The cell
+  procedure in `tests/browser/review/design-quality.spec.ts`, renamed on 2026-10-01 from "the
+  guided setup meets the bar at 1440 and 768, in both themes" to "the guided setup's steps 1 and 2
+  meet the bar at every frame, in both themes", now photographs all four frames.
+- `not photographed (S-1, S-2, S-3)`: verify email's confirmed state, the campaigns list's empty
+  state, and step 5's needs-changes answer. Each is photographed since 2026-10-01 (see "Where each
+  row's picture comes from" and the by-hand table above).
+
 - `n/a`: a shell part that does not render at that frame (the rail below 1180, the tablet rail
   outside 768, the drawer outside 390).
 
-Signed: every photographed cell passes on all ten axes on the tree named above; the three
-unphotographed states are listed as follow-ups, not as failures, because each is asserted by a
-test that runs in the gate.
+Signed: every cell of every row is photographed and passes on all ten axes on the tree named
+above, with D-009 and D-010 carried as open, owned debts as "The re-sign of 2026-10-01" describes.

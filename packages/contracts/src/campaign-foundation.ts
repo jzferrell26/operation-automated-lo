@@ -269,7 +269,8 @@ export const CampaignManifestSchema = z
           })
           .strict(),
       )
-      .min(1)
+      // PRD-008b D1. A version records the images a person supplied, and Open House Boost has no
+      // photo intake yet, so none is a true record. Preflight checks each image that is present.
       .max(20),
     partner: z
       .object({

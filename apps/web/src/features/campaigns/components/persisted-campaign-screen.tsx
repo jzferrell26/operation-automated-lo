@@ -20,6 +20,13 @@ import styles from "./open-house-draft-builder.module.css";
 export function PersistedCampaignScreen({
   campaign,
 }: Readonly<{ campaign: CampaignWorkspaceProjection }>) {
+  /*
+   * PRD-008b D2. "Ready for approval" and "An approver can sign off on it now" are true only while
+   * the campaign is waiting for that approval. Once it has been approved the same checks still
+   * passed, so the result says that instead, and the screen no longer invites a sign-off that has
+   * already happened.
+   */
+  const awaitingApproval = campaign.state === "awaiting_approval";
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -95,7 +102,11 @@ export function PersistedCampaignScreen({
           <div>
             <p className={styles.eyebrow}>Campaign check</p>
             <h2 id="campaign-check-title">
-              {campaign.preflight.blocking ? CHECK_RESULT_NEEDS_CHANGES : CHECK_RESULT_READY}
+              {campaign.preflight.blocking
+                ? CHECK_RESULT_NEEDS_CHANGES
+                : awaitingApproval
+                  ? CHECK_RESULT_READY
+                  : "Checks passed"}
             </h2>
           </div>
         </div>
@@ -106,7 +117,10 @@ export function PersistedCampaignScreen({
           {campaign.preflight.findings.length === 0 ? (
             <Card padding="md">
               <strong>Nothing to fix.</strong>
-              <p>This campaign meets every rule we check. An approver can sign off on it now.</p>
+              <p>
+                This campaign meets every rule we check.
+                {awaitingApproval ? " An approver can sign off on it now." : ""}
+              </p>
             </Card>
           ) : (
             campaign.preflight.findings.map((finding) => (

@@ -133,15 +133,49 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
   await expect(page.getByText("Approved.", { exact: false }).first()).toBeVisible();
 
   /**
-   * `approved` is the moment after the decision and before the next load: the page still holds the
-   * version it arrived with, and the only thing that has changed is what the screen says back. The
-   * theme is chosen from the header rather than by reloading, because a reload is exactly the
-   * thing this state is defined as being before.
+   * PRD-008b 008B-AC-006. The decision replaces the controls with what was recorded and refreshes
+   * the page, so this waits for the refreshed page rather than for the card alone.
+   *
+   * "Who signed off" is rendered by the server only once a decision is stored, so its arrival is
+   * the proof that the refresh has landed. Until 2026-10-01 this state photographed the moment
+   * before that: an approved card beside a screen that still said "Ready for approval", offered
+   * "An approver can sign off on it now.", and re-offered the approval, which is the contradiction
+   * the PRD-006 QA report recorded. The assertions are scoped to the page's main region, so
+   * nothing in the shell or a closed walkthrough can satisfy or break them.
+   */
+  const main = page.getByRole("main");
+  const signedOffNow = page.getByRole("region", { name: "Who signed off" });
+  await expect(signedOffNow).toBeVisible();
+  await expect(main.getByText("Ready for approval", { exact: false })).toHaveCount(0);
+  await expect(main.getByText("An approver can sign off on it now.", { exact: false })).toHaveCount(
+    0,
+  );
+  await expect(main.getByText("Approve this version", { exact: false })).toHaveCount(0);
+  await expect(main.getByRole("button", { name: "Approve this version" })).toHaveCount(0);
+  await expect(main.getByRole("button", { name: "Send back for changes" })).toHaveCount(0);
+  await expect(
+    main.getByText(
+      "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.",
+    ),
+  ).toBeVisible();
+  await expect(signedOffNow).toContainText("Approved by");
+
+  /**
+   * `approved` is the page after the decision landed and the refresh re-read the stored state: the
+   * card says what was recorded, and every region around it agrees. The theme is chosen from the
+   * header rather than by reloading, because a reload would replace the card with the control a
+   * later visitor sees, which is the `already-decided` state below. The moment the decision was
+   * recorded is a fact about this run, not about the design, so it is masked as it is there.
    */
   for (const theme of REVIEW_THEMES) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await chooseThemeFromTheHeader(page, theme);
-    await captureNamedState(page, { screen: "campaign-detail", state: "approved", theme });
+    await captureNamedState(page, {
+      screen: "campaign-detail",
+      state: "approved",
+      theme,
+      mask: [signedOffNow.locator("p").last()],
+    });
   }
 
   for (const theme of REVIEW_THEMES) {
@@ -164,4 +198,63 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
 
   expectNoExternalRequests(guard);
   await approverContext.close();
+});
+
+/**
+ * PRD-008b 008B-AC-007 and 008B-AC-008, in the project that can reach them.
+ *
+ * Both are about what a signed-in person is shown, so they are checked as one, signed in as the
+ * seeded creator, who can edit branding. `/brand` has to be the person's own saved branding editor
+ * whether or not the homeowner reports flag is set on the server under test, so the assertions
+ * read the same in either state and the run does not need to know which one it is in. The demo
+ * campaign address has no page in a signed-in workspace.
+ *
+ * It sits in this file for the reason the file gives: it signs the seeded creator in once more, and
+ * running last means nothing PRD-006c owns starts after it.
+ */
+test("the brand page is the person's own saved branding, and the demo campaign address does not exist", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const { creatorEmail, password } = seededCredentials();
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const guard = await guardLocalOrigin(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await signInExisting(page, creatorEmail, password);
+  await restartGuidedSetup(page);
+  await putTheWalkthroughAside(page);
+
+  await page.goto("/brand", { waitUntil: "networkidle" });
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1, name: "Report branding" })).toBeVisible();
+  await expect(main.getByLabel("Company name", { exact: true })).toBeVisible();
+  // What the workspace's demo brand carries, which a signed-in person must never read as their own.
+  await expect(main).not.toContainText("Alex Morgan");
+  await expect(main).not.toContainText("Prairie Home Lending");
+
+  // A save persists for the same person, and survives a reload.
+  const tagline = "Saved from the brand page.";
+  await main.getByLabel("Brand tagline", { exact: true }).fill(tagline);
+  const response = page.waitForResponse(
+    (result) =>
+      result.url().endsWith("/api/workspace/preferences") && result.request().method() === "POST",
+  );
+  await main.getByRole("button", { name: "Save report branding", exact: true }).click();
+  expect((await response).status()).toBe(200);
+  await expect(page.getByText("Your changes are saved.", { exact: true })).toBeVisible();
+  await page.reload({ waitUntil: "networkidle" });
+  await expect(page.getByRole("main").getByLabel("Brand tagline", { exact: true })).toHaveValue(
+    tagline,
+  );
+
+  // The demo campaign address is not a page here. Next.js may already have streamed a parent
+  // loading boundary with a 200, so the document is checked rather than only the status.
+  const demo = await page.goto("/marketing/campaigns/synthetic-open-house-001");
+  expect([200, 404]).toContain(demo?.status());
+  await expect(page.getByRole("heading", { name: "404", exact: true })).toBeVisible();
+  await expect(page.getByText("This campaign isn't connected yet")).toHaveCount(0);
+
+  expectNoExternalRequests(guard);
+  await context.close();
 });

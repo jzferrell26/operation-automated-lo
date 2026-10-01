@@ -116,15 +116,13 @@ export async function compileOpenHouseDraft(
             mergeTokens: [],
             financingTerms: [],
           },
-          images: [
-            {
-              assetRef: "asset_propertyPlaceholder001",
-              approvalStatus: "approved",
-              width: 1600,
-              height: 1200,
-              altText: `Property image placeholder for ${input.address}`,
-            },
-          ],
+          /*
+           * PRD-008b D1. The builder has no photo input, so the loan officer supplied no image and
+           * the version records none. It used to stamp one approved placeholder here, which meant an
+           * approver signed off on a version that claimed an image nobody had seen. Preflight checks
+           * only the images that are present, so an empty list is the honest record and passes.
+           */
+          images: [],
           partner: {
             realtorDisplayName: input.realtorDisplayName,
             permissionConfirmed: input.realtorPermissionConfirmed,

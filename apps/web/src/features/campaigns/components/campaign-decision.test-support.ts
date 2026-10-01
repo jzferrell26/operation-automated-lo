@@ -57,6 +57,34 @@ export async function awaitingApprovalProjection(
   );
 }
 
+/**
+ * A draft the checks refused, read by `principal`: nobody can approve it, because there is nothing
+ * to approve yet. The Realtor has not given permission, which is a finding that blocks.
+ */
+export async function needsChangesProjection(
+  principal: AuthenticatedPrincipal = APPROVER,
+): Promise<CampaignWorkspaceProjection> {
+  const compiled = await compileOpenHouseDraft(
+    { ...OPEN_HOUSE_DRAFT_INPUT, realtorPermissionConfirmed: false },
+    createLocalSyntheticPrincipal(),
+    LOCAL_SYNTHETIC_ENV,
+  );
+  if (!compiled.preflight.blocking) {
+    throw new Error("The needs-changes draft no longer fails the checks, so it is not a fixture.");
+  }
+  return projectCampaignWorkspace(
+    {
+      version: compiled.version,
+      preflight: compiled.preflight,
+      state: "preflight_failed" as const,
+      rowVersion: 1,
+      updatedAt: compiled.version.createdAt,
+    },
+    principal,
+    "postgres",
+  );
+}
+
 /** The same draft after somebody recorded a decision on it, read by `principal`. */
 async function decidedProjection(
   decision: "approved" | "rejected",

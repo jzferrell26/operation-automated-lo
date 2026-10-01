@@ -7,6 +7,7 @@ import {
   APPROVER,
   approvedProjection,
   awaitingApprovalProjection,
+  needsChangesProjection,
   sentBackProjection,
 } from "./campaign-decision.test-support.js";
 import { PersistedCampaignScreen } from "./persisted-campaign-screen.js";
@@ -80,4 +81,29 @@ describe.each([
       container.querySelectorAll(`[data-tour="${GUIDED_SETUP_ANCHORS.campaignApproveControl}"]`),
     ).toHaveLength(1);
   });
+});
+
+/**
+ * PRD-008b 008B-AC-011. The card is for a version that is waiting for an approver. One whose checks
+ * need changes is waiting for its author, and nothing about it can be approved yet, so asking
+ * somebody to send the link to an approver would send them to a person who has nothing to do. It
+ * used to render for everybody who could not approve, which for this version meant everybody.
+ */
+describe("the approver hand-off card on a version whose checks need changes", () => {
+  it.each([
+    ["a creator", CREATOR],
+    ["an approver", APPROVER],
+  ])(
+    "is not offered to %s, because nothing about it can be approved yet",
+    async (_who, principal) => {
+      const { container } = renderCampaign(await needsChangesProjection(principal));
+
+      expect(screen.queryByText(/Copy this link and send it to them/u)).toBeNull();
+      expect(screen.queryByRole("button", { name: "Copy link" })).toBeNull();
+      expect(handOffAnchors(container)).toBe(0);
+      // The page still says plainly where it stands, and the approve control stays blocked.
+      expect(screen.getByRole("heading", { name: "Needs changes" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Approve this version" })).toBeDisabled();
+    },
+  );
 });

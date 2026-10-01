@@ -190,11 +190,14 @@ export function CampaignApprovalControls({
         </Button>
       ) : null}
       {/*
-        PRD-008b 008B-AC-010. The card asks somebody who cannot approve to send the link to an
-        approver, which is a step on a version nobody has decided on. Once a version was approved,
-        or sent back, there is nothing for an approver to do with the link, so it is not offered.
+        PRD-008b 008B-AC-010 and 008B-AC-011. The card asks somebody who cannot approve to send the
+        link to an approver, which is a step on a version that is waiting for one: the checks passed
+        and nobody has decided. Once a version was approved, or sent back, there is nothing for an
+        approver to do with the link. And a version whose checks need changes is waiting for its
+        author, so nothing about it can be approved yet and an approver has nothing to do with the
+        link either.
       */}
-      {canApprove || alreadyDecided !== undefined ? null : (
+      {canApprove || alreadyDecided !== undefined || blocking ? null : (
         <CampaignHandOff campaignHref={campaignHref} />
       )}
       <p role="status">{status?.sentence ?? "Nobody has approved this version yet."}</p>

@@ -128,7 +128,9 @@ describe("what step 7 says", () => {
     ["approved", `Your campaign is saved and approved. ${TAIL}`],
     [
       "sent_back",
-      `Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it. ${TAIL}`,
+      // Finding R2. It ends where the not-connected sentence ends: "this is where you'll launch it"
+      // would follow "needs a new version" and promise a launch the version cannot reach.
+      "Your campaign is saved, and it was sent back for changes. It needs a new version before anyone can approve it. It won't run as an ad yet: HighLevel and Meta aren't connected.",
     ],
     [
       "unknown",

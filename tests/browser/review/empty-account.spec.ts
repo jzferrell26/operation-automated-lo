@@ -38,6 +38,7 @@ import {
   type NewAccountPage,
 } from "./helpers/new-account-pages.js";
 import { chooseThemeFromTheHeader, REVIEW_THEMES } from "./helpers/review-session.js";
+import { saveBrandDetails } from "./helpers/saved-brand.js";
 import { seedCampaignHistory } from "./helpers/seed-campaign-history.js";
 
 /**
@@ -590,6 +591,10 @@ test.describe.serial("a brand-new account, from its first page to its first appr
       const creatorGuard = await guardLocalOrigin(creator);
       await creator.setViewportSize({ width: 1440, height: 900 });
       await signInExisting(creator, creatorEmail, password);
+      // The seed saves the creator no Brand, and a library ad carries the creator's own NMLS number,
+      // so without one step 3 reads "Needs changes" and offers no hand-off (see `saveBrandDetails`).
+      // A real loan officer saves the Brand first, and so does this one, as the decision spec does.
+      await saveBrandDetails(creator);
       await saveACampaign(creator, { ad: SAMPLE_ADS.firstHome, place: "Austin, TX" });
       await expectStepThreeState(creator, "cannot-approve");
       await chooseThemeFromTheHeader(creator, theme);

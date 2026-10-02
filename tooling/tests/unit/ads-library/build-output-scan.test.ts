@@ -8,7 +8,7 @@ import { findSampleTraces } from "../../../scripts/ads-library/scan-build-output
 
 /**
  * PRD-009c D2 and D3, 009C-AC-004 (the build-output scan). A production build must hold no sample
- * catalog entry and no sample art. The scan looks for every sample id, name, and approval literal
+ * catalog entry and no sample art. The scan looks for every sample id and name
  * in the build's text files, and for every sample art file by its digest, whatever it is called.
  */
 

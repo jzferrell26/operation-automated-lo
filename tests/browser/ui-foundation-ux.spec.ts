@@ -1,5 +1,5 @@
 import { AxeBuilder } from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { evidencePath, writeEvidenceSummary } from "./helpers/ui-foundation-evidence.js";
 
@@ -37,9 +37,26 @@ async function guardSyntheticLocalPage(page: Page) {
   return { externalRequests, hydrationMessages, pageErrors };
 }
 
-async function chooseTheme(page: Page, theme: "Light" | "Dark") {
-  await page.getByRole("radio", { name: theme }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", theme.toLowerCase());
+/** PRD-009a: the theme choice lives in the account control, so it is opened, used, and closed. */
+function accountControl(page: Page): Locator {
+  return page.getByRole("banner").getByRole("button", { name: /^Your account: / });
+}
+
+async function openAccount(page: Page): Promise<Locator> {
+  const panel = page.getByRole("dialog", { name: "Your account" });
+  if (!(await panel.isVisible())) {
+    await accountControl(page).click();
+  }
+  await expect(panel).toBeVisible();
+  return panel;
+}
+
+async function chooseTheme(page: Page, theme: "Light" | "Dark" | "System") {
+  const panel = await openAccount(page);
+  await panel.getByRole("radio", { name: theme }).click();
+  if (theme !== "System") {
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme.toLowerCase());
+  }
 
   /* The segmented control moves its fill and its label colour over
    * `--motion-base`. axe reads computed colour, so sampling before the
@@ -47,7 +64,7 @@ async function chooseTheme(page: Page, theme: "Light" | "Dark") {
    * a token. Wait for the control to come to rest, with a ceiling above
    * `--motion-slow` for the case where no transition runs at all.
    */
-  await page.getByRole("radiogroup", { name: "Appearance theme" }).evaluate(
+  await panel.getByRole("radiogroup", { name: "Appearance theme" }).evaluate(
     (group) =>
       new Promise<void>((resolve) => {
         const settle = () => {
@@ -58,6 +75,8 @@ async function chooseTheme(page: Page, theme: "Light" | "Dark") {
         group.addEventListener("transitionend", settle, { once: true });
       }),
   );
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
 }
 
 async function assertAxeClean(page: Page) {
@@ -76,9 +95,17 @@ async function assertGuardClean(guard: Awaited<ReturnType<typeof guardSyntheticL
   expect(guard.pageErrors).toEqual([]);
 }
 
-test("first paint applies the stored Dark theme before hydration", async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem("oalo:theme-preference", "dark");
+async function expectNoHorizontalScroll(page: Page, frame: string) {
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    `the page does not scroll sideways at ${frame}`,
+  ).toBe(true);
+}
+
+/** Installs the first-paint probe: what `data-theme` and the colour scheme were before React ran. */
+async function sampleTheFirstPaint(page: Page, stored: string | null) {
+  await page.addInitScript((value) => {
+    if (value !== null) window.localStorage.setItem("oalo:theme-preference", value);
     const samples: ThemeSample[] = [];
     Object.defineProperty(window, "__oaloThemeSamples", { value: samples });
     const capture = (phase: string) => {
@@ -91,14 +118,22 @@ test("first paint applies the stored Dark theme before hydration", async ({ page
     };
     capture("init-script");
     requestAnimationFrame(() => capture("first-animation-frame"));
-  });
+  }, stored);
+}
+
+async function readTheFirstPaint(page: Page): Promise<readonly ThemeSample[]> {
+  return page.evaluate(
+    () => (window as Window & { __oaloThemeSamples?: ThemeSample[] }).__oaloThemeSamples ?? [],
+  );
+}
+
+test("first paint applies the stored Dark theme before hydration", async ({ page }) => {
+  await sampleTheFirstPaint(page, "dark");
   const guard = await guardSyntheticLocalPage(page);
 
   await page.goto("/overview");
-  await expect(page.getByRole("radiogroup", { name: "Appearance theme" })).toBeVisible();
-  const samples = await page.evaluate(
-    () => (window as Window & { __oaloThemeSamples?: ThemeSample[] }).__oaloThemeSamples ?? [],
-  );
+  await expect(page.getByRole("banner")).toBeVisible();
+  const samples = await readTheFirstPaint(page);
   const firstResolved = samples.find((sample) => sample.theme !== null);
   const firstFrame = samples.find((sample) => sample.phase === "first-animation-frame");
 
@@ -109,50 +144,48 @@ test("first paint applies the stored Dark theme before hydration", async ({ page
 });
 
 /**
- * UIF-009, rewritten by PRD-006d's named-state review, F-19.
- *
- * It used to assert that 1180 rendered an 80px rail from a media query with no `data-collapsed`
- * attribute, and that only 1440 had a control. That is a compact rail, not a collapsible one, and
- * design brief section 14 and `03-components/application-shell-and-navigation.md:26` both say the
- * tablet uses a collapsible navigation rail. The stylesheet's tablet block is gone, so the same
- * control collapses the same rail to the same 80px compact width at 1440, 1180, and 768.
- *
- * Every assertion the old test made about the compact rail is still made here, at every frame that
- * has one: nine links, each with an accessible name and a tooltip while the labels are hidden.
- * What changed is how the compact rail is reached, which is the defect.
+ * PRD-009a, 009A-AC-008, and design D-5. With nothing stored and the device set to dark, the head
+ * script paints Light, so there is no flash and no Dark first visit. Choosing System stores
+ * `system`, follows a live device change, and survives a reload; Light and Dark persist.
  */
-test("UIF-009 collapses the rail to the compact icon rail at every frame that has one", async ({
+test("a first visit on a dark device paints Light, and System is stored and followed", async ({
   page,
 }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await sampleTheFirstPaint(page, null);
   const guard = await guardSyntheticLocalPage(page);
-  const sidebar = page.getByLabel("Primary workspace");
-  const compactLinks = page
-    .getByRole("navigation", { name: "Product navigation" })
-    .getByRole("link");
 
-  for (const width of [1440, 1180, 768] as const) {
-    await page.setViewportSize({ width, height: 900 });
-    await page.goto("/overview");
+  await page.goto("/overview");
+  await expect(page.getByRole("banner")).toBeVisible();
+  const samples = await readTheFirstPaint(page);
+  expect(samples.find((sample) => sample.theme !== null)?.theme).toBe("light");
+  expect(samples.find((sample) => sample.phase === "first-animation-frame")).toMatchObject({
+    theme: "light",
+    colorScheme: "light",
+  });
+  expect(samples.some((sample) => sample.theme === "dark")).toBe(false);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  expect(await page.evaluate(() => localStorage.getItem("oalo:theme-preference"))).toBeNull();
 
-    await expect(sidebar, `the rail opens expanded at ${String(width)}`).not.toHaveAttribute(
-      "data-collapsed",
-      "true",
-    );
-    await expect(compactLinks).toHaveCount(9);
+  await chooseTheme(page, "System");
+  expect(await page.evaluate(() => localStorage.getItem("oalo:theme-preference"))).toBe("system");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
-    await page.getByRole("button", { name: "Collapse navigation" }).click();
-    await expect(sidebar).toHaveAttribute("data-collapsed", "true");
-    await expect.poll(async () => Math.round((await sidebar.boundingBox())?.width ?? 0)).toBe(80);
-    // The labels are gone, so the name and the tooltip are the only things identifying each item.
-    for (const link of await compactLinks.all()) {
-      await expect(link).toHaveAttribute("aria-label", /\S/u);
-      await expect(link).toHaveAttribute("title", /\S/u);
-    }
+  await page.reload();
+  expect(await page.evaluate(() => localStorage.getItem("oalo:theme-preference"))).toBe("system");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
-    await page.getByRole("button", { name: "Expand navigation" }).click();
-    await expect(sidebar).not.toHaveAttribute("data-collapsed", "true");
-  }
-
+  await chooseTheme(page, "Light");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await chooseTheme(page, "Dark");
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await assertGuardClean(guard);
 });
 
@@ -187,41 +220,307 @@ test("1180 and 390 layouts preserve the required Overview priorities", async ({ 
   await assertGuardClean(guard);
 });
 
-test("mobile drawer traps focus, locks scroll, closes on Escape, and restores focus", async ({
+/*
+ * PRD-009a and design `00-direction.md` section 2.1: the light top bar at the four frames.
+ *
+ * Superseded on 2026-10-01 by PRD-009 (D-2): UIF-009's collapsible rail and its compact icon rail,
+ * the mobile drawer, and the 768 rail. Their claims move onto the bar: one row at 1440 and 1180
+ * with the menu clear of the account cluster, two rows at 768, a Menu sheet at 390, no sideways
+ * scroll anywhere, and axe at zero in Light and Dark at every frame.
+ */
+const FRAMES = [
+  { name: "1440", width: 1440, height: 900 },
+  { name: "1180", width: 1180, height: 900 },
+  { name: "768", width: 768, height: 1024 },
+  { name: "390", width: 390, height: 844 },
+] as const;
+
+const THE_SIX = [
+  "Home",
+  "Campaigns",
+  "Brand",
+  "Realtor partners",
+  "Homeowner reports",
+  "Settings",
+] as const;
+
+type Box = Readonly<{ x: number; y: number; width: number; height: number }>;
+
+async function boxOf(locator: Locator): Promise<Box> {
+  const box = await locator.boundingBox();
+  expect(box, "the element has a box").not.toBeNull();
+  return box ?? { x: 0, y: 0, width: 0, height: 0 };
+}
+
+function centerY(box: Box): number {
+  return box.y + box.height / 2;
+}
+
+async function topBarParts(page: Page) {
+  const banner = page.getByRole("banner");
+  const menu = banner.getByRole("navigation", { name: "Main" });
+  return {
+    banner,
+    menu,
+    lastItem: menu.getByRole("listitem").last(),
+    wordmark: banner.getByRole("link", { name: "Automated LO" }),
+    help: banner.getByRole("button", { name: "Help" }),
+    account: accountControl(page),
+  };
+}
+
+for (const theme of ["Light", "Dark"] as const) {
+  test(`the top bar holds its shape at 1440, 1180, 768, and 390 in ${theme} (009A-AC-011)`, async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const guard = await guardSyntheticLocalPage(page);
+
+    for (const frame of FRAMES) {
+      await page.setViewportSize({ width: frame.width, height: frame.height });
+      await page.goto("/overview");
+      await chooseTheme(page, theme);
+      const { menu, lastItem, wordmark, help, account } = await topBarParts(page);
+      const helpBox = await boxOf(help);
+      const accountBox = await boxOf(account);
+      const clusterLeft = Math.min(helpBox.x, accountBox.x);
+
+      if (frame.width >= 1180) {
+        const menuBox = await boxOf(menu);
+        const lastBox = await boxOf(lastItem);
+        const wordmarkBox = await boxOf(wordmark);
+        for (const part of [menuBox, wordmarkBox, helpBox]) {
+          expect(
+            Math.abs(centerY(part) - centerY(accountBox)),
+            `one row at ${frame.name}`,
+          ).toBeLessThan(4);
+        }
+        expect(
+          menuBox.x + menuBox.width,
+          `the menu clears the account at ${frame.name}`,
+        ).toBeLessThanOrEqual(clusterLeft);
+        expect(
+          lastBox.x + lastBox.width,
+          `the last item clears the account at ${frame.name}`,
+        ).toBeLessThanOrEqual(clusterLeft);
+      } else if (frame.width >= 720) {
+        const menuBox = await boxOf(menu);
+        const wordmarkBox = await boxOf(wordmark);
+        expect(Math.abs(centerY(wordmarkBox) - centerY(accountBox))).toBeLessThan(4);
+        expect(menuBox.y, "the six links take the second row at 768").toBeGreaterThanOrEqual(
+          Math.max(wordmarkBox.y + wordmarkBox.height, accountBox.y + accountBox.height) - 1,
+        );
+        const lastBox = await boxOf(lastItem);
+        expect(lastBox.x + lastBox.width).toBeLessThanOrEqual(frame.width);
+      } else {
+        await expect(menu).toBeHidden();
+        const menuButton = page.getByRole("banner").getByRole("button", { name: "Menu" });
+        await expect(menuButton).toBeVisible();
+        await menuButton.click();
+        const sheet = page.getByRole("dialog", { name: "Menu" });
+        await expect(sheet).toBeVisible();
+        await expect(
+          sheet.getByRole("navigation", { name: "Main menu" }).getByRole("link"),
+        ).toHaveText([...THE_SIX]);
+        expect(
+          await sheet.evaluate((element) => element.contains(document.activeElement)),
+          "focus moves into the sheet",
+        ).toBe(true);
+        await assertAxeClean(page);
+        await page.keyboard.press("Escape");
+        await expect(sheet).toBeHidden();
+        await expect(menuButton).toBeFocused();
+      }
+
+      await expectNoHorizontalScroll(page, frame.name);
+      await assertAxeClean(page);
+      if (regenerateEvidence) {
+        const fileName = `top-bar-${theme.toLowerCase()}-${frame.width}x${frame.height}.png`;
+        await page.screenshot({ path: evidencePath(fileName) });
+        screenshots.push(fileName);
+      }
+    }
+
+    await assertGuardClean(guard);
+  });
+}
+
+/** PRD-009a, 009A-AC-012: every control in the bar is a 44px target at every frame. */
+test("every interactive control in the bar is at least 44px tall at every frame", async ({
   page,
 }) => {
   const guard = await guardSyntheticLocalPage(page);
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/overview");
-  const trigger = page.getByRole("button", { name: "Open navigation" });
-  await trigger.focus();
-  await trigger.press("Enter");
 
-  const drawer = page.getByRole("dialog", { name: "Workspace navigation" });
-  await expect(drawer).toBeVisible();
-  await expect(page.locator("body")).toHaveCSS("overflow", "hidden");
-  await expect(page.getByRole("button", { name: "Close navigation" }).last()).toBeFocused();
-  const focusables = drawer.locator(
-    "a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])",
-  );
-  const last = focusables.last();
-  await last.focus();
-  await page.keyboard.press("Tab");
-  await expect(focusables.first()).toBeFocused();
-  await page.keyboard.press("Escape");
-  await expect(drawer).toBeHidden();
-  await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
-  await expect(trigger).toBeFocused();
+  for (const frame of FRAMES) {
+    await page.setViewportSize({ width: frame.width, height: frame.height });
+    await page.goto("/overview");
+    const short = await page
+      .getByRole("banner")
+      .locator("a[href]:visible, button:visible, [tabindex='0']:visible")
+      .evaluateAll((elements) =>
+        elements
+          .map((element) => ({
+            name: element.getAttribute("aria-label") ?? element.textContent?.trim() ?? "unnamed",
+            height: element.getBoundingClientRect().height,
+          }))
+          .filter(({ height }) => height < 44),
+      );
+    expect(short, `controls under 44px tall at ${frame.name}`).toEqual([]);
+  }
+
   await assertGuardClean(guard);
 });
 
-test("keyboard focus, target size, checklist order, and reduced motion meet the UX contract", async ({
+/**
+ * PRD-009a, 009A-AC-009. One header: the wordmark linking Home, the six-item "Main" menu in order,
+ * Help, and the account control; the current page carries `aria-current` and a tint and a weight,
+ * not colour alone; no left rail and no collapse toggle.
+ */
+test("the header holds the wordmark, the six links, Help, and the account control", async ({
+  page,
+}) => {
+  const guard = await guardSyntheticLocalPage(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/overview");
+
+  await expect(page.getByRole("banner")).toHaveCount(1);
+  const { menu, wordmark, help, account } = await topBarParts(page);
+  await expect(wordmark).toHaveAttribute("href", "/overview");
+  await expect(menu.getByRole("link")).toHaveText([...THE_SIX]);
+  await expect(help).toBeVisible();
+  await expect(account).toBeVisible();
+  await expect(page.locator("aside")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /collapse|expand/iu })).toHaveCount(0);
+
+  const current = menu.getByRole("link", { name: "Home", exact: true });
+  await expect(current).toHaveAttribute("aria-current", "page");
+  const marks = await menu.getByRole("link").evaluateAll((links) =>
+    links.map((link) => ({
+      current: link.getAttribute("aria-current"),
+      background: getComputedStyle(link).backgroundColor,
+      weight: getComputedStyle(link).fontWeight,
+    })),
+  );
+  const [home, ...others] = marks;
+  expect(home?.weight).toBe("600");
+  for (const other of others) {
+    expect(other.current).toBeNull();
+    expect(other.weight).not.toBe(home?.weight);
+    expect(other.background).not.toBe(home?.background);
+  }
+
+  const panel = await openAccount(page);
+  await expect(panel.getByText("Alex Morgan")).toBeVisible();
+  await expect(panel.getByRole("radiogroup", { name: "Appearance theme" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(account).toBeFocused();
+  await assertGuardClean(guard);
+});
+
+/**
+ * PRD-009a, 009A-AC-004. With `data-tenant-accent` set, the action blue is `#005fcc` and the body
+ * text 16px on every menu page, each checked on its own; in Dark the pages that used to load the
+ * product token file show the shared Dark surfaces, not that file's old Dark block.
+ *
+ * `/homeowners` needs a real session (`apps/web/src/server/homeowners/page-brand.ts` sends a
+ * visitor without one to sign in), so the synthetic server cannot show it; the review project
+ * checks it in `tests/browser/review/top-bar.spec.ts`.
+ */
+const ACCENT_PAGES = ["/overview", "/brand", "/partners", "/settings"] as const;
+
+for (const path of ACCENT_PAGES) {
+  test(`${path} renders the one action blue and 16px body text, and the shared Dark surfaces`, async ({
+    page,
+  }) => {
+    const guard = await guardSyntheticLocalPage(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(path);
+    await expect(page.locator("html")).toHaveAttribute("data-tenant-accent", /\S/u);
+
+    const read = () =>
+      page.evaluate(() => {
+        const scope =
+          [...document.querySelectorAll<HTMLElement>('[data-product-shell="true"]')].at(-1) ??
+          document.querySelector("main") ??
+          document.body;
+        const token = (name: string) =>
+          getComputedStyle(scope).getPropertyValue(name).trim().toLowerCase();
+        return {
+          actionOnRoot: getComputedStyle(document.documentElement)
+            .getPropertyValue("--ac-primary")
+            .trim()
+            .toLowerCase(),
+          action: token("--ac-primary"),
+          canvas: token("--sf-canvas"),
+          card: token("--sf-card"),
+          sunken: token("--sf-sunken"),
+          bodySize: getComputedStyle(document.body).fontSize,
+          scopeSize: token("--text-body-size"),
+        };
+      });
+
+    await chooseTheme(page, "Light");
+    expect(await read()).toMatchObject({
+      actionOnRoot: "#005fcc",
+      action: "#005fcc",
+      bodySize: "16px",
+      scopeSize: "1rem",
+    });
+
+    await chooseTheme(page, "Dark");
+    expect(await read()).toMatchObject({
+      action: "#3566d6",
+      canvas: "#14161b",
+      card: "#1b1e25",
+      sunken: "#22262f",
+      bodySize: "16px",
+    });
+    await assertGuardClean(guard);
+  });
+}
+
+/**
+ * PRD-009a, 009A-AC-007. Inter loads from the application origin and nothing else is fetched: the
+ * route guard above aborts and records any request to another origin.
+ */
+test("Inter loads from the application origin on a signed-in page", async ({ page }) => {
+  const guard = await guardSyntheticLocalPage(page);
+  const fontResponse = page.waitForResponse((response) =>
+    response.url().endsWith("/fonts/InterVariable.woff2"),
+  );
+  await page.goto("/overview");
+  const response = await fontResponse;
+  expect(new URL(response.url()).origin).toBe(applicationOrigin);
+  expect(response.status()).toBe(200);
+
+  const fonts = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return {
+      check: document.fonts.check("16px Inter"),
+      faces: [...document.fonts]
+        .filter((face) => face.family.replaceAll('"', "") === "Inter")
+        .map((face) => face.status),
+      bodyFamily: getComputedStyle(document.body).fontFamily,
+    };
+  });
+  expect(fonts.check).toBe(true);
+  expect(fonts.faces).toEqual(["loaded"]);
+  expect(fonts.bodyFamily.startsWith("Inter")).toBe(true);
+  await assertGuardClean(guard);
+});
+
+/**
+ * PRD-009a and 009G-AC-010: the UX contract opens Home. Until 2026-10-01 it opened `/onboarding`,
+ * which PRD-009f removes in the same merge, and also asserted that page's nine checklist headings;
+ * those leave with the page. Focus, target size, and reduced motion are still asserted.
+ */
+test("keyboard focus, target size, and reduced motion meet the UX contract on Home", async ({
   page,
 }) => {
   const guard = await guardSyntheticLocalPage(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/onboarding");
+  await page.goto("/overview");
 
   await page.keyboard.press("Tab");
   const focused = page.locator(":focus");
@@ -241,21 +540,7 @@ test("keyboard focus, target size, checklist order, and reduced motion meet the 
     );
   expect(undersized).toEqual([]);
 
-  const checklistHeadings = await page.locator("[data-tour^='onboarding-'] h3").allTextContents();
-  // PRD-006b D5. The nine steps and their order are unchanged; each one is now named the way a
-  // loan officer would name it, and the schema pins the new titles per position.
-  expect(checklistHeadings).toEqual([
-    "Install and access",
-    "Brand and compliance",
-    "HighLevel routing",
-    "Meta connection",
-    "Who does what",
-    "Check everything again",
-    "Send a test lead",
-    "Look at the result",
-    "Ready to launch",
-  ]);
-  const animated = await page.locator("main *").evaluateAll((elements) =>
+  const animated = await page.locator("main *, header *").evaluateAll((elements) =>
     elements
       .map((element) => ({
         animation: getComputedStyle(element).animationName,
@@ -270,68 +555,28 @@ test("keyboard focus, target size, checklist order, and reduced motion meet the 
   await assertGuardClean(guard);
 });
 
-/* PRD-006d, 006D-AC-017: the tablet frame from design brief section 14 joins the
- * matrix. The brief's tablet rules are a collapsible rail and single-column
- * forms, asserted separately below.
+/* PRD-006d, 006D-AC-017, re-scoped on 2026-10-01 by PRD-009 (S-42, D-2): the 768 frame asserts the
+ * two-row top bar and single-column forms instead of the collapsible rail.
  */
 const TABLET_FRAME = { width: 768, height: 1024 } as const;
 
-for (const route of ["overview", "onboarding"] as const) {
-  for (const theme of ["Light", "Dark"] as const) {
-    for (const viewport of [
-      { width: 1180, height: 900 },
-      TABLET_FRAME,
-      { width: 390, height: 844 },
-    ] as const) {
-      test(`${route} ${theme} ${viewport.width}x${viewport.height} is axe-clean`, async ({
-        page,
-      }) => {
-        const guard = await guardSyntheticLocalPage(page);
-        await page.setViewportSize(viewport);
-        await page.goto(`/${route}`);
-        await chooseTheme(page, theme);
-        await assertAxeClean(page);
-        if (regenerateEvidence) {
-          const fileName = `${route}-${theme.toLowerCase()}-${viewport.width}x${viewport.height}.png`;
-          await page.screenshot({ path: evidencePath(fileName) });
-          screenshots.push(fileName);
-        }
-        await assertGuardClean(guard);
-      });
-    }
-  }
-}
-
-test("the 768 tablet frame uses the collapsible rail and single-column content", async ({
+test("the 768 tablet frame uses the two-row top bar and single-column content", async ({
   page,
 }) => {
   const guard = await guardSyntheticLocalPage(page);
   await page.setViewportSize(TABLET_FRAME);
 
-  for (const route of ["overview", "onboarding", "brand"] as const) {
+  for (const route of ["overview", "brand"] as const) {
     await page.goto(`/${route}`);
 
-    // Design brief section 14: tablet uses a collapsible navigation rail, not
-    // the mobile top bar and drawer. F-19: collapsible means the control is
-    // here and it works, so the 80px compact rail is asserted as what this
-    // frame collapses to rather than as what the stylesheet forces on it.
-    const sidebar = page.getByLabel("Primary workspace");
-    await expect(sidebar).toBeVisible();
-    await expect(page.getByRole("button", { name: "Open navigation" })).toBeHidden();
-    await page.getByRole("button", { name: "Collapse navigation" }).click();
-    await expect.poll(async () => Math.round((await sidebar.boundingBox())?.width ?? 0)).toBe(80);
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-      "the collapsed tablet rail does not scroll the page sideways",
-    ).toBe(true);
-    await page.getByRole("button", { name: "Expand navigation" }).click();
-    await expect(sidebar).not.toHaveAttribute("data-collapsed", "true");
+    const { menu, wordmark } = await topBarParts(page);
+    await expect(menu).toBeVisible();
+    await expect(page.getByRole("banner").getByRole("button", { name: "Menu" })).toBeHidden();
+    expect((await boxOf(menu)).y).toBeGreaterThan((await boxOf(wordmark)).y);
 
     // Section 14: no horizontal overflow, and a constrained width puts the
     // page into a single column.
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-    ).toBe(true);
+    await expectNoHorizontalScroll(page, "768");
     const multiColumn = await page
       .locator("main :where(section, form, article, div)")
       .evaluateAll((elements) =>
@@ -361,16 +606,19 @@ test("the 768 tablet frame uses the collapsible rail and single-column content",
   await assertGuardClean(guard);
 });
 
-test("open drawer and Overview state gallery meet accessibility contracts", async ({ page }) => {
+test("the open Menu sheet and the Overview state gallery meet accessibility contracts", async ({
+  page,
+}) => {
   const guard = await guardSyntheticLocalPage(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/overview");
   await chooseTheme(page, "Light");
-  await page.getByRole("button", { name: "Open navigation" }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Menu" }).click();
+  await expect(page.getByRole("dialog", { name: "Menu" })).toBeVisible();
   await assertAxeClean(page);
   if (regenerateEvidence) {
-    await page.screenshot({ path: evidencePath("overview-light-mobile-drawer-open-390x844.png") });
-    screenshots.push("overview-light-mobile-drawer-open-390x844.png");
+    await page.screenshot({ path: evidencePath("overview-light-menu-sheet-open-390x844.png") });
+    screenshots.push("overview-light-menu-sheet-open-390x844.png");
   }
 
   await page.setViewportSize({ width: 1180, height: 900 });
@@ -390,16 +638,15 @@ test("open drawer and Overview state gallery meet accessibility contracts", asyn
   await assertGuardClean(guard);
 });
 
-test("synthetic acceptance surfaces preserve history, checklist, and authorization boundaries", async ({
+/**
+ * Amended on 2026-10-01 by PRD-009: the `/onboarding` checklist and the `/reports` acceptance
+ * surface leave with their pages (009f D1, D4), so their halves of this test go with them.
+ */
+test("synthetic acceptance surfaces preserve history and authorization boundaries", async ({
   page,
 }) => {
   const guard = await guardSyntheticLocalPage(page);
   await page.setViewportSize({ width: 1180, height: 900 });
-
-  await page.goto("/onboarding");
-  await page.getByRole("button", { name: "Close this tip" }).click();
-  await expect(page.getByRole("region", { name: "Connect your accounts" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Ready to launch" })).toBeVisible();
 
   await page.goto("/settings/connections");
   for (const group of ["Required", "Granted", "Missing", "Optional"]) {
@@ -419,26 +666,17 @@ test("synthetic acceptance surfaces preserve history, checklist, and authorizati
     "/public/synthetic-open-house-v3",
   );
 
-  await page.goto("/reports");
-  const authorized = page.locator("[data-location-state='authorized']");
-  const restricted = page.locator("[data-location-state='restricted']");
-  await expect(authorized.getByRole("link")).toHaveCount(2);
-  await expect(restricted.getByRole("link")).toHaveCount(0);
-  await page.getByLabel("Activity").selectOption("Campaign review");
-  await page.getByLabel("Minutes").fill("25");
-  await page.getByRole("button", { name: "Add entry" }).click();
-  await expect(page.getByRole("status")).toContainText("Nothing was saved");
-
   await assertGuardClean(guard);
 });
 
 for (const route of [
   "brand",
+  "partners",
   "settings/connections",
   "marketing/campaigns/synthetic-open-house-001",
-  "reports",
 ] as const) {
   test(`${route} is accessible and responsive in Light and Dark themes`, async ({ page }) => {
+    test.setTimeout(60_000);
     const guard = await guardSyntheticLocalPage(page);
 
     for (const contract of [
@@ -450,9 +688,7 @@ for (const route of [
       await page.goto(`/${route}`);
       await chooseTheme(page, contract.theme);
       await assertAxeClean(page);
-      expect(
-        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-      ).toBe(true);
+      await expectNoHorizontalScroll(page, `${String(contract.viewport.width)}`);
     }
 
     await assertGuardClean(guard);
@@ -527,7 +763,7 @@ test("canonical profile, creative delivery, Meta assets, approval scope, and lau
   await assertGuardClean(guard);
 });
 
-test("delivered approval table, alertdialog, and drawer modal resolve semantic Light and Dark surfaces", async ({
+test("delivered approval table, alertdialog, and the Menu sheet resolve semantic Light and Dark surfaces", async ({
   page,
 }) => {
   const guard = await guardSyntheticLocalPage(page);
@@ -562,9 +798,9 @@ test("delivered approval table, alertdialog, and drawer modal resolve semantic L
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/overview");
-  await page.getByRole("button", { name: "Open navigation" }).click();
-  const drawer = page.getByRole("dialog", { name: "Workspace navigation" });
-  await expect(drawer).toHaveCSS("background-color", /rgb/u);
+  await page.getByRole("banner").getByRole("button", { name: "Menu" }).click();
+  const sheet = page.getByRole("dialog", { name: "Menu" });
+  await expect(sheet).toHaveCSS("background-color", /rgb/u);
   await assertGuardClean(guard);
 });
 
@@ -578,6 +814,6 @@ test.afterAll(() => {
     syntheticOnly: true,
     externalRequestsAllowed: false,
     screenshots: [...screenshots].sort(),
-    viewportContracts: ["1180x900", "390x844"],
+    viewportContracts: ["1440x900", "1180x900", "768x1024", "390x844"],
   });
 });

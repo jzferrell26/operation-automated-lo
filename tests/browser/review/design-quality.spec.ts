@@ -158,13 +158,6 @@ const NEVER_ISSUED_TOKEN = "never-issued-review-token";
  */
 const THROWAWAY_NEW_PASSWORD = "copper meadow signal verse";
 
-/** One of the rubric's four frames, by name, for a state the product only has at some of them. */
-function frameNamed(name: string): ReviewFrame {
-  const found = REVIEW_FRAMES.find((candidate) => candidate.name === name);
-  if (found === undefined) throw new Error(`${name} is not one of the rubric's frames`);
-  return found;
-}
-
 for (const { screen, path } of ACCOUNT_SCREENS) {
   for (const theme of REVIEW_THEMES) {
     for (const frame of REVIEW_FRAMES) {
@@ -745,17 +738,14 @@ for (const named of PUBLIC_NAMED_STATES) {
  * different: the rail, the drawer, the chip, and the help menu are all React state on a page the
  * session is already on.
  *
- * The collapsed rail is captured at 1440, 1180, and 768. Until F-19 it was a 1440 state only,
- * because the stylesheet hid the collapse control between 768 and 1180 and forced the rail compact
- * there; design brief section 14 and `03-components/application-shell-and-navigation.md:26` both
- * say the tablet uses a collapsible rail, so the toggle now works at all three and the same
- * compact rail is the collapsed state at each. 390 is not one of them and is not meant to be: at
- * that width the rail is replaced by the drawer, whose trigger is `display: none` above 767.98px
- * (`apps/web/src/features/shell/components/app-shell.module.css`, the mobile block), so the mobile
- * drawer is a 390 state and the collapsed rail is not.
+ * Superseded on 2026-10-01 by PRD-009 (D-2, 009a): the collapsed rail (captured at 1440, 1180,
+ * and 768 after F-19) and the mobile drawer (390) left with the rail, so their two captures and the
+ * F-19 toggle check are removed here, in the merge that removes the rail. The light top bar's
+ * frames and its Menu sheet are asserted in `tests/browser/ui-foundation-ux.spec.ts` and are
+ * photographed by 009g's new specs (009G-AC-002).
  *
- * It also holds F-21's shape in place: the sign-out control belongs to the shell's account area in
- * the topbar, and `<main>` opens with the page's own heading rather than with a control.
+ * It also holds F-21's shape in place: the sign-out control belongs to the shell's account control
+ * in the top bar, and `<main>` opens with the page's own heading rather than with a control.
  */
 test("the shell's named states meet the bar", async ({ page }) => {
   test.setTimeout(300_000);
@@ -778,10 +768,16 @@ test("the shell's named states meet the bar", async ({ page }) => {
    * own heading, which rubric axis 1 forbids. Two assertions hold that: the control is inside the
    * banner, and the first thing inside `<main>` that a person meets is the page's heading.
    */
+  // PRD-009a (009A-AC-009): Sign out lives in the account control, so it is opened first.
+  await page
+    .getByRole("banner")
+    .getByRole("button", { name: /^Your account: / })
+    .click();
   const signOut = page.getByRole("button", { name: "Sign out" });
   await expect(signOut).toBeVisible();
   await expect(page.getByRole("banner").getByRole("button", { name: "Sign out" })).toBeVisible();
   await expect(page.getByRole("main").getByRole("button", { name: "Sign out" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
   const headingBeforeControl = await page.evaluate(() => {
     const main = document.querySelector("main");
     if (main === null) return "there is no main landmark";
@@ -791,21 +787,6 @@ test("the shell's named states meet the bar", async ({ page }) => {
   expect(headingBeforeControl, "the page's own heading opens the main landmark").toMatch(
     /^h[12]$/u,
   );
-
-  /**
-   * F-19. "Tablet uses a collapsible rail" is a claim about a control a person can reach, so this
-   * asserts the control rather than the width. The stylesheet used to hide it from 1180 down, and
-   * the tablet rail could not be collapsed at all; the pictures below are of a state that was
-   * unreachable at two of the three frames that have a rail.
-   */
-  for (const frame of [frameNamed("1440"), frameNamed("1180"), frameNamed("768")]) {
-    await page.setViewportSize({ width: frame.width, height: frame.height });
-    await expect(
-      page.getByRole("button", { name: "Collapse navigation" }),
-      `the rail toggle is reachable at ${frame.name}`,
-    ).toBeVisible();
-  }
-  await page.setViewportSize({ width: 1440, height: 900 });
 
   for (const theme of REVIEW_THEMES) {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -821,33 +802,6 @@ test("the shell's named states meet the bar", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.keyboard.press("Escape");
     await expect(page.getByRole("button", { name: "Show me around again" })).toBeHidden();
-
-    // F-19. The same toggle, the same collapsed rail, at all three frames that have a rail. The
-    // state is React state on the shell, so it survives the resizes inside the capture.
-    await page.getByRole("button", { name: "Collapse navigation" }).click();
-    await captureNamedState(page, {
-      screen: "shell",
-      state: "collapsed-rail",
-      theme,
-      frames: [frameNamed("1440"), frameNamed("1180"), frameNamed("768")],
-    });
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.getByRole("button", { name: "Expand navigation" }).click();
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.getByRole("button", { name: "Open navigation" }).click();
-    await expect(page.getByRole("dialog", { name: "Workspace navigation" })).toBeVisible();
-    await captureNamedState(page, {
-      screen: "shell",
-      state: "mobile-drawer",
-      theme,
-      frames: [frameNamed("390")],
-      // The drawer is a fixed overlay over a scroll-locked body; the frame it covers is the
-      // picture, and a full-page capture of a locked body is the page behind it.
-      fullPage: false,
-    });
-    await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog", { name: "Workspace navigation" })).toBeHidden();
   }
 
   expectNoExternalRequests(guard);

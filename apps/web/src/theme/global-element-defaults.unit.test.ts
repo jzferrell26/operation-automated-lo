@@ -112,7 +112,20 @@ describe("the global stylesheet's element defaults", () => {
     expect(declarationsFor("small").get("font-size")).toBe("var(--text-caption-size)");
   });
 
-  it("draws every timestamp in the data font (design brief section 10)", () => {
-    expect(declarationsFor("time").get("font-family")).toBe("var(--font-data)");
+  /**
+   * Superseded on 2026-10-01 by PRD-009 (OD-E, design `00-direction.md` section 2.2): brief section
+   * 10's "timestamps use the data font" gives way to Inter with tabular figures, and monospace
+   * survives only inside "Details for support". The rule the test used to pin was
+   * `time { font-family: var(--font-data) }`.
+   */
+  it("draws every timestamp in the interface face with tabular figures (PRD-009a)", () => {
+    expect(declarationsFor("time").get("font-family")).toBe("var(--font-interface)");
+    expect(declarationsFor("time").get("font-variant-numeric")).toBe("tabular-nums");
+  });
+
+  it("reserves the top bar's height as scroll padding, so a focused control is never under it", () => {
+    expect(declarationsFor("html").get("scroll-padding-block-start")).toBe(
+      "calc(var(--topbar-height) + var(--space-4))",
+    );
   });
 });

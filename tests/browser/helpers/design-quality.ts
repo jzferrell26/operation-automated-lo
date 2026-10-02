@@ -245,8 +245,12 @@ export async function expectTargetsAreLargeEnough(page: Page): Promise<void> {
  * Design brief section 10's six type steps, in CSS pixels at the browser's 16px root: page title,
  * section title, card title, body, secondary, and caption. The tokens are `rem`, so these are the
  * values they compute to while the root stays 16px, which the check below also asserts.
+ *
+ * Superseded on 2026-10-01 by PRD-009 (009a, design `00-direction.md` section 2.4): the steps were
+ * 23, 17, 14, 13, 11.5, and 10.5px; the light look's are 28, 19, 16 (card title and body), 14,
+ * and 12px.
  */
-export const TYPE_STEP_PIXELS = Object.freeze([23, 17, 14, 13, 11.5, 10.5] as const);
+export const TYPE_STEP_PIXELS = Object.freeze([28, 19, 16, 14, 12] as const);
 
 /**
  * Text the type-step check does not hold to the six steps, each named with the reason, the way
@@ -263,7 +267,7 @@ export const TEXT_OFF_THE_TYPE_STEPS: readonly Readonly<{ selector: string; beca
  * root of inheritance and every text on the screen is at one of the brief's six steps.
  *
  * Three claims. `html` computes 16px, because every step is a `rem` token and a smaller root would
- * shrink all six. `body` computes 13px, the body step, so text no module sizes reads at the body
+ * shrink all six. `body` computes 16px, the body step (PRD-009a), so text no module sizes reads at the body
  * step instead of the browser's 16px. And every visible element that carries text of its own (a
  * text node with a box on screen, or a field showing a value) renders at one of the six steps.
  *
@@ -329,7 +333,7 @@ export async function expectTextAtTheTypeSteps(page: Page): Promise<void> {
   );
 
   expect.soft(measured.html, "html stays at the browser's 16px root").toBe(16);
-  expect.soft(measured.body, "body carries the 13px body step").toBe(13);
+  expect.soft(measured.body, "body carries the 16px body step").toBe(16);
   expect.soft(measured.offStep, "text rendered between the brief's six type steps").toEqual([]);
 }
 
@@ -341,18 +345,17 @@ const TIMESTAMP_PATTERN =
   /\b(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2})\b/u;
 
 /**
- * Design brief section 10 and rubric axis 3: timestamps use the data font.
+ * Rubric axis 3: timestamps line up.
  *
- * PRD-008d, the second redraw of 2026-10-01. Outside its two tables the reports screen wrote every
- * timestamp and date ("Jul 21, 2026, 2:30 PM", "2026-07-27") in the interface face, 22 of them at
- * 1440; the overview's activity and attention queue, onboarding's evidence, and campaign detail's
- * launch schedule did the same, and the saved campaign's open-house window and decision time sat in
- * running text. Every one is now a `time` element, which the global stylesheet sets in the data
- * font. This holds the rule from the outside, on every photographed screen: any visible text that
- * reads as a date is drawn in the data font, whichever element carries it.
+ * PRD-008d, the second redraw of 2026-10-01, made every date a `time` element. Until PRD-009 the
+ * global stylesheet set those in the data font and this check held them to it. Superseded on
+ * 2026-10-01 by PRD-009 (009a, design `00-direction.md` section 2.2): numbers and dates use Inter
+ * with tabular figures, and monospace survives only inside "Details for support". The check now
+ * holds the rule from the outside, on every photographed screen: any visible text that reads as a
+ * date is drawn with tabular figures, and in the interface face rather than the data face.
  */
-export async function expectTimestampsInTheDataFont(page: Page): Promise<void> {
-  const sans = await page.evaluate((source) => {
+export async function expectTimestampsInTabularFigures(page: Page): Promise<void> {
+  const offRule = await page.evaluate((source) => {
     const pattern = new RegExp(source, "u");
     const probe = document.createElement("span");
     probe.style.fontFamily = "var(--font-data)";
@@ -368,13 +371,17 @@ export async function expectTimestampsInTheDataFont(page: Page): Promise<void> {
       const element = node.parentElement;
       if (element === null || !pattern.test(text)) continue;
       if (!element.checkVisibility({ visibilityProperty: true })) continue;
-      if (getComputedStyle(element).fontFamily === dataFamily) continue;
+      if (element.closest("[data-support-details]") !== null) continue;
+      const style = getComputedStyle(element);
+      if (style.fontVariantNumeric.includes("tabular-nums") && style.fontFamily !== dataFamily) {
+        continue;
+      }
       found.add(`${element.tagName.toLowerCase()} "${text.trim().slice(0, 60)}"`);
     }
     return [...found];
   }, TIMESTAMP_PATTERN.source);
 
-  expect.soft(sans, "a timestamp drawn in the interface face").toEqual([]);
+  expect.soft(offRule, "a timestamp without tabular figures, or in the data face").toEqual([]);
 }
 
 /**
@@ -383,7 +390,7 @@ export async function expectTimestampsInTheDataFont(page: Page): Promise<void> {
  */
 export async function expectTypographyOnBrief(page: Page): Promise<void> {
   await expectTextAtTheTypeSteps(page);
-  await expectTimestampsInTheDataFont(page);
+  await expectTimestampsInTabularFigures(page);
 }
 
 /** Everything the browser's own sequential navigation can land on. */

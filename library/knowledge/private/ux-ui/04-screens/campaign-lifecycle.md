@@ -6,6 +6,8 @@ Define the connected experience from a new Open House Boost through generated ar
 
 ## Create
 
+> **Superseded on 2026-10-01 by PRD-009** (S-63; OD-B, OD-H, D-9): the six-step create, the separate Studio, Preflight, and Launch screens, and the typed confirmation give way to "Launch an ad" (PRD-009d). The invariants later in this file stand.
+
 The six-step workflow reuses confirmed brand, licensing, disclosures, partner, routing, and provider mappings. It must not ask the user to retype canonical profile data per campaign.
 
 Required states include autosaving, saved, incomplete, verifying, blocked, upload processing, asset rejected, and permission attestation missing.
@@ -20,7 +22,7 @@ Blocking, warning, and passed rules are distinct. The right rail summarizes the 
 
 ## Launch review
 
-The launch screen requires exact confirmation for a real-money provider write. It uses the blueprint-controlled policy classification and accurate uncertain-write language. Publication progress remains visible until a terminal or reconciling state.
+The launch screen requires exact confirmation for a real-money provider write. It uses the blueprint-controlled policy classification and accurate uncertain-write language. Publication progress remains visible until a terminal or reconciling state. _(Superseded on 2026-10-01 by PRD-009 (S-63; D-9): Approve, then "Launch on Facebook", each with its own confirmation; the end of the superseded flow.)_
 
 ## Campaign detail
 

@@ -6,6 +6,8 @@ Keep campaign inputs, generated artifacts, preflight results, approvals, provide
 
 ## Campaign stepper
 
+> **Superseded on 2026-10-01 by PRD-009** (S-60; OD-B, OD-H): the six-stage stepper below gives way to the three steps of "Launch an ad": Choose an ad, Set it up, Review and launch.
+
 Founding Open House Boost stages:
 
 1. Property and event
@@ -15,9 +17,11 @@ Founding Open House Boost stages:
 5. Routing and distribution
 6. Generate and review
 
-The stepper displays save state, completeness, blocking requirements, and current position. It must not imply that visiting a step completes it.
+The stepper displays save state, completeness, blocking requirements, and current position. It must not imply that visiting a step completes it. _(PRD-009 (S-60): the end of the superseded stepper.)_
 
 ## Artifact workspace
+
+> **Superseded on 2026-10-01 by PRD-009** (S-60; OD-H): the artifact tabs below are not in the founding flow; a launch reviews the actual library ad instead. The publishing-progress states later in this file stand for the Meta publish PRD.
 
 Artifact tabs:
 
@@ -29,7 +33,7 @@ Artifact tabs:
 - Email
 - SMS
 
-Every artifact displays status, version, source profile versions, preview state, and whether it is part of the current approval snapshot.
+Every artifact displays status, version, source profile versions, preview state, and whether it is part of the current approval snapshot. _(PRD-009 (S-60): the end of the superseded artifact workspace.)_
 
 Every generated synthetic creative displays an application preview and a Download original link for its exact immutable object. Preview and download use the same creative version, dimensions, MIME type, and approved output path. Dashboard theme never recolors the preview or downloaded original.
 

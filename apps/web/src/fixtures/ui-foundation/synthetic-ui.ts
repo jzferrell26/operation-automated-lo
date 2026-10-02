@@ -1,3 +1,5 @@
+import { mainMenuNavigation } from "../../features/shell/model/navigation.js";
+
 /**
  * Deliberately typed as unknown so every consumer must cross the strict Zod boundary.
  * This fixture contains invented identifiers only and cannot authorize provider access.
@@ -20,6 +22,7 @@ export const rawSyntheticUiFixture: unknown = {
         "location:read",
         "onboarding:read",
         "pipeline:read",
+        "reports:read",
         "settings:read",
       ],
     },
@@ -30,98 +33,12 @@ export const rawSyntheticUiFixture: unknown = {
       verifiedAt: "2026-07-21T14:30:00.000Z",
     },
   },
-  navigation: {
-    items: [
-      { id: "overview", label: "Overview", href: "/overview", state: "available" },
-      {
-        id: "marketing",
-        label: "Marketing Suite",
-        href: "/marketing",
-        state: "available",
-        requiredCapability: "campaign:create",
-      },
-      {
-        id: "brand",
-        label: "Brand Engine",
-        href: "/brand",
-        state: "degraded",
-        stateDetail: "A synthetic policy recheck is pending.",
-      },
-      { id: "partners", label: "Partners", href: "/partners", state: "available" },
-      {
-        id: "leads",
-        label: "Leads and Pipeline",
-        href: "/leads",
-        state: "available",
-        requiredCapability: "pipeline:read",
-      },
-      {
-        id: "automations",
-        label: "Automations",
-        href: "/automations",
-        state: "unavailable",
-        stateDetail: "Not included in the founding workspace plan.",
-      },
-      {
-        id: "reports",
-        label: "Reports",
-        href: "/reports",
-        state: "available",
-        requiredCapability: "reports:read",
-        requiredRole: "Owner or Agency User",
-      },
-      {
-        id: "marketplace",
-        label: "Marketplace",
-        href: "/marketplace",
-        state: "planned",
-        stateDetail: "Planned add-on. This is not an operational tool.",
-      },
-      {
-        id: "settings",
-        label: "Settings",
-        href: "/settings",
-        state: "available",
-        requiredCapability: "settings:read",
-      },
-    ],
-    marketingItems: [
-      { id: "campaigns", label: "Campaigns", href: "/marketing/campaigns", state: "available" },
-      {
-        id: "property_sites",
-        label: "Property Sites",
-        href: "/marketing/property-sites",
-        state: "available",
-      },
-      {
-        id: "pdf_creative",
-        label: "PDFs and Creative",
-        href: "/marketing/creative",
-        state: "available",
-      },
-      {
-        id: "ads_manager",
-        label: "Ads Manager",
-        href: "/marketing/ads",
-        state: "degraded",
-        stateDetail: "Synthetic Meta read-back is reconciling.",
-      },
-      {
-        id: "email_sms",
-        label: "Email and SMS",
-        href: "/marketing/messaging",
-        state: "unavailable",
-        stateDetail: "Not included in this synthetic release.",
-      },
-      {
-        id: "blueprints",
-        label: "Blueprint Templates",
-        href: "/marketing/blueprints",
-        state: "planned",
-        stateDetail: "Planned add-on.",
-      },
-    ],
-  },
+  /**
+   * PRD-009a D2: the one menu, derived rather than restated, so the fixture is not a second menu.
+   * The demo persona is a loan officer who runs their own workspace, so it holds `reports:read`
+   * like a self-serve workspace owner does, and all six items open.
+   */
+  navigation: mainMenuNavigation(),
   overview: {
     safety: {
       dataMode: "synthetic",
@@ -576,12 +493,17 @@ export const rawSyntheticUiFixture: unknown = {
           "Say who creates campaigns, who approves them, who publishes, and who just looks.",
         freshness: "No authoritative observation yet",
         state: "not_started",
-        completionHref: "/settings/team",
+        completionHref: "/settings/account",
         reason: "No synthetic publisher assignment is recorded.",
         responsibleParty: "Location Owner",
         nextAction: "Open Team and Roles.",
       },
     ],
+    /**
+     * PRD-009 (009f D1, 2026-10-01): `/onboarding` and its step pages are gone and redirect to Home,
+     * where the checklist lives, and `/settings/team` redirects to `/settings/account`, so these
+     * steps point at the pages that survive rather than at addresses that only redirect.
+     */
     launchReadiness: [
       {
         id: "dependency_recheck",
@@ -590,7 +512,7 @@ export const rawSyntheticUiFixture: unknown = {
           "We look over your access, details, routing, and roles once more before you launch.",
         freshness: "Locked, no observation",
         state: "not_started",
-        completionHref: "/onboarding/dependency-recheck",
+        completionHref: "/overview",
         reason: "Get Connected is incomplete.",
         responsibleParty: "Location Owner",
         nextAction: "Complete every Get Connected outcome first.",
@@ -601,7 +523,7 @@ export const rawSyntheticUiFixture: unknown = {
         description: "Send one clearly marked test lead. It never counts in your numbers.",
         freshness: "Locked, no synthetic test executed",
         state: "not_started",
-        completionHref: "/onboarding/synthetic-lead",
+        completionHref: "/overview",
         reason: "Dependency recheck has not completed.",
         responsibleParty: "Location Owner",
         nextAction: "Complete the dependency recheck first.",
@@ -613,7 +535,7 @@ export const rawSyntheticUiFixture: unknown = {
           "See where the test lead landed, what was left out of your numbers, and any warnings.",
         freshness: "Locked, no result evidence",
         state: "not_started",
-        completionHref: "/onboarding/results",
+        completionHref: "/overview",
         reason: "No synthetic lead result is available.",
         responsibleParty: "Location Owner",
         nextAction: "Complete the synthetic lead check first.",
@@ -624,7 +546,7 @@ export const rawSyntheticUiFixture: unknown = {
         description: "See what we checked, and what to do next.",
         freshness: "Locked, no readiness decision",
         state: "not_started",
-        completionHref: "/onboarding/launch-ready",
+        completionHref: "/overview",
         reason: "Readiness evidence is incomplete.",
         responsibleParty: "Location Owner",
         nextAction: "Resolve all preceding readiness items.",

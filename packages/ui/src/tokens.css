@@ -1,45 +1,51 @@
 /* Operation Automated LO semantic UI tokens.
  * Components consume these variables instead of primitive color values.
+ *
+ * PRD-009a, 2026-10-01: the light AutomatedRE look (owner decision OD-E). The names are unchanged
+ * and the values are design `00-direction.md` section 2.4 (Light) and section 2.6 (the four Dark
+ * changes), which 009a D1 makes normative. `apps/web/src/theme/token-parity.unit.test.ts` reads
+ * those tables and this file and fails on any difference, and holds the knowledge mirror
+ * `library/knowledge/private/ux-ui/01-master-tokens.css` to the same values.
  */
 
 :root {
   color-scheme: light;
 
-  /* Canvas and surfaces */
-  --sf-canvas: #f3f6fa;
+  /* Canvas and surfaces. The navigation is a light top bar on the card colour. */
+  --sf-canvas: #f5f8fc;
   --sf-card: #ffffff;
-  --sf-sunken: #f7f9fc;
-  --sf-nav: #0e1730;
-  --sf-overlay: rgb(14 23 48 / 58%);
+  --sf-sunken: #f5f8fc;
+  --sf-nav: #ffffff;
+  --sf-overlay: rgb(6 30 53 / 44%);
 
-  /* Text */
-  --tx-strong: #1c2431;
-  --tx-body: #5b6574;
-  --tx-faint: #667085;
+  /* Text. Navy is text and the small mark only. */
+  --tx-strong: #061e35;
+  --tx-body: #526579;
+  --tx-faint: #5f7186;
   --tx-on-action: #ffffff;
-  --tx-on-nav: #e8ecf5;
+  --tx-on-nav: #061e35;
 
-  /* Borders */
-  --bd-hairline: #e9edf3;
-  --bd-input: #dfe5ee;
+  /* Borders. The field edge is a visible control boundary (3.88 on a card). */
+  --bd-hairline: #d6e2ee;
+  --bd-input: #718399;
 
-  /* Actions */
-  --ac-primary: #2f6fed;
-  --ac-primary-hover: #1f4bb8;
-  --ac-primary-active: #193f9c;
-  --ac-secondary: #2b9d8f;
+  /* Actions. One action blue; teal is retired, so the secondary is the action blue too. */
+  --ac-primary: #005fcc;
+  --ac-primary-hover: #004ea8;
+  --ac-primary-active: #003f88;
+  --ac-secondary: #005fcc;
 
   /* Statuses */
-  --st-success-fg: #157a46;
-  --st-success-bg: #e6f6ec;
-  --st-warning-fg: #8a6112;
-  --st-warning-bg: #fdf3dd;
-  --st-critical-fg: #c03a2e;
-  --st-critical-bg: #fdecea;
-  --st-info-fg: #285ecb;
-  --st-info-bg: #eaf2ff;
-  --st-neutral-fg: #5b6574;
-  --st-neutral-bg: #eef1f6;
+  --st-success-fg: #137a50;
+  --st-success-bg: #eaf8f0;
+  --st-warning-fg: #895900;
+  --st-warning-bg: #fff4d6;
+  --st-critical-fg: #b42335;
+  --st-critical-bg: #fff0f2;
+  --st-info-fg: #005fcc;
+  --st-info-bg: #eaf4ff;
+  --st-neutral-fg: #526579;
+  --st-neutral-bg: #eef2f7;
   --st-uncertain-fg: #5d4fc1;
   --st-uncertain-bg: #f3ecff;
 
@@ -58,55 +64,63 @@
    * 9's tenant allowance covers semantic accents, which the ring is not. So no
    * tenant accent moves it any more.
    *
-   * Light `#2f6fed` is the Light default accent's own value, so the default
-   * tenant is unchanged; it measures 3.90 at worst across the ten Light
-   * surfaces. Dark `#8bb0ff` measures 6.84 at worst across the ten Dark ones.
+   * PRD-009a: Light is the action blue `#005fcc` (design section 2.4), 5.20 at
+   * worst across the ten Light surfaces. Dark `#8bb0ff` is unchanged and
+   * measures 6.84 at worst across the ten Dark ones.
    * `apps/web/src/theme/token-contrast.unit.test.ts` pins every one of those
    * twenty pairs and fails if this token is ever re-coupled to the accent.
    */
-  --focus-color: #2f6fed;
+  --focus-color: #005fcc;
   --focus-width: 2px;
   --focus-offset: 3px;
 
-  /* Elevation */
-  --shadow-rest: 0 1px 2px rgb(23 32 50 / 6%);
-  --shadow-card: 0 1px 2px rgb(23 32 50 / 5%), 0 10px 24px -16px rgb(23 32 50 / 18%);
-  --shadow-raised: 0 2px 5px rgb(23 32 50 / 7%), 0 14px 30px -18px rgb(23 32 50 / 28%);
+  /* Elevation. Cards are bordered, not lifted; the shadow only keeps a card from looking pasted on. */
+  --shadow-rest: 0 1px 2px rgb(6 30 53 / 5%);
+  --shadow-card: 0 1px 2px rgb(6 30 53 / 4%);
+  --shadow-raised: 0 2px 4px rgb(6 30 53 / 4%), 0 8px 24px rgb(6 30 53 / 12%);
 
-  /* Typography */
-  --font-interface:
-    "Geist", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-data: "Geist Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
-  --text-page-size: 1.4375rem;
-  --text-section-size: 1.0625rem;
-  --text-card-size: 0.875rem;
-  --text-body-size: 0.8125rem;
-  --text-secondary-size: 0.71875rem;
-  --text-caption-size: 0.65625rem;
+  /* Typography. Inter is vendored in `apps/web/public/fonts/` and declared in `globals.css`;
+   * monospace survives only inside "Details for support". */
+  --font-interface: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --text-page-size: 1.75rem;
+  --text-section-size: 1.1875rem;
+  --text-card-size: 1rem;
+  --text-body-size: 1rem;
+  --text-secondary-size: 0.875rem;
+  --text-caption-size: 0.75rem;
   --weight-regular: 400;
   --weight-medium: 500;
+  --weight-semibold: 600;
   --weight-bold: 700;
   --tracking-page: -0.02em;
   --leading-tight: 1.25;
   --leading-normal: 1.5;
 
-  /* Spacing */
+  /* Spacing. `--space-7` closes PRD-008 follow-up Quality L-1: two stylesheets consumed it before
+   * any theme block defined it. */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
   --space-5: 1.25rem;
   --space-6: 1.5rem;
+  --space-7: 1.75rem;
   --space-8: 2rem;
+  --space-12: 3rem;
 
-  /* Radius */
+  /* Layout. The top bar's height and the content measure (1200px). */
+  --topbar-height: 4rem;
+  --content-max: 75rem;
+
+  /* Radius. Buttons and inputs share one radius. */
   --radius-control: 0.5rem;
-  --radius-button: 0.625rem;
-  --radius-card: 0.875rem;
+  --radius-button: 0.5rem;
+  --radius-card: 0.75rem;
   --radius-panel: 1rem;
   --radius-pill: 999px;
 
-  /* Minimum interactive target from design brief section 14 (44px by 44px). */
+  /* Minimum interactive target from design brief section 14 (44px by 44px), now at every width. */
   --target-min-size: 2.75rem;
 
   /* Reference breakpoints for JavaScript and build-time tooling. */
@@ -122,13 +136,15 @@
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
 
+/* Dark keeps the values measured and signed on 2026-09-20 with design section 2.6's four changes:
+ * the navigation surface, the field edge, the secondary action, and the card shadow. */
 [data-theme="dark"] {
   color-scheme: dark;
 
   --sf-canvas: #14161b;
   --sf-card: #1b1e25;
   --sf-sunken: #22262f;
-  --sf-nav: #0b1122;
+  --sf-nav: #1b1e25;
   --sf-overlay: rgb(0 0 0 / 68%);
 
   --tx-strong: #e8eaef;
@@ -138,12 +154,12 @@
   --tx-on-nav: #e8eaef;
 
   --bd-hairline: #343946;
-  --bd-input: #454c5c;
+  --bd-input: #6b7385;
 
   --ac-primary: #3566d6;
   --ac-primary-hover: #2f5dc7;
   --ac-primary-active: #264da8;
-  --ac-secondary: #3db3a4;
+  --ac-secondary: #3566d6;
 
   --st-success-fg: #4ecb8d;
   --st-success-bg: #132a20;
@@ -164,7 +180,7 @@
   --focus-color: #8bb0ff;
 
   --shadow-rest: 0 1px 2px rgb(0 0 0 / 24%);
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 24%), 0 12px 28px -18px rgb(0 0 0 / 70%);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 24%);
   --shadow-raised: 0 2px 6px rgb(0 0 0 / 30%), 0 18px 36px -20px rgb(0 0 0 / 84%);
 }
 

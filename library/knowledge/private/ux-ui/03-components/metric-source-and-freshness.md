@@ -25,4 +25,4 @@ Status uses the semantic status utility plus text and a glyph. It does not use c
 
 ## Responsive behavior
 
-At 1180px, the business-pulse metric order is preserved through compact layout. At 390px, only the screen-defined priority metrics render first; lower-priority metrics follow after the attention queue. Metric cards do not use arbitrary animation, and loading preserves the label and source context rather than presenting a misleading zero.
+At 1180px, the business-pulse metric order is preserved through compact layout. At 390px, only the screen-defined priority metrics render first; lower-priority metrics follow after the attention queue. Metric cards do not use arbitrary animation, and loading preserves the label and source context rather than presenting a misleading zero. _(Superseded on 2026-10-01 by PRD-009 (S-61; OD-D): there is no business pulse; each campaign's page shows three results (spend, leads sent to HighLevel, cost per lead).)_

@@ -35,15 +35,10 @@ const renderedAllowances: readonly ReviewSurfaceAllowance[] = [
   { path: "navigation.items[*].id", because: "Route slug, rendered only inside its own href." },
   { path: "navigation.items[*].label", because: "Name of a route in this product." },
   { path: "navigation.items[*].href", because: "Route path the review reviewer navigates with." },
-  { path: "navigation.marketingItems[*].id", because: "Route slug of a marketing subroute." },
-  { path: "navigation.marketingItems[*].label", because: "Name of a marketing subroute." },
-  { path: "navigation.marketingItems[*].href", because: "Marketing subroute path." },
+  // PRD-009a (009A-AC-014, 2026-10-01): the Marketing Suite sub-items left the fixture with the
+  // six-item menu, so their four allowances went with them.
   {
     path: "navigation.items[*].state",
-    because: "Closed navigationStateSchema enum; the visible label is component-authored.",
-  },
-  {
-    path: "navigation.marketingItems[*].state",
     because: "Closed navigationStateSchema enum; the visible label is component-authored.",
   },
 
@@ -169,7 +164,9 @@ describe("review surface honesty invariant", () => {
   it("sweeps the whole fixture rather than a curated list of narrative keys", () => {
     const fixture = loadSyntheticUiFixture();
 
-    expect(collectFixtureStrings(fixture).length).toBeGreaterThan(400);
+    // PRD-009a: the six-item menu replaced 15 navigation entries, so the fixture holds fewer
+    // strings (382 on 2026-10-01); the floor still proves the sweep reads the whole fixture.
+    expect(collectFixtureStrings(fixture).length).toBeGreaterThan(350);
     expect(forbiddenReviewStrings(fixture, renderedAllowances).length).toBeGreaterThan(200);
     expect(staleAllowances(fixture, projectionAllowances)).toEqual([]);
   });
@@ -208,7 +205,15 @@ describe("review surface honesty invariant", () => {
     expect(workspace.ui.navigation.items.every((item) => item.requiredRole === undefined)).toBe(
       true,
     );
-    expect(container.textContent).toContain("Available once your accounts are connected.");
+    /**
+     * Amended on 2026-10-01 by PRD-009 (009A-AC-014): every item of the six-item menu is
+     * available, so no navigation item carries state detail to replace, and the locked-item
+     * sentence "Available once your accounts are connected." no longer renders in the shell.
+     */
+    expect(workspace.ui.navigation.items.every((item) => item.stateDetail === undefined)).toBe(
+      true,
+    );
+    expect(container.textContent).not.toContain("Available once your accounts are connected.");
     /**
      * Since PRD-005a the shell states the session it actually has. Without a real sign-in that is
      * "You're signed out", not the fixture's demo persona, so the fixture provenance string must be
@@ -218,7 +223,9 @@ describe("review surface honesty invariant", () => {
     expect(container.textContent).not.toContain("Demo reviewer");
     expect(container.textContent).toContain("You're signed out");
     expect(container.textContent).toContain("Sign in to see your workspace");
-    expect(screen.getAllByText("Not connected yet").length).toBeGreaterThan(0);
+    // PRD-009a (009A-AC-013, D-11): the shell-wide banner whose headline this used to find is
+    // gone; the page states the not-connected fact itself, in its own sections.
+    expect(screen.getAllByText(/^Not connected yet\.?$/u).length).toBeGreaterThan(0);
   });
 
   it("renders no numeric demo value in any review metric", async () => {

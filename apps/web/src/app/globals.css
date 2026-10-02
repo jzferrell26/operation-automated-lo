@@ -1,26 +1,54 @@
 @import "@oalo/ui/tokens.css";
 
-/* Design brief section 10. The interface and data families come from the token
- * layer, never from a local stack, so one edit in `tokens.css` moves the whole
- * product. The font pipeline ruling for this batch is recorded in
- * `apps/web/public/fonts/README.md`: no font file is fetched at runtime, so the
- * declared families resolve through the token stack to the system sans and
- * system monospace faces until a licensed Geist build is vendored.
+/* PRD-009a, 009A-AC-007, and design `00-direction.md` section 2.2. Inter is the interface font:
+ * the unmodified upstream variable file, vendored with its licence in `apps/web/public/fonts/` and
+ * served from the application origin, so nothing is fetched from a third party. The provenance and
+ * the hashes are in `apps/web/public/fonts/README.md`. One face covers every weight: the variable
+ * file carries the whole 100 to 900 range, and `swap` draws the system face until it arrives.
  */
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Design brief section 10. The interface and data families come from the token layer, never from
+ * a local stack, so one edit in `tokens.css` moves the whole product. */
 :root {
   font-family: var(--font-interface);
   background: var(--sf-canvas);
   color: var(--tx-strong);
 }
 
-/* `time` joins the data elements because the brief puts timestamps in the data font, wherever a
- * screen shows one (rubric axis 3). */
+/* 009G-AC-010. The top bar is sticky, so the page reserves its height as scroll padding: a control
+ * scrolled into view by focus or by an anchor lands below the bar, never under it. */
+html {
+  scroll-padding-block-start: calc(var(--topbar-height) + var(--space-4));
+}
+
+/* Superseded on 2026-10-01 by PRD-009 (OD-E, design section 2.2): brief section 10 put timestamps
+ * and data in the monospace face (rubric axis 3). Numbers and dates now use Inter with tabular
+ * figures, so columns of money and dates still line up. */
+time,
+[data-text-tone="data"] {
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
+}
+
 code,
 kbd,
 samp,
-pre,
-time,
-[data-text-tone="data"] {
+pre {
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
+}
+
+/* User-language contract section 6: version references, fingerprints, rule codes, and support
+ * references live only in "Details for support", with plain labels and monospace values. This is
+ * the one place the data font is used. */
+[data-support-details] :is(dd, code, kbd, samp, pre) {
   font-family: var(--font-data);
 }
 
@@ -47,9 +75,9 @@ html[data-tenant-accent][data-theme="dark"] {
 }
 
 /* Design brief section 10 and rubric delta D-009, ruled 2026-10-01. The body step goes on `body`,
- * the root of inheritance, so text no module sizes reads at 13px instead of the browser's 16px.
- * It never goes on `:root` or `html`: every step is a `rem` token, so the root stays the browser's
- * 16px and the six steps keep their values. */
+ * the root of inheritance, so text no module sizes reads at the body step. It never goes on `:root`
+ * or `html`: every step is a `rem` token, so the root stays the browser's 16px and the steps keep
+ * their values. Since PRD-009a the body step is itself 16px (design section 2.4). */
 body {
   margin: 0;
   font-size: var(--text-body-size);
@@ -74,7 +102,7 @@ h6 {
 }
 
 /* The browser draws `small` one keyword smaller than its parent, which lands between the steps at
- * any parent size (10.83px under the 13px body step). A `small` is a source, a freshness line, or
+ * any parent size (13.33px under the 16px body step). A `small` is a source, a freshness line, or
  * a side note, so its floor is the caption step, as on the overview and in the canvases. */
 small {
   font-size: var(--text-caption-size);

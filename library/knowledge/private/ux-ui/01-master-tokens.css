@@ -106,53 +106,85 @@
  *   --focus-color followed it. It no longer does.
  */
 
+/* AMENDED 2026-10-01 by PRD-009 (sub-PRD 009a, 009A-AC-001 and 002) by ux-ui-guardian.
+ *
+ * The light AutomatedRE look the owner chose (OD-E) changes values, not names. Every value below
+ * is design `library/requirements/<lifecycle>/prd-009-marketing-toolkit/design/00-direction.md`
+ * section 2.4 (Light) and section 2.6 (the four Dark changes: `--sf-nav`, `--bd-input`,
+ * `--ac-secondary`, `--shadow-card`), which 009a D1 makes normative. New in both files:
+ * `--weight-semibold`, `--space-7` (closing PRD-008 Quality L-1), `--space-12`,
+ * `--topbar-height`, and `--content-max`. Teal is retired: `--ac-secondary` is the action blue
+ * in both themes. Inter replaces Geist (`--font-interface`), and `--font-data` is the system
+ * monospace stack, used only inside "Details for support".
+ *
+ * The parity is no longer a matter of reading: `apps/web/src/theme/token-parity.unit.test.ts`
+ * reads the design tables, `packages/ui/src/tokens.css`, and every theme block of this file
+ * (including the `prefers-color-scheme` block, which must equal the Dark block) and fails on any
+ * difference. Before this amendment no test compared the two files.
+ *
+ * The superseded values stay readable in git history and in the notes below, which describe the
+ * file as it stood on 2026-09-20; their numbers are history, not the current baseline.
+ *
+ * The `prefers-color-scheme` block is kept so this file reads on its own. It no longer describes
+ * the product's first visit: since PRD-009a (D4, design D-5) the bootstrap script resolves Light
+ * when nothing is stored, whatever the device prefers, and System is a stored choice.
+ */
+
 :root {
   color-scheme: light;
 
-  --sf-canvas: #f3f6fa;
+  --sf-canvas: #f5f8fc;
   --sf-card: #ffffff;
-  --sf-sunken: #f7f9fc;
-  --sf-nav: #0e1730;
-  --sf-overlay: rgb(14 23 48 / 58%);
+  --sf-sunken: #f5f8fc;
+  --sf-nav: #ffffff;
+  --sf-overlay: rgb(6 30 53 / 44%);
 
-  --tx-strong: #1c2431;
-  --tx-body: #5b6574;
-  --tx-faint: #667085;
+  --tx-strong: #061e35;
+  --tx-body: #526579;
+  --tx-faint: #5f7186;
   --tx-on-action: #ffffff;
-  --tx-on-nav: #e8ecf5;
+  --tx-on-nav: #061e35;
 
-  --bd-hairline: #e9edf3;
-  --bd-input: #dfe5ee;
+  --bd-hairline: #d6e2ee;
+  --bd-input: #718399;
 
-  --ac-primary: #2f6fed;
-  --ac-primary-hover: #1f4bb8;
-  --ac-primary-active: #193f9c;
-  --ac-secondary: #2b9d8f;
+  --ac-primary: #005fcc;
+  --ac-primary-hover: #004ea8;
+  --ac-primary-active: #003f88;
+  --ac-secondary: #005fcc;
 
-  --st-success-fg: #157a46;
-  --st-success-bg: #e6f6ec;
-  --st-warning-fg: #8a6112;
-  --st-warning-bg: #fdf3dd;
-  --st-critical-fg: #c03a2e;
-  --st-critical-bg: #fdecea;
-  --st-info-fg: #285ecb;
-  --st-info-bg: #eaf2ff;
-  --st-neutral-fg: #5b6574;
-  --st-neutral-bg: #eef1f6;
+  --st-success-fg: #137a50;
+  --st-success-bg: #eaf8f0;
+  --st-warning-fg: #895900;
+  --st-warning-bg: #fff4d6;
+  --st-critical-fg: #b42335;
+  --st-critical-bg: #fff0f2;
+  --st-info-fg: #005fcc;
+  --st-info-bg: #eaf4ff;
+  --st-neutral-fg: #526579;
+  --st-neutral-bg: #eef2f7;
   --st-uncertain-fg: #5d4fc1;
   --st-uncertain-bg: #f3ecff;
 
-  --font-interface: "Geist", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-data: "Geist Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+  --focus-color: #005fcc;
+  --focus-width: 2px;
+  --focus-offset: 3px;
 
-  --text-page-size: 1.4375rem;
-  --text-section-size: 1.0625rem;
-  --text-card-size: 0.875rem;
-  --text-body-size: 0.8125rem;
-  --text-secondary-size: 0.71875rem;
-  --text-caption-size: 0.65625rem;
+  --shadow-rest: 0 1px 2px rgb(6 30 53 / 5%);
+  --shadow-card: 0 1px 2px rgb(6 30 53 / 4%);
+  --shadow-raised: 0 2px 4px rgb(6 30 53 / 4%), 0 8px 24px rgb(6 30 53 / 12%);
+
+  --font-interface: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --text-page-size: 1.75rem;
+  --text-section-size: 1.1875rem;
+  --text-card-size: 1rem;
+  --text-body-size: 1rem;
+  --text-secondary-size: 0.875rem;
+  --text-caption-size: 0.75rem;
   --weight-regular: 400;
   --weight-medium: 500;
+  --weight-semibold: 600;
   --weight-bold: 700;
   --tracking-page: -0.02em;
   --leading-tight: 1.25;
@@ -164,11 +196,16 @@
   --space-4: 1rem;
   --space-5: 1.25rem;
   --space-6: 1.5rem;
+  --space-7: 1.75rem;
   --space-8: 2rem;
+  --space-12: 3rem;
+
+  --topbar-height: 4rem;
+  --content-max: 75rem;
 
   --radius-control: 0.5rem;
-  --radius-button: 0.625rem;
-  --radius-card: 0.875rem;
+  --radius-button: 0.5rem;
+  --radius-card: 0.75rem;
   --radius-panel: 1rem;
   --radius-pill: 999px;
 
@@ -179,18 +216,10 @@
   --breakpoint-embedded: 1180px;
   --breakpoint-desktop: 1440px;
 
-  --shadow-rest: 0 1px 2px rgb(23 32 50 / 6%);
-  --shadow-card: 0 1px 2px rgb(23 32 50 / 5%), 0 10px 24px -16px rgb(23 32 50 / 18%);
-  --shadow-raised: 0 2px 5px rgb(23 32 50 / 7%), 0 14px 30px -18px rgb(23 32 50 / 28%);
-
   --motion-fast: 120ms;
   --motion-base: 180ms;
   --motion-slow: 240ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-
-  --focus-color: #2f6fed;
-  --focus-width: 2px;
-  --focus-offset: 3px;
 }
 
 [data-theme="dark"] {
@@ -199,7 +228,7 @@
   --sf-canvas: #14161b;
   --sf-card: #1b1e25;
   --sf-sunken: #22262f;
-  --sf-nav: #0b1122;
+  --sf-nav: #1b1e25;
   --sf-overlay: rgb(0 0 0 / 68%);
 
   --tx-strong: #e8eaef;
@@ -209,12 +238,12 @@
   --tx-on-nav: #e8eaef;
 
   --bd-hairline: #343946;
-  --bd-input: #454c5c;
+  --bd-input: #6b7385;
 
   --ac-primary: #3566d6;
   --ac-primary-hover: #2f5dc7;
   --ac-primary-active: #264da8;
-  --ac-secondary: #3db3a4;
+  --ac-secondary: #3566d6;
 
   --st-success-fg: #4ecb8d;
   --st-success-bg: #132a20;
@@ -232,21 +261,20 @@
   --focus-color: #8bb0ff;
 
   --shadow-rest: 0 1px 2px rgb(0 0 0 / 24%);
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 24%), 0 12px 28px -18px rgb(0 0 0 / 70%);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 24%);
   --shadow-raised: 0 2px 6px rgb(0 0 0 / 30%), 0 18px 36px -20px rgb(0 0 0 / 84%);
 }
 
-/* Completed 2026-09-20 by the 006D-AC-005 audit. This block must carry every
- * override `[data-theme="dark"]` carries, or this file stops reading correctly
+/* Completed 2026-09-20 by the 006D-AC-005 audit; values amended 2026-10-01 by PRD-009a. This block
+ * must carry every override `[data-theme="dark"]` carries, or this file stops reading correctly
  * on its own, which is the only reason it exists. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-
     --sf-canvas: #14161b;
     --sf-card: #1b1e25;
     --sf-sunken: #22262f;
-    --sf-nav: #0b1122;
+    --sf-nav: #1b1e25;
     --sf-overlay: rgb(0 0 0 / 68%);
     --tx-strong: #e8eaef;
     --tx-body: #b0b7c4;
@@ -254,11 +282,11 @@
     --tx-on-action: #ffffff;
     --tx-on-nav: #e8eaef;
     --bd-hairline: #343946;
-    --bd-input: #454c5c;
+    --bd-input: #6b7385;
     --ac-primary: #3566d6;
     --ac-primary-hover: #2f5dc7;
     --ac-primary-active: #264da8;
-    --ac-secondary: #3db3a4;
+    --ac-secondary: #3566d6;
     --st-success-fg: #4ecb8d;
     --st-success-bg: #132a20;
     --st-warning-fg: #e8b64c;
@@ -273,7 +301,7 @@
     --st-uncertain-bg: #241d3d;
     --focus-color: #8bb0ff;
     --shadow-rest: 0 1px 2px rgb(0 0 0 / 24%);
-    --shadow-card: 0 1px 2px rgb(0 0 0 / 24%), 0 12px 28px -18px rgb(0 0 0 / 70%);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 24%);
     --shadow-raised: 0 2px 6px rgb(0 0 0 / 30%), 0 18px 36px -20px rgb(0 0 0 / 84%);
   }
 }

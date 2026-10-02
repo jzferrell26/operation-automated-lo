@@ -17,7 +17,7 @@
  *   .ui-panel           -> `.oalo-surface[data-variant="raised"]`, `.panel` in
  *                          `overlay.module.css`
  *   .ui-sunken          -> `.oalo-surface[data-variant="sunken"]`
- *   .ui-nav             -> `.desktopSidebar` in `app-shell.module.css`
+ *   .ui-nav             -> `.desktopSidebar` in `app-shell.module.css` (Amended on 2026-10-01 by PRD-009 (S-103; D-2): `.ui-nav` maps to the top bar, `.topbar` in `app-shell.module.css`.)
  *   .ui-focusable       -> the `:focus-visible` rule each component declares
  *                          with `--focus-width`, `--focus-color`,
  *                          `--focus-offset`

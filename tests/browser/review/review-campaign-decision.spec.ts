@@ -127,29 +127,30 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
    * PRD-008b 008B-AC-006. The decision replaces the controls with what was recorded and refreshes
    * the page, so this waits for the refreshed page rather than for the card alone.
    *
-   * "Who decided" is rendered by the server only once a decision is stored, so its arrival is
-   * the proof that the refresh has landed. Until 2026-10-01 this state photographed the moment
-   * before that: an approved card beside a screen that still said "Ready for approval", offered
-   * "An approver can sign off on it now.", and re-offered the approval, which is the contradiction
-   * the PRD-006 QA report recorded. The assertions are scoped to the page's main region, so
-   * nothing in the shell or a closed walkthrough can satisfy or break them.
+   * PRD-009e's campaign page: the "Approval" region names who decided and when, the date in a
+   * `time` element, and a decided version carries no approve card at all. So once the refresh has
+   * landed, the control's own outcome sentence (writing review W-2: "Approved. This campaign won't
+   * run as an ad yet. HighLevel and Meta aren't connected.") is gone with the card, and the region
+   * is what says the version was approved. The assertions are scoped to the page's main region.
    */
   const main = page.getByRole("main");
-  const decidedNow = page.getByRole("region", { name: "Who decided" });
-  await expect(decidedNow).toBeVisible();
+  const decidedNow = page.getByRole("region", { name: "Approval" });
+  await expect(decidedNow).toContainText("Approved by", { timeout: 30_000 });
+  await expect(decidedNow.locator("time")).toHaveCount(1);
+  await expect(decidedNow.locator("time")).toHaveAttribute("datetime", /^d{4}-d{2}-d{2}T/u);
+  await expect(decidedNow).toContainText("The approval covers this version only.");
   await expect(main.getByText("Ready for approval", { exact: false })).toHaveCount(0);
   await expect(main.getByText("An approver can sign off on it now.", { exact: false })).toHaveCount(
     0,
   );
-  await expect(main.getByText("Approve this version", { exact: false })).toHaveCount(0);
   await expect(main.getByRole("button", { name: "Approve this version" })).toHaveCount(0);
   await expect(main.getByRole("button", { name: "Send back for changes" })).toHaveCount(0);
+  await expect(main.locator("[data-approval-card]")).toHaveCount(0);
   await expect(
     main.getByText(
-      "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.",
+      "Approved. This campaign won't run as an ad yet. HighLevel and Meta aren't connected.",
     ),
-  ).toBeVisible();
-  await expect(decidedNow).toContainText("Approved by");
+  ).toHaveCount(0);
 
   /**
    * `approved` is the page after the decision landed and the refresh re-read the stored state: the
@@ -165,7 +166,7 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
       screen: "campaign-detail",
       state: "approved",
       theme,
-      mask: [decidedNow.locator("p").last()],
+      mask: [decidedNow.locator("time")],
     });
   }
 
@@ -173,17 +174,20 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(campaignUrl);
     await chooseThemeFromTheHeader(page, theme);
-    // The decision is now the server's, so the screen carries the "Who decided" region and the
-    // control is blocked against a version somebody has already decided on.
-    const decided = page.getByRole("region", { name: "Who decided" });
-    await expect(decided).toBeVisible();
+    // The decision is now the server's, so the screen carries the "Approval" region with who
+    // decided, and no control is offered on a version somebody has already decided on.
+    const decided = page.getByRole("region", { name: "Approval" });
+    await expect(decided).toContainText("Approved by");
+    await expect(
+      page.getByRole("main").getByRole("button", { name: "Approve this version" }),
+    ).toHaveCount(0);
     await captureNamedState(page, {
       screen: "campaign-detail",
       state: "already-decided",
       theme,
       // The moment the decision was recorded is a fact about this run, not about the design. It is
-      // the last paragraph in the region; the first is the "Approval" eyebrow, which is copy.
-      mask: [decided.locator("p").last()],
+      // the region's `time` element.
+      mask: [decided.locator("time")],
     });
   }
 

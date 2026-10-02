@@ -18,6 +18,10 @@ import { describe, expect, it } from "vitest";
  *    column, because `repeat(auto-fit, ...)` drops an empty track.
  * 5. The topic question drew at the 16px body step where the mockup has the 14px secondary step,
  *    and sat 12px above its chips where the mockup has 20px.
+ * 6. At 768 the two lists stayed in two columns (they stacked only below 720), so for an approver
+ *    "Needs your approval" sat beside "Running now". 009B-AC-003 says the cards stack in order at
+ *    768 and 390, and a criterion outranks the mockup, so the lists are two columns from 1100px,
+ *    the page's own breakpoint (the Wave 3 verification, defect D-2).
  *
  * jsdom has no layout, so these read the stylesheet. The measurements themselves are in
  * `tests/browser/home-first-run-geometry.spec.ts` (needs a browser run).
@@ -117,16 +121,36 @@ describe("the lead has the previews' measure (verifier: 604px against 518px)", (
   });
 });
 
-describe("the two lists are two equal columns, with or without an approval card (verifier)", () => {
-  it("is a fixed pair of equal tracks, not auto-fit, which would drop the empty one", () => {
-    expect(rule(".lists")["grid-template-columns"]).toBe("repeat(2, minmax(0, 1fr))");
+describe("the two lists are two equal columns from 1100px, with or without an approval card (verifier, D-2)", () => {
+  const WIDE = "@media (min-width: 1100px)";
+
+  it("is a fixed pair of equal tracks from 1100px, not auto-fit, which would drop the empty one", () => {
+    expect(rule(".lists", WIDE)["grid-template-columns"]).toBe("repeat(2, minmax(0, 1fr))");
     expect(source).not.toMatch(/auto-(?:fit|fill)/u);
   });
 
-  it("stacks to one column below 720px, where the mockup does", () => {
-    expect(rule(".lists", "@media (max-width: 719.98px)")["grid-template-columns"]).toBe(
-      "minmax(0, 1fr)",
+  it("is one column below 1100px, so the approval card stacks under Running now at 768 and 390 (009B-AC-003)", () => {
+    expect(rule(".lists")["grid-template-columns"]).toBe("minmax(0, 1fr)");
+    // The wide rule is the only place the pair is switched on: no narrower breakpoint brings it back.
+    const placed = blocks
+      .filter(
+        (block) => block.selector === ".lists" && "grid-template-columns" in block.declarations,
+      )
+      .map((block) => block.media);
+    expect(placed).toEqual([undefined, WIDE]);
+  });
+
+  it("writes the one-column rule first, because both rules weigh the same and the later one wins", () => {
+    const order = blocks.filter((block) => block.selector === ".lists").map((block) => block.media);
+    expect(order).toEqual([undefined, WIDE]);
+  });
+
+  it("uses the breakpoint of the page's own two columns, and no narrower step for the lists", () => {
+    expect(rule(".grid", WIDE)["grid-template-columns"]).toBe("minmax(0, 1.55fr) minmax(0, 1fr)");
+    const narrow = blocks.filter(
+      (block) => block.selector === ".lists" && block.media?.includes("max-width") === true,
     );
+    expect(narrow).toEqual([]);
   });
 });
 

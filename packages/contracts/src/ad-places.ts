@@ -4,12 +4,17 @@ import { z } from "zod";
  * PRD-009d D4. "Where it shows": places, not people.
  *
  * A place is a state (one of the 50 states or the District of Columbia, typed by full name or by its
- * two-letter code, stored as the code) or a city ("Austin, TX"). No value may hold a digit or a
- * whole word from `AD_PLACE_AUDIENCE_WORDS` (distance and postal words such as "mi" and "km", and
- * the age, gender, family, and status words the targeting rule refuses), so "Page, AZ" and
- * "Mendota Heights, MN" pass and "78701", "10 miles around Austin", "women 25-40", "Seniors, TX",
- * and "Austin mi, TX" do not. A list of real places would be stricter still; it is not used because
- * it would be a large new data dependency the product does not have.
+ * two-letter code, stored as the code) or a city ("Austin, TX"). No value may hold a digit, and no
+ * city NAME may hold a whole word from `AD_PLACE_AUDIENCE_WORDS` (postal and radius words, and the
+ * age, gender, family, and status words the targeting rule refuses) or end in a unit of distance
+ * (`AD_PLACE_DISTANCE_UNITS`), so "Page, AZ" and "Mendota Heights, MN" pass and "78701",
+ * "10 miles around Austin", "women 25-40", "Seniors, TX", and "Austin mi, TX" do not. The words are
+ * matched against the city name only, never against the state code, so "MI" is Michigan and
+ * "Detroit, MI" is Detroit. A distance unit is refused only where it reads as a distance (beside a
+ * digit, in a phrase with "within", or as the last word of the name), so "Miles City, MT" passes. A short
+ * list of real places whose names hold a refused word (`AD_PLACE_NAMED_EXCEPTIONS`) passes by exact
+ * match. A list of every real place would be stricter still; it is not used because it would be a
+ * large new data dependency the product does not have.
  * At most 5 states and 10 cities. The domain's extended `TARGETING_NOT_ALLOWED` refuses a stored
  * value outside these rules (`packages/domain/src/library-ad-places.ts`).
  *
@@ -78,13 +83,14 @@ export const AD_CITY_RADIUS_MILES = 15;
 export type AdPlace = Readonly<{ kind: "state" | "city"; value: string }>;
 
 /**
- * Whole words that aim at people or at a distance rather than at a place. The domain holds the same
- * list (`LIBRARY_AD_PLACE_AUDIENCE_WORDS`), and a unit test keeps the two equal. Real town names
+ * Whole words that aim at people, a ZIP code, or a radius rather than at a place. The domain holds the
+ * same list (`LIBRARY_AD_PLACE_AUDIENCE_WORDS`), and a unit test keeps the two equal. Real town names
  * that hold a common word (Old Saybrook, Young Harris, Man, White Plains) are not refused, so "old",
- * "young", "man", and colour words are not on it.
+ * "young", "man", and colour words are not on it. No word here is a two-letter state code, and the
+ * words are never matched against the state code at all.
  */
 export const AD_PLACE_AUDIENCE_WORDS: readonly string[] = Object.freeze([
-  // Distance and postal codes: places are cities and states, never a radius or a ZIP code.
+  // Postal codes and radii: places are cities and states, never a radius or a ZIP code.
   "zip",
   "zips",
   "zipcode",
@@ -92,15 +98,6 @@ export const AD_PLACE_AUDIENCE_WORDS: readonly string[] = Object.freeze([
   "postal",
   "radius",
   "within",
-  "mile",
-  "miles",
-  "mi",
-  "km",
-  "kms",
-  "kilometer",
-  "kilometers",
-  "kilometre",
-  "kilometres",
   // Age.
   "age",
   "ages",
@@ -199,9 +196,55 @@ export const AD_PLACE_AUDIENCE_WORDS: readonly string[] = Object.freeze([
   "catholics",
 ]);
 
+/**
+ * Units of distance. "mi" is also Michigan, and "Miles City" is a city, so a unit is not refused as a
+ * bare word. It is refused where it reads as a distance: beside a digit (every digit is refused),
+ * after "within" (a refused word), or as the last word of the name ("Austin mi", "Austin km", "Mile").
+ * The domain holds the same list (`LIBRARY_AD_PLACE_DISTANCE_UNITS`), held equal by a unit test.
+ */
+export const AD_PLACE_DISTANCE_UNITS: readonly string[] = Object.freeze([
+  "mi",
+  "mile",
+  "miles",
+  "km",
+  "kms",
+  "kilometer",
+  "kilometers",
+  "kilometre",
+  "kilometres",
+]);
+
+/**
+ * Real places (checked against Wikipedia on 2026-10-02) whose names hold a refused word, passed by
+ * exact match on "Name, ST" and nothing looser: a person who serves Gay, GA is not refused, and
+ * "Gay, TX" still is. The domain holds the same list (`LIBRARY_AD_PLACE_NAMED_EXCEPTIONS`).
+ */
+export const AD_PLACE_NAMED_EXCEPTIONS: readonly string[] = Object.freeze([
+  "Gay, GA",
+  "Gay, MI",
+  "Boomer, NC",
+  "Boomer, WV",
+  "Boys Town, NE",
+  "Boys Ranch, TX",
+  "Ages, KY",
+  "Miles, TX",
+  "Miles, IA",
+  "Six Mile, SC",
+  "Eight Mile, AL",
+  "Ten Mile, TN",
+  "Twelve Mile, IN",
+]);
+
 const PEOPLE_WORDS = new RegExp(
   `(?<!\\p{L})(?:${AD_PLACE_AUDIENCE_WORDS.join("|")})(?!\\p{L})`,
   "iu",
+);
+const UNIT_CLOSES_NAME = new RegExp(
+  `(?:^|\\p{L}[^\\p{L}]+)(?:${AD_PLACE_DISTANCE_UNITS.join("|")})$`,
+  "iu",
+);
+const NAMED_EXCEPTIONS: ReadonlySet<string> = new Set(
+  AD_PLACE_NAMED_EXCEPTIONS.map((place) => place.toLowerCase()),
 );
 const CITY_NAME = /^[A-Za-z][A-Za-z .'-]{1,59}$/u;
 
@@ -222,12 +265,16 @@ function stateCode(typed: string): string | undefined {
 export function parseAdPlace(typed: string): AdPlace | undefined {
   const value = typed.trim().replace(/\s+/gu, " ");
   if (value.length === 0 || value.length > 64) return undefined;
-  if (/\p{N}/u.test(value) || PEOPLE_WORDS.test(value)) return undefined;
+  if (/\p{N}/u.test(value)) return undefined;
   const comma = /^(.+?) ?, ?([A-Za-z]{2})$/u.exec(value);
   if (comma !== null) {
     const name = comma[1] ?? "";
     const code = (comma[2] ?? "").toUpperCase();
     if (!CITY_NAME.test(name) || !Object.hasOwn(US_STATES, code)) return undefined;
+    // The words are matched against the name only: the code after the comma is a state, never a word.
+    if (!NAMED_EXCEPTIONS.has(`${name}, ${code}`.toLowerCase())) {
+      if (PEOPLE_WORDS.test(name) || UNIT_CLOSES_NAME.test(name)) return undefined;
+    }
     return Object.freeze({ kind: "city", value: `${name}, ${code}` });
   }
   const code = stateCode(value);

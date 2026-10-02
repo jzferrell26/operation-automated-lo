@@ -8,14 +8,19 @@
  * Layout, from the mockup (`design/mockups/home-first-run.html`): at 1100px and wider the start card
  * and the two lists sit in the left column (1.55fr) and the checklist in the right (1fr), top
  * aligned; below 1100px everything stacks in document order, which is start, checklist, running,
- * approval (D1). Every control is at least 44px tall at every width, and no figure appears on the
- * page, so nothing here styles a number.
+ * approval (D1), the two lists included. Every control is at least 44px tall at every width, and no
+ * figure appears on the page, so nothing here styles a number.
+ *
+ * Amended on 2026-10-02 (the Wave 3 verification, defect D-2): the mockup keeps the two lists side
+ * by side down to 720px, which put "Needs your approval" beside "Running now" at 768. 009B-AC-003
+ * says the cards stack in that order at 768 and 390, and a criterion outranks a mockup, so the lists
+ * row is two columns only from 1100px, the same breakpoint as the rest of the page.
  *
  * Wave 3 polish, against the mockup and its previews at 1440, 1180, 768 and 390 in Light and Dark:
  * the card rhythm is no longer outranked by the element reset, so the checklist intro sits 20px
- * above the first item; the lead has the previews' measure; the two lists are always two equal
- * columns, so "Running now" stays half width when a person who cannot approve gets no approval card
- * (009B D3); the item glyphs are 24px; and the state chips read at the secondary step.
+ * above the first item; the lead has the previews' measure; the two lists are two equal columns
+ * from 1100px, so "Running now" stays half width when a person who cannot approve gets no approval
+ * card (009B D3); the item glyphs are 24px; and the state chips read at the secondary step.
  */
 
 .home {
@@ -38,6 +43,14 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* The two lists stack, running then approval, until the page itself has two columns (009B-AC-003). */
+.lists {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
+}
+
 @media (min-width: 1100px) {
   .grid {
     grid-template-areas:
@@ -54,23 +67,17 @@
     grid-area: setup;
   }
 
+  /*
+   * Two equal columns (the mockup's `.home-lists`), from 1100px only. It was `repeat(auto-fit, ...)`,
+   * which drops an empty track, so a lone "Running now" (no approval card for a person who cannot
+   * approve, 009B D3) grew to the whole column. A fixed pair keeps it at half width, and the second
+   * track stays empty rather than holding an approval card that would say "Nothing to approve" to
+   * someone who never approves.
+   */
   .lists {
     grid-area: lists;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
-
-/*
- * Two equal columns, always (the mockup's `.home-lists`). It was `repeat(auto-fit, ...)`, which
- * drops an empty track, so a lone "Running now" (no approval card for a person who cannot approve,
- * 009B D3) grew to the whole column. A fixed pair keeps it at half width, and the second track
- * stays empty rather than holding an approval card that would say "Nothing to approve" to someone
- * who never approves.
- */
-.lists {
-  display: grid;
-  gap: var(--space-6);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  min-inline-size: 0;
 }
 
 /* The bordered white card of the light look (design section 2.3): the border is the edge. */
@@ -418,9 +425,5 @@
 
   .card {
     padding: var(--space-5);
-  }
-
-  .lists {
-    grid-template-columns: minmax(0, 1fr);
   }
 }

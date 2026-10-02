@@ -8,6 +8,7 @@ import {
   seededCredentials,
   signInExisting,
 } from "./helpers/guided-setup-journey.js";
+import { saveBrandDetails } from "./helpers/saved-brand.js";
 
 /**
  * PRD-009e, against a real database in the review project: the campaign page's approval names the
@@ -40,6 +41,9 @@ test("the campaign page names who approved, lists every version, and opens an ol
   const creatorGuard = await guardLocalOrigin(creator);
   await creator.setViewportSize({ width: 1440, height: 900 });
   await signInExisting(creator, creatorEmail, password);
+  // The seed saves no Brand, so without this the version has no NMLS number, step 3 reads "Needs
+  // changes", and the page offers no hand-off (008B-AC-011). See `saveBrandDetails`.
+  await saveBrandDetails(creator);
   const campaignRef = await saveACampaign(creator, {
     ad: SAMPLE_ADS.firstHome,
     place: "Austin, TX",

@@ -23,7 +23,8 @@ import {
 
 const CARD_GAP = 24;
 const LEAD_MEASURE = 518;
-const TWO_COLUMN_FROM = 720;
+/** The lists row is two columns from the page's own breakpoint, and one column below it (009B-AC-003). */
+const TWO_COLUMN_FROM = 1100;
 
 type Frame = (typeof REVIEW_FRAMES)[number];
 
@@ -121,8 +122,8 @@ for (const theme of ["light", "dark"] as const) {
         0,
       );
 
-      // "Running now" is half of the lists row from 720px, and the whole row below it, whether or
-      // not an approval card sits beside it.
+      // "Running now" is half of the lists row from 1100px (1440 and 1180), and the whole row below
+      // it (768 and 390), whether or not an approval card sits beside it.
       const expectedWidth =
         frame.width >= TWO_COLUMN_FROM ? (measured.rowWidth - CARD_GAP) / 2 : measured.rowWidth;
       expect(measured.runningWidth, `Running now width at ${at}`).toBeCloseTo(expectedWidth, 0);

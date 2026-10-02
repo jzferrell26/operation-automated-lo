@@ -13,6 +13,7 @@ import {
   guardLocalOrigin,
   signUpFreshAccount,
 } from "./helpers/guided-setup-journey.js";
+import { saveBrandDetails } from "./helpers/saved-brand.js";
 
 /**
  * PRD-009d D9 and 009D-AC-022: the happy path from Home to an approved campaign, counted.
@@ -66,14 +67,9 @@ const LONG_NAME =
   "Alexandra Bartholomew Montgomery-Whitfield Fitzgerald Wellington-Smyth the Third";
 
 async function saveTheBrand(page: Page, name?: string): Promise<void> {
-  await page.goto("/brand", { waitUntil: "networkidle" });
-  const main = page.getByRole("main");
-  if (name !== undefined) await main.getByLabel("Loan officer name", { exact: false }).fill(name);
-  await main.getByLabel("Your NMLS number", { exact: false }).fill("1234567");
-  await main.getByLabel("Company NMLS number", { exact: false }).fill("7654321");
-  await main.getByRole("button", { name: "Save your details", exact: true }).click();
-  await expect(main.getByText("Your changes are saved.").first()).toBeVisible();
+  await saveBrandDetails(page, name === undefined ? {} : { name });
   if (name !== undefined) return;
+  const main = page.getByRole("main");
   await main.getByLabel("Title on your ads", { exact: false }).fill("Loan officer");
   await main.getByRole("button", { name: "Save ad settings", exact: true }).click();
   await expect(main.getByText("Your changes are saved.")).toHaveCount(2);

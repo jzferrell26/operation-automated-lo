@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   AD_PLACE_AUDIENCE_WORDS,
+  AD_PLACE_DISTANCE_UNITS,
   AD_PLACE_LIMITS,
+  AD_PLACE_NAMED_EXCEPTIONS,
   AdPlacesInputSchema,
   US_STATES,
   adPlaceLabel,
@@ -10,6 +12,8 @@ import {
 } from "@oalo/contracts";
 import {
   LIBRARY_AD_PLACE_AUDIENCE_WORDS,
+  LIBRARY_AD_PLACE_DISTANCE_UNITS,
+  LIBRARY_AD_PLACE_NAMED_EXCEPTIONS,
   US_STATE_CODES,
   libraryAdPlacesProblem,
 } from "@oalo/domain";
@@ -52,6 +56,19 @@ const REFUSED: readonly string[] = [
   "Low Income, TX",
   "Hispanic, TX",
   "Austin kilometers, TX",
+  // The distance rule: a unit beside a number or closing a longer name is refused, in every form.
+  "Detroit within 10 mi",
+  "Detroit within 10 mi, MI",
+  "Austin 5mi",
+  "Austin 5mi, TX",
+  "10 mi, MI",
+  "Austin miles, TX",
+  "Ten miles, TX",
+  // A named exception is exact: the same name in another state is not a place it names.
+  "Gay, TX",
+  "Boomer, TX",
+  "Boys Town, TX",
+  "Six Mile, TX",
 ];
 
 const ACCEPTED: readonly Readonly<[typed: string, stored: string]>[] = [
@@ -73,7 +90,102 @@ const ACCEPTED: readonly Readonly<[typed: string, stored: string]>[] = [
   ["Young Harris, GA", "Young Harris, GA"],
   ["Man, WV", "Man, WV"],
   ["White Plains, NY", "White Plains, NY"],
+  // Michigan: "mi" is a distance word only where it reads as a distance, never as the state code.
+  ["MI", "MI"],
+  ["mi", "MI"],
+  ["Mi", "MI"],
+  ["Michigan", "MI"],
+  ["Detroit, MI", "Detroit, MI"],
+  ["Grand Rapids, MI", "Grand Rapids, MI"],
+  ["Lansing, MI", "Lansing, MI"],
+  ["detroit, mi", "detroit, MI"],
+  ["Detroit,MI", "Detroit, MI"],
+  // A distance word inside a place name that is not a distance.
+  ["Miles City, MT", "Miles City, MT"],
+  ["Miles, TX", "Miles, TX"],
+  ["Miles, IA", "Miles, IA"],
+  ["Nine Mile Falls, WA", "Nine Mile Falls, WA"],
+  ["Mi-Wuk Village, CA", "Mi-Wuk Village, CA"],
+  ["Miami, FL", "Miami, FL"],
+  // Real places whose names hold a refused word, passed by exact match.
+  ["Gay, GA", "Gay, GA"],
+  ["Gay, MI", "Gay, MI"],
+  ["gay, ga", "gay, GA"],
+  ["Boomer, NC", "Boomer, NC"],
+  ["Boomer, WV", "Boomer, WV"],
+  ["Boys Town, NE", "Boys Town, NE"],
+  ["Boys Ranch, TX", "Boys Ranch, TX"],
+  ["Ages, KY", "Ages, KY"],
+  ["Six Mile, SC", "Six Mile, SC"],
+  ["Eight Mile, AL", "Eight Mile, AL"],
+  ["Ten Mile, TN", "Ten Mile, TN"],
+  ["Twelve Mile, IN", "Twelve Mile, IN"],
 ];
+
+/**
+ * 009D-AC-008 and defect D-1 of the Wave 3 verification: the audience and distance words once held
+ * "mi", so the state code "MI", every "City, MI", and Michigan itself were refused. One or more
+ * sample cities for each of the 50 states and the District of Columbia. The sweep at the end of
+ * this file runs each through both checks, so a word list that collides with any code goes red
+ * for that code.
+ */
+const SAMPLE_CITIES: Readonly<Record<string, readonly string[]>> = {
+  AL: ["Birmingham", "Fairhope"],
+  AK: ["Anchorage", "Homer"],
+  AZ: ["Phoenix", "Page"],
+  AR: ["Little Rock", "Hot Springs"],
+  CA: ["Los Angeles", "Ojai"],
+  CO: ["Denver", "Aspen"],
+  CT: ["Hartford", "Old Saybrook"],
+  DE: ["Wilmington", "Lewes"],
+  DC: ["Washington"],
+  FL: ["Miami", "Tampa"],
+  GA: ["Atlanta", "Savannah"],
+  HI: ["Honolulu", "Hilo"],
+  ID: ["Boise", "Coeur d'Alene"],
+  IL: ["Chicago", "Peoria"],
+  IN: ["Indianapolis", "Fort Wayne"],
+  IA: ["Des Moines", "Cedar Rapids"],
+  KS: ["Wichita", "Topeka"],
+  KY: ["Louisville", "Lexington"],
+  LA: ["New Orleans", "Baton Rouge"],
+  ME: ["Portland", "Bangor"],
+  MD: ["Baltimore", "Annapolis"],
+  MA: ["Boston", "Worcester"],
+  MI: ["Detroit", "Grand Rapids", "Lansing", "Ann Arbor"],
+  MN: ["Minneapolis", "Mendota Heights"],
+  MS: ["Jackson", "Biloxi"],
+  MO: ["Kansas City", "St. Louis"],
+  MT: ["Billings", "Miles City"],
+  NE: ["Omaha", "Lincoln"],
+  NV: ["Las Vegas", "Reno"],
+  NH: ["Manchester", "Concord"],
+  NJ: ["Newark", "Princeton"],
+  NM: ["Albuquerque", "Santa Fe"],
+  NY: ["New York", "White Plains"],
+  NC: ["Charlotte", "Winston-Salem"],
+  ND: ["Fargo", "Bismarck"],
+  OH: ["Columbus", "Cleveland"],
+  OK: ["Oklahoma City", "Tulsa"],
+  OR: ["Portland", "Bend"],
+  PA: ["Philadelphia", "Pittsburgh"],
+  RI: ["Providence", "Newport"],
+  SC: ["Charleston", "Greenville"],
+  SD: ["Sioux Falls", "Rapid City"],
+  TN: ["Nashville", "Memphis"],
+  TX: ["Austin", "Houston"],
+  UT: ["Salt Lake City", "Provo"],
+  VT: ["Burlington", "Montpelier"],
+  VA: ["Richmond", "Norfolk"],
+  WA: ["Seattle", "Spokane"],
+  WV: ["Charleston", "Morgantown"],
+  WI: ["Milwaukee", "Madison"],
+  WY: ["Cheyenne", "Jackson"],
+};
+
+function storedPlace(kind: "state" | "city", value: string) {
+  return kind === "state" ? { states: [value], cities: [] } : { states: [], cities: [value] };
+}
 
 describe("the place rules (009D-AC-008)", () => {
   it("has a table of at least 15 values", () => {
@@ -133,11 +245,39 @@ describe("the place rules (009D-AC-008)", () => {
     expect(adPlaceLabel({ kind: "state", value: "TX" })).toBe("Texas");
   });
 
-  it("holds one audience vocabulary in the contract and the domain", () => {
+  it("holds one vocabulary in the contract and the domain", () => {
     expect([...AD_PLACE_AUDIENCE_WORDS]).toEqual([...LIBRARY_AD_PLACE_AUDIENCE_WORDS]);
+    expect([...AD_PLACE_DISTANCE_UNITS]).toEqual([...LIBRARY_AD_PLACE_DISTANCE_UNITS]);
+    expect([...AD_PLACE_NAMED_EXCEPTIONS]).toEqual([...LIBRARY_AD_PLACE_NAMED_EXCEPTIONS]);
     expect(AD_PLACE_AUDIENCE_WORDS).toEqual(
-      expect.arrayContaining(["mi", "km", "seniors", "moms", "single"]),
+      expect.arrayContaining(["zip", "within", "radius", "seniors", "moms", "single"]),
     );
+    expect(AD_PLACE_DISTANCE_UNITS).toEqual(expect.arrayContaining(["mi", "mile", "miles", "km"]));
+  });
+
+  it("keeps every audience word off the state codes, and the units out of the audience list", () => {
+    // The audience words are matched against a city name, never a code, and none of them is a code.
+    expect(
+      AD_PLACE_AUDIENCE_WORDS.filter((word) => Object.hasOwn(US_STATES, word.toUpperCase())),
+    ).toEqual([]);
+    // "mi" is the one unit that is also a code (Michigan); it is why a unit is not refused as a bare word.
+    expect(
+      AD_PLACE_DISTANCE_UNITS.filter((unit) => Object.hasOwn(US_STATES, unit.toUpperCase())),
+    ).toEqual(["mi"]);
+    for (const unit of AD_PLACE_DISTANCE_UNITS) {
+      expect(AD_PLACE_AUDIENCE_WORDS, unit).not.toContain(unit);
+    }
+  });
+
+  it("names each exception as a place that is refused in any other state", () => {
+    for (const place of AD_PLACE_NAMED_EXCEPTIONS) {
+      const [name, code] = place.split(", ");
+      expect(parseAdPlace(place)?.value, place).toBe(place);
+      expect(libraryAdPlacesProblem(storedPlace("city", place)), place).toBeUndefined();
+      const elsewhere = `${name ?? ""}, ${code === "VT" ? "WY" : "VT"}`;
+      expect(parseAdPlace(elsewhere), elsewhere).toBeUndefined();
+      expect(libraryAdPlacesProblem(storedPlace("city", elsewhere)), elsewhere).toBeDefined();
+    }
   });
 
   it("agrees with the domain's stored-value rule on every value", () => {
@@ -163,10 +303,53 @@ describe("the place rules (009D-AC-008)", () => {
     ]) {
       expect(libraryAdPlacesProblem({ states: [], cities: [value] }), value).toBeDefined();
     }
+    // Every typed value the contract refuses is refused by the domain too, as a state and as a city.
+    for (const typed of REFUSED) {
+      expect(libraryAdPlacesProblem(storedPlace("state", typed)), typed).toBeDefined();
+      expect(libraryAdPlacesProblem(storedPlace("city", typed)), typed).toBeDefined();
+    }
     expect(libraryAdPlacesProblem({ states: ["ZZ"], cities: [] })).toBeDefined();
     expect(
       libraryAdPlacesProblem({ states: ["TX", "OK", "NM", "LA", "AR", "KS"], cities: [] }),
     ).toBeDefined();
     expect(libraryAdPlacesProblem({ states: [], cities: [] })).toBeDefined();
+  });
+});
+
+describe("every state and the District of Columbia, through both checks (the Michigan defect)", () => {
+  const codes = Object.keys(US_STATES);
+
+  it("has a sample city for each of the 51 codes, and no other code", () => {
+    expect(Object.keys(SAMPLE_CITIES).sort()).toEqual([...codes].sort());
+    expect(codes).toHaveLength(51);
+  });
+
+  it.each(codes)("accepts %s by its code, in lower case, and by its full name", (code) => {
+    const name = US_STATES[code] ?? "";
+    for (const typed of [code, code.toLowerCase(), name, name.toLowerCase()]) {
+      expect(parseAdPlace(typed), typed).toEqual({ kind: "state", value: code });
+    }
+    expect(libraryAdPlacesProblem(storedPlace("state", code)), code).toBeUndefined();
+  });
+
+  it.each(codes)("accepts a plain city and the sample cities in %s", (code) => {
+    for (const city of ["Springfield", ...(SAMPLE_CITIES[code] ?? [])]) {
+      const typed = `${city}, ${code}`;
+      expect(parseAdPlace(typed)?.value, typed).toBe(typed);
+      expect(parseAdPlace(`${city},${code.toLowerCase()}`)?.value, typed).toBe(typed);
+      expect(libraryAdPlacesProblem(storedPlace("city", typed)), typed).toBeUndefined();
+    }
+  });
+
+  it("saves Michigan, and cities in it, as places", () => {
+    expect(AdPlacesInputSchema.safeParse(codes.slice(0, 5)).success).toBe(true);
+    expect(AdPlacesInputSchema.safeParse(["MI", "Detroit, MI", "Lansing, MI"]).success).toBe(true);
+    expect(AdPlacesInputSchema.parse(["Michigan", "Detroit, MI", "mi"])).toEqual({
+      states: ["MI"],
+      cities: ["Detroit, MI"],
+    });
+    expect(
+      libraryAdPlacesProblem({ states: ["MI"], cities: ["Detroit, MI", "Grand Rapids, MI"] }),
+    ).toBeUndefined();
   });
 });

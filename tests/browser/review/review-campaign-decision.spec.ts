@@ -9,6 +9,7 @@ import {
   signInExisting,
 } from "./helpers/guided-setup-journey.js";
 import { chooseThemeFromTheHeader, REVIEW_THEMES } from "./helpers/review-session.js";
+import { saveBrandDetails } from "./helpers/saved-brand.js";
 
 /**
  * PRD-006d D3's campaign-detail decision state, in a file of its own so that it runs last.
@@ -68,6 +69,10 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
   const creatorGuard = await guardLocalOrigin(creatorPage);
   await creatorPage.setViewportSize({ width: 1440, height: 900 });
   await signInExisting(creatorPage, creatorEmail, password);
+  // The seed saves no Brand, and a library ad carries the creator's own saved NMLS number, so a
+  // creator who saved none would read "Needs changes" on step 3 and be shown no hand-off. A real
+  // loan officer saves the Brand first (see `saveBrandDetails`).
+  await saveBrandDetails(creatorPage);
   const decidedOnItsPage = await saveACampaign(creatorPage, {
     ad: SAMPLE_ADS.firstHome,
     place: "Austin, TX",

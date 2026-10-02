@@ -214,6 +214,20 @@ describe("step 1, Choose an ad (009D-AC-002)", () => {
     expect(window.location.search).toBe("?step=1");
   });
 
+  // 009G-AC-001. axe reports a heading that skips a level (`heading-order`), and on step 1 the page
+  // title is the only heading above the cards, so each ad is named by a second-level heading. The
+  // library tab has its own "Ads library" section heading above the cards and keeps the third.
+  it("names each ad with a second-level heading, directly under the page title", () => {
+    renderFlow({ step: 1 });
+    const levels = screen
+      .getAllByRole("heading")
+      .filter((heading) => heading.closest("article") !== null)
+      .map((heading) => heading.tagName);
+    expect(levels).toEqual(["H2", "H2", "H2", "H2"]);
+    expect(screen.getByRole("heading", { level: 1, name: "Choose an ad" })).toBeInTheDocument();
+    expect(screen.queryAllByRole("heading", { level: 3 })).toHaveLength(0);
+  });
+
   it("makes every card button secondary, so no single blue button competes with the ads", () => {
     renderFlow({ step: 1 });
     const uses = screen.getAllByRole("button", { name: /^Use this ad/u });

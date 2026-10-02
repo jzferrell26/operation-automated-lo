@@ -20,8 +20,8 @@ import { saveBrandDetails } from "./helpers/saved-brand.js";
  *
  * A workspace owner can approve, so one person goes the whole way; that person signs up here,
  * because the two seeded people are a creator who cannot approve and an approver who cannot write
- * a campaign. This is the run's one extra sign-up: PRD-006d's arithmetic left eight of the ten an
- * hour per address spent (`review/design-quality.spec.ts`), so this makes nine.
+ * a campaign. This is one of the eight sign-ups the review run spends of the ten an hour per address
+ * allows; the count, spec by spec, is at the top of `empty-account.spec.ts` (009G D1).
  *
  * Saving the brand comes first and is not counted: the criterion is about a person who already has
  * a saved brand. Everything from Home on is counted by the page itself

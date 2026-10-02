@@ -145,9 +145,16 @@ describe("the global stylesheet's element defaults", () => {
     expect(declarationsFor("time").get("font-variant-numeric")).toBe("tabular-nums");
   });
 
-  it("reserves the top bar's height as scroll padding, so a focused control is never under it", () => {
-    expect(declarationsFor("html").get("scroll-padding-block-start")).toBe(
-      "calc(var(--topbar-height) + var(--space-4))",
+  /**
+   * 009G-AC-010. The bar is one row at 1440 and 1180, two at 768, and carries a sample-data line in
+   * the local demo, so the reservation is the bar's measured height (`--topbar-reserved`, published
+   * by the shell) with the token as the server-rendered fallback, plus the gap. The browser suite
+   * measures the result at every frame (`tests/browser/helpers/sticky-bar.ts`).
+   */
+  it("reserves the top bar's measured height as scroll padding, so a focused control is never under it", () => {
+    expect(declarationsFor(":root").get("--topbar-offset")).toBe(
+      "calc(var(--topbar-reserved, var(--topbar-height)) + var(--space-4))",
     );
+    expect(declarationsFor("html").get("scroll-padding-block-start")).toBe("var(--topbar-offset)");
   });
 });

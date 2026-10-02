@@ -23,9 +23,17 @@
 }
 
 /* 009G-AC-010. The top bar is sticky, so the page reserves its height as scroll padding: a control
- * scrolled into view by focus or by an anchor lands below the bar, never under it. */
+ * scrolled into view by focus or by an anchor lands below the bar, never under it. The shell
+ * publishes the bar's real height as `--topbar-reserved` (`app-shell.tsx`), because the bar is two
+ * rows at 768 and carries a sample-data line in the local demo; the token is what the server
+ * renders until it does. `--topbar-offset` is that height plus a gap, for anything else that has to
+ * sit clear of the bar. */
+:root {
+  --topbar-offset: calc(var(--topbar-reserved, var(--topbar-height)) + var(--space-4));
+}
+
 html {
-  scroll-padding-block-start: calc(var(--topbar-height) + var(--space-4));
+  scroll-padding-block-start: var(--topbar-offset);
 }
 
 /* Superseded on 2026-10-01 by PRD-009 (OD-E, design section 2.2): brief section 10 put timestamps

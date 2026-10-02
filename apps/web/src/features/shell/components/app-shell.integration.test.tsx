@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NOT_CONNECTED_DISCLOSURE, NOT_CONNECTED_HEADLINE } from "../../../copy/user-language.js";
 import { loadSyntheticUiFixture } from "../../ui-foundation/data/load-synthetic-ui.js";
@@ -289,5 +289,55 @@ describe("connection facts are not the shell's to state (009A-AC-013)", () => {
     expect(screen.getAllByText(disclosure)).toHaveLength(1);
     expect(within(screen.getByRole("banner")).getByText(disclosure)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/Nothing is connected/u);
+  });
+
+  /**
+   * PRD-009g, 009G-AC-010. The page reserves the bar's real height as scroll padding, so the shell
+   * publishes it on the root and takes it back down when it unmounts. jsdom lays nothing out, so the
+   * height is the one the test gives the bar, and the observer is the one that reports a change.
+   */
+  describe("the height it reserves for the sticky bar", () => {
+    let report: () => void = () => undefined;
+    let barHeight = 95;
+
+    beforeEach(() => {
+      class RecordingResizeObserver {
+        public constructor(callback: () => void) {
+          report = callback;
+        }
+        public observe(): void {}
+        public disconnect(): void {}
+        public unobserve(): void {}
+      }
+      vi.stubGlobal("ResizeObserver", RecordingResizeObserver);
+      vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(() => barHeight);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    });
+
+    it("publishes the bar's height on the root, follows it when it changes, and removes it on unmount", () => {
+      barHeight = 95;
+      const { unmount } = renderShell();
+      const root = document.documentElement;
+      expect(root.style.getPropertyValue("--topbar-reserved")).toBe("95px");
+
+      // The bar wraps to two rows at 768.
+      barHeight = 148;
+      report();
+      expect(root.style.getPropertyValue("--topbar-reserved")).toBe("148px");
+
+      unmount();
+      expect(root.style.getPropertyValue("--topbar-reserved")).toBe("");
+    });
+
+    it("renders where there is no observer at all, and publishes nothing", () => {
+      vi.stubGlobal("ResizeObserver", undefined);
+      renderShell();
+
+      expect(document.documentElement.style.getPropertyValue("--topbar-reserved")).toBe("");
+    });
   });
 });

@@ -2,7 +2,7 @@
 
 import { Button, Icon, Link, Sheet, SheetAnchor } from "@oalo/ui";
 import { usePathname } from "next/navigation.js";
-import { useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import {
   SHELL_ACCOUNT_CLOSE,
@@ -67,6 +67,30 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname();
   const [isMenuOpen, setMenuOpen] = useState(false);
+  const topbarRef = useRef<HTMLElement>(null);
+
+  /*
+   * PRD-009g, 009G-AC-010. The page reserves the bar's real height as scroll padding, so a control
+   * focused from below the fold lands under the bar's lower edge and never behind it.
+   *
+   * The bar is not one height. It is one row at 1440 and 1180, two rows at 768, and the local demo
+   * adds a line of sample-data text to it, so a fixed `--topbar-height` reserved too little at two
+   * of the four frames and in the demo. The bar says how tall it is now: this publishes that on the
+   * root, where `globals.css` reads it, and the server-rendered fallback is the token it used to be.
+   */
+  useEffect(() => {
+    const topbar = topbarRef.current;
+    if (topbar === null || typeof ResizeObserver === "undefined") return undefined;
+    const root = document.documentElement;
+    const publish = () => root.style.setProperty("--topbar-reserved", `${topbar.offsetHeight}px`);
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(topbar);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--topbar-reserved");
+    };
+  }, []);
 
   return (
     <div
@@ -82,7 +106,7 @@ export function AppShell({
         block start, so anything that scrolls the page can keep clear of it without reading this
         file's class names.
       */}
-      <header className={styles.topbar} data-shell-sticky-header="true">
+      <header className={styles.topbar} data-shell-sticky-header="true" ref={topbarRef}>
         <div className={styles.bar}>
           <div className={styles.menuButton}>
             <SheetAnchor>

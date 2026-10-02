@@ -94,7 +94,11 @@ jobs:
     # runner when nothing hangs, and the database half about 8, which is 21 with the build and the
     # install on top of it. One retry of the longest spec's 300-second budget adds 5 more. 45 left
     # nothing for a slow Docker host on top of that; 60 does.
-    timeout-minutes: 60
+    #
+    # 90: the PRD-009 review run captures about 200 more frames (009G-AC-001, 002): every page of a
+    # brand-new account, the hosted first impression, and the states of Launch an ad and the
+    # campaign page, each at four widths in two themes.
+    timeout-minutes: 90
     permissions:
       contents: read
     env:

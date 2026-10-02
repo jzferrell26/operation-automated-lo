@@ -1,5 +1,6 @@
 import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
+import { EARLIER_FLOW_LINE } from "../../../apps/web/src/copy/campaign-page-messages.js";
 import { settleTheLibrary } from "../helpers/ads-library.js";
 import {
   REVIEW_FRAMES,
@@ -37,6 +38,7 @@ import {
   type NewAccountPage,
 } from "./helpers/new-account-pages.js";
 import { chooseThemeFromTheHeader, REVIEW_THEMES } from "./helpers/review-session.js";
+import { seedCampaignHistory } from "./helpers/seed-campaign-history.js";
 
 /**
  * PRD-009g, 009G-AC-001, 009G-AC-002, 009G-AC-009, and the review half of 009G-AC-010: a brand-new
@@ -64,7 +66,8 @@ import { chooseThemeFromTheHeader, REVIEW_THEMES } from "./helpers/review-sessio
  * That leaves two. Under CI the review project retries a failed test once, and a retry of a file
  * that signs up in `beforeAll` signs up again, so two is the room a failing run has. A new
  * account-creating spec has to find a way to reuse one of these accounts or take its place in this
- * list.
+ * list. This file's seeded campaigns (below) sign nobody up: they are stored into this file's own
+ * account, so the total stays at eight.
  *
  * **What is photographed.** The pictures are the labelled sample ads on the review server, and a
  * fresh account's own pages. Nothing here is a real person: the name, company, and address are the
@@ -72,13 +75,20 @@ import { chooseThemeFromTheHeader, REVIEW_THEMES } from "./helpers/review-sessio
  * domain. A date is a fact about the run, not about the design, so every `time` element and every
  * date field is masked (the pictures still fail on a spacing token, a colour role, or a type step).
  *
- * **Not here, and why.** Three states of 009G-AC-002 need a campaign whose library ad changed after
- * it was saved: "Ad retired" on step 3 and on the campaign page, the "a newer version of the ad
- * exists" notice, and a campaign saved before PRD-009. The product never saves a version against a
- * retired, replaced, or missing ad (009D-AC-011), so no browser can reach one by using it, and the
- * review run's database can only be written to through the sanctioned seeding harness
- * (`tests/security/database-privilege-escalation-boundary.test.ts`). They are covered by integration
- * and Postgres tests (`009D-AC-018`, `009E-AC-006`, `009E-AC-012`); see the lane report.
+ * **The states a person cannot make (009G-AC-002).** Three of the states need a campaign whose
+ * library ad changed after it was saved: "Ad retired" on step 3 and on the campaign page, the "a
+ * newer version of the ad exists" notice, and a campaign saved before PRD-009. The product never
+ * saves a version against a retired, replaced, or missing ad (009D-AC-011), so no browser reaches
+ * one by using it. They are stored the one sanctioned way: `seedCampaignHistory`
+ * (`helpers/seed-campaign-history.ts`) builds each with the product's own manifest builder and
+ * ruleset, as they were when the ad was current, and the harness
+ * (`seedReviewAccountCampaigns` in `packages/db/test/campaign-integration-support.mjs`) writes them
+ * into this account's workspace and refuses to run outside the review run's database. The sample
+ * catalog already holds the retired ad (`sample-spring-search`) and the replaced version
+ * (`sample-first-home` version 1), so no catalog entry is added, and the pages that show them are
+ * the product's own, reading what is stored. The seeding happens after the four campaigns above are
+ * saved (it takes its brand from one of them) and before the Brand changes, so none of the three
+ * carries a "Brand changed" notice that belongs to another state.
  */
 
 /** Dates are a fact about the run: every `time` element and every date field is painted over. */
@@ -152,13 +162,22 @@ async function expectStepThreeState(page: Page, state: string): Promise<void> {
 let context: BrowserContext;
 let page: Page;
 let guard: Awaited<ReturnType<typeof guardLocalOrigin>>;
+/** The address this file's one account signed up with, which the seeded campaigns are stored under. */
+let accountEmail: string;
 
-/** The campaigns the account builds, by what each one is for. */
+/**
+ * The campaigns the account builds, by what each one is for. The first four are saved through
+ * "Launch an ad". The last three are the states a person can no longer make, stored by
+ * `seedCampaignHistory`; `earlierFlow` has no step 3, because only a library ad has one.
+ */
 const saved: {
   needsChanges?: SavedCampaign;
   ready?: SavedCampaign;
   approved?: SavedCampaign;
   sentBack?: SavedCampaign;
+  adRetired?: SavedCampaign;
+  newerVersion?: SavedCampaign;
+  earlierFlow?: SavedCampaign;
 } = {};
 
 test.describe.serial("a brand-new account, from its first page to its first approved ad", () => {
@@ -168,7 +187,8 @@ test.describe.serial("a brand-new account, from its first page to its first appr
     page = await context.newPage();
     guard = await guardLocalOrigin(page);
     await page.setViewportSize({ width: 1440, height: 900 });
-    await signUpFreshAccount(page, freshEmail());
+    accountEmail = freshEmail();
+    await signUpFreshAccount(page, accountEmail);
   });
 
   test.afterAll(async () => {
@@ -328,13 +348,62 @@ test.describe.serial("a brand-new account, from its first page to its first appr
   });
 
   /**
+   * 009G-AC-002. The three campaigns a person can no longer make (see the note at the top): an
+   * undecided campaign whose ad the library has since retired, one made from a version of its ad
+   * that a newer version has since replaced, and one saved before PRD-009. They are stored into this
+   * account by the sanctioned harness, taking their brand from the campaign saved ready above, and
+   * each page is then opened the way a person opens it, to prove the product reads what was stored
+   * as the state it is: step 3 says "Ad retired", the campaign page carries the retired notice or the
+   * newer-version notice, and the older campaign opens read-only with its one line.
+   */
+  test("stores a campaign for an ad retired since, one for an ad with a newer version, and one saved before PRD-009 (009G-AC-002)", async () => {
+    test.setTimeout(240_000);
+    expect(saved.ready, "the ready campaign this seeding takes its brand from").toBeDefined();
+    const seeded = await seedCampaignHistory({
+      email: accountEmail,
+      templateCampaignRef: saved.ready?.ref ?? "",
+    });
+    saved.adRetired = seeded.adRetired;
+    saved.newerVersion = seeded.newerVersion;
+    saved.earlierFlow = seeded.earlierFlow;
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+
+    await page.goto(seeded.adRetired.stepThree);
+    await expectStepThreeState(page, "retired");
+    await page.goto(seeded.adRetired.page);
+    await expect(page.locator("[data-notice='retired']")).toBeVisible();
+    await expect(page.locator("[data-campaign-standing='ad_retired']")).toBeVisible();
+    // Nothing else is wrong with it: the Brand has not changed, so no other notice is on the page.
+    await expect(page.locator("[data-library-notices] > li")).toHaveCount(1);
+
+    await page.goto(seeded.newerVersion.page);
+    await expect(page.locator("[data-notice='newer-version']")).toBeVisible();
+    await expect(page.locator("[data-library-notices] > li")).toHaveCount(1);
+
+    await page.goto(seeded.earlierFlow.page);
+    await expect(page.locator("[data-campaign-page='earlier-flow']")).toBeVisible();
+    await expect(page.getByText(EARLIER_FLOW_LINE, { exact: true })).toBeVisible();
+    const main = page.getByRole("main");
+    await expect(main.getByRole("link", { name: "Launch an ad", exact: true })).toBeVisible();
+    await expect(main.getByRole("link", { name: "Make a new version" })).toHaveCount(0);
+  });
+
+  /**
    * 009G-AC-009 again, now that the account has campaigns: step 3 in each of its states, a campaign
    * page, the Campaigns list with every chip it can show, and Home with its lists filled.
    */
   test("the pages that need a campaign say each connection once too (009G-AC-009)", async () => {
     test.setTimeout(240_000);
     await page.setViewportSize({ width: 1440, height: 900 });
-    for (const campaign of [saved.needsChanges, saved.ready, saved.approved, saved.sentBack]) {
+    for (const campaign of [
+      saved.needsChanges,
+      saved.ready,
+      saved.approved,
+      saved.sentBack,
+      saved.adRetired,
+      saved.newerVersion,
+    ]) {
       expect(campaign).toBeDefined();
       await page.goto(campaign?.stepThree ?? "/overview");
       await expect(page.locator("[data-launch-step='3']")).toBeVisible();
@@ -343,6 +412,14 @@ test.describe.serial("a brand-new account, from its first page to its first appr
       await expectOneTitle(page);
       await expectEachConnectionStatedOnce(page, `the campaign page of ${campaign?.ref ?? "?"}`);
     }
+    // A campaign saved before PRD-009 has a page and no step 3.
+    expect(saved.earlierFlow).toBeDefined();
+    await page.goto(saved.earlierFlow?.page ?? "/overview");
+    await expectOneTitle(page);
+    await expectEachConnectionStatedOnce(
+      page,
+      `the campaign page of ${saved.earlierFlow?.ref ?? "?"}`,
+    );
 
     await page.goto("/marketing/campaigns");
     const list = page.locator("[data-campaign-table]");
@@ -351,6 +428,7 @@ test.describe.serial("a brand-new account, from its first page to its first appr
       "Needs changes",
       "Approved",
       "Sent back for changes",
+      "Ad retired",
     ]) {
       await expect(
         list.getByText(chip, { exact: true }).first(),
@@ -365,12 +443,30 @@ test.describe.serial("a brand-new account, from its first page to its first appr
 
   // ---- The populated states, photographed (009G-AC-002) --------------------------------------
 
-  /** D8's states of step 3 that this account can be in. "Ad retired" is in the note at the top. */
+  /**
+   * D8's states of step 3: the name of the picture, the decision the page carries for it, and the
+   * campaign it is photographed for. "Ad retired" is a stored campaign (see the note at the top);
+   * "cannot approve" is a different person, below.
+   */
   const STEP_THREE_STATES = [
-    ["needs-changes", "needsChanges"],
-    ["ready-for-approval", "ready"],
+    ["needs-changes", "needs-changes", "needsChanges"],
+    ["ready-for-approval", "ready", "ready"],
+    ["approved", "approved", "approved"],
+    ["sent-back", "sent-back", "sentBack"],
+    ["ad-retired", "retired", "adRetired"],
+  ] as const;
+
+  /**
+   * The campaign page in the states it has for a library ad, and the one it has for a campaign saved
+   * before PRD-009. Each state of the library notices is here once on its own: the retired notice and
+   * the newer-version notice are stored campaigns, and "Brand changed" is last in this file.
+   */
+  const CAMPAIGN_PAGE_STATES = [
     ["approved", "approved"],
     ["sent-back", "sentBack"],
+    ["ad-retired", "adRetired"],
+    ["newer-version", "newerVersion"],
+    ["saved-before-prd-009", "earlierFlow"],
   ] as const;
 
   for (const theme of REVIEW_THEMES) {
@@ -380,12 +476,12 @@ test.describe.serial("a brand-new account, from its first page to its first appr
       await page.goto("/overview");
       await chooseThemeFromTheHeader(page, theme);
 
-      for (const [state, key] of STEP_THREE_STATES) {
+      for (const [state, reviewState, key] of STEP_THREE_STATES) {
         const campaign = saved[key];
         expect(campaign, `the ${state} campaign was saved`).toBeDefined();
         await page.setViewportSize({ width: 1440, height: 900 });
         await page.goto(campaign?.stepThree ?? "/overview");
-        await expectStepThreeState(page, state === "ready-for-approval" ? "ready" : state);
+        await expectStepThreeState(page, reviewState);
         await expectThemeResolved(page, theme);
         await settleImages(page);
         await captureNamedState(page, {
@@ -397,16 +493,13 @@ test.describe.serial("a brand-new account, from its first page to its first appr
       }
     });
 
-    test(`the campaign page, approved and sent back, meets the bar at every frame in ${theme} (009G-AC-002)`, async () => {
+    test(`the campaign page in each state this account reaches meets the bar at every frame in ${theme} (009G-AC-002)`, async () => {
       test.setTimeout(900_000);
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto("/overview");
       await chooseThemeFromTheHeader(page, theme);
 
-      for (const [state, key] of [
-        ["approved", "approved"],
-        ["sent-back", "sentBack"],
-      ] as const) {
+      for (const [state, key] of CAMPAIGN_PAGE_STATES) {
         const campaign = saved[key];
         expect(campaign, `the ${state} campaign was saved`).toBeDefined();
         await page.setViewportSize({ width: 1440, height: 900 });
@@ -519,9 +612,9 @@ test.describe.serial("a brand-new account, from its first page to its first appr
 
   /**
    * The campaign page with a library notice (009E-AC-006): the Brand changed after the version was
-   * saved, so the page says so and offers a new version. It is the one notice a browser can reach
-   * without writing to the catalog, and it is last because it changes the Brand every case above
-   * read as it was.
+   * saved, so the page says so and offers a new version. It is the one notice a person reaches by
+   * using the product alone (the retired and newer-version notices are above, on stored campaigns),
+   * and it is last because it changes the Brand every case above read as it was.
    */
   for (const theme of REVIEW_THEMES) {
     test(`the campaign page with a library notice meets the bar at every frame in ${theme} (009G-AC-002)`, async () => {
@@ -546,15 +639,21 @@ test.describe.serial("a brand-new account, from its first page to its first appr
 
   /**
    * 009G-AC-010 for the screens that need a campaign: step 3 and the campaign page, in the review
-   * build, at every frame.
+   * build, at every frame, including the stored campaigns (a retired ad, a newer version, and one
+   * saved before PRD-009), which have controls of their own: "Choose another ad", "Use the new
+   * version", and "Launch an ad".
    */
   test("step 3 and the campaign page take the keyboard and keep focus clear of the sticky bar (009G-AC-010)", async () => {
-    test.setTimeout(600_000);
+    test.setTimeout(900_000);
     await page.goto("/overview");
     await chooseThemeFromTheHeader(page, "light");
     for (const [name, address] of [
       ["step 3", saved.ready?.stepThree],
+      ["step 3 with the ad retired", saved.adRetired?.stepThree],
       ["the campaign page", saved.approved?.page],
+      ["the campaign page with the ad retired", saved.adRetired?.page],
+      ["the campaign page with a newer version", saved.newerVersion?.page],
+      ["the campaign page saved before PRD-009", saved.earlierFlow?.page],
       ["the Campaigns list", "/marketing/campaigns"],
     ] as const) {
       await page.setViewportSize({ width: 1180, height: 900 });

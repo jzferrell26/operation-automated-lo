@@ -1,3 +1,4 @@
+import { ADS_LIBRARY_TOPICS } from "@oalo/contracts";
 import { Stack } from "@oalo/ui";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation.js";
@@ -10,6 +11,9 @@ import {
   DESIGN_SURFACE_WORKSPACE_NAME,
 } from "../../../copy/design-surfaces.js";
 import { UnverifiedEmailNotice } from "../../../features/auth/components/unverified-email-notice.js";
+import { OverviewScreen } from "../../../features/overview/components/overview-screen.js";
+import { buildHomeChecklist } from "../../../features/overview/model/home-checklist.js";
+import type { HomeData } from "../../../features/overview/model/home-view.js";
 import { RouteLoading } from "../../../features/shell/components/route-boundary.js";
 import { canRenderSyntheticDemo } from "../../../server/authenticated-workspace-data.js";
 import { RouteErrorSurface } from "./design-surface-gallery.js";
@@ -32,6 +36,33 @@ function ScoredSurface({
   children,
 }: Readonly<{ label: string; children: ReactNode }>): ReactNode {
   return <section aria-label={label}>{children}</section>;
+}
+
+/** The query that selects the fourth state (009G-AC-001): the first-run Home under the notice. */
+const HOME_UNDER_NOTICE_STATE = "home-under-notice";
+
+/** A brand-new account: nothing connected, no brand, no campaign, and every topic offered. */
+const FIRST_RUN_HOME: HomeData = Object.freeze({
+  checklist: buildHomeChecklist({ installationStatuses: [], brand: undefined }),
+  topics: ADS_LIBRARY_TOPICS,
+  running: Object.freeze({ rows: [], total: 0 }),
+  approval: Object.freeze({ rows: [], total: 0 }),
+});
+
+/**
+ * The page the real layout and the Home route draw for an account that has not confirmed its
+ * address: the notice first, then Home, as siblings inside the shell's main region, in the order
+ * `(authenticated)/layout.tsx` and `overview/page.tsx` give them.
+ */
+function HomeUnderTheNotice(): ReactNode {
+  return (
+    <>
+      <UnverifiedEmailNotice csrfToken={undefined} state="unverified" />
+      <Stack gap="6">
+        <OverviewScreen firstName="Alex" home={FIRST_RUN_HOME} />
+      </Stack>
+    </>
+  );
 }
 
 /**
@@ -64,9 +95,21 @@ function ScoredSurface({
  * because it takes the framework's `reset` callback; the notice must not be in one, because it
  * reaches the runtime authentication module for the address its form posts to and that module
  * reaches the database driver.
+ *
+ * PRD-009g, 009G-AC-001: `?state=home-under-notice` draws a fourth state, the page a brand-new
+ * account lands on before it has confirmed its address. The review run configures no email, so the
+ * real layout never renders the notice there (`runtime-authentication.ts`, `not_applicable`), and
+ * no review picture could show the two together. Every other value on this page is a placeholder,
+ * and so is this one: no session, workspace, or person is read.
  */
-export default function DesignSurfacesPage() {
+export default async function DesignSurfacesPage({
+  searchParams,
+}: Readonly<{ searchParams: Promise<Readonly<Record<string, string | string[] | undefined>>> }>) {
   if (!canRenderSyntheticDemo()) notFound();
+  const parameters = await searchParams;
+  if (parameters["state"] === HOME_UNDER_NOTICE_STATE) {
+    return <HomeUnderTheNotice />;
+  }
 
   return (
     <Stack align="stretch" className={styles.page} gap="6">

@@ -25,7 +25,15 @@ are design brief section 14's four frames. The theme is `light` or `dark`. The s
 unless the rubric names one, in which case it is that name in lower case with hyphens.
 
 The project directory in between (`chromium/` for the synthetic screens, `review/` for the account
-screens and the guided-setup steps) comes from `snapshotPathTemplate` in `playwright.config.ts`.
+screens and a brand-new account's pages and states) comes from `snapshotPathTemplate` in
+`playwright.config.ts`.
+
+A state is drawn at all four frames in both themes unless it exists at fewer: the Menu sheet only
+below 720px, and Home under the unverified-email notice only as the pair 009G-AC-001 names.
+`tooling/tests/unit/design-quality/baselines-follow-the-screens.test.ts` holds that inventory: every
+named state is a whole set, and no picture of a screen PRD-009 removed (the Reports page, the
+onboarding checklist, the open house create screen, the guided-setup walkthrough, the left rail) is
+among them.
 
 ## Where they run
 
@@ -37,10 +45,23 @@ screens and the guided-setup steps) comes from `snapshotPathTemplate` in `playwr
   route error boundary, the route loading boundary, and the unverified-email notice. None of the
   three can be navigated to, so PRD-006d's reopened-row review (F-28) renders all three from
   placeholder values inside the real shell, on a page gated the way the email preview is. Read its
-  picture as three rows of the sign-off table rather than one.
-- **Account screens and the seven guided-setup steps**: the `review` project inside `pnpm test:db`,
-  which starts the disposable database, the seeded people, and the TLS terminator that the
-  `__Host-` session cookie requires.
+  picture as three rows of the sign-off table rather than one. Its fourth state,
+  `?state=home-under-notice`, draws the first-run Home under the notice, because the review run
+  configures no email and so can never show the two together (009G-AC-001).
+- **Account screens, a brand-new account's pages, and the populated states**: the `review` project
+  inside `pnpm test:db`, which starts the disposable database, the seeded people, and the TLS
+  terminator that the `__Host-` session cookie requires. The project runs twice, against two
+  servers (`tooling/scripts/database/review-browser-run.mjs`, `REVIEW_PASSES`): the first shows the
+  labelled sample ads and runs every spec except the ones in `tests/browser/review/real-catalog/`;
+  the second starts without the samples flag, shows the real catalog (which ships empty), and runs
+  only those. The second pass is the hosted first impression: Home, the Ads library tab, and step 1
+  with no ad to choose.
+
+  The pictures of a brand-new account come from one account that
+  `tests/browser/review/empty-account.spec.ts` signs up once and reuses (009G D1), because sign-up
+  allows ten an hour per address and the spec's header counts every spend. Every `time` element and
+  date field in those pictures is masked, because a date is a fact about the run and not about the
+  design.
 
 ## Platform
 
@@ -72,7 +93,7 @@ pictures back as two artifacts. Nothing in the workflow commits.
 instead of here, on any platform. This is how the D9 sign-off in
 `docs/operations/evidence-packs/design-quality-signoff.md` gets a real set of screenshots of the
 final tree: `pnpm test:browser` for the synthetic screens and `pnpm test:db` for the account screens
-and the guided setup, with both variables set. The pictures stay outside git.
+and a brand-new account's pages, with both variables set. The pictures stay outside git.
 
 ## Changing a baseline
 

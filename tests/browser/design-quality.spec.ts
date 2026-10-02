@@ -324,6 +324,60 @@ test("the boundary page renders the error state, the loading state, and the unve
   await expect(page.getByRole("button", { name: "Resend the link." })).toBeVisible();
 });
 
+/**
+ * PRD-009g, 009G-AC-001. The first-run Home under the unverified-email notice, photographed at 1440
+ * and 390 in Light.
+ *
+ * A brand-new account has not confirmed its address, so on a deployment with a sending domain the
+ * first page it lands on is Home with the notice above it. The review run configures no email
+ * (`tooling/tests/database/review-browser-run.test.ts` pins that), so the real layout never renders
+ * the notice there and no review picture can show the two together. The design surface renders both
+ * inside the real shell with placeholder values, in the order the layout and the Home route give
+ * them, and this is where the pair is held in place.
+ *
+ * The picture is compared only on the runner that drew it, so the claims a baseline cannot make on
+ * every machine are asserted here: the notice is in the page, it comes before Home's own heading,
+ * and Home is the first-run Home and not the gallery.
+ */
+test("the first-run Home under the unverified-email notice meets the bar at 1440 and 390 in Light", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const externalRequests = await blockAnythingOffOrigin(page);
+  await useStoredTheme(page, "light");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/design-surfaces?state=home-under-notice");
+  await expectThemeResolved(page, "light");
+  await settleForScreenshot(page);
+
+  const main = page.getByRole("main");
+  const notice = main.getByText("Confirm your email so you can reset your password later.");
+  await expect(notice).toBeVisible();
+  await expect(main.getByRole("button", { name: "Resend the link." })).toBeVisible();
+  await expect(main.getByRole("heading", { level: 1, name: "Launch an ad" })).toBeVisible();
+  await expect(main.getByRole("region", { name: "Get set up" })).toBeVisible();
+  // The gallery's three states are the other state of this page and are not on this one.
+  await expect(page.getByRole("heading", { name: "We couldn't load your workspace" })).toHaveCount(
+    0,
+  );
+  const [noticeBox, homeBox] = await Promise.all([
+    notice.boundingBox(),
+    main.getByRole("heading", { level: 1, name: "Launch an ad" }).boundingBox(),
+  ]);
+  expect(
+    noticeBox?.y ?? Number.POSITIVE_INFINITY,
+    "the notice is above Home's own heading",
+  ).toBeLessThan(homeBox?.y ?? 0);
+
+  await captureNamedState(page, {
+    screen: "design-surfaces",
+    state: "home-under-notice",
+    theme: "light",
+    frames: REVIEW_FRAMES.filter((frame) => frame.name === "1440" || frame.name === "390"),
+  });
+  expect(externalRequests).toEqual([]);
+});
+
 /** 006D-AC-018. Nothing a person can reach in the product links to the demo route. */
 test("no screen links to the demo route", async ({ page }) => {
   await blockAnythingOffOrigin(page);

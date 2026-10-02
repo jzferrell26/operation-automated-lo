@@ -473,6 +473,13 @@ test("the boundary review page is not served in review mode", async ({ page }) =
   );
   await expect(page.getByRole("heading", { name: "Loading your workspace" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Resend the link." })).toHaveCount(0);
+
+  // PRD-009g, 009G-AC-001: the page's fourth state, the first-run Home under the notice, sits
+  // behind the same gate, so it is the not-found page here and carries neither the notice nor Home.
+  await page.goto("/design-surfaces?state=home-under-notice");
+  await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Resend the link." })).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1, name: "Launch an ad" })).toHaveCount(0);
 });
 
 /**

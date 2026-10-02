@@ -19,12 +19,22 @@ export const ADS_LIBRARY_HEADING = "Ads library";
 export const ADS_LIBRARY_LEAD =
   "Ready-made ads for loan officers, reviewed before they're added. Your name and NMLS number go on each one automatically. You can change the words; the image stays as it is.";
 
+/**
+ * A topic's chip label as it reads in the middle of a sentence (writing review W-21): "Refinance"
+ * becomes "refinance" and "First-time buyers" becomes "first-time buyers", but "VA loans" keeps its
+ * capitals, because VA is an acronym and not the start of a sentence. The chip itself keeps its
+ * capital, as every button label does.
+ */
+export function topicInSentence(topicLabel: string): string {
+  return topicLabel.replace(/^\p{Lu}(?!\p{Lu})/u, (letter) => letter.toLocaleLowerCase("en-US"));
+}
+
 /** The line a screen reader hears after a topic chip filters the grid in place. */
 export function adsShownStatus(count: number, topicLabel: string | undefined): string {
   const noun = count === 1 ? "ad" : "ads";
   return topicLabel === undefined
     ? `Showing all ${String(count)} ${noun}.`
-    : `Showing ${String(count)} ${noun} about ${topicLabel}.`;
+    : `Showing ${String(count)} ${noun} about ${topicInSentence(topicLabel)}.`;
 }
 
 /** The accessible suffix that tells eight "Use this ad" links apart. */

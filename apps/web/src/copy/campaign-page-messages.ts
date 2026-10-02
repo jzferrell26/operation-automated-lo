@@ -10,6 +10,8 @@
 
 import type { ReportingMetricSource } from "@oalo/contracts";
 
+import { EMPTY_LIBRARY } from "./launch-messages.js";
+
 /** 009E-AC-009. The Campaigns page's two tabs, in the design's order. */
 export const CAMPAIGNS_TABS = Object.freeze({
   label: "Campaigns sections",
@@ -25,6 +27,12 @@ export const CAMPAIGNS_PAGE = Object.freeze({
   action: "Launch an ad",
   emptyTitle: "No campaigns yet",
   emptyDescription: "Pick an ad from the library to set up your first one.",
+  /**
+   * Amended 2026-10-02 by the writing review (MTK-008, W-10). With no ad in the library there is
+   * nothing to pick, so the empty list says what the library says (009C-AC-012) instead of inviting
+   * a choice that does not exist yet. The sentence is `EMPTY_LIBRARY`, read from `launch-messages.ts`.
+   */
+  emptyDescriptionNoAds: EMPTY_LIBRARY,
 });
 
 export const CAMPAIGN_COLUMNS = Object.freeze({
@@ -36,8 +44,25 @@ export const CAMPAIGN_COLUMNS = Object.freeze({
   lastChange: "Last change",
 });
 
+/**
+ * Writing review W-9. A card at phone width has no column header, so each fact on it is named:
+ * "Topic: Refinance." "Dates: Oct 6 to Oct 20." "Where it shows: Austin, TX and 2 more." and, beside
+ * the status, "Last change: Oct 2". A screen reader hears what each bare fact is.
+ */
+export const CAMPAIGN_CARD_LABELS = Object.freeze({
+  topic: "Topic",
+  dates: "Dates",
+  where: "Where it shows",
+  lastChange: "Last change",
+});
+
+/** "Topic: Refinance." One named fact on a campaign card. */
+export function cardFact(label: string, value: string): string {
+  return `${label}: ${value}.`;
+}
+
 /** 009E-AC-012. What a campaign saved before PRD-009 is called in the Topic column. */
-export const EARLIER_FLOW_TOPIC = "Earlier flow";
+export const EARLIER_FLOW_TOPIC = "Open house";
 /** A library ad the catalog no longer holds has no topic to show. */
 export const TOPIC_NOT_IN_LIBRARY = "Not in the library";
 export const RUNS_NOT_SET = "Not set";
@@ -63,7 +88,8 @@ export function libraryEyebrow(topic: string | undefined): string {
 }
 export const FIXES_TITLE = "What to fix";
 export const EARLIER_FLOW_EYEBROW = "Campaign";
-export const EARLIER_FLOW_LINE = "Made with the earlier open house flow.";
+/** Amended 2026-10-02 (MTK-008, W-17): "tool", because a loan officer made a campaign, not a "flow". */
+export const EARLIER_FLOW_LINE = "Made with the earlier open house tool.";
 export const LAUNCH_AN_AD_INSTEAD = "Launch an ad";
 
 /** "Runs from launch until Oct 20, 2026, in Austin, TX. $25 a day, up to $350 in total." */
@@ -122,7 +148,8 @@ export const AD_CARD = Object.freeze({
   pictureMissing: "The picture for this ad isn't available.",
   libraryAd: "Library ad",
   words: "Words",
-  shows: "Shows to",
+  /** Amended 2026-10-02 (MTK-008, W-15): "Shows in", the words step 2 uses for where an ad shows. */
+  shows: "Shows in",
 });
 export function versionLabel(versionNo: number): string {
   return `Version ${String(versionNo)}`;
@@ -197,10 +224,11 @@ export const NOTICES = Object.freeze({
   chooseAnotherAd: "Choose another ad",
   brandChanged: "Brand changed after this version was saved. Make a new version to use it.",
   missingUndecided: "This ad isn't in the library, so this version can't be approved.",
-  missingApproved: "This ad isn't in the library. This campaign keeps the version you approved.",
+  /** Amended 2026-10-02 (MTK-008, W-8): "its approved version", because the reader may not be who approved. */
+  missingApproved: "This ad isn't in the library. This campaign keeps its approved version.",
 });
 export function retiredKept(retiredOn: string): string {
-  return `This ad was taken out of the library on ${retiredOn}. This campaign keeps the version you approved.`;
+  return `This ad was taken out of the library on ${retiredOn}. This campaign keeps its approved version.`;
 }
 
 /** The earlier open house flow, D4 and 009E-AC-012. */

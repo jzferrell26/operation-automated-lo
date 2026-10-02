@@ -258,7 +258,7 @@ describe("the Help control in the top bar (009B-AC-015)", () => {
     const panel = screen.getByRole("dialog", { name: "Help" });
     expect(
       within(panel).getByText(
-        "Questions about Automated LO? Contact support and tell us which page you were on.",
+        "Questions about Automated LO? Ask your workspace owner, and tell them which page you were on.",
       ),
     ).toBeInTheDocument();
     const controls = within(panel).queryAllByRole("button");

@@ -8,7 +8,8 @@ import { homeHash, homeReportsEnabled } from "../../../../server/homeowners/runt
 import { consumeSharedReportBudget } from "../../../../server/homeowners/share-throttle.js";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Your homeowner report",
+  // A homeowner's page: the root layout's template would add the product's name to it (W-13).
+  title: { absolute: "Your homeowner report" },
   robots: { index: false, follow: false, nocache: true },
   referrer: "no-referrer",
 };

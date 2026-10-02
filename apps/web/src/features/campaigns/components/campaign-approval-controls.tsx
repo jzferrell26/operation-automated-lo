@@ -7,10 +7,11 @@ import { useEffect, useRef, useState } from "react";
 import {
   APPROVER_OR_OWNER,
   CAMPAIGN_CREATOR_PARTY,
+  CAMPAIGN_NOT_AN_AD_YET,
   NEEDS_CHANGES_NEXT_ACTION,
   WORKSPACE_OWNER_PARTY,
 } from "../../../copy/user-language.js";
-import { APPROVE_LINE } from "../../../copy/launch-messages.js";
+import { APPROVE_LINE, APPROVE_TITLE } from "../../../copy/launch-messages.js";
 import { CampaignHandOff } from "./campaign-hand-off.js";
 import { userMessageSentence } from "../../http/user-messages.js";
 import {
@@ -151,7 +152,7 @@ export function CampaignApprovalControls({
     // untitled card on the page.
     return (
       <Card data-approval-card="" padding="md">
-        <strong>Approve this campaign</strong>
+        <strong>{APPROVE_TITLE}</strong>
         <p ref={outcomeRef} role="status" tabIndex={-1}>
           {status?.sentence}
         </p>
@@ -161,7 +162,7 @@ export function CampaignApprovalControls({
 
   return (
     <Card data-approval-card="" padding="md">
-      <strong>Approve this campaign</strong>
+      <strong>{APPROVE_TITLE}</strong>
       <p>{APPROVE_LINE}</p>
       <SafeAction
         confirmLabel="Yes, approve"
@@ -204,7 +205,12 @@ export function CampaignApprovalControls({
       {canApprove || alreadyDecided !== undefined || blocking ? null : (
         <CampaignHandOff campaignHref={campaignHref} />
       )}
-      <p role="status">{status?.sentence ?? "Nobody has approved this version yet."}</p>
+      {/*
+        The live region stays on the page so an outcome is announced, but it says nothing until there
+        is one. "Nobody has approved this version yet." is the Approval card's own sentence, directly
+        above, so it is not said twice (writing review W-7).
+      */}
+      <p role="status">{status?.sentence}</p>
       <SupportReference refusal={status?.refusal} />
     </Card>
   );
@@ -217,9 +223,12 @@ function decisionStatus(decision: "approved" | "rejected", duplicate: boolean): 
       ? "Already sent back for changes."
       : "Sent back for changes. The campaign creator can fix it and save a new version.";
   }
-  return duplicate
-    ? "Already approved."
-    : "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.";
+  /*
+   * The second sentence is the contract's own (`user-language.ts`), so the page, the saved notice and
+   * this outcome cannot say different things about whether the ad runs. It used to promise that
+   * connecting both accounts was enough, which launching being off in PRD-009 makes untrue (W-2).
+   */
+  return duplicate ? "Already approved." : `Approved. ${CAMPAIGN_NOT_AN_AD_YET}`;
 }
 
 /** A version nobody can approve yet: it is waiting for the person who wrote it. */
@@ -287,9 +296,10 @@ function resolveDecision(input: {
     requiredRole: APPROVER_OR_OWNER,
     confirmation: {
       title: "Approve this version",
-      effect: "Records your name against this exact version. Nothing is published or sent.",
+      effect:
+        "Saves your name as the approver of this exact version. Nothing is published or sent.",
       scope: "This version of the campaign, as it reads right now",
-      result: "The campaign is approved. Changing it later needs a new approval.",
+      result: "This version is approved. Changing the campaign later needs a new approval.",
     },
   };
 }

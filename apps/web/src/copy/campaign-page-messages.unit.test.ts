@@ -6,15 +6,19 @@ import {
   AD_CARD,
   APPROVAL,
   APPROVER_ROLE_NOUNS,
+  CAMPAIGN_CARD_LABELS,
   CAMPAIGNS_PAGE,
   CAMPAIGNS_TABS,
   EARLIER_FLOW_LINE,
+  EARLIER_FLOW_TOPIC,
   NOTICES,
   RESULTS,
+  cardFact,
   decidedLine,
   decisionParts,
   libraryEyebrow,
   listPlaces,
+  retiredKept,
   runLine,
   runsRange,
   savedLine,
@@ -59,12 +63,45 @@ describe("the campaign page's words", () => {
       "This ad isn't running, so there is nothing to count yet. Spend comes from Meta, and leads are counted when they reach HighLevel.",
     );
     expect(RESULTS.chip).toBe("Not live yet");
-    expect(EARLIER_FLOW_LINE).toBe("Made with the earlier open house flow.");
+    // Writing review W-17: a loan officer remembers an open house campaign, not a "flow".
+    expect(EARLIER_FLOW_TOPIC).toBe("Open house");
+    expect(EARLIER_FLOW_LINE).toBe("Made with the earlier open house tool.");
     expect(APPROVAL.covers).toBe(
       "The approval covers this version and these words only. A new version needs its own approval.",
     );
     expect(NOTICES.chooseAnotherAd).toBe("Choose another ad");
     expect(AD_CARD.title).toBe("The ad");
+  });
+
+  it("say what the library says when it holds no ad, instead of inviting a choice (W-10)", () => {
+    expect(CAMPAIGNS_PAGE.emptyDescriptionNoAds).toBe(
+      "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then.",
+    );
+    expect(CAMPAIGNS_PAGE.emptyDescriptionNoAds).not.toMatch(/pick an ad/iu);
+  });
+
+  it("say where an ad shows the same way step 2 does (W-15)", () => {
+    expect(AD_CARD.shows).toBe("Shows in");
+  });
+
+  it("do not tell a reader they approved what someone else approved (W-8)", () => {
+    expect(NOTICES.missingApproved).toBe(
+      "This ad isn't in the library. This campaign keeps its approved version.",
+    );
+    expect(retiredKept("Oct 1, 2026")).toBe(
+      "This ad was taken out of the library on Oct 1, 2026. This campaign keeps its approved version.",
+    );
+    expect(NOTICES.missingApproved).not.toMatch(/\byou\b/iu);
+    expect(retiredKept("Oct 1, 2026")).not.toMatch(/\byou\b/iu);
+  });
+
+  it("name each fact on a campaign card (W-9)", () => {
+    expect(cardFact(CAMPAIGN_CARD_LABELS.topic, "Refinance")).toBe("Topic: Refinance.");
+    expect(cardFact(CAMPAIGN_CARD_LABELS.dates, "Oct 6 to Oct 20")).toBe("Dates: Oct 6 to Oct 20.");
+    expect(cardFact(CAMPAIGN_CARD_LABELS.where, "Austin, TX and 2 more")).toBe(
+      "Where it shows: Austin, TX and 2 more.",
+    );
+    expect(CAMPAIGN_CARD_LABELS.lastChange).toBe("Last change");
   });
 
   it("have no dash in any sentence", () => {

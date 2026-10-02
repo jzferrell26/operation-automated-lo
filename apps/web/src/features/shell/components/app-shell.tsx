@@ -23,6 +23,7 @@ import {
 } from "../../../copy/shell-messages.js";
 import { ThemeControl } from "../../../theme/index.js";
 import type { DeepReadonly, Navigation } from "../../ui-foundation/model/synthetic-ui.js";
+import { firstNameOf, initialsOf } from "../model/display-name.js";
 import {
   isNavigationItemInteractive,
   isNavigationItemSelected,
@@ -210,7 +211,7 @@ function MenuItem({ item, onNavigate, pathname, variant }: MenuItemProps) {
    * reason. The reason is the element's description, shown on hover and on keyboard focus in the
    * bar and always in the sheet, where there is room for it.
    */
-  const reason = `${navigationStateLabel(item.state)}. ${item.stateDetail ?? ""}`.trim();
+  const reason = navigationReason(item);
   return (
     <span
       aria-describedby={reasonId}
@@ -256,20 +257,6 @@ function ShellHelp() {
       </Sheet>
     </SheetAnchor>
   );
-}
-
-function initialsOf(name: string): string {
-  return name
-    .split(/\s+/u)
-    .map((part) => /\p{L}/u.exec(part)?.[0] ?? "")
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
-function firstNameOf(name: string): string {
-  return name.split(/\s+/u)[0] ?? name;
 }
 
 type AccountControlProps = Readonly<{
@@ -326,6 +313,17 @@ function AccountControl({ accountControls, session }: AccountControlProps) {
   );
 }
 
+/**
+ * What a menu item that is not open to this person says about itself. The item's own sentence
+ * stands alone when it has one ("You don't have access to this. Ask your workspace owner."), so
+ * a person is not told three times that they have no access; the state's short label is the
+ * fallback for an item with no sentence (writing review W-19).
+ */
+function navigationReason(item: ProjectedNavigationItem): string {
+  const detail = item.stateDetail?.trim();
+  return detail === undefined || detail === "" ? navigationStateLabel(item.state) : detail;
+}
+
 /** What a menu item that is not open to this person says about itself (user-language section 4). */
 function navigationStateLabel(state: ProjectedNavigationItem["state"]): string {
   switch (state) {
@@ -336,7 +334,7 @@ function navigationStateLabel(state: ProjectedNavigationItem["state"]): string {
     case "unavailable":
       return "Not included in your plan";
     case "planned":
-      return "Coming later";
+      return "Not available yet";
     case "degraded":
       return "Having trouble";
   }

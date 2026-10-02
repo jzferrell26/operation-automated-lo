@@ -100,11 +100,33 @@ describe("the global stylesheet's element defaults", () => {
     expect(rootSized, "a size on :root or html would shrink every rem step").toEqual([]);
   });
 
+  /**
+   * PRD-009. All seven approved canvases set `line-height: var(--leading-normal)` on `body` next to
+   * the body step, and `--leading-normal` is 1.5. Without it, text no module sizes inherits the
+   * browser's `normal`, about 1.2 in Inter, and draws shorter than the canvas.
+   */
+  it("puts the base leading on body, as the approved canvases do (PRD-009)", () => {
+    expect(declarationsFor("body").get("line-height")).toBe("var(--leading-normal)");
+  });
+
   it("gives every heading level its type step (rubric D-009)", () => {
     expect(declarationsFor("h1").get("font-size")).toBe("var(--text-page-size)");
     expect(declarationsFor("h2").get("font-size")).toBe("var(--text-section-size)");
     for (const level of ["h3", "h4", "h5", "h6"]) {
       expect(declarationsFor(level).get("font-size"), level).toBe("var(--text-card-size)");
+    }
+  });
+
+  /**
+   * PRD-009. The canvases' page and section titles take `--leading-tight`, so an `h1` or `h2` keeps
+   * it instead of inheriting the body's 1.5. `h3` to `h6` inherit the body's leading, as a bare `h3`
+   * does in the canvases; a title they set tight is a module class.
+   */
+  it("keeps the page and section titles on the tight leading, not the body's (PRD-009)", () => {
+    expect(declarationsFor("h1").get("line-height")).toBe("var(--leading-tight)");
+    expect(declarationsFor("h2").get("line-height")).toBe("var(--leading-tight)");
+    for (const level of ["h3", "h4", "h5", "h6"]) {
+      expect(declarationsFor(level).has("line-height"), level).toBe(false);
     }
   });
 

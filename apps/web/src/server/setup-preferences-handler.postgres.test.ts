@@ -211,10 +211,20 @@ describe("the setup profile route (009B-AC-012)", () => {
  * reads it again (D4, non-goals).
  */
 describe("the retired progress row (009B-AC-011)", () => {
-  it("has no route any more", async () => {
-    const { existsSync } = await import("node:fs");
-    const { join } = await import("node:path");
-    expect(existsSync(join(import.meta.dirname, "../app/api/setup/progress/route.ts"))).toBe(false);
+  it("answers 404 at its old address, with the exported route and a real session", async () => {
+    const { POST: progressPost } = await import("../app/api/setup/progress/route.js");
+
+    const response = await progressPost(
+      browserRequest({
+        path: "/api/setup/progress",
+        body: { progress: { status: "in_progress", currentStep: 1 } },
+        session,
+        csrfServerSecret,
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    expect(await response.text()).toBe("");
   });
 
   it("stays in the database, unchanged, after the profile is written and Home and the profile are read", async () => {

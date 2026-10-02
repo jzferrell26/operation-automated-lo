@@ -1,0 +1,232 @@
+/*
+ * PRD-009d D3 and design 00-direction.md section 5.4. One library ad as a picture: the library's
+ * art on top, and the brand band along the bottom (the bottom 20 percent of the tall ad, 270 of
+ * 1350, and the bottom 22 percent of the square ad, 238 of 1080).
+ *
+ * The band is white with navy text in both themes, so its contrast never depends on the theme or on
+ * the person's colour. Those two values and the brand colour arrive as custom properties set by the
+ * component (`ad-creative.tsx`), because a feature stylesheet holds no colour literal of its own.
+ * Every size inside the band is a share of the ad's own width, so a card, the step 2 preview, and
+ * step 3 draw the same proportions at any frame.
+ */
+
+.creative {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  container-type: inline-size;
+  inline-size: 100%;
+  background: var(--ad-band-paper, var(--sf-card));
+}
+
+.creative[data-shape="tall"] {
+  aspect-ratio: 4 / 5;
+  grid-template-rows: 80% 20%;
+}
+
+.creative[data-shape="square"] {
+  aspect-ratio: 1 / 1;
+  grid-template-rows: 77.963% 22.037%;
+}
+
+.art {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  min-block-size: 0;
+  object-fit: cover;
+}
+
+.band {
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.2cqw;
+  min-block-size: 0;
+  padding: 2.4cqw 3.6cqw 2cqw;
+  border-block-start: max(2px, 0.7cqw) solid var(--ad-brand, var(--ac-primary));
+  background: var(--ad-band-paper, var(--sf-card));
+  color: var(--ad-band-ink, var(--tx-strong));
+  font-family: var(--font-interface);
+}
+
+.bandRow {
+  display: grid;
+  align-items: center;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 2.4cqw;
+  min-block-size: 0;
+}
+
+.tile {
+  display: grid;
+  place-items: center;
+  inline-size: 10cqw;
+  block-size: 10cqw;
+  border-radius: 1.4cqw;
+  background: var(--ad-brand, var(--ac-primary));
+  color: var(--ad-tile-letters, var(--tx-on-action));
+  font-size: 4.2cqw;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.identity {
+  display: grid;
+  min-inline-size: 0;
+  gap: 0.6cqw;
+}
+
+/*
+ * D3: a long name wraps to two lines, then shrinks to the 14px floor (the secondary text step),
+ * then truncates. The size steps down with the name's length; the floor is never crossed, and the
+ * two-line clamp is what truncates.
+ */
+.name {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: max(14px, 4.6cqw);
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.name[data-name-size="reduced"] {
+  font-size: max(14px, 3.6cqw);
+}
+
+.name[data-name-size="floor"] {
+  font-size: 14px;
+}
+
+.detail,
+.company {
+  overflow: hidden;
+  font-size: max(9px, 2.8cqw);
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.company {
+  max-inline-size: 30cqw;
+  text-align: end;
+}
+
+.disclosure {
+  overflow: hidden;
+  margin: 0;
+  font-size: max(8px, 2.3cqw);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placeholder {
+  margin: 0;
+  font-size: max(11px, 3.4cqw);
+  font-weight: 600;
+}
+
+.sampleLabel {
+  position: absolute;
+  inset-block-start: 2.4cqw;
+  inset-inline-end: 2.4cqw;
+  padding: 0.6cqw 1.6cqw;
+  border: 1px dashed var(--ad-band-ink, var(--tx-strong));
+  border-radius: 1cqw;
+  background: var(--ad-band-paper, var(--sf-card));
+  color: var(--ad-band-ink, var(--tx-strong));
+  font-size: max(10px, 2.6cqw);
+  font-weight: 600;
+}
+
+/* The generic feed frame of step 2's preview and step 3: no Meta logo and no Meta branding. */
+.feed {
+  overflow: hidden;
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--ad-band-paper, var(--sf-card));
+  color: var(--ad-band-ink, var(--tx-strong));
+}
+
+.feedHeader {
+  display: grid;
+  align-items: center;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 16px 8px;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: 999px;
+  background: var(--ad-brand, var(--ac-primary));
+  color: var(--ad-tile-letters, var(--tx-on-action));
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.feedName {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feedSponsored {
+  font-size: 13px;
+}
+
+.feedText {
+  margin: 0;
+  padding: 0 16px 12px;
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.feedFooter {
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 12px 16px;
+  border-block-start: 1px solid var(--bd-hairline);
+}
+
+.feedCompany {
+  overflow: hidden;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.feedHeadline {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* What the ad's button will say once it runs. It is a picture of a button, not a control. */
+.feedButton {
+  padding: 8px 14px;
+  border: 1px solid var(--bd-hairline);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}

@@ -1,0 +1,143 @@
+/*
+ * PRD-009d D2 and design 00-direction.md section 5.2. The topic chips, the card grid, and one card.
+ * The grid holds four cards a row at 1440, three at 1180, two at 768, and one at 390; the chips
+ * scroll sideways on a phone rather than wrapping into a tall block.
+ */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 47.99rem) {
+  .chips {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-block-end: var(--space-1);
+    scrollbar-width: thin;
+  }
+
+  .chips > li {
+    flex: none;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--target-min-size);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--bd-input);
+  border-radius: var(--radius-pill);
+  background: var(--sf-card);
+  color: var(--tx-strong);
+  font: inherit;
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.chip[aria-current="true"],
+.chip[aria-pressed="true"] {
+  border-color: var(--ac-primary);
+  background: var(--st-info-bg);
+  color: var(--st-info-fg);
+}
+
+.chipCount {
+  color: var(--tx-faint);
+  font-size: var(--text-secondary-size);
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 87.49rem) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 63.99rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.card {
+  display: grid;
+  overflow: hidden;
+  block-size: 100%;
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  background: var(--sf-card);
+  grid-template-rows: auto 1fr;
+}
+
+.cardBody {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.topic {
+  justify-self: start;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--st-neutral-bg);
+  color: var(--st-neutral-fg);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-medium);
+}
+
+.cardTitle {
+  margin: 0;
+  color: var(--tx-strong);
+  font-size: var(--text-card-size);
+  line-height: var(--leading-tight);
+}
+
+.cardWords,
+.cardVersion {
+  margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.cardAction {
+  margin-block-start: var(--space-2);
+}
+
+.cardAction > * {
+  inline-size: 100%;
+}
+
+.empty {
+  max-inline-size: 42rem;
+  margin: 0;
+  padding: var(--space-6);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  background: var(--sf-card);
+  color: var(--tx-body);
+}

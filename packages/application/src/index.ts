@@ -142,6 +142,22 @@ export {
   type CampaignWorkspaceReadRepository,
 } from "./campaign-workspace-read.js";
 
+/**
+ * PRD-009d D5 and 009D-AC-014. The ruleset registry and the library-ad rule codes, for the web
+ * application, which reads the domain only through this package. Step 3 counts the checks a saved
+ * version ran from the registry entry for its stored ruleset reference.
+ */
+export {
+  LIBRARY_AD_RULESET_REF,
+  OPEN_HOUSE_RULESET_REF,
+  PREFLIGHT_RULESET_REGISTRY,
+  evaluateLibraryAdWords,
+  rulesetRuleCodes,
+  type LibraryAdRuleCode,
+  type LibraryAdTexts,
+  type PreflightRuleCode,
+} from "@oalo/domain";
+
 export {
   LeadSubmissionRejectedError,
   acceptPublicLeadSubmission,

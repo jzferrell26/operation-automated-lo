@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation.js";
 import { Badge, Button, Card, Icon, Link, type IconName } from "@oalo/ui";
 import type { WorkspacePageData, WorkspaceView } from "./model.js";
-import { ReportBrandEditor, PartnersEditor } from "./preference-editors.js";
+import { AdBrandEditor, ReportBrandEditor, PartnersEditor } from "./preference-editors.js";
 import "@oalo/ui/product-tokens.css";
 import styles from "./workspace.module.css";
 
@@ -16,9 +16,13 @@ const headings: Record<WorkspaceView, { title: string; description: string }> = 
     title: "Settings",
     description: "Your account, your connections, and where new leads go in HighLevel.",
   },
+  /*
+   * PRD-009d D3. Brand holds what goes on every ad as well as the homeowner report identity, so the
+   * page is named for both. Whether homeowner reports are on is said on the report card itself.
+   */
   profile: {
-    title: "Report branding",
-    description: "A consistent identity on every new homeowner report.",
+    title: "Brand",
+    description: "Your name and NMLS number go on every ad automatically.",
   },
   routing: {
     title: "Where new leads go in HighLevel",
@@ -29,16 +33,6 @@ const headings: Record<WorkspaceView, { title: string; description: string }> = 
     description: "Review valuation usage separately from subscription or lookup charges.",
   },
 };
-/**
- * What the report branding page says when homeowner reports are not turned on for the workspace.
- *
- * The branding is real and is saved either way, so the page keeps saying so. What it cannot say is
- * that the branding gives "every new homeowner report" an identity, because a workspace with the
- * reports module off has nowhere to create one. This is the sentence for that state; the one in the
- * map above is for the state where they are on.
- */
-const REPORT_BRANDING_WHILE_REPORTS_ARE_OFF =
-  "Your branding is saved here for homeowner reports, which aren't turned on for this workspace yet.";
 /**
  * PRD-009f D1 and 009F-AC-004. The three things Settings holds, each with the link to its page.
  *
@@ -180,11 +174,7 @@ export function WorkspaceScreen({ data }: { data: WorkspacePageData }) {
         <div>
           <span className={styles.eyebrow}>{data.identity.company}</span>
           <h1>{heading.title}</h1>
-          <p>
-            {data.view === "profile" && !data.reportsEnabled
-              ? REPORT_BRANDING_WHILE_REPORTS_ARE_OFF
-              : heading.description}
-          </p>
+          <p>{heading.description}</p>
         </div>
         {!["profile", "partners"].includes(data.view) ? (
           <Button variant="outline" onClick={() => router.refresh()}>
@@ -193,7 +183,12 @@ export function WorkspaceScreen({ data }: { data: WorkspacePageData }) {
         ) : null}
       </header>
       {data.view === "settings" ? <SettingsCards /> : null}
-      {data.view === "profile" ? <ReportBrandEditor data={data} /> : null}
+      {data.view === "profile" ? (
+        <>
+          <ReportBrandEditor data={data} />
+          <AdBrandEditor data={data} />
+        </>
+      ) : null}
       {data.view === "partners" ? <PartnersEditor data={data} /> : null}
       {data.view === "routing" ? <Routing data={data} /> : null}
       {data.view === "billing" ? (

@@ -31,10 +31,7 @@ export function BrandProfileScreen({ profile }: BrandProfileScreenProps) {
         <div>
           <p className={styles.eyebrow}>Your brand</p>
           <h1>Brand and compliance details</h1>
-          <p>
-            Fill these in once and every Open House Boost for {profile.activeLocation.displayName}{" "}
-            uses them.
-          </p>
+          <p>Fill these in once and every ad for {profile.activeLocation.displayName} uses them.</p>
         </div>
         <span className={styles.versionBadge}>Current</span>
       </header>
@@ -71,7 +68,7 @@ export function BrandProfileScreen({ profile }: BrandProfileScreenProps) {
       <section aria-labelledby="required-fields-title" className={styles.section}>
         <div className={styles.sectionHeading}>
           <div>
-            <h2 id="required-fields-title">What every Open House Boost needs</h2>
+            <h2 id="required-fields-title">What every ad needs</h2>
             <p>Your state, your lender&apos;s policy, and where the ad runs all ask for these.</p>
           </div>
           <span>{missingFields.length} still to add</span>

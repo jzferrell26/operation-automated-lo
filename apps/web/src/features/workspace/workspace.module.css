@@ -318,3 +318,19 @@
     align-items: start;
   }
 }
+/*
+ * PRD-009d D3. The Brand page's preview of the band an ad carries, at the tall ad's band shape
+ * (1080 by 270, so 4 to 1). Its paper, ink, and brand colour come from the band's own custom
+ * properties; the preview card's muted paragraph colour must not reach the band's text.
+ */
+.adBandPreview {
+  display: grid;
+  overflow: hidden;
+  aspect-ratio: 4 / 1;
+  container-type: inline-size;
+  inline-size: 100%;
+  border-radius: var(--radius-control);
+}
+.brandPreview .adBandPreview p {
+  color: inherit;
+}

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { loadSyntheticBrandProfile } from "./synthetic-brand-profile.js";
 
 describe("synthetic brand profile boundary", () => {
-  it("freezes one current canonical profile and names Open House Boost gaps", () => {
+  it("freezes one current canonical profile and names the gaps every ad has", () => {
     const profile = loadSyntheticBrandProfile();
     const missingFields = profile.canonicalProfile.requiredFields.filter(
       (field) => field.state === "missing",

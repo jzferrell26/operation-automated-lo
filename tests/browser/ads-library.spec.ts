@@ -3,20 +3,23 @@ import { expect, test } from "@playwright/test";
 import { EMPTY_LIBRARY } from "../../apps/web/src/copy/launch-messages.js";
 
 import {
+  CARDS_PER_ROW,
   LIBRARY_PATH,
   activeSampleAds,
   blockAnythingOffOrigin,
   expectChipsScrollSideways,
+  expectNoLongTask,
   expectEveryArtLoaded,
   expectGridColumns,
   sampleTopicCounts,
+  settleTheLibrary,
+  watchLongTasks,
 } from "./helpers/ads-library.js";
 import {
   REVIEW_FRAMES,
   expectAxeClean,
   expectNoHorizontalOverflow,
   expectThemeResolved,
-  settleForScreenshot,
   useStoredTheme,
 } from "./helpers/design-quality.js";
 
@@ -39,34 +42,36 @@ import {
  */
 
 test.describe("The Ads library tab in a browser", () => {
-  test("lays its ads out four, three, two, and one a row, with no sideways scroll (009C-AC-010)", async ({
-    page,
-    baseURL,
-  }) => {
-    test.setTimeout(120_000);
-    const external = await blockAnythingOffOrigin(page, new URL(baseURL ?? "").origin);
-    await useStoredTheme(page, "light");
-    for (const frame of REVIEW_FRAMES) {
+  for (const frame of REVIEW_FRAMES) {
+    test(`lays its ads out ${String(CARDS_PER_ROW[frame.name])} a row at ${frame.name}, with no sideways scroll (009C-AC-010)`, async ({
+      page,
+      baseURL,
+    }) => {
+      test.setTimeout(60_000);
+      const external = await blockAnythingOffOrigin(page, new URL(baseURL ?? "").origin);
+      await useStoredTheme(page, "light");
+      await watchLongTasks(page);
       await page.setViewportSize({ width: frame.width, height: frame.height });
       await page.goto(LIBRARY_PATH);
       await expect(page.locator("[data-ad-card]")).toHaveCount(activeSampleAds().length);
-      await settleForScreenshot(page);
+      await settleTheLibrary(page);
       await expectGridColumns(page, frame.name);
       await expectNoHorizontalOverflow(page);
-    }
-    expect(external).toEqual([]);
-  });
+      await expectNoLongTask(page);
+      expect(external).toEqual([]);
+    });
+  }
 
   test("scrolls the topic chips sideways at 390 and wraps them at the wider frames (009C-AC-010)", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(LIBRARY_PATH);
-    await settleForScreenshot(page);
+    await settleTheLibrary(page);
     await expectChipsScrollSideways(page);
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    await settleForScreenshot(page);
+    await settleTheLibrary(page);
     const chips = page.getByRole("list", { name: "Show ads about" });
     expect(await chips.evaluate((list) => list.scrollWidth <= list.clientWidth + 1)).toBe(true);
   });
@@ -179,20 +184,22 @@ test.describe("The Ads library tab in a browser", () => {
     expect(external).toEqual([]);
   });
 
-  test("is axe-clean at the four frames in Light and Dark (009C-AC-013)", async ({ page }) => {
-    test.setTimeout(240_000);
-    for (const theme of ["light", "dark"] as const) {
-      await useStoredTheme(page, theme);
-      for (const frame of REVIEW_FRAMES) {
+  for (const theme of ["light", "dark"] as const) {
+    for (const frame of REVIEW_FRAMES) {
+      test(`is axe-clean at ${frame.name} in ${theme === "light" ? "Light" : "Dark"} (009C-AC-013)`, async ({
+        page,
+      }) => {
+        test.setTimeout(60_000);
+        await useStoredTheme(page, theme);
         await page.setViewportSize({ width: frame.width, height: frame.height });
         await page.goto(LIBRARY_PATH);
         await expectThemeResolved(page, theme);
         await expect(page.locator("[data-ad-card]").first()).toBeVisible();
-        await settleForScreenshot(page);
+        await settleTheLibrary(page);
         await expectAxeClean(page);
-      }
+      });
     }
-  });
+  }
 });
 
 test.describe("The Ads library tab with no ad in the library (009C-AC-012)", () => {
@@ -201,26 +208,26 @@ test.describe("The Ads library tab with no ad in the library (009C-AC-012)", () 
     "Needs a server started without the sample flag; set OALO_EXPECT_EMPTY_LIBRARY=true for that run",
   );
 
-  test("says so in one sentence, with no chips and no grid, at the four frames in Light and Dark", async ({
-    page,
-  }) => {
-    test.setTimeout(240_000);
-    for (const theme of ["light", "dark"] as const) {
-      await useStoredTheme(page, theme);
-      for (const frame of REVIEW_FRAMES) {
+  for (const theme of ["light", "dark"] as const) {
+    for (const frame of REVIEW_FRAMES) {
+      test(`says so in one sentence, with no chips and no grid, at ${frame.name} in ${theme === "light" ? "Light" : "Dark"}`, async ({
+        page,
+      }) => {
+        test.setTimeout(60_000);
+        await useStoredTheme(page, theme);
         await page.setViewportSize({ width: frame.width, height: frame.height });
         await page.goto(LIBRARY_PATH);
         await expectThemeResolved(page, theme);
         await expect(page.getByText(EMPTY_LIBRARY)).toBeVisible();
-        await settleForScreenshot(page);
+        await settleTheLibrary(page);
         await expect(page.getByRole("list", { name: "Show ads about" })).toHaveCount(0);
         await expect(page.locator("[data-ad-card-grid], [data-ad-card]")).toHaveCount(0);
         await expect(page.getByRole("link", { name: /^Use this ad/u })).toHaveCount(0);
         await expectNoHorizontalOverflow(page);
         await expectAxeClean(page);
-      }
+      });
     }
-  });
+  }
 
   test("answers the sample art route with not found, because no sample is served here", async ({
     request,

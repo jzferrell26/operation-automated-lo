@@ -4,16 +4,15 @@ import {
   LIBRARY_PATH,
   activeSampleAds,
   expectChipsScrollSideways,
-  expectEveryArtLoaded,
   expectGridColumns,
   sampleTopicCounts,
+  settleTheLibrary,
 } from "../helpers/ads-library.js";
 import {
   REVIEW_FRAMES,
   expectAxeClean,
   expectNoHorizontalOverflow,
   expectThemeResolved,
-  settleForScreenshot,
   useStoredTheme,
 } from "../helpers/design-quality.js";
 import {
@@ -60,8 +59,7 @@ test("lays the library out at the four frames, filters in place, and is axe-clea
       await page.goto(LIBRARY_PATH);
       await expectThemeResolved(page, theme);
       await expect(page.locator("[data-ad-card]")).toHaveCount(total);
-      await settleForScreenshot(page);
-      await expectEveryArtLoaded(page);
+      await settleTheLibrary(page);
       await expectGridColumns(page, frame.name);
       await expectNoHorizontalOverflow(page);
       // The band is the signed-in person's own: every card carries one, as text.

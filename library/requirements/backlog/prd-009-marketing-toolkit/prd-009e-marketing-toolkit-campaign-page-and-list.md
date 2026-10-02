@@ -72,7 +72,7 @@ An open house campaign saved before PRD-009 opens read-only with one line, "Made
 - `apps/web/src/app/(authenticated)/marketing/campaigns/page.tsx` and its tests: this lane alone owns the page and its tab strip ("Your campaigns", "Ads library"); 009c owns only `library/page.tsx`
 - The campaign workspace read (approver name, version history, library notices), with Postgres route tests
 - `apps/web/src/copy/campaign-page-messages.ts` (new)
-- `packages/application/src/campaign-approval-command.ts` and `apps/web/src/server/campaign-approval-handler.ts` (recording the decider's own display name, 009E-AC-004)
+- `packages/application/src/campaign-approval-command.ts` and `apps/web/src/server/campaign-approval-handler.ts` (recording the decider's own display name, 009E-AC-004), in Wave 3, after 009c part 1 changed both in Wave 1; this lane changes the command's input and its one caller together
 - `docs/operations/retention-and-deletion.md` and `docs/operations/export.md` (the recorded name as personal data)
 
 ## Test plan

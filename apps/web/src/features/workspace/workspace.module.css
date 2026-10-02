@@ -51,8 +51,9 @@
   gap: var(--space-2);
   min-inline-size: 0;
 }
+/* PRD-009g (009G-AC-001): the caption step, the smallest of the brief's six; 10px was off-step. */
 .eyebrow {
-  font-size: 10px;
+  font-size: var(--text-caption-size);
   font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.12em;

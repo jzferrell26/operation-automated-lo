@@ -128,7 +128,8 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByRole("button", { name: "Approve this version" }).click();
   await page.getByRole("button", { name: "Yes, approve" }).click();
-  await expect(page.getByText("Approved.", { exact: false }).first()).toBeVisible();
+  // The control's "Approved." outcome shows only until the page refreshes into its decided state,
+  // so waiting for it raced the refresh. The recorded decision below is the stable proof.
 
   /**
    * PRD-008b 008B-AC-006. The decision replaces the controls with what was recorded and refreshes

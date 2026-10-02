@@ -368,9 +368,11 @@
   gap: var(--space-3);
 }
 
+/* The summary reads as a link, so it takes the link colour. --ac-primary is a fill and never text in
+ * Dark (3.19 on a card, under the 4.5 floor); --st-info-fg is the brief's link colour in both themes. */
 .checked summary {
   min-block-size: var(--target-min-size);
-  color: var(--ac-primary);
+  color: var(--st-info-fg);
   cursor: pointer;
   font-weight: var(--weight-medium);
   line-height: var(--target-min-size);

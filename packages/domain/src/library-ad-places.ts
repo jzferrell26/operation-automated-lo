@@ -68,16 +68,17 @@ const STATE_CODES: ReadonlySet<string> = new Set(US_STATE_CODES);
 /** D4: at most 5 states and 10 cities. */
 export const LIBRARY_AD_PLACE_LIMITS = Object.freeze({ states: 5, cities: 10 });
 
-const CITY = /^[A-Za-z][A-Za-z .'-]{1,59}, ([A-Z]{2})$/u;
+const CITY = /^([A-Za-z][A-Za-z .'-]{1,59}), ([A-Z]{2})$/u;
 
 /**
- * Whole words (delimited by non-letters) that aim at people or a distance rather than a place: the
- * same list as `AD_PLACE_AUDIENCE_WORDS` in `@oalo/contracts`, held equal by a unit test.
+ * Whole words (delimited by non-letters) that aim at people, a ZIP code, or a radius rather than a
+ * place: the same list as `AD_PLACE_AUDIENCE_WORDS` in `@oalo/contracts`, held equal by a unit test.
+ * They are matched against a city's name only, never against its state code.
  */
 export const LIBRARY_AD_PLACE_AUDIENCE_WORDS: readonly string[] = Object.freeze(
   [
-    // Distance and postal codes: places are cities and states, never a radius or a ZIP code.
-    "zip zips zipcode zipcodes postal radius within mile miles mi km kms kilometer kilometers kilometre kilometres",
+    // Postal codes and radii: places are cities and states, never a radius or a ZIP code.
+    "zip zips zipcode zipcodes postal radius within",
     // Age.
     "age ages aged senior seniors elderly retiree retirees retired teen teens teenager teenagers youth adult adults millennial millennials boomer boomers kids children student students",
     // Gender.
@@ -91,17 +92,48 @@ export const LIBRARY_AD_PLACE_AUDIENCE_WORDS: readonly string[] = Object.freeze(
     .split(" "),
 );
 
+/**
+ * Units of distance: the same list as `AD_PLACE_DISTANCE_UNITS` in `@oalo/contracts`. "mi" is also
+ * Michigan and "Miles City" is a city, so a unit is refused only where it reads as a distance:
+ * beside a digit (every digit is refused), after "within" (a refused word), or as the last word of the
+ * city name ("Austin mi", "Mile").
+ */
+export const LIBRARY_AD_PLACE_DISTANCE_UNITS: readonly string[] = Object.freeze(
+  "mi mile miles km kms kilometer kilometers kilometre kilometres".split(" "),
+);
+
+/**
+ * Real places whose names hold a refused word, passed by exact match on "Name, ST": the same list as
+ * `AD_PLACE_NAMED_EXCEPTIONS` in `@oalo/contracts`.
+ */
+export const LIBRARY_AD_PLACE_NAMED_EXCEPTIONS: readonly string[] = Object.freeze(
+  "Gay, GA|Gay, MI|Boomer, NC|Boomer, WV|Boys Town, NE|Boys Ranch, TX|Ages, KY|Miles, TX|Miles, IA|Six Mile, SC|Eight Mile, AL|Ten Mile, TN|Twelve Mile, IN".split(
+    "|",
+  ),
+);
+
 const PEOPLE_WORDS = new RegExp(
   `(?<!\\p{L})(?:${LIBRARY_AD_PLACE_AUDIENCE_WORDS.join("|")})(?!\\p{L})`,
   "iu",
 );
+const UNIT_CLOSES_NAME = new RegExp(
+  `(?:^|\\p{L}[^\\p{L}]+)(?:${LIBRARY_AD_PLACE_DISTANCE_UNITS.join("|")})$`,
+  "iu",
+);
+const NAMED_EXCEPTIONS: ReadonlySet<string> = new Set(
+  LIBRARY_AD_PLACE_NAMED_EXCEPTIONS.map((place) => place.toLowerCase()),
+);
 
 /** Why a stored state or city falls outside D4, or `undefined` when it does not. */
 function placeProblem(kind: "state" | "city", value: string): string | undefined {
-  if (/\p{N}/u.test(value) || PEOPLE_WORDS.test(value)) return "people";
+  if (/\p{N}/u.test(value)) return "people";
   if (kind === "state") return STATE_CODES.has(value) ? undefined : "unknown state";
   const city = CITY.exec(value);
-  return city !== null && STATE_CODES.has(city[1] ?? "") ? undefined : "not a city";
+  if (city === null || !STATE_CODES.has(city[2] ?? "")) return "not a city";
+  // The words are matched against the name only: the code after the comma is a state, never a word.
+  if (NAMED_EXCEPTIONS.has(value.toLowerCase())) return undefined;
+  const name = city[1] ?? "";
+  return PEOPLE_WORDS.test(name) || UNIT_CLOSES_NAME.test(name) ? "people" : undefined;
 }
 
 /**

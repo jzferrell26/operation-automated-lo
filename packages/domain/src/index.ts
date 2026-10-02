@@ -69,7 +69,9 @@ export {
 export { normaliseLibraryAdText } from "./library-ad-text.js";
 export {
   LIBRARY_AD_PLACE_AUDIENCE_WORDS,
+  LIBRARY_AD_PLACE_DISTANCE_UNITS,
   LIBRARY_AD_PLACE_LIMITS,
+  LIBRARY_AD_PLACE_NAMED_EXCEPTIONS,
   US_STATE_CODES,
   libraryAdPlacesProblem,
 } from "./library-ad-places.js";

@@ -86,16 +86,6 @@ const connectionsAllowances: readonly ReviewSurfaceAllowance[] = [
     value: "Meta",
     because: "Substring of the not-connected disclosure.",
   },
-  {
-    path: "navigation.items[*].id",
-    value: "leads",
-    because: "Substring of the allowed business purpose about where new leads land.",
-  },
-  {
-    path: "navigation.marketingItems[*].id",
-    value: "campaigns",
-    because: "Substring of the allowed capability label 'Create campaigns'.",
-  },
 ];
 
 beforeEach(() => {

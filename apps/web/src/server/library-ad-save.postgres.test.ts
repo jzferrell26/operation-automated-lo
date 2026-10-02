@@ -1,6 +1,6 @@
 import { createCampaignVersion, runCampaignPreflight } from "@oalo/application";
 import type { SqlScalar } from "@oalo/db";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { POST as approvePost } from "../app/api/campaigns/approve/route.js";
@@ -82,11 +82,15 @@ const SavedBody = z
     state: z.string(),
     blocking: z.boolean(),
     findings: z.array(
-      z.object({
-        ruleCode: z.string(),
-        affected: z.string().optional(),
-        remediation: z.string(),
-      }),
+      z
+        .object({
+          ruleCode: z.string(),
+          severity: z.enum(["blocking", "warning"]),
+          description: z.string(),
+          affected: z.string(),
+          remediation: z.string(),
+        })
+        .strict(),
     ),
   })
   .passthrough();
@@ -193,6 +197,27 @@ async function persistThroughTheApplication(
   );
   await adapter.persistDraft(version, preflight);
   return storedVersion(owner, version.campaignRef);
+}
+
+/**
+ * Saves the owner's ad brand and report brand: the test brand, with `change` and `report` laid
+ * over it. `brandWith({})` is the clean brand every other test assumes.
+ */
+async function brandWith(change: Record<string, string>, report: Record<string, string> = {}) {
+  expect(
+    (
+      await savePreference(owner, "ad_brand", {
+        title: "Loan officer",
+        colorPresetId: "forest",
+        disclosureLine: "Equal Housing Opportunity.",
+        leadFormWording: DEFAULT_AD_BRAND.leadFormWording,
+        ...change,
+      })
+    ).status,
+  ).toBe(200);
+  expect((await savePreference(owner, "brand", { ...SAVED_TEST_BRAND, ...report })).status).toBe(
+    200,
+  );
 }
 
 beforeAll(async () => {
@@ -387,22 +412,11 @@ describe.sequential("where it shows (009D-AC-008)", () => {
 });
 
 describe.sequential("each D5 rule makes a version need changes (009D-AC-010)", () => {
-  async function brandWith(change: Record<string, string>, report: Record<string, string> = {}) {
-    expect(
-      (
-        await savePreference(owner, "ad_brand", {
-          title: "Loan officer",
-          colorPresetId: "forest",
-          disclosureLine: "Equal Housing Opportunity.",
-          leadFormWording: DEFAULT_AD_BRAND.leadFormWording,
-          ...change,
-        })
-      ).status,
-    ).toBe(200);
-    expect((await savePreference(owner, "brand", { ...SAVED_TEST_BRAND, ...report })).status).toBe(
-      200,
-    );
-  }
+  // A case that changes the brand puts it back even when it fails, so a failure here cannot leave
+  // a blank NMLS number or a bad disclosure line behind for the suites that run after it.
+  afterEach(async () => {
+    await brandWith({});
+  });
 
   it.each([
     ["WORDS_TOO_LONG", { headline: "h".repeat(61) }, "content.headline"],
@@ -474,7 +488,6 @@ describe.sequential("each D5 rule makes a version need changes (009D-AC-010)", (
       (item) => item.ruleCode === code && item.affected === affected,
     );
     expect(finding?.remediation).toContain(field);
-    await brandWith({});
   });
 
   it("LIBRARY_AD_RETIRED for an ad retired before the check ran", async () => {
@@ -490,8 +503,17 @@ describe.sequential("each D5 rule makes a version need changes (009D-AC-010)", (
 });
 
 describe.sequential("a new version, and its references (009D-AC-020, 021)", () => {
+  // Approving needs a version whose checks passed, so this suite starts from the clean brand
+  // rather than from whatever the suite before it left.
+  beforeAll(async () => {
+    await brandWith({});
+  });
+
   it("appends version 2 to the same campaign, and the earlier approval does not carry over", async () => {
     const first = await saved(owner, LIBRARY_AD_SAVE_INPUT);
+    expect(first.state, "only a version whose checks passed can be approved").toBe(
+      "awaiting_approval",
+    );
     const approved = await approvePost(
       browserRequest({
         path: "/api/campaigns/approve",

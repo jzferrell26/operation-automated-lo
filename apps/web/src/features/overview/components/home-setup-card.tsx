@@ -6,6 +6,7 @@ import {
   HOME_CHECKLIST_STATE_LABELS,
   HOME_PATHS,
   HOME_SETUP,
+  homeChecklistActionName,
 } from "../../../copy/home-messages.js";
 import type {
   HomeChecklist,
@@ -123,7 +124,7 @@ function ChecklistRow({ item }: Readonly<{ item: HomeChecklistItem }>) {
         </Badge>
       </div>
       <Link
-        aria-label={`${copy.actions[item.state]} ${copy.subject}`}
+        aria-label={homeChecklistActionName(item.id, item.state)}
         className={styles.itemAction}
         href={HOME_CHECKLIST_HREFS[item.id]}
         variant="action"

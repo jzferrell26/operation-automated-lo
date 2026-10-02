@@ -122,6 +122,8 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
         expectedPreflightResultHash: persisted.preflight.resultHash,
         expectedRowVersion: 2,
         ipAuditHash: "a".repeat(64),
+        // PRD-009e D2. The decider's own session name, recorded in the decision's evidence.
+        approverDisplayName: "Casey Rivera",
       };
 
       const denied = await executeHumanCampaignApproval(
@@ -163,6 +165,17 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
       assert.equal(reloaded.approval?.decision, "approved");
       assert.equal(reloaded.approval?.actorRef, approver.actorRef);
       assert.equal(reloaded.approval?.campaignVersionRef, persisted.version.campaignVersionRef);
+      assert.equal(reloaded.approval?.snapshot.approverDisplayName, "Casey Rivera");
+
+      // PRD-009e 009E-AC-005. The versions read returns the version with its own check and decision.
+      const versions = await createPostgresCampaignReadRepository(
+        pool,
+        createPrincipalBoundTenantContextAuthority(approver, `${tenant.correlationId}_versions`),
+      ).listVersionsOf(campaignRef);
+      assert.equal(versions.length, 1);
+      assert.equal(versions[0].version.campaignVersionRef, persisted.version.campaignVersionRef);
+      assert.equal(versions[0].preflight?.resultHash, persisted.preflight.resultHash);
+      assert.equal(versions[0].approval?.snapshot.approverDisplayName, "Casey Rivera");
     } finally {
       await cleanupTenants(pool, [tenant], [creator, approver]);
       await pool.close();

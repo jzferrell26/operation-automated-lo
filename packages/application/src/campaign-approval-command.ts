@@ -136,6 +136,14 @@ export interface HumanCampaignApprovalInput {
   readonly decidedAt: Date;
   readonly ipAuditHash: string;
   readonly correlationRef: string;
+  /**
+   * PRD-009e D2, 009E-AC-004. The decider's own session display name, which the route reads from
+   * the session and never from the request body, so nobody can put a name in another person's
+   * mouth. `undefined` says the session yielded nothing but the fallback, and then nothing is
+   * recorded and a screen shows the role instead. The key is required: a caller states which it
+   * has, and none can forget to.
+   */
+  readonly approverDisplayName: string | undefined;
   readonly expectedCampaignVersionRef?: string;
   readonly expectedManifestHash?: string;
   readonly expectedPreflightResultHash?: string;
@@ -362,6 +370,7 @@ export async function executeHumanCampaignApproval(
           decidedAt: input.decidedAt,
           ipAuditHash: input.ipAuditHash,
           decision: input.decision,
+          approverDisplayName: input.approverDisplayName,
         },
         createSessionApprovalAuthority(frozen),
       );

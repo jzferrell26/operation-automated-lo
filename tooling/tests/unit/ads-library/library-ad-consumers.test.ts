@@ -73,7 +73,7 @@ describe("manifest consumers narrow on blueprintId", () => {
     expect(codes).toEqual(["PARTNER_PERMISSION_REQUIRED", "PROPERTY_PERMISSION_REQUIRED"]);
   });
 
-  it("projects a library-ad version without inventing a property, a Realtor, or open house times", async () => {
+  it("projects a library-ad version without a property, a Realtor, or open house times", async () => {
     const version = await libraryAdVersion({ startsAt: "2026-10-02T09:00:00.000Z" });
     const preflight = runCampaignPreflight(version, libraryAdRulesFor());
     const projection = projectCampaignWorkspace(
@@ -88,27 +88,19 @@ describe("manifest consumers narrow on blueprintId", () => {
       "filesystem",
     );
     expect(projection.headline).toBe("Buying your first home? Start with a plan.");
-    expect(projection.propertyAddress).toBe("");
-    expect(projection.realtorDisplayName).toBe("");
-    expect(projection.openHouseStartsAt).toBe("2026-10-02T09:00:00.000Z");
-    expect(projection.openHouseEndsAt).toBe("2026-10-15T23:59:00.000Z");
+    // PRD-009e D4 and 009E-AC-008. The projection has no property, Realtor, or open house time
+    // field at all, for a library ad or any other version.
+    expect(projection.blueprint).toBe("library-ad");
+    for (const key of [
+      "propertyAddress",
+      "realtorDisplayName",
+      "openHouseStartsAt",
+      "openHouseEndsAt",
+    ]) {
+      expect(projection, key).not.toHaveProperty(key);
+    }
     expect(projection.targetingRegions).toEqual(["TX"]);
     expect(projection.disclosureText).toBe("Equal Housing Opportunity.");
-
-    const unscheduled = await libraryAdVersion();
-    expect(
-      projectCampaignWorkspace(
-        {
-          version: unscheduled,
-          preflight: runCampaignPreflight(unscheduled, libraryAdRulesFor()),
-          state: "awaiting_approval",
-          rowVersion: 1,
-          updatedAt: "2026-10-01T16:00:00.000Z",
-        },
-        reader,
-        "filesystem",
-      ).openHouseStartsAt,
-    ).toBe("");
   });
 
   it("builds the open house approval snapshot exactly as before", async () => {
@@ -128,24 +120,34 @@ describe("manifest consumers narrow on blueprintId", () => {
       },
       memoryVersionRepository(),
     );
-    const decision = await createApprovalDecision(
-      {
-        approvalRef: "approval_01OpenHouse",
-        campaignVersion: version,
-        preflight: runCampaignPreflight(version, {
-          ...libraryAdRulesFor("2026-07-20T00:00:00.000Z"),
-          rulesetVersionRef: "ruleset_01Policy",
-          allowedClaims: [...manifest.content.claims],
-        }),
-        actorRef: "principal_approver001",
-        actorKind: "human",
-        actorRole: "approver",
-        decidedAt: new Date("2026-07-21T17:00:00.000Z"),
-        ipAuditHash: "a".repeat(64),
-        decision: "approved",
-      },
-      { async assertMayApprove() {} },
-    );
+    const decide = (approverDisplayName: string | undefined) =>
+      createApprovalDecision(
+        {
+          approvalRef: "approval_01OpenHouse",
+          campaignVersion: version,
+          preflight: runCampaignPreflight(version, {
+            ...libraryAdRulesFor("2026-07-20T00:00:00.000Z"),
+            rulesetVersionRef: "ruleset_01Policy",
+            allowedClaims: [...manifest.content.claims],
+          }),
+          actorRef: "principal_approver001",
+          actorKind: "human",
+          actorRole: "approver",
+          decidedAt: new Date("2026-07-21T17:00:00.000Z"),
+          ipAuditHash: "a".repeat(64),
+          decision: "approved",
+          approverDisplayName,
+        },
+        { async assertMayApprove() {} },
+      );
+    const decision = await decide(undefined);
+    // PRD-009e D2. An open house version records the decider's own name the same way, and carries
+    // no name key at all when there is none.
+    expect(decision.snapshot).not.toHaveProperty("approverDisplayName");
+    expect((await decide("Casey Rivera")).snapshot).toEqual({
+      ...decision.snapshot,
+      approverDisplayName: "Casey Rivera",
+    });
     expect(decision.snapshot).toEqual({
       pageVersionRef: manifest.artifacts.pageVersionRef,
       pdfVersionRef: manifest.artifacts.pdfVersionRef,

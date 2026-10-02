@@ -276,6 +276,7 @@ function command(overrides: Partial<HumanCampaignApprovalInput> = {}): HumanCamp
     decidedAt: now,
     ipAuditHash: sha("a"),
     correlationRef: "correlation_approve_001",
+    approverDisplayName: undefined,
     ...overrides,
   };
 }
@@ -304,6 +305,32 @@ describe("human campaign approval command", () => {
     expect(result.duplicate).toBe(false);
     expect(repository.commits[0]?.event?.toState).toBe("approved");
     expect(repository.denials).toHaveLength(0);
+  });
+
+  /**
+   * PRD-009e D2, 009E-AC-004. The command records the decider's own session name in the decision's
+   * evidence when the caller has one, and nothing when it has none. The name is not part of the
+   * command's identity, so an identical retry hashes the same whether or not the name was read.
+   */
+  it("records the decider's own session name in the decision, and no key without one", async () => {
+    const named = new MemoryApprovalRepository();
+    named.evidence = await passingEvidence();
+    const withName = await approve(
+      command({ approverDisplayName: "Casey Rivera" }),
+      approver,
+      named,
+    );
+    const anonymous = new MemoryApprovalRepository();
+    anonymous.evidence = await passingEvidence();
+    const without = await approve(command(), approver, anonymous);
+
+    expect(withName.kind).toBe("committed");
+    expect(without.kind).toBe("committed");
+    if (withName.kind !== "committed" || without.kind !== "committed") return;
+    expect(withName.decision.snapshot.approverDisplayName).toBe("Casey Rivera");
+    expect(without.decision.snapshot).not.toHaveProperty("approverDisplayName");
+    expect(named.commits[0]?.inputHash).toBe(anonymous.commits[0]?.inputHash);
+    expect(named.commits[0]?.commandKey).toBe(anonymous.commits[0]?.commandKey);
   });
 
   it("lets a location admin approve and keeps a rejection in awaiting_approval", async () => {

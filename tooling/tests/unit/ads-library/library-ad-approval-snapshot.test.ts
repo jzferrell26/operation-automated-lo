@@ -46,7 +46,10 @@ async function snapshotFor(
   return (await decide(version)).snapshot;
 }
 
-async function decide(version: CampaignVersion): Promise<ApprovalDecision> {
+async function decide(
+  version: CampaignVersion,
+  approverDisplayName: string | undefined = undefined,
+): Promise<ApprovalDecision> {
   return createApprovalDecision(
     {
       approvalRef: "approval_01LibraryAd",
@@ -58,6 +61,7 @@ async function decide(version: CampaignVersion): Promise<ApprovalDecision> {
       decidedAt: new Date("2026-10-01T17:00:00.000Z"),
       ipAuditHash: "a".repeat(64),
       decision: "approved",
+      approverDisplayName,
     },
     allowAll,
   );
@@ -130,6 +134,15 @@ describe("library-ad approval snapshot (009C-AC-015)", () => {
         (base as Record<string, unknown>)[field],
       );
     }
+  });
+
+  it("records the decider's own session name beside the same references, and no key without one", async () => {
+    const version = await libraryAdVersion();
+    const unnamed = await decide(version);
+    const named = await decide(version, "Alex Morgan");
+
+    expect(unnamed.snapshot).not.toHaveProperty("approverDisplayName");
+    expect(named.snapshot).toEqual({ ...unnamed.snapshot, approverDisplayName: "Alex Morgan" });
   });
 
   it("accepts an optional approver display name on both variants and nothing unknown", () => {

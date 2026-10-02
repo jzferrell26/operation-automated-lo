@@ -75,11 +75,12 @@ describe.each([
     expect(handOffAnchors(container)).toBe(0);
   });
 
-  it("leaves the one approval card that says what was recorded", async () => {
+  it("leaves no approve card at all, because the Approval section says what was recorded", async () => {
     const { container } = await renderCampaign(options, CREATOR);
 
-    expect(screen.getByRole("button", { name: "Approve this version" })).toBeDisabled();
-    expect(container.querySelectorAll("[data-approval-card]")).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
+    expect(container.querySelectorAll("[data-approval-card]")).toHaveLength(0);
+    expect(screen.getByRole("region", { name: "Approval" })).toBeInTheDocument();
   });
 });
 

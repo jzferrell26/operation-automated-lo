@@ -609,8 +609,8 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
    * in the suite changes.
    *
    * The state's words and its way onward are asserted before anything is photographed: "No
-   * campaigns yet." is a claim about the workspace, and the one control on the card is the thing
-   * the state exists to offer.
+   * campaigns yet" is a claim about the workspace, and the one control on the card is the thing
+   * the state exists to offer. PRD-009e 009E-AC-011: it is also the page's one primary action.
    */
   test(`the campaigns list's empty state meets the bar at every frame in ${theme}`, async ({
     page,
@@ -625,19 +625,25 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
       await settleForScreenshot(page);
 
       const main = page.getByRole("main");
-      await expect(main.getByRole("heading", { level: 1, name: "Your campaigns" })).toBeVisible();
-      await expect(main.getByText("No campaigns yet.")).toBeVisible();
+      await expect(main.getByRole("heading", { level: 1, name: "Campaigns" })).toBeVisible();
+      await expect(main.getByText("No campaigns yet", { exact: true })).toBeVisible();
+      await expect(
+        main.getByText("Pick an ad from the library to set up your first one."),
+      ).toBeVisible();
       // Rubric axis 9: the shared `empty` state, not a card assembled on the page.
       await expect(main.locator(".oalo-async-state[data-state='empty']")).toContainText(
-        "No campaigns yet.",
+        "No campaigns yet",
       );
-      await expect(main.getByRole("link", { name: "Open campaign" })).toHaveCount(0);
+      await expect(main.locator("[data-campaign-row]")).toHaveCount(0);
       await expectThePageOpensAtTheTopOfItsContent(page);
       await expectThePageFillsTheContentColumn(page);
-      await expect(main.getByRole("link", { name: "Create an Open House Boost" })).toHaveAttribute(
-        "href",
-        "/marketing/campaigns/new",
-      );
+      // 009E-AC-011: exactly one "Launch an ad", and it is inside the empty state.
+      await expect(main.getByRole("link", { name: "Launch an ad" })).toHaveCount(1);
+      await expect(
+        main
+          .locator(".oalo-async-state[data-state='empty']")
+          .getByRole("link", { name: "Launch an ad" }),
+      ).toHaveAttribute("href", "/marketing/campaigns/new");
 
       await captureNamedState(page, { screen: "campaigns", state: "empty", theme });
 
@@ -653,11 +659,11 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
    * PRD-008d 008D-AC-010, the sign-off's "Campaigns list, populated" row.
    *
    * Taken from a fixture workspace holding exactly the two campaigns
-   * `helpers/populated-campaign-workspace.ts` saves through the create screen, one ready for
+   * `helpers/populated-campaign-workspace.ts` saves through "Launch an ad", one ready for
    * approval and one that needs changes, so the picture is the same list on every run and on
-   * every machine. The list's contents are asserted before anything is photographed: both cards,
-   * in the order they were saved, each with its headline, address, and badge and its way onward,
-   * and no empty-state card.
+   * every machine. The list's contents are asserted before anything is photographed: both rows,
+   * newest change first (PRD-009e 009E-AC-009), each with its ad's name as the link, its status
+   * chip, and no empty state.
    */
   test(`the campaigns list's populated state meets the bar at every frame in ${theme}`, async ({
     page,
@@ -672,32 +678,26 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
       await settleForScreenshot(page);
 
       const main = page.getByRole("main");
-      await expect(main.getByRole("heading", { level: 1, name: "Your campaigns" })).toBeVisible();
-      await expect(main.getByText("No campaigns yet.")).toHaveCount(0);
-      await expect(main.getByRole("link", { name: "Open campaign" })).toHaveCount(
-        POPULATED_CAMPAIGNS.length,
-      );
-      // Each campaign is one `Card`, which renders an `article`.
-      const cards = main.getByRole("article");
-      await expect(cards).toHaveCount(POPULATED_CAMPAIGNS.length);
-      for (const [index, campaign] of POPULATED_CAMPAIGNS.entries()) {
-        await expect(cards.nth(index).getByRole("heading", { level: 2 })).toHaveText(
-          campaign.headline,
-        );
-        await expect(cards.nth(index)).toContainText(campaign.verdict);
+      await expect(main.getByRole("heading", { level: 1, name: "Campaigns" })).toBeVisible();
+      await expect(main.getByText("No campaigns yet", { exact: true })).toHaveCount(0);
+      // One table row for each campaign, the last one saved first.
+      const rows = main.locator("[data-campaign-table] [data-campaign-row]");
+      await expect(rows).toHaveCount(POPULATED_CAMPAIGNS.length);
+      for (const [index, campaign] of [...POPULATED_CAMPAIGNS].reverse().entries()) {
+        await expect(rows.nth(index).getByRole("link", { name: campaign.ad.name })).toBeVisible();
+        await expect(rows.nth(index)).toContainText(campaign.verdict);
       }
+      await expect(main.getByRole("link", { name: "Launch an ad" })).toHaveCount(1);
       await expectThePageOpensAtTheTopOfItsContent(page);
       await expectThePageFillsTheContentColumn(page);
-      // Rubric axis 1: a card's title is never drawn larger than the page's own title.
-      const [pageTitle, cardTitle] = await Promise.all(
-        [main.getByRole("heading", { level: 1 }), cards.first().getByRole("heading")].map(
-          async (heading) =>
-            heading.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize)),
+      // Rubric axis 1: a row's link is never drawn larger than the page's own title.
+      const [pageTitle, rowLink] = await Promise.all(
+        [main.getByRole("heading", { level: 1 }), rows.first().getByRole("link")].map(
+          async (element) =>
+            element.evaluate((node) => Number.parseFloat(getComputedStyle(node).fontSize)),
         ),
       );
-      expect(cardTitle, "the card title is smaller than the page title").toBeLessThan(
-        pageTitle ?? 0,
-      );
+      expect(rowLink, "the row link is smaller than the page title").toBeLessThan(pageTitle ?? 0);
 
       await captureNamedState(page, { screen: "campaigns", state: "populated", theme });
 

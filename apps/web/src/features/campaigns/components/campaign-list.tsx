@@ -125,19 +125,23 @@ export function CampaignList({
                     <td>
                       <span className={styles.adCell}>
                         <Thumbnail row={row} />
-                        <Link className={styles.rowLink} href={row.href}>
-                          {row.name}
-                        </Link>
-                        <SampleLabel row={row} />
+                        <span className={styles.adName}>
+                          <Link className={styles.rowLink} href={row.href}>
+                            {row.name}
+                          </Link>
+                          <SampleLabel row={row} />
+                        </span>
                       </span>
                     </td>
                     <td>{topicWords(row)}</td>
-                    <td>{runsWords(row, year)}</td>
+                    <td className={styles.nowrap}>{runsWords(row, year)}</td>
                     <td>{whereWords(row)}</td>
-                    <td>
+                    <td className={styles.nowrap}>
                       <StatusChip row={row} />
                     </td>
-                    <td className={styles.muted}>{monthDay(row.updatedAt, year)}</td>
+                    <td className={`${styles.muted} ${styles.nowrap}`}>
+                      {monthDay(row.updatedAt, year)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

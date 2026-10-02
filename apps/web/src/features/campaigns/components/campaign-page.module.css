@@ -73,7 +73,7 @@
 
 .headActions {
   display: grid;
-  max-inline-size: 28rem;
+  max-inline-size: 32rem;
   gap: var(--space-2);
   justify-items: end;
   text-align: end;
@@ -89,6 +89,12 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
+}
+
+.buttonLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .reason {

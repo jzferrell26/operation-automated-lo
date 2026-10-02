@@ -519,15 +519,15 @@ describe("the approve control on the page (PRD-008b)", () => {
     expect(screen.getByRole("button", { name: "Send back for changes" })).toBeEnabled();
   });
 
-  it("stops saying an approved version is ready for approval, and blocks the control", async () => {
-    await renderCampaign({ decision: "approved" });
+  it("stops saying an approved version is ready for approval, and offers no control to approve it again", async () => {
+    const { container } = await renderCampaign({ decision: "approved" });
 
     expect(screen.queryByText("Ready for approval")).toBeNull();
-    expect(screen.getByRole("button", { name: "Approve this version" })).toBeDisabled();
-    expect(
-      screen.getByText("Read who decided, above. Nothing else happens from this page."),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Send back for changes" })).toBeNull();
+    expect(container.querySelector("[data-approval-card]")).toBeNull();
     expect(screen.queryByText(SENT_BACK_NEEDS_NEW_VERSION)).toBeNull();
+    expect(screen.getByRole("region", { name: "Approval" })).toHaveTextContent("Approved by");
   });
 
   it("says a sent-back version was sent back and never that it is ready for approval", async () => {
@@ -535,8 +535,13 @@ describe("the approve control on the page (PRD-008b)", () => {
 
     expect(screen.queryAllByText("Ready for approval")).toHaveLength(0);
     expect(screen.getAllByText("Sent back for changes").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "Approve this version" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Send back for changes" })).toBeNull();
+    // The Approval section says what the sent-back version needs, once.
+    expect(screen.getByRole("region", { name: "Approval" })).toHaveTextContent(
+      SENT_BACK_NEEDS_NEW_VERSION,
+    );
+    expect(screen.getAllByText(SENT_BACK_NEEDS_NEW_VERSION)).toHaveLength(1);
   });
 
   it.each([
@@ -558,8 +563,8 @@ describe("the approve control on the page (PRD-008b)", () => {
     },
   );
 
-  it("points a decided version at the approval section above the control", async () => {
-    const { container } = await renderCampaign({ decision: "approved" });
+  it("puts the approval section above the control on a version still waiting", async () => {
+    const { container } = await renderCampaign({}, APPROVER);
 
     const order = [
       ...container.querySelectorAll("[data-approval-section], [data-approval-card]"),

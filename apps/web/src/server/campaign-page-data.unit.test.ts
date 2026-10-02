@@ -229,7 +229,24 @@ describe("the library notices (009E-AC-006)", () => {
         chooseAnotherAdHref: undefined,
       },
     ]);
-    expect(page.approvalControls).toBeDefined();
+    // Somebody has decided, so there is nothing left to approve and no control is offered.
+    expect(page.approvalControls).toBeUndefined();
+  });
+
+  it("offers the approve control only to a version nobody has decided on", async () => {
+    expect((await libraryPageOf()).approvalControls).toMatchObject({
+      campaignRef: "campaign_01LibraryPage",
+      blocking: false,
+      canApprove: true,
+      alreadyDecided: undefined,
+      state: "awaiting_approval",
+    });
+    expect((await libraryPageOf({ needsChanges: true })).approvalControls).toMatchObject({
+      blocking: true,
+    });
+    for (const decision of ["approved", "rejected"] as const) {
+      expect((await libraryPageOf({ decision })).approvalControls, decision).toBeUndefined();
+    }
   });
 
   it("offers choosing another ad on a sent-back version whose ad is retired", async () => {

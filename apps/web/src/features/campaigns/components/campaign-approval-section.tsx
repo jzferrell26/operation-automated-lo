@@ -7,7 +7,11 @@ import {
   decisionParts,
   type DecisionWho,
 } from "../../../copy/campaign-page-messages.js";
-import { APPROVAL_ROLE_LABELS, CAMPAIGN_SENT_BACK_LABEL } from "../../../copy/user-language.js";
+import {
+  APPROVAL_ROLE_LABELS,
+  CAMPAIGN_SENT_BACK_LABEL,
+  CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION,
+} from "../../../copy/user-language.js";
 import { shortDay } from "../launch-model.js";
 import styles from "./campaign-page.module.css";
 
@@ -73,7 +77,9 @@ export function CampaignApprovalSection({
           {parts.trail}
           <time dateTime={decision.decidedAt}>{shortDay(decision.decidedAt)}</time>.
         </p>
-        {approved ? <p className={styles.small}>{APPROVAL.covers}</p> : null}
+        <p className={styles.small}>
+          {approved ? APPROVAL.covers : CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION}
+        </p>
       </div>
     </Surface>
   );

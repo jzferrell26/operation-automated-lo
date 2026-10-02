@@ -35,7 +35,10 @@ export function CampaignHeaderActions({
           </Link>
         )}
         <Button aria-describedby={reasonId} disabled type="button" variant="primary">
-          <Icon decorative name="megaphone" size="sm" /> {LAUNCH_ON_FACEBOOK}
+          <span className={styles.buttonLabel}>
+            <Icon decorative name="megaphone" size="sm" />
+            {LAUNCH_ON_FACEBOOK}
+          </span>
         </Button>
       </div>
       <p className={styles.reason} id={reasonId}>

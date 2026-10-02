@@ -320,8 +320,12 @@ export function buildCampaignPage(input: CampaignPageInput): CampaignPageData | 
       campaign: projection.campaignRef,
       from: "campaigns",
     }),
+    // D8: once somebody has decided, the Approval section says what was recorded and there is
+    // nothing left to approve, so the approve and hand-off card is for a version still waiting.
     approvalControls:
-      isLatest && !approvalBlockedByLibrary ? approvalControlsFor(projection) : undefined,
+      isLatest && !approvalBlockedByLibrary && shown.decision === undefined
+        ? approvalControlsFor(projection)
+        : undefined,
   };
   return Object.freeze(page);
 }

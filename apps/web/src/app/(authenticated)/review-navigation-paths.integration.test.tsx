@@ -34,14 +34,15 @@ describe("paths a connected-account workspace can send a user to", () => {
     const workspace = loadAuthenticatedWorkspace();
     const { navigation, onboarding } = workspace.ui;
 
+    // PRD-009a (009A-AC-014, 2026-10-01): the six-item menu replaced nine items and the six
+    // Marketing Suite sub-items, so the walk covers 6 menu paths and the 9 setup steps.
     const paths = [
       ...navigation.items.map((item) => item.href),
-      ...navigation.marketingItems.map((item) => item.href),
       ...onboarding.getConnected.map((item) => item.completionHref),
       ...onboarding.launchReadiness.map((item) => item.completionHref),
     ];
 
-    expect(paths.length).toBeGreaterThan(15);
+    expect(paths.length).toBe(15);
     expect(paths.filter((path) => SYNTHETIC_PATH.test(path))).toEqual([]);
   });
 

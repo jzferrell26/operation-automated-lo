@@ -78,10 +78,15 @@ const navigationItemSchema = z
   })
   .strict();
 
+/**
+ * PRD-009a D2 and 009A-AC-014. The menu is the six items of `MAIN_MENU`
+ * (`features/shell/model/navigation.ts`), which the fixture derives its navigation from. The
+ * nine-item navigation and the six Marketing Suite sub-items it replaced are gone, so a fixture
+ * carrying `marketingItems` is refused by the strict shape.
+ */
 export const navigationSchema = z
   .object({
-    items: z.array(navigationItemSchema).length(9),
-    marketingItems: z.array(navigationItemSchema).length(6),
+    items: z.array(navigationItemSchema).length(6),
   })
   .strict();
 

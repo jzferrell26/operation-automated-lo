@@ -461,7 +461,6 @@ function toReviewNavigationItem(item: DeepReadonly<NavigationItem>): DeepReadonl
 function toReviewNavigation(navigation: DeepReadonly<Navigation>): DeepReadonly<Navigation> {
   return {
     items: navigation.items.map(toReviewNavigationItem),
-    marketingItems: navigation.marketingItems.map(toReviewNavigationItem),
   };
 }
 

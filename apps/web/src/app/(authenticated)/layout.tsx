@@ -14,6 +14,7 @@ import { GuidedSetupProvider } from "../../features/guided-setup/guided-setup-pr
 import { GuidedSetupShellControls } from "../../features/guided-setup/guided-setup-progress.js";
 import { AppShell } from "../../features/shell/components/app-shell.js";
 import {
+  mainMenuNavigation,
   projectNavigationForSession,
   type WorkspaceSessionView,
 } from "../../features/shell/model/navigation.js";
@@ -31,7 +32,6 @@ import { readSetupPreferencesForRequest } from "../../server/setup-preferences.j
 import { canRenderDashboardPreview } from "../../server/dashboard-preview.js";
 import { DashboardPreviewProvider } from "../../features/dashboard-preview/preview-provider.js";
 import { ProductShell } from "../../features/dashboard-preview/product-shell.js";
-import { reportWorkspaceNavigation } from "../../features/workspace/navigation.js";
 
 export const dynamic = "force-dynamic";
 
@@ -111,7 +111,7 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
     const fixture = workspace.ui;
     return (
       <AppShell
-        navigation={projectNavigationForSession(fixture.navigation, fixture.session)}
+        navigation={projectNavigationForSession(mainMenuNavigation(), fixture.session)}
         session={fixture.session}
         workspaceMode={workspace.mode}
       >
@@ -132,8 +132,8 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
    * PRD-006d's named-state review, F-21. The sign-out control belongs to the shell's account area,
    * not to the page.
    *
-   * `03-components/application-shell-and-navigation.md` puts identity and its controls in the rail
-   * and the topbar's account control, and rubric axis 1 asks that the eye land on the page's own
+   * `03-components/application-shell-and-navigation.md` puts identity and its controls in the top
+   * bar's account control (PRD-009a), and rubric axis 1 asks that the eye land on the page's own
    * title. Until 2026-09-20 this form was the first child of `<main>`, so every workspace page
    * opened with a button above its own heading. It is the same plain form post it always was: a
    * hidden field, no client script, the label from the copy module, and the 44px target the
@@ -154,28 +154,18 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
     </form>
   );
 
+  /**
+   * PRD-009a D2, 009A-AC-010, and 009A-AC-014. The one menu, for every account: Homeowner reports
+   * is listed whether or not the homeowner report flag is set (the owner's answer to D-4), and the
+   * role projection still decides whether this person can open it (`reports:read`). Until
+   * 2026-10-01 this read the fixture's nine items, relabelled some of them for the report
+   * workspace, and appended Homeowner reports only when that flag was `enabled`.
+   */
   const shellBody = (
     <AppShell
       accountControls={shell.authenticated ? signOutControl : undefined}
-      headerControls={shell.authenticated ? <GuidedSetupShellControls /> : undefined}
-      navigation={projectNavigationForSession(
-        process.env.OALO_HOMEOWNER_REPORTS === "enabled" && shell.authenticated
-          ? {
-              ...reportWorkspaceNavigation(workspace.ui.navigation),
-              items: [
-                ...reportWorkspaceNavigation(workspace.ui.navigation).items,
-                {
-                  id: "homeowner-reports",
-                  label: "Homeowner reports",
-                  href: "/homeowners",
-                  state: "available",
-                  requiredCapability: "reports:read",
-                },
-              ],
-            }
-          : workspace.ui.navigation,
-        session,
-      )}
+      helpControls={shell.authenticated ? <GuidedSetupShellControls /> : undefined}
+      navigation={projectNavigationForSession(mainMenuNavigation(), session)}
       session={session}
       workspaceMode={workspace.mode}
     >

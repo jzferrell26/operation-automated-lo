@@ -1,3 +1,5 @@
+import type { IconName } from "@oalo/ui";
+
 import {
   deepFreeze,
   type Capability,
@@ -7,6 +9,66 @@ import {
 } from "../../ui-foundation/model/synthetic-ui.js";
 
 export type ProjectedNavigationItem = DeepReadonly<NavigationItem>;
+
+export type MainMenuEntry = Readonly<{
+  id: string;
+  label: string;
+  href: string;
+  /** Drawn in the Menu sheet at the mobile frame; the desktop bar shows the labels alone. */
+  icon: IconName;
+  requiredCapability?: Capability;
+}>;
+
+/**
+ * PRD-009a D2 and 009A-AC-014: the one menu. Six items, in the owner's labels and order ("Yes, as
+ * shown", D-2), at today's addresses (D-12). The review shell, the synthetic shell, and the
+ * dashboard preview shell all read this list, and the synthetic fixture derives its `navigation`
+ * from it, so there is no second menu to drift.
+ *
+ * Homeowner reports is listed for every account (the owner's answer to D-4); `reports:read` still
+ * decides through `projectNavigationForSession` whether a given role can open it. The Ads library
+ * is a tab of Campaigns (009c), not a menu item (D-16). Leads and Pipeline, Automations, Reports,
+ * Marketplace or Workspace tools, the Marketing Suite and its sub-items, and Getting started are
+ * gone (OD-A, OD-D).
+ */
+export const MAIN_MENU: readonly MainMenuEntry[] = deepFreeze([
+  { id: "overview", label: "Home", href: "/overview", icon: "home" },
+  { id: "campaigns", label: "Campaigns", href: "/marketing/campaigns", icon: "megaphone" },
+  { id: "brand", label: "Brand", href: "/brand", icon: "building" },
+  { id: "partners", label: "Realtor partners", href: "/partners", icon: "users" },
+  {
+    id: "homeowner-reports",
+    label: "Homeowner reports",
+    href: "/homeowners",
+    icon: "file-text",
+    requiredCapability: "reports:read",
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    href: "/settings",
+    icon: "settings",
+    requiredCapability: "settings:read",
+  },
+] satisfies MainMenuEntry[]);
+
+/** The one menu in the navigation shape the shell projects: every item available. */
+export function mainMenuNavigation(): DeepReadonly<Navigation> {
+  return deepFreeze({
+    items: MAIN_MENU.map(({ id, label, href, requiredCapability }) => ({
+      id,
+      label,
+      href,
+      state: "available" as const,
+      ...(requiredCapability === undefined ? {} : { requiredCapability }),
+    })),
+  });
+}
+
+/** The icon of a menu item, found by its address. */
+export function mainMenuIcon(href: string): IconName {
+  return MAIN_MENU.find((entry) => entry.href === href)?.icon ?? "circle-dot";
+}
 
 /**
  * PRD-005a 005A-AC-011. The shell renders from this shape rather than from `SyntheticSession`.
@@ -90,7 +152,6 @@ export function projectNavigationForSession(
 ) {
   return deepFreeze({
     items: navigation.items.map((item) => projectItem(item, session)),
-    marketingItems: navigation.marketingItems.map((item) => projectItem(item, session)),
   });
 }
 

@@ -1,0 +1,228 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { render, screen, within } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  NOT_CONNECTED_BANNER_LABEL,
+  NOT_CONNECTED_DISCLOSURE,
+  NOT_CONNECTED_HEADLINE,
+} from "../../copy/user-language.js";
+import type { Capability } from "../../features/ui-foundation/model/synthetic-ui.js";
+import type { RuntimeShellSession } from "../../server/runtime-authentication.js";
+import { useReviewModeEnvironment } from "./review-mode-test-support.js";
+
+/**
+ * PRD-009a, 009A-AC-010 and 009A-AC-013, through the real authenticated layout.
+ *
+ * 010: "Homeowner reports" is in the menu whether `OALO_HOMEOWNER_REPORTS` is set or unset, and
+ * the role projection (`reports:read`) still decides whether a given role can open it.
+ *
+ * 013: no review route renders the shell-wide not-connected banner, and the account control states
+ * only who is signed in. Connection facts are stated once, where they matter (D-11), which is not
+ * the shell. The walk covers every address the review workspace serves inside this layout.
+ */
+
+let pathname = "/overview";
+let shell: RuntimeShellSession;
+
+vi.mock("next/headers.js", () => ({ headers: () => Promise.resolve(new Headers()) }));
+vi.mock("next/navigation.js", () => ({ usePathname: () => pathname }));
+vi.mock("../../theme/index.js", () => ({
+  ThemeControl: () => <div aria-label="Appearance theme">Theme control</div>,
+}));
+vi.mock("../../server/setup-preferences.js", () => ({
+  readSetupPreferencesForRequest: () => Promise.resolve(undefined),
+}));
+vi.mock("../../server/runtime-authentication.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../server/runtime-authentication.js")>();
+  return { ...actual, resolveRuntimeShellSession: () => Promise.resolve(shell) };
+});
+
+const { default: AuthenticatedLayout } = await import("./layout.js");
+
+const OWNER_CAPABILITIES: readonly Capability[] = [
+  "campaign:create",
+  "location:read",
+  "onboarding:read",
+  "pipeline:read",
+  "reports:read",
+  "settings:read",
+];
+
+function signedIn(capabilities: readonly Capability[]): RuntimeShellSession {
+  return Object.freeze({
+    mode: "review" as const,
+    authenticated: true,
+    csrfToken: "a-session-bound-token-for-the-proof",
+    session: Object.freeze({
+      emailVerification: "verified" as const,
+      safety: Object.freeze({
+        dataMode: "synthetic" as const,
+        writesEnabled: false as const,
+        disclosure: NOT_CONNECTED_DISCLOSURE,
+      }),
+      user: Object.freeze({
+        displayName: "Dana Reyes",
+        roleLabel: "Workspace owner",
+        capabilities: Object.freeze([...capabilities]),
+      }),
+      location: Object.freeze({
+        displayName: "Dana's workspace",
+        source: "Signed in with your email. HighLevel, Meta, and Stripe aren't connected yet.",
+      }),
+    }),
+  });
+}
+
+async function renderLayout() {
+  return render(await AuthenticatedLayout({ children: <h1>Page</h1> }));
+}
+
+function mainMenuLabels(): readonly string[] {
+  const main = screen.getByRole("navigation", { name: "Main" });
+  return within(main)
+    .getAllByRole("listitem")
+    .map((item) => (item.querySelector("[data-menu-label]")?.textContent ?? "").trim());
+}
+
+const THE_SIX = [
+  "Home",
+  "Campaigns",
+  "Brand",
+  "Realtor partners",
+  "Homeowner reports",
+  "Settings",
+] as const;
+
+describe("Homeowner reports in the menu (009A-AC-010)", () => {
+  useReviewModeEnvironment();
+
+  beforeEach(() => {
+    pathname = "/overview";
+  });
+
+  it.each([
+    ["set", "enabled"],
+    ["unset", undefined],
+    ["set to anything else", "disabled"],
+  ] as const)("lists it for a workspace owner with the flag %s", async (_state, value) => {
+    vi.stubEnv("OALO_HOMEOWNER_REPORTS", value);
+    shell = signedIn(OWNER_CAPABILITIES);
+    await renderLayout();
+
+    expect(mainMenuLabels()).toEqual(THE_SIX);
+    expect(
+      within(screen.getByRole("navigation", { name: "Main" })).getByRole("link", {
+        name: "Homeowner reports",
+      }),
+    ).toHaveAttribute("href", "/homeowners");
+  });
+
+  it.each([
+    ["set", "enabled"],
+    ["unset", undefined],
+  ] as const)(
+    "shows it as text with its reason to a role without reports:read, flag %s",
+    async (_state, value) => {
+      vi.stubEnv("OALO_HOMEOWNER_REPORTS", value);
+      shell = signedIn(["location:read"]);
+      await renderLayout();
+
+      const main = screen.getByRole("navigation", { name: "Main" });
+      expect(mainMenuLabels()).toEqual(THE_SIX);
+      expect(within(main).queryByRole("link", { name: /Homeowner reports/u })).toBeNull();
+      expect(within(main).getByText("Homeowner reports").closest("[data-state]")).toHaveAttribute(
+        "data-state",
+        "permission_restricted",
+      );
+    },
+  );
+
+  it("no longer reads the flag in the layout", () => {
+    const layout = readFileSync(resolve("apps/web/src/app/(authenticated)/layout.tsx"), "utf8");
+    expect(layout).not.toContain("OALO_HOMEOWNER_REPORTS");
+  });
+});
+
+/** Every address the review workspace serves inside this layout after PRD-009's removals. */
+const REVIEW_ROUTES = [
+  "/overview",
+  "/marketing/campaigns",
+  "/marketing/campaigns/new",
+  "/marketing/campaigns/library",
+  "/marketing/campaigns/campaign_00000000000000000000000000000000",
+  "/brand",
+  "/partners",
+  "/homeowners",
+  "/homeowners/new",
+  "/settings",
+  "/settings/account",
+  "/settings/connections",
+  "/settings/routing",
+  "/settings/billing",
+  "/settings/change-password",
+] as const;
+
+describe("no shell-wide not-connected banner in review mode (009A-AC-013)", () => {
+  useReviewModeEnvironment();
+
+  it.each(REVIEW_ROUTES)(
+    "%s renders no banner and an account control without a connection clause",
+    async (route) => {
+      pathname = route;
+      shell = signedIn(OWNER_CAPABILITIES);
+      const user = userEvent.setup();
+      await renderLayout();
+
+      expect(screen.queryByLabelText(NOT_CONNECTED_BANNER_LABEL)).not.toBeInTheDocument();
+      expect(screen.queryByText(NOT_CONNECTED_HEADLINE)).not.toBeInTheDocument();
+      expect(screen.queryByText(NOT_CONNECTED_DISCLOSURE)).not.toBeInTheDocument();
+      expect(document.querySelector("aside")).toBeNull();
+
+      await user.click(screen.getByRole("button", { name: "Your account: Dana Reyes" }));
+      const account = screen.getByRole("dialog", { name: "Your account" });
+      expect(account).toHaveTextContent("Dana Reyes");
+      expect(account.textContent).not.toMatch(/connected|HighLevel|Meta|Stripe/u);
+      expect(within(account).getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+    },
+  );
+
+  it("states who is signed out, and nothing about connections, without a session", async () => {
+    pathname = "/overview";
+    shell = Object.freeze({
+      mode: "review" as const,
+      authenticated: false,
+      session: undefined,
+      csrfToken: undefined,
+    });
+    await renderLayout();
+
+    expect(screen.queryByLabelText(NOT_CONNECTED_BANNER_LABEL)).not.toBeInTheDocument();
+    expect(screen.queryByText(NOT_CONNECTED_HEADLINE)).not.toBeInTheDocument();
+    expect(mainMenuLabels()).toEqual(THE_SIX);
+  });
+});
+
+describe("the synthetic demo keeps one sample-data line (009A-AC-013, 009a D3)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("renders exactly one sample-data line, in the top bar region, and no banner", async () => {
+    vi.stubEnv("OALO_ENVIRONMENT", "local");
+    vi.stubEnv("OALO_REVIEW_SURFACE", undefined);
+    pathname = "/overview";
+    await renderLayout();
+
+    const lines = screen.getAllByText("Local demo with sample data.");
+    expect(lines).toHaveLength(1);
+    expect(within(screen.getByRole("banner")).getByText("Local demo with sample data.")).toBe(
+      lines[0],
+    );
+    expect(screen.queryByLabelText(NOT_CONNECTED_BANNER_LABEL)).not.toBeInTheDocument();
+    expect(mainMenuLabels()).toEqual(THE_SIX);
+  });
+});

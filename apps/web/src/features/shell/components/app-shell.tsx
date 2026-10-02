@@ -1,277 +1,181 @@
 "use client";
 
-import { Button, Dialog, Icon, IconButton, Surface } from "@oalo/ui";
+import { Button, Icon, Link, Sheet, SheetAnchor } from "@oalo/ui";
 import { usePathname } from "next/navigation.js";
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 
 import {
-  NOT_CONNECTED_BANNER_LABEL,
-  NOT_CONNECTED_HEADLINE,
-  WORKSPACE_EYEBROW,
-} from "../../../copy/user-language.js";
+  SHELL_ACCOUNT_CLOSE,
+  SHELL_ACCOUNT_TITLE,
+  SHELL_HELP_BODY,
+  SHELL_HELP_BUTTON,
+  SHELL_HELP_CLOSE,
+  SHELL_HELP_TITLE,
+  SHELL_MAIN_MENU_LABEL,
+  SHELL_MENU_BUTTON,
+  SHELL_MENU_CLOSE,
+  SHELL_MENU_SHEET_LIST_LABEL,
+  SHELL_MENU_SHEET_TITLE,
+  SHELL_SKIP_TO_CONTENT,
+  SHELL_WORDMARK,
+  SHELL_WORDMARK_INITIALS,
+  shellAccountButtonLabel,
+} from "../../../copy/shell-messages.js";
 import { ThemeControl } from "../../../theme/index.js";
-import type {
-  DeepReadonly,
-  Navigation,
-  NavigationItem,
-} from "../../ui-foundation/model/synthetic-ui.js";
+import type { DeepReadonly, Navigation } from "../../ui-foundation/model/synthetic-ui.js";
 import {
   isNavigationItemInteractive,
   isNavigationItemSelected,
+  mainMenuIcon,
+  type ProjectedNavigationItem,
   type WorkspaceSessionView,
 } from "../model/navigation.js";
 import styles from "./app-shell.module.css";
 
 type AppShellProps = Readonly<{
   /**
-   * `03-components/application-shell-and-navigation.md`: the shell's own account area, beside the
-   * theme control in the topbar. The signed-in layout puts the sign-out form here. Until the
-   * PRD-006d named-state review's F-21 that form was the first child of `<main>`, so every page in
-   * the workspace opened with a control instead of its own heading, which is rubric axis 1. The
-   * shell takes it as a slot for the same reason it takes `headerControls`: the form carries a
-   * server-rendered field, and the shell stays a client component that knows nothing about
-   * sessions.
+   * The account control's own actions. The signed-in layout puts the sign-out form here: a plain
+   * form post carrying a server-rendered field, which is why the shell takes it as a slot and stays
+   * a client component that knows nothing about sessions.
    */
   accountControls?: ReactNode;
   children: ReactNode;
-  dashboardPreview?: boolean;
   /**
-   * PRD-006c D5. The guided setup's two ways back in: the "Finish setup" chip and the help menu.
-   * The shell takes them as a slot rather than importing them, so the shell keeps knowing nothing
-   * about the walkthrough, and a workspace without one simply passes nothing.
+   * Help in the top bar. The signed-in layout passes the guided setup's help controls until PRD-009b
+   * retires the walkthrough (Wave 2); with nothing passed, the shell draws its own Help.
    */
-  headerControls?: ReactNode;
+  helpControls?: ReactNode;
   navigation: DeepReadonly<Navigation>;
   session: WorkspaceSessionView;
   workspaceMode?: "synthetic" | "review";
 }>;
 
 /**
- * PRD-006c D5 and D6's words for the drawer, kept beside each other so the trigger's name, the
- * layer's name, and the close control's name cannot drift apart.
+ * PRD-009a, 009A-AC-009 to 014, and design `00-direction.md` section 2.1: the light top bar.
+ *
+ * One `<header>` holds the wordmark (linking Home), the six-item "Main" menu, Help, and the account
+ * control (name, the Light/Dark/System choice, Sign out). The current page is marked by a pale blue
+ * tint, navy text, semibold weight, and `aria-current="page"`, so the mark is never colour alone.
+ * At 1440 and 1180 the bar is one row; at 768 the six links take a second row; below 720 a "Menu"
+ * button opens them in the `Sheet` primitive. There is no left rail, no collapse toggle, and no
+ * shell-wide not-connected banner (D-11): connection facts are stated once, where they matter.
+ * The local demo keeps one sample-data line in the top bar region (009a D3), because the contract
+ * requires sample data to be labelled.
  */
-const DRAWER_TITLE = "Workspace navigation";
-const DRAWER_CLOSE_LABEL = "Close navigation";
-const DRAWER_OPEN_LABEL = "Open navigation";
-const DRAWER_ID = "mobile-navigation-drawer";
-
 export function AppShell({
   accountControls,
   children,
-  dashboardPreview = false,
-  headerControls,
+  helpControls,
   navigation,
   session,
   workspaceMode = "synthetic",
 }: AppShellProps) {
   const pathname = usePathname();
-  const [isRailCollapsed, setRailCollapsed] = useState(false);
-  const [isMarketingExpanded, setMarketingExpanded] = useState(pathname.startsWith("/marketing"));
-  const [isDrawerOpen, setDrawerOpen] = useState(false);
-
-  function closeDrawerAfterNavigation() {
-    setDrawerOpen(false);
-  }
+  const [isMenuOpen, setMenuOpen] = useState(false);
 
   return (
     <div
       className={styles.shell}
       data-data-mode={session.safety.dataMode}
       data-workspace-mode={workspaceMode}
-      data-dashboard-preview={dashboardPreview || undefined}
     >
-      <aside
-        className={styles.desktopSidebar}
-        data-collapsed={isRailCollapsed || undefined}
-        aria-label="Primary workspace"
-      >
-        <NavigationHeader isCollapsed={isRailCollapsed} />
-        <NavigationItems
-          isCollapsed={isRailCollapsed}
-          isMarketingExpanded={isMarketingExpanded}
-          navigation={navigation}
-          onMarketingExpandedChange={setMarketingExpanded}
-          pathname={pathname}
-        />
-        <Button
-          aria-expanded={!isRailCollapsed}
-          className={styles.railToggle}
-          onClick={() => setRailCollapsed((current) => !current)}
-          size="sm"
-          variant="ghost"
-        >
-          {isRailCollapsed ? "Expand navigation" : "Collapse navigation"}
-        </Button>
-        <SessionIdentity isCollapsed={isRailCollapsed} session={session} />
-      </aside>
-
-      <div className={styles.workspace}>
-        {/*
-          PRD-006c D7, "the panel never obscures the focused element or the shell's sticky
-          header". The attribute is the shell saying which of its own elements is pinned to the
-          block start, so anything that scrolls the page can keep clear of it without reading this
-          file's class names. The guided setup's placement model takes the measurement as
-          `Viewport.blockStart`; the shell itself knows nothing about the walkthrough.
-        */}
-        <header className={styles.topbar} data-shell-sticky-header="true">
-          <div className={styles.mobileMenu}>
-            <IconButton
-              aria-controls={DRAWER_ID}
-              aria-expanded={isDrawerOpen}
-              icon="menu"
-              label={DRAWER_OPEN_LABEL}
-              onClick={() => setDrawerOpen(true)}
-            />
-          </div>
-          <div className={styles.locationContext}>
-            <span className={styles.eyebrow}>{WORKSPACE_EYEBROW}</span>
-            <strong>{session.location.displayName}</strong>
-            <span>{session.user.roleLabel}</span>
-          </div>
-          {headerControls}
-          <div className={styles.themeControl} aria-label="Theme settings">
-            <ThemeControl />
-          </div>
-          {accountControls === undefined ? null : (
-            <div className={styles.accountControls}>{accountControls}</div>
-          )}
-        </header>
-
-        <aside
-          className={styles.syntheticDisclosure}
-          data-review-surface={workspaceMode === "review" || undefined}
-          aria-label={
-            workspaceMode === "review"
-              ? NOT_CONNECTED_BANNER_LABEL
-              : "Local demo, nothing connected"
-          }
-        >
-          <Icon
-            decorative
-            name="info"
-            size="sm"
-            tone={workspaceMode === "review" ? "warning" : "info"}
-          />
-          <span>{session.safety.disclosure}</span>
-          <strong>
-            {workspaceMode === "review" ? NOT_CONNECTED_HEADLINE : "Nothing is connected."}
-          </strong>
-        </aside>
-
-        <main className={styles.content} id="main-content">
-          {children}
-        </main>
-      </div>
-
+      <Link className={styles.skipLink} href="#main-content">
+        {SHELL_SKIP_TO_CONTENT}
+      </Link>
       {/*
-        PRD-006d 006D-AC-003 and D4 line 88. The drawer is the `Dialog` primitive at its
-        `inline-start` placement, not a hand-built layer.
-
-        Until 2026-09-20 this was a plain element wearing the dialog role and the modal flag, with
-        its own focus trap, its own Escape handler, its own scroll lock, and its own focus return,
-        which is exactly the behaviour D4 named `Dialog` to generalise. Two implementations of one
-        contract is how the two drift: the trap here already differed from the primitive's, which
-        decides the wrap in `resolveTabTarget`, a pure function with its own test.
-
-        The wrapper stays, with nothing in it but the media gate. The drawer is the mobile
-        frame's rail, so above the mobile frame there is no drawer to draw, and `display: none`
-        on an ancestor is what keeps a layer opened at 390 from reappearing over a tablet layout
-        after a resize. At the mobile frame it is `display: contents`, so the primitive's own
-        fixed scrim does the positioning.
+        PRD-006c D7. The attribute is the shell saying which of its own elements is pinned to the
+        block start, so anything that scrolls the page can keep clear of it without reading this
+        file's class names.
       */}
-      <div className={styles.drawerLayer}>
-        <Dialog
-          className={styles.drawer}
-          closeLabel={DRAWER_CLOSE_LABEL}
-          id={DRAWER_ID}
-          onClose={() => setDrawerOpen(false)}
-          open={isDrawerOpen}
-          placement="inline-start"
-          title={DRAWER_TITLE}
-        >
-          <NavigationItems
-            isCollapsed={false}
-            isMarketingExpanded={isMarketingExpanded}
+      <header className={styles.topbar} data-shell-sticky-header="true">
+        <div className={styles.bar}>
+          <div className={styles.menuButton}>
+            <SheetAnchor>
+              <Button
+                aria-controls={isMenuOpen ? "main-menu-sheet" : undefined}
+                aria-expanded={isMenuOpen}
+                onClick={() => setMenuOpen((open) => !open)}
+                variant="secondary"
+              >
+                <span className={styles.buttonContent}>
+                  <Icon decorative name="menu" size="sm" />
+                  {SHELL_MENU_BUTTON}
+                </span>
+              </Button>
+              <Sheet
+                anchor="block-end"
+                className={styles.menuSheet}
+                closeLabel={SHELL_MENU_CLOSE}
+                id="main-menu-sheet"
+                onClose={() => setMenuOpen(false)}
+                open={isMenuOpen}
+                title={SHELL_MENU_SHEET_TITLE}
+              >
+                <MenuList
+                  label={SHELL_MENU_SHEET_LIST_LABEL}
+                  navigation={navigation}
+                  onNavigate={() => setMenuOpen(false)}
+                  pathname={pathname}
+                  variant="sheet"
+                />
+              </Sheet>
+            </SheetAnchor>
+          </div>
+
+          <Link className={styles.wordmark} href="/overview">
+            <span className={styles.wordmarkTile} aria-hidden="true">
+              {SHELL_WORDMARK_INITIALS}
+            </span>
+            <span>{SHELL_WORDMARK}</span>
+          </Link>
+
+          <MenuList
+            label={SHELL_MAIN_MENU_LABEL}
             navigation={navigation}
-            onItemNavigate={closeDrawerAfterNavigation}
-            onMarketingExpandedChange={setMarketingExpanded}
             pathname={pathname}
+            variant="bar"
           />
-          <SessionIdentity isCollapsed={false} session={session} />
-        </Dialog>
-      </div>
+
+          <div className={styles.cluster}>
+            {helpControls ?? <ShellHelp />}
+            <AccountControl accountControls={accountControls} session={session} />
+          </div>
+        </div>
+        {workspaceMode === "synthetic" ? (
+          <p className={styles.sampleLine}>
+            <Icon decorative name="info" size="sm" tone="info" />
+            <span>{session.safety.disclosure}</span>
+          </p>
+        ) : null}
+      </header>
+
+      <main className={styles.content} id="main-content">
+        {children}
+      </main>
     </div>
   );
 }
 
-function NavigationHeader({ isCollapsed }: Readonly<{ isCollapsed: boolean }>) {
-  return (
-    <div className={styles.brand}>
-      <span className={styles.brandMark} aria-hidden="true">
-        OA
-      </span>
-      {!isCollapsed ? <strong>Operation Automated LO</strong> : null}
-    </div>
-  );
-}
-
-type NavigationItemsProps = Readonly<{
-  isCollapsed: boolean;
-  isMarketingExpanded: boolean;
+type MenuListProps = Readonly<{
+  label: string;
   navigation: DeepReadonly<Navigation>;
-  onItemNavigate?: () => void;
-  onMarketingExpandedChange: (expanded: boolean) => void;
+  onNavigate?: () => void;
   pathname: string;
+  variant: "bar" | "sheet";
 }>;
 
-function NavigationItems({
-  isCollapsed,
-  isMarketingExpanded,
-  navigation,
-  onItemNavigate,
-  onMarketingExpandedChange,
-  pathname,
-}: NavigationItemsProps) {
+function MenuList({ label, navigation, onNavigate, pathname, variant }: MenuListProps) {
   return (
-    <nav className={styles.navigation} aria-label="Product navigation">
-      <ul className={styles.navigationList}>
+    <nav aria-label={label} className={variant === "bar" ? styles.menu : styles.sheetMenu}>
+      <ul className={styles.menuList}>
         {navigation.items.map((item) => (
           <li key={item.id}>
-            <NavigationItemView
-              isCollapsed={isCollapsed}
+            <MenuItem
               item={item}
-              {...(onItemNavigate ? { onNavigate: onItemNavigate } : {})}
+              {...(onNavigate ? { onNavigate } : {})}
               pathname={pathname}
+              variant={variant}
             />
-            {item.id === "marketing" && !isCollapsed ? (
-              <>
-                <Button
-                  aria-controls="marketing-subnavigation"
-                  aria-expanded={isMarketingExpanded}
-                  className={styles.subnavToggle}
-                  onClick={() => onMarketingExpandedChange(!isMarketingExpanded)}
-                  size="sm"
-                  variant="ghost"
-                >
-                  {isMarketingExpanded ? "Collapse Marketing" : "Expand Marketing"}
-                </Button>
-                {isMarketingExpanded ? (
-                  <ul className={styles.subnavigation} id="marketing-subnavigation">
-                    {navigation.marketingItems.map((marketingItem) => (
-                      <li key={marketingItem.id}>
-                        <NavigationItemView
-                          isCollapsed={false}
-                          item={marketingItem}
-                          {...(onItemNavigate ? { onNavigate: onItemNavigate } : {})}
-                          pathname={pathname}
-                          subordinate
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </>
-            ) : null}
           </li>
         ))}
       </ul>
@@ -279,99 +183,157 @@ function NavigationItems({
   );
 }
 
-type NavigationItemViewProps = Readonly<{
-  isCollapsed: boolean;
-  item: DeepReadonly<NavigationItem>;
+type MenuItemProps = Readonly<{
+  item: ProjectedNavigationItem;
   onNavigate?: () => void;
   pathname: string;
-  subordinate?: boolean;
+  variant: "bar" | "sheet";
 }>;
 
-function NavigationItemView({
-  isCollapsed,
-  item,
-  onNavigate,
-  pathname,
-  subordinate = false,
-}: NavigationItemViewProps) {
-  const isSelected = isNavigationItemSelected(item, pathname);
-  const isInteractive = isNavigationItemInteractive(item);
-  const stateLabel = navigationStateLabel(item.state);
-  const accessibleLabel = item.state === "available" ? item.label : `${item.label}. ${stateLabel}`;
-  const tooltipLabel = item.stateDetail
-    ? `${item.label}: ${stateLabel}. ${item.stateDetail}`
-    : accessibleLabel;
-  const content = (
-    <>
-      <Icon
-        decorative
-        name={isSelected ? "circle-dot" : navigationStateIcon(item.state)}
-        size="sm"
-        tone={navigationStateTone(item.state)}
-      />
-      {!isCollapsed ? <span>{item.label}</span> : null}
-      {!isCollapsed && item.state !== "available" ? (
-        <span className={styles.navigationState}>{navigationStateLabel(item.state)}</span>
-      ) : null}
-    </>
-  );
+function MenuItem({ item, onNavigate, pathname, variant }: MenuItemProps) {
+  const reasonId = useId();
+  const icon =
+    variant === "sheet" ? <Icon decorative name={mainMenuIcon(item.href)} size="sm" /> : null;
 
-  if (isInteractive) {
+  if (isNavigationItemInteractive(item)) {
+    const isCurrent = isNavigationItemSelected(item, pathname);
     return (
       <a
-        aria-current={isSelected ? "page" : undefined}
-        aria-label={accessibleLabel}
+        aria-current={isCurrent ? "page" : undefined}
         className={styles.navigationLink}
-        data-selected={isSelected || undefined}
-        data-subordinate={subordinate || undefined}
+        data-current={isCurrent || undefined}
         href={item.href}
         onClick={onNavigate}
-        title={tooltipLabel}
       >
-        {content}
+        {icon}
+        <span data-menu-label="">{item.label}</span>
       </a>
     );
   }
 
+  /*
+   * 009A-AC-009: a role without access sees the same label, as text that goes nowhere, with its
+   * reason. The reason is the element's description, shown on hover and on keyboard focus in the
+   * bar and always in the sheet, where there is room for it.
+   */
+  const reason = `${navigationStateLabel(item.state)}. ${item.stateDetail ?? ""}`.trim();
   return (
     <span
-      aria-disabled="true"
-      aria-label={accessibleLabel}
-      className={styles.navigationLink}
-      data-subordinate={subordinate || undefined}
+      aria-describedby={reasonId}
+      className={styles.menuText}
       data-state={item.state}
-      role="link"
       tabIndex={0}
-      title={tooltipLabel}
+      title={reason}
     >
-      {content}
-      {!isCollapsed && item.stateDetail ? (
-        <span className={styles.navigationDetail}>{item.stateDetail}</span>
-      ) : null}
+      {icon}
+      <Icon decorative name="lock" size="sm" tone="neutral" />
+      <span data-menu-label="">{item.label}</span>
+      <span className={styles.menuReason} id={reasonId}>
+        {reason}
+      </span>
     </span>
   );
 }
 
-function SessionIdentity({
-  isCollapsed,
-  session,
-}: Readonly<{ isCollapsed: boolean; session: WorkspaceSessionView }>) {
+function ShellHelp() {
+  const [isOpen, setOpen] = useState(false);
   return (
-    <Surface className={styles.identity} data-collapsed={isCollapsed || undefined} padding="sm">
-      <Icon decorative name="lock" size="sm" tone="navigation" />
-      {!isCollapsed ? (
-        <div>
-          <strong>{session.location.displayName}</strong>
-          <span>{session.user.displayName}</span>
-          <span>{session.user.roleLabel}</span>
-          <small>{session.location.source}</small>
-        </div>
-      ) : null}
-    </Surface>
+    <SheetAnchor className={styles.anchorEnd}>
+      <Button
+        aria-expanded={isOpen}
+        className={styles.helpButton}
+        onClick={() => setOpen((open) => !open)}
+        variant="ghost"
+      >
+        <span className={styles.buttonContent}>
+          <Icon decorative name="help" size="sm" />
+          <span className={styles.helpLabel}>{SHELL_HELP_BUTTON}</span>
+        </span>
+      </Button>
+      <Sheet
+        anchor="block-end"
+        className={styles.endSheet}
+        closeLabel={SHELL_HELP_CLOSE}
+        onClose={() => setOpen(false)}
+        open={isOpen}
+        title={SHELL_HELP_TITLE}
+      >
+        <p className={styles.sheetText}>{SHELL_HELP_BODY}</p>
+      </Sheet>
+    </SheetAnchor>
   );
 }
 
-function navigationStateLabel(state: NavigationItem["state"]): string {
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/u)
+    .map((part) => /\p{L}/u.exec(part)?.[0] ?? "")
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+function firstNameOf(name: string): string {
+  return name.split(/\s+/u)[0] ?? name;
+}
+
+type AccountControlProps = Readonly<{
+  accountControls: ReactNode;
+  session: WorkspaceSessionView;
+}>;
+
+/**
+ * 009A-AC-009 and 013: the person's name, the Light/Dark/System choice, and Sign out. It states
+ * who is signed in and nothing else: the session's source line, which named the connections, is
+ * not rendered here any more.
+ */
+function AccountControl({ accountControls, session }: AccountControlProps) {
+  const [isOpen, setOpen] = useState(false);
+  const name = session.user.displayName;
+
+  return (
+    <SheetAnchor className={styles.anchorEnd}>
+      <Button
+        aria-expanded={isOpen}
+        aria-label={shellAccountButtonLabel(name)}
+        className={styles.accountButton}
+        onClick={() => setOpen((open) => !open)}
+        variant="ghost"
+      >
+        <span className={styles.buttonContent}>
+          <span className={styles.avatar} aria-hidden="true">
+            {initialsOf(name)}
+          </span>
+          <span className={styles.accountName} aria-hidden="true">
+            {firstNameOf(name)}
+          </span>
+        </span>
+      </Button>
+      <Sheet
+        anchor="block-end"
+        className={styles.endSheet}
+        closeLabel={SHELL_ACCOUNT_CLOSE}
+        onClose={() => setOpen(false)}
+        open={isOpen}
+        title={SHELL_ACCOUNT_TITLE}
+      >
+        <div className={styles.accountIdentity}>
+          <strong>{name}</strong>
+          <span>{session.user.roleLabel}</span>
+          <span>{session.location.displayName}</span>
+        </div>
+        <ThemeControl />
+        {accountControls === undefined ? null : (
+          <div className={styles.accountActions}>{accountControls}</div>
+        )}
+      </Sheet>
+    </SheetAnchor>
+  );
+}
+
+/** What a menu item that is not open to this person says about itself (user-language section 4). */
+function navigationStateLabel(state: ProjectedNavigationItem["state"]): string {
   switch (state) {
     case "available":
       return "Available";
@@ -383,34 +345,5 @@ function navigationStateLabel(state: NavigationItem["state"]): string {
       return "Coming later";
     case "degraded":
       return "Having trouble";
-  }
-}
-
-function navigationStateIcon(state: NavigationItem["state"]): "circle-dot" | "clock" | "lock" {
-  switch (state) {
-    case "available":
-      return "circle-dot";
-    case "degraded":
-      return "clock";
-    case "permission_restricted":
-    case "unavailable":
-    case "planned":
-      return "lock";
-  }
-}
-
-function navigationStateTone(
-  state: NavigationItem["state"],
-): "navigation" | "neutral" | "uncertain" | "warning" {
-  switch (state) {
-    case "available":
-      return "navigation";
-    case "degraded":
-      return "warning";
-    case "permission_restricted":
-      return "uncertain";
-    case "unavailable":
-    case "planned":
-      return "neutral";
   }
 }

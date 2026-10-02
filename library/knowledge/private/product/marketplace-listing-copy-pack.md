@@ -4,6 +4,8 @@
 
 Paste-ready listing fields, screenshot shot list, Loom script, and claim-by-claim audit for the Automated LO HighLevel Marketplace listing. Authored ahead of the operator so no copy has to be invented live in the portal at submission time.
 
+> **Superseded in substance on 2026-10-01 by PRD-009** (S-80; OD-H): this pack was written for the open house flow. The product's first flow is now "Launch an ad" from the curated library, and the public overview and FAQ that this pack maps onto were rewritten for it (S-78, S-79). Rewriting the listing fields, the shot list, the Loom script, and the claim audit waits on owner decision D-5 of the [finish-line operator checklist](../operations/finish-line-operator-checklist.md), so nothing below is current listing copy.
+
 **Related:**
 
 - [HighLevel Marketplace submission packet](highlevel-marketplace-submission.md) (process, inspection checklist, prohibitions)

@@ -77,10 +77,18 @@ html[data-tenant-accent][data-theme="dark"] {
 /* Design brief section 10 and rubric delta D-009, ruled 2026-10-01. The body step goes on `body`,
  * the root of inheritance, so text no module sizes reads at the body step. It never goes on `:root`
  * or `html`: every step is a `rem` token, so the root stays the browser's 16px and the steps keep
- * their values. Since PRD-009a the body step is itself 16px (design section 2.4). */
+ * their values. Since PRD-009a the body step is itself 16px (design section 2.4).
+ *
+ * The base leading goes on `body` with it. All seven approved PRD-009 canvases
+ * (`library/requirements/in-work/prd-009-marketing-toolkit/design/mockups/*.html`) set family,
+ * size, and `line-height: var(--leading-normal)` together on `body`, and `--leading-normal` is 1.5
+ * in both token files. Without it, text no module sizes reads at the browser's `normal`, about 1.2
+ * in Inter, and every such block draws shorter than its canvas. The family is not repeated here:
+ * `:root` above already sets it and `body` inherits it. */
 body {
   margin: 0;
   font-size: var(--text-body-size);
+  line-height: var(--leading-normal);
 }
 
 /* Each heading level's step, as a floor rather than a role. An element selector loses to any
@@ -99,6 +107,19 @@ h4,
 h5,
 h6 {
   font-size: var(--text-card-size);
+}
+
+/* The page and section titles keep the tight leading, so the body's 1.5 does not reach them. The
+ * canvases give `.page-title` and `.section-title` `line-height: var(--leading-tight)`, and every
+ * `h1` and all but one `h2` in the seven canvases is one of the two. A title no module sets takes it
+ * here: left to inherit, a 19px section title draws 28.5px tall against its canvas's 23.75px.
+ * `h3` to `h6` are left alone on purpose. A card or item title the canvases set tight carries
+ * `.card-title`, which a module reproduces with its own class, and a bare `h3` in a canvas inherits
+ * the body's 1.5 (the Home setup steps, 24px at the 16px step). Same floor rule as the sizes above,
+ * so a module class still wins. */
+h1,
+h2 {
+  line-height: var(--leading-tight);
 }
 
 /* The browser draws `small` one keyword smaller than its parent, which lands between the steps at

@@ -10,6 +10,13 @@ describe("the name Home greets by", () => {
     expect(firstNameFrom("Cher")).toBe("Cher");
   });
 
+  it("skips a leading title, so Dr. Alex Morgan is not welcomed as Dr. (W-23)", () => {
+    expect(firstNameFrom("Dr. Alex Morgan")).toBe("Alex");
+    expect(firstNameFrom("Ms Dana Reyes")).toBe("Dana");
+    expect(firstNameFrom("  Mr.   Sam   Okafor ")).toBe("Sam");
+    expect(firstNameFrom("Drew Carter")).toBe("Drew");
+  });
+
   it("is nothing when there is no name, so the greeting is plain", () => {
     expect(firstNameFrom(undefined)).toBeUndefined();
     expect(firstNameFrom("")).toBeUndefined();

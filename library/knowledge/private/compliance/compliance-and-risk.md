@@ -52,7 +52,7 @@ Regulation Z covers commercial messages that promote consumer credit, including 
 - Preserve the exact rendered ad and landing page for the lender's required record-retention period.
 - Do not allow an AI service to calculate or improvise loan terms.
 
-The first Open House Boost blueprint should avoid rate and payment claims. This materially reduces risk and review friction.
+The first Open House Boost blueprint should avoid rate and payment claims. This materially reduces risk and review friction. _(Amended on 2026-10-01 by PRD-009 (S-74; OD-H): every library ad avoids rate and payment claims, enforced by the word checks of PRD-009d.)_
 
 ## Fair lending and ad targeting
 
@@ -71,7 +71,7 @@ Meta requires the appropriate Special Ad Category for housing and financial prod
 - Do not generate lookalike or customer-match audiences in v1.
 - Show the target geography and exclusions in the final approval summary.
 - Monitor delivery and conversion metrics for material geographic or demographic anomalies where lawful data is available.
-- Require lender review of every new blueprint and meaningful blueprint revision.
+- Require lender review of every new blueprint and meaningful blueprint revision. _(Amended on 2026-10-01 by PRD-009 (S-75; OD-H): this applies to every library ad and every meaningful revision of one: the owner's merge of the catalog pull request comes after the lender review (PRD-009c D7).)_
 
 ## Listing, photo, logo, and data rights
 
@@ -151,7 +151,7 @@ Uninstall should revoke product access immediately, stop jobs, mark tokens unusa
 ## Pre-launch legal checklist
 
 - Mortgage counsel reviews the product terms, privacy policy, data processing terms, and campaign operating model.
-- Lender compliance approves the Open House Boost blueprint and disclosure configuration.
+- Lender compliance approves the Open House Boost blueprint and disclosure configuration. _(Amended on 2026-10-01 by PRD-009 (S-75; OD-H): lender compliance approves each library ad and its disclosures, together with the lender review rule near the start of this document.)_
 - Counsel reviews the Realtor partnership and any free-service or sponsorship structure under RESPA.
 - Counsel reviews consent evidence, SMS, call, email, and state-law operating rules.
 - Data-provider contracts cover every property, photo, rate, value, equity, or transaction input.

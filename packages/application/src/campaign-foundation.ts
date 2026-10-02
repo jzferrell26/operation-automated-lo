@@ -316,7 +316,13 @@ export interface ApprovalAuthorityPort {
  * `artifacts` or `property` block, so its snapshot is built from the variant instead: the ad and
  * its version, both art digests, and references derived from content, never per-draft ones.
  */
-function approvalSnapshotFor(manifest: CampaignVersion["manifest"]): ApprovalSnapshot {
+function approvalSnapshotFor(
+  manifest: CampaignVersion["manifest"],
+  approverDisplayName: string | undefined,
+): ApprovalSnapshot {
+  // PRD-009e D2. The decider's own session display name, when the server's session read yielded
+  // one. Both snapshot variants may carry it; neither carries a key for it when there is none.
+  const approver = approverDisplayName === undefined ? {} : { approverDisplayName };
   const budgetHash = hash({
     dailyBudgetMinor: manifest.meta.dailyBudgetMinor,
     totalBudgetMinor: manifest.meta.totalBudgetMinor,
@@ -346,6 +352,7 @@ function approvalSnapshotFor(manifest: CampaignVersion["manifest"]): ApprovalSna
         startsAt: manifest.schedule.startsAt,
         endsAt: manifest.schedule.endsAt,
       }),
+      ...approver,
     });
   }
   return ApprovalSnapshotSchema.parse({
@@ -364,6 +371,7 @@ function approvalSnapshotFor(manifest: CampaignVersion["manifest"]): ApprovalSna
     }),
     formVersionRef: manifest.artifacts.formVersionRef,
     destinationVersionRef: manifest.artifacts.destinationVersionRef,
+    ...approver,
   });
 }
 
@@ -378,6 +386,12 @@ export async function createApprovalDecision(
     decidedAt: Date;
     ipAuditHash: string;
     decision: ApprovalDecision["decision"];
+    /**
+     * PRD-009e D2. The decider's own session display name, read by the server from their session
+     * and never from a request. `undefined` says there is none to record. The key is required, so a
+     * caller has to state which it is.
+     */
+    approverDisplayName: string | undefined;
   }>,
   authority: ApprovalAuthorityPort,
 ): Promise<Readonly<ApprovalDecision>> {
@@ -402,7 +416,7 @@ export async function createApprovalDecision(
     actorRef: input.actorRef,
     actorRole: input.actorRole,
   });
-  const snapshot = approvalSnapshotFor(version.manifest);
+  const snapshot = approvalSnapshotFor(version.manifest, input.approverDisplayName);
   return deepFreeze(
     ApprovalDecisionSchema.parse({
       schemaVersion: 1,

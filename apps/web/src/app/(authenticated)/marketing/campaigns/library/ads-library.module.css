@@ -1,0 +1,55 @@
+/*
+ * PRD-009c part 2, design mockup ads-library.html. The Campaigns title, the tab strip, then the
+ * library: a heading with its lead sentence, the topic chips, and the grid of ads.
+ *
+ * The page takes the whole content column so the grid has its full width: four cards a row at 1440,
+ * three at 1180, two at 768, and one at 390 (the grid's own rules, in `ad-library-cards.module.css`).
+ * Every direct child may shrink below its content, which is what lets the chip row scroll sideways
+ * at 390 instead of stretching the page.
+ */
+
+.page {
+  display: grid;
+  inline-size: 100%;
+  gap: var(--space-6);
+  color: var(--tx-strong);
+  min-inline-size: 0;
+}
+
+.page > * {
+  min-inline-size: 0;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: var(--text-page-size);
+  line-height: var(--leading-tight);
+}
+
+.section {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.heading {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.heading h2 {
+  margin: 0;
+  font-size: var(--text-section-size);
+  line-height: var(--leading-tight);
+}
+
+.lead {
+  max-inline-size: 60ch;
+  margin: 0;
+  color: var(--tx-body);
+}
+
+.browser {
+  display: grid;
+  gap: var(--space-5);
+  min-inline-size: 0;
+}

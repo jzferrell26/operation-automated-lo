@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PermissionScreen } from "../../../../features/onboarding/components/permission-screen.js";
@@ -13,6 +13,7 @@ import {
   leakedReviewStrings,
   reviewSurfaceText,
   staleAllowances,
+  userLanguageForbiddenStrings,
   type ReviewSurfaceAllowance,
 } from "../../review-surface-sweep.js";
 
@@ -123,6 +124,49 @@ describe("authenticated settings connections route", () => {
     const forbidden = forbiddenReviewStrings(loadSyntheticUiFixture(), connectionsAllowances);
 
     expect(leakedReviewStrings(reviewSurfaceText(container), forbidden)).toEqual([]);
+  });
+
+  /*
+   * Writing review pass 1, guard gap 3. The capability labels and purposes a loan officer reads on
+   * this page come from `fixtures/ui-foundation/synthetic-ui.ts`, which the source guard does not
+   * scan (`forbidden-vocabulary.test.ts` skips `apps/web/src/fixtures`). The page is the one place
+   * those words reach a person, so the guard reads the page: the whole user-language contract, with
+   * no allowance at all, over everything it renders, including the labels.
+   */
+  it("holds the labels the fixture supplies to the user-language contract, with no allowance", () => {
+    const { container } = renderConnections("production", OALO_REVIEW_SURFACE_AUTHORIZED);
+
+    expect(
+      leakedReviewStrings(reviewSurfaceText(container), userLanguageForbiddenStrings()),
+    ).toEqual([]);
+  });
+
+  /*
+   * The labels themselves are pinned, so a capability added to the fixture, or a label reworded,
+   * fails here until somebody has read the new words as a loan officer would. The second list is
+   * the "Why it's needed" line under each.
+   */
+  it("pins the capability labels and purposes a loan officer reads, so a change is read first", () => {
+    const { container } = renderConnections("production", OALO_REVIEW_SURFACE_AUTHORIZED);
+    const page = within(container);
+
+    expect(
+      page.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent),
+    ).toEqual([
+      "Read your workspace",
+      "Create campaigns",
+      "Read agency reports",
+      "Read your workflows",
+    ]);
+    const purposes = [...container.querySelectorAll("dt")]
+      .filter((term) => term.textContent === "Why it's needed")
+      .map((term) => term.nextElementSibling?.textContent);
+    expect(purposes).toEqual([
+      "Know which workspace you are in and where your leads should go.",
+      "Let you set up an ad in your own workspace.",
+      "Show totals across every workspace an agency sign-in covers.",
+      "Show your HighLevel workflows beside your routing, so you can see both.",
+    ]);
   });
 
   it("states that no capability has an observed grant state", () => {

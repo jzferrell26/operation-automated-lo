@@ -43,7 +43,7 @@ All test records are stored in the visitor's browser under the versioned `oalo.d
 
 The preview content-check endpoint compiles and checks in memory, bounds incoming data, refuses requests from a different browser origin, and returns no publication authority. It accepts the HTTP destination Host because Next can expose an internal localhost request URL after proxying. It does not trust an arbitrary forwarded host to choose the browser origin. Stored data is validated before being read or saved; a storage failure never produces a saved confirmation.
 
-Unknown routes render the not-found UI with noindex. Next's streamed response may already have HTTP 200 headers, so browser checks assert the actual not-found boundary. The root artifact ignore is `/reports`, anchored so deployment includes the application's reports page.
+Unknown routes render the not-found UI with noindex. Next's streamed response may already have HTTP 200 headers, so browser checks assert the actual not-found boundary. The root artifact ignore is `/reports`, anchored so deployment includes the application's reports page. _(Amended on 2026-10-01 by PRD-009 (009f D1; OD-D): the application's reports page is removed, and `/reports` redirects to Campaigns.)_
 
 ## Repeatable verification
 

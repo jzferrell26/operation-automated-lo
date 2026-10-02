@@ -104,7 +104,9 @@ describe("the page for a report link that cannot be shown", () => {
   it("keeps the report page's robots and referrer posture in its own markup", () => {
     expect(metadata.robots).toEqual({ index: false, follow: false, nocache: true });
     expect(metadata.referrer).toBe("no-referrer");
-    expect(metadata.title).toBe("This report link isn't available");
+    // Absolute (writing review W-13): the root layout's title template would otherwise add the
+    // product's name to a page a loan officer's client opens.
+    expect(metadata.title).toEqual({ absolute: "This report link isn't available" });
   });
 });
 

@@ -203,7 +203,8 @@ describe("authenticated marketing campaign routes", () => {
   /**
    * Rubric axis 9 and `03-components/async-empty-error-permission-state.md`: an empty list is the
    * shared `empty` state with its one creation action, not a card assembled on the page. PRD-008d's
-   * baseline review of 2026-10-01 found the hand-built card when it photographed the state.
+   * baseline review of 2026-10-01 found the hand-built card when it photographed the state. PRD-009e
+   * 009E-AC-011 renames the state's words and its action; it stays the shared state.
    */
   it("says a workspace with no campaigns is empty through the shared empty state", async () => {
     stubWorkspaceEnvironment("local", undefined);
@@ -215,9 +216,9 @@ describe("authenticated marketing campaign routes", () => {
     const { container } = render(await CampaignListPage());
 
     const empty = container.querySelector(".oalo-async-state[data-state='empty']");
-    expect(empty?.querySelector("h2")?.textContent).toBe("No campaigns yet.");
+    expect(empty?.querySelector("h2")?.textContent).toBe("No campaigns yet");
     expect(empty?.querySelector("a[href='/marketing/campaigns/new']")?.textContent).toBe(
-      "Create an Open House Boost",
+      "Launch an ad",
     );
     expect(container.querySelectorAll("article")).toHaveLength(0);
   });

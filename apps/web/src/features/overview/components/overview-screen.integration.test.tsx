@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { AdsLibraryTopic } from "@oalo/contracts";
+import { Icon, type IconName, type IconSize } from "@oalo/ui";
 
 import { buildHomeChecklist, type SavedBrandRecord } from "../model/home-checklist.js";
 import type { HomeCampaignRow, HomeList } from "../model/home-campaigns.js";
@@ -59,7 +60,7 @@ function row(overrides: Partial<HomeCampaignRow> = {}): HomeCampaignRow {
     href: "/marketing/campaigns/campaign_one",
     startsAt: "2026-10-03T14:00:00.000Z",
     endsAt: "2026-10-17T14:00:00.000Z",
-    statusLabel: "Live",
+    statusLabel: "With Meta",
     sample: false,
     ...overrides,
   };
@@ -231,17 +232,23 @@ describe("the Get set up card (009B-AC-004, 009B-AC-007)", () => {
     expect(
       items.map((item) => within(item).getByRole("heading", { level: 3 }).textContent),
     ).toEqual(["Connect HighLevel", "Connect Meta", "Add your brand"]);
+    // Writing review W-2: launching is off in PRD-009 even when both accounts are connected, so the
+    // card never says connecting is enough for an ad to run.
     expect(
       within(setup).getByText(
-        "You can set up an ad now. It runs once HighLevel and Meta are connected.",
+        "You can set up an ad now. Launching it on Facebook isn't turned on yet, and it needs HighLevel and Meta connected.",
       ),
     ).toBeInTheDocument();
     expect(
       within(setup).getByText("New leads from your ads go to your HighLevel account."),
     ).toBeInTheDocument();
     expect(
-      within(setup).getByText("Your Facebook page and ad account, so your ads can run."),
+      within(setup).getByText(
+        "Your Facebook page and ad account. Meta needs both before an ad can launch.",
+      ),
     ).toBeInTheDocument();
+    expect(setup).not.toHaveTextContent("It runs once");
+    expect(setup).not.toHaveTextContent("so your ads can run");
     // 009d D3: "logo" is not promised.
     expect(
       within(setup).getByText("Your name and NMLS number. They go on every ad automatically."),
@@ -298,22 +305,38 @@ describe("the Get set up card (009B-AC-004, 009B-AC-007)", () => {
     expect(within(card("Get set up")).getByText("2 of 3 done")).toBeInTheDocument();
   });
 
+  /*
+   * Writing review W-3. The page both connection links open says "Nothing is connected from this
+   * page" and has no connect control, so the links no longer say "Connect". While nothing is
+   * connected they say what the page does: "See what's needed". W-24: the brand link names what to
+   * add, fix or edit, which is the brand details.
+   */
   it("gives each item a link named for it: both connections to Settings, the brand to Brand", () => {
     renderHome();
     const setup = card("Get set up");
 
-    expect(within(setup).getByRole("link", { name: "Connect HighLevel" })).toHaveAttribute(
-      "href",
-      "/settings/connections",
-    );
-    expect(within(setup).getByRole("link", { name: "Connect Meta" })).toHaveAttribute(
-      "href",
-      "/settings/connections",
-    );
-    expect(within(setup).getByRole("link", { name: "Add your brand" })).toHaveAttribute(
+    const highLevel = within(setup).getByRole("link", { name: "See what's needed for HighLevel" });
+    expect(highLevel).toHaveAttribute("href", "/settings/connections");
+    expect(highLevel).toHaveTextContent("See what's needed");
+    const meta = within(setup).getByRole("link", { name: "See what's needed for Meta" });
+    expect(meta).toHaveAttribute("href", "/settings/connections");
+    expect(meta).toHaveTextContent("See what's needed");
+    expect(within(setup).getByRole("link", { name: "Add your brand details" })).toHaveAttribute(
       "href",
       "/brand",
     );
+    // Nothing on the card promises an action the destination does not have.
+    expect(within(setup).queryByRole("link", { name: /^Connect/u })).toBeNull();
+  });
+
+  it("keeps each link's visible words inside its accessible name (WCAG 2.5.3)", () => {
+    renderHome();
+    const setup = card("Get set up");
+
+    for (const link of within(setup).getAllByRole("link")) {
+      const visible = (link.textContent ?? "").trim();
+      expect(link.getAttribute("aria-label"), visible).toContain(visible);
+    }
   });
 
   it("keeps each item's name in its link in every state", () => {
@@ -325,12 +348,15 @@ describe("the Get set up card (009B-AC-004, 009B-AC-007)", () => {
     );
     const setup = card("Get set up");
 
+    // "Fix" and "Review" stay for the states that are not "nothing is connected yet" (W-3).
     expect(within(setup).getByRole("link", { name: "Fix HighLevel" })).toHaveAttribute(
       "href",
       "/settings/connections",
     );
-    expect(within(setup).getByRole("link", { name: "Connect Meta" })).toBeInTheDocument();
-    expect(within(setup).getByRole("link", { name: "Fix your brand" })).toHaveAttribute(
+    expect(
+      within(setup).getByRole("link", { name: "See what's needed for Meta" }),
+    ).toBeInTheDocument();
+    expect(within(setup).getByRole("link", { name: "Fix your brand details" })).toHaveAttribute(
       "href",
       "/brand",
     );
@@ -440,8 +466,11 @@ describe("Running now (009B-AC-009)", () => {
     const running = card("Running now");
 
     expect(within(running).getByText("No ads running")).toBeInTheDocument();
+    // Writing review W-2: it says launching is off, so it never reads as a promise.
     expect(
-      within(running).getByText("An ad shows here, with its spend and leads, once you launch it."),
+      within(running).getByText(
+        "Ads you launch will show here with their spend and leads. Launching isn't turned on yet.",
+      ),
     ).toBeInTheDocument();
     const launch = within(running).getByRole("link", { name: "Launch an ad" });
     expect(launch).toHaveAttribute("href", "/marketing/campaigns/new");
@@ -457,7 +486,7 @@ describe("Running now (009B-AC-009)", () => {
     expect(links).toHaveLength(1);
     expect(links[0]).toHaveTextContent("First home, start here");
     expect(links[0]).toHaveAttribute("href", "/marketing/campaigns/campaign_one");
-    expect(within(running).getByText("Live")).toBeInTheDocument();
+    expect(within(running).getByText("With Meta")).toBeInTheDocument();
     expect(within(running).getByText(/Oct 3, 2026/u)).toBeInTheDocument();
     expect(within(running).getByText(/Oct 17, 2026/u)).toBeInTheDocument();
   });
@@ -537,5 +566,62 @@ describe("sample ads are labelled wherever they appear (009B-AC-014, 009C-AC-005
     renderHome(homeData({ running: { rows: [row()], total: 1 } }));
 
     expect(screen.queryByText("Sample ad")).toBeNull();
+  });
+});
+
+describe("the two lists row (Wave 3 polish, 009B D3)", () => {
+  it("holds both cards for a person who can approve, side by side in one row", () => {
+    renderHome();
+    const row = card("Running now").parentElement;
+
+    expect(row).toBe(card("Needs your approval").parentElement);
+    expect(row?.children).toHaveLength(2);
+  });
+
+  it("holds Running now alone, not an empty approval card, for a person who cannot approve", () => {
+    renderHome(homeData({ approval: undefined }));
+    const row = card("Running now").parentElement;
+
+    // The stylesheet keeps two equal columns (home-polish.unit.test.ts), so the card stays half width.
+    expect(row?.children).toHaveLength(1);
+    expect(screen.queryByText("Nothing to approve")).toBeNull();
+  });
+});
+
+describe("the checklist glyphs and chips (Wave 3 polish)", () => {
+  /** What `Icon` draws for a name at a size, to compare an item's glyph against, class names included. */
+  function iconMarkup(name: IconName, size: IconSize): string {
+    const { container, unmount } = render(<Icon decorative name={name} size={size} />);
+    const markup = container.innerHTML;
+    unmount();
+    return markup;
+  }
+
+  it("draws both connections as the Connections glyph and the brand as the Brand kit glyph, at 24px", () => {
+    renderHome();
+    const drawn = [...card("Get set up").querySelectorAll("li[data-item] > span svg")].map(
+      (svg) => svg.outerHTML,
+    );
+
+    expect(drawn).toEqual([
+      iconMarkup("globe", "lg"),
+      iconMarkup("globe", "lg"),
+      iconMarkup("sparkles", "lg"),
+    ]);
+  });
+
+  it("sets every state chip at Home's chip size, in the checklist and in both lists", () => {
+    const { container } = renderHome(
+      homeData({
+        running: { rows: [row({ sample: true })], total: 1 },
+        approval: { rows: [row({ statusLabel: "Ready for approval" })], total: 1 },
+      }),
+    );
+    const chips = [...container.querySelectorAll(".oalo-state-label")];
+
+    // Three checklist chips, then the status and the sample label in Running now, then the status in
+    // Needs your approval.
+    expect(chips).toHaveLength(6);
+    for (const chip of chips) expect(chip.className).toMatch(/stateChip/u);
   });
 });

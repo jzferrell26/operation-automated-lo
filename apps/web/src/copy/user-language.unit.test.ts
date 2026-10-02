@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 import { findVocabularyHits } from "./forbidden-vocabulary.js";
 import * as userLanguage from "./user-language.js";
 import {
+  CAMPAIGN_AD_RETIRED_LABEL,
   CAMPAIGN_NEXT_ACTION_LABELS,
   CAMPAIGN_SENT_BACK_LABEL,
   CAMPAIGN_STATE_LABELS,
+  CAMPAIGN_VERSION_REPLACED_LABEL,
   CHECK_RESULT_PASSED,
   NEEDS_CHANGES_NEXT_ACTION,
   NOT_CONNECTED_DISCLOSURE,
@@ -81,6 +83,50 @@ describe("where a campaign stands once somebody has decided on it", () => {
 
   it("carries no forbidden word and no stored token", () => {
     for (const phrase of [CAMPAIGN_SENT_BACK_LABEL, CHECK_RESULT_PASSED]) {
+      expect(findVocabularyHits(phrase), phrase).toEqual([]);
+      expect(phrase).not.toContain("_");
+    }
+  });
+});
+
+/**
+ * PRD-009e 009E-AC-010. Nothing in PRD-009 can publish an ad, so no screen can truthfully say a
+ * campaign is "Live" or "Going live", and the three words the list adds say what is true of a version
+ * the library or a person has acted on.
+ */
+describe("the campaign standings the list and the campaign page read (009E-AC-010)", () => {
+  it("has no state phrase that says a campaign is live or going live", () => {
+    for (const [state, phrase] of Object.entries(CAMPAIGN_STATE_LABELS)) {
+      expect(phrase, state).not.toMatch(/\b(?:live|going live|launched|running)\b/iu);
+    }
+    expect(Object.values(CAMPAIGN_STATE_LABELS)).not.toContain("Live");
+    expect(Object.values(CAMPAIGN_STATE_LABELS)).not.toContain("Going live");
+  });
+
+  it("says Ad retired, Sent back for changes, and Needs changes in the product's own words", () => {
+    expect(CAMPAIGN_AD_RETIRED_LABEL).toBe("Ad retired");
+    expect(campaignStateLabel("ad_retired", undefined)).toBe("Ad retired");
+    expect(campaignStateLabel("awaiting_approval", "rejected")).toBe("Sent back for changes");
+    expect(campaignStateLabel("preflight_failed", undefined)).toBe("Needs changes");
+  });
+
+  it("says a version nobody decided on that a newer one replaced was replaced", () => {
+    expect(campaignStateLabel("replaced", undefined)).toBe(CAMPAIGN_VERSION_REPLACED_LABEL);
+    expect(CAMPAIGN_VERSION_REPLACED_LABEL).toBe("Replaced by a newer version");
+  });
+
+  it("reads a standing the same with or without a decision, except a send-back", () => {
+    for (const standing of ["ad_retired", "replaced"] as const) {
+      for (const decision of [undefined, "approved", "rejected"] as const) {
+        expect(campaignStateLabel(standing, decision), `${standing}/${String(decision)}`).toBe(
+          campaignStateLabel(standing, undefined),
+        );
+      }
+    }
+  });
+
+  it("carries no forbidden word and no stored token", () => {
+    for (const phrase of [CAMPAIGN_AD_RETIRED_LABEL, CAMPAIGN_VERSION_REPLACED_LABEL]) {
       expect(findVocabularyHits(phrase), phrase).toEqual([]);
       expect(phrase).not.toContain("_");
     }

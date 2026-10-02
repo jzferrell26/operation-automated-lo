@@ -1,225 +1,248 @@
-import { Card, Icon } from "@oalo/ui";
-
-import type { CampaignWorkspaceProjection } from "@oalo/application";
+import { US_STATES } from "@oalo/contracts";
+import { Badge, Link, Surface } from "@oalo/ui";
 
 import {
-  APPROVAL_ROLE_LABELS,
-  CAMPAIGN_NEXT_ACTION_LABELS,
-  CAMPAIGN_NOT_AN_AD_YET,
-  CAMPAIGN_SAVED_NOTICE,
-  CAMPAIGN_SENT_BACK_LABEL,
-  CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION,
-  CHECK_RESULT_NEEDS_CHANGES,
-  CHECK_RESULT_PASSED,
-  CHECK_RESULT_READY,
-  SUPPORT_DETAILS_LABELS,
-  campaignStateLabel,
-} from "../../../copy/user-language.js";
+  EARLIER_FLOW,
+  EARLIER_FLOW_EYEBROW,
+  EARLIER_FLOW_LINE,
+  FIXES_TITLE,
+  LAUNCH_AN_AD_INSTEAD,
+  OLDER_VERSION,
+  SUPPORT_LABELS,
+  libraryEyebrow,
+  listPlaces,
+  runLine,
+  supportLibraryAd,
+} from "../../../copy/campaign-page-messages.js";
+import { CAMPAIGNS_CRUMB, CRUMBS_LABEL, TOPIC_LABELS } from "../../../copy/launch-messages.js";
+import { SUPPORT_DETAILS_LABELS, campaignStateLabel } from "../../../copy/user-language.js";
 import { SupportDetails } from "../../shell/components/support-details.js";
+import {
+  standingTone,
+  type CampaignPageData,
+  type EarlierFlowCampaignPage,
+  type LibraryAdCampaignPage,
+} from "../campaign-page-model.js";
+import { dollars, launchHref, readableDay, shortDay } from "../launch-model.js";
+import { CampaignAdCard } from "./campaign-ad-card.js";
 import { CampaignApprovalControls } from "./campaign-approval-controls.js";
+import { CampaignApprovalSection } from "./campaign-approval-section.js";
+import { CampaignHeaderActions } from "./campaign-header-actions.js";
+import { CampaignLibraryNotices } from "./campaign-library-notices.js";
+import { CampaignResultsCard } from "./campaign-results-card.js";
+import { CampaignVersionsCard } from "./campaign-versions-card.js";
 import styles from "./campaign-page.module.css";
 
-export function PersistedCampaignScreen({
-  campaign,
-}: Readonly<{ campaign: CampaignWorkspaceProjection }>) {
-  /*
-   * PRD-008b D2. "Ready for approval" and "An approver can sign off on it now" are true only while
-   * the campaign is waiting for that approval, which means waiting with nobody having decided. Once
-   * it has been approved the same checks still passed, so the result says that instead, and the
-   * screen no longer invites a sign-off that has already happened.
-   *
-   * A send-back is the case the stored state cannot tell apart. It leaves the campaign in
-   * `awaiting_approval` with a rejection recorded against it, so the state alone would keep saying
-   * "Ready for approval" about a version that was just sent back. The recorded decision is what
-   * says so, and the state badge, the check result, and the next steps all read it.
-   */
-  const awaitingApproval =
-    campaign.state === "awaiting_approval" && campaign.approval === undefined;
-  const sentBack =
-    campaign.state === "awaiting_approval" && campaign.approval?.decision === "rejected";
-  const standing = campaignStateLabel(campaign.state, campaign.approval?.decision);
+/**
+ * PRD-009e, 009E-AC-001 to 009E-AC-008 and 009E-AC-012. The campaign page: one page for one version
+ * of one campaign, saying honestly how it is doing (spend, leads sent to HighLevel, and cost per
+ * lead, which are not live yet), showing the exact library ad and words that were approved, who
+ * approved them, every version, and any library notice.
+ *
+ * It is handed data that was already read under the session's workspace and already decided about
+ * (`CampaignPageData`), so it makes no decision of its own. It shows no address, open house time,
+ * Realtor partner, contact list, lead table, pipeline, appointment, application, or funded figure,
+ * and links to none of them (009E-AC-008): the data it is handed has no place to carry one.
+ */
+export function PersistedCampaignScreen({ page }: Readonly<{ page: CampaignPageData }>) {
+  return page.kind === "library-ad" ? (
+    <LibraryAdScreen page={page} />
+  ) : (
+    <EarlierFlowScreen page={page} />
+  );
+}
+
+function Crumbs({ current }: Readonly<{ current: string }>) {
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>Open House Boost</p>
-          <h1>{campaign.headline}</h1>
-          <p>{campaign.propertyAddress}</p>
+    <nav aria-label={CRUMBS_LABEL} className={styles.crumbs}>
+      <Link href="/marketing/campaigns">{CAMPAIGNS_CRUMB}</Link>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">{current}</span>
+    </nav>
+  );
+}
+
+function StandingChip({ page }: Readonly<{ page: CampaignPageData }>) {
+  const decision = page.decision?.decision;
+  return (
+    <p>
+      <Badge data-campaign-standing={page.standing} tone={standingTone(page.standing, decision)}>
+        {campaignStateLabel(page.standing, decision)}
+      </Badge>
+    </p>
+  );
+}
+
+function Fixes({ fixes }: Readonly<{ fixes: readonly string[] }>) {
+  if (fixes.length === 0) return null;
+  return (
+    <Surface aria-labelledby="campaign-fixes-title" data-fixes="" padding="md" role="region">
+      <div className={styles.body}>
+        <h2 className={styles.cardTitle} id="campaign-fixes-title">
+          {FIXES_TITLE}
+        </h2>
+        <ul className={styles.fixes}>
+          {fixes.map((fix) => (
+            <li key={fix}>{fix}</li>
+          ))}
+        </ul>
+      </div>
+    </Surface>
+  );
+}
+
+function OlderVersionNotice({ page }: Readonly<{ page: CampaignPageData }>) {
+  return (
+    <Surface data-older-version="" padding="md">
+      <div className={styles.older}>
+        <p>{OLDER_VERSION.notice}</p>
+        <div className={styles.noticeActions}>
+          <Link href={page.detailHref} variant="action">
+            {OLDER_VERSION.seeLatest}
+          </Link>
         </div>
-        <span>{standing}</span>
+      </div>
+    </Surface>
+  );
+}
+
+/** "Austin, TX and Texas": the places in a sentence, a state by its full name. */
+function placeWords(places: LibraryAdCampaignPage["places"]): string {
+  return listPlaces([...places.cities, ...places.states.map((code) => US_STATES[code] ?? code)]);
+}
+
+function LibraryAdScreen({ page }: Readonly<{ page: LibraryAdCampaignPage }>) {
+  const topic = page.topic === undefined ? undefined : TOPIC_LABELS[page.topic];
+  const retired = page.notices.find((notice) => notice.kind === "retired");
+  return (
+    <div className={styles.page} data-campaign-page="library-ad" data-version-no={page.versionNo}>
+      <Crumbs current={page.name} />
+      <header className={styles.head}>
+        <div className={styles.headText}>
+          <p className={styles.eyebrow}>{libraryEyebrow(topic)}</p>
+          <h1 className={styles.title}>{page.name}</h1>
+          <p className={styles.lead}>
+            {runLine({
+              startsOn: page.startsOn === undefined ? undefined : readableDay(page.startsOn),
+              endsOn: readableDay(page.endsOn),
+              places: placeWords(page.places),
+              daily: dollars(page.budget.dailyDollars),
+              total: dollars(page.budget.totalDollars),
+            })}
+          </p>
+          <StandingChip page={page} />
+        </div>
+        {page.isLatest ? (
+          <CampaignHeaderActions
+            launch={{
+              metaConnected: false,
+              retiredOn:
+                retired?.kind === "retired" && retired.retiredOn !== null
+                  ? shortDay(retired.retiredOn)
+                  : null,
+              approved: page.decision?.decision === "approved",
+              launchingTurnedOn: false,
+            }}
+            makeNewVersionHref={page.canMakeNewVersion ? page.makeNewVersionHref : undefined}
+          />
+        ) : null}
       </header>
 
-      <Card className={styles.notice} padding="md">
-        <Icon decorative name="lock" size="sm" tone="info" />
-        <div>
-          <strong>
-            {campaign.persistenceKind === "postgres" ? "Saved" : "Saved on this computer"}
-          </strong>
-          <p>{CAMPAIGN_SAVED_NOTICE}</p>
-        </div>
-      </Card>
+      {page.isLatest ? (
+        <CampaignResultsCard results={page.results} />
+      ) : (
+        <OlderVersionNotice page={page} />
+      )}
 
-      <div className={styles.summaryGrid}>
-        <Card padding="sm">
-          <strong>Realtor</strong>
-          <p>{campaign.realtorDisplayName}</p>
-        </Card>
-        <Card padding="sm">
-          <strong>Where it stands</strong>
-          <p>{standing}</p>
-        </Card>
-        <Card padding="sm">
-          <strong>Daily budget</strong>
-          <p>{dollars(campaign.dailyBudgetMinor)}</p>
-        </Card>
-        <Card padding="sm">
-          <strong>Total budget</strong>
-          <p>{dollars(campaign.totalBudgetMinor)}</p>
-        </Card>
-        <Card padding="sm">
-          <strong>Where the ad runs</strong>
-          <p>
-            {campaign.targetingCountry}
-            {campaign.targetingRegions.length > 0
-              ? ` / ${campaign.targetingRegions.join(", ")}`
-              : ""}
-          </p>
-        </Card>
-        <Card padding="sm">
-          <strong>Open house</strong>
-          <p>
-            <time dateTime={campaign.openHouseStartsAt}>
-              {new Date(campaign.openHouseStartsAt).toLocaleString("en-US")}
-            </time>{" "}
-            to{" "}
-            <time dateTime={campaign.openHouseEndsAt}>
-              {new Date(campaign.openHouseEndsAt).toLocaleString("en-US")}
-            </time>
-          </p>
-        </Card>
-        <Card padding="sm">
-          <strong>Disclosure</strong>
-          <p>{campaign.disclosureText}</p>
-        </Card>
-        <Card padding="sm">
-          <strong>Approval scope</strong>
-          <p>
-            Approval applies to this exact version. If you change the campaign, the new version
-            needs its own approval.
-          </p>
-          <SupportDetails
-            rows={[[SUPPORT_DETAILS_LABELS.versionId, campaign.campaignVersionRef]]}
-          />
-        </Card>
-      </div>
-
-      <section className={styles.review} aria-labelledby="campaign-check-title">
-        <div className={styles.reviewHeading}>
-          <div>
-            <p className={styles.eyebrow}>Campaign check</p>
-            <h2 id="campaign-check-title">
-              {campaign.preflight.blocking
-                ? CHECK_RESULT_NEEDS_CHANGES
-                : awaitingApproval
-                  ? CHECK_RESULT_READY
-                  : CHECK_RESULT_PASSED}
-            </h2>
-          </div>
-        </div>
-        <div className={styles.findings}>
-          {campaign.preflight.findings.length === 0 ? (
-            <Card padding="md">
-              <strong>Nothing to fix.</strong>
-              <p>
-                This campaign meets every rule we check.
-                {awaitingApproval ? " An approver can sign off on it now." : ""}
-                {sentBack ? ` ${CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION}` : ""}
-              </p>
-            </Card>
-          ) : (
-            campaign.preflight.findings.map((finding) => (
-              <Card key={finding.ruleCode} padding="md">
-                <strong>{finding.description}</strong>
-                <p>{finding.remediation}</p>
-                <small>
-                  {finding.severity === "blocking" ? "Fix this before approving" : "Worth a look"}
-                </small>
-                <SupportDetails rows={[[SUPPORT_DETAILS_LABELS.rule, finding.ruleCode]]} />
-              </Card>
-            ))
+      <div className={styles.detailGrid}>
+        <CampaignAdCard page={page} />
+        <div className={styles.stack}>
+          <CampaignApprovalSection decision={page.decision} />
+          <Fixes fixes={page.fixes} />
+          {page.approvalControls === undefined ? null : (
+            <CampaignApprovalControls {...page.approvalControls} />
           )}
-        </div>
-      </section>
-
-      {campaign.approval !== undefined ? (
-        <section className={styles.review} aria-labelledby="campaign-approval-title">
-          <div className={styles.reviewHeading}>
-            <div>
-              <p className={styles.eyebrow}>Approval</p>
-              <h2 id="campaign-approval-title">Who decided</h2>
-            </div>
-          </div>
-          <Card padding="md">
-            <strong>
-              {decisionLabel(campaign.approval.decision)} by{" "}
-              {APPROVAL_ROLE_LABELS[campaign.approval.actorRole]}
-            </strong>
-            <p>
-              <time dateTime={campaign.approval.decidedAt}>
-                {new Date(campaign.approval.decidedAt).toLocaleString("en-US")}
-              </time>
-            </p>
-            <small>{CAMPAIGN_NOT_AN_AD_YET}</small>
-          </Card>
-        </section>
-      ) : null}
-
-      <section className={styles.review} aria-labelledby="campaign-next-title">
-        <div className={styles.reviewHeading}>
-          <div>
-            <p className={styles.eyebrow}>What to do next</p>
-            <h2 id="campaign-next-title">Your next steps</h2>
+          <CampaignLibraryNotices notices={page.notices} />
+          <CampaignVersionsCard shownVersionNo={page.versionNo} versions={page.versions} />
+          <div className={styles.support}>
+            <SupportDetails
+              rows={[
+                [SUPPORT_DETAILS_LABELS.versionId, page.campaignVersionRef],
+                [SUPPORT_LABELS.libraryAd, supportLibraryAd(page.ad.id, page.ad.version)],
+                [SUPPORT_DETAILS_LABELS.supportReference, page.campaignRef],
+              ]}
+            />
           </div>
         </div>
-        <div className={styles.findings}>
-          {campaign.nextActions.map((action) => (
-            <Card key={action.id} padding="sm">
-              <strong>{action.available ? "Available" : "Not available"}</strong>
-              <p>{CAMPAIGN_NEXT_ACTION_LABELS[action.id]}</p>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <CampaignApprovalControls
-        campaignHref={campaign.detailHref}
-        campaignRef={campaign.campaignRef}
-        campaignVersionRef={campaign.campaignVersionRef}
-        manifestHash={campaign.manifestHash}
-        preflightResultHash={campaign.preflight.resultHash}
-        rowVersion={campaign.rowVersion}
-        canApprove={campaign.canApprove}
-        alreadyDecided={campaign.approval?.decision}
-        blocking={campaign.preflight.blocking}
-        state={campaign.state}
-      />
-
-      <SupportDetails
-        rows={[
-          [SUPPORT_DETAILS_LABELS.versionId, campaign.campaignVersionRef],
-          [SUPPORT_DETAILS_LABELS.contentFingerprint, campaign.manifestHash],
-          [SUPPORT_DETAILS_LABELS.checkFingerprint, campaign.preflight.resultHash],
-        ]}
-      />
+      </div>
     </div>
   );
 }
 
-/** "Approved" or "Sent back for changes". The stored decision word is not the user's word. */
-function decisionLabel(decision: "approved" | "rejected"): string {
-  return decision === "approved" ? "Approved" : CAMPAIGN_SENT_BACK_LABEL;
-}
-
-function dollars(minor: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(minor / 100);
+/**
+ * D4. A campaign saved before PRD-009: read-only, with one honest line, its saved words, and its
+ * recorded decisions. It has no "Make a new version" and no approve control, and the page offers
+ * "Launch an ad" instead. Its property fields are never read, so none can be shown.
+ */
+function EarlierFlowScreen({ page }: Readonly<{ page: EarlierFlowCampaignPage }>) {
+  return (
+    <div className={styles.page} data-campaign-page="earlier-flow" data-version-no={page.versionNo}>
+      <Crumbs current={page.headline} />
+      <header className={styles.head}>
+        <div className={styles.headText}>
+          <p className={styles.eyebrow}>{EARLIER_FLOW_EYEBROW}</p>
+          <h1 className={styles.title}>{page.headline}</h1>
+          <p className={styles.lead}>{EARLIER_FLOW_LINE}</p>
+          <StandingChip page={page} />
+        </div>
+        <div className={styles.headActions}>
+          <div className={styles.actions}>
+            <Link className={styles.primaryLink} href={launchHref({ step: 1, from: "campaigns" })}>
+              {LAUNCH_AN_AD_INSTEAD}
+            </Link>
+          </div>
+        </div>
+      </header>
+      <div className={styles.detailGrid}>
+        <Surface
+          aria-labelledby="campaign-words-title"
+          data-saved-words=""
+          padding="lg"
+          role="region"
+        >
+          <div className={styles.body}>
+            <h2 className={styles.cardTitle} id="campaign-words-title">
+              {EARLIER_FLOW.wordsTitle}
+            </h2>
+            <dl className={styles.facts}>
+              <div>
+                <dt>{EARLIER_FLOW.headline}</dt>
+                <dd>{page.headline}</dd>
+              </div>
+              <div>
+                <dt>{EARLIER_FLOW.adText}</dt>
+                <dd>{page.body}</dd>
+              </div>
+              <div>
+                <dt>{EARLIER_FLOW.disclosure}</dt>
+                <dd>{page.disclosureText}</dd>
+              </div>
+            </dl>
+          </div>
+        </Surface>
+        <div className={styles.stack}>
+          <CampaignApprovalSection decision={page.decision} />
+          <CampaignVersionsCard shownVersionNo={page.versionNo} versions={page.versions} />
+          <div className={styles.support}>
+            <SupportDetails
+              rows={[
+                [SUPPORT_DETAILS_LABELS.versionId, page.campaignVersionRef],
+                [SUPPORT_DETAILS_LABELS.supportReference, page.campaignRef],
+              ]}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

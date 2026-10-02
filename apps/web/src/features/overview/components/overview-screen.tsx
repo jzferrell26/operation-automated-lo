@@ -26,6 +26,11 @@ type OverviewScreenProps = Readonly<{
  * The cards sit in document order (start, setup, running, approval) and the stylesheet lays them out
  * in two columns at desktop widths and stacks them in that same order below 1100px, which is the
  * order D1 gives for 768 and 390.
+ *
+ * The two lists always sit in two equal columns. A person who cannot approve gets no "Needs your
+ * approval" card (D3, 009B-AC-010), so "Running now" is alone in the row at half width, as the
+ * mockup draws each card, rather than an empty approval card saying "Nothing to approve" to someone
+ * who never approves.
  */
 export function OverviewScreen({ firstName, home, reviewSetup = false }: OverviewScreenProps) {
   return (

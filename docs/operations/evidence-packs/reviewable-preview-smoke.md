@@ -19,7 +19,7 @@ Does **not** unblock the 28 `DEFERRED: LIVE HIGHLEVEL AUTH` criteria (`GGL-B10`;
 | `GGL-008` / `GGL-009` (create/approve round trips) | **VERIFIED** (CI run `35058370796` at `dab2ec6`, PR #65, `c140f11`); reproduce with `pnpm test:db` (the gate provisions the disposable database itself) |
 | Vercel project `operation-automated-lo-web` | Exists; operator deploy not observed (`GGL-B01`) |
 | `OALO_DATABASE_URL` on preview | **Blocked** (`GGL-B03`) — operator must set server-only on existing project |
-| `OALO_REVIEW_SURFACE=authorized` on preview | **Required** for honest `/overview` and `/reports` (`GGL-001`/`GGL-002`). Without it, default preview serves **labeled** synthetic demo metrics and does not satisfy review URL criteria |
+| `OALO_REVIEW_SURFACE=authorized` on preview | **Required** for honest `/overview` and `/reports` (`GGL-001`/`GGL-002`). Without it, default preview serves **labeled** synthetic demo metrics and does not satisfy review URL criteria _(Amended on 2026-10-01 by PRD-009 (S-15; OD-D, D-11): `/reports` redirects to Campaigns and no banner exists, so read `/overview` and a campaign page.)_ |
 | Marketplace portal | **Unsigned-in** (`GGL-B04`–`B06`) |
 
 Ledger: [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md) Gauntlet section, rows `GGL-*` and `GGL-B*`. PR #66 was a separate, closed and unmerged approach to the same gate; it is not the gate's proof and is not reopened.
@@ -37,8 +37,8 @@ Ledger: [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md) Gauntlet section, 
 
 1. Set server-only env on `operation-automated-lo-web` preview: `OALO_DATABASE_URL`, `OALO_REVIEW_SURFACE=authorized`, plus required `OALO_*` contract vars from [`production-environments.md`](../../production-environments.md).
 2. Deploy or promote preview; record deployment URL and commit SHA (`GGL-B01`).
-3. Open `/overview` and `/reports` on the review URL; confirm honest not-connected states, not unlabeled synthetic spend/leads (`GGL-001`/`GGL-002`).
-4. Create Open House Boost → reload → approve; confirm Postgres persistence (`GGL-B03`).
+3. Open `/overview` and `/reports` on the review URL; confirm honest not-connected states, not unlabeled synthetic spend/leads (`GGL-001`/`GGL-002`). _(Amended on 2026-10-01 by PRD-009 (S-15; OD-D, D-11): `/reports` redirects to Campaigns; open `/overview` and a campaign page, each with its own not-connected statement.)_
+4. Create Open House Boost → reload → approve; confirm Postgres persistence (`GGL-B03`). _(Re-scoped on 2026-10-01 by PRD-009 (S-94; OD-H): launch a library ad from "Launch an ad", reload, and approve it. The real library is empty until the owner supplies ads (checklist step 11), so this step needs one.)_
 5. Retain smoke log outside git (`GGL-B02`).
 
 ## Smoke checklist
@@ -49,8 +49,8 @@ Ledger: [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md) Gauntlet section, 
 | `OALO_DATABASE_URL` set server-only on preview | B03 | [ ] | Env name only, not value |
 | `OALO_REVIEW_SURFACE=authorized` set server-only | B03 | [ ] | Required for honest review surfaces |
 | `/overview` honest not-connected (review mode) | B03 | [ ] | Screenshot or operator note |
-| `/reports` honest not-connected (review mode) | B03 | [ ] | No misleading synthetic spend |
-| Create Open House Boost on preview | B03 | [ ] | Campaign ref (non-PII) |
+| `/reports` honest not-connected (review mode) | B03 | [ ] | No misleading synthetic spend _(Amended on 2026-10-01 by PRD-009 (S-15; OD-D): `/reports` redirects to Campaigns; check `/overview` and a campaign page instead.)_ |
+| Create Open House Boost on preview | B03 | [ ] | Campaign ref (non-PII) _(Re-scoped on 2026-10-01 by PRD-009 (S-94; OD-H): launch a library ad on preview.)_ |
 | Reload page; campaign still present | B03 | [ ] | Confirms Postgres |
 | Approver records human approval | B03 | [ ] | Approved state after reload |
 | Smoke log retained outside git | B02 | [ ] | |

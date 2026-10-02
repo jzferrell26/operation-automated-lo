@@ -4,6 +4,8 @@
  * strings in their own copy files. Every string follows the user-language contract.
  */
 
+import { ROLE_LABELS } from "./user-language.js";
+
 export const SHELL_SKIP_TO_CONTENT = "Skip to content";
 
 /** The wordmark (D-14). A supplied logo is a later swap; the initials tile stands in for it. */
@@ -24,11 +26,24 @@ export const SHELL_HELP_TITLE = "Help";
  * Amended 2026-10-02 by the writing review (MTK-008, W-12). It used to say "Contact support" and gave
  * no way to: the product carries no support address, link or form anywhere, and the panel is not
  * allowed a link or a second control. So it names the one person a loan officer can actually ask,
- * their workspace owner, and keeps the useful half of the old line, which page they were on. When a
- * real support channel exists, this is the one line to change.
+ * their workspace owner, and keeps the useful half of the old line, which page they were on.
+ *
+ * Amended again 2026-10-02 (pass 2, W-36). A sign-up makes the new person the workspace owner, so for
+ * them "Ask your workspace owner" sent the usual reader to themselves. The owner is told what is true
+ * and promises nothing; everyone else is still pointed at their owner. When a real support address
+ * exists, "Email <address> and tell us which page you were on" replaces both, for everyone.
  */
-export const SHELL_HELP_BODY =
+export const SHELL_HELP_BODY_FOR_OWNER =
+  "Questions about Automated LO? Write down which page you were on.";
+export const SHELL_HELP_BODY_FOR_OTHERS =
   "Questions about Automated LO? Ask your workspace owner, and tell them which page you were on.";
+
+/** The help sentence for a person, by the role label the session carries (`ROLE_LABELS`). */
+export function shellHelpBody(roleLabel: string): string {
+  return roleLabel === ROLE_LABELS.location_admin
+    ? SHELL_HELP_BODY_FOR_OWNER
+    : SHELL_HELP_BODY_FOR_OTHERS;
+}
 export const SHELL_HELP_CLOSE = "Close help";
 
 export const SHELL_ACCOUNT_TITLE = "Your account";

@@ -97,10 +97,10 @@ describe("the brand page in review mode", () => {
       render(await BrandProfilePage());
 
       expect(mocked.workspacePageData).toHaveBeenCalledWith("profile");
-      expect(screen.getByRole("heading", { name: "Your report identity" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Your details" })).toBeInTheDocument();
       expect(screen.getByLabelText("Company name")).toHaveValue(SAVED_BRAND.company);
       expect(screen.getByLabelText("Brand tagline")).toHaveValue(SAVED_BRAND.tagline);
-      expect(screen.getByRole("button", { name: "Save report branding" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Save your details" })).toBeEnabled();
       for (const demo of DEMO_BRAND_VALUES) {
         expect(document.body.textContent).not.toContain(demo);
       }
@@ -121,7 +121,7 @@ describe("the brand page in synthetic mode", () => {
 
       expect(mocked.workspacePageData).not.toHaveBeenCalled();
       expect(document.body.textContent).toContain("Alex Morgan");
-      expect(screen.queryByRole("button", { name: "Save report branding" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Save your details" })).toBeNull();
     },
   );
 
@@ -147,10 +147,11 @@ describe("the brand page in synthetic mode", () => {
 describe("what the brand page says about homeowner reports", () => {
   /** PRD-009d D3: Brand holds the ad brand too, so the page lead speaks for both and names no report. */
   const PAGE_LEAD = "Your name and NMLS number go on every ad automatically.";
+  // Writing review pass 2, W-4: the card says what goes where, so the heading "Your details" is true.
   const ON_EDITOR =
-    "Saved for your account in this workspace and used when you create a new homeowner report.";
+    "Saved for your account in this workspace. Your name, company and NMLS numbers go on every ad, and all of it is used when you create a new homeowner report.";
   const OFF_EDITOR =
-    "Saved for your account in this workspace. It will be used on a new homeowner report once homeowner reports are turned on.";
+    "Saved for your account in this workspace. Your name, company and NMLS numbers go on every ad. All of it goes on new homeowner reports once those are turned on.";
 
   it("keeps saying what the branding does when homeowner reports are on", async () => {
     stubEnvironment("production", OALO_REVIEW_SURFACE_AUTHORIZED, "enabled");
@@ -184,6 +185,6 @@ describe("what the brand page says about homeowner reports", () => {
 
     render(await BrandProfilePage());
 
-    expect(screen.getByRole("button", { name: "Save report branding" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Save your details" })).toBeEnabled();
   });
 });

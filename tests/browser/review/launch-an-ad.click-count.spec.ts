@@ -69,13 +69,13 @@ async function saveTheBrand(page: Page, name?: string): Promise<void> {
   await page.goto("/brand", { waitUntil: "networkidle" });
   const main = page.getByRole("main");
   if (name !== undefined) await main.getByLabel("Loan officer name", { exact: false }).fill(name);
-  await main.getByLabel("Loan officer NMLS", { exact: false }).fill("1234567");
-  await main.getByLabel("Company NMLS", { exact: false }).fill("7654321");
-  await main.getByRole("button", { name: "Save report branding", exact: true }).click();
+  await main.getByLabel("Your NMLS number", { exact: false }).fill("1234567");
+  await main.getByLabel("Company NMLS number", { exact: false }).fill("7654321");
+  await main.getByRole("button", { name: "Save your details", exact: true }).click();
   await expect(main.getByText("Your changes are saved.").first()).toBeVisible();
   if (name !== undefined) return;
   await main.getByLabel("Title on your ads", { exact: false }).fill("Loan officer");
-  await main.getByRole("button", { name: "Save ad brand", exact: true }).click();
+  await main.getByRole("button", { name: "Save ad settings", exact: true }).click();
   await expect(main.getByText("Your changes are saved.")).toHaveCount(2);
 }
 

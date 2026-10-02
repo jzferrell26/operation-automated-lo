@@ -266,7 +266,7 @@ test("the brand page is the person's own saved branding, and the demo campaign a
     (result) =>
       result.url().endsWith("/api/workspace/preferences") && result.request().method() === "POST",
   );
-  await main.getByRole("button", { name: "Save report branding", exact: true }).click();
+  await main.getByRole("button", { name: "Save your details", exact: true }).click();
   expect((await response).status()).toBe(200);
   await expect(page.getByText("Your changes are saved.", { exact: true })).toBeVisible();
   await page.reload({ waitUntil: "networkidle" });

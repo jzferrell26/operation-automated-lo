@@ -57,7 +57,7 @@ describe("the ad brand card on the Brand page (009D-AC-003)", () => {
     render(<AdBrandEditor data={workspaceData("profile")} />);
 
     expect(screen.getByRole("textbox", { name: /Title on your ads/u })).toHaveValue("");
-    expect(screen.getByRole("combobox", { name: /Brand colour/u })).toHaveTextContent("Navy");
+    expect(screen.getByRole("combobox", { name: /Brand color/u })).toHaveTextContent("Navy");
     expect(screen.getByRole("textbox", { name: /Disclosure line/u })).toHaveValue(
       DEFAULT_AD_BRAND.disclosureLine,
     );
@@ -85,7 +85,7 @@ describe("the ad brand card on the Brand page (009D-AC-003)", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /Title on your ads/u }), {
       target: { value: chosen.title },
     });
-    fireEvent.click(screen.getByRole("combobox", { name: /Brand colour/u }));
+    fireEvent.click(screen.getByRole("combobox", { name: /Brand color/u }));
     fireEvent.click(screen.getByRole("option", { name: "Forest green" }));
     fireEvent.change(screen.getByRole("textbox", { name: /Disclosure line/u }), {
       target: { value: chosen.disclosureLine },
@@ -99,7 +99,7 @@ describe("the ad brand card on the Brand page (009D-AC-003)", () => {
     expect(preview?.style.getPropertyValue("--ad-brand")).toBe(adBrandColorValue("forest"));
     expect(network).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Save ad brand" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save ad settings" }));
 
     expect(await screen.findByText("Your changes are saved.")).toBeInTheDocument();
     expect(network).toHaveBeenCalledTimes(1);
@@ -107,9 +107,9 @@ describe("the ad brand card on the Brand page (009D-AC-003)", () => {
     expect(sentCommands()).toEqual([{ key: "ad_brand", expectedRevision: null, value: chosen }]);
   });
 
-  it("offers exactly the six colour presets", () => {
+  it("offers exactly the six color presets", () => {
     render(<AdBrandEditor data={workspaceData("profile")} />);
-    fireEvent.click(screen.getByRole("combobox", { name: /Brand colour/u }));
+    fireEvent.click(screen.getByRole("combobox", { name: /Brand color/u }));
     expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(
       AD_BRAND_COLOR_PRESETS.map((preset) => preset.label),
     );
@@ -128,7 +128,7 @@ describe("the ad brand limits hold before anything is sent (009D-AC-024)", () =>
     fireEvent.change(screen.getByRole("textbox", { name: new RegExp(label, "u") }), {
       target: { value },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Save ad brand" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save ad settings" }));
 
     await waitFor(() =>
       expect(document.body.textContent).toContain(
@@ -146,29 +146,74 @@ describe("the ad brand limits hold before anything is sent (009D-AC-024)", () =>
       expect(field).toBeRequired();
       expect(field).toBeInvalid();
     }
-    fireEvent.click(screen.getByRole("button", { name: "Save ad brand" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save ad settings" }));
     expect(network).not.toHaveBeenCalled();
   });
 
   it("is read-only for a role that cannot edit Brand", () => {
     render(<AdBrandEditor data={workspaceData("profile", { canEdit: false })} />);
     expect(screen.getByRole("textbox", { name: /Title on your ads/u })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Save ad brand" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save ad settings" })).toBeDisabled();
   });
 });
 
 describe("the report brand's NMLS numbers (verifier, 2026-10-02)", () => {
   it.each([
-    ["Loan officer NMLS", "123"],
-    ["Company NMLS", "12"],
+    ["Your NMLS number", "123"],
+    ["Company NMLS number", "12"],
   ])(
     "refuses %s %j before anything is sent, and says how many digits it takes",
     async (label, value) => {
       render(<ReportBrandEditor data={workspaceData("profile")} />);
       fireEvent.change(screen.getByLabelText(new RegExp(label, "u")), { target: { value } });
-      fireEvent.click(screen.getByRole("button", { name: "Save report branding" }));
+      fireEvent.click(screen.getByRole("button", { name: "Save your details" }));
       await waitFor(() => expect(document.body.textContent).toContain("4 to 12 digits"));
+      // Writing review pass 2, W-4: the sentence says "NMLS numbers", the words the labels use.
+      expect(document.body.textContent).toContain(
+        "Check the name, company, email and NMLS numbers before saving. Each NMLS number has 4 to 12 digits.",
+      );
+      expect(document.body.textContent).not.toMatch(/license numbers/iu);
       expect(network).not.toHaveBeenCalled();
     },
   );
+});
+
+/**
+ * Writing review pass 2, W-4. Home sends a person to Brand. The page used to call its first card "Your
+ * report identity" (saved with "Save report branding") and its second "Your brand on ads" (saved with
+ * "Save ad brand"), while its fix sentences say "Brand" and "NMLS number" and its fields said "Loan
+ * officer NMLS". One idea now has one name: the first card holds "Your details".
+ */
+describe("the Brand page names its parts consistently (writing review W-4)", () => {
+  it("calls the first card Your details and saves it with Save your details", () => {
+    render(<ReportBrandEditor data={workspaceData("profile")} />);
+    expect(screen.getByRole("heading", { name: "Your details" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save your details" })).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/report identity|report branding/iu);
+  });
+
+  it("labels the two NMLS fields the way the checks say them", () => {
+    render(<ReportBrandEditor data={workspaceData("profile")} />);
+    expect(screen.getByLabelText(/^Your NMLS number/u)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Company NMLS number/u)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Loan officer NMLS/u)).toBeNull();
+  });
+
+  it("calls the second card's button Save ad settings, and says where its name and NMLS come from", () => {
+    render(<AdBrandEditor data={workspaceData("profile")} />);
+    expect(screen.getByRole("heading", { name: "Your brand on ads" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save ad settings" })).toBeInTheDocument();
+    expect(document.body.textContent).toContain(
+      "Your name, company and NMLS numbers come from Your details above.",
+    );
+    expect(document.body.textContent).not.toMatch(/report identity|Save ad brand/iu);
+  });
+
+  // W-14: the product is American in every other string (NMLS, Realtor, dollars).
+  it("spells color the American way", () => {
+    render(<AdBrandEditor data={workspaceData("profile")} />);
+    expect(screen.getByRole("combobox", { name: /Brand color/u })).toBeInTheDocument();
+    expect(document.body.textContent).toContain("the title, color and disclosure line");
+    expect(document.body.textContent).not.toMatch(/colour/iu);
+  });
 });

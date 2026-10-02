@@ -135,9 +135,9 @@ test.describe.serial("signed-in workspace pages", () => {
     await page.getByLabel("Loan officer name", { exact: true }).fill("Casey Example");
     await page.getByLabel("Company name", { exact: true }).fill("Evergreen Example Lending");
     await page.getByLabel("Loan officer email", { exact: true }).fill("casey@example.test");
-    await page.getByLabel("Loan officer NMLS", { exact: true }).fill("123456");
+    await page.getByLabel("Your NMLS number", { exact: true }).fill("123456");
     await page.getByLabel("Brand tagline", { exact: true }).fill("A saved report identity.");
-    await saved("Save report branding");
+    await saved("Save your details");
     await page.reload();
     await expect(page.getByLabel("Company name", { exact: true })).toHaveValue(
       "Evergreen Example Lending",
@@ -146,7 +146,7 @@ test.describe.serial("signed-in workspace pages", () => {
     try {
       await otherTab.goto(page.url(), { waitUntil: "networkidle" });
       await page.getByLabel("Brand tagline", { exact: true }).fill("Latest saved tagline.");
-      await saved("Save report branding");
+      await saved("Save your details");
       await otherTab
         .getByLabel("Brand tagline", { exact: true })
         .fill("My unsaved older-tab edit.");
@@ -155,7 +155,7 @@ test.describe.serial("signed-in workspace pages", () => {
           result.url().endsWith("/api/workspace/preferences") &&
           result.request().method() === "POST",
       );
-      await otherTab.getByRole("button", { name: "Save report branding", exact: true }).click();
+      await otherTab.getByRole("button", { name: "Save your details", exact: true }).click();
       expect((await response).status()).toBe(409);
       await expect(otherTab.getByLabel("Brand tagline", { exact: true })).toHaveValue(
         "My unsaved older-tab edit.",
@@ -262,7 +262,7 @@ test.describe.serial("signed-in workspace pages", () => {
       await page
         .getByLabel("Brand tagline", { exact: true })
         .fill("Keep my unsaved edit after failure.");
-      await page.getByRole("button", { name: "Save report branding", exact: true }).click();
+      await page.getByRole("button", { name: "Save your details", exact: true }).click();
       await expect(page.getByRole("main").getByRole("alert")).toContainText(
         "The save was not confirmed",
       );

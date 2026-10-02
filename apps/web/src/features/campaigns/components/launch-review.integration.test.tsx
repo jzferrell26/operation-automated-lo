@@ -185,6 +185,30 @@ describe("Launch on Facebook (009D-AC-016)", () => {
     expect(launch).toBeDisabled();
   });
 
+  it("is given no event handler, no form, and no form action, whatever its state (verifier, 2026-10-02)", () => {
+    for (const state of [
+      { metaConnected: false, retiredOn: null, approved: false, launchingTurnedOn: false },
+      { metaConnected: true, retiredOn: null, approved: true, launchingTurnedOn: true },
+    ]) {
+      const { unmount } = render(<LaunchOnFacebook state={state} />);
+      const launch = screen.getByRole("button", { name: "Launch on Facebook" });
+      // A disabled button never dispatches a click, so a handler on it would pass every click
+      // test. React keeps the props it was given on the element; they are read from there.
+      const propsKey = Object.keys(launch).find((key) => key.startsWith("__reactProps$"));
+      expect(propsKey, "React's props on the button").toBeDefined();
+      const props = (launch as unknown as Record<string, Record<string, unknown>>)[propsKey ?? ""];
+      const handlers = Object.keys(props ?? {}).filter((name) => /^on[A-Z]/u.test(name));
+      expect(handlers).toEqual([]);
+      expect(props?.["formAction"]).toBeUndefined();
+      expect(props?.["form"]).toBeUndefined();
+      for (const attribute of ["form", "formaction", "formmethod", "href", "onclick"]) {
+        expect(launch).not.toHaveAttribute(attribute);
+      }
+      expect(launch.closest("form")).toBeNull();
+      unmount();
+    }
+  });
+
   it.each([
     [
       { metaConnected: true, retiredOn: "Oct 1, 2026", approved: true, launchingTurnedOn: false },

@@ -142,6 +142,13 @@ const PUBLICATION_AUTHORIZED_MARKER =
 /** A production source that would move a campaign into a state only a launch could reach. */
 const LAUNCH_STATE_WRITE_MARKER = /toState\s*[:=]\s*["'](?:publishing|live)["']/u;
 
+/**
+ * PRD-009d 009D-AC-016 and 017. A request to a launch or publish path from any production source:
+ * the address itself, or a request call whose first argument names one.
+ */
+const LAUNCH_REQUEST_MARKER =
+  /["'`]\/api\/[^"'`]*(?:launch|publish)[^"'`]*["'`]|\b(?:fetch|postInternalJson|getInternalJson)\(\s*[^,)]*(?:launch|publish)/iu;
+
 /** Reading a request body as a form: the shape a file upload or a pasted link import would take. */
 const FORM_BODY_READ_MARKER = /multipart\/form-data|\.formData\(\)/u;
 
@@ -509,6 +516,21 @@ describe("provider side effects stay disabled by default", () => {
       expect(META_OUTBOUND_MARKER.test(sample), sample).toBe(true);
     }
     expect(META_OUTBOUND_MARKER.test("Connect Meta in Settings, Connections.")).toBe(false);
+  }, 30_000);
+
+  it("has no production source that requests a launch or publish path, and detects one if it appears (009D-AC-016, 017)", async () => {
+    expect(await productionSourcesMatching(LAUNCH_REQUEST_MARKER)).toEqual([]);
+    for (const sample of [
+      'onClick={() => fetch("/api/campaigns/launch")}',
+      "await postInternalJson(`/api/campaigns/${ref}/publish`, {})",
+      "const LAUNCH = '/api/meta/launch';",
+      "fetch(launchPath)",
+    ]) {
+      expect(LAUNCH_REQUEST_MARKER.test(sample), sample).toBe(true);
+    }
+    expect(LAUNCH_REQUEST_MARKER.test('postInternalJson("/api/campaigns/preflight", body)')).toBe(
+      false,
+    );
   }, 30_000);
 
   it("keeps the campaign API to approve and preflight, the Meta adapter on its fixture plan, and publication unauthorized in every state (009D-AC-017)", async () => {

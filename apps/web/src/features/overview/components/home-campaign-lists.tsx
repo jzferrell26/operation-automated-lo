@@ -7,7 +7,9 @@ import {
   HOME_SAMPLE_AD_LABEL,
   HOME_SEE_ALL_CAMPAIGNS,
   homeRunDates,
+  homeRunDays,
 } from "../../../copy/home-messages.js";
+import { TextWithDays } from "../../campaigns/components/text-with-days.js";
 import type { HomeCampaignRow, HomeList } from "../model/home-campaigns.js";
 import styles from "./overview.module.css";
 
@@ -81,7 +83,11 @@ function CampaignRow({ row }: Readonly<{ row: HomeCampaignRow }>) {
           {row.name}
         </Link>
       </h3>
-      {dates === "" ? null : <p className={styles.secondary}>{dates}</p>}
+      {dates === "" ? null : (
+        <p className={styles.secondary}>
+          <TextWithDays days={homeRunDays(row.startsAt, row.endsAt)} text={dates} />
+        </p>
+      )}
       <p className={styles.badges}>
         <Badge className={styles.stateChip} tone="info">
           {row.statusLabel}

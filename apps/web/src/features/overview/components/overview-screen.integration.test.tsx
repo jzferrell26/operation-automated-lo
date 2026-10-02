@@ -544,6 +544,19 @@ describe("Running now (009B-AC-009)", () => {
     expect(within(card("Running now")).getByText(/Starts when you launch it/u)).toBeInTheDocument();
   });
 
+  it("draws every run date as a time element, so the global rule gives it tabular figures", () => {
+    renderHome(homeData({ running: { rows: [row()], total: 1 } }));
+    const running = card("Running now");
+
+    const days = [...running.querySelectorAll("time")];
+    expect(days.map((day) => [day.getAttribute("datetime"), day.textContent])).toEqual([
+      ["2026-10-03", "Oct 3, 2026"],
+      ["2026-10-17", "Oct 17, 2026"],
+    ]);
+    // Nothing else changed: the sentence reads as it did before the dates became elements.
+    expect(running).toHaveTextContent("Set to run Oct 3, 2026 to Oct 17, 2026");
+  });
+
   it("offers See all campaigns only when there are more than the three shown", () => {
     const three = {
       rows: [row({ campaignRef: "a" }), row({ campaignRef: "b" }), row({ campaignRef: "c" })],

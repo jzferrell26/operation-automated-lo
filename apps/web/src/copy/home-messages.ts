@@ -189,15 +189,33 @@ export const HOME_FOOTER =
  * as fact what nothing can do yet, and every other screen says "set to run" or "Dates".
  */
 export function homeRunDates(startsAt: string | undefined, endsAt: string | undefined): string {
-  const format = (iso: string) =>
-    new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-      timeZone: "UTC",
-    }).format(new Date(iso));
+  const format = formatRunDay;
   if (endsAt === undefined) return startsAt === undefined ? "" : `Starts ${format(startsAt)}`;
   return startsAt === undefined
     ? `Starts when you launch it, ends ${format(endsAt)}`
     : `Set to run ${format(startsAt)} to ${format(endsAt)}`;
+}
+
+function formatRunDay(iso: string): string {
+  return new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(
+    new Date(iso),
+  );
+}
+
+/**
+ * The days `homeRunDates` writes, in the order it writes them, each with its machine value. Every
+ * date on screen is a `time` element (PRD-008d, 009a), so a Home row draws the sentence with each
+ * of these as one, and the global stylesheet gives it tabular figures in the interface face.
+ */
+export function homeRunDays(
+  startsAt: string | undefined,
+  endsAt: string | undefined,
+): readonly Readonly<{ dateTime: string; text: string }>[] {
+  return [startsAt, endsAt].flatMap((iso) =>
+    iso === undefined
+      ? []
+      : [{ dateTime: new Date(iso).toISOString().slice(0, 10), text: formatRunDay(iso) }],
+  );
 }
 
 /** Where each Home link goes. The create route is 009d's; Settings, Brand, and Campaigns already exist. */

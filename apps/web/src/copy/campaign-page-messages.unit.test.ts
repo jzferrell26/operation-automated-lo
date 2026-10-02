@@ -69,7 +69,7 @@ describe("the campaign page's words", () => {
 
   it("have no dash in any sentence", () => {
     for (const phrase of Object.values(messages).flatMap(everyString)) {
-      expect(phrase, phrase).not.toMatch(/[–—]/u);
+      expect(phrase, phrase).not.toMatch(/[\u2013\u2014]/u);
     }
   });
 });

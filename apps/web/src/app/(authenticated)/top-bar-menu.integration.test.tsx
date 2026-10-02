@@ -226,3 +226,67 @@ describe("the synthetic demo keeps one sample-data line (009A-AC-013, 009a D3)",
     expect(mainMenuLabels()).toEqual(THE_SIX);
   });
 });
+
+/**
+ * PRD-009b D4 and 009B-AC-015. The Help control in the top bar opens a help menu that contains no
+ * walkthrough restart.
+ *
+ * The floating walkthrough is retired, and with it the "Finish setup" chip and the help menu's "Show
+ * me around again". Help is the shell's own: one control, one panel with a sentence in it and a way to
+ * close it. This renders the real signed-in layout, which is where the walkthrough's controls used to
+ * be put into the bar, and looks for them everywhere a person could. "At every frame" is the same
+ * component at every frame: the bar's Help shows its label at 768 and wider and its icon below 720,
+ * and both are this one button (`tests/browser/review/top-bar.spec.ts` drives it in a browser).
+ */
+describe("the Help control in the top bar (009B-AC-015)", () => {
+  useReviewModeEnvironment();
+
+  const WALKTHROUGH_CONTROL =
+    /show me around|walkthrough|finish setup|guided setup|restart|take a tour/iu;
+
+  beforeEach(() => {
+    pathname = "/overview";
+    shell = signedIn(OWNER_CAPABILITIES);
+  });
+
+  it("opens a help panel with a sentence and a way to close it, and no walkthrough restart", async () => {
+    const user = userEvent.setup();
+    await renderLayout();
+
+    await user.click(screen.getByRole("button", { name: "Help" }));
+
+    const panel = screen.getByRole("dialog", { name: "Help" });
+    expect(
+      within(panel).getByText(
+        "Questions about Automated LO? Contact support and tell us which page you were on.",
+      ),
+    ).toBeInTheDocument();
+    const controls = within(panel).queryAllByRole("button");
+    expect(
+      controls.map((control) => control.getAttribute("aria-label") ?? control.textContent),
+    ).toEqual(["Close help"]);
+    expect(within(panel).queryAllByRole("link")).toEqual([]);
+    expect(panel.textContent).not.toMatch(WALKTHROUGH_CONTROL);
+  });
+
+  it("puts no walkthrough control anywhere in the bar, open or closed", async () => {
+    const { container } = await renderLayout();
+    const bar = screen.getByRole("banner");
+
+    expect(
+      [...bar.querySelectorAll("button, a, [role='button'], [role='menuitem']")]
+        .map(
+          (control) => `${control.getAttribute("aria-label") ?? ""} ${control.textContent ?? ""}`,
+        )
+        .filter((name) => WALKTHROUGH_CONTROL.test(name)),
+    ).toEqual([]);
+    expect(container.querySelector("[data-tour]")).toBeNull();
+    expect(container.querySelector("[role='menu']")).toBeNull();
+  });
+
+  it("has one Help control, not the shell's and a second one beside it", async () => {
+    await renderLayout();
+
+    expect(screen.getAllByRole("button", { name: /^Help$/u })).toHaveLength(1);
+  });
+});

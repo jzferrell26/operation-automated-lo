@@ -338,25 +338,19 @@ describe("the Get set up card (009B-AC-004, 009B-AC-007)", () => {
 });
 
 describe("the card when setup is done or broken (009B-AC-006)", () => {
-  const everything = {
-    installationStatuses: ["active"] as const,
-    brand: { name: "Alex Morgan", nmls: "1234567" },
+  // Meta can never be connected in PRD-009, so "all three done" is an injected state.
+  const ALL_DONE: HomeData["checklist"] = {
+    items: [
+      { id: "highlevel", state: "connected" },
+      { id: "meta", state: "connected" },
+      { id: "brand", state: "done" },
+    ],
+    doneCount: 3,
+    total: 3,
   };
 
   it("collapses to one line, with a link to review the items, when all three are done", () => {
-    // Meta can never be connected in PRD-009, so "all three done" is an injected state.
-    const done: HomeData = {
-      ...homeData(everything),
-      checklist: {
-        items: [
-          { id: "highlevel", state: "connected" },
-          { id: "meta", state: "connected" },
-          { id: "brand", state: "done" },
-        ],
-        doneCount: 3,
-        total: 3,
-      },
-    };
+    const done: HomeData = { ...homeData(), checklist: ALL_DONE };
     renderHome(done);
     const setup = card("You're set up");
 
@@ -368,18 +362,7 @@ describe("the card when setup is done or broken (009B-AC-006)", () => {
   });
 
   it("opens the items again when the person asks to review them", () => {
-    const done: HomeData = {
-      ...homeData(everything),
-      checklist: {
-        items: [
-          { id: "highlevel", state: "connected" },
-          { id: "meta", state: "connected" },
-          { id: "brand", state: "done" },
-        ],
-        doneCount: 3,
-        total: 3,
-      },
-    };
+    const done: HomeData = { ...homeData(), checklist: ALL_DONE };
     renderHome(done, { reviewSetup: true });
 
     expect(within(card("Get set up")).getAllByRole("listitem")).toHaveLength(3);

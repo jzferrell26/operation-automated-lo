@@ -12,7 +12,6 @@ import {
   expectThemeResolved,
   expectTypographyOnBrief,
   expectZeroMotionUnderReducedMotion,
-  parkThePointer,
   screenshotName,
   settleForScreenshot,
   useStoredTheme,

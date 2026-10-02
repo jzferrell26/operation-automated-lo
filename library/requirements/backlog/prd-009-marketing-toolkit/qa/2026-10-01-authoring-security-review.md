@@ -299,3 +299,32 @@ Fix: define both in D5. The phrase exception is the whole phrase "mortgage broke
 ### Verdict after the re-review
 
 **FIX FIRST.** Two new Medium findings, N-1 and N-2, remain; each is a short edit to D5 and the `009D-AC-010` table in `009d`. Nothing else is open at Medium or above. After those two edits, a read of `009d` D5 and `009D-AC-010` is enough to turn this to PASS. The MTK-003 close-out audit on the final tree remains required.
+
+
+---
+
+## Re-review 2 at `677f01c`
+
+**Scope:** commits `0708019` (N-1 to N-6) and `677f01c` (ordinals in the Brand name and company), read as diffs against `41cf037` and against the current text of `prd-009d` D5, D3, `009D-AC-010`, and `009E-AC-004`. Read and report only; nothing pushed.
+**Verdict:** **FIX FIRST.** N-1 as I wrote it and N-2 are closed, but the number allowances that closed N-1 (the license reference from `0708019`, the ordinal from `677f01c`) leave one new Medium finding, N-7. One short sentence in D5 and four cases in `009D-AC-010` close it.
+
+| ID | Result | Why |
+|---|---|---|
+| N-1 | **Closed for the gap I raised** | The `%`, `$`, and number-word checks now read every checked text, and the digit check reads the headline, primary text, title, and lead form wording with no exception, so "starting at 3.9" in the lead form wording and "5% down" or "$0 down" in the disclosure line are refused. The replacement allowances are N-7. |
+| N-2 | **Closed** | D5 defines the "mortgage broker" phrase as a whole phrase delimited by non-letters, matched after every other term on the original text and never deleted first, and defines the host exception as an exact host (`nmlsconsumeraccess.org` or `www.`), no user information, no port, no other host in the text, and only in the disclosure line. `009D-AC-010` adds the ten negative cases and the one positive case I asked for. |
+| N-3 to N-6 | **Closed** | `009E-AC-004` shows the name beside the role, refuses an `approverDisplayName` in the approve request with 400, and names the field in the retention and export documents. D3 replaces the starter consent text with a property-free default and `009F-AC-014(c)` names the disclosure and lead form wording for counsel. `009C-AC-002` uses an offline append-only `catalog.lock.json`. |
+
+### The ordinal allowance
+
+The ordinal alone is narrow and mostly safe. `\b\d{1,3}(st|nd|rd|th)\b` applies only to the Brand name and company, the whole token must match, so "3.5th" still leaves a refused "3", and the table refuses "1st 30yr", "3.5% Lending", "100 Percent Home Loans", and an ordinal in the title, headline, or disclosure line. "1st Choice Mortgage" and "21st Century Lending" pass. It does open one path, because an ordinal is a digit token that the number-word rule ("three percent") does not treat as a number word: a company of "30th Year Fixed Lending" or "1st Payment Free Mortgage" carries a term or a teaser with no refused digit, and passes unless the claim patterns happen to match it.
+
+**N-7 (Medium). Digits that the number rule lets through are not checked against the words beside them, so a term or payment can follow an allowed digit run.**
+Location: `prd-009d-...md` D5 "What is checked" (the license reference and the ordinal) and `009D-AC-010`.
+What is wrong: the license reference is "a run of digits ... that directly follows NMLS, license, lic, or #", with no minimum length and no limit on what follows. The author's own refused case, "1st 30yr", therefore has a passing twin: a company of "Acme #30yr Lending" (or a disclosure line of "Lic #30 year fixed") puts "30" after `#`, so the digit rule exempts it, and nothing then looks at "yr". The claim table lists "30-year fixed" and "thirty year" but not "30yr", so the claim rule is the only remaining barrier, which is the gap N-1 was raised for. The ordinal examples above reach the same place.
+Fix: add to D5: "A license reference has 4 to 12 digits (spaces or hyphens allowed between groups). A license reference or an ordinal within two tokens, before or after, of year, years, yr, yrs, month, months, mo, percent, pct, payment, down, apr, rate, rates, fixed, term, or points is refused, as 'three percent' already is." Add to `009D-AC-010`: refused, company "Acme #30yr Lending", company "30th Year Fixed Lending", company "1st Payment Free Mortgage", disclosure line "Lic #30 year fixed"; passing, "1st Choice Mortgage", "21st Century Lending", and "Lic. 12-3456". A name such as "1st Rate Mortgage" is refused by this rule, which is acceptable as the conservative default until counsel narrows it.
+
+**Info (not blocking).** The allowed NMLS host in the disclosure line should be host-only, with no path or query, because a path can carry a name the term list does not know. Add "no path or query" to the host exception.
+
+### Verdict after Re-review 2
+
+**FIX FIRST** on N-7 alone. Nothing else is open at Medium or above. Once the adjacency sentence and the four cases are in `009d`, a read of D5 and `009D-AC-010` turns this to PASS. The MTK-003 close-out audit on the final tree remains required.

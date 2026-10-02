@@ -91,7 +91,12 @@ async function decidedProjection(
   principal: AuthenticatedPrincipal,
 ): Promise<CampaignWorkspaceProjection> {
   const compiled = await compiledDraft();
-  const { artifacts } = compiled.version.manifest;
+  const { manifest } = compiled.version;
+  // PRD-009c D5 made the manifest a union; the open house compiler only builds `open-house-boost`.
+  if (manifest.blueprintId !== "open-house-boost") {
+    throw new Error("The open house compiler built another blueprint.");
+  }
+  const { artifacts } = manifest;
   return projectCampaignWorkspace(
     {
       version: compiled.version,

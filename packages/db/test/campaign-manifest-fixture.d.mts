@@ -1,3 +1,3 @@
-import type { CampaignManifest } from "@oalo/contracts";
+import type { OpenHouseCampaignManifest } from "@oalo/contracts";
 
-export const campaignManifestFixture: CampaignManifest;
+export const campaignManifestFixture: OpenHouseCampaignManifest;

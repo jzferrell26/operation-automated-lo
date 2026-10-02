@@ -10,12 +10,12 @@ type CampaignState =
   | "completed"
   | "archived";
 
-interface CampaignManifest {
-  readonly property: {
-    readonly openHouseStartsAt: string;
-    readonly openHouseEndsAt: string;
-    readonly permissionConfirmed: boolean;
-  };
+/**
+ * The fields every blueprint shares. PRD-009c D5 makes the manifest a union on `blueprintId`; the
+ * rules that read only these fields run for both blueprints, and the rules that read a property or
+ * a partner run only for `open-house-boost`.
+ */
+interface CampaignManifestCommon {
   readonly content: {
     readonly headline: string;
     readonly body: string;
@@ -30,7 +30,6 @@ interface CampaignManifest {
     readonly width: number;
     readonly height: number;
   }[];
-  readonly partner: { readonly permissionConfirmed: boolean };
   readonly meta: {
     readonly enabled: boolean;
     readonly specialAdCategory: "HOUSING" | "NONE";
@@ -45,6 +44,22 @@ interface CampaignManifest {
   };
   readonly routing: { readonly validationStatus: "valid" | "missing" | "stale" };
 }
+
+interface OpenHouseCampaignManifest extends CampaignManifestCommon {
+  readonly blueprintId: "open-house-boost";
+  readonly property: {
+    readonly openHouseStartsAt: string;
+    readonly openHouseEndsAt: string;
+    readonly permissionConfirmed: boolean;
+  };
+  readonly partner: { readonly permissionConfirmed: boolean };
+}
+
+interface LibraryAdCampaignManifest extends CampaignManifestCommon {
+  readonly blueprintId: "library-ad";
+}
+
+type CampaignManifest = OpenHouseCampaignManifest | LibraryAdCampaignManifest;
 
 interface PreflightFinding {
   readonly severity: "blocking" | "warning";
@@ -238,17 +253,19 @@ export function evaluateCampaignPreflight(
       ),
     );
   }
-  const startsAt = new Date(manifest.property.openHouseStartsAt).getTime();
-  const endsAt = new Date(manifest.property.openHouseEndsAt).getTime();
-  if (endsAt <= startsAt || startsAt < new Date(rules.earliestStartAt).getTime()) {
-    findings.push(
-      finding(
-        "OPEN_HOUSE_DATES_INVALID",
-        "The open-house dates are expired or out of order.",
-        "property.openHouseStartsAt",
-        "Choose a future start time and an end time after the start.",
-      ),
-    );
+  if (manifest.blueprintId === "open-house-boost") {
+    const startsAt = new Date(manifest.property.openHouseStartsAt).getTime();
+    const endsAt = new Date(manifest.property.openHouseEndsAt).getTime();
+    if (endsAt <= startsAt || startsAt < new Date(rules.earliestStartAt).getTime()) {
+      findings.push(
+        finding(
+          "OPEN_HOUSE_DATES_INVALID",
+          "The open-house dates are expired or out of order.",
+          "property.openHouseStartsAt",
+          "Choose a future start time and an end time after the start.",
+        ),
+      );
+    }
   }
   const campaignText = `${manifest.content.headline}\n${manifest.content.body}`.toLocaleLowerCase(
     "en",
@@ -302,7 +319,7 @@ export function evaluateCampaignPreflight(
       ),
     );
   }
-  if (!manifest.partner.permissionConfirmed) {
+  if (manifest.blueprintId === "open-house-boost" && !manifest.partner.permissionConfirmed) {
     findings.push(
       finding(
         "PARTNER_PERMISSION_REQUIRED",
@@ -312,7 +329,7 @@ export function evaluateCampaignPreflight(
       ),
     );
   }
-  if (!manifest.property.permissionConfirmed) {
+  if (manifest.blueprintId === "open-house-boost" && !manifest.property.permissionConfirmed) {
     findings.push(
       finding(
         "PROPERTY_PERMISSION_REQUIRED",

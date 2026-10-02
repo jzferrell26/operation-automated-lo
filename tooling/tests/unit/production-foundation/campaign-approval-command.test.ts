@@ -17,10 +17,10 @@ import {
   type HumanCampaignApprovalInput,
 } from "@oalo/application";
 import {
-  CampaignManifestSchema,
+  OpenHouseCampaignManifestSchema,
   type ApprovalDecision,
   type CampaignInputVersions,
-  type CampaignManifest,
+  type OpenHouseCampaignManifest,
   type PreflightRules,
 } from "@oalo/contracts";
 
@@ -36,7 +36,7 @@ const inputVersions: CampaignInputVersions = {
   rulesetVersionRef: "ruleset_01Policy",
 };
 
-const manifest: CampaignManifest = CampaignManifestSchema.parse({
+const manifest: OpenHouseCampaignManifest = OpenHouseCampaignManifestSchema.parse({
   schemaVersion: 1,
   blueprintId: "open-house-boost",
   property: {
@@ -234,18 +234,18 @@ function existingApprovalFor(
     ipAuditHash: sha("a"),
     decision: "approved" as const,
     snapshot: {
-      pageVersionRef: evidence.version.manifest.artifacts.pageVersionRef,
-      pdfVersionRef: evidence.version.manifest.artifacts.pdfVersionRef,
-      creativeVersionRef: evidence.version.manifest.artifacts.creativeVersionRef,
-      copyVersionRef: evidence.version.manifest.artifacts.copyVersionRef,
-      emailPackageVersionRef: evidence.version.manifest.artifacts.emailPackageVersionRef,
-      smsPackageVersionRef: evidence.version.manifest.artifacts.smsPackageVersionRef,
-      disclosureVersionRef: evidence.version.manifest.artifacts.disclosureVersionRef,
+      pageVersionRef: manifest.artifacts.pageVersionRef,
+      pdfVersionRef: manifest.artifacts.pdfVersionRef,
+      creativeVersionRef: manifest.artifacts.creativeVersionRef,
+      copyVersionRef: manifest.artifacts.copyVersionRef,
+      emailPackageVersionRef: manifest.artifacts.emailPackageVersionRef,
+      smsPackageVersionRef: manifest.artifacts.smsPackageVersionRef,
+      disclosureVersionRef: manifest.artifacts.disclosureVersionRef,
       targetingHash: sha("t"),
       budgetHash: sha("b"),
       datesHash: sha("d"),
-      formVersionRef: evidence.version.manifest.artifacts.formVersionRef,
-      destinationVersionRef: evidence.version.manifest.artifacts.destinationVersionRef,
+      formVersionRef: manifest.artifacts.formVersionRef,
+      destinationVersionRef: manifest.artifacts.destinationVersionRef,
     },
   } satisfies ApprovalDecision;
 }

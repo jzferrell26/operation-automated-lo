@@ -12,8 +12,7 @@ import {
   LOCAL_SYNTHETIC_ENV,
   OPEN_HOUSE_DRAFT_INPUT,
 } from "../../../server/campaign-command-test-support.js";
-import { compileOpenHouseDraft } from "../../../server/open-house-draft.js";
-import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
+import { compileOpenHouseDraft } from "../../../server/open-house-draft.test-support.js";
 import {
   APPROVER,
   awaitingApprovalProjection,
@@ -215,9 +214,7 @@ describe("persisted campaign approval screen", () => {
       const { container } = render(
         <PersistedCampaignScreen campaign={await needsChangesProjection(principal)} />,
       );
-      const control = container.querySelector<HTMLElement>(
-        `[data-tour="${GUIDED_SETUP_ANCHORS.campaignApproveControl}"]`,
-      );
+      const control = container.querySelector<HTMLElement>("[data-approval-card]");
       if (control === null) throw new Error("The approve control has no card around it.");
 
       expect(screen.queryByText(PERMISSION)).toBeNull();

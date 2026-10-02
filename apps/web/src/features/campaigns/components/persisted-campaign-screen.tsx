@@ -15,10 +15,9 @@ import {
   SUPPORT_DETAILS_LABELS,
   campaignStateLabel,
 } from "../../../copy/user-language.js";
-import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
 import { SupportDetails } from "../../shell/components/support-details.js";
 import { CampaignApprovalControls } from "./campaign-approval-controls.js";
-import styles from "./open-house-draft-builder.module.css";
+import styles from "./campaign-page.module.css";
 
 export function PersistedCampaignScreen({
   campaign,
@@ -114,16 +113,7 @@ export function PersistedCampaignScreen({
         </Card>
       </div>
 
-      {/* PRD-006c D3 step 5 points at the campaign check result, which is the verdict and what the
-          checks found, so the anchor is the whole section rather than its heading. PRD-008d, the
-          scored baseline review of 2026-10-01: anchored to the heading alone, the walkthrough
-          scrolled only the heading clear and dropped its panel straight onto the finding card
-          below it, so at 768 and 1180 the one thing the step is about was under the panel. */}
-      <section
-        className={styles.review}
-        aria-labelledby="campaign-check-title"
-        data-tour={GUIDED_SETUP_ANCHORS.campaignCheckResult}
-      >
+      <section className={styles.review} aria-labelledby="campaign-check-title">
         <div className={styles.reviewHeading}>
           <div>
             <p className={styles.eyebrow}>Campaign check</p>
@@ -136,10 +126,7 @@ export function PersistedCampaignScreen({
             </h2>
           </div>
         </div>
-        {/* PRD-006c D2. The anchor is on the container, not on the list, because step 5 points at
-            what the checks found whether or not they found anything, and an anchor that exists
-            only in one branch is an anchor a step can fail to find. */}
-        <div className={styles.findings} data-tour={GUIDED_SETUP_ANCHORS.campaignCheckFindings}>
+        <div className={styles.findings}>
           {campaign.preflight.findings.length === 0 ? (
             <Card padding="md">
               <strong>Nothing to fix.</strong>

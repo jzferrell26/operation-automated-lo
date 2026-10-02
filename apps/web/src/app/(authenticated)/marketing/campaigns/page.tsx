@@ -4,7 +4,7 @@ import { redirect } from "next/navigation.js";
 import { Card, EmptyState, Link } from "@oalo/ui";
 
 import { CAMPAIGN_NEXT_ACTION_LABELS, campaignStateLabel } from "../../../../copy/user-language.js";
-import styles from "../../../../features/campaigns/components/open-house-draft-builder.module.css";
+import styles from "../../../../features/campaigns/components/campaign-page.module.css";
 import { readWorkspaceCampaignsForRequest } from "../../../../server/campaign-workspace-reads.js";
 import { SIGN_IN_PATH } from "../../../../server/runtime-authentication.js";
 import type { CampaignWorkspaceNextAction } from "@oalo/application";

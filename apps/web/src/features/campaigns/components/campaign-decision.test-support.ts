@@ -10,7 +10,7 @@ import {
   LOCAL_SYNTHETIC_ENV,
   OPEN_HOUSE_DRAFT_INPUT,
 } from "../../../server/campaign-command-test-support.js";
-import { compileOpenHouseDraft } from "../../../server/open-house-draft.js";
+import { compileOpenHouseDraft } from "../../../server/open-house-draft.test-support.js";
 
 /**
  * A campaign as each screen that shows where it stands reads it, before and after a decision.

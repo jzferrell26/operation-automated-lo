@@ -1,0 +1,328 @@
+/*
+ * PRD-009d. The three steps of "Launch an ad", after design 00-direction.md section 6 and the
+ * launch-step mockups: the header with its crumbs, title, lead, and step indicator; step 2's form
+ * beside its live preview at 1440 and 1180 and above it at 768 and 390; step 3's ad beside what the
+ * approval covers.
+ */
+
+.page {
+  display: grid;
+  gap: var(--space-6);
+  min-inline-size: 0;
+}
+
+.header {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.header h1 {
+  margin: 0;
+  color: var(--tx-strong);
+  font-size: var(--text-page-size);
+  line-height: var(--leading-tight);
+}
+
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+}
+
+.lead {
+  max-inline-size: 44rem;
+  margin: 0;
+  color: var(--tx-body);
+}
+
+.setUp,
+.review {
+  display: grid;
+  align-items: start;
+  gap: var(--space-6);
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+}
+
+@media (max-width: 63.99rem) {
+  .setUp,
+  .review {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.form {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.section {
+  display: grid;
+  gap: var(--space-4);
+  padding-block-end: var(--space-6);
+  border-block-end: 1px solid var(--bd-hairline);
+  scroll-margin-block-start: calc(var(--topbar-height) + var(--space-4));
+}
+
+.section h2,
+.preview h2,
+.adCard h2,
+.cardTitle {
+  margin: 0;
+  color: var(--tx-strong);
+  font-size: var(--text-section-size);
+}
+
+.sectionHeading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.note,
+.caption,
+.hint,
+.saveNote {
+  margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+.caption {
+  text-align: center;
+}
+
+.saveNote {
+  text-align: end;
+}
+
+.brandSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-control);
+  background: var(--sf-sunken);
+  color: var(--tx-strong);
+}
+
+.locked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-control);
+  background: var(--sf-sunken);
+  color: var(--tx-strong);
+}
+
+.pair {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 47.99rem) {
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.places {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.placeChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.placeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-inline-start: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--st-info-bg);
+  color: var(--st-info-fg);
+  font-weight: var(--weight-medium);
+}
+
+.placeRemove {
+  border-color: transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  box-shadow: none;
+}
+
+.placeAdd {
+  display: grid;
+  align-items: end;
+  gap: var(--space-3);
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.showsIn {
+  margin: 0;
+  color: var(--tx-strong);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.preview {
+  position: sticky;
+  inset-block-start: calc(var(--topbar-height) + var(--space-4));
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  background: var(--sf-card);
+}
+
+@media (max-width: 63.99rem) {
+  .preview {
+    position: static;
+  }
+}
+
+.adCard {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.feedFrame {
+  inline-size: 100%;
+  max-inline-size: 30rem;
+  margin-inline: auto;
+}
+
+.shapeSwitch {
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--bd-input);
+  border-radius: var(--radius-control);
+}
+
+.shapeOption {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--target-min-size);
+  padding: 0 var(--space-4);
+  color: var(--tx-strong);
+  cursor: pointer;
+}
+
+.shapeOption + .shapeOption {
+  border-inline-start: 1px solid var(--bd-input);
+}
+
+.reviewSide {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.approveCard {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.checked summary {
+  min-block-size: var(--target-min-size);
+  color: var(--ac-primary);
+  cursor: pointer;
+  font-weight: var(--weight-medium);
+  line-height: var(--target-min-size);
+}
+
+.checked ul,
+.fixes,
+.factList {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding-inline-start: var(--space-5);
+}
+
+.factList {
+  padding: 0;
+  list-style: none;
+}
+
+.factsTitle {
+  margin: 0;
+  color: var(--tx-strong);
+  font-size: var(--text-body-size);
+}
+
+.facts {
+  display: grid;
+  gap: var(--space-2) var(--space-4);
+  grid-template-columns: minmax(6rem, auto) minmax(0, 1fr);
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--tx-body);
+}
+
+.facts dd {
+  margin: 0;
+  color: var(--tx-strong);
+  font-weight: var(--weight-medium);
+  overflow-wrap: anywhere;
+}
+
+.decision {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.launchCard {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* "Fix it", "Make a new version", and "Choose another ad" lead somewhere, so they are links, drawn
+   as the one primary action of their card. */
+.primaryLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--target-min-size);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-button);
+  background: var(--ac-primary);
+  color: var(--tx-on-action);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.primaryLink:hover {
+  background: var(--ac-primary-hover);
+  color: var(--tx-on-action);
+}

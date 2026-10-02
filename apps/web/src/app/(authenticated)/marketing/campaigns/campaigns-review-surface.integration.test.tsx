@@ -176,10 +176,17 @@ describe("authenticated marketing campaign routes", () => {
     });
   });
 
-  it("keeps every unallowed fixture string off the review campaign create route", () => {
-    const { container } = render(<NewCampaignPage />);
+  /**
+   * PRD-009d D3. "Launch an ad" shows the signed-in person's own Brand on every ad, so in review
+   * mode it is a page for a session: a visitor with none is sent to sign in, as the list is, rather
+   * than shown a library with a band that belongs to nobody.
+   */
+  it("redirects an unauthenticated review visitor away from the create route", async () => {
+    await expect(NewCampaignPage({ searchParams: Promise.resolve({}) })).rejects.toMatchObject({
+      digest: expect.any(String),
+    });
 
-    expect(sweepSurface(container)).toEqual([]);
+    expect(redirectCalls).toEqual(["/sign-in"]);
   });
 
   /**

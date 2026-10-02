@@ -1,0 +1,365 @@
+"use client";
+
+import type { AdsLibraryCallToAction, AdsLibraryTopic } from "@oalo/contracts";
+import { adPlaceLabel } from "@oalo/contracts";
+import { Badge, Card, Link } from "@oalo/ui";
+import { useState } from "react";
+
+import {
+  AD_RETIRED_CHIP,
+  AD_TEXT_CHANGED,
+  AD_TEXT_UNCHANGED,
+  APPROVED_CHIP,
+  CHANGE,
+  CHOOSE_ANOTHER_AD,
+  FACEBOOK_FEED,
+  FACT_LABELS,
+  FACTS_TITLE,
+  FIX_IT,
+  FRAME_CAPTION,
+  HEADLINE_CHANGED,
+  HEADLINE_UNCHANGED,
+  LEADS_NOT_CONNECTED,
+  LAUNCH_STEP_TITLES,
+  MAKE_A_NEW_VERSION,
+  REVIEW_LEAD,
+  SEE_WHAT_WE_CHECKED,
+  SHAPE_LABEL,
+  SHAPE_SQUARE,
+  SHAPE_TALL,
+  SHAPES_NOTE,
+  WHAT_TO_FIX,
+  WHAT_YOU_APPROVE,
+  YOUR_AD,
+  adFact,
+  adRetiredNotice,
+  approvedLine,
+  budgetFact,
+  checksCount,
+  runsFact,
+} from "../../../copy/launch-messages.js";
+import {
+  CAMPAIGN_SENT_BACK_LABEL,
+  CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION,
+  CHECK_RESULT_NEEDS_CHANGES,
+  CHECK_RESULT_PASSED,
+  CHECK_RESULT_READY,
+  SUPPORT_DETAILS_LABELS,
+} from "../../../copy/user-language.js";
+import { SupportDetails } from "../../shell/components/support-details.js";
+import {
+  dollars,
+  fixTargetFor,
+  launchHref,
+  readableDay,
+  shortDay,
+  type LaunchBand,
+  type LaunchFrom,
+} from "../launch-model.js";
+import { AdFeedPreview } from "./ad-feed-preview.js";
+import type { AdShape } from "./ad-creative.js";
+import { CampaignApprovalControls } from "./campaign-approval-controls.js";
+import { LaunchHeader } from "./launch-flow.js";
+import { LaunchOnFacebook } from "./launch-on-facebook.js";
+import styles from "./launch.module.css";
+
+/**
+ * PRD-009d D7, D8 and 009D-AC-013 to 019. Step 3, Review and launch.
+ *
+ * Everything here is read from the saved version, its stored check result, and its recorded
+ * decision; nothing on this page is typed by hand. The state D8 draws comes from the recorded
+ * decision first, as PRD-008b requires of every surface (008B-AC-004, 008B-AC-009 to 011), then from
+ * the catalog (a retired ad), then from the checks, then from whether the viewer may approve.
+ */
+
+export interface LaunchReviewFinding {
+  readonly ruleCode: string;
+  readonly affected: string;
+  readonly remediation: string;
+}
+
+export interface LaunchReviewData {
+  readonly campaignRef: string;
+  readonly campaignVersionRef: string;
+  readonly versionNo: number;
+  readonly manifestHash: string;
+  readonly preflightResultHash: string;
+  readonly rowVersion: number;
+  readonly state: string;
+  readonly detailHref: string;
+  readonly canApprove: boolean;
+  readonly decision?:
+    | Readonly<{ decision: "approved" | "rejected"; approver: string; decidedAt: string }>
+    | undefined;
+  readonly ad: Readonly<{
+    id: string;
+    version: number;
+    name: string;
+    topic: AdsLibraryTopic | undefined;
+    alt: string;
+    art: Readonly<{ tall: string; square: string }>;
+    sample: boolean;
+    callToAction: AdsLibraryCallToAction;
+    defaults: Readonly<{ headline: string; primaryText: string }> | undefined;
+  }>;
+  readonly retiredOn: string | null;
+  readonly words: Readonly<{ headline: string; primaryText: string }>;
+  readonly advertiser: LaunchBand;
+  readonly budget: Readonly<{ dailyDollars: number; totalDollars: number }>;
+  readonly endsOn: string;
+  readonly places: Readonly<{ states: readonly string[]; cities: readonly string[] }>;
+  readonly checks: Readonly<{
+    run: number;
+    passed: number;
+    blocking: boolean;
+    rules: readonly Readonly<{ code: string; name: string; passed: boolean }>[];
+    findings: readonly LaunchReviewFinding[];
+  }>;
+}
+
+export type LaunchReviewState =
+  "ready" | "cannot-approve" | "needs-changes" | "approved" | "sent-back" | "retired";
+
+/** D8: which state step 3 draws. The recorded decision comes first, then retirement, then the checks. */
+export function launchReviewState(
+  review: Pick<LaunchReviewData, "decision" | "retiredOn" | "checks" | "canApprove">,
+): LaunchReviewState {
+  if (review.decision?.decision === "approved") return "approved";
+  if (review.decision?.decision === "rejected") return "sent-back";
+  if (review.retiredOn !== null) return "retired";
+  if (review.checks.blocking) return "needs-changes";
+  return review.canApprove ? "ready" : "cannot-approve";
+}
+
+function placeLabels(places: LaunchReviewData["places"]): readonly string[] {
+  return [
+    ...places.cities.map((value) => adPlaceLabel({ kind: "city", value })),
+    ...places.states.map((value) => adPlaceLabel({ kind: "state", value })),
+  ];
+}
+
+export function LaunchReview({
+  review,
+  from,
+}: Readonly<{ review: LaunchReviewData; from?: LaunchFrom | undefined }>) {
+  const [shape, setShape] = useState<AdShape>("tall");
+  const state = launchReviewState(review);
+  const changeHref = launchHref({ step: 2, campaign: review.campaignRef, from });
+  const defaults = review.ad.defaults;
+  return (
+    <div className={styles.page} data-launch-step="3" data-review-state={state}>
+      <LaunchHeader lead={REVIEW_LEAD} step={3} title={LAUNCH_STEP_TITLES.review} />
+      <div className={styles.review}>
+        <Card className={styles.adCard} padding="lg">
+          <div className={styles.sectionHeading}>
+            <h2>{YOUR_AD}</h2>
+            <fieldset className={styles.shapeSwitch}>
+              <legend className="oalo-visually-hidden">{SHAPE_LABEL}</legend>
+              {(
+                [
+                  ["tall", SHAPE_TALL],
+                  ["square", SHAPE_SQUARE],
+                ] as const
+              ).map(([value, label]) => (
+                <label className={styles.shapeOption} key={value}>
+                  <input
+                    type="radio"
+                    checked={shape === value}
+                    name="ad-shape"
+                    onChange={() => setShape(value)}
+                    value={value}
+                  />
+                  {label}
+                </label>
+              ))}
+            </fieldset>
+          </div>
+          <div className={styles.feedFrame}>
+            <AdFeedPreview
+              advertiser={review.advertiser}
+              alt={review.ad.alt}
+              art={review.ad.art}
+              callToAction={review.ad.callToAction}
+              headline={review.words.headline}
+              primaryText={review.words.primaryText}
+              sample={review.ad.sample}
+              shape={shape}
+            />
+          </div>
+          <p className={styles.caption}>{FRAME_CAPTION}</p>
+          <p className={styles.caption}>{SHAPES_NOTE}</p>
+        </Card>
+        <div className={styles.reviewSide}>
+          <Card className={styles.approveCard} padding="md">
+            <div className={styles.sectionHeading}>
+              <h2 className={styles.cardTitle}>{WHAT_YOU_APPROVE}</h2>
+              <Badge tone={review.checks.blocking ? "critical" : "success"}>
+                {review.checks.blocking ? CHECK_RESULT_NEEDS_CHANGES : CHECK_RESULT_PASSED}
+              </Badge>
+            </div>
+            <p className={styles.note} data-checks-count="">
+              {checksCount(review.checks.passed, review.checks.run)}
+            </p>
+            <details className={styles.checked}>
+              <summary>{SEE_WHAT_WE_CHECKED}</summary>
+              <ul>
+                {review.checks.rules.map((rule) => (
+                  <li data-rule-passed={rule.passed} key={rule.code}>
+                    {rule.name}
+                  </li>
+                ))}
+              </ul>
+            </details>
+            <div className={styles.sectionHeading}>
+              <h3 className={styles.factsTitle}>{FACTS_TITLE}</h3>
+              <Link href={changeHref} variant="action">
+                {CHANGE}
+              </Link>
+            </div>
+            <dl className={styles.facts}>
+              <dt>{FACT_LABELS.ad}</dt>
+              <dd>{adFact(review.ad.name, review.ad.version)}</dd>
+              <dt>{FACT_LABELS.words}</dt>
+              <dd>
+                {defaults === undefined || defaults.headline !== review.words.headline
+                  ? HEADLINE_CHANGED
+                  : HEADLINE_UNCHANGED}
+                {". "}
+                {defaults === undefined || defaults.primaryText !== review.words.primaryText
+                  ? AD_TEXT_CHANGED
+                  : AD_TEXT_UNCHANGED}
+              </dd>
+              <dt>{FACT_LABELS.budget}</dt>
+              <dd>
+                {budgetFact(
+                  dollars(review.budget.dailyDollars),
+                  dollars(review.budget.totalDollars),
+                )}
+              </dd>
+              <dt>{FACT_LABELS.runs}</dt>
+              <dd>{runsFact(readableDay(review.endsOn))}</dd>
+              <dt>{FACT_LABELS.shows}</dt>
+              <dd>
+                <ul className={styles.factList}>
+                  {placeLabels(review.places).map((label) => (
+                    <li key={label}>{label}</li>
+                  ))}
+                  <li>{FACEBOOK_FEED}</li>
+                </ul>
+              </dd>
+              <dt>{FACT_LABELS.leads}</dt>
+              <dd>{LEADS_NOT_CONNECTED}</dd>
+            </dl>
+          </Card>
+          <LaunchDecision changeHref={changeHref} from={from} review={review} state={state} />
+          <LaunchOnFacebook
+            state={{
+              metaConnected: false,
+              retiredOn: review.retiredOn === null ? null : shortDay(review.retiredOn),
+              approved: state === "approved",
+              launchingTurnedOn: false,
+            }}
+          />
+          <SupportDetails
+            rows={[
+              [SUPPORT_DETAILS_LABELS.versionId, review.campaignVersionRef],
+              [SUPPORT_DETAILS_LABELS.contentFingerprint, review.manifestHash],
+              [SUPPORT_DETAILS_LABELS.checkFingerprint, review.preflightResultHash],
+            ]}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** D8: the decision card for each state step 3 can be in. */
+function LaunchDecision({
+  review,
+  state,
+  changeHref,
+  from,
+}: Readonly<{
+  review: LaunchReviewData;
+  state: LaunchReviewState;
+  changeHref: string;
+  from: LaunchFrom | undefined;
+}>) {
+  if (state === "approved" && review.decision !== undefined) {
+    return (
+      <Card data-decision-card="approved" padding="md">
+        <Badge tone="success">{APPROVED_CHIP}</Badge>
+        <p>{approvedLine(review.decision.approver, shortDay(review.decision.decidedAt))}</p>
+      </Card>
+    );
+  }
+  if (state === "sent-back") {
+    return (
+      <Card data-decision-card="sent-back" padding="md">
+        <Badge tone="warning">{CAMPAIGN_SENT_BACK_LABEL}</Badge>
+        <p>{CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION}</p>
+        <Link className={styles.primaryLink} href={changeHref} variant="action">
+          {MAKE_A_NEW_VERSION}
+        </Link>
+      </Card>
+    );
+  }
+  if (state === "retired" && review.retiredOn !== null) {
+    return (
+      <Card data-decision-card="retired" padding="md">
+        <Badge tone="neutral">{AD_RETIRED_CHIP}</Badge>
+        <p>{adRetiredNotice(shortDay(review.retiredOn))}</p>
+        <Link
+          className={styles.primaryLink}
+          href={launchHref({ step: 1, campaign: review.campaignRef, from })}
+          variant="action"
+        >
+          {CHOOSE_ANOTHER_AD}
+        </Link>
+      </Card>
+    );
+  }
+  const firstBlocking = review.checks.findings[0];
+  const target = firstBlocking === undefined ? undefined : fixTargetFor(firstBlocking);
+  return (
+    <div className={styles.decision} data-decision-card={state}>
+      {state === "needs-changes" && firstBlocking !== undefined && target !== undefined ? (
+        <Card padding="md">
+          <Badge tone="critical">{CHECK_RESULT_NEEDS_CHANGES}</Badge>
+          <ul className={styles.fixes}>
+            {review.checks.findings.map((finding) => (
+              <li key={`${finding.ruleCode}:${finding.affected}`}>
+                <strong>{WHAT_TO_FIX}</strong> {finding.remediation}
+              </li>
+            ))}
+          </ul>
+          <Link
+            className={styles.primaryLink}
+            href={
+              target.step === 1
+                ? launchHref({ step: 1, campaign: review.campaignRef, from })
+                : launchHref({ step: 2, campaign: review.campaignRef, from }, target.at)
+            }
+            variant="action"
+          >
+            {FIX_IT}
+          </Link>
+        </Card>
+      ) : state === "ready" ? (
+        <Badge tone="info">{CHECK_RESULT_READY}</Badge>
+      ) : null}
+      <CampaignApprovalControls
+        alreadyDecided={review.decision?.decision}
+        blocking={review.checks.blocking}
+        campaignHref={review.detailHref}
+        campaignRef={review.campaignRef}
+        campaignVersionRef={review.campaignVersionRef}
+        canApprove={review.canApprove}
+        manifestHash={review.manifestHash}
+        preflightResultHash={review.preflightResultHash}
+        rowVersion={review.rowVersion}
+        state={review.state}
+      />
+    </div>
+  );
+}

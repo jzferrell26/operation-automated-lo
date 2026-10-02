@@ -5,7 +5,7 @@ import {
   expectNoExternalRequests,
   freshEmail,
 } from "./helpers/guided-setup-journey.js";
-import { putTheWalkthroughAside, chooseThemeFromTheHeader } from "./helpers/review-session.js";
+import { chooseThemeFromTheHeader } from "./helpers/review-session.js";
 
 let context: BrowserContext, page: Page;
 let guard: Awaited<ReturnType<typeof guardLocalOrigin>>;
@@ -59,7 +59,6 @@ test.describe.serial("signed-in workspace pages", () => {
     await page.getByLabel("Company", { exact: false }).fill("Workspace Example Lending");
     await page.getByRole("button", { name: "Create account", exact: true }).click();
     await page.waitForURL("**/overview");
-    await putTheWalkthroughAside(page);
   });
   test.afterAll(async () => {
     expectNoExternalRequests(guard);

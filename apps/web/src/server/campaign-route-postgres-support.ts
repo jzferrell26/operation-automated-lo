@@ -15,6 +15,7 @@ import {
   seedReviewActor,
   seedReviewLocation,
   seedReviewLocationWithoutInstallation,
+  setReviewInstallationStatus,
 } from "../../../../packages/db/test/route-seeding-bridge.js";
 import { ADS_LIBRARY_SAMPLES_FLAG } from "../features/ads-library/server/catalog-loader.js";
 import { resolveAuthenticatedReadPrincipal } from "./authenticated-principal.js";
@@ -307,6 +308,19 @@ export async function seedLocationWithoutInstallation(
   displayName: string,
 ): Promise<string> {
   return seedReviewLocationWithoutInstallation(pool, displayName);
+}
+
+/**
+ * PRD-009b 009B-AC-004. Puts a seeded location's installation into one of the six statuses the
+ * table allows. `app_runtime` can only select from the table, so the write is an owner statement
+ * and lives in the sanctioned harness; this is the one hop to it.
+ */
+export async function setInstallationStatus(
+  pool: PostgresDatabasePool,
+  location: SeededLocation,
+  status: "pending" | "active" | "missing_scope" | "reconnect_required" | "revoked" | "uninstalled",
+): Promise<void> {
+  await setReviewInstallationStatus(pool, location.locationId, status);
 }
 
 export interface BrowserRequestOverrides {

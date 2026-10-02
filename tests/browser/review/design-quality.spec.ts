@@ -7,13 +7,11 @@ import {
   expectAxeClean,
   expectKeyboardReachesEveryControl,
   expectNoHorizontalOverflow,
-  expectPanelFooterIsOnScreen,
   expectTargetsAreLargeEnough,
   expectThePageFillsTheContentColumn,
   expectThemeResolved,
   expectTypographyOnBrief,
   expectZeroMotionUnderReducedMotion,
-  parkThePointer,
   screenshotName,
   settleForScreenshot,
   useStoredTheme,
@@ -22,16 +20,10 @@ import {
 import {
   expectNoExternalRequests,
   guardLocalOrigin,
-  letTheStepPlaceItself,
-  restartGuidedSetup,
   seededCredentials,
   signInExisting,
 } from "./helpers/guided-setup-journey.js";
-import {
-  chooseThemeFromTheHeader,
-  putTheWalkthroughAside,
-  REVIEW_THEMES,
-} from "./helpers/review-session.js";
+import { chooseThemeFromTheHeader, REVIEW_THEMES } from "./helpers/review-session.js";
 import { issueVerificationTokenForTheSeededOutsider } from "./helpers/verification-token.js";
 
 /**
@@ -68,22 +60,15 @@ const ACCOUNT_SCREENS = Object.freeze([
 ] as const);
 
 /**
- * PRD-006d D3's sign-up refusal state, and the arithmetic that used to keep it out of the suite.
+ * PRD-006d D3's sign-up refusal state.
  *
  * `handlePasswordSignUp` spends one `sign_up_ip` attempt on every submission before it parses the
  * body (`apps/web/src/server/password-authentication-handler.ts:771`), and the limit is ten an
- * hour per address (the same file, line 118). Until 2026-09-20 PRD-006c's four specs spent exactly
- * ten of them in one run: four in `guided-setup.accessibility.spec.ts`, three in
- * `guided-setup.tablet-anchoring.spec.ts`, two in `guided-setup.resume.spec.ts`, and one in
- * `guided-setup.timed.spec.ts`. Adding two here was measured on 2026-09-19: the run's last two
- * sign-ups were refused with "There have been too many attempts" and two PRD-006c specs failed on
- * a sign-up that never returned.
- *
- * F-22 made room rather than arguing about it. The accessibility matrix now walks one account
- * instead of four and the anchoring spec one instead of three, so those four specs spend five;
- * `guided-setup.walkthrough-captures.spec.ts` spends one more for the workspace owner that step
- * 6's approve branch needs, and the two submissions below bring a run to eight of ten. The state
- * is in the suite on every run instead of being a hand-staged row in the sign-off document.
+ * hour per address (the same file, line 118). A review suite that spends the product's rate-limit
+ * budget breaks the specs sharing the run with it, so the two submissions below are refusals against
+ * an address that already has an account and create nothing. PRD-009b removed the walkthrough specs
+ * that used to spend most of the budget; the specs that replace them (009G) keep to the same
+ * discipline and reuse one account (009G D1).
  *
  * One submission per theme, because a public account screen carries no theme control and the theme
  * is chosen before the page loads. The refusal is React state on the page, so it survives the four
@@ -308,11 +293,6 @@ test("change-password meets the design quality bar at every frame in both themes
   const { creatorEmail, password } = seededCredentials();
   await page.setViewportSize({ width: 1440, height: 900 });
   await signInExisting(page, creatorEmail, password);
-  // The seeded person's progress lives on the server and survives the run, so the walkthrough is
-  // put back to a known place and then dismissed before anything is measured. The helper waits for
-  // the dismissal's own write, which F-23 now also makes the product wait for.
-  await restartGuidedSetup(page);
-  await putTheWalkthroughAside(page);
 
   for (const theme of REVIEW_THEMES) {
     await page.goto("/settings/account");
@@ -380,10 +360,6 @@ test("the workspace after a saved password meets the design quality bar", async 
   const { creatorEmail, password } = seededCredentials();
   await page.setViewportSize({ width: 1440, height: 900 });
   await signInExisting(page, creatorEmail, password);
-  // The seeded person's progress lives on the server, so the walkthrough is put back to a known
-  // place and dismissed before anything is measured, exactly as the change-password case does.
-  await restartGuidedSetup(page);
-  await putTheWalkthroughAside(page);
 
   for (const theme of REVIEW_THEMES) {
     await page.goto("/overview?passwordReset=1");
@@ -430,118 +406,20 @@ test("the workspace after a saved password meets the design quality bar", async 
 });
 
 /**
- * PRD-008d, the scored baseline review of 2026-10-01: the picture of a step that points at the page
- * shows what it points at. The element is on screen, below the sticky header, above the viewport's
- * end, and clear of the panel, before the picture is taken, because a picture is only compared on
- * the runner that drew it and this has to hold everywhere.
+ * 006D-AC-018, from the review side: the one surface PRD-006d put out of scope is not served here
+ * and nothing links to it, so a person given the review URL cannot arrive at it.
+ *
+ * Until 2026-10-01 this ran at the end of the walkthrough's steps 1 and 2 matrix. PRD-009b retired
+ * the floating walkthrough and that matrix with it (D4); this half never needed the walkthrough, so
+ * it stands on its own.
  */
-async function expectTheStepPointsAtSomethingOnScreen(
-  page: Page,
-  frame: ReviewFrame,
-): Promise<void> {
-  const highlighted = page.locator("[data-guided-setup-highlight='true']").first();
-  await expect(highlighted, `at ${frame.name} the step points at something`).toBeVisible();
-  const target = await highlighted.boundingBox();
-  const panelBox = await page.getByRole("dialog").boundingBox();
-  const header = await page.getByRole("banner").boundingBox();
-  expect(target, `at ${frame.name} the element has a box`).not.toBeNull();
-  expect(panelBox, `at ${frame.name} the panel has a box`).not.toBeNull();
-  if (target === null || panelBox === null) return;
-  expect(
-    target.y,
-    `at ${frame.name} the element starts below the sticky header`,
-  ).toBeGreaterThanOrEqual(header === null ? 0 : header.y + header.height - 1);
-  expect(
-    target.y + target.height,
-    `at ${frame.name} the element ends inside the viewport`,
-  ).toBeLessThanOrEqual(frame.height);
-  const overlaps =
-    panelBox.x < target.x + target.width &&
-    panelBox.x + panelBox.width > target.x &&
-    panelBox.y < target.y + target.height &&
-    panelBox.y + panelBox.height > target.y;
-  expect(overlaps, `at ${frame.name} the panel covers what it is pointing at`).toBe(false);
-}
-
-/**
- * 006C-AC-020's review half for steps 1 and 2, at all four frames, and 006D-AC-018 from the review
- * side.
- *
- * PRD-008d 008D-AC-008, the sign-off's A-1 cells. Until 2026-10-01 this took 1440 and 768 only, the
- * two frames PRD-006c's own accessibility matrix leaves out, and the sign-off recorded steps 1 and
- * 2 at 1180 and 390 as "pass, asserted (A-1)": `guided-setup.accessibility.spec.ts` runs axe, the
- * motion check, the target sizes, the ring, and the panel clearance there, and draws no picture.
- * An assertion holds a rule; it does not hold a composition. So the same cell procedure now runs
- * at all four frames and every cell has a baseline. Each cell starts the walkthrough again from
- * the top of the overview, which is where a person meets step 1.
- *
- * Step 1 is photographed where the product puts it, not at the top of the page. PRD-008d's scored
- * baseline review of 2026-10-01 found the earlier cells scrolling back to the top after the
- * walkthrough had scrolled the quick actions clear of its panel, so at 1180, 768, and 390 the
- * pictures showed the panel pointing at quick actions below the fold: a state nobody using the
- * product is in, signed as if it were. The cell now starts at the top and lets the step's own
- * scroll run (`letTheStepPlaceItself`). Step 2 points at nothing on the page, so the top of the
- * page stays its canonical start.
- *
- * It signs in as the seeded creator and restarts the walkthrough rather than creating an account,
- * so the run's sign-up budget stays where PRD-006c's specs need it. `restartGuidedSetup` is what a
- * person would use, and using it here is what makes a spec about a seeded person repeatable.
- */
-test("the guided setup's steps 1 and 2 meet the bar at every frame, in both themes", async ({
-  page,
-}) => {
-  // Twice the cells it had, each a restart, two pictures, and a dismissal. Measured on 2026-10-01
-  // in the review composition on a Windows workstation: 40 s. The budget is the old one scaled
-  // with the cells, which leaves the runner's throttled processor several times that.
-  test.setTimeout(360_000);
+test("the demo route is not served in review mode and nothing links to it", async ({ page }) => {
+  test.setTimeout(120_000);
   const guard = await guardLocalOrigin(page);
   const { creatorEmail, password } = seededCredentials();
   await page.setViewportSize({ width: 1440, height: 900 });
   await signInExisting(page, creatorEmail, password);
 
-  for (const theme of REVIEW_THEMES) {
-    await chooseThemeFromTheHeader(page, theme);
-    for (const frame of REVIEW_FRAMES) {
-      await page.setViewportSize({ width: frame.width, height: frame.height });
-      await restartGuidedSetup(page);
-      await settleForScreenshot(page);
-      await letTheStepPlaceItself(page, "top");
-      await settleForScreenshot(page, { keepScroll: true });
-
-      await expectAxeClean(page);
-      await expectTargetsAreLargeEnough(page);
-      await expectTypographyOnBrief(page);
-      /**
-       * PRD-006d's reopened row 2. The committed step-1 baseline at 1440 showed the panel's
-       * footer controls below the fold, and nothing here said so: a screenshot that is only
-       * compared on the runner cannot be the assertion for a layout defect on every platform.
-       * The controls are measured before the picture is taken, at both frames.
-       */
-      await expectPanelFooterIsOnScreen(page, frame, ["Let's go", "Not now"]);
-      await expectTheStepPointsAtSomethingOnScreen(page, frame);
-      await parkThePointer(page);
-      await expect(page).toHaveScreenshot(
-        screenshotName("guided-setup", frame.name, theme, "step-1-welcome"),
-      );
-
-      await page.getByRole("button", { name: "Let's go" }).click();
-      await expect(page.getByRole("dialog", { name: "Your details" })).toBeVisible();
-      await settleForScreenshot(page);
-      await expectAxeClean(page);
-      await expectNoHorizontalOverflow(page);
-      await expectTypographyOnBrief(page);
-      await expectPanelFooterIsOnScreen(page, frame);
-      await parkThePointer(page);
-      await expect(page).toHaveScreenshot(
-        screenshotName("guided-setup", frame.name, theme, "step-2-your-details"),
-      );
-
-      await putTheWalkthroughAside(page);
-    }
-  }
-
-  // 006D-AC-018: the one surface PRD-006d put out of scope is not served here and nothing links
-  // to it, so a person given the review URL cannot arrive at it.
   await page.goto("/demo");
   await expect(
     page.getByRole("link", { name: /walkthrough/iu }),
@@ -735,7 +613,7 @@ for (const named of PUBLIC_NAMED_STATES) {
  *
  * One sign-in rather than five. The rate limits this run shares are the reason the file already
  * walks the frames and themes in place rather than signing in per cell, and a shell state is no
- * different: the rail, the drawer, the chip, and the help menu are all React state on a page the
+ * different: the account control and the help menu are all React state on a page the
  * session is already on.
  *
  * Superseded on 2026-10-01 by PRD-009 (D-2, 009a): the collapsed rail (captured at 1440, 1180,
@@ -753,11 +631,9 @@ test("the shell's named states meet the bar", async ({ page }) => {
   const { creatorEmail, password } = seededCredentials();
   await page.setViewportSize({ width: 1440, height: 900 });
   await signInExisting(page, creatorEmail, password);
-  await restartGuidedSetup(page);
-  // PRD-006c D5. Putting the walkthrough aside is what places the "Finish setup" chip in the
-  // header, inside its seven-day window, so the chip is reached by the control a person uses.
-  await putTheWalkthroughAside(page);
-  await expect(page.getByRole("button", { name: "Finish setup" })).toBeVisible();
+  // PRD-009b D4: the floating walkthrough is retired, so there is no "Finish setup" chip in the bar
+  // and nothing to put aside. Its capture (`shell--finish-setup-chip`) and its 8 baselines are gone.
+  await expect(page.getByRole("button", { name: "Finish setup" })).toHaveCount(0);
 
   /**
    * F-21. The sign-out control is the shell's, not the page's.
@@ -793,15 +669,15 @@ test("the shell's named states meet the bar", async ({ page }) => {
     await page.goto("/overview");
     await chooseThemeFromTheHeader(page, theme);
 
-    await captureNamedState(page, { screen: "shell", state: "finish-setup-chip", theme });
-
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.getByRole("button", { name: "Help", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Show me around again" })).toBeVisible();
+    // 009B-AC-015: the help menu is the shell's own panel, and it holds no walkthrough restart.
+    await expect(page.getByRole("dialog", { name: "Help" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Show me around again" })).toHaveCount(0);
     await captureNamedState(page, { screen: "shell", state: "help-menu-open", theme });
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("button", { name: "Show me around again" })).toBeHidden();
+    await expect(page.getByRole("dialog", { name: "Help" })).toBeHidden();
   }
 
   expectNoExternalRequests(guard);

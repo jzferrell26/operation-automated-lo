@@ -1,231 +1,388 @@
-.overview {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-  color: var(--tx-strong);
+/*
+ * PRD-009b and design `00-direction.md` section 4: Home, first run.
+ *
+ * Superseded on 2026-10-01 by PRD-009: the CRM overview this file styled (health strip, metric
+ * grids, attention list, activity feed, workspace grid, edge-state gallery) is gone. Home is a
+ * greeting, the start card, the "Get set up" card, two short lists, and one sentence.
+ *
+ * Layout, from the mockup (`design/mockups/home-first-run.html`): at 1100px and wider the start card
+ * and the two lists sit in the left column (1.55fr) and the checklist in the right (1fr), top
+ * aligned; below 1100px everything stacks in document order, which is start, checklist, running,
+ * approval (D1). Every control is at least 44px tall at every width, and no figure appears on the
+ * page, so nothing here styles a number.
+ */
+
+.home {
+  display: grid;
+  gap: var(--space-5);
+  min-inline-size: 0;
 }
 
-.pageHeader,
-.sectionHeading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
+.welcome {
+  margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-medium);
 }
 
-.pageHeader h1,
-.sectionHeading h2,
-.listGrid h3,
-.workspaceGrid h3 {
+.grid {
+  display: grid;
+  align-items: start;
+  gap: var(--space-6);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1100px) {
+  .grid {
+    grid-template-areas:
+      "start setup"
+      "lists setup";
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  }
+
+  .start {
+    grid-area: start;
+  }
+
+  .setup {
+    grid-area: setup;
+  }
+
+  .lists {
+    grid-area: lists;
+  }
+}
+
+.lists {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  min-inline-size: 0;
+}
+
+/* The bordered white card of the light look (design section 2.3): the border is the edge. */
+.card,
+.start {
+  min-inline-size: 0;
+  padding: var(--space-6);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  background: var(--sf-card);
+  box-shadow: var(--shadow-card);
+}
+
+.card > * + * {
+  margin-block-start: var(--space-4);
+}
+
+.card h2,
+.card h3,
+.card p,
+.card ul,
+.start h1,
+.start p,
+.start ul,
+.start ol {
   margin: 0;
 }
 
-.pageHeader h1 {
+.sectionTitle {
+  color: var(--tx-strong);
+  font-size: var(--text-section-size);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+.secondary {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+.eyebrow {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+}
+
+/* The start card. */
+.start {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-8);
+}
+
+/* The page title step (28px). The mockup draws this one at 34px and the primary button at 17px, which
+ * are between the brief's six type steps (28, 19, 16, 14, 12); `expectTypographyOnBrief` refuses text
+ * between them, so Home uses the steps and gets its weight from the bold face and the card's space. */
+.startTitle {
+  color: var(--tx-strong);
   font-size: var(--text-page-size);
+  font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-page);
   line-height: var(--leading-tight);
 }
 
-.pageHeader p,
-.sectionHeading p,
-.listGrid p,
-.workspaceGrid p {
+.lead {
+  max-inline-size: 60ch;
   color: var(--tx-body);
+  font-size: var(--text-body-size);
   line-height: var(--leading-normal);
 }
 
-.eyebrow,
-.itemMeta {
-  margin-block: 0 var(--space-1);
-  color: var(--tx-faint);
-  font-size: var(--text-caption-size);
-  font-weight: var(--weight-medium);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+/*
+ * 009B-AC-003. The primary button is first in the document so it is the first control after the
+ * skip link and the top bar, and the topics follow it. The design draws the question and the topic
+ * buttons above the button, so the column is reordered visually; the document order is what a
+ * keyboard and a screen reader follow.
+ */
+.startActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
-.headerActions {
+.topics,
+.emptyLibrary {
+  order: 1;
+}
+
+.primaryRow {
+  order: 2;
+}
+
+.question {
+  color: var(--tx-strong);
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-semibold);
+}
+
+.topics {
   display: grid;
-  min-inline-size: min(22rem, 100%);
   gap: var(--space-3);
-  justify-items: end;
 }
 
-.readiness,
-.statusLabel {
+.emptyLibrary {
+  max-inline-size: 52ch;
+  color: var(--tx-body);
+  font-size: var(--text-body-size);
+  line-height: var(--leading-normal);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+/* A secondary button in the shape of a pill: white, with the visible field edge. */
+.start .chip {
+  min-block-size: var(--target-min-size);
+  padding-inline: var(--space-4);
+  border-radius: var(--radius-pill);
+  box-shadow: none;
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+}
+
+/* The one primary button on the page, drawn as a link because it goes to another page. */
+.start .primaryLink {
+  min-block-size: 3.25rem;
+  padding-inline: var(--space-8);
+  border-color: var(--ac-primary);
+  background: var(--ac-primary);
+  box-shadow: none;
+  color: var(--tx-on-action);
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-semibold);
+}
+
+.start .primaryLink:hover {
+  border-color: var(--ac-primary-hover);
+  background: var(--ac-primary-hover);
+  color: var(--tx-on-action);
+}
+
+.start .primaryLink:active {
+  background: var(--ac-primary-active);
+}
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  padding: 0;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  list-style: none;
+}
+
+.steps li {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  border-radius: var(--radius-pill);
-  background: var(--st-neutral-bg);
-  color: var(--st-neutral-fg);
-  font-size: var(--text-caption-size);
-  font-weight: var(--weight-medium);
-  padding: var(--space-1) var(--space-2);
-  text-transform: capitalize;
-}
-
-.readiness[data-status="launch_ready"],
-.statusLabel[data-status="healthy"] {
-  background: var(--st-success-bg);
-  color: var(--st-success-fg);
-}
-
-.readiness[data-status="attention_required"],
-.statusLabel[data-status="attention"],
-.statusLabel[data-status="setup_required"],
-.statusLabel[data-status="warning"] {
-  background: var(--st-warning-bg);
-  color: var(--st-warning-fg);
-}
-
-.statusLabel[data-status="critical"] {
-  background: var(--st-critical-bg);
-  color: var(--st-critical-fg);
-}
-
-.statusLabel[data-status="restricted"],
-.statusLabel[data-status="uncertain"] {
-  background: var(--st-uncertain-bg);
-  color: var(--st-uncertain-fg);
-}
-
-.healthStrip,
-.metricGrid,
-.workspaceGrid,
-.stateGrid,
-.listGrid {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.healthStrip {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
-
-.healthItem,
-.workspaceGrid article,
-.listGrid article {
-  display: grid;
-  align-content: start;
   gap: var(--space-2);
 }
 
-.healthItem span:not(.statusLabel),
-.healthItem small,
-.workspaceGrid small,
-.listGrid time {
-  color: var(--tx-body);
+.stepDot {
+  display: grid;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--st-info-bg);
+  color: var(--st-info-fg);
   font-size: var(--text-caption-size);
+  font-weight: var(--weight-bold);
 }
 
-.section,
-.healthSection,
-.quickActionsSection,
-.secondaryActionsSection {
-  display: grid;
+/* The "Get set up" card. */
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-4);
 }
 
-/* Each action keeps its own height. Stretched to its row, a link beside an unavailable action and
- * its explanation became a button some 200px tall (PRD-008d, second redraw, R-14). */
-.quickActions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
-  gap: var(--space-3);
+.count {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  font-variant-numeric: tabular-nums;
 }
 
-.metricGrid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.progress {
+  block-size: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--st-neutral-bg);
 }
 
-.listGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.progress > span {
+  display: block;
+  block-size: 100%;
+  background: var(--ac-primary);
 }
 
-.workspaceGrid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.stateGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.filters {
+.setupDone {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--space-1);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
 }
 
-.evidenceList {
+.setupDone > * + * {
+  margin-block-start: 0;
+}
+
+.checklist {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0;
+  list-style: none;
+}
+
+.checklist > li {
+  display: grid;
+  align-items: start;
+  gap: var(--space-3);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding-block: var(--space-4);
+  border-block-start: 1px solid var(--bd-hairline);
+}
+
+.checklist > li:first-child {
+  padding-block-start: var(--space-1);
+  border-block-start: 0;
+}
+
+.itemIcon {
+  display: inline-grid;
+  margin-block-start: 0.0625rem;
+  color: var(--tx-faint);
+}
+
+.itemTitle {
+  color: var(--tx-strong);
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-semibold);
+}
+
+.stateBadge {
+  margin-block-start: var(--space-2);
+}
+
+.itemAction {
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+}
+
+/* The two lists. */
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-2) var(--space-2);
+  text-align: center;
+}
+
+.emptyTitle {
+  color: var(--tx-strong);
+  font-weight: var(--weight-semibold);
+}
+
+.emptyBody {
+  max-inline-size: 36ch;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+.rows {
+  display: grid;
+  gap: var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.rows > li > * + * {
+  margin-block-start: var(--space-1);
+}
+
+.rowTitle {
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-semibold);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 
-.evidenceList div {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.evidenceList dt {
-  color: var(--tx-faint);
-  font-size: var(--text-caption-size);
-}
-
-.evidenceList dd {
+.footer {
   margin: 0;
+  padding-block: var(--space-2) var(--space-6);
   color: var(--tx-body);
-  font-size: var(--text-body-size);
+  font-size: var(--text-secondary-size);
+  text-align: center;
 }
 
-@media (max-width: 1180px) {
-  .healthStrip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+@media (max-width: 719.98px) {
+  .home {
+    gap: var(--space-5);
   }
 
-  .metricGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 768px) {
-  .overview {
-    gap: var(--space-6);
+  .start {
+    padding: var(--space-6);
   }
 
-  .pageHeader,
-  .sectionHeading {
-    flex-direction: column;
+  .card {
+    padding: var(--space-5);
   }
 
-  .headerActions {
-    inline-size: 100%;
-    justify-items: start;
-  }
-
-  .healthStrip,
-  .metricGrid,
-  .workspaceGrid,
-  .stateGrid,
-  .listGrid,
-  .quickActions,
-  .evidenceList {
+  .lists {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .filters {
-    justify-content: flex-start;
-  }
-}
-
-/* Brief section 12: the overview declares no motion, and cannot gain any. */
-@media (prefers-reduced-motion: reduce) {
-  .overview,
-  .overview * {
-    animation: none;
-    transition-duration: 0ms;
   }
 }

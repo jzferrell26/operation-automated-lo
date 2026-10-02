@@ -72,6 +72,13 @@ export declare function readLocationCorrelationIds(
   locationId: string,
 ): Promise<readonly string[]>;
 
+/** PRD-009b 009B-AC-004. One of the six statuses `platform.marketplace_installations` allows. */
+export declare function setReviewInstallationStatus(
+  pool: DatabasePool,
+  locationId: string,
+  status: "pending" | "active" | "missing_scope" | "reconnect_required" | "revoked" | "uninstalled",
+): Promise<void>;
+
 export declare function seedReviewLocationWithoutInstallation(
   pool: DatabasePool,
   displayName: string,

@@ -146,7 +146,7 @@ export const GUIDED_SETUP_STEPS = Object.freeze({
      */
     needsChangesTitle: "This version needs changes",
     needsChangesBody:
-      "This version needs changes before anyone can approve it. Fix what the checks found, then save it again.",
+      "This version needs changes before anyone can approve it. The campaign creator fixes what the checks found and saves it again.",
     /**
      * PRD-008b 008B-AC-010. What step 6 says to an approver who cannot create a campaign when nobody
      * has saved one for them to approve. It used to tell them to choose "Approve this version", which

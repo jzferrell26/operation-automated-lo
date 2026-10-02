@@ -7,7 +7,7 @@ import {
   seededCredentials,
   signInExisting,
 } from "./helpers/guided-setup-journey.js";
-import { chooseThemeFromTheHeader, putTheWalkthroughAside } from "./helpers/review-session.js";
+import { chooseThemeFromTheHeader } from "./helpers/review-session.js";
 
 /**
  * PRD-009a, the review halves of 009A-AC-004, 009, 011, and 013, signed in as the seeded creator.
@@ -33,7 +33,6 @@ async function signIn(page: Page): Promise<void> {
   const { creatorEmail, password } = seededCredentials();
   await page.setViewportSize({ width: 1440, height: 900 });
   await signInExisting(page, creatorEmail, password);
-  await putTheWalkthroughAside(page);
 }
 
 test("the review top bar holds six labels, Help, and an account that names only the person", async ({
@@ -114,11 +113,12 @@ for (const path of ["/overview", "/brand", "/partners", "/settings", "/homeowner
 }
 
 /**
- * 009A-AC-011 in review. One caveat is recorded rather than hidden: until PRD-009b removes the
- * guided setup's "Finish setup" chip from the Help slot (Wave 2), a person who put the walkthrough
- * aside carries a wider account cluster, and at 1180 the menu can meet it. The one-row and
- * no-overlap checks therefore run when the chip is absent and annotate the run when it is present;
- * the no-sideways-scroll and axe checks run at every frame regardless.
+ * 009A-AC-011 in review. The one-row, no-overlap, and no-sideways-scroll checks run at every frame.
+ *
+ * Until PRD-009b removed the guided setup's "Finish setup" chip from the Help slot, a person who put
+ * the walkthrough aside carried a wider account cluster, and at 1180 the menu could meet it, so the
+ * one-row and no-overlap checks were deferred whenever the chip was present. The chip is gone, so
+ * nothing is deferred.
  */
 test("the review top bar holds its shape at the four frames, axe-clean in Light and Dark", async ({
   page,
@@ -138,7 +138,7 @@ test("the review top bar holds its shape at the four frames, axe-clean in Light 
       await page.goto("/overview");
       await chooseThemeFromTheHeader(page, theme);
       const banner = page.getByRole("banner");
-      const chipShown = await banner.getByRole("button", { name: "Finish setup" }).isVisible();
+      await expect(banner.getByRole("button", { name: "Finish setup" })).toHaveCount(0);
 
       if (frame.width >= 1180) {
         const menuBox = await banner.getByRole("navigation", { name: "Main" }).boundingBox();
@@ -148,12 +148,7 @@ test("the review top bar holds its shape at the four frames, axe-clean in Light 
         const helpBox = await banner
           .getByRole("button", { name: "Help", exact: true })
           .boundingBox();
-        if (chipShown) {
-          test.info().annotations.push({
-            type: "deferred to PRD-009b",
-            description: `the "Finish setup" chip is in the bar at ${frame.name} (${theme})`,
-          });
-        } else if (menuBox && accountBox && helpBox) {
+        if (menuBox && accountBox && helpBox) {
           expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(Math.min(accountBox.x, helpBox.x));
           expect(
             Math.abs(menuBox.y + menuBox.height / 2 - (accountBox.y + accountBox.height / 2)),

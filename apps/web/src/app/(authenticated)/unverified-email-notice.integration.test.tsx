@@ -6,7 +6,6 @@ import type { EmailVerificationView } from "../../features/shell/model/navigatio
 import type { RuntimeShellSession } from "../../server/runtime-authentication.js";
 import {
   runtimeAuthenticationModuleStub,
-  setupPreferencesModuleStub,
   themeModuleStub,
   useReviewModeEnvironment,
 } from "./review-mode-test-support.js";
@@ -34,12 +33,10 @@ let shell: RuntimeShellSession;
 vi.mock("next/headers.js", () => ({ headers: () => Promise.resolve(new Headers()) }));
 vi.mock("next/navigation.js", () => ({ usePathname: () => "/overview" }));
 /**
- * The guided setup stub says there are no preferences, and the runtime-authentication stub keeps
- * the real module apart from the session, so the notice's form still posts to the real path
- * constants. Both live in the support module with the reasons.
+ * The runtime-authentication stub keeps the real module apart from the session, so the notice's form
+ * still posts to the real path constants. It lives in the support module with the reason.
  */
 vi.mock("../../theme/index.js", () => themeModuleStub("Theme control"));
-vi.mock("../../server/setup-preferences.js", () => setupPreferencesModuleStub());
 vi.mock("../../server/runtime-authentication.js", (importOriginal) =>
   runtimeAuthenticationModuleStub(importOriginal, () => shell),
 );

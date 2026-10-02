@@ -219,7 +219,7 @@ describe("the top bar (009A-AC-009)", () => {
     expect(screen.queryByRole("dialog", { name: "Menu" })).not.toBeInTheDocument();
   });
 
-  it("opens a help panel from Help when no help controls are passed", async () => {
+  it("opens the shell's own help panel from Help (the walkthrough's help menu is retired, D4)", async () => {
     const user = userEvent.setup();
     renderShell();
 

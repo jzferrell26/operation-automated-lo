@@ -234,6 +234,9 @@
   min-inline-size: var(--target-min-size);
   align-items: center;
   gap: var(--space-2);
+  /* The `Button` primitive adds block padding, which made this 32px avatar a 50px control against the
+   * mockup's 44px. The control sizes itself from the target and nothing taller. */
+  padding-block: 0;
   padding-inline: var(--space-2) var(--space-3);
   border: 1px solid var(--bd-hairline);
   border-radius: var(--radius-pill);
@@ -316,14 +319,16 @@
  *
  * PRD-008d: pages start at the top of the content, not the middle of it.
  *
- * PRD-006c D7, Wave 7r: room at the end of the page for the guided setup's panel, published as
- * `--guided-setup-panel-room` while a step is open and unset otherwise. PRD-009b retires the panel.
+ * PRD-009b Wave 2 (Wave 1 verifier finding): the column is the bar's own box, `--content-max` wide
+ * and centred with the same inline padding, so the page starts at the wordmark's edge at every
+ * frame. It was `--content-max` plus 64px, which put the page 32px left of the wordmark at 1440
+ * (x=120 against x=152). The guided setup's panel room is gone with the panel (D4).
  */
 .content {
   flex: 1 1 auto;
   inline-size: 100%;
   min-block-size: 0;
-  max-inline-size: calc(var(--content-max) + 2 * var(--space-8));
+  max-inline-size: var(--content-max);
   /* PRD-009a: the column is the bar's own measure, so a page starts at its inline start, under
    * the wordmark, rather than centring a narrower composition inside a wider column (the bootstrap
    * `main` rule's `place-items: center`). */
@@ -331,7 +336,6 @@
   justify-items: stretch;
   margin-inline: auto;
   padding: var(--space-6) var(--space-8);
-  padding-block-end: calc(var(--space-6) + var(--guided-setup-panel-room, 0px));
 }
 
 /* 768 (and up to the 1100px it needs for one row): the six links on a second row of their own. */
@@ -401,7 +405,6 @@
 
   .content {
     padding: var(--space-4);
-    padding-block-end: calc(var(--space-4) + var(--guided-setup-panel-room, 0px));
   }
 }
 

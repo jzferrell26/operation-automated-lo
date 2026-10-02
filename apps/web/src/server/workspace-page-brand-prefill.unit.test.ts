@@ -20,20 +20,20 @@ const mocks = vi.hoisted(() => ({
 }));
 const PRINCIPAL = {
   role: "location_admin",
-  locationId: "00000000-0000-4000-8000-000000000011",
-  actorId: "00000000-0000-4000-8000-000000000012",
+  locationId: "00000000-0000-4000-8000-000000000401",
+  actorId: "00000000-0000-4000-8000-000000000402",
 };
 
-vi.mock("@oalo/db", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@oalo/db")>()),
-  createPrincipalBoundTenantContextAuthority: () => ({}),
-  PostgresHomeownerRepository: class {
-    summaries = vi.fn();
-    usage = vi.fn();
-    list = vi.fn();
-    ghlLocation = vi.fn();
-  },
-}));
+// The loader builds a homeowner repository for every page and uses it only for report pages, so a
+// bare constructor is all a Brand page needs.
+vi.mock("@oalo/db", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@oalo/db")>();
+  return {
+    ...actual,
+    createPrincipalBoundTenantContextAuthority: vi.fn(() => ({})),
+    PostgresHomeownerRepository: vi.fn(),
+  };
+});
 vi.mock("./authenticated-workspace-data.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./authenticated-workspace-data.js")>()),
   authenticatedWorkspaceMode: () => "review",

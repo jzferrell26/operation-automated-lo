@@ -2,48 +2,52 @@
 
 > Date: 2026-10-01, revision 2 (after OD-H, the curated ads library) | Author: `design-system-guardian` | Companion to [`00-direction.md`](00-direction.md)
 >
-> The IDs D-1 to D-25 are local to this file; they are not the review rubric's deltas D-001 onward. AD-1 to AD-3 are the PRD-009 index's own decisions (`prd-009-marketing-toolkit-index.md:87-89`), listed here only where OD-H settles them.
+> The IDs D-1 to D-25 are local to this file; they are not the review rubric's deltas D-001 onward. AD-1 to AD-3 were the first PRD-009 draft's own decisions; the index records them as moot under OD-H ([PRD-009 index](../prd-009-marketing-toolkit-index.md), section "Owner decisions", paragraph "Made moot by OD-H"). Citations below name the index section and paragraph rather than line numbers, because the index is still being edited.
 
-## 1. Still open (new with OD-H)
+## 1. Applied by default (new with OD-H): the owner may still overrule
 
-| ID | Question | Recommendation | Blocks |
+The index applies the designer's recommendation on every open decision unless the owner says otherwise, and lists D-16 to D-25 there ([PRD-009 index](../prd-009-marketing-toolkit-index.md), section "Owner decisions", paragraph "The designer's recommendations, applied"). Each stays here with its reasoning so the owner can overrule it.
+
+| ID | Question | Recommendation, applied | Blocks |
 |---|---|---|---|
 | D-16 | Naming: what do we call the library, the flow and the thing a loan officer sets up? | "Ads library", "Launch an ad", steps "Choose an ad", "Set it up", "Review and launch"; a set-up ad is a "campaign"; keep the menu item "Campaigns"; retire "Open House Boost" | All copy |
 | D-17 | Library filters | Topic chips with counts, five topics, one topic per ad; no search or sorting until the library passes about 24 ads | The library and step 1 |
 | D-18 | What "Where it shows" offers under Meta's Special Ad Category rules | Places only: cities and states, typed by name and remembered; Facebook feed only; no radius control, no ZIP, no age, gender, interests or audiences. Exact current Meta rules UNVERIFIED | Step 2 |
 | D-19 | Which Special Ad Category each library ad uses | The curator sets it per ad in the catalog; Housing for now, as the product enforces today, until Meta's current classification is checked (UNVERIFIED) | The catalog, the checks |
 | D-20 | What Realtor partners is for now | Keep it as a plain partner list with one honest line; no new features in PRD-009; out of the setup checklist and the launch flow | The Realtor partners page, Home |
-| D-21 | What retiring an ad does to campaigns already using it | Drafts and approved-not-launched campaigns must choose another ad; running ones finish their run with a notice; finished ones never change | Campaign page, step 3 |
+| D-21 | What retiring an ad does to campaigns already using it | Undecided and approved-not-launched versions must choose another ad; running ones finish their run with a notice; finished ones never change | Campaign page, step 3 |
 | D-22 | Default budget and run length for an everyday ad | $25 a day for 14 days ($350 total), all editable | Step 2 |
 | D-23 | Instagram as well as Facebook? | Facebook feed only in PRD-009 | Step 2 and 3 |
-| D-24 | How much of the loan officer's brand colour goes on the ad | A thin rule and the logo tile only; the band stays white with navy text | The ad renderer |
-| D-25 | Can an ad go out without a logo? | Yes, with an initials tile; the NMLS number stays required | Brand, the checks |
+| D-24 | How much of the loan officer's brand colour goes on the ad | A thin rule and the initials tile only; the band stays white with navy text | The ad renderer |
+| D-25 | Can an ad go out without a logo? | Yes, with an initials tile; the NMLS number stays required. PRD-009 has no logo upload at all (009d Non-Goals) | Brand, the checks |
 
 ## 2. Answered by the owner
 
-From the PRD-009 index (`prd-009-marketing-toolkit-index.md:73-79`):
+From the [PRD-009 index](../prd-009-marketing-toolkit-index.md), section "Owner decisions":
 
-| ID | Question | Answer |
-|---|---|---|
-| D-2 | Top bar or left rail | "Yes, as shown": the light top bar. OD-H keeps it unchanged |
-| D-4 | Homeowner reports in the menu | "Always show it" |
-| D-9 | Approve and launch as two acts | Two buttons, each with its own confirmation |
-| D-3, D-5, D-6, D-8, D-10, D-11, D-12, D-14, D-15 | Partners in the menu; Light on first visit; the other Marketing Suite pages; Stripe and billing; tall 4:5 by default; remove the shell banner; keep addresses; the wordmark; retire the walkthrough | "Follow the designer's recommendation" (index line 79). Two consequences of OD-H: D-10 now means the library supplies both shapes and the preview opens on tall; D-15's checklist drops to three items (`00-direction.md` 4.2) |
+| ID | Question | Answer | Where in the index |
+|---|---|---|---|
+| D-2 | Top bar or left rail | "Yes, as shown": the light top bar. OD-H keeps it unchanged | Paragraph "His answers on the design proposal" |
+| D-4 | Homeowner reports in the menu | "Always show it" | Same paragraph |
+| D-9 | Approve and launch as two acts | Two buttons, Approve then "Launch on Facebook", each with its own confirmation | Same paragraph |
+| D-3, D-5, D-6, D-8, D-10, D-11, D-12, D-14, D-15 | Partners in the menu; Light on first visit; the other Marketing Suite pages; Stripe and billing; tall 4:5 by default; remove the shell banner; keep addresses; the wordmark; retire the walkthrough | The designer's recommendation. Two consequences of OD-H: D-10 now means the library supplies both shapes and the preview opens on tall; D-15's checklist drops to three items (`00-direction.md` 4.2) | Paragraph "The designer's recommendations, applied" |
 
 ## 3. Closed as moot by OD-H
+
+Recorded in the [PRD-009 index](../prd-009-marketing-toolkit-index.md), section "Owner decisions", paragraph "Made moot by OD-H".
 
 | ID | Was | Why it is moot |
 |---|---|---|
 | D-1 | Zillow or Redfin link import (owner had answered "Yes, include it") | No property step exists. Import, its fetch guards and its counsel item go with it |
 | D-7 | The Realtor's permission recorded once per partner | No Realtor appears in any paid ad, so there is nothing to permit. Compliance control 9 stays in force (`compliance-and-risk.md:19`) |
 | D-13 | Making the property description optional | No property step |
-| The Realtor question (AD-1) | A Realtor partner co-branded in the paid ad | Library ads carry only the loan officer's identity (OD-H). `REALTOR_ON_PAID_AD_POLICY` has one value: never |
-| AD-2 | Where property photos are stored | No photo upload, so no storage bucket |
+| AD-1 | A Realtor partner co-branded in the paid ad | Never: library ads carry only the loan officer's identity, and control 9 stands |
+| AD-2 | Where property photos are stored | No photo upload, so no storage |
 | AD-3 | Listing Studio's Firecrawl fallback | No link import |
 
 ---
 
-## 4. The open decisions in full
+## 4. The decisions in full
 
 ### D-16. Naming
 
@@ -145,7 +149,7 @@ The connection can describe Instagram placements (`packages/ghl/src/meta-adapter
 
 ### D-24. Brand colour on the ad
 
-**Recommendation:** the brand band is white with navy text; the loan officer's brand colour appears only as the thin rule above the band and behind the logo tile. Contrast then never depends on a colour the loan officer picked, and every ad in the library still looks like the library.
+**Recommendation:** the brand band is white with navy text; the loan officer's brand colour appears only as the thin rule above the band and behind the initials tile. Contrast then never depends on a colour the loan officer picked, and every ad in the library still looks like the library.
 
 - **If yes:** no per-colour contrast check is needed on the band.
 - **If the whole band takes the brand colour:** the text colour must be chosen per brand and checked at 4.5:1, and a pale brand colour fails.
@@ -153,7 +157,7 @@ The connection can describe Instagram placements (`packages/ghl/src/meta-adapter
 
 ### D-25. An ad without a logo
 
-**Recommendation:** allowed. The band shows an initials tile in the brand colour. The name and the NMLS number stay required: without them the checks send the version back with "Add your NMLS number in Brand".
+**Recommendation:** allowed. The band shows an initials tile in the brand colour. PRD-009 has no logo upload (009d Non-Goals), so in PRD-009 every ad uses the tile. The name and the NMLS number stay required: without them the checks send the version back with "Add your NMLS number in Brand".
 
 - **If yes:** a new loan officer can launch before finding a logo file.
 - **If a logo is required:** Brand's "Done" state needs a logo too, and the first launch waits for one.

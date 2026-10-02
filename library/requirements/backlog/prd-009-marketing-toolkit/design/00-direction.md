@@ -6,7 +6,7 @@
 >
 > Companion files: [`01-open-decisions.md`](01-open-decisions.md) (what still needs the owner) and [`mockups/`](mockups/) (seven static pages, previews in [`mockups/previews/`](mockups/previews/)).
 >
-> This is a design proposal. It changes no product code, test, screenshot, or design-system file. The PRD-009 sub-PRDs on this branch that describe the property flow (009c, 009d) predate OD-H; `library-guardian` revises them from this document. When the owner accepts it, `ux-ui-guardian` carries it into `library/knowledge/private/ux-ui/`.
+> This is a design proposal. It changes no product code, test, screenshot, or design-system file. The PRD-009 sub-PRDs on this branch already follow OD-H (009c is the ads library, 009d is Launch an ad). Where a sub-PRD and this document differ on a format, a string, or a state, the sub-PRD governs. When the owner accepts it, `ux-ui-guardian` carries it into `library/knowledge/private/ux-ui/`.
 
 ---
 
@@ -240,7 +240,7 @@ Sections 12, 15, 16, 17, 18, 19 and 20 stand. Section 15's "Pause and resume req
 |---|---|---|
 | Home | First run: "Launch an ad", the setup checklist, what's running, what needs approval | Today's `/overview`, redesigned (section 4) |
 | Campaigns | Two tabs: **Your campaigns** (the list) and **Ads library** (browse and filter). One primary action: "Launch an ad" | The library sits inside Campaigns so the approved menu stays as it is |
-| Brand | The loan officer's name, title, NMLS number, logo, company and company NMLS, brand colour, disclosure line | Everything the ad's brand band needs (section 5.4). One brand for ads and homeowner reports |
+| Brand | The loan officer's name, title, NMLS number, company and company NMLS, brand colour, disclosure line (no logo upload in PRD-009; the band uses an initials tile, 009d Non-Goals) | Everything the ad's brand band needs (section 5.4). One brand for ads and homeowner reports |
 | Realtor partners | The saved partner list | The owner kept it in the menu (OD-C); its purpose without co-branded ads is open decision D-20. It no longer feeds the ads or the setup checklist |
 | Homeowner reports | PRD-007's reports | Always shown (owner's answer to D-4) |
 | Settings | Account; Connections (HighLevel, Meta); Where new leads go in HighLevel | Unchanged from revision 1 |
@@ -287,7 +287,7 @@ Mockup: [`mockups/home-first-run.html`](mockups/home-first-run.html). Previews a
 +--------------------------------------------------------------------------+
 | Automated LO   Home  Campaigns  Brand  Realtor partners  ...  Help  (JR) |
 +--------------------------------------------------------------------------+
-  Welcome, Jordan.
+  Welcome, Alex.
   +---------------------------------------------+  +----------------------+
   | Ads library                                 |  | Get set up  0 of 3   |
   | LAUNCH AN AD                        (h1)    |  | [progress]           |
@@ -312,7 +312,7 @@ Mockup: [`mockups/home-first-run.html`](mockups/home-first-run.html). Previews a
 |---|---|---|---|
 | Connect HighLevel | New leads from your ads go to your HighLevel account. | Not connected yet; Connected; Needs attention | Connect / Fix it |
 | Connect Meta | Your Facebook page and ad account, so your ads can run. | Not connected yet; Connected; Needs attention | Connect / Fix it |
-| Add your brand | Your name, NMLS number and logo. They go on every ad automatically. | Not started; Done (name and NMLS number saved); Needs attention (NMLS number missing) | Add / Edit |
+| Add your brand | Your name and NMLS number. They go on every ad automatically. | Not started; Done (name and NMLS number saved); Needs attention (NMLS number missing) | Add / Edit |
 
 "Add a Realtor partner" leaves the checklist: under OD-H a partner changes nothing about an ad. The rest of revision 1's rules hold: one sentence states the consequence once ("You can set up an ad now. It runs once HighLevel and Meta are connected."); progress comes only from saved records; the card collapses to "You're set up" when done and reopens if something breaks.
 
@@ -358,41 +358,51 @@ The alternative, renaming the menu item "Campaigns" to "Ads", is open decision D
 
 ### 5.3 The catalog: what each ad needs
 
-The orchestrator's default (OD-H): the library lives in the repository as a versioned catalog of data plus image files, and adding or changing an ad is a small reviewed change. There is no upload screen in PRD-009.
+**[`prd-009c-marketing-toolkit-ads-library.md`](../prd-009c-marketing-toolkit-ads-library.md) D1 governs the format.** This section summarizes it for design readers; where the two differ, 009c wins and this section is the bug. The library lives in the repository as a versioned catalog of data plus image files, and adding or changing an ad is a small reviewed change merged by the owner (009c D7). There is no upload screen in PRD-009.
 
-| Field | Example | Rule |
-|---|---|---|
-| `id` | `first-home-start-here` | Stable for the life of the ad; never reused |
-| `version` | `3` | Goes up whenever the image, default words, limits or compliance notes change. A campaign records the exact version it used |
-| `status` | `active` or `retired` | Retired ads stay in the catalog forever so old campaigns can always show the exact ad (5.5) |
-| `topic` | `first-time-buyers` | One topic per ad; drives the filter (D-17) |
-| `name` | "First home, start here" | The card title and the campaign's name |
-| `images.tall` | art file 1080 by 1080, composed to 1080 by 1350 | 4:5. The top 1080 by 1080 is the owner's art; the bottom 270px is reserved for the brand band (5.4) |
-| `images.square` | art file 1080 by 842, composed to 1080 by 1080 | 1:1. The top 78% is art; the bottom 22% is the band |
-| `images.alt` | "Your first home starts here, with a house and a key" | The image's words and picture, for screen readers |
-| `defaults.headline` | "Buying your first home? Start with a plan." | Prefilled; editable |
-| `defaults.primaryText` | "I help first-time buyers understand every step ..." | Prefilled; editable |
-| `editable` | `headline` up to 60 characters, `primaryText` up to 300 | Only these two fields can change ("Just the copy"). Limits are product limits; Meta's own limits are UNVERIFIED |
-| `callToAction` | `LEARN_MORE` | The ad's button; not editable. Meta's allowed button list is UNVERIFIED |
-| `specialAdCategory` | `HOUSING` | Set by the curator per ad; which category everyday mortgage ads need is open decision D-19 |
-| `compliance.notes` | "No rates, payments or terms. 'May be eligible', never 'qualify'." | Shown to reviewers, not to the loan officer |
-| `compliance.requiredOnAd` | NMLS number, Equal Housing line | The checks fail if the brand band cannot supply them |
-| `compliance.blockedInWords` | rate, APR, payment and term claims; "guaranteed"; Realtor or brokerage names | Checked against the edited words (Regulation Z rules in `compliance-and-risk.md:40-55`; control 9) |
-| `approval.approvedBy`, `approval.approvedOn` | "Jonathan Ferrell", `2026-10-01` | Who approved this version for the library, and when. Lender or counsel review of each new ad is an operating rule in `compliance-and-risk.md:74` ("Require lender review of every new blueprint") |
-| `retired.on`, `retired.reason`, `retired.replacedBy` | `2026-10-12`, "Program details changed", `first-home-start-here-2` | Only when retired |
+**Where it lives** (009c Scope and D2): the real catalog is `apps/web/src/features/ads-library/catalog/catalog.json`, a list of entries that starts empty, with its art under `apps/web/public/ads-library/`. The sample catalog is `apps/web/src/fixtures/ads-library/sample-catalog.json`, with its art under `apps/web/src/fixtures/ads-library/art/`, loaded only when the sample guard passes (009c D3).
 
-A sample entry:
+| Field | Rule (009c D1) |
+|---|---|
+| `id` | Lower-case kebab case, at most 60 characters, stable for the life of the ad, never reused |
+| `version` | Integer from 1; versions of one `id` are contiguous. An existing `(id, version)` is never edited; a change is a new version |
+| `status` | `active` or `retired` on an ad's highest version; `replaced` on every lower version |
+| `sample` | `true` in the sample catalog, `false` in the real catalog, without exception |
+| `topic` | One of `first-time-buyers`, `refinance`, `va-loans`, `pre-approval`, `down-payment-help` |
+| `name` | 3 to 60 characters; the card title and the campaign's name. Sample entries start "Sample:" |
+| `images.tall.art` | Exactly `<id>/v<version>/tall.png` or `.jpg`: a PNG or JPEG of exactly **1080 by 1080**, the top of the 4:5 ad. The product composes it to 1080 by 1350 by adding the 270px brand band (5.4) |
+| `images.square.art` | Exactly `<id>/v<version>/square.png` or `.jpg`: **1080 by 842**, the top of the 1:1 ad. Composed to 1080 by 1080 with the 238px band |
+| `images.tall.sha256`, `images.square.sha256` | The SHA-256 of each file's bytes, 64 lower-case hexadecimal characters. The loader refuses an entry whose bytes differ |
+| `images.alt` | 10 to 200 characters describing the image's words and picture |
+| `defaults.headline`, `defaults.primaryText` | Prefilled words, within `editable`'s limits and passing the word checks of 009d D5 |
+| `editable` | `headline.maxLength` at most 60, `primaryText.maxLength` at most 300. Product limits; Meta's own limits are UNVERIFIED |
+| `callToAction` | One value from a fixed list, `LEARN_MORE` by default; Meta's allowed list is UNVERIFIED |
+| `specialAdCategory` | `HOUSING` until `meta-ads-guardian` confirms otherwise (D-19) |
+| `compliance.notes`, `compliance.requiredOnAd`, `compliance.blockedInWords` | `requiredOnAd` includes `nmls` and `equal-housing`; `notes` state rules in general terms, with no lender name or lender policy text, because the repository is public |
+| `approval.approvedBy`, `approval.approvedOn` | The owner's handle `jzferrell26` (a handle, not a real name) and the date he approved this version. In the sample catalog, the literal "Sample catalog, not a real approval" |
+| `retired.on`, `retired.reason`, `retired.replacedBy` | Required exactly when `status` is `retired`; `replacedBy` names an `id` that exists |
+
+The art rules in 009c D1 also hold: each file at most 1 MiB, its type decided by its magic bytes, SVG refused, no EXIF, XMP, IPTC, or PNG text metadata, and `art` never free text (the loader derives the path from `id` and `version`, keeps it inside its fixed root, and checks the digest at load).
+
+An entry in the real catalog's shape. **Illustrative only:** the two `sha256` values are placeholders that stand for the real files' digests, and 009c D1 governs every field.
 
 ```json
 {
   "id": "first-home-start-here",
   "version": 3,
   "status": "active",
+  "sample": false,
   "topic": "first-time-buyers",
   "name": "First home, start here",
   "images": {
-    "tall": { "art": "first-home-start-here/v3/tall.png", "width": 1080, "height": 1350 },
-    "square": { "art": "first-home-start-here/v3/square.png", "width": 1080, "height": 1080 },
+    "tall": {
+      "art": "first-home-start-here/v3/tall.png",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "square": {
+      "art": "first-home-start-here/v3/square.png",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
     "alt": "Your first home starts here, with a house and a key"
   },
   "defaults": {
@@ -407,18 +417,20 @@ A sample entry:
     "requiredOnAd": ["nmls", "equal-housing"],
     "blockedInWords": ["rate-claims", "payment-claims", "term-claims", "guarantees", "realtor-or-brokerage-names"]
   },
-  "approval": { "approvedBy": "Jonathan Ferrell", "approvedOn": "2026-10-01" }
+  "approval": { "approvedBy": "jzferrell26", "approvedOn": "2026-10-01" }
 }
 ```
+
+**What a campaign version records from the library** (the `library-ad` manifest variant, 009c D5): `libraryAd` (`id`, `version`); `content` (the edited `headline` and `body`, the library's `callToAction`, the disclosure line and lead form wording read from the person's saved Brand, and empty `claims`, `mergeTokens`, and `financingTerms`); `images` (each art file with a reference derived from the ad's `id`, `version` and shape, `approvalStatus: "approved"`, its exact size, and `contentSha256` copied from the catalog); `advertiser` (the frozen band values and nothing else about any person); `schedule` (`startsAt`, null for "when you launch it", and `endsAt`); `meta` (the Housing category, `placements: ["facebook_feed"]`, country, regions (states), cities, the always-empty ZIP, custom audience and protected-dimension lists, and the budgets); and `routing`. The variant has no `partner` or `property` block and no key that can hold a Realtor or brokerage identity. Because the manifest hash covers all of it, an approval covers that library ad version, its art bytes, those words, and that brand.
 
 ### 5.4 How the loan officer's brand goes on an ad
 
 The product composes every ad from two parts: the library's art, which nobody but the curator changes, and a **brand band** drawn from Brand, which the loan officer never edits on the ad itself.
 
 - **Where:** the bottom 20% of the tall ad (270px of 1350) and the bottom 22% of the square ad. The curator keeps that zone plain in the art.
-- **What, left to right:** the logo (in a square tile); the name in bold, then title and NMLS number; the company name and company NMLS number on the right; the disclosure line from Brand along the bottom ("Equal Housing Opportunity.").
-- **Colour:** the band is white with navy text, so its contrast never depends on the loan officer's colours. The brand colour appears only as the thin rule above the band and behind the logo tile. Making the whole band brand-coloured is open decision D-24.
-- **Missing pieces:** no logo shows an initials tile in the brand colour (D-25); no NMLS number fails the checks with "Add your NMLS number in Brand", so the version cannot be approved; a long name wraps to two lines and then shrinks to a floor before it truncates.
+- **What, left to right:** an initials tile in the brand colour (PRD-009 has no logo upload, 009d Non-Goals); the name in bold, then title and NMLS number; the company name on the right; the disclosure line from Brand along the bottom ("Equal Housing Opportunity.").
+- **Colour:** the band is white with navy text, so its contrast never depends on the loan officer's colours. The brand colour appears only as the thin rule above the band and behind the initials tile. Making the whole band brand-coloured is open decision D-24.
+- **Missing pieces:** the initials tile is the only mark in PRD-009, so no ad waits for a logo (D-25); no NMLS number fails the checks with "Add your NMLS number in Brand", so the version cannot be approved; a long name wraps to two lines and then shrinks to a floor before it truncates.
 - **The Facebook post header** shows the loan officer's Facebook page name once Meta is connected; until then, the preview uses the Brand name.
 - **Frozen at "Save and check":** the brand values, the library ad id and version, and the edited words are saved together as one version, the same freeze Listing Studio applies to its marketing snapshot (recon: `src/lib/office/data.ts:35-53`). Approval binds that exact version. Editing Brand later never changes an approved version; the campaign page offers "Make a new version" to pick up the new brand.
 - **Realtor names never appear** on a paid ad (control 9). The edited words are checked for Realtor and brokerage names too.
@@ -487,7 +499,7 @@ The rules do not change: an approver or workspace owner approves one exact versi
 | Ready for approval | Approve (primary) and Send back. Launch disabled with one sentence: the Meta sentence while Meta isn't connected, otherwise "Approve this version first." | Status "Ready for approval" with the same approve card | Chip "Ready for approval" | Under "Needs your approval" |
 | Ready for approval, viewer can't approve | "You can't approve campaigns in this workspace. Send this link to an approver." with Copy the link | Same | Same chip | For approvers only |
 | Needs changes | Chip "Needs changes", the plain fix ("Take 'low rates' out of the headline. Ads can't state rate claims."), "Fix it" back to step 2 | Same, with "Make a new version" | Chip "Needs changes" | Not listed |
-| Approved, Meta not connected | Chip "Approved", "Approved by <name> on <date>. The approval covers this version only."; Launch disabled with the Meta sentence | Same | Chip "Approved" | Not listed |
+| Approved, Meta not connected | Chip "Approved", "Approved by <name>, <role>, on <date>. The approval covers this version and these words only." (009E-AC-004); Launch disabled with the Meta sentence | Same | Chip "Approved" | Not listed |
 | Approved, launching not turned on | Launch disabled: "Launching on Facebook isn't turned on for your workspace yet. Nothing has been published." | Same | Chip "Approved" | Not listed |
 | Sent back for changes | "It was sent back for changes, so it needs a new version before anyone can approve it." and "Make a new version" | Same; the version list shows who sent it back | Chip "Sent back for changes" | Never under approval |
 | Ad retired (draft or undecided) | Chip "Ad retired", the notice from 5.5, "Choose another ad" | Same | Chip "Ad retired" | Not listed |
@@ -502,7 +514,7 @@ Mockup: [`mockups/campaign-detail.html`](mockups/campaign-detail.html) (approved
 - **Header:** eyebrow "From the ads library, First-time buyers"; the ad's name as the title; one line with run dates, area and budget; the status chip. Actions: "Make a new version" (secondary) and "Launch on Facebook" (primary, disabled) with the one Meta sentence directly under the buttons.
 - **Results**, first and full width: Spend, Leads sent to HighLevel, Cost per lead, each "Not live yet" under one chip and one sentence, never a zero. Unchanged from revision 1.
 - **The ad:** the feed preview of the approved version, plus the library ad and version, which words were changed, and who it shows to.
-- **Approval:** who approved, when, and that it covers this version and these words only.
+- **Approval:** "Approved by <name>, <role>, on <date>." and that it covers this version and these words only (009E-AC-004).
 - **Versions:** each version, its chip, who saved it or sent it back, and when.
 - **Library notices,** one line each, only when they apply: the ad was retired (5.5); a newer version exists; Brand changed after approval ("Make a new version to use it").
 - **Details for support:** collapsed.
@@ -526,10 +538,10 @@ Every sentence in the mockups follows the user-language contract: second person,
 | Where | String |
 |---|---|
 | Home heading | Launch an ad |
-| Home lead | Pick a ready-made Facebook ad for loan officers. Your name, NMLS number and logo go on it for you. You set the budget, dates and area, then approve it. |
+| Home lead | Pick a ready-made Facebook ad for loan officers. Your name and NMLS number go on it for you. You set the budget, dates and area, then approve it. |
 | Home question | What do you want to promote? |
 | Checklist intro | You can set up an ad now. It runs once HighLevel and Meta are connected. |
-| Library lead | Ready-made ads for loan officers, reviewed before they're added. Your name, NMLS number and logo go on each one automatically. You can change the words; the image stays as it is. |
+| Library lead | Ready-made ads for loan officers, reviewed before they're added. Your name and NMLS number go on each one automatically. You can change the words; the image stays as it is. |
 | Step 2 brand line | Added for you from Brand. The image and layout come from the library and can't be changed. |
 | Step 2 words hint | Don't add rates, payments or loan terms here. The checks will send them back for changes. |
 | Step 2 area hint | Mortgage ads can't be aimed by age, gender or ZIP code, so you choose places, not people. Meta may also widen a small area. |
@@ -581,7 +593,7 @@ Everything else was read from the files cited, in this worktree or in the Listin
 
 ## 12. Mockups and how they were checked
 
-Seven self-contained HTML files in [`mockups/`](mockups/): `home-first-run`, `ads-library`, `launch-step-1-choose`, `launch-step-2-set-up`, `launch-step-3-review-and-launch`, `campaign-detail`, `campaigns-list`. Inline CSS and SVG only, no scripts, no external requests. Every page carries a strip saying each name, ad, image, date and count is a made-up sample, and every ad image carries a "Sample image" tag. The eight sample ads avoid rate, payment and term claims.
+Seven self-contained HTML files in [`mockups/`](mockups/): `home-first-run`, `ads-library`, `launch-step-1-choose`, `launch-step-2-set-up`, `launch-step-3-review-and-launch`, `campaign-detail`, `campaigns-list`. Inline CSS and SVG only, no scripts, no external requests. Every page carries a strip saying the strings and states are illustrative and the sub-PRDs govern, and every ad image carries a "Sample image" tag. People and companies use the repository's own sample identity, as the sample catalog does (009c D2): Alex Morgan, Prairie Home Lending, NMLS 0000000, from `apps/web/src/features/brand/model/synthetic-brand-profile.ts`. No other person is named, and no made-up NMLS number appears. The eight sample ads avoid rate, payment and term claims.
 
 Checked on 2026-10-01 with Playwright 1.63.0 and `@axe-core/playwright` 4.13.0 from this repo, using a throwaway script outside the repo:
 

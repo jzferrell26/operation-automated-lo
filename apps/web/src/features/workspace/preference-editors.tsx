@@ -463,7 +463,11 @@ export function AdBrandEditor({ data }: { data: WorkspacePageData }) {
       </Card>
       <Card className={styles.brandPreview} padding="lg">
         <span className={styles.eyebrow}>On every ad</span>
-        <div className={styles.adBandPreview} style={adColorVariables(adBrand.colorPresetId)}>
+        <div
+          className={styles.adBandPreview}
+          data-ad-preview=""
+          style={adColorVariables(adBrand.colorPresetId)}
+        >
           <BrandBand
             advertiser={{
               name: brand.name,

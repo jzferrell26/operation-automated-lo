@@ -1,0 +1,387 @@
+[
+  {
+    "id": "sample-first-home",
+    "version": 1,
+    "status": "replaced",
+    "sample": true,
+    "topic": "first-time-buyers",
+    "name": "Sample: First home, start here",
+    "images": {
+      "tall": {
+        "art": "sample-first-home/v1/tall.png",
+        "sha256": "36054b5dab767dbdda948629bd42d66491d43b7056561a507a75dfbfbb5048ab"
+      },
+      "square": {
+        "art": "sample-first-home/v1/square.png",
+        "sha256": "a383a3adea63fde93a742a6f04332f3e9f81de22365ec6ae30d9b4a6315b4a46"
+      },
+      "alt": "A drawing of a house and a key under a large SAMPLE mark"
+    },
+    "defaults": {
+      "headline": "Buying your first home? Start with a plan.",
+      "primaryText": "I help first-time buyers understand each step, from pre-approval to closing day. Send me a message and let's talk about where you are today."
+    },
+    "editable": { "headline": { "maxLength": 60 }, "primaryText": { "maxLength": 300 } },
+    "callToAction": "LEARN_MORE",
+    "specialAdCategory": "HOUSING",
+    "compliance": {
+      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "requiredOnAd": ["nmls", "equal-housing"],
+      "blockedInWords": [
+        "rate-claims",
+        "payment-claims",
+        "term-claims",
+        "guarantees",
+        "realtor-or-brokerage-names"
+      ]
+    },
+    "approval": { "approvedBy": "Sample catalog, not a real approval", "approvedOn": "2026-09-01" }
+  },
+  {
+    "id": "sample-first-home",
+    "version": 2,
+    "status": "active",
+    "sample": true,
+    "topic": "first-time-buyers",
+    "name": "Sample: First home, start here",
+    "images": {
+      "tall": {
+        "art": "sample-first-home/v2/tall.png",
+        "sha256": "36054b5dab767dbdda948629bd42d66491d43b7056561a507a75dfbfbb5048ab"
+      },
+      "square": {
+        "art": "sample-first-home/v2/square.png",
+        "sha256": "a383a3adea63fde93a742a6f04332f3e9f81de22365ec6ae30d9b4a6315b4a46"
+      },
+      "alt": "A drawing of a house and a key under a large SAMPLE mark"
+    },
+    "defaults": {
+      "headline": "Thinking about your first home? Start here.",
+      "primaryText": "I walk first-time buyers through each step, from pre-approval to closing day. Send me a message and let's talk about your plans."
+    },
+    "editable": { "headline": { "maxLength": 60 }, "primaryText": { "maxLength": 300 } },
+    "callToAction": "LEARN_MORE",
+    "specialAdCategory": "HOUSING",
+    "compliance": {
+      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "requiredOnAd": ["nmls", "equal-housing"],
+      "blockedInWords": [
+        "rate-claims",
+        "payment-claims",
+        "term-claims",
+        "guarantees",
+        "realtor-or-brokerage-names"
+      ]
+    },
+    "approval": { "approvedBy": "Sample catalog, not a real approval", "approvedOn": "2026-09-28" }
+  },
+  {
+    "id": "sample-first-home-checklist",
+    "version": 1,
+    "status": "active",
+    "sample": true,
+    "topic": "first-time-buyers",
+    "name": "Sample: Your first home checklist",
+    "images": {
+      "tall": {
+        "art": "sample-first-home-checklist/v1/tall.png",
+        "sha256": "38746d1136c8e2cd1b28f49c80bfdb58ef295f735a2088e64bf5035da95c7e53"
+      },
+      "square": {
+        "art": "sample-first-home-checklist/v1/square.png",
+        "sha256": "33263a5a76fd5c59e2bf15148ff5dbbec6db786ce3c4e2e3901ac4cb8e6dc0ad"
+      },
+      "alt": "A drawing of a house and a check mark under a large SAMPLE mark"
+    },
+    "defaults": {
+      "headline": "Your first home checklist starts with one call.",
+      "primaryText": "Not sure what comes first when you buy a home? I can walk you through the steps in plain words. Send me a message to get started."
+    },
+    "editable": { "headline": { "maxLength": 60 }, "primaryText": { "maxLength": 300 } },
+    "callToAction": "LEARN_MORE",
+    "specialAdCategory": "HOUSING",
+    "compliance": {
+      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "requiredOnAd": ["nmls", "equal-housing"],
+      "blockedInWords": [
+        "rate-claims",
+        "payment-claims",
+        "term-claims",
+        "guarantees",
+        "realtor-or-brokerage-names"
+      ]
+    },
+    "approval": { "approvedBy": "Sample catalog, not a real approval", "approvedOn": "2026-09-12" }
+  },
+  {
+    "id": "sample-loan-review",
+    "version": 1,
+    "status": "active",
+    "sample": true,
+    "topic": "refinance",
+    "name": "Sample: Is your home loan still a fit?",
+    "images": {
+      "tall": {
+        "art": "sample-loan-review/v1/tall.png",
+        "sha256": "5068c6c950061fcfb0e02f29c1ba3a00c27b2a32cafc30967eae97814bd0de41"
+      },
+      "square": {
+        "art": "sample-loan-review/v1/square.png",
+        "sha256": "c1b0d163ece84e975fc3dec7dd3375c6500159476b5f03a1cfcbd83e39195da3"
+      },
+      "alt": "A drawing of a house and a circle under a large SAMPLE mark"
+    },
+    "defaults": {
+      "headline": "Wondering if your home loan still fits?",
+      "primaryText": "Life changes, and your home loan can change with it. Send me a message and we can look at your options together."
+    },
+    "editable": { "headline": { "maxLength": 60 }, "primaryText": { "maxLength": 300 } },
+    "callToAction": "LEARN_MORE",
+    "specialAdCategory": "HOUSING",
+    "compliance": {
+      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "requiredOnAd": ["nmls", "equal-housing"],
+      "blockedInWords": [
+        "rate-claims",
+        "payment-claims",
+        "term-claims",
+        "guarantees",
+        "realtor-or-brokerage-names"
+      ]
+    },
+    "approval": { "approvedBy": "Sample catalog, not a real approval", "approvedOn": "2026-09-20" }
+  },
+  {
+    "id": "sample-refinance-questions",
+    "version": 1,
+    "status": "active",
+    "sample": true,
+    "topic": "refinance",
+    "name": "Sample: Questions to ask before you refinance",
+    "images": {
+      "tall": {
+        "art": "sample-refinance-questions/v1/tall.png",
+        "sha256": "5068c6c950061fcfb0e02f29c1ba3a00c27b2a32cafc30967eae97814bd0de41"
+      },
+      "square": {
+        "art": "sample-refinance-questions/v1/square.png",
+        "sha256": "c1b0d163ece84e975fc3dec7dd3375c6500159476b5f03a1cfcbd83e39195da3"
+      },
+      "alt": "A drawing of a house and a circle beside it under a large SAMPLE mark"
+    },
+    "defaults": {
+      "headline": "Thinking about a refinance? Ask first.",
+      "primaryText": "Before you refinance, it helps to know the right questions. Send me a message and I'll walk you through them."
+    },
+    "editable": { "headline": { "maxLength": 60 }, "primaryText": { "maxLength": 300 } },
+    "callToAction": "LEARN_MORE",
+    "specialAdCategory": "HOUSING",
+    "compliance": {
+      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "requiredOnAd": ["nmls", "equal-housing"],
+      "blockedInWords": [
+        "rate-claims",
+        "payment-claims",
+        "term-claims",
+        "guarantees",
+        "realtor-or-brokerage-names"
+      ]
+    },
+    "approval": { "approvedBy": "Sample catalog, not a real approval", "approvedOn": "2026-09-14" }
+  },
+  {
+    "id": "sample-va-home-loans",
+    "version": 1,
+    "status": "active",
+    "sample": true,
+    "topic": "va-loans",
+    "name": "Sample: Home loans for veterans",
+    "images": {
+      "tall": {
+        "art": "sample-va-home-loans/v1/tall.png",
+        "sha256": "9046ecf1f1c80f46391b6e4825de3b9d4dc8ac75fb6d44a1cb46cd248104f806"
+      },
+      "square": {
+        "art": "sample-va-home-loans/v1/square.png",
+        "sha256": "0b88485b8d8afd43fd1f7bd10e5c4c92757ed70c715a03833207d6bd524c48ae"
+      },
+      "alt": "A drawing of a house and a flag under a large SAMPLE mark"
+    },
+    "defaults": {
+      "headline": "Served our country? Let's talk home loans.",
+      "primaryText": "VA loans can help eligible veterans and service members buy a home. Send me a message to learn whether you may qualify."
+    },
+    "editable": { "headline": { "maxLength": 60 }, "primaryText": { "maxLength": 300 } },
+    "callToAction": "LEARN_MORE",
+    "specialAdCategory": "HOUSING",
+    "compliance": {
+      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "requiredOnAd": ["nmls", "equal-housing"],
+      "blockedInWords": [
+        "rate-claims",
+        "payment-claims",
+        "term-claims",
+        "guarantees",
+        "realtor-or-brokerage-names"
+      ]
+    },
+    "approval": { "approvedBy": "Sample catalog, not a real approval", "approvedOn": "2026-09-18" }
+  },
+  {
+    "id": "sample-pre-approval",
+    "version": 1,
+    "status": "active",
+    "sample": true,
+    "topic": "pre-approval",
+    "name": "Sample: Get pre-approved before you shop",
+    "images": {
+      "tall": {
+        "art": "sample-pre-approval/v1/tall.png",
+        "sha256": "f23bf3c06251d205c063b57a8d10334d7216d49bfe623ce31efde1c628e6329c"
+      },
+      "square": {
+        "art": "sample-pre-approval/v1/square.png",
+        "sha256": "975e99aa4a249643bd9d6c4e6a5db6f34eab5c8f7994fa1b45332e8cd15962c3"
+      },
+      "alt": "A drawing of a house and a check mark beside it under a large SAMPLE mark"
+    },
+    "defaults": {
+      "headline": "Get pre-approved before you start shopping.",
+      "primaryText": "A pre-approval helps you know where you stand before you make an offer. Send me a message and let's get started."
+    },
+    "editable": { "headline": { "maxLength": 60 }, "primaryText": { "maxLength": 300 } },
+    "callToAction": "LEARN_MORE",
+    "specialAdCategory": "HOUSING",
+    "compliance": {
+      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "requiredOnAd": ["nmls", "equal-housing"],
+      "blockedInWords": [
+        "rate-claims",
+        "payment-claims",
+        "term-claims",
+        "guarantees",
+        "realtor-or-brokerage-names"
+      ]
+    },
+    "approval": { "approvedBy": "Sample catalog, not a real approval", "approvedOn": "2026-09-24" }
+  },
+  {
+    "id": "sample-stronger-offer",
+    "version": 1,
+    "status": "active",
+    "sample": true,
+    "topic": "pre-approval",
+    "name": "Sample: Make a stronger offer",
+    "images": {
+      "tall": {
+        "art": "sample-stronger-offer/v1/tall.png",
+        "sha256": "7c754c7d6d565dd1ee301e36f69b2baf2b68b1c572b91a3282e030a56f20241d"
+      },
+      "square": {
+        "art": "sample-stronger-offer/v1/square.png",
+        "sha256": "48ded954733d48e743bfa30d5e7f00cdd35a8c21d7b763a2dc7d4b9f7999582e"
+      },
+      "alt": "A drawing of a house and a key beside it under a large SAMPLE mark"
+    },
+    "defaults": {
+      "headline": "Ready to make an offer? Start with a pre-approval.",
+      "primaryText": "Sellers take a pre-approved buyer seriously. Send me a message and I'll explain how the process works."
+    },
+    "editable": { "headline": { "maxLength": 60 }, "primaryText": { "maxLength": 300 } },
+    "callToAction": "LEARN_MORE",
+    "specialAdCategory": "HOUSING",
+    "compliance": {
+      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "requiredOnAd": ["nmls", "equal-housing"],
+      "blockedInWords": [
+        "rate-claims",
+        "payment-claims",
+        "term-claims",
+        "guarantees",
+        "realtor-or-brokerage-names"
+      ]
+    },
+    "approval": { "approvedBy": "Sample catalog, not a real approval", "approvedOn": "2026-09-10" }
+  },
+  {
+    "id": "sample-down-payment-help",
+    "version": 1,
+    "status": "active",
+    "sample": true,
+    "topic": "down-payment-help",
+    "name": "Sample: Down payment help may be closer",
+    "images": {
+      "tall": {
+        "art": "sample-down-payment-help/v1/tall.png",
+        "sha256": "7eb89ee83c8a84c3fe70ac6e28a3f548ac7abdd1c0bc853c0d84e543b0a3510d"
+      },
+      "square": {
+        "art": "sample-down-payment-help/v1/square.png",
+        "sha256": "948fd0f887a0ab49a3027276aba773b224041660ac80aabed5d835ec80a53d7c"
+      },
+      "alt": "A drawing of a house and a stack of coins under a large SAMPLE mark"
+    },
+    "defaults": {
+      "headline": "Down payment help may be closer than you think.",
+      "primaryText": "Many buyers don't know about down payment help programs. Send me a message and I'll walk you through what may be available."
+    },
+    "editable": { "headline": { "maxLength": 60 }, "primaryText": { "maxLength": 300 } },
+    "callToAction": "LEARN_MORE",
+    "specialAdCategory": "HOUSING",
+    "compliance": {
+      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "requiredOnAd": ["nmls", "equal-housing"],
+      "blockedInWords": [
+        "rate-claims",
+        "payment-claims",
+        "term-claims",
+        "guarantees",
+        "realtor-or-brokerage-names"
+      ]
+    },
+    "approval": { "approvedBy": "Sample catalog, not a real approval", "approvedOn": "2026-09-26" }
+  },
+  {
+    "id": "sample-spring-search",
+    "version": 1,
+    "status": "retired",
+    "sample": true,
+    "topic": "first-time-buyers",
+    "name": "Sample: Spring home search",
+    "images": {
+      "tall": {
+        "art": "sample-spring-search/v1/tall.png",
+        "sha256": "10a9ee43b6ef598fd1318e0f8800af39aeac695d7c9af67403d0926b04509dec"
+      },
+      "square": {
+        "art": "sample-spring-search/v1/square.png",
+        "sha256": "152eecc0c3875a5d159aeace5ee76f66cffe5b9b714039a6215a224270fb2ed7"
+      },
+      "alt": "A drawing of a house and a small flag under a large SAMPLE mark"
+    },
+    "defaults": {
+      "headline": "Spring is a great time to start your home search.",
+      "primaryText": "Thinking about buying this spring? Send me a message and let's talk about your plans."
+    },
+    "editable": { "headline": { "maxLength": 60 }, "primaryText": { "maxLength": 300 } },
+    "callToAction": "LEARN_MORE",
+    "specialAdCategory": "HOUSING",
+    "compliance": {
+      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "requiredOnAd": ["nmls", "equal-housing"],
+      "blockedInWords": [
+        "rate-claims",
+        "payment-claims",
+        "term-claims",
+        "guarantees",
+        "realtor-or-brokerage-names"
+      ]
+    },
+    "approval": { "approvedBy": "Sample catalog, not a real approval", "approvedOn": "2026-09-05" },
+    "retired": {
+      "on": "2026-09-30",
+      "reason": "A seasonal sample, taken out of the library.",
+      "replacedBy": "sample-first-home"
+    }
+  }
+]

@@ -97,7 +97,7 @@ With nothing stored, the bootstrap resolves Light whatever the device says (D-5)
 - `apps/web/src/features/shell/components/app-shell.tsx`, `app-shell.module.css`, and their tests
 - `apps/web/src/app/(authenticated)/layout.tsx`
 - `apps/web/src/fixtures/ui-foundation/synthetic-ui.ts`, `apps/web/src/features/workspace/navigation.ts`, `apps/web/src/features/dashboard-preview/product-shell.tsx`, and their navigation tests, including `apps/web/src/features/ui-foundation/model/synthetic-ui.unit.test.ts` (this lane owns these tests in Wave 1, so 009f does not edit them)
-- `apps/web/src/features/dashboard-preview/product-help.tsx`; `product-walkthrough.tsx` and `product-guides.ts` (removed)
+- `apps/web/src/features/dashboard-preview/product-help.tsx`; `product-walkthrough.tsx` and `product-guides.ts` (removed); `walkthrough.module.css`, pruned to the classes `product-help.tsx` still uses (009F-AC-005)
 - `apps/web/src/theme/type-tokens-defined.unit.test.ts`
 - `tests/browser/ui-foundation-ux.spec.ts` (this lane owns it in Wave 1): its rail and drawer tests rewritten for the top menu, and its `/onboarding` and `/reports` visits (`:224`, `:279`, `:311`, `:399`, `:422`) changed in the same merge that removes those pages, so the UX contract test opens Home (009G-AC-010)
 - `tests/browser/review/design-quality.spec.ts`: the `collapsed-rail` and `mobile-drawer` captures (`:830`, `:842`), removed with the rail

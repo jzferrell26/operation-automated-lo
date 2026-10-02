@@ -152,6 +152,7 @@ Only the repository owner can merge to `main` today (Background 8). The ruleset 
 - `apps/web/src/app/(authenticated)/marketing/campaigns/library/**` (new); the Campaigns tab strip in `apps/web/src/app/(authenticated)/marketing/campaigns/page.tsx` belongs to 009e
 - `packages/application/src/campaign-approval-command.ts` and `packages/application/src/campaign-foundation.ts` (the catalog port, the refusal, the snapshot union) and their tests
 - `apps/web/src/server/campaign-approval-handler.ts` (Wave 1: the call at `:55` composes the required catalog port from the loader and passes it; 009e edits the file again in Wave 3 to record the name) and its tests, `campaign-approval-handler.unit.test.ts`, `campaign-approval-handler.postgres.test.ts`, and `campaign-approval-handler.correlation.postgres.test.ts`
+- `packages/domain/src/campaign-foundation.ts`, `packages/application/src/campaign-workspace-read.ts` (`:207-226`), and `apps/web/src/server/dashboard-preview-handler.ts` (`:65-81`): in Wave 1 their manifest reads narrow on `blueprintId` for the union (the index run rule on exported types); 009d and 009e own the first two later, and 009d removes the third
 - `tooling/scripts/database/review-browser-run.mjs` and `playwright.config.ts` (set the flag and `local`), `tooling/tests/database/review-browser-run.test.ts`, `README.md` (the synthetic demo section), `docs/production-environments.md`
 
 ## Test plan

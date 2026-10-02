@@ -101,11 +101,10 @@ test("the checklist says what is not connected once, and the brand is not starte
   await expect(setup.getByText("0 of 3 done")).toBeVisible();
   await expect(page.getByText("Not connected yet")).toHaveCount(2);
   await expect(setup.getByText("Not started")).toHaveCount(1);
-  await expect(setup.getByRole("link", { name: "Connect HighLevel" })).toHaveAttribute(
-    "href",
-    "/settings/connections",
-  );
-  await expect(setup.getByRole("link", { name: "Add your brand" })).toHaveAttribute(
+  await expect(
+    setup.getByRole("link", { name: "See what's needed for HighLevel" }),
+  ).toHaveAttribute("href", "/settings/connections");
+  await expect(setup.getByRole("link", { name: "Add your brand details" })).toHaveAttribute(
     "href",
     "/brand",
   );

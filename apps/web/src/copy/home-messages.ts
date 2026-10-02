@@ -4,6 +4,7 @@ import type {
   HomeChecklistItemId,
   HomeChecklistState,
 } from "../features/overview/model/home-checklist.js";
+import { EMPTY_LIBRARY, SAMPLE_AD_LABEL, TOPIC_LABELS } from "./launch-messages.js";
 
 /**
  * PRD-009b. The words of Home, in one file, so the writing review reads them in one place and no
@@ -13,6 +14,10 @@ import type {
  * Every string follows the user-language contract: second person, plain words, sentence case, no
  * internal nouns, no dashes, and nothing that says an ad is live or launched. Where the design's
  * wording promised a logo, 009d D3's correction is used, because PRD-009 has no logo upload.
+ *
+ * Three sets of words are shared with "Launch an ad": the topic names, "Sample ad", and the
+ * empty-library sentence. They are read from `launch-messages.ts` and not copied, so the two
+ * screens cannot drift (writing review pass 1, W-22).
  */
 
 export const HOME_GREETING_PLAIN = "Welcome.";
@@ -31,23 +36,21 @@ export const HOME_START = Object.freeze({
   stepsLabel: "What happens next",
   steps: Object.freeze(["Choose an ad", "Set it up", "Review and launch"]),
   /** 009C-AC-012. Said on the library tab, in step 1, and here, in the same words. */
-  emptyLibrary:
-    "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then.",
+  emptyLibrary: EMPTY_LIBRARY,
 });
 
 /** The topic buttons. Sentence case, the owner's own examples (design section 5.1). */
-export const HOME_TOPIC_LABELS: Readonly<Record<AdsLibraryTopic, string>> = Object.freeze({
-  "first-time-buyers": "First-time buyers",
-  refinance: "Refinance",
-  "va-loans": "VA loans",
-  "pre-approval": "Pre-approval",
-  "down-payment-help": "Down payment help",
-});
+export const HOME_TOPIC_LABELS: Readonly<Record<AdsLibraryTopic, string>> = TOPIC_LABELS;
 
 export const HOME_SETUP = Object.freeze({
   heading: "Get set up",
-  /** The one sentence on Home that says what is and is not connected (009B-AC-008). */
-  intro: "You can set up an ad now. It runs once HighLevel and Meta are connected.",
+  /**
+   * The one sentence on Home that says what is and is not connected (009B-AC-008). Amended
+   * 2026-10-02 by the writing review (MTK-008, W-2): it no longer says connecting is enough to run
+   * an ad, because launching stays off in PRD-009 even when both are connected.
+   */
+  intro:
+    "You can set up an ad now. Launching it on Facebook isn't turned on yet, and it needs HighLevel and Meta connected.",
   /** What the card says when all three are done, in place of the items. */
   doneHeading: "You're set up",
   reviewAction: "Review your setup",
@@ -65,9 +68,19 @@ type ChecklistCopy = Readonly<{
 }>;
 
 /**
+ * What the two connection items' link says while nothing is connected. Amended 2026-10-02 by the
+ * writing review (MTK-008, W-3): the link used to say "Connect", and it opens a page that says
+ * "Nothing is connected from this page" because no connect control exists in PRD-009. The words
+ * now promise only what the page does, which is say what each account needs from the person.
+ */
+export const HOME_SEE_WHATS_NEEDED = "See what's needed";
+
+/**
  * The three items of D2. The action's accessible name is its visible word and the item's subject
- * ("Connect" and "HighLevel", "Fix" and "your brand"), so a screen reader hears which item a link
- * belongs to, and the visible word stays inside it (WCAG 2.5.3).
+ * ("Fix" and "HighLevel", "Edit" and "your brand details"), so a screen reader hears which item a
+ * link belongs to, and the visible word stays inside it (WCAG 2.5.3). The one visible word that
+ * does not read with a bare subject, "See what's needed", takes "for" first: "See what's needed
+ * for HighLevel" (`homeChecklistActionName`).
  */
 export const HOME_CHECKLIST: Readonly<Record<HomeChecklistItemId, ChecklistCopy>> = Object.freeze({
   highlevel: {
@@ -77,27 +90,28 @@ export const HOME_CHECKLIST: Readonly<Record<HomeChecklistItemId, ChecklistCopy>
     actions: {
       connected: "Review",
       needs_attention: "Fix",
-      not_connected: "Connect",
+      not_connected: HOME_SEE_WHATS_NEEDED,
       done: "Review",
-      not_started: "Connect",
+      not_started: HOME_SEE_WHATS_NEEDED,
     },
   },
   meta: {
     title: "Connect Meta",
-    sentence: "Your Facebook page and ad account, so your ads can run.",
+    sentence: "Your Facebook page and ad account. Meta needs both before an ad can launch.",
     subject: "Meta",
     actions: {
       connected: "Review",
       needs_attention: "Fix",
-      not_connected: "Connect",
+      not_connected: HOME_SEE_WHATS_NEEDED,
       done: "Review",
-      not_started: "Connect",
+      not_started: HOME_SEE_WHATS_NEEDED,
     },
   },
   brand: {
     title: "Add your brand",
     sentence: "Your name and NMLS number. They go on every ad automatically.",
-    subject: "your brand",
+    /** "your brand details" says what to add, fix or edit (writing review W-24). */
+    subject: "your brand details",
     actions: {
       connected: "Edit",
       needs_attention: "Fix",
@@ -107,6 +121,18 @@ export const HOME_CHECKLIST: Readonly<Record<HomeChecklistItemId, ChecklistCopy>
     },
   },
 });
+
+/** The accessible name of one checklist link: its visible word, then which item it belongs to. */
+export function homeChecklistActionName(
+  id: HomeChecklistItemId,
+  state: HomeChecklistState,
+): string {
+  const copy = HOME_CHECKLIST[id];
+  const action = copy.actions[state];
+  return action === HOME_SEE_WHATS_NEEDED
+    ? `${action} for ${copy.subject}`
+    : `${action} ${copy.subject}`;
+}
 
 /** The words each state is shown in, always beside its glyph. */
 export const HOME_CHECKLIST_STATE_LABELS: Readonly<Record<HomeChecklistState, string>> =
@@ -128,7 +154,9 @@ export const HOME_CHECKLIST_HREFS: Readonly<Record<HomeChecklistItemId, string>>
 export const HOME_RUNNING = Object.freeze({
   heading: "Running now",
   emptyTitle: "No ads running",
-  emptyBody: "An ad shows here, with its spend and leads, once you launch it.",
+  /** Amended 2026-10-02 (MTK-008, W-2): says launching is off, so it never reads as a promise. */
+  emptyBody:
+    "Ads you launch will show here with their spend and leads. Launching isn't turned on yet.",
   emptyAction: "Launch an ad",
 });
 
@@ -142,7 +170,7 @@ export const HOME_APPROVAL = Object.freeze({
 export const HOME_SEE_ALL_CAMPAIGNS = "See all campaigns";
 
 /** 009C-AC-005. A campaign built on a sample ad says so wherever it is listed. */
-export const HOME_SAMPLE_AD_LABEL = "Sample ad";
+export const HOME_SAMPLE_AD_LABEL = SAMPLE_AD_LABEL;
 
 export const HOME_FOOTER =
   "HighLevel stays your CRM. Your contacts, pipelines and follow-up live there.";

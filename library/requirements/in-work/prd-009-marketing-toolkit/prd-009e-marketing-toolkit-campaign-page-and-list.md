@@ -49,6 +49,8 @@ An older version opens at a stable address of its own, read-only: no approve, la
 
 An open house campaign saved before PRD-009 opens read-only with one line, "Made with the earlier open house flow.", its saved words, and its recorded decisions. It has no "Make a new version"; the page offers "Launch an ad" instead. Its property fields are not shown.
 
+_Amended 2026-10-02 by the PRD-009 writing review (MTK-008, W-17): the line is "Made with the earlier open house tool." and the list's Topic column says "Open house", because a loan officer remembers making an open house campaign, not "a flow"._
+
 ## Acceptance criteria
 
 | ID | Criterion | Test |
@@ -63,8 +65,8 @@ An open house campaign saved before PRD-009 opens read-only with one line, "Made
 | 009E-AC-008 | The page renders no address, open house time, Realtor partner, contact list, lead table, pipeline, appointment, application, or funded figure, and no link to `/leads`. A source scan of both pages' components agrees. | Integration, Source scan |
 | 009E-AC-009 | The Campaigns page owns the tab strip "Your campaigns" and "Ads library" (the library tab's content is 009C-AC-010) and one primary action, "Launch an ad". At 720 px and wider "Your campaigns" is a table with Ad (a decorative thumbnail and the name as the link), Topic, Runs, Where it shows, Status, and Last change; below 720 px it is cards with the same facts. It has no results column, no search, and no filters. | Integration, Browser (review) |
 | 009E-AC-010 | Every status on the list comes from `campaignStateLabel`, extended for "Ad retired": a sent-back version reads "Sent back for changes" and a version whose checks found something reads "Needs changes". The existing `campaign-list-decisions.integration.test.tsx` cases still pass and new cases cover every state of 009d D8. | Integration |
-| 009E-AC-011 | With no campaigns, "Your campaigns" shows "No campaigns yet", "Pick an ad from the library to set up your first one.", and the primary "Launch an ad" inside the empty state, so the page still has exactly one primary action. | Integration |
-| 009E-AC-012 | A campaign saved before PRD-009 renders as D4 states: read-only, the one line, its words and decisions, no property field, no "Make a new version", and "Launch an ad" offered instead; on the list it shows its saved headline as its name and "Earlier flow" as its topic. A Postgres test seeds one such version. | Postgres route, Integration |
+| 009E-AC-011 | With no campaigns, "Your campaigns" shows "No campaigns yet", "Pick an ad from the library to set up your first one.", and the primary "Launch an ad" inside the empty state, so the page still has exactly one primary action. _(Amended 2026-10-02 by the PRD-009 writing review (MTK-008, W-10): when the library has no ad to choose, the empty state says "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then." in place of "Pick an ad from the library to set up your first one.", because there is nothing to pick.)_ | Integration |
+| 009E-AC-012 | A campaign saved before PRD-009 renders as D4 states: read-only, the one line, its words and decisions, no property field, no "Make a new version", and "Launch an ad" offered instead; on the list it shows its saved headline as its name and "Earlier flow" as its topic _(amended 2026-10-02 by the PRD-009 writing review (MTK-008, W-17): "Open house")_. A Postgres test seeds one such version. | Postgres route, Integration |
 
 ## Files expected to change
 

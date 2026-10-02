@@ -123,6 +123,22 @@ describe("the top bar (009A-AC-009)", () => {
     ).toBeInTheDocument();
   });
 
+  // Writing review W-23: a title in the name is not the first name.
+  it("shows the first name, and the initials, after a leading title", () => {
+    const fixture = loadSyntheticUiFixture();
+    renderShell({
+      session: {
+        ...fixture.session,
+        user: { ...fixture.session.user, displayName: "Dr. Alex Morgan" },
+      },
+    });
+
+    const account = screen.getByRole("button", { name: "Your account: Dr. Alex Morgan" });
+    expect(account).toHaveTextContent("Alex");
+    expect(account).not.toHaveTextContent("Dr.");
+    expect(account).toHaveTextContent("AM");
+  });
+
   it("marks the current page with aria-current and its own tint and weight", () => {
     pathname = "/marketing/campaigns/new";
     renderShell();
@@ -182,7 +198,10 @@ describe("the top bar (009A-AC-009)", () => {
     expect(within(main).queryByRole("link", { name: /Homeowner reports/u })).toBeNull();
     const restricted = within(main).getByText("Homeowner reports").closest("[data-state]");
     expect(restricted).toHaveAttribute("data-state", "permission_restricted");
-    expect(restricted).toHaveAccessibleDescription(`No access. ${NO_ACCESS_DETAIL}`);
+    // Writing review W-19: the sentence stands alone, so a person is not told three times that
+    // they have no access.
+    expect(restricted).toHaveAccessibleDescription(NO_ACCESS_DETAIL);
+    expect(restricted).not.toHaveAccessibleDescription(/^No access/u);
     expect(within(main).getAllByRole("link")).toHaveLength(5);
   });
 

@@ -16,11 +16,11 @@ import { describe, expect, it } from "vitest";
  * Fixtures are read like everything else. A fixture's strings are what the local demo and the
  * synthetic review mode render, so a sentence there reaches a person too.
  *
- * Several lanes of PRD-009 rewrite the files that still carry the phrase, each in its own wave. Until
- * a lane has, its file is listed in `PENDING` with the lane that owns it. The list is a ratchet and
+ * Several lanes of PRD-009 rewrote the files that carried the phrase, each in its own wave. Until a
+ * lane had, its file was listed in `PENDING` with the lane that owned it. The list was a ratchet and
  * not an excuse: a file that is not listed has to be clean, and a listed file that has become clean
- * fails the second test until its row is deleted, so the list only ever gets shorter. 009F-AC-009
- * is met when it is empty.
+ * fails the second test until its row is deleted, so the list only ever got shorter. 009F-AC-009 is
+ * met when it is empty, and it is.
  */
 
 const repositoryRoot = resolve(import.meta.dirname, "../../../..");
@@ -30,18 +30,12 @@ const PHRASE = /open\s+house\s+boost/iu;
 type PendingFile = Readonly<{ path: string; lane: string }>;
 
 /**
- * The files that still carry the phrase when this lane lands (Wave 1), with the lane that rewrites
- * each. One row per file, grouped by lane so that two lanes deleting rows in the same wave do not
- * touch neighbouring lines.
+ * The files that still carry the phrase, with the lane that rewrites each. PRD-009e rewrote the last
+ * two (the Campaigns list and the campaign page) in Wave 3, so the list is empty and 009F-AC-009 is
+ * met. The ratchet stays in place: a file that is not listed has to be clean, and a listed file that
+ * has become clean fails the second test until its row is deleted.
  */
-const PENDING: readonly PendingFile[] = [
-  // 009e, Wave 3: the campaign page and the list.
-  { path: "apps/web/src/app/(authenticated)/marketing/campaigns/page.tsx", lane: "009e" },
-  {
-    path: "apps/web/src/features/campaigns/components/persisted-campaign-screen.tsx",
-    lane: "009e",
-  },
-];
+const PENDING: readonly PendingFile[] = [];
 
 async function sourceFiles(): Promise<readonly string[]> {
   const entries = await readdir(join(repositoryRoot, SCANNED_ROOT), {
@@ -146,6 +140,14 @@ describe("009F-AC-009: no rendered string says Open House Boost", () => {
       stale,
       `Delete these rows from PENDING, the files are clean:\n${stale.join("\n")}`,
     ).toEqual([]);
+  });
+
+  /**
+   * 009F-AC-009 is met when the pending list is empty. Every lane that rewrote a screen has removed
+   * its rows, so a row added back is a screen that says the retired name again.
+   */
+  it("has no file left on the pending list", () => {
+    expect(PENDING).toEqual([]);
   });
 
   it("reads strings and text, not comments or the stored blueprint value", () => {

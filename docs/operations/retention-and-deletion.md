@@ -34,3 +34,11 @@ Two keys exist:
 - `setup_profile.v1`: personal data. The fields are `displayName`, `company`, `nmlsNumber`, `phone`, `realtorName`, and `realtorBrokerage`. The first four are the person's own; the last two name a Realtor partner, who is a third party and whose name must be handled with the same care.
 
 The application role holds `select`, `insert`, and `update` on this table and no `delete`. Removing a row is an owner-privileged operation performed with the migration login, under the same authorization, approval, and evidence requirements as every other step on this page.
+
+## The decider's name on an approval (PRD-009e D2)
+
+`campaign.approval_decisions.snapshot.approverDisplayName` is personal data and must be named in the scope of every retention, deletion, and export request that covers a person.
+
+It is the display name the person typed at sign-up (`platform.app_users.safe_display_name`, 1 to 200 characters, not verified), copied from their own session into the decision's evidence at the moment they approved a campaign version or sent it back. The decision's `actor_id` and `actor_role` stay the authoritative record of who decided; the name is only what the person called themselves then. A decision made before PRD-009 carries no name, and a decision made when the session read yielded nothing but the fallback carries none either.
+
+The table is append-only: the `approval_decisions_append_only` trigger (`supabase/migrations/20260915180000_campaign_activation.sql`) rejects every update and delete, so the application cannot correct or erase a recorded name afterwards. The application role holds `select` and `insert` on the table and the support role holds `select`, so both can read the name; no runtime role can change it. A request to correct or erase it is an owner-privileged operation performed with the migration login, under the same authorization, approval, and evidence requirements as every other step on this page, and only after counsel has decided whether a decision's evidence may be altered.

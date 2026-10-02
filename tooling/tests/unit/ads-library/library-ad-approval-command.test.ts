@@ -96,6 +96,7 @@ function command(overrides: Partial<HumanCampaignApprovalInput> = {}): HumanCamp
     decidedAt: new Date("2026-10-01T17:00:00.000Z"),
     ipAuditHash: "a".repeat(64),
     correlationRef: "correlation_approve_001",
+    approverDisplayName: undefined,
     ...overrides,
   };
 }

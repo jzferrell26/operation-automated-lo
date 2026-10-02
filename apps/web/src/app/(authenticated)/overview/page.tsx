@@ -1,7 +1,9 @@
 import { Stack } from "@oalo/ui";
+import type { Metadata } from "next";
 import { headers } from "next/headers.js";
 import { redirect } from "next/navigation.js";
 
+import { PAGE_TITLES } from "../../../copy/page-titles.js";
 import { PasswordResetNotice } from "../../../features/auth/components/password-reset-notice.js";
 import { DashboardPreviewScreen } from "../../../features/dashboard-preview/dashboard-screen.js";
 import { OverviewScreen } from "../../../features/overview/components/overview-screen.js";
@@ -13,6 +15,9 @@ import {
   resolveRuntimeShellSession,
   SIGN_IN_PATH,
 } from "../../../server/runtime-authentication.js";
+
+/** Writing review W-13: the tab says which page this is. */
+export const metadata: Metadata = { title: PAGE_TITLES.home };
 
 /**
  * PRD-009b. Home. The server read (`readHomeForRequest`) answers everything the page draws: the

@@ -32,8 +32,8 @@ Deploy PRD-003 to the **existing** Vercel project (`operation-automated-lo-web`)
 |---|---|---|
 | 004A-AC-001 | Preview deployment uses project `operation-automated-lo-web` only. | BLOCKED: operator Vercel access |
 | 004A-AC-002 | `OALO_DATABASE_URL` and auth secrets are server-only env vars on Vercel. | Code half VERIFIED; Vercel half BLOCKED: operator |
-| 004A-AC-003 | `/overview` does not show unlabeled synthetic spend/leads on the review URL. | VERIFIED in review mode; requires `OALO_REVIEW_SURFACE=authorized` |
-| 004A-AC-004 | Create Open House Boost → navigate away → reload → campaign still present (Postgres). | VERIFIED in-repo against real Postgres; operator preview smoke still blocked |
+| 004A-AC-003 | `/overview` does not show unlabeled synthetic spend/leads on the review URL. _(Reaffirmed on 2026-10-01 by PRD-009: still holds, and is re-proved on the new Home (009B-AC-013); ledger `GGL-002`. No status change.)_ | VERIFIED in review mode; requires `OALO_REVIEW_SURFACE=authorized` |
+| 004A-AC-004 | Create Open House Boost → navigate away → reload → campaign still present (Postgres). _(Re-scoped on 2026-10-01 by PRD-009 (S-95; OD-H): save a library-ad version, navigate away, reload; the campaign is present.)_ | VERIFIED in-repo against real Postgres; operator preview smoke still blocked |
 | 004A-AC-005 | Authorized approver can approve; aggregate shows approved state after reload. | VERIFIED in-repo against real Postgres; operator preview smoke still blocked |
 | 004A-AC-006 | Smoke log retained per evidence pack; no tokens or PII in git. | BLOCKED: operator smoke run |
 

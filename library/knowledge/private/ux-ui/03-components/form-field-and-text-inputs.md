@@ -47,7 +47,7 @@ unconnected inline error is not possible by construction.
 | Description | `--text-secondary-size`, `--tx-body`, above the control so it is read before the field is filled. |
 | Control | `min-block-size: var(--target-min-size)`, `padding-block: var(--space-2)`, `padding-inline: var(--space-3)`, `border: 1px solid var(--bd-input)`, `border-radius: var(--radius-control)`, `background: var(--sf-card)`, `--text-body-size` at `--weight-medium`. |
 | Control, `size="lg"` | `padding-block: var(--space-3)`, `padding-inline: var(--space-4)`, `--text-card-size`, `border-radius: var(--radius-button)`. |
-| Control, `tone="data"` | `font-family: var(--font-data)` for an identifier, a version, a hash, or a timestamp, per brief section 10. |
+| Control, `tone="data"` | `font-family: var(--font-interface)` with `font-variant-numeric: tabular-nums` for an identifier, a version, a hash, or a timestamp, per brief section 10. _(Amended on 2026-10-01 by PRD-009 (OD-E, 009A-AC-007): was `var(--font-data)`; numbers and dates now use Inter with tabular figures, and the monospace face survives only inside "Details for support".)_ |
 | Multi-line control | `min-block-size: calc(var(--space-8) * 3)`, `padding-block: var(--space-3)`, `resize: vertical`. |
 | Error | `--text-secondary-size` in `--st-critical-fg`, below the control, with the `alert-triangle` glyph, so the error is not carried by color alone. |
 

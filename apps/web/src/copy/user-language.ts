@@ -1,4 +1,4 @@
-import type { CampaignNextActionId } from "@oalo/application";
+import type { CampaignNextActionId, CampaignStanding } from "@oalo/application";
 import type { ApplicationRole, CampaignState } from "@oalo/contracts";
 
 /**
@@ -253,12 +253,28 @@ export const CAMPAIGN_STATE_LABELS: Readonly<Record<CampaignState, string>> = Ob
   preflight_failed: CHECK_RESULT_NEEDS_CHANGES,
   awaiting_approval: CHECK_RESULT_READY,
   approved: "Approved",
-  publishing: "Going live",
-  live: "Live",
+  // PRD-009e 009E-AC-010. Nothing in PRD-009 can publish an ad, so no screen can truthfully say a
+  // campaign is "Live" or "Going live", and neither word is left here to be shown by accident. The
+  // two states stay in the map because the schema still has them (the Meta publish PRD will use
+  // them), and they read as what is known: the ad is being sent to Meta, or Meta has it.
+  publishing: "Sending to Meta",
+  live: "With Meta",
   paused: "Paused",
   completed: "Finished",
   archived: "Archived",
 });
+
+/**
+ * PRD-009e 009E-AC-010. The two standings a campaign can be in that the stored state cannot say.
+ *
+ * "Ad retired": the library took the ad this version was made from out of the library, and nobody
+ * has approved the version, so it can no longer be approved (009c D4). "Replaced": a newer version
+ * of the campaign exists and nobody ever decided on this one, so it is neither waiting for an
+ * approver nor approved. Neither is a stored state, so they are standings, and the label function
+ * below reads them with the state.
+ */
+export const CAMPAIGN_AD_RETIRED_LABEL = "Ad retired";
+export const CAMPAIGN_VERSION_REPLACED_LABEL = "Replaced by a newer version";
 
 /**
  * Where a campaign stands, given what has been decided on it.
@@ -270,9 +286,11 @@ export const CAMPAIGN_STATE_LABELS: Readonly<Record<CampaignState, string>> = Ob
  * with the decision it has, and gets the state's phrase unless that decision is a send-back.
  */
 export function campaignStateLabel(
-  state: CampaignState,
+  state: CampaignStanding,
   decision: "approved" | "rejected" | undefined,
 ): string {
+  if (state === "ad_retired") return CAMPAIGN_AD_RETIRED_LABEL;
+  if (state === "replaced") return CAMPAIGN_VERSION_REPLACED_LABEL;
   return state === "awaiting_approval" && decision === "rejected"
     ? CAMPAIGN_SENT_BACK_LABEL
     : CAMPAIGN_STATE_LABELS[state];

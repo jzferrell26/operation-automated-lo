@@ -1,6 +1,6 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.16 | Date: October 1, 2026 | Status: Active
+> Category: Product Operations | Version: 1.17 | Date: October 2, 2026 | Status: Active
 
 The canonical internal map of the product boundary, system flow, implementation status, external gates, and next work for Operation Automated LO.
 
@@ -12,6 +12,7 @@ The canonical internal map of the product boundary, system flow, implementation 
 - [External Evidence Sprint (next batch)](../../../../NEXT_BATCH_LEDGER.md)
 - [PRD-003: Authenticated Product Activation](../../../requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md)
 - [PRD-004: Reviewable Go-Live](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md)
+- [PRD-009: Marketing Toolkit](../../../requirements/in-work/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md) (in draft pull request #75, not merged)
 - [HighLevel Marketplace submission packet](highlevel-marketplace-submission.md)
 - [Marketplace listing copy pack](marketplace-listing-copy-pack.md)
 - [Finish-line operator checklist](../operations/finish-line-operator-checklist.md) (every remaining item that needs a person, in dependency order)
@@ -39,11 +40,12 @@ The following September 24 update supersedes the older tip, uncomposed-authentic
 | Dashboard and homeowner reports | PR #69 (`da8dfb9`) merged September 24; PR #68 was closed as superseded. Standalone address valuation, optional verified contact association, mortgage/equity calculations, snapshot history, PDF output, sharing, monthly worker and guarded HighLevel handoff are implemented. |
 | Release verification | Full CI run `35951313777` passed application, real PostgreSQL/authenticated browser, recovery and preview-smoke gates. This includes the previously failing guided-setup focus journey. |
 | Hosted app | `operation-automated-lo-web.vercel.app` is an authenticated deployment. Hosted signup, password login, profile persistence, report API access and sign-out were exercised. The production verification left paid lookup allowance at zero and confirmed unconfigured lookups fail before external access. |
-| Database | Dedicated Supabase project `vonesqpyfsrhasuxfiiz`, US East, in Jonathan's personal organization. Ten tracked migrations were applied on 2026-09-24. The three migrations PRD-008 added since (`20260930180000_change_password_rate_limit.sql`, `20261001090000_homeowner_review_rerequest.sql`, and `20261001120000_sign_in_without_account.sql`) are not recorded as applied to it: UNVERIFIED. Step 0 of the [finish-line operator checklist](../operations/finish-line-operator-checklist.md) asks for them to be applied before PR #74 is merged. The separate runtime login uses transaction pooling and certificate-verified TLS, cannot assume the migration owner, and sees no tenant rows without context. |
+| Database | Dedicated Supabase project `vonesqpyfsrhasuxfiiz`, US East, in Jonathan's personal organization. Ten tracked migrations were applied on 2026-09-24. The three migrations PRD-008 added since (`20260930180000_change_password_rate_limit.sql`, `20261001090000_homeowner_review_rerequest.sql`, and `20261001120000_sign_in_without_account.sql`) are not recorded as applied to it: UNVERIFIED. Step 0 of the [finish-line operator checklist](../operations/finish-line-operator-checklist.md) asks for them to be applied. PR #74 merged on 2026-10-01 (`e89058e`), so the step is now overdue rather than ahead of the merge. The separate runtime login uses transaction pooling and certificate-verified TLS, cannot assume the migration owner, and sees no tenant rows without context. |
 | Live AVM | A licensed RentCast credential and an explicitly approved workspace/lookup allowance are still required. A property-only report does not require HighLevel. No live RentCast response has been represented as verified. |
 | Authenticated page completion | The follow-up scope closes missing signed-in destinations and adds persisted personal report branding, Realtor partners and per-channel drafts. These are user-and-location scoped settings, not shared company records or CRM imports. See the authenticated-page scope and review reports under PRD-007. |
 | External connections | HighLevel App Test/SSO, live Meta publication/reporting, CRM pipeline import, billing and external compliance evidence remain separately gated. Missing connections are shown explicitly; example data is not presented as observed customer data. |
 | Add-on authority | PRD-007 implements the authorized homeowner-intelligence slice from PRD-002e. Other future-option PRD-002 modules remain backlog. |
+| Marketing toolkit | [PRD-009](../../../requirements/in-work/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md) turns the product from an open house workflow with CRM-style pages into a marketing toolkit: a light top menu with six sections (Home, Campaigns, Brand, Realtor partners, Homeowner reports, Settings), a first-run Home, a curated Ads library, and "Launch an ad". It is in draft pull request #75 on `claude/prd-009-marketing-toolkit` and is not merged, so the hosted app does not have it. It adds no migration and no deployment variable. The real library starts empty until the owner supplies approved ads, and "Launch on Facebook" is always off. Its operator items are steps 10 to 13 of the [finish-line operator checklist](../operations/finish-line-operator-checklist.md). |
 
 Operational detail: [Homeowner AVM activation](../../../../docs/operations/homeowner-avm-activation.md). Implementation and review evidence: [PRD-007](../../../requirements/in-work/prd-007-homeowner-reports/prd-007-homeowner-reports-index.md). The formal PRD-001 ledger remains the source for external acceptance, and its counts are not implicitly changed by this map update.
 
@@ -53,7 +55,7 @@ The remaining work now splits into two documents. A Gauntlet run can finish the 
 
 | Remaining work | Owner | Where |
 | --- | --- | --- |
-| Agent-executable | Gauntlet run | [PRD-008 Finish-Line Hardening](../../../requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) (complete in PR #74; see the October 1 update below) |
+| Agent-executable | Gauntlet run | [PRD-008 Finish-Line Hardening](../../../requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) (merged as PR #74; see the October 1 and October 2 updates below) |
 | Human-only | Operator and product owner | [Finish-line operator checklist](../operations/finish-line-operator-checklist.md) |
 
 PRD-008 covers:
@@ -82,7 +84,9 @@ The checklist covers:
 
 No criterion status changed with this split.
 
-**October 1 update.** A Gauntlet run executed PRD-008 on branch `claude/gauntlet-prd-008`. PRD-008 is complete in pull request #74 (74 acceptance criteria), which is open and not merged and waits for the owner's merge, while `main` stays at `36b58f1` (PR #73). Its folder moved to `library/requirements/completed/`. Per-criterion results are in the PRD-008 section of [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md): all 74 rows read VERIFIED (the PRD's [index](../../../requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) says what closed the last five). This map claims no PRD-001 criterion as changed. The remaining work is the [finish-line operator checklist](../operations/finish-line-operator-checklist.md), and its step 0 comes first: apply the three PRD-008 migrations to the hosted database before the merge.
+**October 1 update.** A Gauntlet run executed PRD-008 on branch `claude/gauntlet-prd-008`. PRD-008 is complete in pull request #74 (74 acceptance criteria), which is open and not merged and waits for the owner's merge, while `main` stays at `36b58f1` (PR #73). Its folder moved to `library/requirements/completed/`. Per-criterion results are in the PRD-008 section of [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md): all 74 rows read VERIFIED (the PRD's [index](../../../requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) says what closed the last five). This map claims no PRD-001 criterion as changed. The remaining work is the [finish-line operator checklist](../operations/finish-line-operator-checklist.md), and its step 0 comes first: apply the three PRD-008 migrations to the hosted database before the merge. _(Updated 2026-10-02: PR #74 merged on 2026-10-01 as `e89058e`, so the statements above about an open, unmerged pull request describe the state when this paragraph was written. See the October 2 update.)_
+
+**October 2 update.** PRD-008 merged to `main` as pull request #74 (`e89058e`, 2026-10-01T15:22:18Z, read with `gh`), so `main` is no longer at `36b58f1`. Whether the three PRD-008 migrations reached the hosted database before that merge is not recorded (UNVERIFIED), and step 0 of the [finish-line operator checklist](../operations/finish-line-operator-checklist.md) stays Open. A Gauntlet run is building [PRD-009, the marketing toolkit](../../../requirements/in-work/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md), on branch `claude/prd-009-marketing-toolkit` in draft pull request #75 (120 acceptance criteria), which is open and not merged; its folder is in `library/requirements/in-work/`. PRD-009 gives the product six sections (Home, Campaigns, Brand, Realtor partners, Homeowner reports, Settings), a first-run Home, a curated Ads library that is empty until the owner supplies approved ads, and "Launch an ad" in three steps, with "Launch on Facebook" always off until Meta is connected and launching is turned on. It removes Leads and Pipeline, Automations, the Reports page, Workspace tools, and the Marketing Suite, retires the name Open House Boost from the product, and leaves HighLevel as the CRM (owner decision OD-A). It adds no migration and no deployment variable. Per-criterion status is in the "Gauntlet raid: marketing toolkit (PRD-009)" section of [`EXECUTION_LEDGER.md`](../../../../EXECUTION_LEDGER.md), and the operator items are steps 10 to 13 of the checklist.
 
 ## Historical September 16 status snapshot
 
@@ -166,6 +170,8 @@ flowchart LR
     ROUTE --> DB
 ```
 
+> **Amended on 2026-10-01 by PRD-009** (S-73; OD-H): the diagram shows the founding open house flow. In PRD-009 the input is a curated library ad plus the loan officer's own edited words, budget, dates, and places; there is no property, Realtor, collateral, or rendering step, and the flow stops at an approved version with "Launch on Facebook" off. Open house campaigns saved earlier stay readable.
+
 HighLevel remains the authority for installation, location context, CRM records, connected Meta assets, workflows, appointments, and provider reporting. Operation Automated LO owns tenant configuration, immutable versions, preflight, approvals, durable commands, generated artifacts, audit history, and attribution links. Meta remains the delivery and policy authority through HighLevel. Stripe owns hosted payment collection and subscription lifecycle.
 
 ## PRD and module status
@@ -175,7 +181,7 @@ HighLevel remains the authority for installation, location context, CRM records,
 | 001J | Platform foundation, runtime, delivery, tenancy, durable work, rendering, and operations | 34 | 27 | 4 | 3 | 0 | 0 | In Work |
 | 001A | Tenant installation, HighLevel identity, OAuth, token lifecycle, and roles | 41 | 20 | 21 | 0 | 0 | 0 | In Work |
 | 001B | Brand, Realtor partner, compliance, and routing profiles | 20 | 20 | 0 | 0 | 0 | 0 | In Work |
-| 001C | Open House Boost blueprint, versions, preflight, and approval | 30 | 30 | 0 | 0 | 0 | 0 | In Work |
+| 001C | Open House Boost blueprint, versions, preflight, and approval _(Amended on 2026-10-01 by PRD-009 (S-73; OD-H): the library-ad blueprint joins it; open house versions stay readable.)_ | 30 | 30 | 0 | 0 | 0 | 0 | In Work |
 | 001D | Public page, PDF, QR, collateral, and paid-ad creative rendering | 35 | 35 | 0 | 0 | 0 | 0 | In Work |
 | 001E | HighLevel Meta discovery, draft, publish, control, and reporting | 35 | 33 | 0 | 0 | 2 | 0 | In Work |
 | 001F | Lead capture, HighLevel routing, workflow handoff, and attribution | 29 | 28 | 0 | 0 | 0 | 1 | In Work |
@@ -184,19 +190,20 @@ HighLevel remains the authority for installation, location context, CRM records,
 | 001I | AI-assisted brand and campaign generation, metering, and economics | 14 | 11 | 0 | 3 | 0 | 0 | In Work |
 | **PRD-001 total** | **Founding core** | **305** | **267** | **28** | **7** | **2** | **1** | **In Work** |
 | [PRD-002](../../../requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md) | Future add-on portfolio | Not in the PRD-001 ledger | Not started | Not applicable | Independently gated | Not applicable | Not applicable | Backlog, not authorized |
+| [PRD-009](../../../requirements/in-work/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md) | Marketing toolkit: the Ads library and "Launch an ad" | 120, in their own ledger section | Counted in the `MKR-` rows of `EXECUTION_LEDGER.md`, not here | Not applicable | Not applicable | Not applicable | Not applicable | In Work (draft pull request #75, not merged) |
 
 Repository verification is complete for the 267 locally provable criteria. Two Special Ad Category criteria are product-owner accepted constraints. The remaining 36 criteria require authorized external systems, real environment evidence, named approvals, or measured operating data.
 
 ## Hard boundaries
 
-1. The founding release is one Open House Boost workflow for one installed HighLevel location. It is not a generic campaign builder, CRM, LOS, or AI employee platform.
+1. The founding release is one Open House Boost workflow for one installed HighLevel location. It is not a generic campaign builder, CRM, LOS, or AI employee platform. _(Amended on 2026-10-01 by PRD-009 (S-73; OD-H): the release is a marketing toolkit whose core is launching curated library ads, still for one installed HighLevel location; it is not a generic campaign builder, a CRM, an LOS, or an AI employee platform.)_
 2. Realtor and brokerage identity may appear only in approved collateral, including the public page, PDF, flyer, and QR materials. Paid-ad copy, creative, lead forms, advertiser identity, and calls to action use loan-officer or lender identity only.
 3. Collateral and paid ads are separate immutable projections with separate hashes, preflight evidence, and approval summaries.
 4. Generation never authorizes publication. A current deterministic preflight, named human approval, provider draft read-back, and separate explicit publish confirmation are required.
 5. Meta execution goes through HighLevel. The product does not store direct Meta OAuth credentials.
 6. Broad HighLevel OAuth scope is technical permission, not product authorization. Provider routes and methods remain server-side, allowlisted, idempotent, reconciled, and audited.
 7. The HighLevel location is the tenant security boundary. The server derives location and role from verified session context, and the browser cannot select another location.
-8. HighLevel remains the CRM and connected-ad system of record. The product stores provider IDs, immutable campaign evidence, and normalized attribution, not a duplicate borrower database.
+8. HighLevel remains the CRM and connected-ad system of record. The product stores provider IDs, immutable campaign evidence, and normalized attribution, not a duplicate borrower database. _(Amended on 2026-10-01 by PRD-009 (OD-A): this is now an owner decision as well as a boundary: the product has no CRM pages (no lead lists, pipelines, contact views, or automations), and HighLevel is where contacts, pipelines, and follow-up live.)_
 9. Consumer subscriptions to Claude or ChatGPT are not application infrastructure. Model output is an untrusted draft and cannot decide facts, compliance, approval, targeting, budget, or publication.
 10. Production traffic stays disabled until the applicable external gates are resolved and recorded. Synthetic repository completeness is not live acceptance.
 11. PRD-002 is a future-options register. No add-on enters implementation before the founding core proves its live, compliance, demand, activation, support, and retention gates.
@@ -234,7 +241,7 @@ The detailed capture requirements and unblock procedures remain authoritative in
 
 ## Prioritized next steps (librarian)
 
-**Start with the [finish-line operator checklist](../operations/finish-line-operator-checklist.md).** It lists every remaining item that needs a person (a decision, an account, a credential, or a live provider) in dependency order, with the runbook for each. The sections below are the older sequencing it consolidates: its steps 3 to 5 are items 1 to 3 under "Now", step 7 is Wave 1 G2, and step 9 is Waves 2 to 7. The agent-executable work was [PRD-008](../../../requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md), which is complete in pull request #74 and waits for the owner's merge.
+**Start with the [finish-line operator checklist](../operations/finish-line-operator-checklist.md).** It lists every remaining item that needs a person (a decision, an account, a credential, or a live provider) in dependency order, with the runbook for each. The sections below are the older sequencing it consolidates: its steps 3 to 5 are items 1 to 3 under "Now", step 7 is Wave 1 G2, and step 9 is Waves 2 to 7. The agent-executable work was [PRD-008](../../../requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md), which merged as pull request #74 on 2026-10-01 (`e89058e`). The marketing toolkit, [PRD-009](../../../requirements/in-work/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md), is in draft pull request #75 and is not merged; its operator items (supply the first approved ads, counsel and lender review of the library ads, a post-deploy check, and the owner's visual sign-off) are steps 10 to 13 of the checklist.
 
 Authoritative batch plan: [External Evidence Sprint](../../../../NEXT_BATCH_LEDGER.md). Packs: [`docs/operations/evidence-packs/`](../../../../docs/operations/evidence-packs/README.md). Agent brief: [the-map.mdc](../../../../.cursor/rules/core/the-map.mdc).
 
@@ -274,7 +281,7 @@ PRD-001 core is complete only when all of the following are true:
 
 - All 305 criteria are `VERIFIED`, or an external criterion has an explicitly approved final disposition allowed by the PRD and readiness gate. No criterion is open, silently waived, or represented as live evidence when only synthetic evidence exists.
 - G1 through G7 are each `PASS`, `ACCEPTED CONSTRAINT`, or `DEFERRED OUT OF CORE` with named-owner evidence. G1 and G4 are already accepted constraints as of 2026-08-25. G8 remains accurately labeled as an accepted constraint until paid-customer evidence exists.
-- One authorized HighLevel location completes installation, launch readiness, the Open House Boost campaign flow, lender-only paid-ad publication, and the isolated lead-routing path under the approved operating model.
+- One authorized HighLevel location completes installation, launch readiness, the Open House Boost campaign flow, lender-only paid-ad publication, and the isolated lead-routing path under the approved operating model. _(Amended on 2026-10-01 by PRD-009 (S-73; OD-H): read "the Open House Boost campaign flow" as the library-ad flow ("Launch an ad"); open house campaigns saved earlier stay readable.)_
 - The exact approved campaign version produces the co-branded collateral and separate lender or loan-officer paid-ad projection, with read-back parity, explicit publication, audit history, and outcome attribution.
 - Preview, staging, and production resources are isolated; KMS recovery, smoke, rollback, database restore, and provider reconciliation exercises pass.
 - Counsel and lender compliance approve the founding blueprint, disclosures, consent, targeting, retention, privacy, Realtor relationship rules, and provider data boundaries.
@@ -305,6 +312,7 @@ PRD-001 core is complete only when all of the following are true:
 
 ## Changelog
 
+- v1.17 (2026-10-02): PRD-009, the marketing toolkit, recorded under 009F-AC-013. S-73 is applied: the open house flow diagram, the 001C row, hard boundary 1, and the core-completion item carry dated notes; hard boundary 8 now points at owner decision OD-A; the hosted status table and the module status table gain a PRD-009 row; "Prioritized next steps" points at the checklist, whose steps 10 to 13 are PRD-009's operator items. PRD-008 is recorded as merged in pull request #74 (`e89058e`, 2026-10-01), replacing the statements that it was open and awaiting the owner's merge; the October 1 paragraph and the v1.14 to v1.16 entries stay as history. Documentation only: no criterion status changed.
 - v1.16 (2026-10-01): PRD-008 ledger counts refreshed at ship. All 74 PRD-008 ledger rows now read VERIFIED, so the "October 1 update" says that in place of the partial count recorded in v1.15, which stays below as history. PRD-008 stays recorded as complete in draft pull request #74, open and awaiting the owner's merge, with checklist step 0 first. Documentation only.
 - v1.15 (2026-10-01): The Database row now says the three PRD-008 migrations are not recorded as applied to the hosted database (UNVERIFIED) and links checklist step 0 (close-out quality L-11), matching the README, the terrain map, and `NEXT_BATCH_LEDGER.md`. PRD-008 is recorded as complete in draft pull request #74 and awaiting the owner's merge: its folder moved to `library/requirements/completed/` (008E-AC-014), every link to it was repaired, and the "October 1 update" and "Prioritized next steps" now say so, with checklist step 0 first. 62 of its 74 ledger rows are VERIFIED at `211b519`; the other 12 close at ship. Documentation only.
 - v1.14 (2026-10-01): PRD-008 finish-line hardening, in review. A Gauntlet run executed the agent-executable work on branch `claude/gauntlet-prd-008`; it is in draft pull request #74 (74 acceptance criteria), open and not merged, and `main` stays at `36b58f1` (PR #73). PRD-008 moved from `backlog/` to `in-work/` at the start of the run. This map records no PRD-008 criterion as complete: the per-criterion results are in the PRD-008 section of `EXECUTION_LEDGER.md`, and the run's final results go in at ship. "Prioritized next steps" now points at the finish-line operator checklist, which holds every remaining item that needs a person. The missing v1.12 entry is restored below (008E-AC-011). Documentation only: no PRD-001 criterion status changed.

@@ -293,6 +293,25 @@ export function createFilesystemCampaignReadRepository(
       const record = await loadLocalCampaign(campaignRef, environment);
       return record === undefined ? undefined : localCampaignToReadRecord(record);
     },
+    /**
+     * The local demo's file keeps one record per campaign, the newest version, as it always has: a
+     * new version replaces the one before it. So the demo's history is that one version, and the
+     * database is what holds every version (009E-AC-005).
+     */
+    async listVersionsOf(campaignRef) {
+      const record = await loadLocalCampaign(campaignRef, environment);
+      return Object.freeze(
+        record === undefined
+          ? []
+          : [
+              Object.freeze({
+                version: record.version,
+                preflight: record.preflight,
+                ...(record.approval === undefined ? {} : { approval: record.approval }),
+              }),
+            ],
+      );
+    },
   };
 }
 

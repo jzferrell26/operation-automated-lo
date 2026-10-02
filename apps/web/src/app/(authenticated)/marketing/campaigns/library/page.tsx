@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import { headers } from "next/headers.js";
 import { redirect } from "next/navigation.js";
 
+import { PAGE_TITLES } from "../../../../../copy/page-titles.js";
 import { canRenderDashboardPreview } from "../../../../../server/dashboard-preview.js";
 import { SIGN_IN_PATH } from "../../../../../server/runtime-authentication.js";
 import { AdsLibraryScreen } from "./ads-library-screen.js";
@@ -8,6 +10,9 @@ import {
   loadPreviewAdsLibraryPage,
   readAdsLibraryPageForRequest,
 } from "./ads-library-page-data.js";
+
+/** Writing review W-13: the tab says which page this is. */
+export const metadata: Metadata = { title: PAGE_TITLES.adsLibrary };
 
 /**
  * PRD-009c part 2, 009C-AC-010. The "Ads library" tab at `/marketing/campaigns/library`.

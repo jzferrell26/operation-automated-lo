@@ -177,6 +177,39 @@ describe.each(HOSTS)("the approval control %s when the route refuses", (_where, 
     expectDecisionStillOffered();
   });
 
+  /*
+   * Writing review W-1. The four library refusals used to fall through to "Something went wrong on
+   * our side. Try again", which blames us for a library change and offers a retry that cannot work.
+   */
+  it.each([
+    ["LIBRARY_AD_MISSING", "This ad isn't in the library, so this version can't be approved."],
+    [
+      "LIBRARY_AD_RETIRED",
+      "This ad was taken out of the library, so this version can't be approved.",
+    ],
+    [
+      "LIBRARY_AD_REPLACED",
+      "A newer version of this ad is in the library, so this version can't be approved.",
+    ],
+    [
+      "LIBRARY_AD_ART_CHANGED",
+      "The picture for this ad changed after this version was saved, so this version can't be approved.",
+    ],
+  ])("says plainly why a library change refused it, for %s", async (code, what) => {
+    stubRefusedFetch(code, SUPPORT_REFERENCE, 409);
+    render(mount(APPROVABLE));
+
+    await approve();
+
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent(what);
+    });
+    expect(screen.getByRole("status")).not.toHaveTextContent("Something went wrong on our side");
+    expect(screen.getByRole("status")).not.toHaveTextContent("Try again");
+    expect(screen.queryByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeNull();
+    expectDecisionStillOffered();
+  });
+
   it("still shows the row, and says so, when the refusal carried no reference", async () => {
     stubRefusedFetch(undefined, undefined, 409);
     render(mount(APPROVABLE));
@@ -221,7 +254,7 @@ describe.each(HOSTS)("the approval control %s when the route refuses", (_where, 
 
     await waitFor(() => {
       expect(screen.getByRole("status")).toHaveTextContent(
-        "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.",
+        "Approved. This campaign won't run as an ad yet. HighLevel and Meta aren't connected.",
       );
     });
     expect(screen.queryByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeNull();
@@ -255,7 +288,7 @@ describe.each(HOSTS)(
         "an approval",
         approve,
         { decision: "approved", duplicate: false } as const,
-        "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.",
+        "Approved. This campaign won't run as an ad yet. HighLevel and Meta aren't connected.",
       ],
       [
         "a duplicate approval",
@@ -289,7 +322,7 @@ describe.each(HOSTS)(
         expect(screen.queryByRole("button", { name: APPROVE_LABEL })).toBeNull();
         expect(screen.queryByRole("button", { name: SEND_BACK_LABEL })).toBeNull();
         // The card keeps its own title once a decision replaces its controls.
-        expect(screen.getByText("Approve this campaign")).toBeInTheDocument();
+        expect(screen.getByText("Approve this version")).toBeInTheDocument();
         expect(mocked.refresh).toHaveBeenCalledTimes(1);
       },
     );
@@ -402,4 +435,49 @@ describe.each(HOSTS)("what the approval control says %s in each state", (where, 
       expect(screen.queryByText(/Read the decision below/u)).toBeNull();
     },
   );
+});
+
+/**
+ * Writing review W-7. The card names one thing, "this version", and says nothing it has no outcome
+ * for: the Approval card above it already says nobody has approved the version.
+ */
+describe.each(HOSTS)("the words of the approval card %s", (_where, mount) => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("is titled for the version, not the campaign", () => {
+    render(mount(APPROVABLE));
+
+    expect(screen.getAllByText("Approve this version").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Approve this campaign")).toBeNull();
+  });
+
+  it("says nothing in its status line until there is an outcome", () => {
+    render(mount(APPROVABLE));
+
+    expect(screen.queryByText("Nobody has approved this version yet.")).toBeNull();
+    for (const status of screen.queryAllByRole("status")) {
+      expect(status).toBeEmptyDOMElement();
+    }
+  });
+
+  it("says what approving does, in plain words, and what it does not do", async () => {
+    const user = userEvent.setup();
+    render(mount(APPROVABLE));
+
+    await user.click(screen.getByRole("button", { name: APPROVE_LABEL }));
+
+    expect(
+      await screen.findByText(
+        "Saves your name as the approver of this exact version. Nothing is published or sent.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "This version is approved. Changing the campaign later needs a new approval.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Records your name against/u)).toBeNull();
+  });
 });

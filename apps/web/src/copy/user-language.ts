@@ -51,6 +51,17 @@ export const NOT_CONNECTED_SETUP_REASON =
 /** Who finishes that setup step. */
 export const NOT_CONNECTED_SETUP_OWNER = "You, once you connect";
 
+/**
+ * PRD-009f D1. The page for `/leads`, `/leads/pipeline`, and `/automations`, which no longer exist.
+ * It says where the work went, because the one reader it has followed an old link or typed an old
+ * address.
+ */
+export const GONE_PAGE = Object.freeze({
+  title: "This page is gone.",
+  lead: "Your leads, pipelines and follow-up live in HighLevel.",
+  homeLabel: "Go to Home",
+});
+
 /** The four access groups, named for what the group means to the user. */
 export const ACCESS_GROUP_LABELS = Object.freeze({
   required: "Access this app needs",

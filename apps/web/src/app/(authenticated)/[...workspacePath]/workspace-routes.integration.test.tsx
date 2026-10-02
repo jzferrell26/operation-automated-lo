@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { WorkspacePageData, WorkspaceView } from "../../../features/workspace/model.js";
+import type { WorkspaceView } from "../../../features/workspace/model.js";
+import { workspaceData } from "../../../features/workspace/workspace.test-support.js";
 import { useReviewModeEnvironment } from "../review-mode-test-support.js";
 import WorkspaceModulePage from "./page.js";
 
@@ -30,36 +31,6 @@ vi.mock("next/navigation.js", async (importOriginal) => ({
 
 useReviewModeEnvironment();
 
-const BRAND = {
-  name: "Casey Rivera",
-  company: "Evergreen Example Lending",
-  email: "casey@example.test",
-  phone: "555-0100",
-  nmls: "123456",
-  companyNmls: "234567",
-  tagline: "",
-};
-
-function dataFor(view: WorkspaceView): WorkspacePageData {
-  return {
-    view,
-    identity: {
-      name: "Casey Rivera",
-      company: "Evergreen Example Lending",
-      role: "Workspace owner",
-    },
-    canEdit: true,
-    preferences: { brand: null, partners: null, messages: {} },
-    defaultBrand: BRAND,
-    reportsEnabled: true,
-    valuationConfigured: true,
-    contactConfigured: false,
-    deliveryEnabled: false,
-    lookupsUsed: 4,
-    lookupLimit: 50,
-  };
-}
-
 async function open(address: string) {
   const path = address.split("/").filter(Boolean);
   const view = (await WorkspaceModulePage({
@@ -70,7 +41,9 @@ async function open(address: string) {
 
 beforeEach(() => {
   mocked.workspacePageData.mockReset();
-  mocked.workspacePageData.mockImplementation(async (view: WorkspaceView) => dataFor(view));
+  mocked.workspacePageData.mockImplementation(async (view: WorkspaceView) =>
+    workspaceData(view, { lookupsUsed: 4 }),
+  );
 });
 
 describe("009F-AC-003: the addresses that stay still serve their page", () => {

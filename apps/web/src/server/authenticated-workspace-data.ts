@@ -490,9 +490,10 @@ export function loadAuthenticatedWorkspace(input: unknown = process.env) {
     },
     brand: toReviewBrand(brand),
     /**
-     * No review route renders the reporting fixture: `/reports` and the synthetic campaign detail
-     * route both branch to `ReviewNotConnectedScreen` in review mode. The disclosure is still
-     * replaced so a future review consumer cannot pick up the synthetic one by accident.
+     * No review route renders the reporting fixture: the synthetic campaign detail route branches
+     * to `ReviewNotConnectedScreen` in review mode, and the Reports page that did too was removed
+     * by PRD-009f. The disclosure is still replaced so a future review consumer cannot pick up
+     * the synthetic one by accident.
      */
     reporting: { ...reporting, safety: toReviewSafety(reporting.safety) },
   });

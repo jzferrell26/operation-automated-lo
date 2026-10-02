@@ -629,7 +629,7 @@ describe("the two lists row (Wave 3 polish, 009B D3)", () => {
     renderHome(homeData({ approval: undefined }));
     const row = card("Running now").parentElement;
 
-    // The stylesheet keeps two equal columns (home-polish.unit.test.ts), so the card stays half width.
+    // From 1100px the stylesheet keeps two equal columns (home-polish.unit.test.ts), so the card stays half width.
     expect(row?.children).toHaveLength(1);
     expect(screen.queryByText("Nothing to approve")).toBeNull();
   });

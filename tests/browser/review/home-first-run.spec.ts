@@ -171,26 +171,31 @@ test.describe.serial("Home for a brand-new account", () => {
     ]);
   });
 
-  test("at 1440 the checklist sits beside the start card, and the lists sit under it (009B-AC-003)", async () => {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/overview");
+  for (const frame of REVIEW_FRAMES.filter((candidate) => candidate.width >= 1100)) {
+    test(`at ${frame.name} the checklist sits beside the start card, and the lists sit under it, side by side (009B-AC-003)`, async () => {
+      await page.setViewportSize({ width: frame.width, height: frame.height });
+      await page.goto("/overview");
 
-    const [start, setup, running, approval] = await Promise.all(
-      ["Launch an ad", "Get set up", "Running now", "Needs your approval"].map((name) =>
-        page.getByRole("region", { name }).boundingBox(),
-      ),
-    );
-    expect(start && setup && running && approval).toBeTruthy();
-    if (!start || !setup || !running || !approval) return;
-    expect(setup.x, "the checklist is in the right-hand column").toBeGreaterThan(
-      start.x + start.width - 1,
-    );
-    expect(Math.abs(setup.y - start.y), "the two share a top edge").toBeLessThan(2);
-    expect(running.y, "Running now is under the start card").toBeGreaterThan(
-      start.y + start.height,
-    );
-    expect(approval.x, "the two lists share a row").toBeGreaterThan(running.x + running.width - 1);
-  });
+      const [start, setup, running, approval] = await Promise.all(
+        ["Launch an ad", "Get set up", "Running now", "Needs your approval"].map((name) =>
+          page.getByRole("region", { name }).boundingBox(),
+        ),
+      );
+      expect(start && setup && running && approval).toBeTruthy();
+      if (!start || !setup || !running || !approval) return;
+      expect(setup.x, "the checklist is in the right-hand column").toBeGreaterThan(
+        start.x + start.width - 1,
+      );
+      expect(Math.abs(setup.y - start.y), "the two share a top edge").toBeLessThan(2);
+      expect(running.y, "Running now is under the start card").toBeGreaterThan(
+        start.y + start.height,
+      );
+      expect(approval.x, "the two lists share a row").toBeGreaterThan(
+        running.x + running.width - 1,
+      );
+      expect(Math.abs(approval.y - running.y), "the two lists share a top edge").toBeLessThan(2);
+    });
+  }
 
   for (const frame of REVIEW_FRAMES.filter((candidate) => candidate.width < 1100)) {
     test(`at ${frame.name} the cards stack: start, checklist, running, approval (009B-AC-003)`, async () => {

@@ -267,9 +267,19 @@ test("the email preview renders both account emails at the mail-client width", a
 
   const frames = page.locator("iframe[data-email-preview]");
   await expect(frames).toHaveCount(2);
+  /**
+   * Polled, because this page holds no control for `expectStylesHaveApplied` to look at: its only
+   * links are inside the frames. A frame photographed before the page's own sheet applies is the
+   * browser's bare 300px frame and its 2px border, which is the 304 a full run measured once on
+   * 2026-10-01 (113 other tests passed, and six runs of this test alone all read 600). The
+   * assertion is unchanged: each frame is 600px wide once the page is styled.
+   */
   for (const frame of await frames.all()) {
-    const box = await frame.boundingBox();
-    expect(box?.width).toBe(600);
+    await expect
+      .poll(async () => (await frame.boundingBox())?.width, {
+        message: "the email frame was still arriving at its width",
+      })
+      .toBe(600);
   }
   await expect(
     page.getByRole("heading", { name: "Reset your Automated LO password" }),

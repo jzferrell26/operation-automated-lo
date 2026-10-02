@@ -1,7 +1,7 @@
 # PRD-009a: Marketing Toolkit - The Light Look and the Top Menu
 
 > **Parent:** [PRD-009](./prd-009-marketing-toolkit-index.md)
-> **Status:** Backlog. Authored 2026-10-01. Not started.
+> **Status:** Backlog. Authored 2026-10-01; checked against OD-H the same day (the look and the menu are unchanged; only the register row numbers moved). Not started.
 > **Priority:** P0. Every other sub-PRD renders inside the shell this one rebuilds.
 > **Schema changes:** None
 > **Owner Guardians:** `ux-ui-guardian` (tokens, shell, the `ux-ui/` amendment); `react-guardian` (the shell component and navigation sources); `typography-font-guardian` (Inter); `dark-mode-theming-guardian` (the first-visit theme)
@@ -52,7 +52,7 @@ The Light values in [`design/00-direction.md`](design/00-direction.md) section 2
 
 ### D2. One menu definition
 
-The six items (Home `/overview`, Campaigns `/marketing/campaigns`, Brand `/brand`, Realtor partners `/partners`, Homeowner reports `/homeowners`, Settings `/settings`) are defined once and read by the review shell, the synthetic shell, and the dashboard preview shell. The labels are the owner's ("Yes, as shown"). The addresses are today's (D-12). Homeowner reports is listed for every account regardless of `OALO_HOMEOWNER_REPORTS` (D-4), and the existing role projection (`projectNavigationForSession`, capability `reports:read`) still decides whether a given role sees it.
+The six items (Home `/overview`, Campaigns `/marketing/campaigns`, Brand `/brand`, Realtor partners `/partners`, Homeowner reports `/homeowners`, Settings `/settings`) are defined once and read by the review shell, the synthetic shell, and the dashboard preview shell. The labels are the owner's ("Yes, as shown"). The addresses are today's (D-12). Homeowner reports is listed for every account regardless of `OALO_HOMEOWNER_REPORTS` (D-4), and the existing role projection (`projectNavigationForSession`, capability `reports:read`) still decides whether a given role sees it. The Ads library is a tab inside Campaigns (009c), not a menu item, so the approved menu does not change under OD-H (D-16).
 
 ### D3. The synthetic demo keeps one sample-data line
 
@@ -80,7 +80,7 @@ With nothing stored, the bootstrap resolves Light whatever the device says (D-5)
 | 009A-AC-012 | Every interactive control in the bar is at least 44 px tall at every frame, not only on touch. | Browser (synthetic) |
 | 009A-AC-013 | In review mode no signed-in page renders the shell-wide not-connected `<aside>` (`app-shell.tsx:140-158`), and the account control states only who is signed in, with no connection clause. In synthetic mode exactly one sample-data line renders in the top bar region (D3). The review-surface sweep is extended to assert both on every review route. | Integration |
 | 009A-AC-014 | The menu of D2 is the only menu: the review, synthetic, and dashboard preview shells each yield exactly the six labels in order, and none lists Leads and Pipeline, Automations, Reports, Marketplace or Workspace tools, the Marketing Suite or any of its sub-items, or Getting started. `marketingItems` and the "Expand Marketing" toggle are removed. The navigation unit tests (including the nine-item list at `apps/web/src/features/ui-foundation/model/synthetic-ui.unit.test.ts:39-59`) assert the six. | Unit |
-| 009A-AC-015 | Every register row in [009f](./prd-009f-marketing-toolkit-removals-and-records.md) whose file is under `library/knowledge/private/ux-ui/` (rows S-42 to S-68) is applied in that file: a dated note in place names PRD-009 and the reason, and the superseded text stays readable (quoted or struck, never deleted). The ux-ui `README.md` names the PRD-009 mockups as the visual reference and the Claude Design canvases as history. A second pass checks each row against its file. | Record check |
+| 009A-AC-015 | Every register row in [009f](./prd-009f-marketing-toolkit-removals-and-records.md) whose file is under `library/knowledge/private/ux-ui/` (rows S-45 to S-71) is applied in that file: a dated note in place names PRD-009 and the reason, and the superseded text stays readable (quoted or struck, never deleted). The ux-ui `README.md` names the PRD-009 mockups as the visual reference and the Claude Design canvases as history. A second pass checks each row against its file. | Record check |
 
 ## Files expected to change
 

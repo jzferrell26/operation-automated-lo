@@ -1,0 +1,92 @@
+[
+  {
+    "id": "sample-first-home",
+    "version": 1,
+    "tallSha256": "36054b5dab767dbdda948629bd42d66491d43b7056561a507a75dfbfbb5048ab",
+    "squareSha256": "a383a3adea63fde93a742a6f04332f3e9f81de22365ec6ae30d9b4a6315b4a46",
+    "defaultsSha256": "4dda5a8c0ca8687e90d3f010417d04401794fd2de082ca42932d1f74318f480e",
+    "headlineMaxLength": 60,
+    "primaryTextMaxLength": 300
+  },
+  {
+    "id": "sample-first-home",
+    "version": 2,
+    "tallSha256": "36054b5dab767dbdda948629bd42d66491d43b7056561a507a75dfbfbb5048ab",
+    "squareSha256": "a383a3adea63fde93a742a6f04332f3e9f81de22365ec6ae30d9b4a6315b4a46",
+    "defaultsSha256": "26d1897496217a028f8e2a1b514d2f41023e2f6ce467f10c2b16a9fea3318636",
+    "headlineMaxLength": 60,
+    "primaryTextMaxLength": 300
+  },
+  {
+    "id": "sample-first-home-checklist",
+    "version": 1,
+    "tallSha256": "38746d1136c8e2cd1b28f49c80bfdb58ef295f735a2088e64bf5035da95c7e53",
+    "squareSha256": "33263a5a76fd5c59e2bf15148ff5dbbec6db786ce3c4e2e3901ac4cb8e6dc0ad",
+    "defaultsSha256": "4ec559eb319b6c6040b802f8ba5613b25badf0de8f6ec36108da88d0e424c7a1",
+    "headlineMaxLength": 60,
+    "primaryTextMaxLength": 300
+  },
+  {
+    "id": "sample-loan-review",
+    "version": 1,
+    "tallSha256": "5068c6c950061fcfb0e02f29c1ba3a00c27b2a32cafc30967eae97814bd0de41",
+    "squareSha256": "c1b0d163ece84e975fc3dec7dd3375c6500159476b5f03a1cfcbd83e39195da3",
+    "defaultsSha256": "ec2b0665631be9ef58bd5a445d1756dfd005b6403f4f092ce32d89476616ab73",
+    "headlineMaxLength": 60,
+    "primaryTextMaxLength": 300
+  },
+  {
+    "id": "sample-refinance-questions",
+    "version": 1,
+    "tallSha256": "5068c6c950061fcfb0e02f29c1ba3a00c27b2a32cafc30967eae97814bd0de41",
+    "squareSha256": "c1b0d163ece84e975fc3dec7dd3375c6500159476b5f03a1cfcbd83e39195da3",
+    "defaultsSha256": "aa42798741c636780c34f39411ea8cb3becda821bf789ede515016b1401d5458",
+    "headlineMaxLength": 60,
+    "primaryTextMaxLength": 300
+  },
+  {
+    "id": "sample-va-home-loans",
+    "version": 1,
+    "tallSha256": "9046ecf1f1c80f46391b6e4825de3b9d4dc8ac75fb6d44a1cb46cd248104f806",
+    "squareSha256": "0b88485b8d8afd43fd1f7bd10e5c4c92757ed70c715a03833207d6bd524c48ae",
+    "defaultsSha256": "c4b6b2e6741efde64af7222845d76126cf21fbeef8fc731163078c596e030398",
+    "headlineMaxLength": 60,
+    "primaryTextMaxLength": 300
+  },
+  {
+    "id": "sample-pre-approval",
+    "version": 1,
+    "tallSha256": "f23bf3c06251d205c063b57a8d10334d7216d49bfe623ce31efde1c628e6329c",
+    "squareSha256": "975e99aa4a249643bd9d6c4e6a5db6f34eab5c8f7994fa1b45332e8cd15962c3",
+    "defaultsSha256": "b7ee345f51a2b27e6769cdcbd851e57abcb34c0a80117d3b5acb49c9c09d772a",
+    "headlineMaxLength": 60,
+    "primaryTextMaxLength": 300
+  },
+  {
+    "id": "sample-stronger-offer",
+    "version": 1,
+    "tallSha256": "7c754c7d6d565dd1ee301e36f69b2baf2b68b1c572b91a3282e030a56f20241d",
+    "squareSha256": "48ded954733d48e743bfa30d5e7f00cdd35a8c21d7b763a2dc7d4b9f7999582e",
+    "defaultsSha256": "c2c5672656e38d02d809e4d8c6939637c77cfb4f3f8ad727b581ed43f13aae81",
+    "headlineMaxLength": 60,
+    "primaryTextMaxLength": 300
+  },
+  {
+    "id": "sample-down-payment-help",
+    "version": 1,
+    "tallSha256": "7eb89ee83c8a84c3fe70ac6e28a3f548ac7abdd1c0bc853c0d84e543b0a3510d",
+    "squareSha256": "948fd0f887a0ab49a3027276aba773b224041660ac80aabed5d835ec80a53d7c",
+    "defaultsSha256": "aea3f2c48406a522d5eeb44da9a371d8a5acb7b942c13cb17ac18ebcb6c3b21a",
+    "headlineMaxLength": 60,
+    "primaryTextMaxLength": 300
+  },
+  {
+    "id": "sample-spring-search",
+    "version": 1,
+    "tallSha256": "10a9ee43b6ef598fd1318e0f8800af39aeac695d7c9af67403d0926b04509dec",
+    "squareSha256": "152eecc0c3875a5d159aeace5ee76f66cffe5b9b714039a6215a224270fb2ed7",
+    "defaultsSha256": "506de036d4908cef409962ad674bea9121f48a3f2006936037d29540f4edfadc",
+    "headlineMaxLength": 60,
+    "primaryTextMaxLength": 300
+  }
+]

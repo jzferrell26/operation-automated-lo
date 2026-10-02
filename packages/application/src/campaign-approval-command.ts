@@ -36,6 +36,92 @@ export class CampaignApprovalNotReadyError extends Error {
   }
 }
 
+/**
+ * PRD-009c D4. Where a library ad stands in the catalog, as the approval command needs it: the
+ * status of the exact `(id, version)`, the ad's highest version and its status, and the two art
+ * digests the catalog records for that version.
+ */
+export interface LibraryAdCatalogStanding {
+  readonly status: "active" | "retired" | "replaced";
+  readonly highestVersion: number;
+  readonly highestStatus: "active" | "retired" | "replaced";
+  readonly tallSha256: string;
+  readonly squareSha256: string;
+}
+
+/**
+ * PRD-009c D4. The catalog as the approval command reads it. It is a required parameter of
+ * `executeHumanCampaignApproval`, never optional, so no caller can approve a library-ad version
+ * without the catalog's say (the PRD-009 run rule: a new parameter is never made optional to spare
+ * a caller). Resolving an `(id, version)` that is not in the loaded catalog answers `undefined`.
+ */
+export interface LibraryAdCatalogPort {
+  standingOf(
+    ad: Readonly<{ id: string; version: number }>,
+  ): Promise<LibraryAdCatalogStanding | undefined>;
+}
+
+export type LibraryAdRefusalReason = "missing" | "retired" | "replaced" | "art_changed";
+
+const LIBRARY_AD_REFUSAL_MESSAGES: Readonly<Record<LibraryAdRefusalReason, string>> = {
+  missing: "This ad isn't in the library, so this version can't be approved.",
+  retired: "This ad was taken out of the library, so this version can't be approved.",
+  replaced: "A newer version of this ad is in the library, so this version can't be approved.",
+  art_changed: "This ad's pictures changed in the library, so this version can't be approved.",
+};
+
+export class CampaignLibraryAdRefusedError extends Error {
+  public readonly reason: LibraryAdRefusalReason;
+
+  public constructor(reason: LibraryAdRefusalReason) {
+    super(LIBRARY_AD_REFUSAL_MESSAGES[reason]);
+    this.name = "CampaignLibraryAdRefusedError";
+    this.reason = reason;
+  }
+}
+
+function assertLibraryAdCatalogPort(catalog: unknown): asserts catalog is LibraryAdCatalogPort {
+  if (
+    typeof catalog !== "object" ||
+    catalog === null ||
+    typeof (catalog as { standingOf?: unknown }).standingOf !== "function"
+  ) {
+    throw new TypeError("executeHumanCampaignApproval requires a library-ad catalog port.");
+  }
+}
+
+/**
+ * PRD-009c D4, 009C-AC-008. A library-ad version is approvable only while its ad is in the catalog,
+ * active, at its highest version, and still has the art digests the version recorded. A version of
+ * an ad that was retired gets the retired refusal even when a newer version was retired, and an
+ * older version gets the newer-version refusal. An open house version has no library ad, so the
+ * catalog is not consulted for it.
+ */
+async function assertLibraryAdApprovable(
+  manifest: CampaignVersion["manifest"],
+  catalog: LibraryAdCatalogPort,
+): Promise<void> {
+  if (manifest.blueprintId !== "library-ad") return;
+  const standing = await catalog.standingOf({
+    id: manifest.libraryAd.id,
+    version: manifest.libraryAd.version,
+  });
+  if (standing === undefined) throw new CampaignLibraryAdRefusedError("missing");
+  if (standing.status === "retired" || standing.highestStatus === "retired") {
+    throw new CampaignLibraryAdRefusedError("retired");
+  }
+  if (standing.status !== "active" || standing.highestVersion !== manifest.libraryAd.version) {
+    throw new CampaignLibraryAdRefusedError("replaced");
+  }
+  const [tall, square] = manifest.images;
+  if (
+    tall.contentSha256 !== standing.tallSha256 ||
+    square.contentSha256 !== standing.squareSha256
+  ) {
+    throw new CampaignLibraryAdRefusedError("art_changed");
+  }
+}
+
 export interface CampaignApprovalEvidence {
   readonly version: CampaignVersion;
   readonly preflight: PreflightResult;
@@ -188,7 +274,9 @@ export async function executeHumanCampaignApproval(
   input: HumanCampaignApprovalInput,
   principal: Readonly<AuthenticatedPrincipal>,
   repository: CampaignApprovalRepository,
+  catalog: LibraryAdCatalogPort,
 ): Promise<HumanCampaignApprovalResult> {
+  assertLibraryAdCatalogPort(catalog);
   const frozen = freezeAuthenticatedPrincipal(principal);
   return repository.run(async (transaction) => {
     const evidence = await transaction.loadCurrentEvidence(input.campaignRef);
@@ -225,6 +313,10 @@ export async function executeHumanCampaignApproval(
       });
       return Object.freeze({ kind: "denied" as const });
     }
+
+    // PRD-009c D4. After the role check, before anything else: a version whose library ad is
+    // missing, retired, replaced, or whose art changed is refused for every caller alike.
+    await assertLibraryAdApprovable(evidence.version.manifest, catalog);
 
     if (matchesExistingApproval(input, frozen, evidence)) {
       return Object.freeze({

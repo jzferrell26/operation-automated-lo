@@ -63,6 +63,11 @@ export async function handleDashboardPreviewCheck(
       environment,
     );
     const manifest = version.manifest;
+    // The open house compiler only ever builds `open-house-boost`; the manifest is a union since
+    // PRD-009c D5, so the property and partner fields are read only after narrowing.
+    if (manifest.blueprintId !== "open-house-boost") {
+      return json({ error: "CAMPAIGN_PREFLIGHT_FAILED" }, 400);
+    }
     return json(
       campaignCheckSchema.parse({
         campaignRef: version.campaignRef,

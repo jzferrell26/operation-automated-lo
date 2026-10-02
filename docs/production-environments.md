@@ -66,6 +66,10 @@ Review-surface flag (server-only, never `NEXT_PUBLIC_`):
 
   The flag governs more than the two criterion-named routes. When it is set, the authenticated shell, `/overview`, `/reports`, `/onboarding`, `/settings/connections`, `/brand`, and the marketing campaign detail route all render not-connected projections instead of fixture content, and the public synthetic artifact route returns 404 rather than publishing a property. Those extra surfaces are not named by an acceptance criterion; they are covered because the same fixture content would otherwise read as observed tenant state.
 
+Ads library samples flag (server-only, never `NEXT_PUBLIC_`, local runs only):
+
+- `OALO_ADS_LIBRARY_SAMPLES`, unset by default. The exact value `enabled` shows the labelled sample ads (PRD-009c D3) in the ads library, but only when `OALO_ENVIRONMENT` is the literal `local` (an unset value is not local) and none of `VERCEL`, `VERCEL_ENV`, and `OALO_RELEASE_MANIFEST_JSON` is set. Any one of those deployment signals refuses the samples even with the flag set, and the sample art route then answers 404. The local synthetic demo, the review test run (`tooling/scripts/database/review-browser-run.mjs`), the synthetic browser suite (`playwright.config.ts`), and the tests set it. **Never set it on a deployment**, in Vercel or anywhere else: the real ads library starts empty, and a deployment shows only the ads the owner supplies. `OALO_RELEASE_MANIFEST_JSON` is required outside local (above), so a preview, staging, or production deployment that follows this contract refuses samples on that signal alone, and the raw `local` check refuses them on a deployment that never set `OALO_ENVIRONMENT`.
+
 Database, task project, secret scope, private storage, published storage, and provider app identifiers must be unique across all four environments. The isolation fixture in CI is synthetic contract evidence, not proof about live resources.
 
 ## Public variable allowlist

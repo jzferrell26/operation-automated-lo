@@ -1,6 +1,7 @@
 import { generateKeyPairSync } from "node:crypto";
 
 import { afterEach, describe, expect, it } from "vitest";
+import { freezeAuthenticatedPrincipal } from "@oalo/application";
 import { issueEmbeddedSessionToken } from "@oalo/auth";
 
 import {
@@ -17,6 +18,13 @@ import {
   persistedDraftFromPreflightBody,
 } from "./campaign-command-test-support.js";
 import { handleCampaignPreflight } from "./campaign-preflight-handler.js";
+import {
+  SAMPLES_ON_ENVIRONMENT,
+  libraryAdApprovalPayload,
+  sampleEntry,
+  saveLibraryAdDraft,
+} from "./library-ad-test-support.js";
+import { loadLocalCampaign } from "./local-campaign-store.js";
 
 const store = createTemporaryCampaignStore("oalo-approval-");
 const csrfSecret = Buffer.alloc(32, 9);
@@ -286,4 +294,104 @@ describe("campaign approval handler", () => {
       /^correlation_approve_[0-9a-f]+$/u,
     );
   });
+});
+
+/**
+ * PRD-009c D4, 009C-AC-008. The handler composes the command's required catalog port from the ads
+ * library loader under the same environment, so the route refuses a library-ad version whose ad is
+ * retired, replaced, missing, or whose art changed, with its own code and nothing written.
+ */
+describe("campaign approval handler, library-ad versions", () => {
+  const CREATOR = freezeAuthenticatedPrincipal({
+    actorRef: CREATOR_REF,
+    actorId: "00000000-0000-4000-8000-000000000822",
+    locationRef: LOCATION_REF,
+    locationId: "00000000-0000-4000-8000-000000000821",
+    installationRef: INSTALLATION_REF,
+    role: "campaign_creator",
+    roleVersion: 1,
+    sessionId: "session_approvalcreator001",
+    authenticationMode: "embedded",
+  });
+
+  function withSamples(environment: Readonly<Record<string, string>>) {
+    return Object.freeze({ ...environment, ...SAMPLES_ON_ENVIRONMENT });
+  }
+
+  async function approveLibraryAd(
+    adId: string,
+    version: number,
+    options: Readonly<{ samples: boolean; tallSha256?: string }>,
+  ) {
+    await store.enter();
+    const session = sessionFixture();
+    const environment = options.samples ? withSamples(store.env()) : store.env();
+    const entry = await sampleEntry(adId, version);
+    const draft = await saveLibraryAdDraft({
+      principal: CREATOR,
+      environment,
+      entry:
+        options.tallSha256 === undefined
+          ? entry
+          : {
+              ...entry,
+              images: {
+                ...entry.images,
+                tall: { ...entry.images.tall, sha256: options.tallSha256 },
+              },
+            },
+    });
+    expect(draft.preflight.blocking).toBe(false);
+    const response = await handleCampaignApproval(
+      approveRequest(libraryAdApprovalPayload(draft), session.approverHeaders),
+      environment,
+      session.ports,
+    );
+    const stored = await loadLocalCampaign(draft.version.campaignRef, environment);
+    return { response, stored };
+  }
+
+  it("approves a version of an active ad at its highest version, with samples on", async () => {
+    const { response, stored } = await approveLibraryAd("sample-first-home", 2, { samples: true });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      state: "approved",
+      decision: "approved",
+    });
+    expect(stored?.approval?.snapshot).toMatchObject({
+      blueprintId: "library-ad",
+      libraryAdId: "sample-first-home",
+      libraryAdVersion: 2,
+    });
+  });
+
+  it.each([
+    ["a retired ad", "sample-spring-search", 1, true, undefined, "LIBRARY_AD_RETIRED"],
+    ["a replaced version", "sample-first-home", 1, true, undefined, "LIBRARY_AD_REPLACED"],
+    ["changed art", "sample-first-home", 2, true, "9".repeat(64), "LIBRARY_AD_ART_CHANGED"],
+    [
+      "an ad the catalog does not hold, with samples off",
+      "sample-first-home",
+      2,
+      false,
+      undefined,
+      "LIBRARY_AD_MISSING",
+    ],
+  ] as const)(
+    "refuses %s with 409 and writes nothing",
+    async (_label, adId, version, samples, tallSha256, code) => {
+      const { response, stored } = await approveLibraryAd(adId, version, {
+        samples,
+        ...(tallSha256 === undefined ? {} : { tallSha256 }),
+      });
+      expect(response.status).toBe(409);
+      await expect(response.json()).resolves.toEqual({ error: code });
+      expect(response.headers.get("x-oalo-correlation-ref")).toMatch(
+        /^correlation_approve_[0-9a-f]+$/u,
+      );
+      expect(stored?.state).toBe("awaiting_approval");
+      expect(stored?.approval).toBeUndefined();
+      expect(stored?.rowVersion).toBe(1);
+    },
+  );
 });

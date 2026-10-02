@@ -196,6 +196,29 @@ export function deriveCampaignNextActions(
   }
 }
 
+/**
+ * The open house fields of the projection, read through the manifest's `blueprintId` (PRD-009 run
+ * rule on exported types). A library-ad version has no property and, by structure, no Realtor
+ * (compliance control 9), so it shows neither, and its run dates stand where the open house times
+ * stood. PRD-009e replaces this projection's open house fields in Wave 3.
+ */
+function openHouseFieldsOf(manifest: CampaignVersion["manifest"]) {
+  if (manifest.blueprintId === "library-ad") {
+    return {
+      propertyAddress: "",
+      openHouseStartsAt: manifest.schedule.startsAt ?? "",
+      openHouseEndsAt: manifest.schedule.endsAt,
+      realtorDisplayName: "",
+    };
+  }
+  return {
+    propertyAddress: manifest.property.address,
+    openHouseStartsAt: manifest.property.openHouseStartsAt,
+    openHouseEndsAt: manifest.property.openHouseEndsAt,
+    realtorDisplayName: manifest.partner.realtorDisplayName,
+  };
+}
+
 export function projectCampaignWorkspace(
   record: CampaignWorkspaceReadRecord,
   principal: Readonly<AuthenticatedPrincipal>,
@@ -214,10 +237,7 @@ export function projectCampaignWorkspace(
     rowVersion: record.rowVersion,
     updatedAt: record.updatedAt,
     headline: manifest.content.headline,
-    propertyAddress: manifest.property.address,
-    openHouseStartsAt: manifest.property.openHouseStartsAt,
-    openHouseEndsAt: manifest.property.openHouseEndsAt,
-    realtorDisplayName: manifest.partner.realtorDisplayName,
+    ...openHouseFieldsOf(manifest),
     disclosureText: manifest.content.disclosureText,
     dailyBudgetMinor: manifest.meta.dailyBudgetMinor,
     totalBudgetMinor: manifest.meta.totalBudgetMinor,

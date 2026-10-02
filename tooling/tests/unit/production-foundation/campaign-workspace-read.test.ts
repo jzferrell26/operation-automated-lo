@@ -11,10 +11,10 @@ import {
   type CampaignWorkspaceReadRecord,
 } from "@oalo/application";
 import {
-  CampaignManifestSchema,
+  OpenHouseCampaignManifestSchema,
   type ApprovalDecision,
   type CampaignInputVersions,
-  type CampaignManifest,
+  type OpenHouseCampaignManifest,
   type CampaignState,
   type CampaignVersion,
   type PreflightResult,
@@ -32,7 +32,7 @@ const inputVersions: CampaignInputVersions = {
   rulesetVersionRef: "ruleset_01Policy",
 };
 
-const manifest: CampaignManifest = CampaignManifestSchema.parse({
+const manifest: OpenHouseCampaignManifest = OpenHouseCampaignManifestSchema.parse({
   schemaVersion: 1,
   blueprintId: "open-house-boost",
   property: {

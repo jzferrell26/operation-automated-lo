@@ -87,6 +87,13 @@ export {
 } from "./campaign-foundation.js";
 
 export {
+  libraryAdCopyRef,
+  libraryAdCreativeRef,
+  libraryAdDisclosureRef,
+  libraryAdImageRef,
+} from "./library-ad-references.js";
+
+export {
   CAMPAIGN_APPROVAL_ROLES,
   CAMPAIGN_MUTATION_ROLES,
   CampaignCommandForbiddenError,
@@ -106,7 +113,11 @@ export {
 export {
   CampaignApprovalNotReadyError,
   CampaignApprovalStaleError,
+  CampaignLibraryAdRefusedError,
   executeHumanCampaignApproval,
+  type LibraryAdCatalogPort,
+  type LibraryAdCatalogStanding,
+  type LibraryAdRefusalReason,
   type CampaignApprovalCommitInput,
   type CampaignApprovalCommitResult,
   type CampaignApprovalEvidence,

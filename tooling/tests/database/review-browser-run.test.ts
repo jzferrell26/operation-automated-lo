@@ -31,6 +31,13 @@ describe("review browser run", () => {
     expect(environment["OALO_SELF_SERVE_SIGNUP"]).toBe("enabled");
     expect(environment["OALO_PROVIDER_MODE"]).toBe("stub");
     expect(environment["OALO_SYNTHETIC_DATA_ONLY"]).toBe("true");
+    // PRD-009c D3, 009C-AC-004. The review run shows the labelled sample ads: the flag and a raw
+    // `local` environment are both set, and none of the deployment-shaped signals is.
+    expect(environment["OALO_ENVIRONMENT"]).toBe("local");
+    expect(environment["OALO_ADS_LIBRARY_SAMPLES"]).toBe("enabled");
+    for (const signal of ["VERCEL", "VERCEL_ENV", "OALO_RELEASE_MANIFEST_JSON"]) {
+      expect(environment[signal]).toBeUndefined();
+    }
   });
 
   it("configures no email at all, which is the honest not-configured state", () => {

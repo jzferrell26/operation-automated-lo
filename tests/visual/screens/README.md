@@ -20,7 +20,7 @@ answers "does this screen still look the way the design brief says".
 ## Naming
 
 `<screen>--<state>--<frame>--<theme>.png`, for example
-`campaign-create--default--390--dark.png`. The frame is one of `1440`, `1180`, `768`, `390`, which
+`overview--default--390--dark.png`. The frame is one of `1440`, `1180`, `768`, `390`, which
 are design brief section 14's four frames. The theme is `light` or `dark`. The state is `default`
 unless the rubric names one, in which case it is that name in lower case with hyphens.
 
@@ -29,7 +29,7 @@ screens and the guided-setup steps) comes from `snapshotPathTemplate` in `playwr
 
 ## Where they run
 
-- **Synthetic screens** (overview, campaigns, create, campaign detail, reports, onboarding,
+- **Synthetic screens** (overview, campaigns, campaign detail,
   settings and connections, brand, email preview, and the boundary page): `pnpm test:browser`,
   which `pnpm verify:offline` runs.
 

@@ -11,32 +11,28 @@ let context: BrowserContext, page: Page;
 let guard: Awaited<ReturnType<typeof guardLocalOrigin>>;
 const faults: string[] = [];
 const password = "cedar harbour lantern phrase";
-const routes = [
-  "/marketing",
-  "/marketing/property-sites",
-  "/marketing/creative",
-  "/marketing/ads",
-  "/marketing/messaging",
-  "/marketing/blueprints",
-  "/partners",
-  "/leads",
-  "/leads/pipeline",
-  "/automations",
-  "/marketplace",
-  "/settings",
-  "/settings/profile",
-  "/settings/routing",
-  "/settings/team",
-  "/settings/billing",
-];
+/** PRD-009f D1. The pages that survive. */
+const routes = ["/partners", "/brand", "/settings", "/settings/routing", "/settings/billing"];
+/** PRD-009f D1. An address that moved answers a redirect, and where it leads. */
+const moved = [
+  ["/marketing", "/marketing/campaigns"],
+  ["/marketing/property-sites", "/marketing/campaigns"],
+  ["/marketing/creative", "/marketing/campaigns"],
+  ["/marketing/ads", "/marketing/campaigns"],
+  ["/marketing/messaging", "/marketing/campaigns"],
+  ["/marketing/blueprints", "/marketing/campaigns/library"],
+  ["/reports", "/marketing/campaigns"],
+  ["/marketplace", "/overview"],
+  ["/settings/profile", "/brand"],
+  ["/settings/team", "/settings/account"],
+  ["/onboarding", "/overview"],
+] as const;
+/** PRD-009f D1. The three CRM addresses that answer 404 with the gone page. */
+const gone = ["/leads", "/leads/pipeline", "/automations"] as const;
 async function open(path: string) {
   const response = await page.goto(path, { waitUntil: "networkidle" });
   expect(response?.status(), path).toBe(200);
   await expect(page.locator("[data-authenticated-workspace-page]")).toBeVisible();
-}
-async function select(label: string, option: string) {
-  await page.getByRole("combobox", { name: label, exact: true }).click();
-  await page.getByRole("option", { name: option, exact: true }).click();
 }
 async function saved(button: string) {
   const response = page.waitForResponse(
@@ -71,6 +67,44 @@ test.describe.serial("signed-in workspace pages", () => {
     await context?.close();
   });
 
+  /**
+   * PRD-009f 009F-AC-001 and 009F-AC-002, with a real session.
+   *
+   * The redirects are read without following them, because the status and the Location are the
+   * claim. The gone page is asked for as a person asks for it, and its 404 is the HTTP status: the
+   * group that serves it has no loading boundary, so the status is not committed before the page
+   * throws. An address no page of this product owns keeps the ordinary not-found, and the sentence
+   * about a page being gone is not on it.
+   */
+  test("moved addresses redirect, gone addresses answer 404 with the gone page, and anything else is the ordinary not-found", async () => {
+    test.setTimeout(120000);
+    for (const [from, to] of moved) {
+      const response = await page.request.get(from, { maxRedirects: 0 });
+      expect(response.status(), from).toBe(307);
+      expect(new URL(response.headers()["location"] ?? "", page.url()).pathname, from).toBe(to);
+    }
+    for (const path of gone) {
+      const response = await page.goto(path);
+      expect(response?.status(), path).toBe(404);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "This page is gone." }),
+        path,
+      ).toBeVisible();
+      await expect(
+        page.getByText("Your leads, pipelines and follow-up live in HighLevel."),
+        path,
+      ).toBeVisible();
+      await expect(
+        page.getByRole("main").getByRole("link", { name: "Go to Home" }),
+        path,
+      ).toHaveAttribute("href", "/overview");
+    }
+    await page.getByRole("main").getByRole("link", { name: "Go to Home" }).click();
+    await expect(page).toHaveURL(/\/overview$/u);
+    await page.goto("/leads/someone-else");
+    await expect(page.getByRole("heading", { name: "404", exact: true })).toBeVisible();
+    await expect(page.getByText("This page is gone.")).toHaveCount(0);
+  });
   test("every known destination opens for the signed-in account and unknown destinations stay missing", async () => {
     test.setTimeout(120000);
     for (const path of routes) {
@@ -91,14 +125,14 @@ test.describe.serial("signed-in workspace pages", () => {
     const anonymous = await context.browser()!.newContext({ ignoreHTTPSErrors: true });
     try {
       const visitor = await anonymous.newPage();
-      await visitor.goto(new URL("/settings/profile", page.url()).href);
+      await visitor.goto(new URL("/partners", page.url()).href);
       await expect(visitor).toHaveURL(/\/sign-in$/u);
     } finally {
       await anonymous.close();
     }
   });
   test("report identity saves, survives reload and rejects an outdated tab without losing its draft", async () => {
-    await open("/settings/profile");
+    await open("/brand");
     await page.getByLabel("Loan officer name", { exact: true }).fill("Casey Example");
     await page.getByLabel("Company name", { exact: true }).fill("Evergreen Example Lending");
     await page.getByLabel("Loan officer email", { exact: true }).fill("casey@example.test");
@@ -162,22 +196,15 @@ test.describe.serial("signed-in workspace pages", () => {
         "Latest saved tagline.",
       );
       await expect(page.getByRole("button", { name: "Create report", exact: true })).toBeDisabled();
-      await page.getByRole("button", { name: "Expand Marketing", exact: true }).click();
-      await expect(
-        page
-          .getByRole("navigation", { name: "Product navigation" })
-          .getByRole("link", { name: "Message drafts", exact: true }),
-      ).toHaveAttribute("href", "/marketing/messaging");
-      await expect(
-        page
-          .getByRole("navigation", { name: "Product navigation" })
-          .getByRole("link", { name: "Workspace tools", exact: true }),
-      ).toHaveAttribute("href", "/marketplace");
-      await open("/settings/profile");
     }
   });
-  test("partner edits persist and choosing a saved partner does not grant material permission", async () => {
+  test("partner edits persist, and the page says that Realtor partners never appear in paid ads", async () => {
     await open("/partners");
+    await expect(
+      page.getByText("Your ads show only you. Realtor partners never appear in paid ads.", {
+        exact: true,
+      }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Add Realtor partner", exact: true }).click();
     await page.getByLabel("Partner name", { exact: true }).fill("Avery Example");
     await page.getByLabel("Brokerage or company", { exact: true }).fill("Example Realty");
@@ -189,62 +216,8 @@ test.describe.serial("signed-in workspace pages", () => {
     await page.getByRole("button", { name: "Edit Avery Example", exact: true }).click();
     await page.getByLabel("Brokerage or company", { exact: true }).fill("Updated Example Realty");
     await saved("Save partner");
-    await page.goto("/marketing/campaigns/new", { waitUntil: "networkidle" });
-    await page
-      .getByLabel("I have permission to use the Realtor's materials.", { exact: true })
-      .check();
-    await select("Saved Realtor partner", "Avery Example Updated Example Realty");
-    await expect(page.getByLabel("Realtor name", { exact: true })).toHaveValue("Avery Example");
-    await expect(
-      page.getByLabel("I have permission to use the Realtor's materials.", { exact: true }),
-    ).not.toBeChecked();
     await open("/partners");
     await expect(page.getByText("Updated Example Realty", { exact: true })).toBeVisible();
-  });
-  test("email and SMS drafts persist independently and unsaved edits require a choice before switching", async () => {
-    await open("/marketing/messaging");
-    await page.getByLabel("Email subject", { exact: true }).fill("Saved invitation");
-    await page.getByLabel("Message text", { exact: true }).fill("My saved email invitation.");
-    await saved("Save message draft");
-    await select("Message draft", "Open house invitation · SMS");
-    await page.getByLabel("Message text", { exact: true }).fill("My saved SMS invitation.");
-    await saved("Save message draft");
-    await page.getByLabel("Message text", { exact: true }).fill("Unsaved SMS changes.");
-    await select("Message draft", "Buyer follow-up · Email");
-    await expect(
-      page.getByRole("dialog", { name: "Discard unsaved draft changes?" }),
-    ).toBeVisible();
-    await page.getByRole("button", { name: "Keep editing", exact: true }).click();
-    await expect(page.getByLabel("Message text", { exact: true })).toHaveValue(
-      "Unsaved SMS changes.",
-    );
-    await select("Message draft", "Buyer follow-up · Email");
-    await page.getByRole("button", { name: "Discard edits and switch", exact: true }).click();
-    await select("Message draft", "Open house invitation · SMS");
-    await expect(page.getByLabel("Message text", { exact: true })).toHaveValue(
-      "My saved SMS invitation.",
-    );
-    await page.reload();
-    await expect(page.getByLabel("Email subject", { exact: true })).toHaveValue("Saved invitation");
-    await expect(page.getByLabel("Message text", { exact: true })).toHaveValue(
-      "My saved email invitation.",
-    );
-    await page.evaluate(() =>
-      Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined }),
-    );
-    await page.getByRole("button", { name: "Copy draft", exact: true }).click();
-    await expect(
-      page.getByText("Clipboard access is unavailable. Select the message text to copy it.", {
-        exact: true,
-      }),
-    ).toBeVisible();
-    await page.getByLabel("Message text", { exact: true }).fill("A newly edited invitation.");
-    await expect(page.getByText("Your changes are saved.", { exact: true })).toHaveCount(0);
-    await expect(
-      page.getByText("Clipboard access is unavailable. Select the message text to copy it.", {
-        exact: true,
-      }),
-    ).toHaveCount(0);
   });
   test("a conflicting partner edit can reload the latest roster without discarding the open form", async () => {
     await open("/partners");
@@ -274,7 +247,7 @@ test.describe.serial("signed-in workspace pages", () => {
     }
   });
   test("a failed save preserves the typed text and does not display a saved confirmation", async () => {
-    await open("/marketing/messaging");
+    await open("/brand");
     await page.route("**/api/workspace/preferences", async (route) => {
       if (route.request().method() === "POST")
         await route.fulfill({
@@ -288,14 +261,14 @@ test.describe.serial("signed-in workspace pages", () => {
     });
     try {
       await page
-        .getByLabel("Message text", { exact: true })
-        .fill("Keep my unsaved draft after failure.");
-      await page.getByRole("button", { name: "Save message draft", exact: true }).click();
+        .getByLabel("Brand tagline", { exact: true })
+        .fill("Keep my unsaved edit after failure.");
+      await page.getByRole("button", { name: "Save report branding", exact: true }).click();
       await expect(page.getByRole("main").getByRole("alert")).toContainText(
         "The save was not confirmed",
       );
-      await expect(page.getByLabel("Message text", { exact: true })).toHaveValue(
-        "Keep my unsaved draft after failure.",
+      await expect(page.getByLabel("Brand tagline", { exact: true })).toHaveValue(
+        "Keep my unsaved edit after failure.",
       );
       await expect(page.getByText("Your changes are saved.", { exact: true })).toHaveCount(0);
     } finally {
@@ -311,14 +284,10 @@ test.describe.serial("signed-in workspace pages", () => {
       await open("/settings");
       await chooseThemeFromTheHeader(page, theme);
       for (const path of [
-        "/marketing",
         "/settings",
-        "/settings/profile",
+        "/brand",
         "/partners",
-        "/marketing/messaging",
-        "/marketing/creative",
         "/settings/routing",
-        "/settings/team",
         "/settings/billing",
       ]) {
         await open(path);
@@ -363,7 +332,7 @@ test.describe.serial("signed-in workspace pages", () => {
             `${theme} ${path} ${width} document bounds`,
           ).toBe(true);
         }
-        if (["/settings/profile", "/marketing"].includes(path))
+        if (path === "/brand")
           await page.screenshot({
             path: info.outputPath(`${theme}-${path.replaceAll("/", "-")}-mobile.png`),
             fullPage: true,

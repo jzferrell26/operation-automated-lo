@@ -57,7 +57,7 @@ What the bar holds: the product name on the left; the menu; on the right, Help a
 2. **It is the font of the look the owner picked.** The AutomatedRE layer sets `--ls-font-ui` to Inter (`src/styles/ls-tokens.css:426`), loaded in `src/app/layout.tsx:2,10` of Listing Studio. Two products from one owner should read as one family.
 3. **It suits the job.** Inter has tabular figures for money and dates, which lets us drop the monospace "data font" from ordinary screens (see the token table).
 
-**Delivery.** Follow the existing font pipeline exactly: vendor `inter-latin.woff2` (variable, Latin subset) and its upstream licence file into `apps/web/public/fonts/`, add one `@font-face` with `font-display: swap`, re-run the browser gate that forbids third-party requests, then redraw the baselines. Inter is published under the SIL Open Font License 1.1; UNVERIFIED in this pass, so the vendoring lane must place the unmodified upstream licence beside the file before it ships, as the README already requires.
+**Delivery.** [`prd-009a-marketing-toolkit-light-look-and-top-menu.md`](../prd-009a-marketing-toolkit-light-look-and-top-menu.md) is the reference: 009A-AC-006 defines the vendored files and how they are verified, 009A-AC-007 the `@font-face` and the font tokens, and Background 3 the licence. In short: the unmodified upstream variable file `InterVariable.woff2` (352,240 bytes) and `LICENSE.txt` from the Inter release tag, each checked against the upstream tag commit and its git blob SHA-1, recorded with its SHA-256 in `apps/web/public/fonts/README.md`; one `@font-face` with `font-display: swap`; then the browser gate that forbids third-party requests, and redrawn baselines. Where this paragraph and 009a differ, 009a governs.
 
 **Monospace** survives only inside "Details for support" (version and support references). Numbers and dates use Inter with `font-variant-numeric: tabular-nums`.
 
@@ -586,7 +586,7 @@ The canvases stay in the repo as history and stop being the visual reference.
 | Meta's current Special Ad Category rules for mortgage ads: which category (Housing, or Meta's financial products category), allowed location types, any minimum area, and whether Meta widens small areas | UNVERIFIED | `meta-ads-guardian` and research gate G3, before PRD-009 build fixes D-18 and D-19 |
 | Facebook feed image sizes (1080 by 1350, 1080 by 1080), headline and text limits, the allowed button labels | UNVERIFIED | Same |
 | HighLevel's own navigation beside the Custom Page at the 1180 frame | UNVERIFIED | A sandbox location |
-| Inter's licence (SIL Open Font License 1.1) | UNVERIFIED here | The font vendoring lane |
+| Inter's licence and the exact vendored files | Read upstream by 009a (Background 3: SIL Open Font License 1.1; 009A-AC-006: tag commit, sizes, git blob SHA-1s) | The vendoring lane, against 009A-AC-006 |
 | The check names in the step 3 mockup | Illustrative; drawn from `compliance-and-risk.md` (Regulation Z, targeting, control 9) | The PRD-009 checks criteria |
 
 Everything else was read from the files cited, in this worktree or in the Listing Studio snapshot, on 2026-10-01.

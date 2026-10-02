@@ -83,13 +83,13 @@ The first draft had a property-intake 009c and an open house 009d; OD-H replaced
 |---|---|---|---|
 | [`prd-009a-marketing-toolkit-light-look-and-top-menu`](./prd-009a-marketing-toolkit-light-look-and-top-menu.md) | Token values, the tenant accent, Inter with its licence, Light by default, the six-item top bar at four frames, the banner removed, the `ux-ui/` amendment | 15 | Backlog |
 | [`prd-009b-marketing-toolkit-home-for-a-new-account`](./prd-009b-marketing-toolkit-home-for-a-new-account.md) | "Launch an ad" with the topic question, the three-item checklist from saved records, connection status stated once, the two honest lists, the walkthrough retired with the profile kept | 15 | Backlog |
-| [`prd-009c-marketing-toolkit-ads-library`](./prd-009c-marketing-toolkit-ads-library.md) | The catalog format and its schema test, 4:5 and 1:1 art, versions and retirement, the binding into the campaign version, the library tab with topic filters, labelled sample ads that never reach a deployment | 14 | Backlog |
-| [`prd-009d-marketing-toolkit-launch-an-ad`](./prd-009d-marketing-toolkit-launch-an-ad.md) | Choose an ad, set it up, review and launch: the brand band, the editable words with limits, the locked disclosure, budget, dates, and places, the Meta rules check, the word checks, Approve, the disabled "Launch on Facebook", the PRD-008b states, new versions, click and field counts | 23 | Backlog |
+| [`prd-009c-marketing-toolkit-ads-library`](./prd-009c-marketing-toolkit-ads-library.md) | The catalog format and its schema test, 4:5 and 1:1 art, versions and retirement, art digests and contained paths, the binding into the campaign version and the approval snapshot, the library tab with topic filters, labelled sample ads behind a fail-closed guard | 16 | Backlog |
+| [`prd-009d-marketing-toolkit-launch-an-ad`](./prd-009d-marketing-toolkit-launch-an-ad.md) | Choose an ad, set it up, review and launch: the brand band, the editable words with limits, the locked disclosure, budget, dates, and places, the Meta rules check, the word checks, Approve, the disabled "Launch on Facebook", the PRD-008b states, new versions, click and field counts, Brand text read and checked on the server, structured places, control 9 by structure | 24 | Backlog |
 | [`prd-009e-marketing-toolkit-campaign-page-and-list`](./prd-009e-marketing-toolkit-campaign-page-and-list.md) | Results with honest not-live states, the approved ad and words, who approved, versions, library notices, older open house campaigns, the list with status and one action | 12 | Backlog |
 | [`prd-009f-marketing-toolkit-removals-and-records`](./prd-009f-marketing-toolkit-removals-and-records.md) | Removals with each old address's fate, "Open House Boost" retired from copy, Realtor partners' honest line, the 81-row supersession register, ledger, maps, public docs, operator checklist | 15 | Backlog |
 | [`prd-009g-marketing-toolkit-verification`](./prd-009g-marketing-toolkit-verification.md) | Baselines redrawn once with new empty-account states, the scored design review, the timed run, the "state it once" test | 12 | Backlog |
 
-Sub-PRD criteria: 106. Module criteria below: 11. **Total: 117.**
+Sub-PRD criteria: 109. Module criteria below: 11. **Total: 120.**
 
 ### PRD-008 follow-ups this PRD closes
 
@@ -102,7 +102,7 @@ From the [PRD-008 index, "Follow-ups after PRD-008"](../../completed/prd-008-fin
 1. **Phase 0.** Move this folder to `library/requirements/in-work/` and repair links (009F-AC-015); write the `MKR-` ledger rows; check the prerequisites in the scope contract; record whether the owner has answered any open question differently from the default.
 2. **Wave 1, in parallel, on disjoint files:**
    - **009a (look and menu)** owns `packages/ui/src/tokens.*`, `apps/web/src/theme/**`, `apps/web/public/fonts/**`, `apps/web/src/app/globals.css`, `apps/web/src/features/shell/**`, `apps/web/src/app/(authenticated)/layout.tsx`, `apps/web/src/fixtures/ui-foundation/synthetic-ui.ts`, `apps/web/src/features/workspace/navigation.ts`, `apps/web/src/features/dashboard-preview/product-shell.tsx`, and `library/knowledge/private/ux-ui/**`.
-   - **009c part 1 (the catalog)** owns `packages/contracts/src/ads-library.ts` and the manifest union in `packages/contracts/src/campaign-foundation.ts`, the catalog, loader, and builder under `apps/web/src/features/ads-library/`, `apps/web/src/fixtures/ads-library/**`, the sample art route, `tooling/scripts/ads-library/**`, the retirement refusal in `apps/web/src/server/campaign-approval-handler.ts`, `tooling/scripts/database/review-browser-run.mjs`, and `docs/production-environments.md` (009C-AC-001 to 009, 014).
+   - **009c part 1 (the catalog)** owns `packages/contracts/src/ads-library.ts` and the manifest union in `packages/contracts/src/campaign-foundation.ts`, the catalog, loader, and builder under `apps/web/src/features/ads-library/`, `apps/web/src/fixtures/ads-library/**`, the sample art route, `tooling/scripts/ads-library/**`, the approval snapshot union and the catalog-port refusal in `packages/application/src/campaign-foundation.ts` and `packages/application/src/campaign-approval-command.ts`, `tooling/scripts/database/review-browser-run.mjs`, and `docs/production-environments.md` (009C-AC-001 to 009, 014 to 016).
    - **009f code (removals)** owns the catch-all route, `apps/web/src/features/workspace/model.ts` and `workspace-screen.tsx`, the rest of `apps/web/src/features/dashboard-preview/**`, the Reports route and only-serving files, the gone page and redirects, `apps/web/src/copy/user-language.ts`, `apps/web/src/copy/auth-messages.ts`, `apps/web/src/app/layout.tsx`, and the tests recon section 1 lists.
 
    **Wave lanes never edit `EXECUTION_LEDGER.md`.** Each lane puts its ledger content in its lane report; the orchestrator alone writes the ledger. No baseline is redrawn before Wave 4.
@@ -129,7 +129,7 @@ Module-level criteria. Sub-PRD criteria use the `009X-AC-NNN` scheme inside each
 | MTK-008 | Every new or changed user-visible string passes the user-language source guard (`tooling/tests/unit/user-language/forbidden-vocabulary.test.ts`) and the review-surface sweep, and `technical-writing-craft-guardian` reviews all of them, across every lane, with no blocking finding. Its report is in this PRD's `qa/` folder. | Unit, Integration, Review |
 | MTK-009 | No signed-in screen in review mode renders a spend, lead, cost, or count figure that is not read from a live source, the catalog, or the stored check result. A figure with no live source shows words, never 0. | Integration |
 | MTK-010 | `pnpm-lock.yaml` gains no new package. The sample art generator uses the `sharp` the root `package.json` already declares. The Inter font is a vendored file, not a package. | CI, Source scan |
-| MTK-011 | No deployment can show a sample ad: the three guards of 009c D3 hold, and Light is the design target for every new baseline (both themes drawn, the scored review led by Light, the first visit Light). | Unit, Review, Browser |
+| MTK-011 | No deployment can show a sample ad: the fail-closed guard of 009c D3 holds (009C-AC-004, 016), and Light is the design target for every new baseline (both themes drawn, the scored review led by Light, the first visit Light). | Unit, Review, Browser |
 
 ---
 
@@ -138,10 +138,10 @@ Module-level criteria. Sub-PRD criteria use the `009X-AC-NNN` scheme inside each
 | ID | Risk | Mitigation |
 |---|---|---|
 | R-1 | **The real library ships empty.** On the hosted app nobody can launch an ad until the owner supplies the first approved ads. | Every surface says so honestly (009C-AC-012); the operator checklist names the exact files, format, and where to send them (009F-AC-014). |
-| R-2 | **A sample ad reaches a real user.** | Three independent guards: an environment check, an explicit flag no deployment sets, and a visible "Sample ad" label; sample art is unreachable outside a local run (009c D3). |
+| R-2 | **A sample ad reaches a real user.** An unset `OALO_ENVIRONMENT` defaults to `local` in the existing schemas. | The guard fails closed: the raw flag must be `enabled`, the raw environment exactly `local`, and no deployment-shaped signal set; samples are not in a deployment's bundle; a post-deploy check is on the operator checklist (009c D3, 009F-AC-014). |
 | R-3 | **Meta's Special Ad Category rules are UNVERIFIED:** whether everyday mortgage ads are Housing or Financial products, allowed locations, minimum areas, placements, labels, limits. | `meta-ads-guardian` checks the current documentation during the run (009D-AC-012); conservative defaults (Housing, places only, feed only) hold where a rule stays unverified; launch is disabled anyway. |
-| R-4 | **The word checks miss a claim or block a clean sentence.** | A deterministic detector with a table of at least 30 cases; the curator reviews every ad's defaults; a named human approves every version. |
-| R-5 | **Library ads still need lender and counsel review** (`compliance-and-risk.md:74`, `:154`). | Each ad records who approved it and when; the catalog README states the review rule; a counsel and lender item sits on the operator checklist before any live launch. |
+| R-4 | **The word checks miss a claim or block a clean sentence.** | A deterministic detector over normalised text, with at least 30 plain and 10 evasion cases, run on the words and every Brand text the ad prints; every digit refused in the words by default; the curator reviews every ad's defaults; a named human approves every version. |
+| R-5 | **Library ads still need lender and counsel review** (`compliance-and-risk.md:74`, `:154`). | The owner's own merge of each catalog pull request is the approval record (the ruleset requires 0 reviews); the catalog README states the review rule; a counsel and lender item sits on the operator checklist before any live launch. In a one-person workspace the `location_admin` approves their own campaign, so per-version approval is a self-attestation there and the curator's lender review is the real compliance gate. |
 | R-6 | **Campaigns saved before PRD-009 exist on the hosted app.** | They stay parseable and open read-only with one honest line (009E-AC-012). |
 | R-7 | **No logo on the ad.** The design's band has a logo tile, and PRD-009 has no file storage. | An initials tile (D-25), and three design strings corrected so the product never promises a logo (009d D3); a logo upload is an owner question for later. |
 | R-8 | **Sign-up rate limits starve the review specs** (10 per hour). | The empty-account spec creates one account and reuses it (009g D1). |
@@ -226,15 +226,16 @@ flowchart TD
 
 None in the database: PRD-009 adds no migration and no pgTAP suite, and the existing suites still run in `pnpm test:db`. Specifically:
 
-- The campaign manifest contract becomes a union on `blueprintId`: `open-house-boost` unchanged, plus `library-ad` (009c D5). The `manifest` column already accepts any JSON object.
+- The campaign manifest contract becomes a union on `blueprintId`: `open-house-boost` unchanged, plus `library-ad` with art digests and no partner field (009c D5). The `manifest` column already accepts any JSON object.
+- The approval snapshot becomes a union too, and decisions record the decider's own session display name in their evidence (009C-AC-015, 009e D2); the `snapshot` column already accepts any JSON object, and no grant on `platform.app_users` is added.
 - The domain's checks gain the library-ad ruleset and its rules (009d D5).
-- Brand gains three fields (title, brand colour, disclosure line) stored per person in `platform.user_preferences` beside the report brand (009d D3); the homeowner report brand contract is unchanged.
+- Brand gains four fields (title, a brand colour preset id, disclosure line, lead form wording) stored per person in `platform.user_preferences` beside the report brand (009d D3); the homeowner report brand contract is unchanged.
 - The ads catalog and its art are files in the repository (009c).
 
 ## API changes
 
-- **Changed:** `POST /api/campaigns/preflight` saves a library-ad version (the ad and its version, the edited words, schedule, places, budgets) and accepts an existing campaign reference for a new version. `POST /api/campaigns/approve` refuses an undecided version whose library ad is retired.
-- **New:** a route that serves sample art only in a local run with the samples flag (404 otherwise).
+- **Changed:** `POST /api/campaigns/preflight` saves a library-ad version (the ad and its version, the edited words, schedule, structured places, budgets) and accepts an existing campaign reference for a new version; its body is bounded and `.strict()`, and it carries no Brand, disclosure, or lead form field, which the server reads from saved Brand. `POST /api/campaigns/approve` refuses, through the approval command, an undecided version whose library ad is retired, replaced, missing, or whose art digests differ, and records the decider's own display name.
+- **New:** a route that serves sample art by `(adId, version, shape)` only when the fail-closed sample guard passes (404 otherwise).
 - **Removed:** `POST /api/setup/progress`.
 - No launch, publish, upload, or import route is added.
 - Old page addresses redirect or answer the gone page as 009f D1 lists; `/marketing/campaigns/library` is new.
@@ -249,6 +250,7 @@ Each has a default, so none blocks the run.
 - [ ] **A logo on the ad.** Owner question for a later PRD; it needs file storage. Default: the initials tile (D-25).
 - [ ] **Meta's current Special Ad Category rules** (D-18, D-19, D-23): category, locations, minimum area, placements, labels, limits. UNVERIFIED until 009D-AC-012 records them; conservative defaults apply.
 - [ ] **Every other open decision D-16 to D-25** takes the designer's recommendation unless the owner says otherwise.
+- [ ] The hosted app's actual `OALO_ENVIRONMENT` value. UNVERIFIED; the sample guard does not depend on it, and the operator's post-deploy check records it (009F-AC-014).
 - [ ] How HighLevel frames the Custom Page at 1180. UNVERIFIED; the design does not depend on it.
 - [ ] Whether a mortgage ad must carry the NMLS number by law. Not asserted (009d D5); G7 counsel.
 
@@ -267,3 +269,4 @@ Each has a default, so none blocks the run.
 ## Amendments
 
 - **2026-10-01, OD-H (a curated ads library replaces the ad builder).** The owner simplified the core flow after the first draft (`69b60ea`). The property-intake 009c and the open house 009d of commit `22e6b87` are superseded whole by `prd-009c-marketing-toolkit-ads-library.md` and `prd-009d-marketing-toolkit-launch-an-ad.md`; git history keeps the originals. Link import, photo upload and storage, the two migrations and their pgTAP suite, the Firecrawl question, and partner consent and co-branding are removed everywhere; AD-1 to AD-3 are moot and compliance control 9 stays in force. Home, the campaign page and list, the register, verification, the operator checklist items, the counts (121 to 117), the wave plan, and the risks follow.
+- **2026-10-01, the authoring security review** ([`qa/2026-10-01-authoring-security-review.md`](qa/2026-10-01-authoring-security-review.md), FIX FIRST, nine Medium). All nine are fixed in the criteria: Brand text, the disclosure, and the lead form wording are read on the server and checked (M-1, 009D-AC-024); places are structured and validated (M-2, 009D-AC-008); the claim checks normalise text and test evasions (M-3, 009D-AC-010); the sample guard fails closed (M-4, 009C-AC-004); approval binds the art bytes and has its own snapshot (M-5, 009C-AC-002, 015); the approver's name is recorded from their own session with no new read of `platform.app_users` and no migration (M-6, 009E-AC-004); art paths are derived and contained and the sample route has a fixed lookup (M-7, 009C-AC-002, 016); ads arrive through a session or private channel and the owner's merge is the approval record (M-8, 009c D7, 009F-AC-014); control 9 holds by structure (M-9, 009D-AC-023). Lows L-1 to L-11 are applied as criterion clauses, except that the design mockups' sample identifiers (L-6) belong to `design-system-guardian`. Counts move from 117 to 120.

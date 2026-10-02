@@ -2,7 +2,10 @@ import { type AuthenticatedPrincipal, type CampaignWorkspaceReadRecord } from "@
 import { ApprovalDecisionSchema } from "@oalo/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { loadAdsLibrary } from "../features/ads-library/server/catalog-loader.js";
+import {
+  ADS_LIBRARY_SAMPLES_FLAG,
+  loadAdsLibrary,
+} from "../features/ads-library/server/catalog-loader.js";
 import { createLocalSyntheticPrincipal } from "./authenticated-principal.js";
 import { createTemporaryCampaignStore } from "./campaign-command-test-support.js";
 import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
@@ -34,7 +37,7 @@ const APPROVER: AuthenticatedPrincipal = createLocalSyntheticPrincipal({
 const CREATOR: AuthenticatedPrincipal = createLocalSyntheticPrincipal();
 
 function environment() {
-  return { ...store.env(), OALO_ADS_LIBRARY_SAMPLES: "enabled" };
+  return { ...store.env(), [ADS_LIBRARY_SAMPLES_FLAG]: "enabled" };
 }
 
 const NOTHING_SAVED = { installationStatuses: [], brand: undefined } as const;

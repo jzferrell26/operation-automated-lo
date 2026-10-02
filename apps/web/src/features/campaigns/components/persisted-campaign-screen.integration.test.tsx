@@ -5,9 +5,11 @@ import {
   APPROVER,
   CREATOR,
   OWNER,
+  daysOutsideTimeElements,
   earlierFlowCampaign,
   libraryCampaign,
   pageOf,
+  wholeSentence,
   type LibraryCampaignOptions,
 } from "../../../server/campaign-page.test-support.js";
 import { PersistedCampaignScreen } from "./persisted-campaign-screen.js";
@@ -53,7 +55,9 @@ describe("the campaign page header (009E-AC-001)", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Runs from Tue, Oct 6, 2026 until Tue, Oct 20, 2026, in Austin, TX and Texas. $25 a day, up to $350 in total.",
+        wholeSentence(
+          "Runs from Tue, Oct 6, 2026 until Tue, Oct 20, 2026, in Austin, TX and Texas. $25 a day, up to $350 in total.",
+        ),
       ),
     ).toBeInTheDocument();
   });
@@ -62,7 +66,9 @@ describe("the campaign page header (009E-AC-001)", () => {
     await renderCampaign({ endsAt: "2026-10-20T23:59:59.000Z" });
 
     expect(
-      screen.getByText(/^Runs from launch until Tue, Oct 20, 2026, in Austin, TX and Texas\./u),
+      screen.getByText(
+        wholeSentence(/^Runs from launch until Tue, Oct 20, 2026, in Austin, TX and Texas\./u),
+      ),
     ).toBeInTheDocument();
   });
 
@@ -386,7 +392,9 @@ describe("the library notices on the page (009E-AC-006)", () => {
     await renderCampaign({ adId: "sample-spring-search", adVersion: 1 });
 
     const notice = screen.getByText(
-      "This ad was taken out of the library on Sep 30, 2026, so this draft can't be approved. Your budget, dates and area are kept.",
+      wholeSentence(
+        "This ad was taken out of the library on Sep 30, 2026, so this draft can't be approved. Your budget, dates and area are kept.",
+      ),
     );
     const item = notice.closest("li") as HTMLElement;
     expect(within(item).getAllByRole("link")).toHaveLength(1);
@@ -405,7 +413,9 @@ describe("the library notices on the page (009E-AC-006)", () => {
     });
 
     const notice = screen.getByText(
-      "This ad was taken out of the library on Sep 30, 2026. This campaign keeps its approved version.",
+      wholeSentence(
+        "This ad was taken out of the library on Sep 30, 2026. This campaign keeps its approved version.",
+      ),
     );
     expect(within(notice.closest("li") as HTMLElement).queryByRole("link")).toBeNull();
     expect(within(notice.closest("li") as HTMLElement).queryByRole("button")).toBeNull();
@@ -657,5 +667,74 @@ describe("a campaign saved before PRD-009 (009E-AC-012)", () => {
       "Version ID",
       "Support reference",
     ]);
+  });
+});
+
+/**
+ * Every date is a `time` element (PRD-008d, 009a), so the global stylesheet draws it with tabular
+ * figures in the interface face, which the browser's design-quality check holds every photographed
+ * screen to. Found on CI for the header line and the versions card.
+ */
+describe("the dates on the campaign page", () => {
+  it.each([
+    ["ready for approval", {}],
+    ["approved", { decision: "approved" as const }],
+    ["sent back", { decision: "rejected" as const }],
+    [
+      "approved on a retired ad",
+      { adId: "sample-spring-search", adVersion: 1, decision: "approved" as const },
+    ],
+    ["undecided on a retired ad", { adId: "sample-spring-search", adVersion: 1 }],
+  ] as const)("are all in time elements when the campaign is %s", async (_state, options) => {
+    const { container } = await renderCampaign({
+      startsAt: "2026-10-06T09:00:00.000Z",
+      endsAt: "2026-10-20T23:59:59.000Z",
+      ...options,
+    });
+
+    expect(daysOutsideTimeElements(container)).toEqual([]);
+    expect(container.querySelectorAll("time").length).toBeGreaterThan(0);
+  });
+
+  it("gives the run dates and the saved date their own machine values", async () => {
+    const { container } = await renderCampaign({
+      startsAt: "2026-10-06T09:00:00.000Z",
+      endsAt: "2026-10-20T23:59:59.000Z",
+    });
+
+    const lead = container.querySelector("header p:nth-of-type(2)") as HTMLElement;
+    expect([...lead.querySelectorAll("time")].map((time) => time.getAttribute("datetime"))).toEqual(
+      ["2026-10-06", "2026-10-20"],
+    );
+    const versions = container.querySelector("[data-versions]") as HTMLElement;
+    expect(versions.querySelector("time")).toHaveTextContent(/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/u);
+  });
+
+  it("are in time elements on a page made before PRD-009", async () => {
+    const earlier = render(
+      <PersistedCampaignScreen
+        page={await pageOf(await earlierFlowCampaign(), { principal: OWNER })}
+      />,
+    );
+
+    expect(daysOutsideTimeElements(earlier.container)).toEqual([]);
+  });
+});
+
+/**
+ * PRD-009 design direction 6.5 and 009d D8: a version whose checks found something is drawn with the
+ * chip "Needs changes", the plain fixes, and "Make a new version". The design gives it no heading
+ * of its own: "Needs changes" is the chip, and "What to fix" heads the fixes.
+ */
+describe("a campaign that needs changes", () => {
+  it("shows the chip, the plain fixes, and Make a new version, and no heading called Needs changes", async () => {
+    const { container } = await renderCampaign({ needsChanges: true });
+
+    const chip = container.querySelector("[data-campaign-standing='preflight_failed']");
+    expect(chip).toHaveTextContent("Needs changes");
+    const fixes = screen.getByRole("region", { name: "What to fix" });
+    expect(within(fixes).getAllByRole("listitem").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Make a new version" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Needs changes" })).toBeNull();
   });
 });

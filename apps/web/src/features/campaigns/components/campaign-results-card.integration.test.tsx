@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { daysOutsideTimeElements } from "../../../server/campaign-page.test-support.js";
 import { NO_LIVE_RESULTS, type CampaignResultsInput } from "../campaign-page-model.js";
 import { CampaignResultsCard } from "./campaign-results-card.js";
 
@@ -120,5 +121,16 @@ describe("the results card with live values", () => {
 
     expect(figure("spend")).toHaveTextContent("Source: Automated LO. Update time not recorded");
     expect(figure("leads")).toHaveTextContent("Update time not recorded");
+  });
+});
+
+describe("the day a figure was last updated", () => {
+  it("is a time element with the moment it names", () => {
+    const { container } = render(<CampaignResultsCard results={LIVE} />);
+
+    const updated = container.querySelector("[data-figure='spend'] time") as HTMLElement;
+    expect(updated).toHaveAttribute("datetime", "2026-10-03T14:15:00.000Z");
+    expect(updated.textContent).toMatch(/^Oct 3, 2026, 2:15 PM UTC$/u);
+    expect(daysOutsideTimeElements(container)).toEqual([]);
   });
 });

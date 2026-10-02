@@ -12,6 +12,7 @@ import { standingTone } from "../campaign-page-model.js";
 import { shortDay } from "../launch-model.js";
 import { decisionWho } from "./campaign-approval-section.js";
 import styles from "./campaign-page.module.css";
+import { TextWithDays } from "./text-with-days.js";
 
 /**
  * PRD-009e D2, D3 and 009E-AC-005. Every version of the campaign, newest first: its number, the
@@ -42,14 +43,22 @@ export function CampaignVersionsCard({
                 <Badge tone={standingTone(version.standing, decision?.decision)}>
                   {campaignStateLabel(version.standing, decision?.decision)}
                 </Badge>
-                <p>{savedLine(shortDay(version.savedAt), version.savedByViewer)}</p>
+                <p>
+                  <TextWithDays
+                    days={[{ dateTime: version.savedAt, text: shortDay(version.savedAt) }]}
+                    text={savedLine(shortDay(version.savedAt), version.savedByViewer)}
+                  />
+                </p>
                 {decision === undefined ? null : (
                   <p>
-                    {decidedLine(
-                      decision.decision === "approved" ? "Approved" : "Sent back",
-                      shortDay(decision.decidedAt),
-                      decisionWho(decision),
-                    )}
+                    <TextWithDays
+                      days={[{ dateTime: decision.decidedAt, text: shortDay(decision.decidedAt) }]}
+                      text={decidedLine(
+                        decision.decision === "approved" ? "Approved" : "Sent back",
+                        shortDay(decision.decidedAt),
+                        decisionWho(decision),
+                      )}
+                    />
                   </p>
                 )}
                 {/*

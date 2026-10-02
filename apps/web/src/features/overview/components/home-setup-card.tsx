@@ -27,10 +27,19 @@ import styles from "./overview.module.css";
  * keeps the card open with that item marked.
  */
 
+/**
+ * The mockup draws a plug for both connections and a palette for the brand. `IconName` is a closed
+ * set (`packages/ui/src/components/Icon.tsx`) with neither glyph, so each item takes the nearest one
+ * the product already uses for the page it opens: Settings' navigation draws Connections as `globe`
+ * and Brand kit as `sparkles` (`dashboard-preview/workspace-settings.tsx`). The first draft used
+ * `bolt`, which is the old preview rail's logo mark and means "the product", not "connect", and
+ * `building`, which Settings uses for the company profile. Adding `plug` and `palette` to the set
+ * would match the mockup exactly and would change only this map.
+ */
 const ITEM_ICONS: Readonly<Record<HomeChecklistItem["id"], IconName>> = {
-  highlevel: "bolt",
-  meta: "bolt",
-  brand: "building",
+  highlevel: "globe",
+  meta: "globe",
+  brand: "sparkles",
 };
 
 const STATE_TONES: Readonly<Record<HomeChecklistState, BadgeTone>> = {
@@ -100,13 +109,13 @@ function ChecklistRow({ item }: Readonly<{ item: HomeChecklistItem }>) {
   return (
     <li data-item={item.id} data-state={item.state}>
       <span aria-hidden="true" className={styles.itemIcon}>
-        <Icon decorative name={ITEM_ICONS[item.id]} size="md" />
+        <Icon decorative name={ITEM_ICONS[item.id]} size="lg" />
       </span>
       <div>
         <h3 className={styles.itemTitle}>{copy.title}</h3>
         <p className={styles.secondary}>{copy.sentence}</p>
         <Badge
-          className={styles.stateBadge}
+          className={`${styles.stateBadge} ${styles.stateChip}`}
           data-checklist-state={item.state}
           tone={STATE_TONES[item.state]}
         >

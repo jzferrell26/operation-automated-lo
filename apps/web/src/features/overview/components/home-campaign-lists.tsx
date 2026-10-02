@@ -83,8 +83,14 @@ function CampaignRow({ row }: Readonly<{ row: HomeCampaignRow }>) {
       </h3>
       {dates === "" ? null : <p className={styles.secondary}>{dates}</p>}
       <p className={styles.badges}>
-        <Badge tone="info">{row.statusLabel}</Badge>
-        {row.sample ? <Badge tone="neutral">{HOME_SAMPLE_AD_LABEL}</Badge> : null}
+        <Badge className={styles.stateChip} tone="info">
+          {row.statusLabel}
+        </Badge>
+        {row.sample ? (
+          <Badge className={styles.stateChip} tone="neutral">
+            {HOME_SAMPLE_AD_LABEL}
+          </Badge>
+        ) : null}
       </p>
     </li>
   );

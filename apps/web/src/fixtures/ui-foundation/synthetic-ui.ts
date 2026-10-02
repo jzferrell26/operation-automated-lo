@@ -216,7 +216,7 @@ export const rawSyntheticUiFixture: unknown = {
       {
         id: "attention-routing",
         title: "Destination stage cannot be verified",
-        affectedModule: "Leads and Pipeline",
+        affectedModule: "Settings",
         severity: "critical",
         responsibleParty: "Location Owner",
         remediation: "Select an existing authorized pipeline stage and rerun the read-only check.",
@@ -228,7 +228,7 @@ export const rawSyntheticUiFixture: unknown = {
       {
         id: "attention-meta",
         title: "Meta asset read-back is inconclusive",
-        affectedModule: "Marketing Suite",
+        affectedModule: "Campaigns",
         severity: "uncertain",
         responsibleParty: "Location Owner",
         remediation: "Wait for the synthetic reconciliation to reach a terminal state.",
@@ -278,7 +278,7 @@ export const rawSyntheticUiFixture: unknown = {
     workspaceStatus: [
       {
         id: "workspace-marketing",
-        label: "Marketing Suite",
+        label: "Campaigns",
         state: "attention",
         detail: "Provider reconciliation in progress",
         source: "Synthetic module registry",
@@ -286,7 +286,7 @@ export const rawSyntheticUiFixture: unknown = {
       },
       {
         id: "workspace-brand",
-        label: "Brand Engine",
+        label: "Brand",
         state: "healthy",
         detail: "Version 3 current",
         source: "Synthetic module registry",
@@ -294,7 +294,7 @@ export const rawSyntheticUiFixture: unknown = {
       },
       {
         id: "workspace-partners",
-        label: "Partners",
+        label: "Realtor partners",
         state: "healthy",
         detail: "Active",
         source: "Synthetic module registry",
@@ -302,7 +302,7 @@ export const rawSyntheticUiFixture: unknown = {
       },
       {
         id: "workspace-leads",
-        label: "Leads and Pipeline",
+        label: "Where new leads go",
         state: "setup_required",
         detail: "Destination stage required",
         source: "Synthetic module registry",
@@ -310,15 +310,15 @@ export const rawSyntheticUiFixture: unknown = {
       },
       {
         id: "workspace-automations",
-        label: "Automations",
-        state: "restricted",
-        detail: "Not included in plan",
-        source: "Synthetic entitlement projection",
+        label: "Ads library",
+        state: "healthy",
+        detail: "Sample ads available",
+        source: "Synthetic module registry",
         freshness: "Evaluated 2 minutes ago",
       },
       {
         id: "workspace-reports",
-        label: "Reports",
+        label: "Homeowner reports",
         state: "restricted",
         detail: "Owner role required",
         source: "Synthetic role projection",
@@ -326,10 +326,10 @@ export const rawSyntheticUiFixture: unknown = {
       },
       {
         id: "workspace-marketplace",
-        label: "Marketplace",
-        state: "planned",
-        detail: "Planned add-on",
-        source: "Synthetic product registry",
+        label: "Plan and usage",
+        state: "healthy",
+        detail: "Included in your plan",
+        source: "Synthetic entitlement projection",
         freshness: "Evaluated 2 minutes ago",
       },
       {
@@ -342,9 +342,9 @@ export const rawSyntheticUiFixture: unknown = {
       },
       {
         id: "workspace-onboarding",
-        label: "Onboarding",
+        label: "Account",
         state: "setup_required",
-        detail: "Get Connected is incomplete",
+        detail: "Email not confirmed yet",
         source: "Synthetic readiness verifier",
         freshness: "Evaluated 2 minutes ago",
       },
@@ -399,7 +399,7 @@ export const rawSyntheticUiFixture: unknown = {
           {
             id: "synthetic-permission-campaign-create",
             label: "Create campaigns",
-            businessPurpose: "Let you build an Open House Boost in your own workspace.",
+            businessPurpose: "Let you set up an ad in your own workspace.",
             evidence: "Synthetic App Test evidence verified 8 minutes ago.",
             impact: "Draft preparation is available; provider writes remain disabled.",
             nextAction: "No action is required for this synthetic projection.",

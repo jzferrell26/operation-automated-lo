@@ -1177,7 +1177,7 @@ describe("guided setup steps", () => {
 
         expect(panel()).toHaveAccessibleName("This version needs changes");
         expect(panel()).toHaveAccessibleDescription(
-          "This version needs changes before anyone can approve it. Fix what the checks found, then save it again.",
+          "This version needs changes before anyone can approve it. The campaign creator fixes what the checks found and saves it again.",
         );
         for (const untrue of [
           GUIDED_SETUP_STEPS.approveOrHandOff.approveBody,

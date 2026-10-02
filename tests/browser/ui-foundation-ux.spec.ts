@@ -372,6 +372,55 @@ test("every interactive control in the bar is at least 44px tall at every frame"
 });
 
 /**
+ * The sheet primitive's cascade. Its mobile `.sheet` rule (0,1,0) used to lose to its
+ * `[data-anchor]` rules (0,2,0), so at 390 the bar's three sheets opened as fixed panels at
+ * `inset-block-start: 100%`, with their tops below the frame (measured 2026-10-01: a top of 856px in
+ * an 844px frame). `toBeVisible` accepts a panel that is off screen, so the position is asserted:
+ * at 390 each sheet is a bottom sheet across the full frame, and at 1180 Help still opens beneath
+ * its own control.
+ */
+test("the bar's three sheets sit inside the frame at 390 and Help stays anchored at 1180", async ({
+  page,
+}) => {
+  const guard = await guardSyntheticLocalPage(page);
+  const banner = page.getByRole("banner");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/overview");
+  for (const opener of [
+    banner.getByRole("button", { name: "Menu" }),
+    banner.getByRole("button", { name: "Help" }),
+    accountControl(page),
+  ]) {
+    await opener.click();
+    const sheet = page.getByRole("dialog");
+    await expect(sheet).toBeVisible();
+    const box = await boxOf(sheet);
+    expect(box.x, "a bottom sheet starts at the frame's edge").toBeLessThanOrEqual(1);
+    expect(box.width, "a bottom sheet spans the frame").toBeGreaterThanOrEqual(389);
+    expect(box.y, "a bottom sheet starts inside the frame").toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height, "a bottom sheet ends at the frame's bottom").toBeCloseTo(844, 0);
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+  }
+
+  await page.setViewportSize({ width: 1180, height: 900 });
+  await page.goto("/overview");
+  const help = banner.getByRole("button", { name: "Help" });
+  await help.click();
+  const helpSheet = page.getByRole("dialog");
+  await expect(helpSheet).toBeVisible();
+  const helpBox = await boxOf(help);
+  const sheetBox = await boxOf(helpSheet);
+  expect(sheetBox.y, "Help's panel opens beneath its control").toBeGreaterThanOrEqual(
+    helpBox.y + helpBox.height - 1,
+  );
+  expect(sheetBox.x + sheetBox.width, "and stays inside the frame").toBeLessThanOrEqual(1180);
+
+  await assertGuardClean(guard);
+});
+
+/**
  * PRD-009a, 009A-AC-009. One header: the wordmark linking Home, the six-item "Main" menu in order,
  * Help, and the account control; the current page carries `aria-current` and a tint and a weight,
  * not colour alone; no left rail and no collapse toggle.

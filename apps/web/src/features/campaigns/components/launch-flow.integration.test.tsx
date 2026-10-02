@@ -361,6 +361,33 @@ describe("step 2, Where it shows (009D-AC-008)", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it("announces a save it refused at the top of the form, takes focus there, and ties each message to its field", async () => {
+    const fetch = stubSave();
+    const user = userEvent.setup();
+    renderFlow(STEP_TWO, { rememberedPlaces: ["TX"] });
+    const daily = screen.getByLabelText(/^Daily budget/u);
+    fireEvent.change(daily, { target: { value: "1" } });
+    await user.click(screen.getByRole("button", { name: "Save and check" }));
+
+    const problem = screen.getByRole("alert");
+    expect(problem).toHaveAttribute("aria-live", "assertive");
+    expect(problem).toHaveTextContent("Look over the fields marked below and try again.");
+    expect(problem).toHaveFocus();
+    const headline = screen.getByLabelText(/^Headline/u);
+    expect(
+      problem.compareDocumentPosition(headline) & Node.DOCUMENT_POSITION_FOLLOWING,
+      "the message comes before the first field",
+    ).toBeTruthy();
+    expect(daily).toHaveAttribute("aria-invalid", "true");
+    expect(daily).toHaveAccessibleDescription(expect.stringContaining(DAILY_BUDGET_FIX));
+    expect(fetch).not.toHaveBeenCalled();
+
+    fireEvent.change(daily, { target: { value: "25" } });
+    await user.click(screen.getByRole("button", { name: "Save and check" }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText("Look over the fields marked below and try again.")).toBeNull();
+  });
+
   it("says a refused save in plain words and stays on step 2", async () => {
     stubSave({ error: "LIBRARY_AD_NOT_AVAILABLE" }, 400);
     const user = userEvent.setup();

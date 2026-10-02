@@ -101,6 +101,21 @@
   text-align: end;
 }
 
+/* A refused save, said once at the top of the form; the field's own message says what to change. */
+.problem {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--st-critical-bg);
+  color: var(--st-critical-fg);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+.problem:focus-visible {
+  outline: 2px solid var(--st-critical-fg);
+  outline-offset: 2px;
+}
+
 .brandSummary {
   display: flex;
   flex-wrap: wrap;

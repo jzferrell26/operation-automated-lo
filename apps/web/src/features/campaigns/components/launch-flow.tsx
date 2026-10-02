@@ -3,7 +3,7 @@
 import type { AdsLibraryTopic } from "@oalo/contracts";
 import { Button, Card, Icon, Link, LiveRegion, Stepper, TextArea, TextField } from "@oalo/ui";
 import { useRouter } from "next/navigation.js";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import {
   AD_TEXT_LABEL,
@@ -160,6 +160,15 @@ export function LaunchFlow({
   const [errors, setErrors] = useState<FieldErrors>({});
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  // Counts refused attempts, so a second refusal moves focus to the message again.
+  const [refusals, setRefusals] = useState(0);
+  const problem = useRef<HTMLDivElement>(null);
+
+  // A refused save is said at the top of the form, and focus goes there, so the person hears it
+  // and sees it at 390 even though "Save and check" sits at the bottom of a long form.
+  useEffect(() => {
+    if (refusals > 0) problem.current?.focus();
+  }, [refusals]);
 
   // The browser's own Back and Forward move between the steps too, and they read the address.
   useEffect(() => {
@@ -176,6 +185,7 @@ export function LaunchFlow({
     setAddress(next);
     setStatus("");
     setErrors({});
+    setRefusals(0);
     window.history.pushState(null, "", launchHref(next));
   }
 
@@ -229,7 +239,11 @@ export function LaunchFlow({
       ...(draft.places.length > 0 ? {} : { places: PLACE_REQUIRED }),
     };
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length > 0) {
+      setRefusals((count) => count + 1);
+      return;
+    }
+    setRefusals(0);
     setBusy(true);
     setStatus("");
     try {
@@ -267,6 +281,16 @@ export function LaunchFlow({
       />
       <div className={styles.setUp}>
         <Card className={styles.form} padding="lg">
+          {refusals > 0 ? (
+            <LiveRegion
+              className={styles.problem}
+              message={userMessageSentence("INVALID_CAMPAIGN_DRAFT")}
+              ref={problem}
+              tabIndex={-1}
+              urgency="alert"
+              visible
+            />
+          ) : null}
           <section aria-labelledby="launch-brand-title" className={styles.section} id="brand">
             <h2 id="launch-brand-title">{BRAND_CARD_TITLE}</h2>
             <BrandSummary advertiser={advertiser} />

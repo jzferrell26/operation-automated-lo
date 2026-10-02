@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>New Open House Boost, step 3 (PRD-009 mockup)</title>
+<title>Launch an ad, step 2 (PRD-009 mockup)</title>
 <style>
 :root {
   color-scheme: light;
@@ -443,13 +443,86 @@ details.card.support { padding-block: var(--space-1); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; scroll-behavior: auto !important; }
 }
+
+/* Sub-tabs inside Campaigns: selected is ink and weight, never the accent (Listing Studio rule). */
+.tabs { display: flex; gap: var(--space-2); border-block-end: 1px solid var(--bd-hairline); overflow-x: auto; }
+.tabs a { display: inline-flex; align-items: center; min-block-size: var(--target-min-size); padding-inline: var(--space-4); color: var(--tx-body); text-decoration: none; font-weight: var(--weight-medium); font-size: var(--text-secondary-size); border-block-end: 2px solid transparent; margin-block-end: -1px; white-space: nowrap; }
+.tabs a[aria-current="page"] { color: var(--tx-strong); font-weight: var(--weight-semibold); border-block-end-color: var(--tx-strong); }
+
+/* Topic filter chips */
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.page > *, .start > *, .chips-nav { min-inline-size: 0; }
+.chip { display: inline-flex; align-items: center; gap: var(--space-2); min-block-size: var(--target-min-size); padding-inline: var(--space-4); border: 1px solid var(--bd-input); border-radius: var(--radius-pill); background: var(--sf-card); color: var(--tx-strong); text-decoration: none; font-size: var(--text-secondary-size); font-weight: var(--weight-medium); white-space: nowrap; }
+.chip:hover { background: var(--sf-sunken); color: var(--tx-strong); }
+.chip[aria-current="true"] { background: var(--st-info-bg); border-color: var(--ac-primary); font-weight: var(--weight-semibold); }
+.chip .count { color: var(--tx-body); font-weight: var(--weight-regular); }
+
+/* Ad grid and cards */
+.ad-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(15.5rem, 100%), 1fr)); gap: var(--space-6); }
+.ad-card { display: flex; flex-direction: column; background: var(--sf-card); border: 1px solid var(--bd-hairline); border-radius: var(--radius-card); box-shadow: var(--shadow-card); overflow: hidden; min-inline-size: 0; }
+.ad-card__body { display: grid; gap: var(--space-2); padding: var(--space-4) var(--space-5) var(--space-5); flex: 1; align-content: start; }
+.ad-card__title { font-size: var(--text-card-size); font-weight: var(--weight-semibold); line-height: var(--leading-tight); }
+.ad-card__words { font-size: var(--text-secondary-size); color: var(--tx-body); }
+.ad-card__meta { font-size: var(--text-caption-size); color: var(--tx-faint); }
+.ad-card .btn { margin-block-start: auto; }
+.ad-card__foot { padding: 0 var(--space-5) var(--space-5); }
+.badge--topic { background: var(--st-neutral-bg); color: var(--tx-strong); justify-self: start; }
+
+/* The ad: library image on top, the loan officer's brand band underneath. Never themed. */
+.creative { container-type: inline-size; position: relative; display: grid; grid-template-rows: 4fr 1fr; aspect-ratio: 4 / 5; background: #ffffff; color: #061e35; --ad-brand: #1f4d3f; }
+.creative--square { aspect-ratio: 1 / 1; grid-template-rows: 78fr 22fr; }
+.creative__art { position: relative; overflow: hidden; min-block-size: 0; }
+.creative__art svg { display: block; inline-size: 100%; block-size: 100%; }
+.sample-tag { position: absolute; inset-inline-end: 2.5cqw; inset-block-start: 2.5cqw; font-size: max(0.625rem, 2.7cqw); font-weight: 600; background: rgb(255 255 255 / 90%); color: #5c3d00; border: 1px dashed #895900; border-radius: 1cqw; padding: 0.6cqw 1.8cqw; }
+.creative__band { border-block-start: 1.1cqw solid var(--ad-brand); display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: 1fr auto; column-gap: 3cqw; align-items: center; padding: 2.2cqw 4cqw 1.6cqw; background: #ffffff; min-block-size: 0; }
+.creative__logo { grid-row: 1; inline-size: 9cqw; block-size: 9cqw; border-radius: 1.6cqw; background: var(--ad-brand); color: #ffffff; display: grid; place-items: center; font-weight: 700; font-size: 3.4cqw; }
+.creative__who { font-size: 3.1cqw; line-height: 1.25; min-inline-size: 0; }
+.creative__who b { display: block; font-size: 3.7cqw; }
+.creative__company { font-size: 2.8cqw; line-height: 1.25; text-align: end; color: #2b3b4d; }
+.creative__legal { grid-column: 1 / -1; font-size: 2.4cqw; color: #2b3b4d; padding-block-start: 0.8cqw; }
+
+/* Facebook feed frame (generic, no Meta branding) */
+.fb { background: #ffffff; color: #1c1e21; border: 1px solid #d6e2ee; border-radius: var(--radius-card); overflow: hidden; inline-size: 100%; max-inline-size: 31.25rem; margin-inline: auto; }
+.fb__head { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-4); }
+.fb__avatar { inline-size: 2.5rem; block-size: 2.5rem; border-radius: 50%; background: #1f4d3f; color: #ffffff; display: grid; place-items: center; font-weight: 700; font-size: var(--text-secondary-size); flex: none; }
+.fb__name { font-weight: 600; font-size: 0.9375rem; line-height: 1.3; }
+.fb__meta { font-size: var(--text-caption-size); color: #4b5563; }
+.fb__text { padding: 0 var(--space-4) var(--space-3); font-size: 0.9375rem; line-height: 1.45; }
+.fb__link { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: #f0f2f5; }
+.fb__domain { font-size: var(--text-caption-size); text-transform: uppercase; letter-spacing: 0.04em; color: #4b5563; }
+.fb__headline { font-weight: 600; font-size: 0.9375rem; line-height: 1.3; }
+.fb__cta { flex: none; display: inline-flex; align-items: center; min-block-size: 2.25rem; padding-inline: var(--space-4); border-radius: 0.375rem; background: #e4e6eb; color: #1c1e21; font-weight: 600; font-size: var(--text-secondary-size); }
+
+/* Home lead card */
+.topic-question { font-weight: var(--weight-semibold); font-size: var(--text-secondary-size); }
+
+/* Where it shows */
+.areas { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.area { display: inline-flex; align-items: center; gap: var(--space-1); min-block-size: var(--target-min-size); padding-inline: var(--space-4) var(--space-1); border-radius: var(--radius-pill); background: var(--st-info-bg); color: var(--tx-strong); font-size: var(--text-secondary-size); font-weight: var(--weight-medium); }
+.area button { inline-size: var(--target-min-size); block-size: var(--target-min-size); border: 0; background: transparent; border-radius: 50%; color: var(--tx-body); cursor: pointer; display: grid; place-items: center; }
+.area button svg { inline-size: 1rem; block-size: 1rem; }
+.add-area { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); align-items: end; }
+.counter { font-size: var(--text-caption-size); color: var(--tx-faint); justify-self: end; }
+.field-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
+.reset-link { display: inline-flex; align-items: center; min-block-size: var(--target-min-size); font-size: var(--text-secondary-size); font-weight: var(--weight-semibold); }
+.notice { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3) var(--space-4); border-radius: var(--radius-control); background: var(--st-info-bg); color: var(--tx-strong); font-size: var(--text-secondary-size); }
+.notice svg { inline-size: 1.25rem; block-size: 1.25rem; color: var(--st-info-fg); flex: none; margin-block-start: 0.0625rem; }
+.states { grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr)); }
+.thumb { inline-size: 3rem; flex: none; border-radius: var(--radius-control); overflow: hidden; border: 1px solid var(--bd-hairline); }
+.ad-cell { display: flex; align-items: center; gap: var(--space-3); min-inline-size: 15rem; }
+.list-card__head { display: flex; gap: var(--space-3); align-items: center; }
+@media (max-width: 719px) {
+  .add-area { grid-template-columns: minmax(0, 1fr); }
+  .ad-grid { gap: var(--space-4); }
+  .chips--filter { flex-wrap: nowrap; overflow-x: auto; padding-block-end: var(--space-1); }
+}
 </style>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
-<aside class="mockup-note" aria-label="About this mockup"><div class="mockup-note__inner"><strong>Design mockup for PRD-009.</strong> <span>Not the product. Every name, address, photo, date and count on this page is a made-up sample. Meta is not connected in this example.</span></div></aside>
+<aside class="mockup-note" aria-label="About this mockup"><div class="mockup-note__inner"><strong>Design mockup for PRD-009.</strong> <span>Not the product. Every name, ad, image, date and count on this page is a made-up sample.</span></div></aside>
 <header class="topbar"><div class="topbar__inner">
-<details class="mobile-menu"><summary aria-label="Open the menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Menu</span></summary><nav class="mobile-menu__panel" aria-label="Main menu"><ul><li><a href="home-first-run.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg><span>Home</span></a></li><li><a href="campaigns-list.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 11v2a1 1 0 0 0 1 1h3l7 4V6L7 10H4a1 1 0 0 0-1 1Z"/><path d="M18 9a4 4 0 0 1 0 6"/><path d="M7 14v4a2 2 0 0 0 2 2"/></svg><span>Campaigns</span></a></li><li><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="16" cy="10" r="1.2"/><path d="M12 21a2.5 2.5 0 0 1 0-5h1.5a2.5 2.5 0 0 0 2.5-2.5"/></svg><span>Brand</span></a></li><li><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></svg><span>Realtor partners</span></a></li><li><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg><span>Homeowner reports</span></a></li><li><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg><span>Settings</span></a></li></ul></nav></details>
+<details class="mobile-menu"><summary aria-label="Open the menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Menu</span></summary><nav class="mobile-menu__panel" aria-label="Main menu"><ul><li><a href="home-first-run.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg><span>Home</span></a></li><li><a href="campaigns-list.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 11v2a1 1 0 0 0 1 1h3l7 4V6L7 10H4a1 1 0 0 0-1 1Z"/><path d="M18 9a4 4 0 0 1 0 6"/><path d="M7 14v4a2 2 0 0 0 2 2"/></svg><span>Campaigns</span></a></li><li><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="16" cy="10" r="1.2"/><path d="M12 21a2.5 2.5 0 0 1 0-5h1.5a2.5 2.5 0 0 0 2.5-2.5"/></svg><span>Brand</span></a></li><li><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></svg><span>Realtor partners</span></a></li><li><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg><span>Homeowner reports</span></a></li><li><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg><span>Settings</span></a></li></ul></nav></details>
 <a class="brand" href="home-first-run.html"><span class="brand__mark" aria-hidden="true">ALO</span><span>Automated LO</span></a>
 <nav class="nav" aria-label="Main"><ul><li><a href="home-first-run.html"><span>Home</span></a></li><li><a href="campaigns-list.html" aria-current="page"><span>Campaigns</span></a></li><li><a href="#"><span>Brand</span></a></li><li><a href="#"><span>Realtor partners</span></a></li><li><a href="#"><span>Homeowner reports</span></a></li><li><a href="#"><span>Settings</span></a></li></ul></nav>
 <div class="account">
@@ -460,49 +533,48 @@ details.card.support { padding-block: var(--space-1); }
 <button class="btn btn--secondary btn--sm" type="button">Sign out</button></div></details>
 </div></div></header>
 <main id="main" class="page">
-<nav aria-label="Breadcrumb" class="crumbs"><a href="campaigns-list.html">Campaigns</a><span aria-hidden="true">/</span><span aria-current="page">New Open House Boost</span></nav>
-<div class="page-head"><div class="page-head__text"><h1 class="page-title">Review and launch</h1><p class="lead">This is the actual ad. Look it over, approve it, then launch it.</p></div></div>
-<ol class="stepper" aria-label="Open House Boost steps"><li class="is-done"><span class="stepper__num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span class="sr-only">Done:</span></span><span class="stepper__text"><span class="stepper__label">Property and event</span><span class="stepper__state">Done</span></span></li><li class="is-done"><span class="stepper__num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span class="sr-only">Done:</span></span><span class="stepper__text"><span class="stepper__label">Make it yours</span><span class="stepper__state">Done</span></span></li><li aria-current="step"><span class="stepper__num">3</span><span class="stepper__text"><span class="stepper__label">Review and launch</span><span class="stepper__state">Step 3 of 3</span></span></li></ol>
-<div class="review-grid">
-<section class="card" aria-labelledby="h-ad"><div class="card-head"><h2 id="h-ad" class="section-title">Your ad</h2>
-<fieldset><legend class="sr-only">Ad shape</legend><div class="format-switch"><label><input type="radio" name="shape" checked> Tall (4:5)</label><label><input type="radio" name="shape"> Square (1:1)</label></div></fieldset></div>
-<figure class="fb" aria-labelledby="ad3-cap">
-<figcaption id="ad3-cap" class="sr-only">Facebook feed preview of the ad</figcaption>
-<div class="fb__head"><span class="fb__avatar" aria-hidden="true">JR</span><div><p class="fb__name">Jordan Rivera, Sample Home Loans</p><p class="fb__meta">Sponsored</p></div></div>
-<p class="fb__text">Come and see the home in person this Saturday from 1 to 3 PM. I can answer your financing questions while you are there.</p>
-<div class="creative" role="img" aria-label="Ad image: a photo of the home at 418 Sample Oak Drive, the open house time, Jordan Rivera with NMLS number, Casey Morgan of Bluebird Realty, and the Equal Housing Opportunity line">
-<div class="creative__photo"><svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><defs><linearGradient id="sky0" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bcd9f2"/><stop offset="1" stop-color="#eef6fd"/></linearGradient></defs><rect width="400" height="300" fill="url(#sky0)"/><ellipse cx="70" cy="200" rx="60" ry="70" fill="#7aa37f"/><ellipse cx="345" cy="195" rx="55" ry="75" fill="#6f9a74"/><rect y="228" width="400" height="72" fill="#9cc48f"/><path d="M90 230V150l110-62 110 62v80Z" fill="#f4efe6"/><path d="M78 156 200 84l122 72" fill="none" stroke="#4a5563" stroke-width="16" stroke-linejoin="round"/><rect x="180" y="176" width="40" height="54" rx="3" fill="#7b5a43"/><rect x="118" y="162" width="40" height="32" rx="2" fill="#a9c7de"/><rect x="242" y="162" width="40" height="32" rx="2" fill="#a9c7de"/><path d="M138 162v32M118 178h40M262 162v32M242 178h40" stroke="#ffffff" stroke-width="3"/><path d="M160 300l30-70h20l30 70Z" fill="#d9cfbf"/></svg><span class="creative__chip">Open house</span></div>
-<div class="creative__band"><p class="creative__when">Saturday, Oct 18, 1 to 3 PM</p><p class="creative__addr">418 Sample Oak Drive, Austin, TX</p>
-<div class="creative__people"><div class="creative__person"><span class="creative__face" aria-hidden="true">JR</span><p><b>Jordan Rivera</b>Loan officer, NMLS 123456</p></div><div class="creative__person"><span class="creative__face" aria-hidden="true">CM</span><p><b>Casey Morgan</b>Bluebird Realty</p></div></div>
-<p class="creative__legal">Equal Housing Opportunity. Additional lender disclosures apply.</p></div></div>
-<div class="fb__link"><div><p class="fb__domain">Open house details</p><p class="fb__headline">Open house Saturday, 1 to 3 PM</p></div><span class="fb__cta">Learn more</span></div>
-</figure>
-<p class="caption" style="text-align:center">Shown as it appears in the Facebook feed. The colors in the ad are your brand's, not the app's.</p>
+<nav aria-label="Breadcrumb" class="crumbs"><a href="campaigns-list.html">Campaigns</a><span aria-hidden="true">/</span><span aria-current="page">Launch an ad</span></nav>
+<div class="page-head"><div class="page-head__text"><h1 class="page-title">Set it up</h1><p class="lead">First home, start here. First-time buyers, version 3.</p></div></div>
+<ol class="stepper" aria-label="Launch an ad, steps"><li class="is-done"><span class="stepper__num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span class="sr-only">Done:</span></span><span class="stepper__text"><span class="stepper__label">Choose an ad</span><span class="stepper__state">Done</span></span></li><li aria-current="step"><span class="stepper__num">2</span><span class="stepper__text"><span class="stepper__label">Set it up</span><span class="stepper__state">Step 2 of 3</span></span></li><li><span class="stepper__num">3</span><span class="stepper__text"><span class="stepper__label">Review and launch</span><span class="stepper__state">Next</span></span></li></ol>
+<div class="two-col">
+<form class="card form-card" aria-label="Set up your ad">
+<section class="form-section" aria-labelledby="h-brand"><h2 id="h-brand" class="section-title">Your brand on the ad</h2>
+<div class="brand-summary"><span class="brand-summary__logo" aria-hidden="true">SH</span><span class="brand-summary__text"><strong>Jordan Rivera, Loan officer</strong><span class="muted">NMLS 123456. Sample Home Loans, NMLS 100200</span></span><a href="#">Change in Brand</a></div>
+<p class="hint">Added for you from Brand. The image and layout come from the library and can't be changed.</p>
 </section>
-<div class="rail">
-<section class="card" aria-labelledby="h-checks"><div class="card-head"><h2 id="h-checks" class="card-title">What you approve</h2><span class="badge badge--success"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/></svg>Checks passed</span></div>
-<p class="small muted"><span class="num">14</span> of <span class="num">14</span> checks passed (sample count). Housing ads have their own rules. We apply them for you, every time.</p>
-<details class="disclosure"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="inline-size:1rem;block-size:1rem"><path d="m9 6 6 6-6 6"/></svg>See what we checked</summary><ul>
-<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Your NMLS number is on the ad</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>The Equal Housing Opportunity line is on the ad</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Casey Morgan agreed to co-branded ads</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>No age, gender or ZIP code targeting</li></ul></details>
-<div class="card-head"><h3 class="small" style="font-weight:var(--weight-semibold)">Budget, dates and leads</h3><a href="create-step-2-make-it-yours.html">Change<span class="sr-only"> budget, dates and leads</span></a></div>
-<dl class="facts"><div><dt>Budget</dt><dd>$25 a day, up to $125 in total</dd></div><div><dt>Runs</dt><dd>From launch until the open house ends, Sat, Oct 18, 3 PM</dd></div><div><dt>Shown to</dt><dd>People around the property, under the housing ad rules</dd></div><div><dt>New leads go to</dt><dd>Your HighLevel account, once it's connected</dd></div></dl></section>
-<section class="card" aria-labelledby="h-approve"><h2 id="h-approve" class="card-title">Approve this version</h2>
-<p class="small muted">Approving applies to this exact version. Nothing is published or sent.</p>
-<div class="actions"><button class="btn btn--primary" type="button">Approve this version</button><button class="btn btn--secondary" type="button">Send back for changes</button></div>
-<p class="small" role="status">Nobody has approved this version yet.</p></section>
-<section class="card" aria-labelledby="launch-h"><h2 id="launch-h" class="card-title">Launch</h2>
-<button class="btn btn--primary btn--block" type="button" disabled aria-describedby="launch-why"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 15c-1.5 1.5-2 5-2 5s3.5-.5 5-2"/><path d="M9 15l-3-3c1.5-4 5-8 13-9-1 8-5 11.5-9 13Z"/><circle cx="14.5" cy="9.5" r="1.5"/></svg>Launch on Facebook</button>
-<p class="reason" id="launch-why">Meta isn't connected yet, so <a href="#">connect it in Settings</a> to launch this ad.</p></section>
-<details class="card disclosure support"><summary>Details for support</summary><dl><div><dt>Version</dt><dd>2 (sample)</dd></div><div><dt>Support reference</dt><dd>SAMPLE-0000</dd></div></dl></details>
+<section class="form-section" aria-labelledby="h-words"><div class="field-head"><h2 id="h-words" class="section-title">Ad words</h2><a class="reset-link" href="#">Use the library words</a></div>
+<div class="field"><label for="headline">Headline</label><input class="input" id="headline" maxlength="60" value="Buying your first home in Austin? Start with a plan." aria-describedby="headline-count"><span class="counter" id="headline-count"><span class="num">52</span> of 60 characters</span></div>
+<div class="field"><label for="text">Ad text</label><textarea class="textarea" id="text" rows="4" maxlength="300" aria-describedby="text-count">I help first-time buyers understand every step, from pre-approval to closing day. Send me a message and let's talk about where you are today.</textarea><span class="counter" id="text-count"><span class="num">141</span> of 300 characters</span></div>
+<div class="locked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span><strong>Disclosure, from your brand:</strong> Equal Housing Opportunity.</span></div>
+<p class="hint">Don't add rates, payments or loan terms here. The checks will send them back for changes.</p>
+</section>
+<section class="form-section" aria-labelledby="h-budget"><h2 id="h-budget" class="section-title">Budget and dates</h2>
+<div class="money-row">
+<div class="field"><label for="daily">Daily budget</label><div class="prefix"><span aria-hidden="true">$</span><input class="input num" id="daily" inputmode="numeric" value="25"></div></div>
+<div class="field"><label for="total">Total budget</label><div class="prefix"><span aria-hidden="true">$</span><input class="input num" id="total" inputmode="numeric" value="350"></div></div>
+<div class="field"><label for="start">Starts</label><input class="input" id="start" value="When you launch it" readonly aria-describedby="start-hint"></div>
+<div class="field"><label for="end">Ends</label><input class="input" id="end" type="date" value="2026-10-20"></div>
 </div>
+<p class="hint" id="start-hint">Set to run for 14 days. Change the end date if you like.</p>
+</section>
+<section class="form-section" aria-labelledby="h-where"><h2 id="h-where" class="section-title">Where it shows</h2>
+<ul class="areas" aria-label="Areas this ad shows in"><li class="area">Austin, TX<button type="button" aria-label="Remove Austin, TX"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg></button></li></ul>
+<div class="add-area"><div class="field"><label for="area">Add a city or state</label><input class="input" id="area" placeholder="For example: Round Rock, TX"></div><button class="btn btn--secondary" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>Add</button></div>
+<p class="hint">Mortgage ads can't be aimed by age, gender or ZIP code, so you choose places, not people. Meta may also widen a small area.</p>
+<p class="small"><strong>Shows in:</strong> the Facebook feed.</p>
+</section>
+<div class="form-actions"><a class="btn btn--secondary" href="launch-step-1-choose.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 6-6 6 6 6"/></svg>Back</a><a class="btn btn--primary" href="launch-step-3-review-and-launch.html" aria-describedby="save-hint">Save and check</a><p class="reason form-actions__note" id="save-hint">We save this version and run the checks. Nothing is published.</p></div>
+</form>
+<aside class="card sticky" aria-labelledby="h-preview"><div class="card-head"><h2 id="h-preview" class="card-title">Your ad so far</h2><span class="caption">Updates as you type</span></div>
+<figure class="fb" aria-labelledby="ad2-cap">
+<figcaption id="ad2-cap" class="sr-only">Facebook feed preview of the ad</figcaption>
+<div class="fb__head"><span class="fb__avatar" aria-hidden="true">JR</span><div><p class="fb__name">Jordan Rivera, Sample Home Loans</p><p class="fb__meta">Sponsored</p></div></div>
+<p class="fb__text">I help first-time buyers understand every step, from pre-approval to closing day. Send me a message and let's talk about where you are today.</p>
+<div class="creative" role="img" aria-label="Ad image from the library: Your first home starts here, with Jordan Rivera, NMLS 123456, Sample Home Loans, and the Equal Housing Opportunity line"><div class="creative__art"><svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><defs><linearGradient id="g-first-home-start-here-17" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe1c7"/><stop offset="1" stop-color="#fff3e6"/></linearGradient></defs><rect width="400" height="400" fill="url(#g-first-home-start-here-17)"/><text x="32" y="112" fill="#4a2a12" font-family="Inter, Segoe UI, sans-serif" font-weight="800" font-size="34">Your first home</text><text x="32" y="152" fill="#4a2a12" font-family="Inter, Segoe UI, sans-serif" font-weight="800" font-size="34">starts here</text><g transform="translate(250 205)"><path d="M0 70V10l60-45 60 45v60Z" fill="#fff"/><path d="M-8 14 60-38l68 52" fill="none" stroke="#c4622d" stroke-width="12" stroke-linejoin="round"/><rect x="48" y="38" width="24" height="32" fill="#c4622d"/></g><g transform="translate(205 300) rotate(-25)"><circle cx="0" cy="0" r="22" fill="none" stroke="#e0a100" stroke-width="10"/><path d="M22 0h80M78 0v16M94 0v12" stroke="#e0a100" stroke-width="10" stroke-linecap="round"/></g></svg><span class="sample-tag" aria-hidden="true">Sample image</span></div><div class="creative__band"><span class="creative__logo" aria-hidden="true">SH</span><p class="creative__who"><b>Jordan Rivera</b>Loan officer, NMLS 123456</p><p class="creative__company">Sample Home Loans<br>NMLS 100200</p><p class="creative__legal">Equal Housing Opportunity.</p></div></div>
+<div class="fb__link"><div><p class="fb__domain">Sample Home Loans</p><p class="fb__headline">Buying your first home in Austin? Start with a plan.</p></div><span class="fb__cta">Learn more</span></div>
+</figure>
+</aside>
 </div>
-<section aria-labelledby="h-states" class="annotation" style="display:grid;gap:var(--space-4)"><h2 id="h-states" class="card-title"><strong>Mockup note.</strong> The same two cards in the other states (PRD-008b: every surface reads the recorded decision)</h2>
-<div class="states">
-<div class="card"><span class="badge badge--success"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/></svg>Approved</span><p class="small">Approved by Jordan Rivera on Oct 1, 2026. The approval covers this version only.</p><button class="btn btn--primary btn--block btn--sm" type="button" disabled aria-describedby="s1-why">Launch on Facebook</button><p class="reason" id="s1-why">Meta isn't connected yet, so connect it in Settings to launch this ad.</p></div>
-<div class="card"><span class="badge badge--warning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Sent back for changes</span><p class="small">It was sent back for changes, so it needs a new version before anyone can approve it.</p><button class="btn btn--primary btn--block btn--sm" type="button">Make a new version</button></div>
-<div class="card"><span class="badge badge--critical"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3 2.5 20h19Z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg>Needs changes</span><p class="small">This version needs changes before anyone can approve it.</p><p class="small"><strong>What to fix:</strong> add your NMLS number in Brand.</p><button class="btn btn--primary btn--block btn--sm" type="button">Fix it</button></div>
-<div class="card"><span class="badge badge--info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Ready for approval</span><p class="small">You can't approve campaigns in this workspace. Send this link to an approver.</p><button class="btn btn--primary btn--block btn--sm" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>Copy the link</button></div>
-</div></section>
 </main>
 </body>
 </html>

@@ -2,18 +2,18 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { HAND_OFF } from "../../../copy/launch-messages.js";
-import { createLocalSyntheticPrincipal } from "../../../server/authenticated-principal.js";
 import {
   APPROVER,
-  approvedProjection,
-  awaitingApprovalProjection,
-  needsChangesProjection,
-  sentBackProjection,
-} from "./campaign-decision.test-support.js";
+  CREATOR,
+  libraryCampaign,
+  pageOf,
+  type LibraryCampaignOptions,
+} from "../../../server/campaign-page.test-support.js";
 import { PersistedCampaignScreen } from "./persisted-campaign-screen.js";
 
 /**
- * PRD-008b 008B-AC-010, the approver hand-off card.
+ * PRD-008b 008B-AC-010 and 008B-AC-011, the approver hand-off card, on the campaign page of
+ * PRD-009e.
  *
  * The card tells somebody who cannot approve to copy the campaign's link and send it to an
  * approver. That is a step on a version nobody has decided on. On a version that was approved, or
@@ -23,16 +23,18 @@ import { PersistedCampaignScreen } from "./persisted-campaign-screen.js";
  * rule also needs the campaign to be waiting.
  */
 
-vi.mock("next/navigation.js", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
-
-const CREATOR = createLocalSyntheticPrincipal();
+vi.mock("next/navigation.js", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 
 /** PRD-009d D8: the hand-off card says this, on the campaign page and on step 3 alike. */
 const HAND_OFF_WORDS =
   "You can't approve campaigns in this workspace. Send this link to an approver.";
 
-function renderCampaign(campaign: Awaited<ReturnType<typeof awaitingApprovalProjection>>) {
-  return render(<PersistedCampaignScreen campaign={campaign} />);
+async function renderCampaign(
+  options: LibraryCampaignOptions,
+  principal: typeof CREATOR | typeof APPROVER,
+) {
+  const page = await pageOf(await libraryCampaign(options), { principal });
+  return render(<PersistedCampaignScreen page={page} />);
 }
 
 function handOffAnchors(container: HTMLElement): number {
@@ -41,7 +43,7 @@ function handOffAnchors(container: HTMLElement): number {
 
 describe("the approver hand-off card on a version nobody has decided on", () => {
   it("is offered to a creator, who cannot approve", async () => {
-    const { container } = renderCampaign(await awaitingApprovalProjection(CREATOR));
+    const { container } = await renderCampaign({}, CREATOR);
 
     expect(screen.getByText(HAND_OFF_WORDS)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: HAND_OFF.copyLinkLabel })).toBeInTheDocument();
@@ -49,7 +51,7 @@ describe("the approver hand-off card on a version nobody has decided on", () => 
   });
 
   it("is not offered to an approver, who can approve it themselves", async () => {
-    const { container } = renderCampaign(await awaitingApprovalProjection(APPROVER));
+    const { container } = await renderCampaign({}, APPROVER);
 
     expect(screen.queryByText(/Send this link to an approver/u)).toBeNull();
     expect(screen.queryByRole("button", { name: HAND_OFF.copyLinkLabel })).toBeNull();
@@ -58,14 +60,14 @@ describe("the approver hand-off card on a version nobody has decided on", () => 
 });
 
 describe.each([
-  ["approved", approvedProjection],
-  ["sent back", sentBackProjection],
-] as const)("the approver hand-off card on a version that was %s", (_outcome, project) => {
+  ["approved", { decision: "approved" as const }],
+  ["sent back", { decision: "rejected" as const }],
+] as const)("the approver hand-off card on a version that was %s", (_outcome, options) => {
   it.each([
     ["a creator", CREATOR],
     ["an approver", APPROVER],
   ])("is not offered to %s, because there is nothing left to hand off", async (_who, principal) => {
-    const { container } = renderCampaign(await project(principal));
+    const { container } = await renderCampaign(options, principal);
 
     expect(screen.queryByText(/Send this link to an approver/u)).toBeNull();
     expect(screen.queryByText(/You can't approve campaigns in this workspace/u)).toBeNull();
@@ -74,7 +76,7 @@ describe.each([
   });
 
   it("leaves the one approval card that says what was recorded", async () => {
-    const { container } = renderCampaign(await project(CREATOR));
+    const { container } = await renderCampaign(options, CREATOR);
 
     expect(screen.getByRole("button", { name: "Approve this version" })).toBeDisabled();
     expect(container.querySelectorAll("[data-approval-card]")).toHaveLength(1);
@@ -94,13 +96,15 @@ describe("the approver hand-off card on a version whose checks need changes", ()
   ])(
     "is not offered to %s, because nothing about it can be approved yet",
     async (_who, principal) => {
-      const { container } = renderCampaign(await needsChangesProjection(principal));
+      const { container } = await renderCampaign({ needsChanges: true }, principal);
 
       expect(screen.queryByText(/Send this link to an approver/u)).toBeNull();
       expect(screen.queryByRole("button", { name: HAND_OFF.copyLinkLabel })).toBeNull();
       expect(handOffAnchors(container)).toBe(0);
       // The page still says plainly where it stands, and the approve control stays blocked.
-      expect(screen.getByRole("heading", { name: "Needs changes" })).toBeInTheDocument();
+      expect(container.querySelector("[data-campaign-standing]")).toHaveTextContent(
+        "Needs changes",
+      );
       expect(screen.getByRole("button", { name: "Approve this version" })).toBeDisabled();
     },
   );

@@ -2,13 +2,17 @@ import { headers } from "next/headers.js";
 import { notFound, redirect } from "next/navigation.js";
 
 import { PersistedCampaignScreen } from "../../../../../features/campaigns/components/persisted-campaign-screen.js";
+import { DashboardPreviewCampaign } from "../../../../../features/dashboard-preview/dashboard-screen.js";
 import { AuthenticatedWorkspaceUnavailableError } from "../../../../../server/authenticated-workspace-data.js";
 import { CampaignWorkspaceStoreUnavailableError } from "../../../../../server/campaign-persistence-runtime.js";
 import { readWorkspaceCampaignForRequest } from "../../../../../server/campaign-workspace-reads.js";
-import { SIGN_IN_PATH } from "../../../../../server/runtime-authentication.js";
 import { canRenderDashboardPreview } from "../../../../../server/dashboard-preview.js";
-import { DashboardPreviewCampaign } from "../../../../../features/dashboard-preview/dashboard-screen.js";
+import { SIGN_IN_PATH } from "../../../../../server/runtime-authentication.js";
 
+/**
+ * PRD-009e. The campaign page for the newest version of a campaign. An unknown reference, and a
+ * campaign in another location, both answer "not found" (009E-AC-005).
+ */
 export default async function CampaignPage({
   params,
 }: Readonly<{ params: Promise<{ campaignRef: string }> }>) {
@@ -33,5 +37,6 @@ export default async function CampaignPage({
   // 005A-AC-010. Not signed in is not the same answer as this campaign does not exist.
   if (!read.authenticated) redirect(SIGN_IN_PATH);
   if (read.campaign === undefined) notFound();
-  return <PersistedCampaignScreen campaign={read.campaign} />;
+  if (read.campaign.kind === "redirect") redirect(read.campaign.href);
+  return <PersistedCampaignScreen page={read.campaign.page} />;
 }

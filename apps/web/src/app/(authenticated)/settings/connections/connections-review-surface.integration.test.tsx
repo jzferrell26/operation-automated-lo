@@ -79,7 +79,7 @@ const connectionsAllowances: readonly ReviewSurfaceAllowance[] = [
   {
     path: "overview.health[*].label",
     value: "HighLevel",
-    because: "Substring of the not-connected disclosure, which names all three accounts.",
+    because: "Substring of the not-connected disclosure, which names both accounts.",
   },
   {
     path: "overview.health[*].label",

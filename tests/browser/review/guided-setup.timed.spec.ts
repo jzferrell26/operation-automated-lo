@@ -121,8 +121,8 @@ test("a first-time loan officer reaches a saved, approved campaign inside five m
   await typeIntoLabel(page, "Property address", "48 Cedar Street, Austin");
   await typeIntoLabel(page, "State", "TX");
   await typeIntoLabel(page, "Property description", "A three-bedroom home near the park.");
-  await page.getByLabel("Open house starts").fill("2026-10-03T13:00");
-  await page.getByLabel("Open house ends").fill("2026-10-03T15:00");
+  await page.getByLabel("Open house starts").fill("2030-06-12T13:00");
+  await page.getByLabel("Open house ends").fill("2030-06-12T15:00");
   await page.getByLabel("I have permission to market this property.").check();
   await page.getByLabel("I have permission to use the Realtor's materials.").check();
   await typeIntoLabel(page, "Where the ad runs", "Austin metro");

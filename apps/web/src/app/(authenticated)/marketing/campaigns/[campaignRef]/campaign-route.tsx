@@ -37,7 +37,9 @@ export async function campaignRouteMetadata(
       return { title: page.kind === "library-ad" ? page.name : page.headline };
     }
   } catch {
-    // The page's own read, which is the same cached read, throws the same error and answers it.
+    // The page's own read, which is the same cached read, throws the same error and answers it, so
+    // the title alone falls back here rather than answering the error twice.
+    return { title: PAGE_TITLES.campaign };
   }
   return { title: PAGE_TITLES.campaign };
 }

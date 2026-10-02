@@ -7,6 +7,7 @@ import {
   OALO_REVIEW_SURFACE_AUTHORIZED,
   loadAuthenticatedWorkspace,
 } from "../../../../server/authenticated-workspace-data.js";
+import { metadata } from "./page.js";
 import {
   collectFixtureStrings,
   forbiddenReviewStrings,
@@ -189,7 +190,9 @@ describe("authenticated settings connections route", () => {
       true,
     );
     expect(
-      capabilities.every((capability) => capability.impact === "No effect until you connect."),
+      capabilities.every(
+        (capability) => capability.impact === "No effect yet. Nothing is connected.",
+      ),
     ).toBe(true);
     expect(container.textContent).not.toContain("Synthetic App Test evidence verified");
     expect(
@@ -217,5 +220,33 @@ describe("authenticated settings connections route", () => {
 
     expect(container.textContent).toContain("Synthetic App Test evidence verified");
     expect(leakedReviewStrings(reviewSurfaceText(container), forbidden).length).toBeGreaterThan(10);
+  });
+});
+
+/**
+ * PRD-009 writing review closing check, N-1. Connections is the page every "See what's needed"
+ * link opens, and its tab still read "Automated LO" beside the pages that name themselves.
+ */
+describe("the Connections tab", () => {
+  it("names the page, and the root layout's template adds the product after it", () => {
+    expect(metadata.title).toBe("Connections");
+  });
+});
+
+/**
+ * PRD-009 writing review closing check, N-2. "What it affects" said "No effect until you connect"
+ * one line above "Connecting HighLevel and Meta isn't available in the app yet", so the first read
+ * as a promise that connecting would have an effect and the second said no one can connect.
+ */
+describe("what each capability affects, while nothing can be connected", () => {
+  it("says nothing is connected and never suggests there is a connect step", () => {
+    const { container } = renderConnections("production", OALO_REVIEW_SURFACE_AUTHORIZED);
+    const impacts = [...container.querySelectorAll("dt")]
+      .filter((term) => term.textContent === "What it affects")
+      .map((term) => term.nextElementSibling?.textContent);
+
+    expect(impacts.length).toBeGreaterThan(0);
+    expect(new Set(impacts)).toEqual(new Set(["No effect yet. Nothing is connected."]));
+    expect(container.textContent).not.toContain("No effect until you connect");
   });
 });

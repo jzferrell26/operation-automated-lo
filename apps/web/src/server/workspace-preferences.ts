@@ -161,7 +161,7 @@ export async function saveWorkspacePreference(
       throw new WorkspacePreferenceError(
         "WORKSPACE_WRITE_CONFLICT",
         409,
-        "Another tab saved newer changes. Your edits are still here. Load the latest saved details before trying again.",
+        "Another tab saved newer changes. Your edits are still here. Load the latest saved version of this card before trying again.",
       );
     await tx.write(writeContract, [
       principal.locationId,
@@ -237,7 +237,7 @@ export async function handleWorkspacePreferences(
       {
         error: "WORKSPACE_PREFERENCES_UNAVAILABLE",
         message:
-          "Your settings could not be confirmed. Your edits have not been replaced. Check the saved details before trying again.",
+          "Your settings could not be confirmed. Your edits have not been replaced. Check the saved version before trying again.",
       },
       503,
     );

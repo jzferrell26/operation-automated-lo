@@ -526,7 +526,7 @@ Mockup: [`mockups/campaign-detail.html`](mockups/campaign-detail.html) (approved
 Mockup: [`mockups/campaigns-list.html`](mockups/campaigns-list.html).
 
 - Title "Campaigns", the two tabs ("Your campaigns", "Ads library"), one primary action "Launch an ad".
-- **Table at 720px and wider:** Ad (a small thumbnail, decorative, and the name as the link), Topic, Runs, Where it shows, Status, Last change. **Cards below 720px** with the same facts.
+- **Table at 720px and wider:** Ad (a small thumbnail, decorative, and the name as the link), Topic, Runs, Where it shows, Status, Last change. **Cards below 720px** with the same facts. _(Amended 2026-10-02 by the PRD-009 writing review closing check (MTK-008, N-6): the column is "Dates", as the phone card says, because "Runs" states as fact what nothing can do in PRD-009. 009E-AC-009 carries the amendment and outranks this design.)_
 - No results column (results live on each campaign page).
 - Status chips read the recorded decision (`campaignStateLabel`).
 - Empty state: "No campaigns yet", "Pick an ad from the library to set up your first one.", action "Launch an ad". _(Amended 2026-10-02 by the PRD-009 writing review (MTK-008, W-10): with no ad in the library the sentence is the library's own, "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then.", because there is nothing to pick.)_

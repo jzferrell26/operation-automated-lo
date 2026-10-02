@@ -167,7 +167,7 @@ describe("saving the new version", () => {
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("We couldn't save the new version. Nothing was saved.");
-    expect(alert).toHaveTextContent("This ad isn't in the library any more");
+    expect(alert).toHaveTextContent("This ad isn't in the library anymore");
     // W-30: "Choose another ad" is the link the campaign page's notices carry; "pick it again" was not.
     expect(alert).toHaveTextContent(
       "Choose another ad. Check the words, budget and area before you save.",
@@ -176,7 +176,7 @@ describe("saving the new version", () => {
   });
 
   // Writing review pass 2, W-27. The same save route answers here as on step 2, so the same
-  // sentence that says "the support reference below" has a reference below it.
+  // sentence that points at "Details for support, below" has that region below it (closing check N-4).
   it("shows the support reference its own sentence points at, for a failed save", async () => {
     vi.stubGlobal(
       "fetch",
@@ -198,7 +198,9 @@ describe("saving the new version", () => {
     await user.click(screen.getByRole("button", { name: "Use the new version" }));
     await user.click(screen.getByRole("button", { name: "Yes, use the new version" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("the support reference below");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "give them the reference in Details for support, below.",
+    );
     expect(screen.getByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeInTheDocument();
     expect(screen.getByText("correlation_save_1a2b3c4d5e6f")).toBeInTheDocument();
   });

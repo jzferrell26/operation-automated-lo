@@ -94,7 +94,12 @@ export const ACCESS_GROUP_STATE_LABELS = Object.freeze({
 export const ACCESS_GROUP_DESCRIPTION =
   "You haven't connected HighLevel yet, so there's nothing to confirm here.";
 export const ACCESS_NOTHING_CHECKED = "Nothing checked yet.";
-export const ACCESS_NO_EFFECT_YET = "No effect until you connect.";
+/**
+ * Writing review closing check, N-2. "What it affects", said while nothing can be connected. It used
+ * to read "No effect until you connect.", one line above "Connecting HighLevel and Meta isn't
+ * available in the app yet", so the first read as a promise that connecting would have an effect.
+ */
+export const ACCESS_NO_EFFECT_YET = "No effect yet. Nothing is connected.";
 
 export const BRAND_PROFILE_SOURCE = "You haven't saved your brand details yet.";
 export const BRAND_FIELD_VALUE = "Not saved yet";

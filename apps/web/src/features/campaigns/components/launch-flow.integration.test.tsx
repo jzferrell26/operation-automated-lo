@@ -138,7 +138,7 @@ describe("the three steps (009D-AC-001)", () => {
  * show step 1 with no explanation. It now says why, above the chips, once.
  */
 describe("an address that names an ad that has left the library (writing review W-30)", () => {
-  const SAID = "That ad isn't in the library any more. Choose another ad.";
+  const SAID = "That ad isn't in the library anymore. Choose another ad.";
 
   it("shows step 1 and says the ad is gone, for a new campaign", () => {
     renderFlow({ step: 2, ad: "sample-no-longer-here" });
@@ -556,7 +556,7 @@ describe("step 2, Where it shows (009D-AC-008)", () => {
     renderFlow(STEP_TWO, { rememberedPlaces: ["TX"] });
     await user.click(screen.getByRole("button", { name: "Save and check" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "We couldn't save this version. Nothing was saved. This ad isn't in the library any more, or a newer version replaced it. Choose another ad. Check the words, budget and area before you save.",
+      "We couldn't save this version. Nothing was saved. This ad isn't in the library anymore, or a newer version replaced it. Choose another ad. Check the words, budget and area before you save.",
     );
     expect(mocked.push).not.toHaveBeenCalled();
     expect(screen.getByRole("heading", { level: 1, name: "Set it up" })).toBeInTheDocument();
@@ -575,8 +575,8 @@ describe("step 2, Where it shows (009D-AC-008)", () => {
   });
 
   /**
-   * Writing review pass 2, W-27. The failed-save sentence says "the support reference below", so a
-   * reference is below it: for that code, and for a code the product has no words for, which
+   * Writing review pass 2, W-27, and closing check N-4. The failed-save sentence says the reference
+   * is "in Details for support, below", so that region is below it: for that code, and for a code the product has no words for, which
    * contract section 7 says always shows one. A code whose own sentence needs none shows none.
    */
   describe("the support reference under a refused save (writing review W-27)", () => {
@@ -591,7 +591,7 @@ describe("step 2, Where it shows (009D-AC-008)", () => {
     it("shows it for CAMPAIGN_PREFLIGHT_FAILED, whose sentence points at it", async () => {
       await refuse("CAMPAIGN_PREFLIGHT_FAILED");
       expect(screen.getByRole("alert")).toHaveTextContent(
-        "We couldn't save this version. Nothing was saved. We couldn't finish the checks on this campaign. Try again. If it keeps happening, contact support and give them the support reference below.",
+        "We couldn't save this version. Nothing was saved. We couldn't finish the checks on this campaign. Try again. If it keeps happening, contact support and give them the reference in Details for support, below.",
       );
       const details = screen.getByText(SUPPORT_DETAILS_SUMMARY).closest("details") as HTMLElement;
       expect(

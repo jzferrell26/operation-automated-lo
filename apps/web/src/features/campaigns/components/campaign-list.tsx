@@ -25,7 +25,7 @@ import { TextWithDays, type DayInText } from "./text-with-days.js";
 /**
  * PRD-009e 009E-AC-009 to 009E-AC-012. The Campaigns list: the tab strip, one primary action
  * ("Launch an ad"), and every campaign with its true status. At 720px and wider it is a table with
- * Ad (a decorative thumbnail and the name as the link), Topic, Runs, Where it shows, Status, and
+ * Ad (a decorative thumbnail and the name as the link), Topic, Dates, Where it shows, Status, and
  * Last change; below 720px it is cards with the same facts. It has no results column, no search,
  * and no filters (D-17): results live on each campaign's own page.
  *

@@ -45,8 +45,9 @@ export function SupportDetails({ rows }: Readonly<{ rows: readonly SupportDetail
  * which asks them to contact support, and support cannot find a request nobody can name.
  *
  * Writing review pass 2 (MTK-008, W-27) adds the second half of the rule: a mapped code whose own
- * sentence says "the support reference below" shows it too, because a sentence that points below
- * must have something below it. `showsSupportReference` holds the rule, and every surface that can
+ * sentence points at it shows it too, because a sentence that points below must have something
+ * below it. Closing check N-4: the sentence names the region ("the reference in Details for
+ * support, below"), because the reference is inside a closed region and cannot be seen at rest. `showsSupportReference` holds the rule, and every surface that can
  * show a refusal renders this, so it is written once rather than remembered per screen.
  */
 export function SupportReference({ refusal }: Readonly<{ refusal: InternalRefusal | undefined }>) {

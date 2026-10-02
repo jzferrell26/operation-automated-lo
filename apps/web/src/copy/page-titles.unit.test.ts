@@ -35,6 +35,11 @@ describe("the words in a browser tab", () => {
       launchAnAd: "Launch an ad",
       campaign: "Campaign",
       brand: "Brand",
+      connections: "Connections",
+      settings: "Settings",
+      partners: "Realtor partners",
+      routing: "Where new leads go",
+      billing: "Plan and usage",
       gone: "Page gone",
     });
   });

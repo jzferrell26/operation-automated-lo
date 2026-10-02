@@ -13,6 +13,7 @@ export interface SampleAdSpec {
   readonly headline: string;
   readonly primaryText: string;
   readonly approvedOn: string;
+  readonly notes: string;
   readonly retired?: Readonly<{ on: string; reason: string; replacedBy: string | null }>;
 }
 

@@ -59,8 +59,6 @@ const GLYPH_SCALE = 24;
 const GLYPH_GAP = 24;
 const MARK_TOP = 190;
 
-const COMPLIANCE_NOTES =
-  "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.";
 const BLOCKED_IN_WORDS = [
   "rate-claims",
   "payment-claims",
@@ -86,6 +84,7 @@ export const SAMPLE_ADS = Object.freeze([
     primaryText:
       "I help first-time buyers understand each step, from pre-approval to closing day. Send me a message and let's talk about where you are today.",
     approvedOn: "2026-09-01",
+    notes: "Sample, first version. The words name the steps of a first purchase and no figure.",
   },
   {
     id: "sample-first-home",
@@ -99,6 +98,7 @@ export const SAMPLE_ADS = Object.freeze([
     primaryText:
       "I walk first-time buyers through each step, from pre-approval to closing day. Send me a message and let's talk about your plans.",
     approvedOn: "2026-09-28",
+    notes: "Sample, second version. The words walk through the buying process and state no figure.",
   },
   {
     id: "sample-first-home-checklist",
@@ -112,6 +112,7 @@ export const SAMPLE_ADS = Object.freeze([
     primaryText:
       "Not sure what comes first when you buy a home? I can walk you through the steps in plain words. Send me a message to get started.",
     approvedOn: "2026-09-12",
+    notes: "Sample. A checklist offer: the words promise a conversation, never an outcome.",
   },
   {
     id: "sample-loan-review",
@@ -125,6 +126,7 @@ export const SAMPLE_ADS = Object.freeze([
     primaryText:
       "Life changes, and your home loan can change with it. Send me a message and we can look at your options together.",
     approvedOn: "2026-09-20",
+    notes: "Sample. A loan review invitation: the words never suggest savings or a lower cost.",
   },
   {
     id: "sample-refinance-questions",
@@ -138,6 +140,7 @@ export const SAMPLE_ADS = Object.freeze([
     primaryText:
       "Before you refinance, it helps to know the right questions. Send me a message and I'll walk you through them.",
     approvedOn: "2026-09-14",
+    notes: "Sample. Refinance questions only: no savings, costs, or timing claims in the words.",
   },
   {
     id: "sample-va-home-loans",
@@ -151,6 +154,7 @@ export const SAMPLE_ADS = Object.freeze([
     primaryText:
       "VA loans can help eligible veterans and service members buy a home. Send me a message to learn whether you may qualify.",
     approvedOn: "2026-09-18",
+    notes: "Sample. VA eligibility is described as something to check, never as promised.",
   },
   {
     id: "sample-pre-approval",
@@ -164,6 +168,7 @@ export const SAMPLE_ADS = Object.freeze([
     primaryText:
       "A pre-approval helps you know where you stand before you make an offer. Send me a message and let's get started.",
     approvedOn: "2026-09-24",
+    notes: "Sample. Pre-approval is described as a step, never as a guarantee of a loan.",
   },
   {
     id: "sample-stronger-offer",
@@ -177,6 +182,7 @@ export const SAMPLE_ADS = Object.freeze([
     primaryText:
       "Sellers take a pre-approved buyer seriously. Send me a message and I'll explain how the process works.",
     approvedOn: "2026-09-10",
+    notes: "Sample. The offer is about being prepared, never about winning a home.",
   },
   {
     id: "sample-down-payment-help",
@@ -190,6 +196,7 @@ export const SAMPLE_ADS = Object.freeze([
     primaryText:
       "Many buyers don't know about down payment help programs. Send me a message and I'll walk you through what may be available.",
     approvedOn: "2026-09-26",
+    notes: "Sample. Down payment help is named as programs to ask about, with no amount.",
   },
   {
     id: "sample-spring-search",
@@ -203,6 +210,7 @@ export const SAMPLE_ADS = Object.freeze([
     primaryText:
       "Thinking about buying this spring? Send me a message and let's talk about your plans.",
     approvedOn: "2026-09-05",
+    notes: "Sample, retired. A seasonal message about starting a search, with no figure.",
     retired: {
       on: "2026-09-30",
       reason: "A seasonal sample, taken out of the library.",
@@ -432,7 +440,7 @@ function catalogEntry(spec, digests) {
     callToAction: "LEARN_MORE",
     specialAdCategory: "HOUSING",
     compliance: {
-      notes: COMPLIANCE_NOTES,
+      notes: spec.notes,
       requiredOnAd: ["nmls", "equal-housing"],
       blockedInWords: BLOCKED_IN_WORDS,
     },

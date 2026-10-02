@@ -25,7 +25,7 @@
     "callToAction": "LEARN_MORE",
     "specialAdCategory": "HOUSING",
     "compliance": {
-      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "notes": "Sample, first version. The words name the steps of a first purchase and no figure.",
       "requiredOnAd": ["nmls", "equal-housing"],
       "blockedInWords": [
         "rate-claims",
@@ -63,7 +63,7 @@
     "callToAction": "LEARN_MORE",
     "specialAdCategory": "HOUSING",
     "compliance": {
-      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "notes": "Sample, second version. The words walk through the buying process and state no figure.",
       "requiredOnAd": ["nmls", "equal-housing"],
       "blockedInWords": [
         "rate-claims",
@@ -101,7 +101,7 @@
     "callToAction": "LEARN_MORE",
     "specialAdCategory": "HOUSING",
     "compliance": {
-      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "notes": "Sample. A checklist offer: the words promise a conversation, never an outcome.",
       "requiredOnAd": ["nmls", "equal-housing"],
       "blockedInWords": [
         "rate-claims",
@@ -139,7 +139,7 @@
     "callToAction": "LEARN_MORE",
     "specialAdCategory": "HOUSING",
     "compliance": {
-      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "notes": "Sample. A loan review invitation: the words never suggest savings or a lower cost.",
       "requiredOnAd": ["nmls", "equal-housing"],
       "blockedInWords": [
         "rate-claims",
@@ -177,7 +177,7 @@
     "callToAction": "LEARN_MORE",
     "specialAdCategory": "HOUSING",
     "compliance": {
-      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "notes": "Sample. Refinance questions only: no savings, costs, or timing claims in the words.",
       "requiredOnAd": ["nmls", "equal-housing"],
       "blockedInWords": [
         "rate-claims",
@@ -215,7 +215,7 @@
     "callToAction": "LEARN_MORE",
     "specialAdCategory": "HOUSING",
     "compliance": {
-      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "notes": "Sample. VA eligibility is described as something to check, never as promised.",
       "requiredOnAd": ["nmls", "equal-housing"],
       "blockedInWords": [
         "rate-claims",
@@ -253,7 +253,7 @@
     "callToAction": "LEARN_MORE",
     "specialAdCategory": "HOUSING",
     "compliance": {
-      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "notes": "Sample. Pre-approval is described as a step, never as a guarantee of a loan.",
       "requiredOnAd": ["nmls", "equal-housing"],
       "blockedInWords": [
         "rate-claims",
@@ -291,7 +291,7 @@
     "callToAction": "LEARN_MORE",
     "specialAdCategory": "HOUSING",
     "compliance": {
-      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "notes": "Sample. The offer is about being prepared, never about winning a home.",
       "requiredOnAd": ["nmls", "equal-housing"],
       "blockedInWords": [
         "rate-claims",
@@ -329,7 +329,7 @@
     "callToAction": "LEARN_MORE",
     "specialAdCategory": "HOUSING",
     "compliance": {
-      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "notes": "Sample. Down payment help is named as programs to ask about, with no amount.",
       "requiredOnAd": ["nmls", "equal-housing"],
       "blockedInWords": [
         "rate-claims",
@@ -367,7 +367,7 @@
     "callToAction": "LEARN_MORE",
     "specialAdCategory": "HOUSING",
     "compliance": {
-      "notes": "Sample ad for tests and the demo only. No rates, payments or loan terms in the words.",
+      "notes": "Sample, retired. A seasonal message about starting a search, with no figure.",
       "requiredOnAd": ["nmls", "equal-housing"],
       "blockedInWords": [
         "rate-claims",

@@ -389,7 +389,7 @@ test("the bar's three sheets sit inside the frame at 390 and Help stays anchored
   await page.goto("/overview");
   for (const opener of [
     banner.getByRole("button", { name: "Menu" }),
-    banner.getByRole("button", { name: "Help" }),
+    banner.getByRole("button", { name: "Help", exact: true }),
     accountControl(page),
   ]) {
     await opener.click();
@@ -406,7 +406,7 @@ test("the bar's three sheets sit inside the frame at 390 and Help stays anchored
 
   await page.setViewportSize({ width: 1180, height: 900 });
   await page.goto("/overview");
-  const help = banner.getByRole("button", { name: "Help" });
+  const help = banner.getByRole("button", { name: "Help", exact: true });
   await help.click();
   const helpSheet = page.getByRole("dialog");
   await expect(helpSheet).toBeVisible();

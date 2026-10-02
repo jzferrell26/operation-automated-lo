@@ -94,20 +94,33 @@ export const LIBRARY_AD_PLACE_AUDIENCE_WORDS: readonly string[] = Object.freeze(
 
 /**
  * Units of distance: the same list as `AD_PLACE_DISTANCE_UNITS` in `@oalo/contracts`. "mi" is also
- * Michigan and "Miles City" is a city, so a unit is refused only where it reads as a distance:
- * beside a digit (every digit is refused), after "within" (a refused word), or as the last word of the
- * city name ("Austin mi", "Mile").
+ * Michigan and "Miles City" is a city, so a unit is refused only where it reads as a distance: beside a
+ * digit (every digit is refused), beside a number word (below), after "within" (a refused word), or as
+ * the last word of the city name, with or without a full stop after it ("Austin mi", "Mile", "Austin Mi.").
  */
 export const LIBRARY_AD_PLACE_DISTANCE_UNITS: readonly string[] = Object.freeze(
   "mi mile miles km kms kilometer kilometers kilometre kilometres".split(" "),
 );
 
 /**
+ * Number words that spell a radius beside a unit of distance ("ten miles around Austin", "five mi",
+ * "a few miles"): the same list as `AD_PLACE_NUMBER_WORDS` in `@oalo/contracts`. Beside mi, miles, km,
+ * kms, kilometers and kilometres any of them is refused; beside the singular "mile", "kilometer" and
+ * "kilometre" only "one" is, because real names hold a number word and "Mile" (Nine Mile Falls, WA).
+ */
+export const LIBRARY_AD_PLACE_NUMBER_WORDS: readonly string[] = Object.freeze(
+  "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred hundreds thousand thousands dozen dozens few several".split(
+    " ",
+  ),
+);
+
+/**
  * Real places whose names hold a refused word, passed by exact match on "Name, ST": the same list as
- * `AD_PLACE_NAMED_EXCEPTIONS` in `@oalo/contracts`.
+ * `AD_PLACE_NAMED_EXCEPTIONS` in `@oalo/contracts`, which cites the source (the USGS Geographic Names
+ * Information System, read on 2026-10-02).
  */
 export const LIBRARY_AD_PLACE_NAMED_EXCEPTIONS: readonly string[] = Object.freeze(
-  "Gay, GA|Gay, MI|Boomer, NC|Boomer, WV|Boys Town, NE|Boys Ranch, TX|Ages, KY|Miles, TX|Miles, IA|Six Mile, SC|Eight Mile, AL|Ten Mile, TN|Twelve Mile, IN".split(
+  "Gay, GA|Gay, ID|Gay, MI|Gay, NC|Gay, OK|Gay, WV|Fort Gay, WV|Mount Gay, WV|Mount Gay-Shamrock, WV|Boomer, NC|Boomer, TN|Boomer, WV|Boys Town, NE|Boys Ranch, TX|Ages, KY|Miles, CA|Miles, IA|Miles, LA|Miles, NC|Miles, OH|Miles, TX|Miles, WA|Miles, WI|Miles, WV|Six Mile, SC|Seven Mile, OH|Eight Mile, AL|Ten Mile, TN|Twelve Mile, IN|Pass Christian, MS|Veteran, NY|Veteran, WY|Zip City, AL".split(
     "|",
   ),
 );
@@ -117,7 +130,19 @@ const PEOPLE_WORDS = new RegExp(
   "iu",
 );
 const UNIT_CLOSES_NAME = new RegExp(
-  `(?:^|\\p{L}[^\\p{L}]+)(?:${LIBRARY_AD_PLACE_DISTANCE_UNITS.join("|")})$`,
+  `(?:^|\\p{L}[^\\p{L}]+)(?:${LIBRARY_AD_PLACE_DISTANCE_UNITS.join("|")})[^\\p{L}]*$`,
+  "iu",
+);
+const SINGULAR_UNITS: readonly string[] = ["mile", "kilometer", "kilometre"];
+const COUNTED_UNITS = LIBRARY_AD_PLACE_DISTANCE_UNITS.filter(
+  (unit) => !SINGULAR_UNITS.includes(unit),
+);
+// "ten miles", "five mi", "a few km", "dozens of miles": a number word, an optional "of", a plural or
+// abbreviated unit. Or "one" and a singular unit ("one mile"); any other number beside "Mile" is a
+// name (Nine Mile Falls).
+const NUMBER_BESIDE_UNIT = new RegExp(
+  `(?<!\\p{L})(?:${LIBRARY_AD_PLACE_NUMBER_WORDS.join("|")})(?:[^\\p{L}]+of)?[^\\p{L}]+(?:${COUNTED_UNITS.join("|")})(?!\\p{L})` +
+    `|(?<!\\p{L})one[^\\p{L}]+(?:${SINGULAR_UNITS.join("|")})(?!\\p{L})`,
   "iu",
 );
 const NAMED_EXCEPTIONS: ReadonlySet<string> = new Set(
@@ -133,7 +158,9 @@ function placeProblem(kind: "state" | "city", value: string): string | undefined
   // The words are matched against the name only: the code after the comma is a state, never a word.
   if (NAMED_EXCEPTIONS.has(value.toLowerCase())) return undefined;
   const name = city[1] ?? "";
-  return PEOPLE_WORDS.test(name) || UNIT_CLOSES_NAME.test(name) ? "people" : undefined;
+  return PEOPLE_WORDS.test(name) || UNIT_CLOSES_NAME.test(name) || NUMBER_BESIDE_UNIT.test(name)
+    ? "people"
+    : undefined;
 }
 
 /**

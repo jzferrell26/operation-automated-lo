@@ -78,9 +78,7 @@ export function ProductShell({ children }: { children: ReactNode }) {
     if (search) searchRef.current?.focus();
   }, [search]);
   function selected(href: string) {
-    return href === "/marketing"
-      ? pathname === href
-      : pathname === href || pathname.startsWith(`${href}/`);
+    return pathname === href || pathname.startsWith(`${href}/`);
   }
   function rail(compact: boolean) {
     return (

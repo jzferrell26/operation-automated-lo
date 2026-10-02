@@ -5,6 +5,7 @@ import {
   AD_PLACE_DISTANCE_UNITS,
   AD_PLACE_LIMITS,
   AD_PLACE_NAMED_EXCEPTIONS,
+  AD_PLACE_NUMBER_WORDS,
   AdPlacesInputSchema,
   US_STATES,
   adPlaceLabel,
@@ -14,6 +15,7 @@ import {
   LIBRARY_AD_PLACE_AUDIENCE_WORDS,
   LIBRARY_AD_PLACE_DISTANCE_UNITS,
   LIBRARY_AD_PLACE_NAMED_EXCEPTIONS,
+  LIBRARY_AD_PLACE_NUMBER_WORDS,
   US_STATE_CODES,
   libraryAdPlacesProblem,
 } from "@oalo/domain";
@@ -64,8 +66,37 @@ const REFUSED: readonly string[] = [
   "10 mi, MI",
   "Austin miles, TX",
   "Ten miles, TX",
+  // W-1 of the pre-redraw verification: a distance written with a number word beside a unit.
+  "ten miles around Austin, TX",
+  "Five Miles From Austin, TX",
+  "five mi from Dallas, TX",
+  "twenty miles of Houston, TX",
+  "Several miles from Waco, TX",
+  "A few miles outside Tyler, TX",
+  "a hundred miles of Dallas, TX",
+  "A dozen miles from Waco, TX",
+  "Dozens of miles from Waco, TX",
+  "Twenty-five kilometres around Austin, TX",
+  "thirty km from Austin, TX",
+  "Fifty kms from Austin, TX",
+  "One mile from Austin, TX",
+  "ten miles around Austin",
+  // A unit followed by a full stop still closes the name.
+  "Austin Mi., TX",
+  "Austin Miles., TX",
+  "Austin km., TX",
+  // Audience and distance phrases stay refused.
+  "gay neighborhoods in Austin, TX",
+  "veterans near Killeen, TX",
   // A named exception is exact: the same name in another state is not a place it names.
   "Gay, TX",
+  "Gay, VT",
+  "Miles, VA",
+  "Veteran, TX",
+  "Zip City, TX",
+  "Seven Mile, TX",
+  "Fort Gay, TX",
+  "Pass Christian, TX",
   "Boomer, TX",
   "Boys Town, TX",
   "Six Mile, TX",
@@ -120,6 +151,32 @@ const ACCEPTED: readonly Readonly<[typed: string, stored: string]>[] = [
   ["Eight Mile, AL", "Eight Mile, AL"],
   ["Ten Mile, TN", "Ten Mile, TN"],
   ["Twelve Mile, IN", "Twelve Mile, IN"],
+  // W-2 of the pre-redraw verification: real places the first list missed, each an exact pair.
+  ["Seven Mile, OH", "Seven Mile, OH"],
+  ["Miles, WA", "Miles, WA"],
+  ["Miles, WI", "Miles, WI"],
+  ["Miles, NC", "Miles, NC"],
+  ["Miles, WV", "Miles, WV"],
+  ["Miles, CA", "Miles, CA"],
+  ["Miles, LA", "Miles, LA"],
+  ["Miles, OH", "Miles, OH"],
+  ["Gay, WV", "Gay, WV"],
+  ["Gay, OK", "Gay, OK"],
+  ["Gay, NC", "Gay, NC"],
+  ["Gay, ID", "Gay, ID"],
+  ["Veteran, WY", "Veteran, WY"],
+  ["Veteran, NY", "Veteran, NY"],
+  ["Zip City, AL", "Zip City, AL"],
+  ["Boomer, TN", "Boomer, TN"],
+  ["Fort Gay, WV", "Fort Gay, WV"],
+  ["Mount Gay, WV", "Mount Gay, WV"],
+  ["Mount Gay-Shamrock, WV", "Mount Gay-Shamrock, WV"],
+  ["Pass Christian, MS", "Pass Christian, MS"],
+  ["pass christian, ms", "pass christian, MS"],
+  // A number word and the singular "Mile" inside a longer real name is not a distance.
+  ["Three Mile Bay, NY", "Three Mile Bay, NY"],
+  ["Eleven Mile Corner, AZ", "Eleven Mile Corner, AZ"],
+  ["Four Mile Prairie, TX", "Four Mile Prairie, TX"],
 ];
 
 /**
@@ -249,6 +306,10 @@ describe("the place rules (009D-AC-008)", () => {
     expect([...AD_PLACE_AUDIENCE_WORDS]).toEqual([...LIBRARY_AD_PLACE_AUDIENCE_WORDS]);
     expect([...AD_PLACE_DISTANCE_UNITS]).toEqual([...LIBRARY_AD_PLACE_DISTANCE_UNITS]);
     expect([...AD_PLACE_NAMED_EXCEPTIONS]).toEqual([...LIBRARY_AD_PLACE_NAMED_EXCEPTIONS]);
+    expect([...AD_PLACE_NUMBER_WORDS]).toEqual([...LIBRARY_AD_PLACE_NUMBER_WORDS]);
+    expect(AD_PLACE_NUMBER_WORDS).toEqual(
+      expect.arrayContaining(["one", "ten", "twenty", "hundred", "dozen", "few", "several"]),
+    );
     expect(AD_PLACE_AUDIENCE_WORDS).toEqual(
       expect.arrayContaining(["zip", "within", "radius", "seniors", "moms", "single"]),
     );

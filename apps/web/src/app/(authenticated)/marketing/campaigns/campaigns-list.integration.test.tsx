@@ -5,9 +5,11 @@ import { CampaignList } from "../../../../features/campaigns/components/campaign
 import type { CampaignListRow } from "../../../../features/campaigns/campaign-page-model.js";
 import {
   APPROVER,
+  daysOutsideTimeElements,
   earlierFlowCampaign,
   libraryCampaign,
   rowOf,
+  wholeSentence,
 } from "../../../../server/campaign-page.test-support.js";
 
 /**
@@ -90,7 +92,7 @@ describe("the Campaigns list (009E-AC-009)", () => {
       /\/api\/ads-library\/samples\/sample-first-home\/2\/tall$/u,
     );
     expect(within(row).getByText("First-time buyers")).toBeInTheDocument();
-    expect(within(row).getByText("Oct 6 to Oct 20")).toBeInTheDocument();
+    expect(within(row).getByText(wholeSentence("Oct 6 to Oct 20"))).toBeInTheDocument();
     expect(within(row).getByText("Austin, TX and 1 more")).toBeInTheDocument();
     expect(within(row).getByText("Approved")).toBeInTheDocument();
     expect(within(row).getByText("Oct 1")).toBeInTheDocument();
@@ -102,7 +104,7 @@ describe("the Campaigns list (009E-AC-009)", () => {
     const row = within(screen.getByRole("table"))
       .getByRole("link", { name: "Sample: Get pre-approved before you shop" })
       .closest("tr") as HTMLElement;
-    expect(within(row).getByText("Until Oct 22")).toBeInTheDocument();
+    expect(within(row).getByText(wholeSentence("Until Oct 22"))).toBeInTheDocument();
     expect(within(row).getByText("Round Rock, TX and 3 more")).toBeInTheDocument();
     expect(within(row).getByText("Ready for approval")).toBeInTheDocument();
   });
@@ -113,7 +115,7 @@ describe("the Campaigns list (009E-AC-009)", () => {
     const row = within(screen.getByRole("table"))
       .getByRole("link", { name: "Sample: First home, start here" })
       .closest("tr") as HTMLElement;
-    expect(within(row).getByText("Oct 6, 2026 to Oct 20, 2026")).toBeInTheDocument();
+    expect(within(row).getByText(wholeSentence("Oct 6, 2026 to Oct 20, 2026"))).toBeInTheDocument();
     expect(within(row).getByText("Oct 1, 2026")).toBeInTheDocument();
   });
 
@@ -237,4 +239,25 @@ describe("a campaign saved before PRD-009 on the list (009E-AC-012)", () => {
     expect(within(table).getByText("Not in the library")).toBeInTheDocument();
     expect(table.querySelector("img")).toBeNull();
   });
+});
+
+describe("the dates on the Campaigns list", () => {
+  it.each([
+    ["this year", NOW],
+    ["a later year, so each day carries its year", new Date("2027-01-05T12:00:00.000Z")],
+  ] as const)(
+    "are all in time elements, in the table and in the cards, in %s",
+    async (_when, now) => {
+      const { container } = render(<CampaignList now={now} rows={await rows()} />);
+
+      expect(daysOutsideTimeElements(container)).toEqual([]);
+      const times = [...container.querySelectorAll("tbody time")];
+      expect(times.length).toBeGreaterThanOrEqual(3);
+      for (const time of times)
+        expect(time.getAttribute("datetime")).toMatch(/^\d{4}-\d{2}-\d{2}/u);
+      expect(
+        container.querySelectorAll("[data-campaign-cards] time").length,
+      ).toBeGreaterThanOrEqual(3);
+    },
+  );
 });

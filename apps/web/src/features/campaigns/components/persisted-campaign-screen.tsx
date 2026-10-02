@@ -31,6 +31,7 @@ import { CampaignHeaderActions } from "./campaign-header-actions.js";
 import { CampaignLibraryNotices } from "./campaign-library-notices.js";
 import { CampaignResultsCard } from "./campaign-results-card.js";
 import { CampaignVersionsCard } from "./campaign-versions-card.js";
+import { TextWithDays, type DayInText } from "./text-with-days.js";
 import styles from "./campaign-page.module.css";
 
 /**
@@ -114,6 +115,21 @@ function placeWords(places: LibraryAdCampaignPage["places"]): string {
 function LibraryAdScreen({ page }: Readonly<{ page: LibraryAdCampaignPage }>) {
   const topic = page.topic === undefined ? undefined : TOPIC_LABELS[page.topic];
   const retired = page.notices.find((notice) => notice.kind === "retired");
+  const startsOn = page.startsOn === undefined ? undefined : readableDay(page.startsOn);
+  const endsOn = readableDay(page.endsOn);
+  const runSentence = runLine({
+    startsOn,
+    endsOn,
+    places: placeWords(page.places),
+    daily: dollars(page.budget.dailyDollars),
+    total: dollars(page.budget.totalDollars),
+  });
+  const runDays: DayInText[] = [
+    ...(page.startsOn === undefined || startsOn === undefined
+      ? []
+      : [{ dateTime: page.startsOn, text: startsOn }]),
+    { dateTime: page.endsOn, text: endsOn },
+  ];
   return (
     <div className={styles.page} data-campaign-page="library-ad" data-version-no={page.versionNo}>
       <Crumbs current={page.name} />
@@ -122,13 +138,7 @@ function LibraryAdScreen({ page }: Readonly<{ page: LibraryAdCampaignPage }>) {
           <p className={styles.eyebrow}>{libraryEyebrow(topic)}</p>
           <h1 className={styles.title}>{page.name}</h1>
           <p className={styles.lead}>
-            {runLine({
-              startsOn: page.startsOn === undefined ? undefined : readableDay(page.startsOn),
-              endsOn: readableDay(page.endsOn),
-              places: placeWords(page.places),
-              daily: dollars(page.budget.dailyDollars),
-              total: dollars(page.budget.totalDollars),
-            })}
+            <TextWithDays days={runDays} text={runSentence} />
           </p>
           <StandingChip page={page} />
         </div>
@@ -144,6 +154,7 @@ function LibraryAdScreen({ page }: Readonly<{ page: LibraryAdCampaignPage }>) {
               launchingTurnedOn: false,
             }}
             makeNewVersionHref={page.canMakeNewVersion ? page.makeNewVersionHref : undefined}
+            retiredOnDay={retired?.kind === "retired" ? retired.retiredOn : null}
           />
         ) : null}
       </header>

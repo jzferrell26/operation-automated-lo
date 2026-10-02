@@ -365,3 +365,48 @@ export async function rowOf(
     options.library ?? (await sampleLibrary()),
   );
 }
+
+/**
+ * A day as this product writes one: "Jul 21, 2026", "7/21/2026", or "2026-07-21". The design-quality
+ * check in the browser holds the same pattern, and holds each match to tabular figures; a `time`
+ * element is where the global stylesheet gives it those.
+ */
+const DAY_PATTERN =
+  /\b(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2})\b/u;
+
+/**
+ * Every piece of text under `root` that holds a day without being inside a `time` element, which is
+ * what the browser's tabular figures check would flag (each found as its element and its words).
+ * Details for support are left out, as the browser check leaves them out.
+ */
+export function daysOutsideTimeElements(root: Element): string[] {
+  const found: string[] = [];
+  const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+    const element = node.parentElement;
+    const text = node.textContent ?? "";
+    if (element === null || !DAY_PATTERN.test(text)) continue;
+    if (element.closest("time, [data-support-details]") !== null) continue;
+    found.push(`${element.tagName.toLowerCase()} "${text.trim()}"`);
+  }
+  return found;
+}
+
+/** An element's text as a reader takes it: every run of white space is one space, and no edge space. */
+function wordsOf(element: Element): string {
+  return (element.textContent ?? "").replace(/\s+/gu, " ").trim();
+}
+
+/**
+ * A text matcher for a whole sentence whose days are drawn as `time` elements: the sentence is the
+ * element's full text, however many elements it is split across, and no element inside it holds
+ * all of it (so the match is the sentence's own element and not one of its ancestors).
+ */
+export function wholeSentence(sentence: string | RegExp) {
+  return (_own: string, element: Element | null): boolean => {
+    if (element === null) return false;
+    const full = wordsOf(element);
+    const matches = typeof sentence === "string" ? full === sentence : sentence.test(full);
+    return matches && [...element.children].every((child) => wordsOf(child) !== full);
+  };
+}

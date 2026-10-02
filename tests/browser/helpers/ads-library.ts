@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { expect, type Page } from "@playwright/test";
 
+import { settleForScreenshot } from "./design-quality.js";
+
 /**
  * PRD-009c part 2. What a browser sees on the "Ads library" tab, shared by the synthetic suite
  * (`tests/browser/ads-library.spec.ts`) and the review suite (`tests/browser/review/ads-library.spec.ts`)
@@ -124,4 +126,48 @@ export async function expectEveryArtLoaded(page: Page): Promise<void> {
       { message: "every card's art loaded" },
     )
     .toBe(true);
+}
+
+/**
+ * Settles the library for a measurement without waiting for the network to go idle.
+ *
+ * `settleForScreenshot` ends with `waitForLoadState("networkidle")`, which has no limit of its own
+ * but the test's. CI's full synthetic run of `ads-library.spec.ts` (run 36989783019) lost a whole
+ * 240 second attempt to it once, and the retry passed in 90 seconds. Idle network proves nothing a
+ * measurement here needs: what matters is that the styles applied, the fonts are ready, and every
+ * card's picture has loaded, and each of those is waited for by name.
+ */
+export async function settleTheLibrary(page: Page): Promise<void> {
+  await settleForScreenshot(page, { idleNetwork: false });
+  if ((await page.locator("[data-ad-card]").count()) > 0) await expectEveryArtLoaded(page);
+}
+
+/**
+ * The longest the page may hold the browser's main thread in one task while it loads, in
+ * milliseconds. The library once held it for about 2,500 ms, three times in a row, because three
+ * nested grids sized their tracks from the cards (see `ads-library.module.css`): the page took 8
+ * seconds to fire `load`, and CI's full synthetic run lost a 240 second attempt to it waiting for
+ * the network to go idle. Working loads measure about 175 ms here, so a slower runner has room.
+ */
+export const MAIN_THREAD_TASK_BUDGET_MS = 1000;
+
+/** Starts recording long tasks (50 ms or more) on every page this one opens. Call before `goto`. */
+export async function watchLongTasks(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const longTasks: number[] = [];
+    (window as unknown as { __longTasks: number[] }).__longTasks = longTasks;
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) longTasks.push(entry.duration);
+    }).observe({ type: "longtask", buffered: true });
+  });
+}
+
+export async function expectNoLongTask(page: Page): Promise<void> {
+  const longest = await page.evaluate(() =>
+    Math.max(0, ...((window as unknown as { __longTasks?: number[] }).__longTasks ?? [])),
+  );
+  expect(
+    longest,
+    `the longest main-thread task while the library loaded, against ${String(MAIN_THREAD_TASK_BUDGET_MS)} ms`,
+  ).toBeLessThan(MAIN_THREAD_TASK_BUDGET_MS);
 }

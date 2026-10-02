@@ -10,6 +10,7 @@ import {
 } from "../../../copy/campaign-page-messages.js";
 import type { CampaignResultsInput } from "../campaign-page-model.js";
 import styles from "./campaign-page.module.css";
+import { TextWithDays } from "./text-with-days.js";
 
 /**
  * PRD-009e D1, 009E-AC-002 and MTK-009. The results card: Spend, Leads sent to HighLevel, and Cost
@@ -25,16 +26,21 @@ function dollarsFromCents(cents: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 }
 
-function updatedWords(updatedAt: string | null): string {
-  if (updatedAt === null) return RESULT_UPDATED_UNKNOWN;
-  const when = new Date(updatedAt);
-  if (Number.isNaN(when.getTime())) return RESULT_UPDATED_UNKNOWN;
-  return resultUpdatedLine(
-    `${new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-      timeZone: "UTC",
-    }).format(when)} UTC`,
+function UpdatedWords({ updatedAt }: Readonly<{ updatedAt: string | null }>) {
+  const when = updatedAt === null ? undefined : new Date(updatedAt);
+  if (updatedAt === null || when === undefined || Number.isNaN(when.getTime())) {
+    return RESULT_UPDATED_UNKNOWN;
+  }
+  const written = `${new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }).format(when)} UTC`;
+  return (
+    <TextWithDays
+      days={[{ dateTime: when.toISOString(), text: written }]}
+      text={resultUpdatedLine(written)}
+    />
   );
 }
 
@@ -102,7 +108,7 @@ export function CampaignResultsCard({ results }: Readonly<{ results: CampaignRes
                   <span className={styles.metricMeta}>
                     {resultSourceLine(RESULT_SOURCE_NAMES[figure.metric.source])}
                     {". "}
-                    {updatedWords(figure.metric.updatedAt)}
+                    <UpdatedWords updatedAt={figure.metric.updatedAt} />
                   </span>
                 )}
               </li>

@@ -20,6 +20,7 @@ import { LAUNCH_PATH } from "../launch-model.js";
 import { CampaignsTabs } from "./campaigns-tabs.js";
 import styles from "./campaign-list.module.css";
 import pageStyles from "./campaign-page.module.css";
+import { TextWithDays, type DayInText } from "./text-with-days.js";
 
 /**
  * PRD-009e 009E-AC-009 to 009E-AC-012. The Campaigns list: the tab strip, one primary action
@@ -37,12 +38,22 @@ function topicWords(row: CampaignListRow): string {
   return row.topic === undefined ? TOPIC_NOT_IN_LIBRARY : TOPIC_LABELS[row.topic];
 }
 
-function runsWords(row: CampaignListRow, year: number): string {
-  if (row.endsOn === undefined) return RUNS_NOT_SET;
-  return runsRange(
-    row.startsOn === undefined ? undefined : monthDay(row.startsOn, year),
-    monthDay(row.endsOn, year),
+/** When a campaign runs, as the words and the days in them, so each day is drawn as a date. */
+function runsWords(
+  row: CampaignListRow,
+  year: number,
+): Readonly<{ text: string; days: readonly DayInText[] }> {
+  if (row.endsOn === undefined) return { text: RUNS_NOT_SET, days: [] };
+  const days = [row.startsOn, row.endsOn].flatMap((day) =>
+    day === undefined ? [] : [{ dateTime: day, text: monthDay(day, year) }],
   );
+  return {
+    text: runsRange(
+      row.startsOn === undefined ? undefined : monthDay(row.startsOn, year),
+      monthDay(row.endsOn, year),
+    ),
+    days,
+  };
 }
 
 function whereWords(row: CampaignListRow): string {
@@ -148,13 +159,15 @@ export function CampaignList({
                       </span>
                     </td>
                     <td>{topicWords(row)}</td>
-                    <td className={styles.nowrap}>{runsWords(row, year)}</td>
+                    <td className={styles.nowrap}>
+                      <TextWithDays {...runsWords(row, year)} />
+                    </td>
                     <td>{whereWords(row)}</td>
                     <td className={styles.nowrap}>
                       <StatusChip row={row} />
                     </td>
                     <td className={`${styles.muted} ${styles.nowrap}`}>
-                      {monthDay(row.updatedAt, year)}
+                      <time dateTime={row.updatedAt}>{monthDay(row.updatedAt, year)}</time>
                     </td>
                   </tr>
                 ))}
@@ -179,13 +192,17 @@ export function CampaignList({
                   {/* A card has no column header, so each fact is named (writing review W-9). */}
                   <p className={styles.cardFacts}>
                     {cardFact(CAMPAIGN_CARD_LABELS.topic, topicWords(row))}{" "}
-                    {cardFact(CAMPAIGN_CARD_LABELS.dates, runsWords(row, year))}{" "}
+                    <TextWithDays
+                      days={runsWords(row, year).days}
+                      text={cardFact(CAMPAIGN_CARD_LABELS.dates, runsWords(row, year).text)}
+                    />{" "}
                     {cardFact(CAMPAIGN_CARD_LABELS.where, whereWords(row))}
                   </p>
                   <p>
                     <StatusChip row={row} />{" "}
                     <span className={styles.cardFacts}>
-                      {CAMPAIGN_CARD_LABELS.lastChange}: {monthDay(row.updatedAt, year)}
+                      {CAMPAIGN_CARD_LABELS.lastChange}:{" "}
+                      <time dateTime={row.updatedAt}>{monthDay(row.updatedAt, year)}</time>
                     </span>
                   </p>
                 </Surface>

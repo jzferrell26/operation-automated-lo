@@ -157,3 +157,36 @@ describe("the library tab (009C-AC-010)", () => {
     }
   });
 });
+
+/**
+ * The rules in `css` that make a grid and do not name its column track. An implicit `auto` track is
+ * sized from its content, and here the content is cards that are size containers: stacked three deep
+ * it held the main thread for about 2.5 seconds per load (see the stylesheet's own note).
+ */
+function gridsWithoutATrack(css: string): string[] {
+  const found: string[] = [];
+  for (const rule of withoutComments(css).matchAll(/([^{}]+)\{([^{}]*)\}/gu)) {
+    const body = rule[2] ?? "";
+    if (/display:\s*grid\b/u.test(body) && !/grid-template-columns:/u.test(body)) {
+      found.push((rule[1] ?? "").trim());
+    }
+  }
+  return found;
+}
+
+describe("the library's layout cost (009C-AC-010)", () => {
+  it("gives every grid in its stylesheet a column track, so no level is sized from the cards", async () => {
+    const css = await readFile(join(libraryDirectory, "ads-library.module.css"), "utf8");
+    expect(css).toMatch(/display:\s*grid/u);
+    expect(gridsWithoutATrack(css)).toEqual([]);
+    expect(css.match(/grid-template-columns:\s*minmax\(0,\s*1fr\)/gu)?.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("would catch a grid that leaves its track to its content", () => {
+    expect(gridsWithoutATrack(".a { display: grid; gap: 1px; }")).toEqual([".a"]);
+    expect(gridsWithoutATrack("/* .b { display: grid; } */ .c { display: block; }")).toEqual([]);
+    expect(
+      gridsWithoutATrack(".d { display: grid; grid-template-columns: minmax(0, 1fr); }"),
+    ).toEqual([]);
+  });
+});

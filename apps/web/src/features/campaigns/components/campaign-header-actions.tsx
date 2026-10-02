@@ -9,9 +9,10 @@ import {
 } from "../../../copy/launch-messages.js";
 import { launchSentenceFor, type LaunchSentence, type LaunchState } from "../launch-model.js";
 import styles from "./campaign-page.module.css";
+import { TextWithDays } from "./text-with-days.js";
 
 /** The words of the one sentence, with the Meta sentence linking to where Meta is connected. */
-function sentenceWords(sentence: LaunchSentence): ReactNode {
+function sentenceWords(sentence: LaunchSentence, retiredOnDay: string | null): ReactNode {
   switch (sentence.kind) {
     case "meta-not-connected": {
       const words = LAUNCH_SENTENCES.metaNotConnected;
@@ -24,7 +25,12 @@ function sentenceWords(sentence: LaunchSentence): ReactNode {
       );
     }
     case "retired":
-      return launchRetiredSentence(sentence.retiredOn);
+      return (
+        <TextWithDays
+          days={retiredOnDay === null ? [] : [{ dateTime: retiredOnDay, text: sentence.retiredOn }]}
+          text={launchRetiredSentence(sentence.retiredOn)}
+        />
+      );
     case "not-approved":
       return LAUNCH_SENTENCES.notApproved;
     case "not-turned-on":
@@ -45,7 +51,13 @@ function sentenceWords(sentence: LaunchSentence): ReactNode {
 export function CampaignHeaderActions({
   launch,
   makeNewVersionHref,
-}: Readonly<{ launch: LaunchState; makeNewVersionHref: string | undefined }>) {
+  retiredOnDay,
+}: Readonly<{
+  launch: LaunchState;
+  makeNewVersionHref: string | undefined;
+  /** The day the library took the ad out (`YYYY-MM-DD`), which the retired sentence writes as a date. */
+  retiredOnDay: string | null;
+}>) {
   const reasonId = useId();
   const sentence = launchSentenceFor(launch);
   return (
@@ -64,7 +76,7 @@ export function CampaignHeaderActions({
         </Button>
       </div>
       <p className={styles.reason} id={reasonId}>
-        {sentenceWords(sentence)}
+        {sentenceWords(sentence, retiredOnDay)}
       </p>
     </div>
   );

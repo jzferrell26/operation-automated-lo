@@ -6,6 +6,7 @@ import { UseNewVersion } from "../../ads-library/components/use-new-version.js";
 import type { CampaignNotice } from "../campaign-page-model.js";
 import { shortDay } from "../launch-model.js";
 import styles from "./campaign-page.module.css";
+import { TextWithDays, type DayInText } from "./text-with-days.js";
 
 /**
  * PRD-009e 009E-AC-006. One-line library notices, only when they apply, each with at most one
@@ -17,6 +18,13 @@ import styles from "./campaign-page.module.css";
  * A notice on an approved version only says what changed: the approval covers the version that was
  * approved, so nothing here asks the person to redo it.
  */
+
+/** The day a retired notice names, as a day, so the sentence can draw it as a date. */
+function noticeDays(notice: CampaignNotice): readonly DayInText[] {
+  return notice.kind === "retired" && notice.retiredOn !== null
+    ? [{ dateTime: notice.retiredOn, text: shortDay(notice.retiredOn) }]
+    : [];
+}
 
 function noticeSentence(notice: CampaignNotice): string {
   switch (notice.kind) {
@@ -67,7 +75,8 @@ export function CampaignLibraryNotices({
         return (
           <li className={styles.notice} data-notice={notice.kind} key={notice.kind}>
             <p>
-              <Icon decorative name="info" size="sm" tone="info" /> {noticeSentence(notice)}
+              <Icon decorative name="info" size="sm" tone="info" />{" "}
+              <TextWithDays days={noticeDays(notice)} text={noticeSentence(notice)} />
             </p>
             {action === null ? null : <div className={styles.noticeActions}>{action}</div>}
           </li>

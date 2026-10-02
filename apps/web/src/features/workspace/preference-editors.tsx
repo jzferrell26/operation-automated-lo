@@ -1,6 +1,5 @@
 "use client";
 import { useState, type FormEvent } from "react";
-import { HomeBrandSchema } from "@oalo/contracts";
 import {
   Button,
   Card,
@@ -22,6 +21,7 @@ import {
   type AdBrand,
 } from "./ad-brand.js";
 import {
+  BrandSaveSchema,
   PartnerSchema,
   type WorkspacePageData,
   type WorkspacePartner,
@@ -89,9 +89,11 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setValidation("");
-    const parsed = HomeBrandSchema.safeParse(brand);
+    const parsed = BrandSaveSchema.safeParse(brand);
     if (!parsed.success) {
-      setValidation("Check the name, company, email and license numbers before saving.");
+      setValidation(
+        "Check the name, company, email and license numbers before saving. Each NMLS number has 4 to 12 digits.",
+      );
       return;
     }
     const saved = await state.save({

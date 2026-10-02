@@ -9,7 +9,7 @@ import {
   type AdBrand,
 } from "./ad-brand.js";
 import { stubDialogLayout } from "../homeowners/home-workspace.test-support.js";
-import { AdBrandEditor } from "./preference-editors.js";
+import { AdBrandEditor, ReportBrandEditor } from "./preference-editors.js";
 import { TEST_BRAND, workspaceData } from "./workspace.test-support.js";
 
 /**
@@ -155,4 +155,20 @@ describe("the ad brand limits hold before anything is sent (009D-AC-024)", () =>
     expect(screen.getByRole("textbox", { name: /Title on your ads/u })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Save ad brand" })).toBeDisabled();
   });
+});
+
+describe("the report brand's NMLS numbers (verifier, 2026-10-02)", () => {
+  it.each([
+    ["Loan officer NMLS", "123"],
+    ["Company NMLS", "12"],
+  ])(
+    "refuses %s %j before anything is sent, and says how many digits it takes",
+    async (label, value) => {
+      render(<ReportBrandEditor data={workspaceData("profile")} />);
+      fireEvent.change(screen.getByLabelText(new RegExp(label, "u")), { target: { value } });
+      fireEvent.click(screen.getByRole("button", { name: "Save report branding" }));
+      await waitFor(() => expect(document.body.textContent).toContain("4 to 12 digits"));
+      expect(network).not.toHaveBeenCalled();
+    },
+  );
 });

@@ -11,6 +11,9 @@ import { evaluateLibraryAdWords, type LibraryAdWordFinding } from "./library-ad-
  * the codes the evaluator can actually produce.
  */
 
+/** An NMLS number: 4 to 12 digits and nothing else. */
+const NMLS_DIGITS = /^\p{N}{4,12}$/u;
+
 /** The rules every blueprint shares, in the order the evaluator runs them. */
 const SHARED_RULE_CODES = [
   "DISCLOSURE_REQUIRED",
@@ -96,6 +99,7 @@ export interface LibraryAdRuleInput {
     readonly title: string;
     readonly company: string;
     readonly nmls: string;
+    readonly companyNmls: string;
   };
   readonly schedule: { readonly startsAt: string | null; readonly endsAt: string };
 }
@@ -175,13 +179,35 @@ export function evaluateLibraryAdRules(
       context.partnerNames,
     ),
   );
-  if (manifest.advertiser.nmls.trim().length === 0) {
+  // An NMLS number is 4 to 12 digits; the person's is required and the company's is optional.
+  const nmls = manifest.advertiser.nmls.trim();
+  if (nmls.length === 0) {
     findings.push(
       blocking(
         "NMLS_NUMBER_REQUIRED",
         "Your Brand has no NMLS number.",
         "advertiser.nmls",
         "Add your NMLS number in Brand.",
+      ),
+    );
+  } else if (!NMLS_DIGITS.test(nmls)) {
+    findings.push(
+      blocking(
+        "NMLS_NUMBER_REQUIRED",
+        "Your NMLS number in Brand is not 4 to 12 digits.",
+        "advertiser.nmls",
+        "Correct your NMLS number in Brand. It has 4 to 12 digits.",
+      ),
+    );
+  }
+  const companyNmls = manifest.advertiser.companyNmls.trim();
+  if (companyNmls.length > 0 && !NMLS_DIGITS.test(companyNmls)) {
+    findings.push(
+      blocking(
+        "NMLS_NUMBER_REQUIRED",
+        "Your company's NMLS number in Brand is not 4 to 12 digits.",
+        "advertiser.companyNmls",
+        "Correct your company's NMLS number in Brand. It has 4 to 12 digits.",
       ),
     );
   }

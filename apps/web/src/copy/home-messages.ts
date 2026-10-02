@@ -175,7 +175,11 @@ export const HOME_SAMPLE_AD_LABEL = SAMPLE_AD_LABEL;
 export const HOME_FOOTER =
   "HighLevel stays your CRM. Your contacts, pipelines and follow-up live there.";
 
-/** The run dates of one campaign, said plainly. `undefined` for a start means "when you launch it". */
+/**
+ * The run dates of one campaign, said plainly. `undefined` for a start means "when you launch it".
+ * Amended 2026-10-02 (MTK-008, W-33): "Set to run" for a campaign with both days, because "Runs" states
+ * as fact what nothing can do yet, and every other screen says "set to run" or "Dates".
+ */
 export function homeRunDates(startsAt: string | undefined, endsAt: string | undefined): string {
   const format = (iso: string) =>
     new Intl.DateTimeFormat("en-US", {
@@ -185,7 +189,7 @@ export function homeRunDates(startsAt: string | undefined, endsAt: string | unde
   if (endsAt === undefined) return startsAt === undefined ? "" : `Starts ${format(startsAt)}`;
   return startsAt === undefined
     ? `Starts when you launch it, ends ${format(endsAt)}`
-    : `Runs ${format(startsAt)} to ${format(endsAt)}`;
+    : `Set to run ${format(startsAt)} to ${format(endsAt)}`;
 }
 
 /** Where each Home link goes. The create route is 009d's; Settings, Brand, and Campaigns already exist. */

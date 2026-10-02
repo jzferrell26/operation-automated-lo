@@ -5,12 +5,15 @@ import { Button, Card, Icon, Link, LiveRegion, Stepper, TextArea, TextField } fr
 import { useRouter } from "next/navigation.js";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { useThisAdSuffix } from "../../../copy/ads-library-messages.js";
 import {
   AD_NOT_IN_LIBRARY_NOTICE,
   AD_TEXT_LABEL,
   BACK,
   BAND_PLACEHOLDER,
+  ADD_IN_BRAND,
   BRAND_CARD_LINE,
+  BRAND_CARD_LINE_EMPTY,
   BRAND_CARD_TITLE,
   BUDGET_TITLE,
   CAMPAIGNS_CRUMB,
@@ -325,7 +328,9 @@ export function LaunchFlow({
           <section aria-labelledby="launch-brand-title" className={styles.section} id="brand">
             <h2 id="launch-brand-title">{BRAND_CARD_TITLE}</h2>
             <BrandSummary advertiser={advertiser} />
-            <p className={styles.note}>{BRAND_CARD_LINE}</p>
+            <p className={styles.note}>
+              {hasBrandName(advertiser) ? BRAND_CARD_LINE : BRAND_CARD_LINE_EMPTY}
+            </p>
           </section>
           <section aria-labelledby="launch-words-title" className={styles.section} id="words">
             <div className={styles.sectionHeading}>
@@ -484,11 +489,15 @@ export function LaunchHeader({
   );
 }
 
+/** Whether the person has a saved name, which is what "added for you from Brand" needs to be true. */
+function hasBrandName(advertiser: LaunchBand): boolean {
+  return advertiser.name.trim() !== "";
+}
+
 function BrandSummary({ advertiser }: Readonly<{ advertiser: LaunchBand }>) {
-  const nameLine =
-    advertiser.name.trim() === ""
-      ? BAND_PLACEHOLDER
-      : [advertiser.name, advertiser.title].filter((part) => part.trim() !== "").join(", ");
+  const nameLine = !hasBrandName(advertiser)
+    ? BAND_PLACEHOLDER
+    : [advertiser.name, advertiser.title].filter((part) => part.trim() !== "").join(", ");
   const detail = [advertiser.nmls === "" ? "" : `NMLS ${advertiser.nmls}`, advertiser.company]
     .filter((part) => part.trim() !== "")
     .join(". ");
@@ -499,7 +508,7 @@ function BrandSummary({ advertiser }: Readonly<{ advertiser: LaunchBand }>) {
         className={styles.summaryTile}
         style={adColorVariables(advertiser.colorPresetId)}
       >
-        {advertiser.name.trim() === "" ? "" : brandInitials(advertiser.name)}
+        {hasBrandName(advertiser) ? brandInitials(advertiser.name) : ""}
       </span>
       <span>
         <strong>{nameLine}</strong>
@@ -507,7 +516,7 @@ function BrandSummary({ advertiser }: Readonly<{ advertiser: LaunchBand }>) {
         <span className={styles.summaryDetail}>{detail}</span>
       </span>
       <Link href="/brand" variant="action">
-        {CHANGE_IN_BRAND}
+        {hasBrandName(advertiser) ? CHANGE_IN_BRAND : ADD_IN_BRAND}
       </Link>
     </div>
   );
@@ -557,6 +566,7 @@ function StepOne({
         actionFor={(card) => (
           <Button onClick={() => onUse(card)} variant="secondary">
             {USE_THIS_AD}
+            <span className="oalo-visually-hidden">{useThisAdSuffix(card.name)}</span>
           </Button>
         )}
         advertiser={advertiser}

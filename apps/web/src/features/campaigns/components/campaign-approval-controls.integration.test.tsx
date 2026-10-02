@@ -388,7 +388,7 @@ describe.each(HOSTS)("what the approval control says %s in each state", (where, 
   const ALREADY_DECIDED = "Someone has already decided on this version.";
   const READ_WHO_DECIDED = "Read who decided, above. Nothing else happens from this page.";
   const READY =
-    "Read the wording, the budget, where the ad runs, the dates, and the disclosures before you approve.";
+    "Read the wording, the budget, where the ad shows, the dates, and the disclosures before you approve.";
 
   const rows = [
     ["an approver on a version waiting for a decision", { ...APPROVABLE }, [READY], [PERMISSION]],

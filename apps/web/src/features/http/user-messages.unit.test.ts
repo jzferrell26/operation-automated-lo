@@ -125,10 +125,10 @@ describe("error codes become sentences", () => {
       "This ad was taken out of the library, so this version can't be approved. Choose another ad. Your budget, dates and area are kept.",
     );
     expect(userMessageSentence("LIBRARY_AD_REPLACED")).toBe(
-      "A newer version of this ad is in the library, so this version can't be approved. Use the new version of the ad, then approve that one.",
+      "A newer version of this ad is in the library, so this version can't be approved. Open this campaign from Campaigns, use the new version of the ad, then approve that one.",
     );
     expect(userMessageSentence("LIBRARY_AD_ART_CHANGED")).toBe(
-      "The picture for this ad changed after this version was saved, so this version can't be approved. Make a new version from the ad, then approve that one.",
+      "The picture for this ad changed after this version was saved, so this version can't be approved. Open this campaign from Campaigns, make a new version, then approve that one.",
     );
   });
 

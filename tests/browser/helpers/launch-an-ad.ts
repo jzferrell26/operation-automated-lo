@@ -36,7 +36,9 @@ export function adCard(page: Page, ad: SampleAd): Locator {
 }
 
 export async function useThisAd(page: Page, ad: SampleAd): Promise<void> {
-  await adCard(page, ad).getByRole("button", { name: "Use this ad" }).click();
+  await adCard(page, ad)
+    .getByRole("button", { name: /^Use this ad/u })
+    .click();
   await expect(page.getByRole("heading", { level: 1, name: "Set it up" })).toBeVisible();
 }
 

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   AREA_HINT,
+  BAND_PLACEHOLDER,
   BRAND_CARD_LINE,
   DAILY_BUDGET_FIX,
   EMPTY_LIBRARY,
@@ -108,7 +109,7 @@ describe("the three steps (009D-AC-001)", () => {
     await user.click(
       within(screen.getByRole("article", { name: "Sample: Your first home checklist" })).getByRole(
         "button",
-        { name: "Use this ad" },
+        { name: /^Use this ad/u },
       ),
     );
     expect(screen.getByRole("heading", { level: 1, name: "Set it up" })).toBeInTheDocument();
@@ -125,7 +126,7 @@ describe("the three steps (009D-AC-001)", () => {
     await user.click(
       within(screen.getByRole("article", { name: "Sample: Your first home checklist" })).getByRole(
         "button",
-        { name: "Use this ad" },
+        { name: /^Use this ad/u },
       ),
     );
     expect(screen.getByLabelText(/^Headline/u)).toHaveValue("My own words");
@@ -215,10 +216,40 @@ describe("step 1, Choose an ad (009D-AC-002)", () => {
 
   it("makes every card button secondary, so no single blue button competes with the ads", () => {
     renderFlow({ step: 1 });
-    const uses = screen.getAllByRole("button", { name: "Use this ad" });
+    const uses = screen.getAllByRole("button", { name: /^Use this ad/u });
     expect(uses).toHaveLength(4);
     for (const use of uses) expect(use).toHaveAttribute("data-variant", "secondary");
     expect(document.querySelectorAll('[data-variant="primary"]')).toHaveLength(0);
+  });
+
+  // Writing review pass 2, W-31. Eight identical "Use this ad" buttons told a screen reader's list of
+  // buttons nothing; the ads library tab already names each by its ad, and now so does step 1.
+  it("names each Use this ad button by its ad, as the library tab does", () => {
+    renderFlow({ step: 1 });
+    const names = screen
+      .getAllByRole("button", { name: /^Use this ad/u })
+      .map((button) => button.textContent);
+    expect(names).toEqual(
+      expect.arrayContaining([
+        "Use this ad: Sample: First home, start here",
+        "Use this ad: Sample: Your first home checklist",
+        "Use this ad: Sample: Is your home loan still a fit?",
+        "Use this ad: Sample: Home loans for veterans",
+      ]),
+    );
+    expect(new Set(names).size).toBe(names.length);
+    for (const card of TEST_CARDS) {
+      const article = screen.getByRole("article", { name: card.name });
+      expect(
+        within(article).getByRole("button", { name: `Use this ad: ${card.name}` }),
+      ).toBeInTheDocument();
+      // The words a person sees are still just "Use this ad".
+      expect(
+        article
+          .querySelector(".oalo-visually-hidden")
+          ?.parentElement?.textContent?.startsWith("Use this ad"),
+      ).toBe(true);
+    }
   });
 
   it("orders newer approvals first within a topic and shows the version line", () => {
@@ -247,7 +278,7 @@ describe("step 1, Choose an ad (009D-AC-002)", () => {
     renderFlow({ step: 1 }, { cards: [] });
     expect(screen.getByText(EMPTY_LIBRARY)).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: "Show ads about" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Use this ad" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Use this ad/u })).toBeNull();
   });
 
   it("labels every sample ad", () => {
@@ -258,6 +289,55 @@ describe("step 1, Choose an ad (009D-AC-002)", () => {
 
 describe("step 2, Set it up", () => {
   const STEP_TWO: LaunchAddress = { step: 2, ad: "sample-first-home" };
+
+  // Writing review pass 2, W-34. Step 2's "version 3" is the library's version of the ad, and two
+  // screens later "Approve this version" means the campaign's version, so step 2 says which.
+  it("says the version in its lead is the library's, as step 3 and the campaign page do", () => {
+    renderFlow(STEP_TWO);
+    expect(
+      screen.getByText("Sample: First home, start here. First-time buyers, library version 1."),
+    ).toBeInTheDocument();
+  });
+
+  // Writing review pass 2, W-35. With no saved name nothing was added from Brand and nothing is there
+  // to change, so the card says so and the link says what it does.
+  describe("for a person with no Brand yet (writing review W-35)", () => {
+    const NO_BRAND = { ...TEST_BAND, name: "", title: "", company: "", nmls: "", companyNmls: "" };
+
+    it("says nothing is added yet, and links to Add in Brand", () => {
+      renderFlow(STEP_TWO, { advertiser: NO_BRAND });
+      const brand = screen.getByRole("region", { name: "Your brand on the ad" });
+      expect(
+        within(brand).getByText(
+          "Nothing is added yet. Add your name and NMLS number in Brand before you save. The image and layout come from the library and can't be changed.",
+        ),
+      ).toBeInTheDocument();
+      expect(within(brand).getByRole("link", { name: "Add in Brand" })).toHaveAttribute(
+        "href",
+        "/brand",
+      );
+      expect(within(brand).queryByRole("link", { name: "Change in Brand" })).toBeNull();
+      expect(brand).not.toHaveTextContent("Added for you from Brand");
+    });
+
+    it("shows the same placeholder in the feed header, in place of a blank name", () => {
+      renderFlow(STEP_TWO, { advertiser: NO_BRAND });
+      const header = document.querySelector("[data-ad-feed-preview]")?.firstElementChild;
+      expect(header).toHaveTextContent(BAND_PLACEHOLDER);
+      expect(header).toHaveTextContent("Sponsored");
+    });
+
+    it("keeps the filled wording for a person who has a Brand", () => {
+      renderFlow(STEP_TWO);
+      const brand = screen.getByRole("region", { name: "Your brand on the ad" });
+      expect(within(brand).getByText(BRAND_CARD_LINE)).toBeInTheDocument();
+      expect(within(brand).getByRole("link", { name: "Change in Brand" })).toBeInTheDocument();
+      expect(within(brand).queryByRole("link", { name: "Add in Brand" })).toBeNull();
+      const header = document.querySelector("[data-ad-feed-preview]")?.firstElementChild;
+      expect(header).toHaveTextContent("Alex Morgan, Prairie Home Lending");
+      expect(header).not.toHaveTextContent(BAND_PLACEHOLDER);
+    });
+  });
 
   it("summarises the band read-only, with Change in Brand (009D-AC-005)", () => {
     renderFlow(STEP_TWO);

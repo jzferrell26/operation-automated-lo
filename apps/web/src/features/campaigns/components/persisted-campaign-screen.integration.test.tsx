@@ -56,7 +56,7 @@ describe("the campaign page header (009E-AC-001)", () => {
     expect(
       screen.getByText(
         wholeSentence(
-          "Runs from Tue, Oct 6, 2026 until Tue, Oct 20, 2026, in Austin, TX and Texas. $25 a day, up to $350 in total.",
+          "Set to run from Tue, Oct 6, 2026 until Tue, Oct 20, 2026, in Austin, TX and Texas. $25 a day, up to $350 in total.",
         ),
       ),
     ).toBeInTheDocument();
@@ -67,7 +67,9 @@ describe("the campaign page header (009E-AC-001)", () => {
 
     expect(
       screen.getByText(
-        wholeSentence(/^Runs from launch until Tue, Oct 20, 2026, in Austin, TX and Texas\./u),
+        wholeSentence(
+          /^Set to run from launch until Tue, Oct 20, 2026, in Austin, TX and Texas\./u,
+        ),
       ),
     ).toBeInTheDocument();
   });
@@ -203,6 +205,20 @@ describe("the ad on the page (009E-AC-003)", () => {
     const shows = within(facts).getByText("Austin, TX and everything within 15 miles");
     expect(shows.closest("ul")).toHaveTextContent("Texas");
     expect(shows.closest("ul")).toHaveTextContent("the Facebook feed");
+  });
+
+  // Writing review pass 2, W-33. One fact, one name: where an ad shows is "Where it shows" here, in
+  // the list, and on step 2 and 3, and the library ad is "Library ad" here and on step 3.
+  it("labels the facts with the names every other screen uses", async () => {
+    const { container } = await renderCampaign();
+
+    const facts = container.querySelector("[data-ad-card] dl") as HTMLElement;
+    expect([...facts.querySelectorAll("dt")].map((term) => term.textContent)).toEqual([
+      "Library ad",
+      "Words",
+      "Where it shows",
+    ]);
+    expect(within(facts).queryByText("Shows in")).toBeNull();
   });
 
   it("labels a sample ad wherever it appears on the page, with a name a screen reader reads", async () => {
@@ -393,7 +409,7 @@ describe("the library notices on the page (009E-AC-006)", () => {
 
     const notice = screen.getByText(
       wholeSentence(
-        "This ad was taken out of the library on Sep 30, 2026, so this draft can't be approved. Your budget, dates and area are kept.",
+        "This ad was taken out of the library on Sep 30, 2026, so this version can't be approved. Your budget, dates and area are kept.",
       ),
     );
     const item = notice.closest("li") as HTMLElement;

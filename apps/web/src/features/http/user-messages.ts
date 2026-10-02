@@ -105,13 +105,19 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
     what: "This ad was taken out of the library, so this version can't be approved.",
     whatToDo: "Choose another ad. Your budget, dates and area are kept.",
   },
+  /**
+   * Writing review pass 2, W-37. The approve control shows on step 3 and on the campaign page, and
+   * only the campaign page has "Use the new version" and "Make a new version". These sentences name
+   * the page that has them, so they are true wherever the control was pressed.
+   */
   LIBRARY_AD_REPLACED: {
     what: "A newer version of this ad is in the library, so this version can't be approved.",
-    whatToDo: "Use the new version of the ad, then approve that one.",
+    whatToDo:
+      "Open this campaign from Campaigns, use the new version of the ad, then approve that one.",
   },
   LIBRARY_AD_ART_CHANGED: {
     what: "The picture for this ad changed after this version was saved, so this version can't be approved.",
-    whatToDo: "Make a new version from the ad, then approve that one.",
+    whatToDo: "Open this campaign from Campaigns, make a new version, then approve that one.",
   },
   CAMPAIGN_PREFLIGHT_FAILED: {
     what: "We couldn't finish the checks on this campaign.",

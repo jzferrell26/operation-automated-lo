@@ -37,22 +37,30 @@ import {
  * four frames, wraps and shrinks to no less than 14px and stays inside the band.
  */
 
-const FIRST_CAMPAIGN = Object.freeze([
-  "Choose an ad",
-  "Use this ad",
-  "Add",
-  "Save and check",
-  "Approve this version",
-  "Yes, approve",
-]);
+/**
+ * Writing review pass 2, W-31: each "Use this ad" button carries its ad's name, as a hidden suffix,
+ * so the counter (which reads a control's text) names the ad that was chosen.
+ */
+function firstCampaign(ad: (typeof SAMPLE_ADS)[keyof typeof SAMPLE_ADS]): readonly string[] {
+  return Object.freeze([
+    "Choose an ad",
+    `Use this ad: ${ad.name}`,
+    "Add",
+    "Save and check",
+    "Approve this version",
+    "Yes, approve",
+  ]);
+}
 
-const SECOND_CAMPAIGN = Object.freeze([
-  "Choose an ad",
-  "Use this ad",
-  "Save and check",
-  "Approve this version",
-  "Yes, approve",
-]);
+function secondCampaign(ad: (typeof SAMPLE_ADS)[keyof typeof SAMPLE_ADS]): readonly string[] {
+  return Object.freeze([
+    "Choose an ad",
+    `Use this ad: ${ad.name}`,
+    "Save and check",
+    "Approve this version",
+    "Yes, approve",
+  ]);
+}
 
 const LONG_NAME =
   "Alexandra Bartholomew Montgomery-Whitfield Fitzgerald Wellington-Smyth the Third";
@@ -88,7 +96,9 @@ async function launchFromHome(
     .click();
   await expect(page.getByRole("heading", { level: 1, name: "Choose an ad" })).toBeVisible();
   await expect(page.locator("input[type='file' i], input[type='checkbox' i]")).toHaveCount(0);
-  await adCard(page, input.ad).getByRole("button", { name: "Use this ad" }).click();
+  await adCard(page, input.ad)
+    .getByRole("button", { name: /^Use this ad/u })
+    .click();
   await expect(page.getByRole("heading", { level: 1, name: "Set it up" })).toBeVisible();
   await expect(page.locator("input[type='file' i], input[type='checkbox' i]")).toHaveCount(0);
   if (input.place !== undefined) {
@@ -121,14 +131,18 @@ test("a workspace owner with a saved brand goes from Home to approved in 6 then 
 
   await launchFromHome(page, { ad: SAMPLE_ADS.firstHome, place: "Austin, TX" });
   const first = await readActivations(page);
-  expect(first.activations, "the first campaign's activations").toEqual(FIRST_CAMPAIGN);
+  expect(first.activations, "the first campaign's activations").toEqual(
+    firstCampaign(SAMPLE_ADS.firstHome),
+  );
   expect(first.typedFields, "the first campaign's typed fields").toHaveLength(1);
   expect(first.typedFields[0]).toMatch(/^Add a city or state/u);
   expect(first.forbidden).toEqual([]);
 
   await launchFromHome(page, { ad: SAMPLE_ADS.preApproval });
   const second = await readActivations(page);
-  expect(second.activations, "the second campaign's activations").toEqual(SECOND_CAMPAIGN);
+  expect(second.activations, "the second campaign's activations").toEqual(
+    secondCampaign(SAMPLE_ADS.preApproval),
+  );
   expect(second.typedFields, "the second campaign's typed fields").toEqual([]);
   expect(second.forbidden).toEqual([]);
 

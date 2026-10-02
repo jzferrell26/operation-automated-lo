@@ -66,7 +66,7 @@ describe("the Campaigns list (009E-AC-009)", () => {
     expect(container.querySelectorAll("button")).toHaveLength(0);
   });
 
-  it("is a table with Ad, Topic, Runs, Where it shows, Status, and Last change and no other column", async () => {
+  it("is a table with Ad, Topic, Dates, Where it shows, Status, and Last change and no other column", async () => {
     render(<CampaignList now={NOW} rows={await rows()} />);
 
     const table = screen.getByRole("table");
@@ -74,7 +74,7 @@ describe("the Campaigns list (009E-AC-009)", () => {
       within(table)
         .getAllByRole("columnheader")
         .map((header) => header.textContent),
-    ).toEqual(["Ad", "Topic", "Runs", "Where it shows", "Status", "Last change"]);
+    ).toEqual(["Ad", "Topic", "Dates", "Where it shows", "Status", "Last change"]);
     expect(within(table).getAllByRole("row")).toHaveLength(3);
   });
 

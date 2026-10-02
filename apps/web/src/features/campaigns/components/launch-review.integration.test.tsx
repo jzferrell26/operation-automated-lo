@@ -159,6 +159,15 @@ describe("what you approve (009D-AC-014)", () => {
   it("lists the facts the approval covers, with one Change link to step 2", () => {
     render(<LaunchReview from="home" review={reviewFixture()} />);
     const facts = document.querySelector("dl") as HTMLElement;
+    // Writing review W-33: the same names the campaign page and the list use for the same facts.
+    expect([...facts.querySelectorAll("dt")].map((term) => term.textContent)).toEqual([
+      "Library ad",
+      "Words",
+      "Budget",
+      "Dates",
+      "Where it shows",
+      "New leads go to",
+    ]);
     expect(
       within(facts).getByText("Sample: First home, start here, library version 2"),
     ).toBeInTheDocument();
@@ -392,7 +401,7 @@ describe("the PRD-008b states on step 3 (D8, 009D-AC-018)", () => {
     expect(
       screen.getByText(
         sentenceWithDays(
-          "This ad was taken out of the library on Sep 30, 2026, so this draft can't be approved. Your budget, dates and area are kept.",
+          "This ad was taken out of the library on Sep 30, 2026, so this version can't be approved. Your budget, dates and area are kept.",
         ),
       ),
     ).toBeInTheDocument();

@@ -70,7 +70,7 @@ test.describe("the Campaigns list (009E-AC-009)", () => {
           await expect(headers).toHaveText([
             "Ad",
             "Topic",
-            "Runs",
+            "Dates",
             "Where it shows",
             "Status",
             "Last change",
@@ -193,7 +193,9 @@ test.describe("the campaign page (009E-AC-001 to 007)", () => {
         await expect(
           main.getByRole("heading", { level: 1, name: SAMPLE_ADS.firstHome.name }),
         ).toBeVisible();
-        await expect(main.getByText(/^Runs from launch until .*, in Austin, TX/u)).toBeVisible();
+        await expect(
+          main.getByText(/^Set to run from launch until .*, in Austin, TX/u),
+        ).toBeVisible();
 
         // The two actions, and the launch button's one sentence directly under them.
         const launch = main.getByRole("button", { name: "Launch on Facebook" });

@@ -46,15 +46,24 @@ describe("paths a connected-account workspace can send a user to", () => {
     expect(paths.filter((path) => SYNTHETIC_PATH.test(path))).toEqual([]);
   });
 
-  it("rewrites the one demo destination the fixture carries, without dropping the step", () => {
+  /**
+   * Amended on 2026-10-01 by PRD-009 (009f D1): `/onboarding` and its step pages, the fixture's one
+   * demo destination among them, are gone and redirect to Home, so every setup step now points at a
+   * page that survives and the step itself stays.
+   */
+  it("points every setup step at a page that survives, without dropping the step", () => {
     const workspace = loadAuthenticatedWorkspace();
-    const testLeadStep = workspace.ui.onboarding.launchReadiness.find(
-      (item) => item.id === "synthetic_lead",
-    );
+    const steps = [
+      ...workspace.ui.onboarding.getConnected,
+      ...workspace.ui.onboarding.launchReadiness,
+    ];
+    const testLeadStep = steps.find((item) => item.id === "synthetic_lead");
 
-    // The step stays: hiding it would hide the product. Only where it sends the user changes.
     expect(testLeadStep?.title).toBe("Send a test lead");
-    expect(testLeadStep?.completionHref).toBe("/onboarding");
+    expect(testLeadStep?.completionHref).toBe("/overview");
+    expect(
+      steps.filter((item) => /^\/(?:onboarding|settings\/team)\b/u.test(item.completionHref)),
+    ).toEqual([]);
   });
 
   /**
@@ -78,9 +87,10 @@ describe("paths a connected-account workspace can send a user to", () => {
     vi.stubEnv("OALO_REVIEW_SURFACE", undefined);
     const workspace = loadAuthenticatedWorkspace();
 
+    // PRD-009 (009f D1): the demo's test-lead step points at Home, where the checklist now lives.
     expect(
       workspace.ui.onboarding.launchReadiness.find((item) => item.id === "synthetic_lead")
         ?.completionHref,
-    ).toBe("/onboarding/synthetic-lead");
+    ).toBe("/overview");
   });
 });

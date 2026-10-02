@@ -115,9 +115,20 @@ export async function waitForTheSavedResultToSettle(page: Page): Promise<void> {
  * spec just reached.
  */
 export async function chooseThemeFromTheHeader(page: Page, theme: ReviewTheme): Promise<void> {
-  await page.getByRole("radio", { name: theme === "light" ? "Light" : "Dark" }).click();
+  // PRD-009a (009A-AC-009): the theme choice lives in the top bar's account control, so it is
+  // opened first and closed after, leaving the page as it was.
+  const account = page.getByRole("dialog", { name: "Your account" });
+  if (!(await account.isVisible())) {
+    await page
+      .getByRole("banner")
+      .getByRole("button", { name: /^Your account: / })
+      .click();
+  }
+  await account.getByRole("radio", { name: theme === "light" ? "Light" : "Dark" }).click();
   await expectThemeResolved(page, theme);
   // The segmented control moves its fill over `--motion-base`; sampling before it settles reads a
   // blended pair that exists for a moment and is not a token.
   await page.waitForTimeout(400);
+  await page.keyboard.press("Escape");
+  await expect(account).toBeHidden();
 }

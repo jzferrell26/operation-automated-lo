@@ -1,5 +1,5 @@
 import { Button, Icon, Link } from "@oalo/ui";
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 
 import {
   LAUNCH_ON_FACEBOOK,
@@ -7,8 +7,30 @@ import {
   MAKE_A_NEW_VERSION,
   launchRetiredSentence,
 } from "../../../copy/launch-messages.js";
-import { launchSentenceFor, type LaunchState } from "../launch-model.js";
+import { launchSentenceFor, type LaunchSentence, type LaunchState } from "../launch-model.js";
 import styles from "./campaign-page.module.css";
+
+/** The words of the one sentence, with the Meta sentence linking to where Meta is connected. */
+function sentenceWords(sentence: LaunchSentence): ReactNode {
+  switch (sentence.kind) {
+    case "meta-not-connected": {
+      const words = LAUNCH_SENTENCES.metaNotConnected;
+      return (
+        <>
+          {words.before}
+          <Link href="/settings/connections">{words.link}</Link>
+          {words.after}
+        </>
+      );
+    }
+    case "retired":
+      return launchRetiredSentence(sentence.retiredOn);
+    case "not-approved":
+      return LAUNCH_SENTENCES.notApproved;
+    case "not-turned-on":
+      return LAUNCH_SENTENCES.notTurnedOn;
+  }
+}
 
 /**
  * PRD-009e 009E-AC-001. The campaign page's two actions: "Make a new version" (secondary, 009D-AC-020)
@@ -42,19 +64,7 @@ export function CampaignHeaderActions({
         </Button>
       </div>
       <p className={styles.reason} id={reasonId}>
-        {sentence.kind === "meta-not-connected" ? (
-          <>
-            {LAUNCH_SENTENCES.metaNotConnected.before}
-            <Link href="/settings/connections">{LAUNCH_SENTENCES.metaNotConnected.link}</Link>
-            {LAUNCH_SENTENCES.metaNotConnected.after}
-          </>
-        ) : sentence.kind === "retired" ? (
-          launchRetiredSentence(sentence.retiredOn)
-        ) : sentence.kind === "not-approved" ? (
-          LAUNCH_SENTENCES.notApproved
-        ) : (
-          LAUNCH_SENTENCES.notTurnedOn
-        )}
+        {sentenceWords(sentence)}
       </p>
     </div>
   );

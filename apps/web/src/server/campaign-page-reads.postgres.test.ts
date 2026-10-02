@@ -205,20 +205,21 @@ describe("a campaign's versions under the session's own location (009E-AC-005)",
 
 describe("a campaign saved before PRD-009 (009E-AC-012)", () => {
   async function seedEarlierVersion(): Promise<PersistedDraft> {
-    const principal = await principalForSession(creatorSession, environment);
-    const adapter = createCampaignPersistenceAdapter(principal, environment);
-    const compiled = await compileOpenHouseDraft(
+    const who = await principalForSession(creatorSession, environment);
+    const persistence = createCampaignPersistenceAdapter(who, environment);
+    const built = await compileOpenHouseDraft(
       OPEN_HOUSE_DRAFT_INPUT,
-      principal,
+      who,
       environment,
-      adapter.versionRepository,
+      persistence.versionRepository,
     );
-    await adapter.persistDraft(compiled.version, compiled.preflight);
+    await persistence.persistDraft(built.version, built.preflight);
+    const { campaignRef, campaignVersionRef, manifestHash } = built.version;
     return {
-      campaignRef: compiled.version.campaignRef,
-      campaignVersionRef: compiled.version.campaignVersionRef,
-      manifestHash: compiled.version.manifestHash,
-      preflightResultHash: compiled.preflight.resultHash,
+      campaignRef,
+      campaignVersionRef,
+      manifestHash,
+      preflightResultHash: built.preflight.resultHash,
       rowVersion: 1,
     };
   }

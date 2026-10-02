@@ -21,6 +21,7 @@ const PAGES = "apps/web/src/app/(authenticated)/marketing/campaigns";
 const PAGE_SOURCES = [
   `${PAGES}/page.tsx`,
   `${PAGES}/[campaignRef]/page.tsx`,
+  `${PAGES}/[campaignRef]/campaign-route.tsx`,
   `${PAGES}/[campaignRef]/versions/[versionNo]/page.tsx`,
   `${COMPONENTS}/persisted-campaign-screen.tsx`,
   `${COMPONENTS}/campaign-list.tsx`,

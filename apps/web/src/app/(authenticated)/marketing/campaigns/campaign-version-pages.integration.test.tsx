@@ -1,9 +1,9 @@
 import { render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { OWNER, libraryCampaign, pageOf } from "../../../../server/campaign-page.test-support.js";
-import { OALO_REVIEW_SURFACE_AUTHORIZED } from "../../../../server/authenticated-workspace-data.js";
 import { CampaignWorkspaceStoreUnavailableError } from "../../../../server/campaign-persistence-runtime.js";
+import { useReviewModeEnvironment } from "../../review-mode-test-support.js";
 import CampaignPage from "./[campaignRef]/page.js";
 import CampaignVersionPage from "./[campaignRef]/versions/[versionNo]/page.js";
 
@@ -27,17 +27,8 @@ vi.mock("../../../../server/campaign-workspace-reads.js", () => ({
 
 const NOT_FOUND = { digest: "NEXT_HTTP_ERROR_FALLBACK;404" };
 
-beforeEach(() => {
-  vi.stubEnv("OALO_ENVIRONMENT", "production");
-  vi.stubEnv("OALO_PROVIDER_MODE", "stub");
-  vi.stubEnv("OALO_SYNTHETIC_DATA_ONLY", "true");
-  vi.stubEnv("OALO_REVIEW_SURFACE", OALO_REVIEW_SURFACE_AUTHORIZED);
-});
-
-afterEach(() => {
-  vi.unstubAllEnvs();
-  mocked.read.mockReset();
-});
+useReviewModeEnvironment();
+afterEach(() => mocked.read.mockReset());
 
 function versionParams(versionNo: string) {
   return { params: Promise.resolve({ campaignRef: "campaign_01LibraryPage", versionNo }) };

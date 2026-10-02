@@ -1,5 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   APPROVER,
@@ -8,7 +8,7 @@ import {
   rowOf,
   type LibraryCampaignOptions,
 } from "../../../../server/campaign-page.test-support.js";
-import { OALO_REVIEW_SURFACE_AUTHORIZED } from "../../../../server/authenticated-workspace-data.js";
+import { useReviewModeEnvironment } from "../../review-mode-test-support.js";
 import CampaignListPage from "./page.js";
 
 /**
@@ -31,17 +31,8 @@ vi.mock("../../../../server/campaign-workspace-reads.js", () => ({
   readWorkspaceCampaignsForRequest: mocked.read,
 }));
 
-beforeEach(() => {
-  vi.stubEnv("OALO_ENVIRONMENT", "production");
-  vi.stubEnv("OALO_PROVIDER_MODE", "stub");
-  vi.stubEnv("OALO_SYNTHETIC_DATA_ONLY", "true");
-  vi.stubEnv("OALO_REVIEW_SURFACE", OALO_REVIEW_SURFACE_AUTHORIZED);
-});
-
-afterEach(() => {
-  vi.unstubAllEnvs();
-  mocked.read.mockReset();
-});
+useReviewModeEnvironment();
+afterEach(() => mocked.read.mockReset());
 
 /** The list as the page reads it for one campaign, drawn, with its status chips. */
 async function renderList(

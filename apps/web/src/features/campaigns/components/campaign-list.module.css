@@ -13,24 +13,6 @@
   color: var(--tx-strong);
 }
 
-.head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-6);
-}
-
-.headText {
-  display: grid;
-  min-inline-size: 0;
-  gap: var(--space-2);
-}
-
-.headText > * {
-  margin: 0;
-}
-
 .title {
   color: var(--tx-strong);
   font-size: var(--text-page-size);
@@ -154,26 +136,6 @@ a.rowLink.rowLink:hover {
 .cardFacts {
   color: var(--tx-body);
   font-size: var(--text-secondary-size);
-}
-
-a.primaryLink.primaryLink {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-block-size: var(--target-min-size);
-  padding-inline: var(--space-5);
-  border-radius: var(--radius-button);
-  background: var(--ac-primary);
-  color: var(--tx-on-action);
-  font-size: var(--text-body-size);
-  font-weight: var(--weight-semibold);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-a.primaryLink.primaryLink:hover {
-  background: var(--ac-primary-hover);
-  color: var(--tx-on-action);
 }
 
 /* Between 720px and the tablet frame the table keeps all six columns, so the cells tighten, the

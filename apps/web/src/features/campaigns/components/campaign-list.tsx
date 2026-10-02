@@ -17,6 +17,7 @@ import { monthDay, standingTone, type CampaignListRow } from "../campaign-page-m
 import { LAUNCH_PATH } from "../launch-model.js";
 import { CampaignsTabs } from "./campaigns-tabs.js";
 import styles from "./campaign-list.module.css";
+import pageStyles from "./campaign-page.module.css";
 
 /**
  * PRD-009e 009E-AC-009 to 009E-AC-012. The Campaigns list: the tab strip, one primary action
@@ -72,7 +73,7 @@ function SampleLabel({ row }: Readonly<{ row: CampaignListRow }>) {
 
 function LaunchLink() {
   return (
-    <Link className={styles.primaryLink} href={LAUNCH_PATH}>
+    <Link className={pageStyles.primaryLink} href={LAUNCH_PATH}>
       {CAMPAIGNS_PAGE.action}
     </Link>
   );
@@ -85,8 +86,8 @@ export function CampaignList({
   const year = now.getUTCFullYear();
   return (
     <div className={styles.page} data-campaigns-page="">
-      <header className={styles.head}>
-        <div className={styles.headText}>
+      <header className={pageStyles.head}>
+        <div className={pageStyles.headText}>
           <h1 className={styles.title}>{CAMPAIGNS_PAGE.title}</h1>
           <p className={styles.lead}>{CAMPAIGNS_PAGE.lead}</p>
         </div>

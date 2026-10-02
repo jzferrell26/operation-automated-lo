@@ -77,16 +77,17 @@ export const AdsLibrarySha256Schema = z.string().regex(/^[a-f0-9]{64}$/u);
  * Catalog text is shown to every loan officer, so none of it may hide what it says.
  */
 const HIDDEN_CHARACTER = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
-const HIDDEN_CHARACTER_EXCEPT_LINE_BREAK = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f\p{Cf}]/u;
 
 function catalogText(minimum: number, maximum: number, allowLineBreaks = false) {
-  const hidden = allowLineBreaks ? HIDDEN_CHARACTER_EXCEPT_LINE_BREAK : HIDDEN_CHARACTER;
   return z
     .string()
     .min(minimum)
     .max(maximum)
     .refine((value) => value === value.trim(), "No leading or trailing whitespace")
-    .refine((value) => !hidden.test(value), "No hidden or control characters");
+    .refine(
+      (value) => !HIDDEN_CHARACTER.test(allowLineBreaks ? value.replaceAll("\n", " ") : value),
+      "No hidden or control characters",
+    );
 }
 
 /** The only value `images.<shape>.art` may hold: a name derived from the entry's own fields. */

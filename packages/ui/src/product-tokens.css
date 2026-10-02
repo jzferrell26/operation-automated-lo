@@ -1,15 +1,16 @@
-/* AutomatedLO product tokens, governed by ux-ui/04-screens/dashboard-preview.md. */
+/* AutomatedLO product tokens, governed by ux-ui/04-screens/dashboard-preview.md.
+ *
+ * PRD-009a D5, 2026-10-01: one token source for every page. This file used to re-declare global
+ * tokens on `[data-product-shell]` (the type steps, the semibold weight, and a separate action
+ * blue) and, in Dark, the surfaces, text, borders, and action blue, so the four menu pages that load
+ * it rendered a second look. It now carries only the dashboard preview's own `--product-*` names
+ * and the print names; Brand, Realtor partners, Settings, Homeowner reports, the shared report, and
+ * the preview read every global token from `tokens.css`. The preview's own navy navigation
+ * (`--product-nav*`) stays: it is the local-only demo PRD-009a's Non-Goals leave alone.
+ * `apps/web/src/theme/token-parity.unit.test.ts` fails if a token named in design section 2.4 or
+ * 2.6 is declared here again.
+ */
 [data-product-shell="true"] {
-  --text-page-size: 1.75rem;
-  --text-section-size: 1.0625rem;
-  --text-card-size: 0.9375rem;
-  --text-body-size: 0.875rem;
-  --text-secondary-size: 0.75rem;
-  --text-caption-size: 0.6875rem;
-  --weight-semibold: 600;
-  --ac-primary: #2856d9;
-  --ac-primary-hover: #2148b5;
-  --ac-primary-active: #1b3b94;
   --product-nav: #0d172b;
   --product-nav-hover: #1b2b46;
   --product-nav-active: #243d63;
@@ -38,17 +39,6 @@
   --product-print-border: #dce2eb;
 }
 [data-theme="dark"] [data-product-shell="true"] {
-  --sf-canvas: #101827;
-  --sf-card: #172234;
-  --sf-sunken: #1d2b40;
-  --tx-strong: #f0f4fb;
-  --tx-body: #becadd;
-  --tx-faint: #a9b9d0;
-  --bd-hairline: #304057;
-  --bd-input: #445771;
-  --ac-primary: #3e67dd;
-  --ac-primary-hover: #3559c0;
-  --ac-primary-active: #2c4ca7;
   --product-chart-1: #8caeff;
   --product-chart-2: #a7bcfa;
   --product-chart-3: #64cbb4;

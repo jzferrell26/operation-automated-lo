@@ -45,10 +45,10 @@ const themes = [
 ] as const;
 
 /**
- * Text pairs. `--tx-on-nav` is the only foreground the deep navy surface ever
- * carries: `app-shell.module.css` pairs `--sf-nav` with `--tx-on-nav` at every
- * one of its call sites, so the generic body and faint tokens are deliberately
- * not measured against it.
+ * Text pairs. `--tx-on-nav` is the foreground the navigation surface carries:
+ * `app-shell.module.css` pairs `--sf-nav` with `--tx-on-nav` for the top bar's
+ * name and current item. PRD-009a made the bar light, so in Light this is navy
+ * on white (design `00-direction.md` section 2.5).
  */
 const textPairs: ReadonlyArray<readonly [string, string]> = [
   ["--tx-strong", "--sf-canvas"],
@@ -83,18 +83,25 @@ const textPairs: ReadonlyArray<readonly [string, string]> = [
 /**
  * User interface component pairs: the primary action fill has to be
  * distinguishable from the surface it sits on, in both themes.
+ *
+ * PRD-009a, 009A-AC-003, and design `00-direction.md` section 2.5. The field
+ * edge is now a visible control boundary (`--bd-input` `#718399` in Light), so
+ * it is held to the SC 1.4.11 floor on both surfaces a field sits on. This
+ * supersedes rubric delta D-002's decorative field edge.
  */
 const uiComponentPairs: ReadonlyArray<readonly [string, string]> = [
   ["--ac-primary", "--sf-canvas"],
   ["--ac-primary", "--sf-card"],
   ["--ac-secondary", "--sf-card"],
+  ["--bd-input", "--sf-card"],
+  ["--bd-input", "--sf-sunken"],
 ];
 
 /**
  * Every surface a focus ring can land on. The ring is drawn at
  * `--focus-offset`, so it sits on whatever is behind the focused element, not
- * on the element itself: a card, the canvas, a form well, the navigation rail,
- * or a status surface that carries a focusable control.
+ * on the element itself: a card, the canvas, a form well, the top bar, or a
+ * status surface that carries a focusable control.
  *
  * `design-system-guardian` ruled rubric delta D-001 on 2026-09-20. Until then
  * `--focus-color` was `var(--ac-primary)`, so the ring followed the tenant

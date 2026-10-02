@@ -40,7 +40,7 @@
   border: 1px solid var(--bd-input);
   border-radius: var(--radius-control);
   color: var(--tx-on-nav);
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
   font-weight: var(--weight-bold);
 }
 

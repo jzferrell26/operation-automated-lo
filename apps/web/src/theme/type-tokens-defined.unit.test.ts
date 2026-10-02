@@ -14,10 +14,12 @@ import { describe, expect, it } from "vitest";
  * were drawn at weight 400, lighter than the field labels under them, and the browser's 16px had
  * hidden it until D-009 put the body step on `body`.
  *
- * The three feature folders that load `@oalo/ui/product-tokens.css` (the dashboard preview, the
- * homeowner reports, and the workspace pages) are left out: their tokens come from that file.
+ * PRD-009a D5 and 009A-AC-002, 2026-10-01. `product-tokens.css` no longer re-declares any global
+ * token, so the homeowner reports and the workspace pages read their type tokens from `tokens.css`
+ * like every other screen and are no longer left out of this check. The dashboard preview keeps
+ * only its own `--product-*` names in that file, none of which is a font, size, or weight token,
+ * so its stylesheets are held to `tokens.css` too and nothing is left out.
  */
-const PRODUCT_TOKEN_FEATURES = new Set(["dashboard-preview", "homeowners", "workspace"]);
 
 function collectCss(directory: string): readonly string[] {
   return readdirSync(resolve(directory), { withFileTypes: true }).flatMap((entry) => {
@@ -35,7 +37,7 @@ describe("type tokens in the delivered stylesheets", () => {
       ].map((match) => match[1]),
     );
     const features = readdirSync(resolve("apps/web/src/features"), { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && !PRODUCT_TOKEN_FEATURES.has(entry.name))
+      .filter((entry) => entry.isDirectory())
       .flatMap((entry) => collectCss(join("apps/web/src/features", entry.name)));
     const stylesheets = [
       "apps/web/src/app/globals.css",

@@ -233,7 +233,7 @@ test("workspace search, partner editing, campaign views, and connections work", 
   await page.getByLabel("Search pages and campaigns").fill("partners");
   await page
     .getByRole("dialog")
-    .getByRole("link", { name: /Partners/u })
+    .getByRole("link", { name: /Realtor partners/u })
     .click();
   await expect(page).toHaveURL(/\/partners$/u);
   await page.getByRole("button", { name: "Edit Jordan Avery", exact: true }).click();

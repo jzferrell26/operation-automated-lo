@@ -2,6 +2,10 @@
  * PRD-009e (009E-AC-009), design mockups campaigns-list.html and ads-library.html. A hairline under
  * the strip, each tab at least the target size, and the current tab in strong text, semibold, with
  * a 2px underline that sits on the hairline. The strip scrolls sideways rather than wrapping.
+ *
+ * Each tab is a `Link`, whose own `.link` class sets the colour, the underline, the size, the
+ * weight, and the line height. These rules are written with the strip's class in front so they win
+ * on specificity whichever stylesheet loads last; the focus ring is `Link`'s own.
  */
 
 .tabs {
@@ -11,27 +15,26 @@
   overflow-x: auto;
 }
 
-.tab {
-  display: inline-flex;
-  align-items: center;
+.tabs .tab {
   min-block-size: var(--target-min-size);
   padding-inline: var(--space-4);
   margin-block-end: -1px;
   border-block-end: 2px solid transparent;
+  border-radius: 0;
   color: var(--tx-body);
   font-size: var(--text-secondary-size);
   font-weight: var(--weight-medium);
-  text-decoration: none;
+  line-height: var(--leading-normal);
+  text-decoration-line: none;
   white-space: nowrap;
 }
 
-.tab[aria-current="page"] {
+.tabs .tab:hover {
+  color: var(--tx-strong);
+}
+
+.tabs .tab[aria-current="page"] {
   border-block-end-color: var(--tx-strong);
   color: var(--tx-strong);
   font-weight: var(--weight-semibold);
-}
-
-.tab:focus-visible {
-  outline: var(--focus-width) solid var(--focus-color);
-  outline-offset: var(--focus-offset);
 }

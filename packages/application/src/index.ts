@@ -129,17 +129,24 @@ export {
 
 export {
   campaignMayBeApprovedBy,
+  campaignVersionHref,
   deriveCampaignNextActions,
+  deriveCampaignStanding,
+  deriveOlderVersionStanding,
   principalHasCampaignApprovalRole,
+  projectCampaignVersions,
   projectCampaignWorkspace,
   type CampaignNextActionId,
   type CampaignPersistenceKind,
+  type CampaignStanding,
+  type CampaignVersionSummary,
   type CampaignWorkspaceApprovalProjection,
   type CampaignWorkspaceNextAction,
   type CampaignWorkspacePreflightProjection,
   type CampaignWorkspaceProjection,
   type CampaignWorkspaceReadRecord,
   type CampaignWorkspaceReadRepository,
+  type CampaignWorkspaceVersionRecord,
 } from "./campaign-workspace-read.js";
 
 /**

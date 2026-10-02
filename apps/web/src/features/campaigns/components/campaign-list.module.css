@@ -1,0 +1,219 @@
+/*
+ * PRD-009e (009E-AC-009), design mockup campaigns-list.html. "Your campaigns" is a table at 720px and
+ * wider, with the ad's thumbnail and its name as the link, and cards with the same facts below it.
+ * Both are in the page and the stylesheet shows one, as the mockup does.
+ */
+
+.page {
+  display: grid;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: var(--content-max);
+  gap: var(--space-6);
+  color: var(--tx-strong);
+}
+
+.title {
+  color: var(--tx-strong);
+  font-size: var(--text-page-size);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+}
+
+.lead {
+  max-inline-size: 60ch;
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+}
+
+.tableWrap {
+  overflow: hidden;
+}
+
+.table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-secondary-size);
+}
+
+.table th {
+  padding: var(--space-3) var(--space-5);
+  border-block-end: 1px solid var(--bd-hairline);
+  background: var(--sf-sunken);
+  color: var(--tx-body);
+  font-weight: var(--weight-medium);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-4) var(--space-5);
+  border-block-end: 1px solid var(--bd-hairline);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-block-end: 0;
+}
+
+.adCell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.adName {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.thumb {
+  flex: none;
+  inline-size: 3rem;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-control);
+  background: var(--sf-sunken);
+}
+
+.thumb img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+a.rowLink.rowLink {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min-size);
+  color: var(--tx-strong);
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+a.rowLink.rowLink:hover {
+  color: var(--ac-primary-hover);
+  text-decoration: underline;
+}
+
+.muted {
+  color: var(--tx-body);
+}
+
+.cards {
+  display: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.card p {
+  margin: 0;
+}
+
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.cardFacts {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+}
+
+/* Between 720px and the tablet frame the table keeps all six columns, so the cells tighten, the
+   decorative thumbnail steps aside, and the name takes the room it needs. */
+@media (max-width: 63.99rem) {
+  .table th,
+  .table td {
+    padding: var(--space-3);
+  }
+
+  .thumb {
+    display: none;
+  }
+
+  .adCell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .table {
+    table-layout: fixed;
+  }
+
+  .table th {
+    white-space: normal;
+  }
+
+  .table .nowrap {
+    white-space: normal;
+  }
+
+  .table th:nth-child(1) {
+    inline-size: 28%;
+  }
+
+  .table th:nth-child(2) {
+    inline-size: 15%;
+  }
+
+  .table th:nth-child(3) {
+    inline-size: 12%;
+  }
+
+  .table th:nth-child(4) {
+    inline-size: 16%;
+  }
+
+  .table th:nth-child(5) {
+    inline-size: 17%;
+  }
+
+  .table th:nth-child(6) {
+    inline-size: 12%;
+  }
+}
+
+.adName > span {
+  white-space: nowrap;
+}
+
+@media (max-width: 719.98px) {
+  .tableWrap {
+    display: none;
+  }
+
+  .cards {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .head {
+    gap: var(--space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .page * {
+    animation: none;
+    transition-duration: 0ms;
+  }
+}

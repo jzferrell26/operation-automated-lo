@@ -5,12 +5,24 @@ import {
   type CampaignWorkspaceProjection,
 } from "@oalo/application";
 
+import { loadAdsLibrary } from "../features/ads-library/server/catalog-loader.js";
+import type {
+  CampaignListRow,
+  CampaignPageData,
+} from "../features/campaigns/campaign-page-model.js";
+import { readSavedAdBrand, type SavedAdBrand } from "./ad-brand-read.js";
 import {
   resolveAuthenticatedReadPrincipal,
   UnauthenticatedPrincipalError,
 } from "./authenticated-principal.js";
+import {
+  buildCampaignListRow,
+  buildCampaignPage,
+  sortCampaignListRows,
+} from "./campaign-page-data.js";
 import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
 import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
+import { WorkspacePreferenceError } from "./workspace-preferences.js";
 
 export async function listWorkspaceCampaigns(
   principal: Readonly<AuthenticatedPrincipal>,
@@ -63,9 +75,35 @@ export async function loadOverviewCampaigns(
   return listWorkspaceCampaigns(principal, environment);
 }
 
+/**
+ * 009E-AC-009. The Campaigns list's rows: each campaign the person may read, newest change first,
+ * with the library's name, topic, and thumbnail for its ad and the standing every screen shares. A
+ * campaign the person may not read is left out, as it is everywhere else.
+ */
+export async function listCampaignRows(
+  principal: Readonly<AuthenticatedPrincipal>,
+  environment: unknown = process.env,
+): Promise<readonly CampaignListRow[]> {
+  const adapter = createCampaignPersistenceAdapter(principal, environment);
+  const [records, library] = await Promise.all([
+    adapter.readRepository.listForLocation(),
+    loadAdsLibrary({ environment }),
+  ]);
+  return sortCampaignListRows(
+    records.flatMap((record) => {
+      try {
+        return [buildCampaignListRow(record, principal, adapter.kind, library)];
+      } catch (error) {
+        if (error instanceof CampaignResourceNotAccessibleError) return [];
+        throw error;
+      }
+    }),
+  );
+}
+
 export interface WorkspaceCampaignReadResult {
   readonly authenticated: boolean;
-  readonly campaigns: readonly CampaignWorkspaceProjection[];
+  readonly campaigns: readonly CampaignListRow[];
 }
 
 const UNAUTHENTICATED_READ: WorkspaceCampaignReadResult = Object.freeze({
@@ -102,7 +140,7 @@ export async function readWorkspaceCampaignsForRequest(
   }
   return Object.freeze({
     authenticated: true,
-    campaigns: await loadOverviewCampaigns(principal, environment),
+    campaigns: await listCampaignRows(principal, environment),
   });
 }
 
@@ -122,13 +160,83 @@ export async function loadWorkspaceCampaignsForRequest(
   return loadOverviewCampaigns(principal, environment);
 }
 
+/**
+ * 009E-AC-001 to 009E-AC-007 and 009E-AC-012. What the campaign page for one version is handed, or
+ * where to go instead.
+ *
+ * `versionNo` names an older version (D3). The newest version has the campaign's own address, so a
+ * request for it by number answers with that address rather than a second page for the same thing.
+ * A campaign or version that does not exist, and every campaign in another location, answer
+ * `undefined`: the read finds no rows in another location, so the two cannot be told apart
+ * (009E-AC-005).
+ */
+export type CampaignPageLoad =
+  Readonly<{ kind: "page"; page: CampaignPageData }> | Readonly<{ kind: "redirect"; href: string }>;
+
+/**
+ * The person's saved Brand, read only when it can matter: when they saved the newest version of a
+ * library ad and are looking at it (009E-AC-006's "Brand changed" notice). Anyone else's Brand is
+ * not the Brand this version froze, and support cannot open a person's Brand at all.
+ */
+async function brandToCompare(
+  principal: Readonly<AuthenticatedPrincipal>,
+  latest: Readonly<{ createdBy: string; manifest: Readonly<{ blueprintId: string }> }>,
+  versionNo: number | undefined,
+  environment: unknown,
+): Promise<SavedAdBrand | undefined> {
+  if (versionNo !== undefined) return undefined;
+  if (latest.manifest.blueprintId !== "library-ad" || latest.createdBy !== principal.actorRef) {
+    return undefined;
+  }
+  try {
+    return await readSavedAdBrand(principal, environment);
+  } catch (error) {
+    if (error instanceof WorkspacePreferenceError) return undefined;
+    throw error;
+  }
+}
+
+export async function loadCampaignPage(
+  principal: Readonly<AuthenticatedPrincipal>,
+  campaignRef: string,
+  versionNo: number | undefined,
+  environment: unknown = process.env,
+): Promise<CampaignPageLoad | undefined> {
+  const adapter = createCampaignPersistenceAdapter(principal, environment);
+  const record = await adapter.readRepository.getByCampaignRef(campaignRef);
+  if (record === undefined) return undefined;
+  try {
+    const latestHref = projectCampaignWorkspace(record, principal, adapter.kind).detailHref;
+    if (versionNo !== undefined && versionNo === record.version.versionNo) {
+      return Object.freeze({ kind: "redirect" as const, href: latestHref });
+    }
+    const [versions, library, brand] = await Promise.all([
+      adapter.readRepository.listVersionsOf(campaignRef),
+      loadAdsLibrary({ environment }),
+      brandToCompare(principal, record.version, versionNo, environment),
+    ]);
+    const page = buildCampaignPage({
+      record,
+      versions,
+      principal,
+      kind: adapter.kind,
+      library,
+      ...(versionNo === undefined ? {} : { versionNo }),
+      brand,
+    });
+    return page === undefined ? undefined : Object.freeze({ kind: "page" as const, page });
+  } catch (error) {
+    if (error instanceof CampaignResourceNotAccessibleError) return undefined;
+    throw error;
+  }
+}
+
 export async function readWorkspaceCampaignForRequest(
   request: Request,
   campaignRef: string,
   environment: unknown = process.env,
-): Promise<
-  Readonly<{ authenticated: boolean; campaign: CampaignWorkspaceProjection | undefined }>
-> {
+  versionNo?: number,
+): Promise<Readonly<{ authenticated: boolean; campaign: CampaignPageLoad | undefined }>> {
   let principal: Readonly<AuthenticatedPrincipal>;
   try {
     principal = await resolveAuthenticatedReadPrincipal(
@@ -144,6 +252,6 @@ export async function readWorkspaceCampaignForRequest(
   }
   return Object.freeze({
     authenticated: true,
-    campaign: await loadWorkspaceCampaign(principal, campaignRef, environment),
+    campaign: await loadCampaignPage(principal, campaignRef, versionNo, environment),
   });
 }

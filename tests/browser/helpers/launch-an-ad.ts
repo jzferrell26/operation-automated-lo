@@ -4,7 +4,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
  * PRD-009d. "Launch an ad" the way a person goes through it, shared by the synthetic suite and the
  * review suite so both reach a campaign by the same route.
  *
- * The ads are the labelled samples both servers show (`OALO_ADS_LIBRARY_SAMPLES`, 009c D3). A
+ * The ads are the labelled samples both servers show behind the sample flag (009c D3). A
  * campaign's verdict is the product's own: words that claim a rate are the blocking finding
  * `WORDS_RATE_OR_TERM_CLAIM`, so "Needs changes" is what the checks said about a real save rather
  * than a fixture standing in for one.

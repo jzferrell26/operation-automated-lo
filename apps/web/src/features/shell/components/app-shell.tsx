@@ -40,11 +40,6 @@ type AppShellProps = Readonly<{
    */
   accountControls?: ReactNode;
   children: ReactNode;
-  /**
-   * Help in the top bar. The signed-in layout passes the guided setup's help controls until PRD-009b
-   * retires the walkthrough (Wave 2); with nothing passed, the shell draws its own Help.
-   */
-  helpControls?: ReactNode;
   navigation: DeepReadonly<Navigation>;
   session: WorkspaceSessionView;
   workspaceMode?: "synthetic" | "review";
@@ -65,7 +60,6 @@ type AppShellProps = Readonly<{
 export function AppShell({
   accountControls,
   children,
-  helpControls,
   navigation,
   session,
   workspaceMode = "synthetic",
@@ -137,7 +131,7 @@ export function AppShell({
           />
 
           <div className={styles.cluster}>
-            {helpControls ?? <ShellHelp />}
+            <ShellHelp />
             <AccountControl accountControls={accountControls} session={session} />
           </div>
         </div>

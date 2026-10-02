@@ -10,7 +10,6 @@ import type { Capability } from "../../features/ui-foundation/model/synthetic-ui
 import type { RuntimeShellSession } from "../../server/runtime-authentication.js";
 import {
   runtimeAuthenticationModuleStub,
-  setupPreferencesModuleStub,
   themeModuleStub,
   useReviewModeEnvironment,
 } from "./review-mode-test-support.js";
@@ -32,7 +31,6 @@ let shell: RuntimeShellSession;
 vi.mock("next/headers.js", () => ({ headers: () => Promise.resolve(new Headers()) }));
 vi.mock("next/navigation.js", () => ({ usePathname: () => pathname }));
 vi.mock("../../theme/index.js", () => themeModuleStub("Appearance theme"));
-vi.mock("../../server/setup-preferences.js", () => setupPreferencesModuleStub());
 vi.mock("../../server/runtime-authentication.js", (importOriginal) =>
   runtimeAuthenticationModuleStub(importOriginal, () => shell),
 );

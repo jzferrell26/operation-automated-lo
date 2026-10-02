@@ -41,15 +41,6 @@ export function themeModuleStub(controlLabel: string) {
 }
 
 /**
- * The guided setup is the layout's other dependency and has nothing to do with what these suites
- * prove. Saying there are no preferences yet is the honest answer for a brand-new account and
- * keeps each suite failing for one reason only.
- */
-export function setupPreferencesModuleStub() {
-  return { readSetupPreferencesForRequest: () => Promise.resolve(undefined) };
-}
-
-/**
  * Everything except the session resolution is the real module, including the path constants the
  * shell's forms post to, so a rename on either side fails in the suite rather than shipping a
  * control that posts nowhere. `currentShell` is read on every call, so a test can change the

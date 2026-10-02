@@ -1,14 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  APPROVER,
-  awaitingApprovalProjection,
-} from "../features/campaigns/components/campaign-decision.test-support.js";
-import {
   createLocalSyntheticPrincipal,
   UnauthenticatedPrincipalError,
 } from "./authenticated-principal.js";
-import { listWorkspaceCampaigns } from "./campaign-workspace-reads.js";
 import { readSetupPreferencesForRequest } from "./setup-preferences.js";
 import {
   driverFailure,
@@ -20,16 +15,15 @@ import {
 } from "./setup-preferences.test-support.js";
 
 /**
- * PRD-008b 008B-AC-009 to 008B-AC-011, the other half of writing review R6.
+ * PRD-009b D4 and 009B-AC-012. What is left of the setup read once the walkthrough is gone: the
+ * saved profile the Brand form prefills from.
  *
- * The layout reads the guided setup's whole state through `readSetupPreferencesForRequest`, and it
- * used to answer the empty value for any failure at all: the walkthrough at its first step, with
- * no campaign waiting. An approver who cannot create a campaign could still press Continue through
- * the steps, because the saves go to a different request, and at step 6 the walkthrough told them
- * "Nothing is waiting for you" about a workspace it had not been able to look at. So for somebody
- * who is, or may be, an approver, the failure is the same failed state the campaign list read
- * reports, and it is logged the same way. For somebody who is known not to be able to approve, the
- * empty value is what it always was, and the sentence it feeds is not one that person is told.
+ * Until 2026-10-01 the layout read the guided setup's whole state through this function, and it
+ * answered a failure with a flag the walkthrough read to tell an approver that "nothing is waiting"
+ * (PRD-008b, writing review R6). Nothing asks that of this read now: Home reads the campaigns that
+ * wait for an approver itself (`home-reads.ts`), and a failure to read a profile costs a prefill and
+ * nothing else. So the read answers the empty value for any failure, and says what kind of failure
+ * it was in the server's log, never who it happened to.
  */
 
 const mocks = vi.hoisted(() => ({
@@ -37,11 +31,6 @@ const mocks = vi.hoisted(() => ({
   resolveAuthenticatedReadPrincipal: vi.fn(),
   authenticatedWorkspaceMode: vi.fn(),
 }));
-
-// A `vi.mock` factory is hoisted above the imports, so what it shares is loaded inside it.
-vi.mock("./campaign-workspace-reads.js", async () =>
-  (await import("./setup-preferences.test-support.js")).campaignWorkspaceReadsDouble(),
-);
 
 vi.mock("@oalo/db", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@oalo/db")>()),
@@ -68,19 +57,18 @@ vi.mock("./campaign-persistence-runtime.js", async (importOriginal) => ({
   campaignDatabasePool: () => ({}),
 }));
 
-const REQUEST = new Request("https://oalo.local/overview");
+const REQUEST = new Request("https://oalo.local/brand");
 const ENVIRONMENT = {};
+const PERSON = createLocalSyntheticPrincipal({ role: "location_admin" });
 
 let logged: ServerLogSpy;
 
 beforeEach(() => {
-  vi.mocked(listWorkspaceCampaigns).mockReset();
   mocks.withTenantTransaction.mockReset();
   mocks.resolveAuthenticatedReadPrincipal.mockReset();
   mocks.authenticatedWorkspaceMode.mockReset();
   mocks.authenticatedWorkspaceMode.mockReturnValue("review");
-  mocks.resolveAuthenticatedReadPrincipal.mockResolvedValue(APPROVER);
-  // The person has stored nothing, so the walkthrough is at its start.
+  mocks.resolveAuthenticatedReadPrincipal.mockResolvedValue(PERSON);
   mocks.withTenantTransaction.mockImplementation(transactionWithNothingStored);
   logged = spyOnServerLog();
 });
@@ -89,20 +77,83 @@ afterEach(() => {
   logged.mockRestore();
 });
 
-function loggedLine(): string {
-  return firstLoggedLine(logged);
-}
+describe("the saved profile, read for the Brand form (009B-AC-012)", () => {
+  it("is the profile the person saved", async () => {
+    mocks.withTenantTransaction.mockImplementation(
+      (_pool: unknown, _authority: unknown, work: (transaction: unknown) => Promise<unknown>) =>
+        work({
+          read: () =>
+            Promise.resolve([
+              {
+                key: "setup_profile.v1",
+                value: {
+                  displayName: "Dana Reyes",
+                  company: "Northgate Lending",
+                  nmlsNumber: "1234567",
+                },
+              },
+            ]),
+        }),
+    );
 
-describe("the guided setup's state, when an approver's read of it fails", () => {
-  it("is the failed state and the walkthrough's first step, not nothing waiting", async () => {
+    const preferences = await readSetupPreferencesForRequest(REQUEST, ENVIRONMENT);
+
+    expect(preferences.profile).toEqual({
+      displayName: "Dana Reyes",
+      company: "Northgate Lending",
+      nmlsNumber: "1234567",
+    });
+  });
+
+  it("asks for that one preference and for no other, so the retired progress row is never read", async () => {
+    let contractText = "";
+    let parameters: readonly unknown[] = [];
+    mocks.withTenantTransaction.mockImplementation(
+      (_pool: unknown, _authority: unknown, work: (transaction: unknown) => Promise<unknown>) =>
+        work({
+          read: (contract: { text: string }, values: readonly unknown[]) => {
+            contractText = contract.text;
+            parameters = values;
+            return Promise.resolve([]);
+          },
+        }),
+    );
+
+    await readSetupPreferencesForRequest(REQUEST, ENVIRONMENT);
+
+    expect(contractText).toContain("setup_profile.v1");
+    expect(contractText).not.toContain("guided_setup.v1");
+    expect(parameters).toEqual([PERSON.actorId]);
+  });
+
+  it("is no profile, and no failure, for a person who saved none", async () => {
+    const preferences = await readSetupPreferencesForRequest(REQUEST, ENVIRONMENT);
+
+    expect(preferences.profile).toBeUndefined();
+    expect(logged).not.toHaveBeenCalled();
+  });
+
+  it("treats a stored value it cannot read as no profile at all", async () => {
+    mocks.withTenantTransaction.mockImplementation(
+      (_pool: unknown, _authority: unknown, work: (transaction: unknown) => Promise<unknown>) =>
+        work({
+          read: () => Promise.resolve([{ key: "setup_profile.v1", value: { displayName: 7 } }]),
+        }),
+    );
+
+    const preferences = await readSetupPreferencesForRequest(REQUEST, ENVIRONMENT);
+
+    expect(preferences.profile).toBeUndefined();
+  });
+});
+
+describe("the saved profile, when the read fails", () => {
+  it("is the empty value, because a Brand form without a prefill is a form the person fills in", async () => {
     mocks.withTenantTransaction.mockRejectedValue(driverFailure());
 
     const preferences = await readSetupPreferencesForRequest(REQUEST, ENVIRONMENT);
 
-    expect(preferences.awaitingDecisionFailed).toBe(true);
-    expect(preferences.awaitingDecision).toBeUndefined();
-    expect(preferences.campaign).toBeUndefined();
-    expect(preferences.progress.status).toBe("not_started");
+    expect(preferences).toEqual({ profile: undefined });
   });
 
   it("logs the error class and its code, and nothing about the person or the driver's words", async () => {
@@ -111,80 +162,41 @@ describe("the guided setup's state, when an approver's read of it fails", () => 
     await readSetupPreferencesForRequest(REQUEST, ENVIRONMENT);
 
     expect(logged).toHaveBeenCalledTimes(1);
-    const line = loggedLine();
+    const line = firstLoggedLine(logged);
     expect(line).toContain("setup-preferences");
     expect(line).toContain("Error");
     expect(line).toContain("57P01");
-    expectNoPersonSessionOrDriverWords(line, APPROVER);
+    expectNoPersonSessionOrDriverWords(line, PERSON);
   });
 
-  it("is the failed state when the person could not be resolved, because an approver cannot be ruled out", async () => {
+  it("is the same when the person could not be resolved", async () => {
     mocks.resolveAuthenticatedReadPrincipal.mockRejectedValue(driverFailure());
 
     const preferences = await readSetupPreferencesForRequest(REQUEST, ENVIRONMENT);
 
-    expect(preferences.awaitingDecisionFailed).toBe(true);
+    expect(preferences.profile).toBeUndefined();
     expect(logged).toHaveBeenCalledTimes(1);
-    expect(loggedLine()).toContain("57P01");
-    expect(loggedLine()).not.toContain("dana.reyes");
+    expect(firstLoggedLine(logged)).toContain("57P01");
+    expect(firstLoggedLine(logged)).not.toContain("dana.reyes");
   });
 });
 
-describe("the guided setup's state, when nobody is signed in", () => {
-  it("is the empty value as it always was: nobody to look for is not a failure to look", async () => {
+describe("the saved profile, when there is nobody to look for", () => {
+  it("is the empty value, and not a failure, when nobody is signed in", async () => {
     mocks.resolveAuthenticatedReadPrincipal.mockRejectedValue(new UnauthenticatedPrincipalError());
 
     const preferences = await readSetupPreferencesForRequest(REQUEST, ENVIRONMENT);
 
-    expect(preferences.awaitingDecisionFailed).toBe(false);
-    expect(logged).not.toHaveBeenCalled();
-  });
-});
-
-describe("the guided setup's state, when somebody known not to approve has the read fail", () => {
-  it("is what it always was: the empty value, no failed state, and no new log line", async () => {
-    mocks.resolveAuthenticatedReadPrincipal.mockResolvedValue(createLocalSyntheticPrincipal());
-    mocks.withTenantTransaction.mockRejectedValue(driverFailure());
-
-    const preferences = await readSetupPreferencesForRequest(REQUEST, ENVIRONMENT);
-
-    expect(preferences.awaitingDecisionFailed).toBe(false);
-    expect(preferences.awaitingDecision).toBeUndefined();
-    expect(preferences.progress.status).toBe("not_started");
-    expect(logged).not.toHaveBeenCalled();
-  });
-});
-
-describe("the guided setup's state, when nothing failed", () => {
-  it("is not a failure for an approver whose read worked and found nothing waiting", async () => {
-    vi.mocked(listWorkspaceCampaigns).mockResolvedValue([]);
-
-    const preferences = await readSetupPreferencesForRequest(REQUEST, ENVIRONMENT);
-
-    expect(preferences.awaitingDecisionFailed).toBe(false);
+    expect(preferences.profile).toBeUndefined();
     expect(logged).not.toHaveBeenCalled();
   });
 
-  it("is the campaign that is waiting, and not a failure", async () => {
-    // The fixture compiles a draft through the local synthetic principal, which the real workspace
-    // mode allows only in a synthetic workspace; the read itself runs in a review one.
-    mocks.authenticatedWorkspaceMode.mockReturnValue("synthetic");
-    const waiting = await awaitingApprovalProjection();
-    mocks.authenticatedWorkspaceMode.mockReturnValue("review");
-    vi.mocked(listWorkspaceCampaigns).mockResolvedValue([waiting]);
-
-    const preferences = await readSetupPreferencesForRequest(REQUEST, ENVIRONMENT);
-
-    expect(preferences.awaitingDecision?.campaignRef).toBe(waiting.campaignRef);
-    expect(preferences.awaitingDecisionFailed).toBe(false);
-  });
-
-  it("is the empty value, and not a failure, in a workspace with no database behind it", async () => {
+  it("is the empty value in a workspace with no database behind it, without resolving anybody", async () => {
     mocks.authenticatedWorkspaceMode.mockReturnValue("synthetic");
 
     const preferences = await readSetupPreferencesForRequest(REQUEST, ENVIRONMENT);
 
-    expect(preferences.awaitingDecisionFailed).toBe(false);
+    expect(preferences.profile).toBeUndefined();
     expect(mocks.resolveAuthenticatedReadPrincipal).not.toHaveBeenCalled();
     expect(logged).not.toHaveBeenCalled();
   });

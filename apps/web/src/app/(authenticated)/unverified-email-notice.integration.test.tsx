@@ -6,7 +6,6 @@ import type { EmailVerificationView } from "../../features/shell/model/navigatio
 import type { RuntimeShellSession } from "../../server/runtime-authentication.js";
 import {
   runtimeAuthenticationModuleStub,
-  setupPreferencesModuleStub,
   themeModuleStub,
   useReviewModeEnvironment,
 } from "./review-mode-test-support.js";
@@ -39,7 +38,6 @@ vi.mock("next/navigation.js", () => ({ usePathname: () => "/overview" }));
  * constants. Both live in the support module with the reasons.
  */
 vi.mock("../../theme/index.js", () => themeModuleStub("Theme control"));
-vi.mock("../../server/setup-preferences.js", () => setupPreferencesModuleStub());
 vi.mock("../../server/runtime-authentication.js", (importOriginal) =>
   runtimeAuthenticationModuleStub(importOriginal, () => shell),
 );

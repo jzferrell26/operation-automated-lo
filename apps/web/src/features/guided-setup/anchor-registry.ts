@@ -63,7 +63,11 @@ export function onboardingChecklistAnchor(itemId: string): string {
 const OVERVIEW_ROUTE = "/overview";
 const CAMPAIGN_CREATE_ROUTE = "/marketing/campaigns/new";
 const CAMPAIGN_DETAIL_ROUTE = "/marketing/campaigns";
-const ONBOARDING_ROUTE = "/onboarding";
+/**
+ * PRD-009f removed the setup page these anchors lived on, and `/onboarding` redirects to Home, so the
+ * rows name Home. The whole registry goes with the guided setup in Wave 3 (PRD-009b D4).
+ */
+const ONBOARDING_ROUTE = "/overview";
 /** The shell renders on every authenticated route, so its anchors name no single one. */
 export const SHELL_SURFACE = "*";
 /**

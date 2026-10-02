@@ -13,7 +13,7 @@ imply that visiting a step completes it."
 ## Canonical export
 
 Feature code imports `Stepper` from `@oalo/ui`. It serves the guided setup now
-and the six-stage Open House Boost stepper later.
+and the six-stage Open House Boost stepper later. _(Superseded on 2026-10-01 by PRD-009 (S-102; OD-H): the three-step "Launch an ad" stepper.)_
 
 ```tsx
 <Stepper

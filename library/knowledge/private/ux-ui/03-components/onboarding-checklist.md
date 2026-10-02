@@ -12,12 +12,12 @@ Feature code imports `OnboardingChecklist` from `@oalo/ui`. It presents server-v
 
 Each item has a title, phase, state, evidence freshness, responsible role, plain-language blocker where relevant, and one next safe action. States are `not_started`, `in_progress`, `blocked`, `complete`, and `stale`. They use text and distinct glyphs in addition to status color. A completion claim is shown only after server-verified evidence.
 
-The checklist contains exactly these phases and items:
+The checklist contains exactly these phases and items: _(Superseded on 2026-10-01 by PRD-009 (S-59; OD-F, D-15, D-20): Home's three-item "Get set up" checklist (PRD-009b D2) replaces the two phases and nine items below; the evidence rule above stands.)_
 
 1. Get Connected: Install and permissions; Brand and compliance; HighLevel routing; Meta connection; Team responsibilities.
 2. Launch Readiness: Dependency recheck; Synthetic lead; Results review; Launch Ready.
 
-Synthetic lead is visibly labeled as synthetic and is excluded from business metrics and production lead routing. `Launch Ready` cannot be manually checked complete. Blocked actions state the prerequisite, responsible role, and next safe action. AI may suggest content but cannot complete identity, license, lender, disclosure, consent, or compliance evidence.
+Synthetic lead is visibly labeled as synthetic and is excluded from business metrics and production lead routing. `Launch Ready` cannot be manually checked complete. Blocked actions state the prerequisite, responsible role, and next safe action. AI may suggest content but cannot complete identity, license, lender, disclosure, consent, or compliance evidence. _(Superseded on 2026-10-01 by PRD-009 (S-59): the end of the superseded checklist.)_
 
 ## Interaction and responsive behavior
 

@@ -21,6 +21,6 @@ Feature code imports `Icon` and `IconButton` from `@oalo/ui`, never a raw Lucide
 
 ## Navigation and status use
 
-Navigation icons follow the deep navy surface and inherited `--tx-on-nav` color. Body and status icons inherit the paired status token and remain adjacent to a text label. Info, warning, critical, success, neutral, and uncertain statuses use distinct glyphs as specified in [Status, Feedback, and Attention](status-feedback-and-attention.md).
+Navigation icons follow the deep navy surface and inherited `--tx-on-nav` color. Body and status icons inherit the paired status token and remain adjacent to a text label. Info, warning, critical, success, neutral, and uncertain statuses use distinct glyphs as specified in [Status, Feedback, and Attention](status-feedback-and-attention.md). _(Amended on 2026-10-01 by PRD-009 (S-101; OD-E): navigation icons sit on the light top bar and inherit `--tx-on-nav`, which is navy in Light.)_
 
 Hover and press use `--motion-fast`; reduced-motion removes transform feedback. Tooltip text may supplement an icon button, but never supplies its only accessible name.

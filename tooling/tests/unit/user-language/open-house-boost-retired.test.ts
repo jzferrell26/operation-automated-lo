@@ -105,7 +105,7 @@ function textsIn(
   return found;
 }
 
-async function hitsByFile(): Promise<ReadonlyMap<string, readonly string[]>> {
+async function scanSource(): Promise<ReadonlyMap<string, readonly string[]>> {
   const result = new Map<string, readonly string[]>();
   for (const path of await sourceFiles()) {
     const source = await readFile(join(repositoryRoot, path), "utf8");
@@ -117,8 +117,26 @@ async function hitsByFile(): Promise<ReadonlyMap<string, readonly string[]>> {
   return result;
 }
 
+/**
+ * The scan parses every non-test file under `apps/web/src` into a syntax tree, so it is the one
+ * expensive step here. The two tests that need it share a single run, which halves the work.
+ */
+let scan: Promise<ReadonlyMap<string, readonly string[]>> | undefined;
+function hitsByFile(): Promise<ReadonlyMap<string, readonly string[]>> {
+  scan ??= scanSource();
+  return scan;
+}
+
+/**
+ * The scan takes under a second alone, but it timed out at the 5s default while the whole unit
+ * project ran under coverage and every other file competed for the CPU. The work is bounded (one
+ * parse per source file) and grows with the application, so the budget is stated here rather than
+ * left to the default, and it is wide enough for a loaded machine.
+ */
+const SCAN_BUDGET = { timeout: 60_000 };
+
 describe("009F-AC-009: no rendered string says Open House Boost", () => {
-  it("finds the phrase in no file that is not on the pending list", async () => {
+  it("finds the phrase in no file that is not on the pending list", SCAN_BUDGET, async () => {
     const pending = new Set(PENDING.map((entry) => entry.path));
     const offenders = [...(await hitsByFile())]
       .filter(([path]) => !pending.has(path))
@@ -130,7 +148,7 @@ describe("009F-AC-009: no rendered string says Open House Boost", () => {
     ).toEqual([]);
   });
 
-  it("keeps the pending list to files that still carry the phrase", async () => {
+  it("keeps the pending list to files that still carry the phrase", SCAN_BUDGET, async () => {
     const hits = await hitsByFile();
     const stale = PENDING.filter((entry) => !hits.has(entry.path)).map(
       (entry) => `${entry.path} (lane ${entry.lane})`,

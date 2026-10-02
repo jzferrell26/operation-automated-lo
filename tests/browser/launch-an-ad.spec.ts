@@ -166,6 +166,36 @@ test.describe("Launch an ad in a browser", () => {
     expect(external).toEqual([]);
   });
 
+  /**
+   * The CI runs of 2026-10-02 found two "Headline" and two "Add a city or state" fields on step 2:
+   * a page slow to render was rendered again on the client while the server's copy still arrived,
+   * because the theme provider changed its value during hydration. Each field must exist once,
+   * hidden copies included, and be the one the server rendered.
+   */
+  test("step 2 renders each field once, the server's copy, in either theme", async ({ page }) => {
+    for (const theme of ["light", "dark"] as const) {
+      await useStoredTheme(page, theme);
+      await page.goto(stepTwoPath(SAMPLE_ADS.firstHome));
+      await expect(page.getByRole("heading", { level: 1, name: "Set it up" })).toBeVisible();
+      for (const label of [
+        "Headline",
+        "Ad text",
+        "Daily budget",
+        "Total budget",
+        "Ends",
+        "Add a city or state",
+      ]) {
+        await expect(page.getByLabel(label, { exact: true }), `${theme}: ${label}`).toHaveCount(1);
+      }
+      const clientRendered = await page.evaluate(() =>
+        [...document.querySelectorAll("[data-launch-step] [id$='-control']")]
+          .map((control) => control.id)
+          .filter((id) => id.startsWith("_r_")),
+      );
+      expect(clientRendered, `${theme}: fields rendered again on the client`).toEqual([]);
+    }
+  });
+
   test("the live preview sits beside the form at 1440 and 1180 and below it at 768 and 390 (009D-AC-009, 004)", async ({
     page,
   }) => {

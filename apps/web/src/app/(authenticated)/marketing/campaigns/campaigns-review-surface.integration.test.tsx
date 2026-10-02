@@ -65,28 +65,20 @@ const reportingAllowances: readonly ReviewSurfaceAllowance[] = [
 
 /** The synthetic UI fixture must not reach these routes either; the same tokens collide. */
 const uiAllowances: readonly ReviewSurfaceAllowance[] = [
+  // PRD-009a (009A-AC-014, 2026-10-01): Campaigns moved from the Marketing Suite sub-items into
+  // the six-item menu, and the "/marketing" hub item left it, so these allowances follow.
   {
-    path: "navigation.marketingItems[*].href",
+    path: "navigation.items[*].href",
     value: "/marketing/campaigns",
     because: "Substring of the create route's '/marketing/campaigns/new' quick action.",
   },
   {
-    path: "navigation.items[*].href",
-    value: "/marketing",
-    because: "Substring of the same route path; navigation does not render on these routes.",
-  },
-  {
-    path: "navigation.marketingItems[*].id",
+    path: "navigation.items[*].id",
     value: "campaigns",
     because: "Substring of the same route path; navigation does not render on these routes.",
   },
   {
-    path: "navigation.items[*].id",
-    value: "marketing",
-    because: "Substring of the same route path; navigation does not render on these routes.",
-  },
-  {
-    path: "navigation.marketingItems[*].label",
+    path: "navigation.items[*].label",
     value: "Campaigns",
     because: "Substring of the list route's own heading, 'Campaigns in this location'.",
   },
@@ -164,7 +156,8 @@ describe("authenticated marketing campaign routes", () => {
     const ui = loadSyntheticUiFixture();
 
     expect(collectFixtureStrings(reporting).length).toBeGreaterThan(100);
-    expect(collectFixtureStrings(ui).length).toBeGreaterThan(400);
+    // PRD-009a: the six-item menu leaves the fixture with 382 strings (2026-10-01).
+    expect(collectFixtureStrings(ui).length).toBeGreaterThan(350);
     expect(forbiddenReviewStrings(reporting, reportingAllowances).length).toBeGreaterThan(80);
     expect(forbiddenReviewStrings(ui, uiAllowances).length).toBeGreaterThan(200);
     expect(staleAllowances(reporting, reportingAllowances)).toEqual([]);

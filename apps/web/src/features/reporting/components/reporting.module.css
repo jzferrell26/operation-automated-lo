@@ -216,7 +216,8 @@
 
 .assetGrid code {
   color: var(--tx-body);
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 
@@ -264,7 +265,8 @@
 }
 
 .tableRegion td {
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
 }
 
 .launchSummaryGrid ul,
@@ -326,7 +328,8 @@
 }
 
 .metricGrid strong {
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
   font-size: var(--text-page-size);
 }
 

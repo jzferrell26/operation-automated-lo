@@ -8,7 +8,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NOT_CONNECTED_DISCLOSURE, NOT_CONNECTED_HEADLINE } from "../../copy/user-language.js";
 import type { Capability } from "../../features/ui-foundation/model/synthetic-ui.js";
 import type { RuntimeShellSession } from "../../server/runtime-authentication.js";
-import { useReviewModeEnvironment } from "./review-mode-test-support.js";
+import {
+  runtimeAuthenticationModuleStub,
+  setupPreferencesModuleStub,
+  themeModuleStub,
+  useReviewModeEnvironment,
+} from "./review-mode-test-support.js";
 
 /**
  * PRD-009a, 009A-AC-010 and 009A-AC-013, through the real authenticated layout.
@@ -26,16 +31,11 @@ let shell: RuntimeShellSession;
 
 vi.mock("next/headers.js", () => ({ headers: () => Promise.resolve(new Headers()) }));
 vi.mock("next/navigation.js", () => ({ usePathname: () => pathname }));
-vi.mock("../../theme/index.js", () => ({
-  ThemeControl: () => <div aria-label="Appearance theme">Theme control</div>,
-}));
-vi.mock("../../server/setup-preferences.js", () => ({
-  readSetupPreferencesForRequest: () => Promise.resolve(undefined),
-}));
-vi.mock("../../server/runtime-authentication.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../server/runtime-authentication.js")>();
-  return { ...actual, resolveRuntimeShellSession: () => Promise.resolve(shell) };
-});
+vi.mock("../../theme/index.js", () => themeModuleStub("Appearance theme"));
+vi.mock("../../server/setup-preferences.js", () => setupPreferencesModuleStub());
+vi.mock("../../server/runtime-authentication.js", (importOriginal) =>
+  runtimeAuthenticationModuleStub(importOriginal, () => shell),
+);
 
 const { default: AuthenticatedLayout } = await import("./layout.js");
 

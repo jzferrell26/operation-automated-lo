@@ -88,7 +88,8 @@
 }
 
 .control[data-tone="data"] {
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
 }
 
 .control::placeholder {

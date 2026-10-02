@@ -123,7 +123,8 @@
 }
 
 .dataText {
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 

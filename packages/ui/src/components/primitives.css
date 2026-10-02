@@ -128,7 +128,8 @@
 }
 
 .oalo-metric__value {
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
   font-size: var(--text-page-size);
   font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
@@ -304,7 +305,8 @@
 }
 
 .oalo-data-text {
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 
@@ -362,7 +364,8 @@
 
 .oalo-checklist__progress {
   color: var(--tx-body);
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
   font-size: var(--text-caption-size);
   margin: 0;
 }

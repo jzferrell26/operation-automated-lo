@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { APPROVAL } from "../../../apps/web/src/copy/campaign-page-messages.js";
+
 import { captureNamedState, expectAxeClean } from "../helpers/design-quality.js";
 import { SAMPLE_ADS, saveACampaign, verdictOnStepThree } from "../helpers/launch-an-ad.js";
 import {
@@ -144,7 +146,7 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
   await expect(decidedNow).toContainText("Approved by", { timeout: 30_000 });
   await expect(decidedNow.locator("time")).toHaveCount(1);
   await expect(decidedNow.locator("time")).toHaveAttribute("datetime", /^\d{4}-\d{2}-\d{2}T/u);
-  await expect(decidedNow).toContainText("The approval covers this version only.");
+  await expect(decidedNow).toContainText(APPROVAL.covers);
   await expect(main.getByText("Ready for approval", { exact: false })).toHaveCount(0);
   await expect(main.getByText("An approver can sign off on it now.", { exact: false })).toHaveCount(
     0,

@@ -98,8 +98,10 @@ export const ACCESS_NOTHING_CHECKED = "Nothing checked yet.";
  * Writing review closing check, N-2. "What it affects", said while nothing can be connected. It used
  * to read "No effect until you connect.", one line above "Connecting HighLevel and Meta isn't
  * available in the app yet", so the first read as a promise that connecting would have an effect.
+ * PRD-009g D2 (009G-AC-009): it is said on every capability card, so it carries no connection
+ * sentence; the page's notice already says "Nothing is connected from this page", once.
  */
-export const ACCESS_NO_EFFECT_YET = "No effect yet. Nothing is connected.";
+export const ACCESS_NO_EFFECT_YET = "No effect yet.";
 
 export const BRAND_PROFILE_SOURCE = "You haven't saved your brand details yet.";
 export const BRAND_FIELD_VALUE = "Not saved yet";

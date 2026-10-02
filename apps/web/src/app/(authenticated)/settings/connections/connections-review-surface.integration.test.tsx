@@ -189,11 +189,7 @@ describe("authenticated settings connections route", () => {
     expect(capabilities.every((capability) => capability.evidence === "Nothing checked yet.")).toBe(
       true,
     );
-    expect(
-      capabilities.every(
-        (capability) => capability.impact === "No effect yet. Nothing is connected.",
-      ),
-    ).toBe(true);
+    expect(capabilities.every((capability) => capability.impact === "No effect yet.")).toBe(true);
     expect(container.textContent).not.toContain("Synthetic App Test evidence verified");
     expect(
       screen.getAllByText(
@@ -246,7 +242,7 @@ describe("what each capability affects, while nothing can be connected", () => {
       .map((term) => term.nextElementSibling?.textContent);
 
     expect(impacts.length).toBeGreaterThan(0);
-    expect(new Set(impacts)).toEqual(new Set(["No effect yet. Nothing is connected."]));
+    expect(new Set(impacts)).toEqual(new Set(["No effect yet."]));
     expect(container.textContent).not.toContain("No effect until you connect");
   });
 });

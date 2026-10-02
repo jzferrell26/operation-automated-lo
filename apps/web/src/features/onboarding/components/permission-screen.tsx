@@ -1,8 +1,8 @@
-import { Card, Icon, Link, Stack } from "@oalo/ui";
+import { Card, Icon, Stack } from "@oalo/ui";
 
 import { ACCESS_GROUP_STATE_LABELS } from "../../../copy/user-language.js";
 import type { DeepReadonly, Onboarding } from "../../ui-foundation/model/synthetic-ui.js";
-import styles from "./onboarding.module.css";
+import styles from "./permission-screen.module.css";
 
 type PermissionScreenProps = Readonly<{
   onboarding: DeepReadonly<Onboarding>;
@@ -68,10 +68,6 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
           </section>
         ))}
       </div>
-
-      <Link href="/onboarding" variant="action">
-        Back to setup
-      </Link>
     </div>
   );
 }

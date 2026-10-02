@@ -8,11 +8,33 @@ import {
   PartnerSchema,
 } from "./model.js";
 describe("authenticated workspace contracts", () => {
-  it("covers every existing dashboard destination and adds a report identity editor", () => {
+  it("covers every dashboard destination that survives, and none that PRD-009f D1 removed", () => {
     for (const path of Object.keys(previewPaths))
       expect(Object.hasOwn(workspaceRoutes, path), path).toBe(true);
-    expect(workspaceRoutes["/settings/profile"]).toBe("profile");
-    expect(Object.hasOwn(workspaceRoutes, "/unknown")).toBe(false);
+    expect(Object.keys(workspaceRoutes).sort()).toEqual([
+      "/partners",
+      "/settings",
+      "/settings/billing",
+      "/settings/routing",
+    ]);
+    for (const removed of [
+      "/marketing",
+      "/marketing/property-sites",
+      "/marketing/creative",
+      "/marketing/ads",
+      "/marketing/messaging",
+      "/marketing/blueprints",
+      "/leads",
+      "/leads/pipeline",
+      "/automations",
+      "/marketplace",
+      "/settings/profile",
+      "/settings/team",
+      "/unknown",
+    ]) {
+      expect(Object.hasOwn(workspaceRoutes, removed), removed).toBe(false);
+      expect(Object.hasOwn(previewPaths, removed), removed).toBe(false);
+    }
   });
   it("starts each channel with explicit placeholder wording, not invented property facts", () => {
     for (const key of messageKeys) {

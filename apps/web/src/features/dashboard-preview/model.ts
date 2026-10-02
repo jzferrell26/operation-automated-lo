@@ -178,30 +178,23 @@ export const sampleLeads = [
   },
 ] as const;
 
+/**
+ * The addresses the local demo serves through the catch-all. PRD-009f D1: the same four as review
+ * mode (`apps/web/src/features/workspace/model.ts`), because the Marketing Suite, Leads and
+ * Pipeline, Automations, Workspace tools, Workspace access, Reports, and the setup page no longer
+ * exist here either. A unit test holds the two tables together.
+ */
 export const previewPaths = {
-  "/marketing": "marketing",
-  "/marketing/property-sites": "property-sites",
-  "/marketing/creative": "creative",
-  "/marketing/ads": "ads",
-  "/marketing/messaging": "messaging",
-  "/marketing/blueprints": "blueprints",
   "/partners": "partners",
-  "/leads": "leads",
-  "/leads/pipeline": "pipeline",
-  "/automations": "automations",
-  "/marketplace": "marketplace",
   "/settings": "settings",
   "/settings/routing": "routing",
-  "/settings/team": "team",
   "/settings/billing": "billing",
 } as const;
 export type PreviewView =
   | (typeof previewPaths)[keyof typeof previewPaths]
   | "overview"
   | "campaigns"
-  | "reports"
   | "brand"
-  | "onboarding"
   | "connections"
   | "account";
 

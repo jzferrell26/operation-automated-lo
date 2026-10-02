@@ -2,7 +2,6 @@
 
 import { Card, Icon, Link, Select, type IconName } from "@oalo/ui";
 import type { ReactNode } from "react";
-import { usePathname } from "next/navigation.js";
 import { leadStages, sampleLeads, type PreviewCampaign, type PreviewState } from "./model.js";
 import styles from "./workspace.module.css";
 
@@ -236,30 +235,5 @@ export function ProfileAvatar({ name, index = 0 }: { name: string; index?: numbe
     <span className={styles.profileAvatar} data-accent={index % 4}>
       {monogram(name)}
     </span>
-  );
-}
-export function MarketingTabs() {
-  const pathname = usePathname();
-  return (
-    <nav className={styles.tabs} aria-label="Marketing sections">
-      {[
-        ["Campaigns", "/marketing/campaigns"],
-        ["Property sites", "/marketing/property-sites"],
-        ["Creative library", "/marketing/creative"],
-        ["Ads", "/marketing/ads"],
-        ["Email & SMS", "/marketing/messaging"],
-        ["Templates", "/marketing/blueprints"],
-      ].map(([label, href]) => (
-        <Link
-          key={href}
-          href={href ?? "/marketing"}
-          aria-current={
-            href && (pathname === href || pathname.startsWith(`${href}/`)) ? "page" : undefined
-          }
-        >
-          {label}
-        </Link>
-      ))}
-    </nav>
   );
 }

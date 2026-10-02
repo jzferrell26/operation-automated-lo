@@ -20,7 +20,7 @@ export function ExampleCampaign() {
   return (
     <div className={styles.page}>
       <PageHeader
-        title="Cedar Street Open House Boost"
+        title="Cedar Street open house"
         eyebrow="Example campaign"
         description="214 Cedar Street · An open house with a clear next step."
       >
@@ -134,7 +134,7 @@ export function ExampleCampaign() {
               <div className={styles.assetDetails}>
                 <h2>{title}</h2>
                 <Badge tone="info">Example asset</Badge>
-                <Link href={href ?? "/marketing/creative"} download variant="action">
+                <Link href={href ?? "/marketing/campaigns"} download variant="action">
                   <Icon name="download" decorative size="sm" /> Download creative
                 </Link>
               </div>
@@ -159,8 +159,6 @@ export function ExampleCampaign() {
           <SectionTitle
             title="Meet the next conversations."
             detail="Example leads from the open house."
-            href="/leads/pipeline"
-            link="Open pipeline"
           />
           <div className={styles.sourceRows}>
             {sampleLeads
@@ -172,7 +170,6 @@ export function ExampleCampaign() {
                     <strong>{lead.name}</strong>
                     <small>{lead.email}</small>
                   </span>
-                  <Link href="/leads">View leads</Link>
                 </div>
               ))}
           </div>

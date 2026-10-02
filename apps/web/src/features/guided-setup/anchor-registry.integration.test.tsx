@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { OpenHouseDraftBuilder } from "../campaigns/components/open-house-draft-builder.js";
 import { PersistedCampaignScreen } from "../campaigns/components/persisted-campaign-screen.js";
-import { OnboardingScreen } from "../onboarding/components/onboarding-screen.js";
 import { OverviewScreen } from "../overview/components/overview-screen.js";
 import { loadSyntheticUiFixture } from "../ui-foundation/data/load-synthetic-ui.js";
 import {
@@ -123,15 +122,11 @@ describe("guided setup anchors on the screens the registry names", () => {
     expect(countAnchors(creator.container, "campaign.handoff.link")).toBe(1);
   });
 
-  it("renders every required onboarding anchor exactly once", () => {
-    const fixture = loadSyntheticUiFixture();
-    const { container } = render(
-      <OnboardingScreen onboarding={fixture.onboarding} session={fixture.session} />,
-    );
-    for (const anchor of requiredAnchorsForRoute("/onboarding")) {
-      expect(countAnchors(container, anchor), anchor).toBe(1);
-    }
-  });
+  /*
+   * PRD-009f. The setup page the onboarding anchors lived on is gone: `/onboarding` redirects to
+   * Home. Their rows stay in the registry until PRD-009b removes the guided setup with it, so the
+   * last test of this file still requires them, but nothing renders them to prove it.
+   */
 
   it.each([
     [2, "setup.details.form"],

@@ -1,6 +1,7 @@
 import type { AdsLibraryTopic } from "@oalo/contracts";
 
 import { SESSION_USER_FALLBACK } from "../../../copy/user-language.js";
+import { firstNameOf } from "../../shell/model/display-name.js";
 import type { HomeList } from "./home-campaigns.js";
 import type { HomeChecklist } from "./home-checklist.js";
 
@@ -19,10 +20,13 @@ export type HomeData = Readonly<{
 }>;
 
 /**
- * The name Home greets by: the first word of the display name, or nothing when there is no name or
- * the shell could only offer its stand-in ("You"), so the greeting is plain instead of "Welcome, You."
+ * The name Home greets by: the first word of the display name after any leading title ("Dr. Alex
+ * Morgan" is greeted as "Alex", writing review W-23), or nothing when there is no name or the shell
+ * could only offer its stand-in ("You"), so the greeting is plain instead of "Welcome, You."
  */
 export function firstNameFrom(displayName: string | undefined): string | undefined {
-  const first = displayName?.trim().split(/\s+/u)[0];
-  return first === undefined || first === "" || first === SESSION_USER_FALLBACK ? undefined : first;
+  const trimmed = displayName?.trim();
+  if (trimmed === undefined || trimmed === "") return undefined;
+  const first = firstNameOf(trimmed);
+  return first === SESSION_USER_FALLBACK ? undefined : first;
 }

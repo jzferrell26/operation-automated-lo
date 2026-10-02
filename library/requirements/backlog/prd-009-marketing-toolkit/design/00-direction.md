@@ -1,25 +1,27 @@
 # PRD-009 design direction: the marketing toolkit
 
-> Status: Proposal for owner review | Date: 2026-10-01 | Author: `design-system-guardian` | Branch: `claude/prd-009-marketing-toolkit` from `e89058e`
+> Status: Proposal for owner review, revision 2 | Date: 2026-10-01 | Author: `design-system-guardian` | Branch: `claude/prd-009-marketing-toolkit` from `e89058e`
 >
-> Binding inputs: the owner's decisions OD-A to OD-G (2026-10-01, in chat). Where this document and an older brief, spec or PRD criterion disagree, the owner's decision wins and section 2.8 records the supersession.
+> Binding inputs: the owner's decisions OD-A to OD-H (2026-10-01, in chat). **Revision 2 follows OD-H:** a curated, platform-wide ads library replaces the open house ad builder. The property step, photo upload and its storage bucket, Zillow and Redfin import, and Realtor co-branding in ads are all dropped. The look and the top menu were approved unchanged ("Yes, as shown", D-2), so section 2 is unchanged except where it named the old flow. Where this document and an older brief, spec or PRD criterion disagree, the owner's decision wins and section 2.8 records the supersession.
 >
-> Companion files: [`01-open-decisions.md`](01-open-decisions.md) (what still needs the owner) and [`mockups/`](mockups/) (six static pages, previews in [`mockups/previews/`](mockups/previews/)).
+> Companion files: [`01-open-decisions.md`](01-open-decisions.md) (what still needs the owner) and [`mockups/`](mockups/) (seven static pages, previews in [`mockups/previews/`](mockups/previews/)).
 >
-> This is a design proposal. It changes no product code, test, screenshot, or design-system file. When the owner accepts it, `library-guardian` writes the PRD-009 criteria from it, and `ux-ui-guardian` carries it into `library/knowledge/private/ux-ui/`.
+> This is a design proposal. It changes no product code, test, screenshot, or design-system file. The PRD-009 sub-PRDs on this branch that describe the property flow (009c, 009d) predate OD-H; `library-guardian` revises them from this document. When the owner accepts it, `ux-ui-guardian` carries it into `library/knowledge/private/ux-ui/`.
 
 ---
 
 ## 1. The direction on one page
 
-1. **What the product is.** A marketing toolkit that launches Facebook ads for open houses and hands the leads to HighLevel. HighLevel stays the system of record for contacts, pipelines and automations (OD-A). The product does not look, or behave, like a CRM.
-2. **The look.** Listing Studio's AutomatedRE layer: a very light page (`#f5f8fc`), white bordered cards with almost no shadow, navy (`#061e35`) for text, one action blue (`#005fcc`), 44px controls, Inter. Light is the design target; Dark stays available (OD-E).
-3. **The menu.** Six items in a light top bar: Home, Campaigns, Brand, Realtor partners, Homeowner reports (only when turned on), Settings. Leads and Pipeline, Automations, Reports, Workspace tools, the Marketing Suite sub-menu and the "Expand Marketing" toggle go (OD-C, OD-D).
-4. **First run.** Home asks one question, "Start an Open House Boost", with the property address as the first field and one primary button (OD-F). Beside it, a "Get set up" checklist with four items is the one place the page says what is and isn't connected. Below, "Running now" and "Needs your approval" each show one honest empty state. No metric wall. No floating walkthrough.
-5. **The launch.** Three steps on one flow: Property and event, Make it yours, Review and launch. Step 3 shows the actual Facebook feed ad, a one-card check summary, the approval, then "Launch on Facebook". When Meta isn't connected, that button is disabled with one sentence that says what to do (OD-B).
-6. **Results live on the campaign page.** Spend, leads sent to HighLevel, and cost per lead, each with an honest "Not live yet" until Meta and HighLevel are connected (OD-D).
+1. **What the product is.** A marketing toolkit that launches ready-made Facebook ads for loan officers and hands the leads to HighLevel. HighLevel stays the system of record for contacts, pipelines and automations (OD-A).
+2. **The ads come from one library.** The owner curates a platform-wide library of everyday loan officer ads: first-time buyers, refinance, VA loans, pre-approval, down payment help. Each ad is an approved image plus words. A loan officer can change the words, never the image (OD-H).
+3. **The launch is three steps** (OD-B as revised by OD-H): **Choose an ad**, **Set it up** (brand applied for you; words, budget, dates and area), **Review and launch** (the actual ad, a one-card check summary, Approve, then "Launch on Facebook", disabled with one honest sentence until Meta is connected).
+4. **Plain names.** "Open House Boost" retires from the product. The flow is "Launch an ad", the collection is the "Ads library", the thing you set up is a campaign (the menu keeps "Campaigns"). See section 5.1 and open decision D-16.
+5. **The look.** Listing Studio's AutomatedRE layer: a very light page, white bordered cards, navy for text, one action blue (`#005fcc`), 44px controls, Inter. Light is the design target; Dark stays (OD-E). Unchanged from revision 1.
+6. **The menu.** Home, Campaigns, Brand, Realtor partners, Homeowner reports (always shown, owner's answer to D-4), Settings. The Ads library is a tab inside Campaigns, so the approved menu does not change.
+7. **First run.** Home asks one question, "What do you want to promote?", with five topic buttons and one primary button, "Choose an ad". Beside it, a three-item "Get set up" checklist is the one place the page says what is and isn't connected.
+8. **Results live on each campaign's page,** with an honest "Not live yet" until Meta and HighLevel are connected (OD-D).
 
-What does not change: live Meta publishing stays off and gated; approval before launch stays (Housing Special Ad Category); no fake numbers; the user-language contract governs every sentence; the PRD-008b truthfulness rules for decided, sent-back and blocked versions.
+What does not change: live Meta publishing stays off and gated; approval before launch stays and binds the exact version, including edited words; no fake numbers; the user-language contract; the PRD-008b truthfulness rules; compliance control 9, "Paid advertising is never co-branded with a Realtor or brokerage" (`library/knowledge/private/compliance/compliance-and-risk.md:19`), which OD-H puts back in force.
 
 ---
 
@@ -43,7 +45,7 @@ Why the top bar wins for this product:
 - **Six items fit in one row** at every desktop frame and in a second row at 768, so the menu is always visible above 720px without any collapse toggle. The rail needed a person-controlled collapse at 1440, 1180 and 768 (brief section 14, rubric D-008) and still cost 272px of a 768 frame.
 - **The 1180 frame is the app inside HighLevel.** The product is a Custom Page rendered inside HighLevel (`library/knowledge/private/integrations/ghl-marketplace-and-scopes.md:19`). HighLevel draws its own navigation beside that page, so a second left rail would put two side menus next to each other and take 232 to 272px from the 1180 frame. UNVERIFIED in this pass: the exact width and position of HighLevel's own navigation around a Custom Page; confirm in a sandbox location before build.
 - **It matches the look the owner chose.** automatedre.com uses a light top navigation (checked on the live site 2026-10-01).
-- **Honest note:** Listing Studio's signed-in app uses a light *left rail* (`src/styles/automatedre-components.css:26`, rail width `17rem` at `src/styles/ls-tokens.css:441`). We follow its colours and components, not its layout, because it has more destinations and is not embedded in HighLevel. The rail remains the alternative in open decision D-2.
+- **Honest note:** Listing Studio's signed-in app uses a light *left rail* (`src/styles/automatedre-components.css:26`, rail width `17rem` at `src/styles/ls-tokens.css:441`). We follow its colours and components, not its layout, because it has more destinations and is not embedded in HighLevel. The owner chose the top bar (D-2, "Yes, as shown").
 
 What the bar holds: the product name on the left; the menu; on the right, Help and the account control (name, Light/Dark/System, Sign out). The theme control moves into the account menu so the bar stays calm; brief section 13's control is unchanged in behaviour.
 
@@ -169,7 +171,7 @@ Computed with the same relative-luminance formula as `contrastRatio` in `apps/we
 
 ### 2.6 What Dark becomes
 
-The Light/Dark/System control stays. **Light is the design target and, as recommended in open decision D-5, the first-visit default.** Dark is checked but not designed screen by screen.
+The Light/Dark/System control stays. **Light is the design target and, the first-visit default (D-5, recommendation applied).** Dark is checked but not designed screen by screen.
 
 Dark keeps the values measured and signed on 2026-09-20 with four changes:
 
@@ -180,7 +182,7 @@ Dark keeps the values measured and signed on 2026-09-20 with four changes:
 | `--ac-secondary` | `#3db3a4` | `#3566d6` | Teal retired |
 | `--shadow-card` | two layers, up to 70% | `0 1px 2px rgb(0 0 0 / 24%)` | Minimal shadow, as in Light |
 
-Type, radius, spacing and motion are theme-independent. Listing Studio's own AutomatedRE app is light in both OS modes (`library/knowledge/private/listing-studio-ux-ui/screens/automatedre-brand-release.md:15`), so there is no Listing Studio Dark to copy; this keeps the repo's measured Dark. Preview: [`mockups/previews/home-first-run--1440--dark.png`](mockups/previews/home-first-run--1440--dark.png). Ads, public pages and PDFs never take the dashboard theme (brief section 13, unchanged): the mockups draw the ad in the loan officer's own brand colours in both themes.
+Type, radius, spacing and motion are theme-independent. Listing Studio's own AutomatedRE app is light in both OS modes (`library/knowledge/private/listing-studio-ux-ui/screens/automatedre-brand-release.md:15`), so there is no Listing Studio Dark to copy; this keeps the repo's measured Dark. Preview: [`mockups/previews/home-first-run--1440--dark.png`](mockups/previews/home-first-run--1440--dark.png). Ads, public pages and PDFs never take the dashboard theme (brief section 13, unchanged): the ad (the library art plus the loan officer's brand band) looks the same in both themes.
 
 ### 2.7 Motion
 
@@ -194,18 +196,18 @@ Dated 2026-10-01, on the owner's decisions OD-A to OD-G. On acceptance, `ux-ui-g
 
 | Section | Lines | What is superseded | By |
 |---|---|---|---|
-| 1 Product identity | 5, 7 | "operating layer ... automation, reporting"; "Advertising is a capability ... not the identity" | OD-A, OD-B: a marketing toolkit whose core is the Facebook ad launch |
-| 2 Approved design source | 11-17 | The Claude Design package as "the approved visual baseline" | Listing Studio's AutomatedRE layer and these mockups (section 9 below names each canvas's fate) |
+| 1 Product identity | 5, 7 | "operating layer ... automation, reporting"; "Advertising is a capability ... not the identity" | OD-A, OD-B, OD-H: a marketing toolkit whose core is launching ready-made Facebook ads from a curated library |
+| 2 Approved design source | 11-17 | The Claude Design package as "the approved visual baseline" | Listing Studio's AutomatedRE layer and these mockups (section 10 below names each canvas's fate) |
 | 3 Aesthetic anchors | 23-28 | The four anchors and "deep navy anchor, cobalt primary actions, restrained teal accents" | OD-E light look; OD-F keeps only Broker Marketplace's calm, one-question start |
 | 4 Aesthetic boundaries | 32-51 | Nothing removed. "Must not feel like a generic CRM clone" (44) becomes a hard rule: no CRM pages | OD-A |
 | 5 Shell and module hierarchy | 55-78 | The nine-item navigation and the Marketing Suite sub-navigation | Section 3 below |
 | 6 Root overview purpose | 82-100 | The five questions and the seven required regions | Section 4 below (first-run Home) |
-| 7 MVP capability boundaries | 106-117 | "Campaign and outcome reporting" as its own surface; "PDFs, QR codes, creative, email, and SMS packages" in the founding interface | Results per campaign (section 6); the Facebook ad is the founding output. The add-ons list (119-130) stands |
+| 7 MVP capability boundaries | 106-117 | "Campaign and outcome reporting" as its own surface; "PDFs, QR codes, creative, email, and SMS packages" in the founding interface | Results per campaign (section 7); ads from the curated library are the founding output (OD-H). The add-ons list (119-130) stands |
 | 8 Surface metaphor and depth | 136-142 | "Navigation: deep navy anchor"; shadow tiers as a depth language | Light top bar; borders are the depth (2.3) |
 | 9 Color contract | 148-149 | "Cobalt is the primary action color"; teal as a supporting accent | One action blue `#005fcc`; teal retired. Status colour rules (150-157) and the focus-ring rule (161) stand with new values |
 | 10 Typography | 165-172 | Geist and Geist Mono; the 23/17/14/13/11.5/10.5 steps | Inter; 28/19/16/16/14/12 (2.2, 2.4) |
 | 11 Radius, spacing, icons | 180-184 | Buttons 10px, cards 12 to 14px | Buttons 8px, cards 12px. Spacing and icon rules stand |
-| 13 Themes | 220 | "First visit resolves the current operating-system preference" | Light on first visit, if the owner accepts D-5 |
+| 13 Themes | 220 | "First visit resolves the current operating-system preference" | Light on first visit (D-5, recommendation applied) |
 | 14 Responsive | 248-256 | "Desktop uses the full navigation sidebar ... compact icon rail ... collapsible navigation rail", and the D-008 ruling | Top bar at 1440 and 1180, two-row bar at 768, Menu button at 390 (2.1) |
 
 Sections 12, 15, 16, 17, 18, 19 and 20 stand. Section 15's "Pause and resume require explicit confirmation" and "Material edits create a new campaign version" apply unchanged to the new flow.
@@ -219,71 +221,59 @@ Sections 12, 15, 16, 17, 18, 19 and 20 stand. Section 15's "Pause and resume req
 | `03-components/campaign-and-artifact-workflow.md` | 7-18, 20-32, 95-107 | The six-stage stepper; the seven artifact tabs in the founding flow; the publishing-progress states stay for when launch is turned on |
 | `03-components/metric-source-and-freshness.md` | 28 | The business-pulse priority order |
 | `04-screens/platform-overview.md` | whole file | Replaced by section 4 |
-| `04-screens/campaign-lifecycle.md` | 7-23 | Six-step create, separate Studio, Preflight and Launch screens, typed confirmation; replaced by section 5. The invariants (29-38) stand |
-| `04-screens/marketing-suite-campaign-performance.md` | whole file | Results move to the campaign page (section 6) |
+| `04-screens/campaign-lifecycle.md` | 7-23 | Six-step create, separate Studio, Preflight and Launch screens, typed confirmation; replaced by section 6, the library flow (OD-H). The invariants (29-38) stand |
+| `04-screens/marketing-suite-campaign-performance.md` | whole file | Results move to the campaign page (section 7) |
 | `04-screens/onboarding-brand-and-platform-settings.md` | 71-78 | Leads and Pipeline, Automations, Reports, Marketplace module status as settings surfaces |
 | `04-screens/workspace-page-completion.md` | 11, 15, 16 | Pages for removed sections |
 | `04-screens/homeowner-reports.md` | 13 | "Use the existing navy, cobalt ..." (the token names stand; the values change) |
 | `06-review-rubric.md` | 57-60 (axis 10); D-002 (174-198); D-008 (227-255) | "Sibling of the canvases" becomes "sibling of the PRD-009 mockups"; D-002's unchanged field edge is superseded by visible edges; D-008's rail ruling has no rail to govern |
 
-**Requirements and standards** (for `library-guardian` to cite when writing PRD-009; the recon lists them in full): PRD-001 index lines 58 and 140, PRD-001g 19-63, 005E-AC-010, PRD-006b's Reports inventory (28, 186-187), 006D D3's "reports (not connected)" screen (78) and the criteria that apply to it (006D-AC-007, 008, 009, 012, 017), and the PRD-006c walkthrough criteria named in 4.4. PRD-004 RGL-002 is **not** superseded; section 4.3 shows how the new Home still meets it. The user-language contract's section 5 strings that name Stripe are affected by open decision D-8.
+**Requirements and standards** (for `library-guardian` to cite when writing PRD-009; the recon lists them in full): PRD-001 index lines 58 and 140, PRD-001g 19-63, 005E-AC-010, PRD-006b's Reports inventory (28, 186-187), 006D D3's "reports (not connected)" screen (78) and the criteria that apply to it (006D-AC-007, 008, 009, 012, 017), and the PRD-006c walkthrough criteria named in 4.4. PRD-004 RGL-002 is **not** superseded; section 4.3 shows how the new Home still meets it. The user-language contract's section 5 strings that name Stripe change under D-8 (recommendation applied). On this branch, sub-PRDs 009c (property intake) and 009d (three-step launch) describe the open house flow that OD-H drops; 009c is superseded whole and 009d is rewritten from section 6. The compliance rule that ads avoid rate and payment claims (`compliance-and-risk.md:48`) is unchanged and now applies to every library ad.
 
 ---
 
-## 3. Information architecture (OD-A, OD-C, OD-D)
+## 3. Information architecture (OD-A, OD-C, OD-D, OD-H)
 
 ### 3.1 The menu
 
 | Item | What it is | Notes |
 |---|---|---|
-| Home | First-run start, setup checklist, what's running, what needs approval | Today's `/overview`, redesigned |
-| Campaigns | The campaign list and the three-step launch | One primary action: "New Open House Boost" |
-| Brand | The loan officer's brand: name, NMLS numbers, logo, colours, disclosure | One brand for ads and homeowner reports (today `/brand` is "Report branding") |
-| Realtor partners | Saved partners, with each partner's agreement to co-branded ads | Owner kept it explicitly (OD-C); placement is open decision D-3 |
-| Homeowner reports | PRD-007's reports | Shown only when the existing switch (`OALO_HOMEOWNER_REPORTS=enabled`, `apps/web/src/app/(authenticated)/layout.tsx:161-177`) is on; default is open decision D-4 |
-| Settings | Account; Connections (HighLevel, Meta); Where new leads go in HighLevel | The lead hand-off stays because it is the "connector" part (OD-C) |
-
-Settings is one page with three cards that link to the existing sub-pages; it is not a second menu.
+| Home | First run: "Launch an ad", the setup checklist, what's running, what needs approval | Today's `/overview`, redesigned (section 4) |
+| Campaigns | Two tabs: **Your campaigns** (the list) and **Ads library** (browse and filter). One primary action: "Launch an ad" | The library sits inside Campaigns so the approved menu stays as it is |
+| Brand | The loan officer's name, title, NMLS number, logo, company and company NMLS, brand colour, disclosure line | Everything the ad's brand band needs (section 5.4). One brand for ads and homeowner reports |
+| Realtor partners | The saved partner list | The owner kept it in the menu (OD-C); its purpose without co-branded ads is open decision D-20. It no longer feeds the ads or the setup checklist |
+| Homeowner reports | PRD-007's reports | Always shown (owner's answer to D-4) |
+| Settings | Account; Connections (HighLevel, Meta); Where new leads go in HighLevel | Unchanged from revision 1 |
 
 ### 3.2 What goes
 
-Leads and Pipeline, Automations, Reports, Workspace tools (`/marketplace`), the Marketing Suite hub and its five sub-pages, and the "Expand Marketing" toggle (`features/shell/components/app-shell.tsx:256`). The demo-mode menu (`features/dashboard-preview/product-shell.tsx:14-36`) follows the same list. The recon's removal footprint (files, tests, 8 Reports baselines, about 256 rail baselines) is the implementation lane's checklist.
+Leads and Pipeline, Automations, Reports, Workspace tools, the Marketing Suite hub and its five sub-pages, and the "Expand Marketing" toggle, as in revision 1. OD-H adds: the property step, photo upload and the storage bucket, Zillow and Redfin import, and the Realtor partner picker in the launch flow.
 
 ### 3.3 Every old URL's fate
 
-Recommendation: keep the URLs of pages that survive (the app runs inside HighLevel, where nobody sees the address bar, and every test and baseline already uses them). Renaming is open decision D-12.
+Unchanged from revision 1 except the rows marked **(OD-H)**. Keep the addresses of pages that survive (open decision D-12, recommendation applied).
 
 | URL today | What it shows today | Fate |
 |---|---|---|
 | `/overview` | Overview | **Kept.** It is Home |
 | `/marketing` | Marketing Suite hub | **Redirect** to `/marketing/campaigns` |
-| `/marketing/campaigns` | Campaign list | **Kept** (Campaigns) |
-| `/marketing/campaigns/new` | Create page | **Kept.** Becomes the three-step flow (the step can live in the address, for example `?step=2`, so Back and reload work) |
-| `/marketing/campaigns/[campaignRef]` | Campaign detail | **Kept** (campaign page) |
-| `/marketing/campaigns/synthetic-open-house-001` | Demo example | **Unchanged:** already not-found on a signed-in workspace (its `page.tsx`, PRD-008b 008B-AC-008) |
-| `/marketing/property-sites` | Saved campaigns plus a not-connected card | **Redirect** to `/marketing/campaigns` |
-| `/marketing/creative` | Creative library | **Redirect** to `/marketing/campaigns` (each campaign page shows its ad) |
-| `/marketing/ads` | Ads Manager | **Redirect** to `/marketing/campaigns` |
-| `/marketing/messaging` | Email and SMS drafts editor | **Redirect** to `/marketing/campaigns`; saved drafts stay in the database, never deleted (open decision D-6) |
-| `/marketing/blueprints` | Campaign templates | **Redirect** to `/marketing/campaigns/new` |
-| `/brand` | Report branding | **Kept** (Brand) |
-| `/partners` | Realtor partners | **Kept** |
-| `/leads` | Leads and Pipeline | **Not-found.** The job moved to HighLevel (OD-A). The not-found page says: "This page is gone. Your leads, pipelines and follow-up live in HighLevel." with "Go to Home" |
-| `/leads/pipeline` | Pipeline | **Not-found**, same sentence |
-| `/automations` | Automations | **Not-found**, same sentence. Its lead-routing piece survives at `/settings/routing` |
-| `/reports` | Reports | **Redirect** to `/marketing/campaigns`: results now live on each campaign's page (OD-D) |
+| `/marketing/campaigns` | Campaign list | **Kept.** The "Your campaigns" tab |
+| `/marketing/campaigns/library` | (new) | **New (OD-H).** The "Ads library" tab. Proposed address; `?topic=refinance` filters |
+| `/marketing/campaigns/new` | Create page | **Kept, reworked (OD-H).** The "Launch an ad" flow. `?topic=` opens step 1 filtered; `?ad=<id>` opens step 2 with that ad chosen; the step can live in the address so Back and reload work |
+| `/marketing/campaigns/[campaignRef]` | Campaign detail | **Kept** (campaign page, section 7) |
+| `/marketing/campaigns/synthetic-open-house-001` | Demo example | **Unchanged:** already not-found on a signed-in workspace |
+| `/marketing/property-sites`, `/marketing/creative`, `/marketing/ads` | Marketing Suite sub-pages | **Redirect** to `/marketing/campaigns` |
+| `/marketing/messaging` | Email and SMS drafts | **Redirect** to `/marketing/campaigns`; saved drafts kept (D-6, recommendation applied) |
+| `/marketing/blueprints` | Campaign templates | **Redirect (OD-H)** to `/marketing/campaigns/library`: the library is what templates were reaching for |
+| `/brand`, `/partners` | Brand, Realtor partners | **Kept** |
+| `/leads`, `/leads/pipeline`, `/automations` | CRM pages | **Not-found** with "This page is gone. Your leads, pipelines and follow-up live in HighLevel." and "Go to Home" |
+| `/reports` | Reports | **Redirect** to `/marketing/campaigns` (results live per campaign) |
 | `/marketplace` | Workspace tools | **Redirect** to `/overview` |
-| `/settings` | Settings hub | **Kept**: Account, Connections, Where new leads go |
-| `/settings/account` | Change password | **Kept**, becomes Account (name, password, workspace access, plan and usage link) |
-| `/settings/connections` | Connections | **Kept** (HighLevel, Meta) |
-| `/settings/routing` | Lead routing | **Kept**, titled "Where new leads go in HighLevel" |
-| `/settings/profile` | Same brand editor as `/brand` | **Redirect** to `/brand` |
-| `/settings/team` | Your workspace access | **Redirect** to `/settings/account` |
-| `/settings/billing` | Valuation allowance; billing not enabled | **Kept**, linked from Account as "Plan and usage" (open decision D-8) |
-| `/onboarding` | Onboarding checklist screen | **Redirect** to `/overview`: the checklist lives on Home |
-| `/homeowners`, `/homeowners/new`, `/homeowners/[propertyId]` | Homeowner reports | **Kept**, menu item only when turned on. What these pages do today when the switch is off is UNVERIFIED in this pass (the page itself has no gate); the implementation lane checks and keeps that behaviour |
-| `/design-surfaces` | Page-state gallery | **Unchanged:** not-found outside the local demo (`design-surfaces/page.tsx:69`) |
-| Public pages (`/sign-in`, `/sign-up`, `/home-report/[secret]`, ...) | | Unchanged |
+| `/settings`, `/settings/account`, `/settings/connections`, `/settings/routing`, `/settings/billing` | Settings | **Kept** as in revision 1 |
+| `/settings/profile`, `/settings/team` | Brand editor, access | **Redirect** to `/brand` and `/settings/account` |
+| `/onboarding` | Onboarding checklist | **Redirect** to `/overview` |
+| `/homeowners`, `/homeowners/new`, `/homeowners/[propertyId]` | Homeowner reports | **Kept**, always in the menu |
+| `/design-surfaces` | Page-state gallery | **Unchanged:** not-found outside the local demo |
 
 ---
 
@@ -299,239 +289,303 @@ Mockup: [`mockups/home-first-run.html`](mockups/home-first-run.html). Previews a
 +--------------------------------------------------------------------------+
   Welcome, Jordan.
   +---------------------------------------------+  +----------------------+
-  | Open House Boost                            |  | Get set up  0 of 4   |
-  | START AN OPEN HOUSE BOOST           (h1)    |  | [progress]           |
-  | One sentence: what happens in three steps.  |  | Connect HighLevel  [Connect]
-  | Property address [____________] [ Start ]   |  | Connect Meta       [Connect]
-  | (1) Property and event (2) Make it yours    |  | Add your brand     [Add] |
-  | (3) Review and launch                       |  | Add a Realtor partner [Add]
-  +---------------------------------------------+  |                      |
-  +---------------------+ +---------------------+  |                      |
-  | Running now         | | Needs your approval |  |                      |
-  | (icon) No ads running| | (icon) Nothing to  |  |                      |
-  | why; one link       | | approve; why        |  |                      |
-  +---------------------+ +---------------------+  +----------------------+
+  | Ads library                                 |  | Get set up  0 of 3   |
+  | LAUNCH AN AD                        (h1)    |  | [progress]           |
+  | One sentence: pick, brand added, approve.   |  | Connect HighLevel [Connect]
+  | What do you want to promote?                |  | Connect Meta      [Connect]
+  | (First-time buyers) (Refinance) (VA loans)  |  | Add your brand    [Add]  |
+  | (Pre-approval) (Down payment help)          |  +----------------------+
+  | [ Choose an ad ]                            |
+  | (1) Choose an ad (2) Set it up (3) Review   |
+  +---------------------------------------------+
+  +---------------------+ +---------------------+
+  | Running now         | | Needs your approval |
+  +---------------------+ +---------------------+
             HighLevel stays your CRM. Your contacts, pipelines and follow-up live there.
 ```
 
-At 768 and 390 the order is: start card, checklist, running, approval. The address field and "Start" are the first things a keyboard or screen-reader user reaches after the menu.
+**The one question** is now "What do you want to promote?" (OD-F's calm, one-question start, applied to the library). The five topic buttons are small and secondary; each opens step 1 filtered to that topic. The one primary button, "Choose an ad", opens step 1 showing every ad. Either way the next screen is the library, so the click count is the same.
 
-**The one question.** "Start an Open House Boost", the address as the first step, one primary button "Start". Typing the address and pressing Start opens step 1 with the address filled in. We borrow Open House Genie's calm, single-card opening and nothing else: no tool catalogue, rate ticker, AutoPilot, agent monitor, or its branding (OD-F).
+### 4.2 The "Get set up" checklist: three items
 
-### 4.2 The "Get set up" checklist
-
-Rendered inline as a card. It is never a floating panel and never covers anything.
-
-| Item | What it says | States (glyph plus words, never colour alone) | Action |
+| Item | What it says | States | Action |
 |---|---|---|---|
-| Connect HighLevel | New leads from your ads go to your HighLevel account. | Not connected yet; Connected; Needs attention (for example a lapsed connection) | Connect / Fix it |
+| Connect HighLevel | New leads from your ads go to your HighLevel account. | Not connected yet; Connected; Needs attention | Connect / Fix it |
 | Connect Meta | Your Facebook page and ad account, so your ads can run. | Not connected yet; Connected; Needs attention | Connect / Fix it |
-| Add your brand | Your name, NMLS number, logo and colors, used on every ad. | Not started; Done | Add / Edit |
-| Add a Realtor partner | The agent hosting the open house, so the ad is co-branded. | Not started; Done | Add / Add another |
+| Add your brand | Your name, NMLS number and logo. They go on every ad automatically. | Not started; Done (name and NMLS number saved); Needs attention (NMLS number missing) | Add / Edit |
 
-- One sentence above the items states the consequence once: "You can start an ad now. It runs once HighLevel and Meta are connected."
-- Progress ("0 of 4 done") comes only from saved records and connection state read on the server, never from clicks or browser storage (the existing rule at `03-components/onboarding-checklist.md:13`, and Listing Studio's `screens/office-launch-checklist.md`).
-- When all four are done, the card collapses to one line, "You're set up", with a link to review it. If something later breaks (a lapsed connection), the card reopens on its own with that item marked "Needs attention".
-- "Connect" for HighLevel and Meta goes to Settings > Connections. Brand goes to Brand; partner goes to Realtor partners. The person comes back to Home.
+"Add a Realtor partner" leaves the checklist: under OD-H a partner changes nothing about an ad. The rest of revision 1's rules hold: one sentence states the consequence once ("You can set up an ad now. It runs once HighLevel and Meta are connected."); progress comes only from saved records; the card collapses to "You're set up" when done and reopens if something breaks.
 
 ### 4.3 Connection status appears once
 
-Today one brand-new Home says "HighLevel, Meta, and Stripe aren't connected" 16 times and shows 9 "Not connected" metric cards (recon section 5). The new Home says it in exactly one place, the checklist card. To make that true:
+Unchanged: the shell-wide banner and its copy in the identity card go (D-11, recommendation applied). Each other page states a connection fact only where it changes what the person can do. PRD-004 RGL-002 still holds.
 
-- The shell-wide not-connected banner (`features/shell/components/app-shell.tsx:140-158`) and the rail identity card's copy of it (`copy/user-language.ts:143`) are removed (open decision D-11).
-- Each other page states a fact only where it changes what the person can do: the disabled "Launch on Facebook" button, the results card on a campaign page, "New leads go to" on step 3.
-- **PRD-004 RGL-002 still holds:** Home shows honest empty and not-connected states and no unlabeled demo data.
+### 4.4 What replaces the floating walkthrough
 
-### 4.4 What replaces the floating walkthrough (PRD-006c)
-
-Options evaluated:
-
-| Option | Covers content? | Works inside HighLevel at 1180 and on a phone? | Verdict |
-|---|---|---|---|
-| Keep the floating panel, re-placed | Yes, by design: it is fixed above the page (`guided-setup.module.css:14-33`); today it covers "Your numbers" | It becomes a bottom sheet under 768, covering 40% of the screen | Rejected |
-| A welcome modal on first visit | Yes, the whole page | Blocks the one question the page asks | Rejected |
-| **Inline checklist plus an in-flow step indicator** | Never | Yes, it is ordinary page content | **Recommended** |
-
-The recommendation is three things, all ordinary page content:
-
-1. **The Home checklist** (4.2) carries setup.
-2. **The step indicator** on the launch flow ("Step 1 of 3", with Done marks on finished steps) carries orientation. It is the existing `Stepper` primitive with three steps instead of six.
-3. **Inline hints next to the field they explain** carry the teaching ("The first photo is the one in the ad."; "We save this version and run the checks. Nothing is published.").
-
-Help stays in the top bar for anyone who wants more. What PRD-006c built that still has value stays: the saved setup profile that prefills the ad (`platform.user_preferences`, `setup_profile.v1`) and the five-minute target, now measured on the three-step flow. Criteria to retire or rewrite when PRD-009 is written: 006C-AC-005 (opens on first render), 006C-AC-006 (the seven steps), 006C-AC-008 (the "Finish setup" chip), 006C-AC-009 ("Show me around again"), 006C-AC-010 to 006C-AC-013 (panel and sheet behaviour), and 006C-AC-018 (the final step's not-connected statement, now the checklist's job). The owner confirms the retirement in open decision D-15.
+Unchanged: the inline checklist, the "Step 1 of 3" indicator in the launch flow, and hints beside the fields (D-15, recommendation applied). Nothing ever covers content. The PRD-006c criteria to retire or rewrite: 006C-AC-005 (opens on first render), 006C-AC-006 (the seven steps), 006C-AC-008 (the "Finish setup" chip), 006C-AC-009 ("Show me around again"), 006C-AC-010 to 006C-AC-013 (panel and sheet behaviour), and 006C-AC-018 (the final step's not-connected statement). The five-minute target (006C-AC-015) stays, measured on the library flow.
 
 ### 4.5 The two lists below
 
-Each uses Listing Studio's empty-state rule (`library/knowledge/private/listing-studio-ux-ui/state-doctrine.md` section 2; `src/components/studio/EmptyState.tsx:9-17`): an icon, what would be here, why it is empty, and at most one action.
-
-| List | Empty title | Why | Action |
-|---|---|---|---|
-| Running now | No ads running | An ad shows here, with its spend and leads, once you launch it. | "Start an Open House Boost" (a link that moves focus to the address field, so the page still has one primary button) |
-| Needs your approval | Nothing to approve | A campaign waits here after its checks pass, until someone approves it or sends it back. | None: there is nothing to do |
-
-Once campaigns exist, each list shows up to three rows (address, open house date, status chip, one link) and "See all campaigns". "Needs your approval" reads the recorded decision (PRD-008b 008B-AC-009): a sent-back version never appears there.
+Unchanged rules (an icon, what would be here, why, at most one action). "Running now" links to "Launch an ad"; "Needs your approval" has no action and reads the recorded decision, so a sent-back version never appears there.
 
 ---
 
-## 5. The three-step launch (OD-B)
+## 5. The Ads library (OD-H)
 
-Mockups: [`create-step-1-property.html`](mockups/create-step-1-property.html), [`create-step-2-make-it-yours.html`](mockups/create-step-2-make-it-yours.html), [`create-step-3-review-and-launch.html`](mockups/create-step-3-review-and-launch.html) (Meta not connected).
+Mockups: [`mockups/ads-library.html`](mockups/ads-library.html) (browse) and [`mockups/launch-step-1-choose.html`](mockups/launch-step-1-choose.html) (choose). Eight sample ads across five topics, drawn in SVG and marked "Sample image".
 
-### 5.1 Step 1, Property and event
+### 5.1 Naming
 
-- **Property address**, filled in from Home. One field; no separate State select (the address carries it).
-- **Link import is not shown.** Zillow or Redfin link import appears only behind an owner switch, as a second way in above the address (open decision D-1). The mockup marks the spot with a dashed note, not with live controls.
-- **The open house:** Date, Starts, Ends. Ends is prefilled two hours after Starts, with a hint saying so.
-- **Photos:** upload, the first one is "In the ad", with stated limits shown before the person picks a file (Listing Studio's rule, `state-doctrine.md` section 7). The limits in the mockup ("JPG or PNG, up to 10 photos") are placeholders until the Meta image rules are checked (UNVERIFIED).
-- **About the home (optional):** one line, used in the ad words. Today's description is required; making it optional is open decision D-13.
-- **One permission box:** "I have permission to market this property and to use these photos in ads." The Realtor's permission moves to the partner record (open decision D-7).
-- Actions: Cancel (secondary), Continue (primary).
+| Thing | Name in the product | Why |
+|---|---|---|
+| The collection | **Ads library** | Says what it is. A loan officer reads "templates" or "blueprints" as something to build from |
+| One entry | **an ad** | Plain; matches "Launch on Facebook" |
+| The flow | **Launch an ad** | The owner's "click click launch". Steps: **Choose an ad**, **Set it up**, **Review and launch** |
+| What a loan officer sets up from an ad | **a campaign**, named after the ad ("First home, start here") | The approved menu says "Campaigns"; a campaign is one ad with your words, budget, dates and area |
+| Topics | First-time buyers, Refinance, VA loans, Pre-approval, Down payment help | The owner's own examples, in sentence case |
+| Retired | "Open House Boost" | It no longer describes the ads (OD-H). It survives only in history documents |
 
-### 5.2 Step 2, Make it yours
+The alternative, renaming the menu item "Campaigns" to "Ads", is open decision D-16.
 
-- **Your brand:** a summary of the saved brand (name, company, NMLS) with "Change in Brand". If no brand exists yet, this card becomes the short brand form in place, so nobody leaves the flow.
-- **Realtor partner:** radio cards of saved partners, each saying whether that partner agreed to co-branded ads; "No partner"; "Add a Realtor partner". The last partner used is preselected.
-- **Ad words,** prefilled from the setup profile and this open house (today's starter text, `features/guided-setup/model/profile.ts:49-56`), all editable: Headline and Ad text. The disclosure comes from the brand and is shown locked. The lead-form consent wording stays prefilled from the brand, behind a "Lead form wording" disclosure (not drawn in the mockup).
-- **Budget:** daily $25 and total $125 prefilled (today's floor, `profile.ts:94-95`), with "The ad runs around the property until the open house ends. Housing ads have their own rules. We apply them for you, every time." Today's required "Where the ad runs" field is prefilled from the address under the housing rules, so it is no longer typed.
-- **A live ad preview** beside the form at 1440 and 1180, below it on narrow screens.
-- Actions: Back, then "Save and check", with "We save this version and run the checks. Nothing is published." This is today's "Save and run the checks": it saves the version and runs the existing checks.
+### 5.2 Where the library appears
 
-### 5.3 Step 3, Review and launch
+- **Campaigns, "Ads library" tab:** browse. Topic chips with counts ("All 8", "Refinance 2"), then a grid of ad cards. Each card shows the ad **with the viewer's own brand already applied**, its topic label, its name, its default headline, "Version 3. Reviewed Oct 1, 2026.", and "Use this ad".
+- **Launch an ad, step 1:** the same cards and filter inside the step indicator. "Use this ad" goes straight to step 2; there is no separate Continue.
+- **Home:** the topic buttons open step 1 filtered.
+- **No search and no sorting** while the library fits on a screen (open decision D-17).
+- **Brand not set up yet:** cards show a placeholder band, "Your name and NMLS number go here", and the person can still set up an ad; the checks send it back until Brand has a name and NMLS number.
+- **Grid:** four cards a row at 1440, three at 1180, two at 768, one at 390. The topic chips scroll sideways on a phone instead of wrapping into a tall block.
 
-- **The actual ad:** a Facebook feed post (page name, "Sponsored", ad text, the image, headline and button), with a Tall (4:5, 1080 by 1350) and Square (1:1, 1080 by 1080) switch (default is open decision D-10). The image is the cover photo plus a band in the loan officer's brand colours carrying the open house time, address, both people, the NMLS number and the Equal Housing Opportunity line. Facebook's exact frame, button labels and image rules are UNVERIFIED in this pass and belong to research gate G3; the mockup draws a generic feed post with no Meta branding.
-- **"What you approve":** one card. "Checks passed" chip and a one-line count, a "See what we checked" disclosure, then budget, run dates, who sees it, and where new leads go, with one "Change" link back to step 2. Approval covers exactly these, so they sit above the approve button.
-- **Approve this version:** the existing control and copy (`features/campaigns/components/campaign-approval-controls.tsx:169-170`): "Approving applies to this exact version. Nothing is published or sent." Primary "Approve this version", secondary "Send back for changes", and the status line.
-- **Launch:** "Launch on Facebook". With Meta not connected it is disabled, and one sentence, tied to the button with `aria-describedby`, says what to do: "Meta isn't connected yet, so connect it in Settings to launch this ad."
-- **Details for support:** collapsed, holding the version and support reference (user-language contract section 6).
+### 5.3 The catalog: what each ad needs
 
-When launching is possible, "Launch on Facebook" opens an inline confirmation that names the consequence in plain words (Listing Studio's pattern, `ListingMarketing.tsx:93-95`): the page, the budget, the dates, "Your ad starts running and spending once Meta approves it." No typed PUBLISH (the Launch canvas's pattern) is required. The publishing progress states from `03-components/campaign-and-artifact-workflow.md:95-107` apply then, and the page never says "Live" until Meta reports it.
+The orchestrator's default (OD-H): the library lives in the repository as a versioned catalog of data plus image files, and adding or changing an ad is a small reviewed change. There is no upload screen in PRD-009.
 
-### 5.4 Clicks and fields, today against target
+| Field | Example | Rule |
+|---|---|---|
+| `id` | `first-home-start-here` | Stable for the life of the ad; never reused |
+| `version` | `3` | Goes up whenever the image, default words, limits or compliance notes change. A campaign records the exact version it used |
+| `status` | `active` or `retired` | Retired ads stay in the catalog forever so old campaigns can always show the exact ad (5.5) |
+| `topic` | `first-time-buyers` | One topic per ad; drives the filter (D-17) |
+| `name` | "First home, start here" | The card title and the campaign's name |
+| `images.tall` | art file 1080 by 1080, composed to 1080 by 1350 | 4:5. The top 1080 by 1080 is the owner's art; the bottom 270px is reserved for the brand band (5.4) |
+| `images.square` | art file 1080 by 842, composed to 1080 by 1080 | 1:1. The top 78% is art; the bottom 22% is the band |
+| `images.alt` | "Your first home starts here, with a house and a key" | The image's words and picture, for screen readers |
+| `defaults.headline` | "Buying your first home? Start with a plan." | Prefilled; editable |
+| `defaults.primaryText` | "I help first-time buyers understand every step ..." | Prefilled; editable |
+| `editable` | `headline` up to 60 characters, `primaryText` up to 300 | Only these two fields can change ("Just the copy"). Limits are product limits; Meta's own limits are UNVERIFIED |
+| `callToAction` | `LEARN_MORE` | The ad's button; not editable. Meta's allowed button list is UNVERIFIED |
+| `specialAdCategory` | `HOUSING` | Set by the curator per ad; which category everyday mortgage ads need is open decision D-19 |
+| `compliance.notes` | "No rates, payments or terms. 'May be eligible', never 'qualify'." | Shown to reviewers, not to the loan officer |
+| `compliance.requiredOnAd` | NMLS number, Equal Housing line | The checks fail if the brand band cannot supply them |
+| `compliance.blockedInWords` | rate, APR, payment and term claims; "guaranteed"; Realtor or brokerage names | Checked against the edited words (Regulation Z rules in `compliance-and-risk.md:40-55`; control 9) |
+| `approval.approvedBy`, `approval.approvedOn` | "Jonathan Ferrell", `2026-10-01` | Who approved this version for the library, and when. Lender or counsel review of each new ad is an operating rule in `compliance-and-risk.md:74` ("Require lender review of every new blueprint") |
+| `retired.on`, `retired.reason`, `retired.replacedBy` | `2026-10-12`, "Program details changed", `first-home-start-here-2` | Only when retired |
 
-Today's figures are from the recon (section 3) and the create page (`open-house-draft-builder.tsx:436-671`). The target is the happy path for a workspace owner who can approve and has used a partner before.
+A sample entry:
 
-| Measure | Today | Target | How |
+```json
+{
+  "id": "first-home-start-here",
+  "version": 3,
+  "status": "active",
+  "topic": "first-time-buyers",
+  "name": "First home, start here",
+  "images": {
+    "tall": { "art": "first-home-start-here/v3/tall.png", "width": 1080, "height": 1350 },
+    "square": { "art": "first-home-start-here/v3/square.png", "width": 1080, "height": 1080 },
+    "alt": "Your first home starts here, with a house and a key"
+  },
+  "defaults": {
+    "headline": "Buying your first home? Start with a plan.",
+    "primaryText": "I help first-time buyers understand every step, from pre-approval to closing day. Send me a message and let's talk about where you are today."
+  },
+  "editable": { "headline": { "maxLength": 60 }, "primaryText": { "maxLength": 300 } },
+  "callToAction": "LEARN_MORE",
+  "specialAdCategory": "HOUSING",
+  "compliance": {
+    "notes": "No rates, payments or loan terms.",
+    "requiredOnAd": ["nmls", "equal-housing"],
+    "blockedInWords": ["rate-claims", "payment-claims", "term-claims", "guarantees", "realtor-or-brokerage-names"]
+  },
+  "approval": { "approvedBy": "Jonathan Ferrell", "approvedOn": "2026-10-01" }
+}
+```
+
+### 5.4 How the loan officer's brand goes on an ad
+
+The product composes every ad from two parts: the library's art, which nobody but the curator changes, and a **brand band** drawn from Brand, which the loan officer never edits on the ad itself.
+
+- **Where:** the bottom 20% of the tall ad (270px of 1350) and the bottom 22% of the square ad. The curator keeps that zone plain in the art.
+- **What, left to right:** the logo (in a square tile); the name in bold, then title and NMLS number; the company name and company NMLS number on the right; the disclosure line from Brand along the bottom ("Equal Housing Opportunity.").
+- **Colour:** the band is white with navy text, so its contrast never depends on the loan officer's colours. The brand colour appears only as the thin rule above the band and behind the logo tile. Making the whole band brand-coloured is open decision D-24.
+- **Missing pieces:** no logo shows an initials tile in the brand colour (D-25); no NMLS number fails the checks with "Add your NMLS number in Brand", so the version cannot be approved; a long name wraps to two lines and then shrinks to a floor before it truncates.
+- **The Facebook post header** shows the loan officer's Facebook page name once Meta is connected; until then, the preview uses the Brand name.
+- **Frozen at "Save and check":** the brand values, the library ad id and version, and the edited words are saved together as one version, the same freeze Listing Studio applies to its marketing snapshot (recon: `src/lib/office/data.ts:35-53`). Approval binds that exact version. Editing Brand later never changes an approved version; the campaign page offers "Make a new version" to pick up the new brand.
+- **Realtor names never appear** on a paid ad (control 9). The edited words are checked for Realtor and brokerage names too.
+
+### 5.5 Retiring an ad, and new versions of an ad
+
+The library never deletes an ad. Retiring it hides it from new choices; the effect on campaigns depends on where each one stands.
+
+| Campaign stands at | What happens when its ad is retired |
+|---|---|
+| Draft, or saved but not decided | It cannot be approved. It shows "Ad retired" and "This ad was taken out of the library on <date>, so this draft can't be approved. Your budget, dates and area are kept." with one action, "Choose another ad" (the step 3 mockup draws this state) |
+| Approved, not launched | Recommended: it cannot launch; the same notice and "Choose another ad"; the approval does not carry over to a new ad (open decision D-21) |
+| Running (once launching exists) | Recommended: it keeps running to its end date with one added line on its page; a retirement marked as a compliance withdrawal flags it "Needs attention". Stopping a live ad needs the future Meta publish work (D-21) |
+| Finished | Nothing changes. Its page still shows the exact ad, version and words it ran with |
+
+**A new version of an ad** (version 3 becomes 4) never changes an existing campaign. A draft still on the older version shows "A newer version of this ad is in the library" with "Use the new version", which replaces its words with the new defaults after asking. Approved and running campaigns keep their version.
+
+---
+
+## 6. Launch an ad: three steps (OD-B as revised by OD-H)
+
+Mockups: [`launch-step-1-choose.html`](mockups/launch-step-1-choose.html), [`launch-step-2-set-up.html`](mockups/launch-step-2-set-up.html), [`launch-step-3-review-and-launch.html`](mockups/launch-step-3-review-and-launch.html) (Meta not connected).
+
+### 6.1 Step 1, Choose an ad
+
+The library grid inside the step indicator (5.2), filtered when the person came from a topic button. "Use this ad" on a card moves to step 2 with that ad. Cancel returns to where the person started. On a choosing screen the choices are the actions, so every card button is secondary and no single blue button competes with the ads.
+
+### 6.2 Step 2, Set it up
+
+- **Your brand on the ad:** a read-only summary of what the band will carry, with "Change in Brand", and one line: "Added for you from Brand. The image and layout come from the library and can't be changed."
+- **Ad words:** Headline and Ad text, prefilled with the library's words, each with a live character count, plus "Use the library words" to undo edits. The disclosure is shown locked. One hint: "Don't add rates, payments or loan terms here. The checks will send them back for changes."
+- **Budget and dates:** daily $25 and total $350 prefilled; "Starts: when you launch it"; "Ends" prefilled 14 days out. The defaults are open decision D-22 (today's floor of $25 a day, `features/guided-setup/model/profile.ts:94-95`, is kept).
+- **Where it shows:** places, not people. Chips for each city or state added ("Austin, TX", each with a 44px remove button), an "Add a city or state" field, and one line: "Mortgage ads can't be aimed by age, gender or ZIP code, so you choose places, not people. Meta may also widen a small area." "Shows in: the Facebook feed." What this offers under the Special Ad Category rules is open decision D-18; the exact current Meta rules are UNVERIFIED. The first time, the person types one city; after that the last area is prefilled. Before Meta is connected, places are saved by name and matched to Meta's locations when it is (the connection already models country, region and city, `packages/ghl/src/meta-adapter.ts:287-293`).
+- **A live preview** of the actual ad beside the form at 1440 and 1180, below it on narrow screens.
+- Actions: Back, then "Save and check" with "We save this version and run the checks. Nothing is published."
+
+### 6.3 Step 3, Review and launch
+
+- **The actual ad** in a generic Facebook feed frame (no Meta branding), with the Tall (4:5) and Square (1:1) switch; tall is the default (D-10, recommendation applied). A caption says the image is the library's and the band is the loan officer's brand.
+- **"What you approve":** "Checks passed" and the count, "See what we checked" (NMLS on the ad, Equal Housing line on the ad, no rate, payment or term claims in your words, no age, gender or ZIP targeting), then the facts the approval covers: the library ad and version, which words were changed, budget, run dates, who sees it and where, and where new leads go. One "Change" link back to step 2.
+- **Approve this version:** the existing control and copy (`features/campaigns/components/campaign-approval-controls.tsx:169-170`), now "Approving applies to this exact version, with your words. Nothing is published or sent."
+- **Launch:** "Launch on Facebook", disabled until Meta is connected, with one sentence tied by `aria-describedby`: "Meta isn't connected yet, so connect it in Settings to launch this ad." In PRD-009 it stays disabled even when Meta is connected, with "Launching on Facebook isn't turned on for your workspace yet. Nothing has been published." (PRD-009 index: no launch route in this PRD).
+- **Details for support:** collapsed; holds the version, the library ad id and version, and the support reference.
+
+### 6.4 Clicks and fields, today against target
+
+Today's figures are from the recon and the create page (`open-house-draft-builder.tsx:436-671`). The target is the happy path for a workspace owner who can approve.
+
+| Measure | Today | Revision 1 (open house) | **Target now (library)** |
 |---|---|---|---|
-| Screens to approval | 3 (Overview, create, campaign page) | 4 short ones (Home, three steps), no detour to the campaign page to approve | Approval sits in step 3 |
-| Clicks to approval | about 6 | **6**: Start, Add photos, Continue, Save and check, Approve this version, Yes, approve | +1 only when changing the preselected partner |
-| Clicks to launch | none: no launch step exists | **8**: the 6 above plus Launch on Facebook and its confirmation | Only once Meta is connected and launching is turned on |
-| Fields to fill | 6 to 7 (address, state, description, start, end, where the ad runs, and the Realtor name if not in the profile) | **3**: address, date, start time | State is in the address; end time, ad words, area, budget and partner are prefilled; the description is optional |
-| Checkboxes | 2 | **1** | The Realtor's permission lives on the partner record (D-7) |
-| Photo uploads | 0 (no ad image today) | 1 | The ad needs an image |
-| Overlay walkthrough steps | 3 before and 1 after | **0** | Section 4.4 |
-| Sign-up to approved, timed | Under 300 s (006C-AC-015) | Under 300 s, measured on this flow | Keep the timed spec, rewritten for three steps |
+| Screens to approval | 3 | 4 | **4**: Home, Choose, Set up, Review |
+| Clicks to approval | about 6 | 6 | **6 the first time**: Choose an ad, Use this ad, Add (the city), Save and check, Approve this version, Yes, approve. **5 after that**, when the area is remembered |
+| Clicks to launch | no launch step | 8 | **8 the first time, 7 after**, once Meta is connected and launching is turned on |
+| Fields to fill | 6 to 7 | 3 | **1 the first time** (one city), **0 after that**. Words, budget and dates are prefilled |
+| Checkboxes | 2 | 1 | **0**. The owner supplies the library images and answers for their rights; the property and Realtor permissions have nothing left to cover |
+| Uploads | 0 | 1 photo | **0** |
+| Overlay walkthrough steps | 4 | 0 | **0** |
+| Sign-up to approved, timed | under 300 s | under 300 s | **under 300 s**, the existing bar, measured on this flow; expected to be far lower |
 
-The honest trade: the first-ever launch adds a photo upload and a partner choice that today's flow does not have, because today's flow never made an ad. Typing drops by more than half.
+### 6.5 Approval rules and the PRD-008b states
 
-### 5.5 Approval rules and the PRD-008b states
-
-The approval rules do not change: an approver or workspace owner approves one exact version; a material edit makes a new version and invalidates approval; approval never publishes; a person who cannot approve gets the hand-off link. Every surface reads the recorded decision, not only the stored state (008B-AC-004, 008B-AC-009 to 008B-AC-011). The step 3 mockup draws the approval and launch cards in each state at the bottom of the page.
+The rules do not change: an approver or workspace owner approves one exact version, now including the edited words and the frozen brand; any edit makes a new version; approval never publishes; a person who cannot approve gets the hand-off link. Every surface reads the recorded decision (008B-AC-004, 008B-AC-009 to 008B-AC-011). The step 3 mockup draws each state at the bottom of the page.
 
 | State | Step 3 | Campaign page | Campaigns list | Home |
 |---|---|---|---|---|
-| Ready for approval (checks passed, no decision) | Approve (primary) and Send back. Launch disabled with one sentence: the Meta sentence while Meta isn't connected (the mockup's case), otherwise "Approve this version first." | Status "Ready for approval"; the same approve card | Chip "Ready for approval" | Listed under "Needs your approval" |
-| Ready for approval, viewer can't approve | "You can't approve campaigns in this workspace. Send this link to an approver." with Copy the link | Same hand-off card | Chip "Ready for approval" | Listed for approvers only |
-| Needs changes (checks found something; blocked) | Chip "Needs changes", what to fix in one plain line, "Fix it" (primary, returns to the step that holds the field); Approve disabled with its reason | Same chip and fix list; "Make a new version" | Chip "Needs changes" | Not listed |
-| Approved, Meta not connected | Chip "Approved", "Approved by <name> on <date>. The approval covers this version only."; Launch disabled with the one Meta sentence | Status "Approved"; Launch disabled with the same sentence | Chip "Approved" | Not listed |
-| Approved, Meta connected, launching not turned on yet | Launch disabled: "Launching on Facebook isn't turned on for your workspace yet. Nothing has been published." | Same | Chip "Approved" | Not listed |
-| Sent back for changes | Chip "Sent back for changes", "It was sent back for changes, so it needs a new version before anyone can approve it.", "Make a new version" (primary); no approve, no hand-off | Same chip; the version list shows who sent it back and when | Chip "Sent back for changes" | Never listed under approval |
-| Launching, live, paused, finished (future, gated) | The progress states; "Live" only after Meta confirms | Status follows Meta, with results | Matching chip | Listed under "Running now" |
-
-The strings in quotation marks above that exist today come from `copy/user-language.ts` (`CAMPAIGN_SENT_BACK_LABEL`, `CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION`, `CHECK_RESULT_READY`, `CHECK_RESULT_NEEDS_CHANGES`) and `campaign-approval-controls.tsx:219-240`. New strings are listed in section 8.
+| Ready for approval | Approve (primary) and Send back. Launch disabled with one sentence: the Meta sentence while Meta isn't connected, otherwise "Approve this version first." | Status "Ready for approval" with the same approve card | Chip "Ready for approval" | Under "Needs your approval" |
+| Ready for approval, viewer can't approve | "You can't approve campaigns in this workspace. Send this link to an approver." with Copy the link | Same | Same chip | For approvers only |
+| Needs changes | Chip "Needs changes", the plain fix ("Take 'low rates' out of the headline. Ads can't state rate claims."), "Fix it" back to step 2 | Same, with "Make a new version" | Chip "Needs changes" | Not listed |
+| Approved, Meta not connected | Chip "Approved", "Approved by <name> on <date>. The approval covers this version only."; Launch disabled with the Meta sentence | Same | Chip "Approved" | Not listed |
+| Approved, launching not turned on | Launch disabled: "Launching on Facebook isn't turned on for your workspace yet. Nothing has been published." | Same | Chip "Approved" | Not listed |
+| Sent back for changes | "It was sent back for changes, so it needs a new version before anyone can approve it." and "Make a new version" | Same; the version list shows who sent it back | Chip "Sent back for changes" | Never under approval |
+| Ad retired (draft or undecided) | Chip "Ad retired", the notice from 5.5, "Choose another ad" | Same | Chip "Ad retired" | Not listed |
+| Launching, live, paused, finished (future, gated) | The progress states; "Live" only after Meta confirms | Status follows Meta, with results | Matching chip | Under "Running now" |
 
 ---
 
-## 6. The campaign page
+## 7. The campaign page
 
-Mockup: [`mockups/campaign-detail.html`](mockups/campaign-detail.html) (approved, not launched).
+Mockup: [`mockups/campaign-detail.html`](mockups/campaign-detail.html) (approved, not launched). No property anywhere.
 
-- **Header:** "Open House Boost", the address as the title, the open house and partner in one line, the status chip. Actions: "Make a new version" (secondary) and "Launch on Facebook" (primary, disabled here), with the one Meta sentence directly under the buttons.
-- **Results**, first and full width: Spend, Leads sent to HighLevel, Cost per lead. Before anything is live, the card carries one chip "Not live yet" and one sentence: "This ad isn't running, so there is nothing to count yet. Spend comes from Meta, and leads are counted when they reach HighLevel." Each figure reads "Not live yet", never a zero (user-language contract section 5, rule 1). Once live, each figure shows its source and freshness (`03-components/metric-source-and-freshness.md`).
-- **The ad:** the same feed preview, labelled with its version, plus budget and run dates.
-- **Approval:** who approved, when, and that it covers this version only.
-- **Versions:** each version, its chip, who saved it or sent it back, and when; older versions open read-only.
+- **Header:** eyebrow "From the ads library, First-time buyers"; the ad's name as the title; one line with run dates, area and budget; the status chip. Actions: "Make a new version" (secondary) and "Launch on Facebook" (primary, disabled) with the one Meta sentence directly under the buttons.
+- **Results**, first and full width: Spend, Leads sent to HighLevel, Cost per lead, each "Not live yet" under one chip and one sentence, never a zero. Unchanged from revision 1.
+- **The ad:** the feed preview of the approved version, plus the library ad and version, which words were changed, and who it shows to.
+- **Approval:** who approved, when, and that it covers this version and these words only.
+- **Versions:** each version, its chip, who saved it or sent it back, and when.
+- **Library notices,** one line each, only when they apply: the ad was retired (5.5); a newer version exists; Brand changed after approval ("Make a new version to use it").
 - **Details for support:** collapsed.
 
-No pipeline, contact list, or lead table appears here: a lead's life after the hand-off belongs to HighLevel.
-
-## 7. The Campaigns list
+## 8. The Campaigns list
 
 Mockup: [`mockups/campaigns-list.html`](mockups/campaigns-list.html).
 
-- Title "Campaigns", one sentence, one primary action: "New Open House Boost".
-- **A table at 720px and wider:** Property (the link), Open house, Realtor partner, Status chip, Last change. **Cards below 720px** with the same facts.
-- **No results column.** Five rows of "Not live yet" would repeat the same fact five times; results live on each campaign page (OD-D).
-- Status chips use the decision-aware label (`campaignStateLabel`, `copy/user-language.ts`), so a sent-back version reads "Sent back for changes" here too.
-- Empty state: "No campaigns yet", "Your Open House Boosts show here once you start one.", action "New Open House Boost" (the page's primary, moved into the empty state).
+- Title "Campaigns", the two tabs ("Your campaigns", "Ads library"), one primary action "Launch an ad".
+- **Table at 720px and wider:** Ad (a small thumbnail, decorative, and the name as the link), Topic, Runs, Where it shows, Status, Last change. **Cards below 720px** with the same facts.
+- No results column (results live on each campaign page).
+- Status chips read the recorded decision (`campaignStateLabel`).
+- Empty state: "No campaigns yet", "Pick an ad from the library to set up your first one.", action "Launch an ad".
 
 ---
 
-## 8. Copy
+## 9. Copy
 
-Every sentence in the mockups follows the user-language contract: second person, plain words, no internal nouns (no "region", "preflight", "provider", "route"), no dashes, and no claim that anything is live or launched. New or changed strings, for the copy module:
+Every sentence in the mockups follows the user-language contract: second person, plain words, no internal nouns, no dashes, no claim that anything is live or launched. New or changed strings since revision 1:
 
 | Where | String |
 |---|---|
-| Home heading | Start an Open House Boost |
-| Home lead | Enter the property address. Then add the open house time and photos, put your brand and your Realtor partner on it, and look at the actual Facebook ad before you approve it. |
-| Checklist intro | You can start an ad now. It runs once HighLevel and Meta are connected. |
-| Checklist states | Not connected yet; Connected; Needs attention; Not started; Done |
-| Running now, empty | No ads running. An ad shows here, with its spend and leads, once you launch it. |
-| Approval, empty | Nothing to approve. A campaign waits here after its checks pass, until someone approves it or sends it back. |
-| Home footer | HighLevel stays your CRM. Your contacts, pipelines and follow-up live there. |
-| Step 2 hint | We save this version and run the checks. Nothing is published. |
+| Home heading | Launch an ad |
+| Home lead | Pick a ready-made Facebook ad for loan officers. Your name, NMLS number and logo go on it for you. You set the budget, dates and area, then approve it. |
+| Home question | What do you want to promote? |
+| Checklist intro | You can set up an ad now. It runs once HighLevel and Meta are connected. |
+| Library lead | Ready-made ads for loan officers, reviewed before they're added. Your name, NMLS number and logo go on each one automatically. You can change the words; the image stays as it is. |
+| Step 2 brand line | Added for you from Brand. The image and layout come from the library and can't be changed. |
+| Step 2 words hint | Don't add rates, payments or loan terms here. The checks will send them back for changes. |
+| Step 2 area hint | Mortgage ads can't be aimed by age, gender or ZIP code, so you choose places, not people. Meta may also widen a small area. |
+| Approve line | Approving applies to this exact version, with your words. Nothing is published or sent. |
+| Retired ad | This ad was taken out of the library on <date>, so this draft can't be approved. Your budget, dates and area are kept. |
+| Retired ad, approved campaign | This ad was taken out of the library on <date>. This campaign keeps the version you approved. |
+| Newer version | A newer version of this ad is in the library. |
 | Launch, Meta not connected | Meta isn't connected yet, so connect it in Settings to launch this ad. |
 | Launch, not turned on | Launching on Facebook isn't turned on for your workspace yet. Nothing has been published. |
-| Results, not live | This ad isn't running, so there is nothing to count yet. Spend comes from Meta, and leads are counted when they reach HighLevel. |
-| Removed pages | This page is gone. Your leads, pipelines and follow-up live in HighLevel. |
 
-The contract's section 5 strings that name Stripe ("HighLevel, Meta, and Stripe aren't connected ...") stay in force until the owner rules on D-8; the new Home does not use them.
+The area hint states the product's own rule (it never offers those choices, `compliance-and-risk.md:65-72`). The clause "Meta may also widen a small area" depends on Meta's current rules and stays UNVERIFIED until checked (D-18).
 
 ---
 
-## 9. The Claude Design canvases: what carries over
+## 10. The Claude Design canvases: what carries over
 
-The canvases in `library/knowledge/private/ux-ui/05-html-examples/claude-design/` stay in the repo as history. They stop being the visual reference (rubric axis 10).
+The canvases stay in the repo as history and stop being the visual reference.
 
 | Canvas | Fate | What carries over |
 |---|---|---|
-| `Overview.dc.html` | Retired | Only the footer idea that HighLevel stays the CRM (its line 135), now Home's footer |
-| `Overview Responsive.dc.html` | Retired | Nothing; the 1180 and 390 frames are redrawn as a top bar and Menu button |
-| `Dashboard.dc.html` (Marketing Suite performance) | Retired | The three results (spend, leads, cost per lead) move to each campaign page |
-| `Campaigns.dc.html` | Reworked | The list with status and one "New" action; search and four filters dropped until there are enough campaigns to need them |
-| `Create.dc.html` (six-step wizard) | Replaced | Step 1's fields (address, date and time, photos, rights confirmation) become step 1; the six-step dark stepper and the "22% complete" meter do not |
-| `Studio.dc.html` | Retired | The idea that the reviewed thing is the real output, now the step 3 ad preview |
-| `Preflight.dc.html` | Folded into step 3 | Blocking findings with a fix action, and "what approval covers", as one compact card |
-| `Launch.dc.html` | Folded into step 3 | The snapshot of what launches (page, budget, schedule, area, housing category) and the progress states; typing PUBLISH is dropped for a plain-words confirmation |
-| `CampaignDetail.dc.html` | Reworked | Status, the ad, versions, approval; six metrics become three; Pause and Duplicate return only once launching is on |
-| `Brand.dc.html` | Reworked later | The locked disclosure and NMLS identity; the eleven-section menu is out of PRD-009's scope |
-| `Onboarding.dc.html` | Replaced | The nine-item, two-phase checklist becomes the four-item Home checklist |
-| `Welcome.dc.html` | Retired | Nothing; sign-up already lands on Home |
-| `Design System.dc.html` | Superseded | Token names survive; values come from section 2.4 |
+| `Overview.dc.html` | Retired | Only the idea that HighLevel stays the CRM (its line 135), now Home's footer |
+| `Overview Responsive.dc.html` | Retired | Nothing; frames redrawn with the top bar |
+| `Dashboard.dc.html` | Retired | The three results move to each campaign page |
+| `Campaigns.dc.html` | Reworked | The list with status and one "new" action, now with the Ads library tab; its search and four filters wait (D-17) |
+| `Create.dc.html` (six-step wizard) | **Retired (OD-H)** | Nothing: the property, people and assets steps are gone. The library plus "Set it up" replace the whole wizard |
+| `Studio.dc.html` | Retired | The idea that you review the real output, now step 3 |
+| `Preflight.dc.html` | Folded into step 3 | Blocking findings with a fix action, and "what approval covers", as one card |
+| `Launch.dc.html` | Folded into step 3 | The snapshot of what launches (budget, schedule, area, category) and, later, the progress states; typing PUBLISH is dropped |
+| `CampaignDetail.dc.html` | Reworked | Status, the ad, versions, approval; three results instead of six; no property |
+| `Brand.dc.html` | Reworked later | The locked disclosure and the NMLS identity, now feeding the brand band |
+| `Onboarding.dc.html` | Replaced | The three-item Home checklist |
+| `Welcome.dc.html` | Retired | Nothing |
+| `Design System.dc.html` | Superseded | Token names survive; values from section 2.4 |
 | `AutomatedLO Directions.dc.html` | History only | Nothing |
 
 ---
 
-## 10. Unverified, and what checks it
+## 11. Unverified, and what checks it
 
 | Claim | Status | Who checks |
 |---|---|---|
-| HighLevel draws its own navigation beside the Custom Page at the 1180 frame, and how wide it is | UNVERIFIED | A sandbox location, before the shell is built |
-| Inter is under the SIL Open Font License 1.1 | UNVERIFIED here | The vendoring lane, by reading the upstream licence it commits |
-| Facebook feed image sizes (1080 by 1080, 1080 by 1350), the button labels Meta allows, image text rules | UNVERIFIED | `meta-ads-guardian` and research gate G3 |
-| The housing rules the step 3 check list shows (no age, gender or ZIP targeting; the minimum area) | The brief lists ZIP targeting as never exposed (section 15); the rest is UNVERIFIED | The existing campaign checks and gate G3; the mockup's check names are illustrative |
-| Photo limits | Placeholder | The implementation PRD, from the Meta image rules |
-| What `/homeowners` does when the switch is off | UNVERIFIED | The implementation lane |
+| Meta's current Special Ad Category rules for mortgage ads: which category (Housing, or Meta's financial products category), allowed location types, any minimum area, and whether Meta widens small areas | UNVERIFIED | `meta-ads-guardian` and research gate G3, before PRD-009 build fixes D-18 and D-19 |
+| Facebook feed image sizes (1080 by 1350, 1080 by 1080), headline and text limits, the allowed button labels | UNVERIFIED | Same |
+| HighLevel's own navigation beside the Custom Page at the 1180 frame | UNVERIFIED | A sandbox location |
+| Inter's licence (SIL Open Font License 1.1) | UNVERIFIED here | The font vendoring lane |
+| The check names in the step 3 mockup | Illustrative; drawn from `compliance-and-risk.md` (Regulation Z, targeting, control 9) | The PRD-009 checks criteria |
 
-Everything else in this document was read from the files it cites in this worktree or in the Listing Studio snapshot, on 2026-10-01.
+Everything else was read from the files cited, in this worktree or in the Listing Studio snapshot, on 2026-10-01.
 
-## 11. Mockups and how they were checked
+## 12. Mockups and how they were checked
 
-Six self-contained HTML files in [`mockups/`](mockups/): inline CSS and SVG only, no scripts, no external requests. Every page carries a "Design mockup" strip saying that each name, address, photo, date and count is a made-up sample; sample addresses contain the word "Sample"; the check count is labelled "(sample count)".
+Seven self-contained HTML files in [`mockups/`](mockups/): `home-first-run`, `ads-library`, `launch-step-1-choose`, `launch-step-2-set-up`, `launch-step-3-review-and-launch`, `campaign-detail`, `campaigns-list`. Inline CSS and SVG only, no scripts, no external requests. Every page carries a strip saying each name, ad, image, date and count is a made-up sample, and every ad image carries a "Sample image" tag. The eight sample ads avoid rate, payment and term claims.
 
 Checked on 2026-10-01 with Playwright 1.63.0 and `@axe-core/playwright` 4.13.0 from this repo, using a throwaway script outside the repo:
 
-- Full-page screenshots of all six pages at 1440 by 900 and 390 by 844, plus Home at 1180 by 900, 768 by 1024 and 1440 Dark: 15 PNGs in [`mockups/previews/`](mockups/previews/).
-- No horizontal overflow at any frame; the menu never overlaps the account cluster; every control (buttons, links outside running text, inputs, choice cards, menu items) at least 44px tall; zero requests outside the file.
-- axe with the WCAG 2.0, 2.1 and 2.2 A and AA rule sets plus best practices: **0 violations** on all 15 frames, 610 passing checks in total.
-- Font: the previews render in Segoe UI because no Inter file is on this machine and the mockups may not fetch one. With Inter vendored, glyphs are slightly wider; the 1180 bar has 127px to spare.
+- Full-page screenshots of all seven pages at 1440 by 900 and 390 by 844, plus Home at 1180 by 900, 768 by 1024 and 1440 Dark: 17 PNGs in [`mockups/previews/`](mockups/previews/). The revision 1 `create-step-*` mockups and previews are deleted.
+- No horizontal overflow at any frame; the menu never overlaps the account cluster; every control at least 44px tall; zero requests outside the file.
+- axe with the WCAG 2.0, 2.1 and 2.2 A and AA rule sets plus best practices: **0 violations** on all 17 frames, 656 passing checks in total.
+- Font: the previews render in Segoe UI because no Inter file is on this machine and the mockups may not fetch one.

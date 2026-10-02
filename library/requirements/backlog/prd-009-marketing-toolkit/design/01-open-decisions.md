@@ -1,165 +1,160 @@
 # PRD-009 open decisions for the owner
 
-> Date: 2026-10-01 | Author: `design-system-guardian` | Companion to [`00-direction.md`](00-direction.md)
+> Date: 2026-10-01, revision 2 (after OD-H, the curated ads library) | Author: `design-system-guardian` | Companion to [`00-direction.md`](00-direction.md)
 >
-> Each item needs Jonathan's call. Each has a recommendation, what happens if he says yes, what happens if he says no, and what it blocks. The IDs D-1 to D-15 are local to this file; they are not the review rubric's deltas D-001 onward.
+> The IDs D-1 to D-25 are local to this file; they are not the review rubric's deltas D-001 onward. AD-1 to AD-3 are the PRD-009 index's own decisions (`prd-009-marketing-toolkit-index.md:87-89`), listed here only where OD-H settles them.
 
-## Summary
+## 1. Still open (new with OD-H)
 
 | ID | Question | Recommendation | Blocks |
 |---|---|---|---|
-| D-1 | Turn on Zillow or Redfin link import? | No, not until a Terms of Use review and a photo-rights answer exist. Manual entry is the default | Step 1 build only if yes |
-| D-2 | Light top bar or light left rail? | Top bar | The shell rebuild |
-| D-3 | Realtor partners in the menu, or inside Campaigns? | In the menu | The menu |
-| D-4 | Homeowner reports in the menu by default? | No: keep it behind its switch, off for new self-serve accounts | The menu, first-run Home |
-| D-5 | Light on first visit even when the device is set to dark? | Yes | Theme start-up |
-| D-6 | What happens to Email and SMS drafts, Campaign templates, Property sites, Creative and Ads Manager? | Remove from the menu, redirect, keep saved drafts | The removal lane |
-| D-7 | Record the Realtor's permission once on the partner, instead of a box on every campaign? | Yes, with a compliance sign-off | Step 1 and the partner form |
-| D-8 | Where do Stripe and billing go, and do the not-connected sentences still name Stripe? | Billing under Settings > Account; drop Stripe from ad-related sentences | Copy constants, Settings |
-| D-9 | Keep Approve and Launch as two separate acts? | Yes | Step 3 |
-| D-10 | Default ad shape: tall 4:5 or square 1:1? | Tall 4:5, with square as an option, pending the Meta specs check | The ad image renderer |
-| D-11 | Remove the shell-wide "Not connected yet" banner? | Yes | Home, the shell |
-| D-12 | Keep today's addresses (`/overview`, `/marketing/campaigns`) or rename? | Keep | Redirect table |
-| D-13 | Make the property description optional? | Yes, if the checks do not depend on it | Step 1 |
-| D-14 | Product mark in the top bar | Use the "Automated LO" wordmark until a logo exists | The shell |
-| D-15 | Retire the floating guided-setup walkthrough (PRD-006c)? | Yes, for the inline checklist and step indicator | Home, PRD-006c criteria |
+| D-16 | Naming: what do we call the library, the flow and the thing a loan officer sets up? | "Ads library", "Launch an ad", steps "Choose an ad", "Set it up", "Review and launch"; a set-up ad is a "campaign"; keep the menu item "Campaigns"; retire "Open House Boost" | All copy |
+| D-17 | Library filters | Topic chips with counts, five topics, one topic per ad; no search or sorting until the library passes about 24 ads | The library and step 1 |
+| D-18 | What "Where it shows" offers under Meta's Special Ad Category rules | Places only: cities and states, typed by name and remembered; Facebook feed only; no radius control, no ZIP, no age, gender, interests or audiences. Exact current Meta rules UNVERIFIED | Step 2 |
+| D-19 | Which Special Ad Category each library ad uses | The curator sets it per ad in the catalog; Housing for now, as the product enforces today, until Meta's current classification is checked (UNVERIFIED) | The catalog, the checks |
+| D-20 | What Realtor partners is for now | Keep it as a plain partner list with one honest line; no new features in PRD-009; out of the setup checklist and the launch flow | The Realtor partners page, Home |
+| D-21 | What retiring an ad does to campaigns already using it | Drafts and approved-not-launched campaigns must choose another ad; running ones finish their run with a notice; finished ones never change | Campaign page, step 3 |
+| D-22 | Default budget and run length for an everyday ad | $25 a day for 14 days ($350 total), all editable | Step 2 |
+| D-23 | Instagram as well as Facebook? | Facebook feed only in PRD-009 | Step 2 and 3 |
+| D-24 | How much of the loan officer's brand colour goes on the ad | A thin rule and the logo tile only; the band stays white with navy text | The ad renderer |
+| D-25 | Can an ad go out without a logo? | Yes, with an initials tile; the NMLS number stays required | Brand, the checks |
+
+## 2. Answered by the owner
+
+From the PRD-009 index (`prd-009-marketing-toolkit-index.md:73-79`):
+
+| ID | Question | Answer |
+|---|---|---|
+| D-2 | Top bar or left rail | "Yes, as shown": the light top bar. OD-H keeps it unchanged |
+| D-4 | Homeowner reports in the menu | "Always show it" |
+| D-9 | Approve and launch as two acts | Two buttons, each with its own confirmation |
+| D-3, D-5, D-6, D-8, D-10, D-11, D-12, D-14, D-15 | Partners in the menu; Light on first visit; the other Marketing Suite pages; Stripe and billing; tall 4:5 by default; remove the shell banner; keep addresses; the wordmark; retire the walkthrough | "Follow the designer's recommendation" (index line 79). Two consequences of OD-H: D-10 now means the library supplies both shapes and the preview opens on tall; D-15's checklist drops to three items (`00-direction.md` 4.2) |
+
+## 3. Closed as moot by OD-H
+
+| ID | Was | Why it is moot |
+|---|---|---|
+| D-1 | Zillow or Redfin link import (owner had answered "Yes, include it") | No property step exists. Import, its fetch guards and its counsel item go with it |
+| D-7 | The Realtor's permission recorded once per partner | No Realtor appears in any paid ad, so there is nothing to permit. Compliance control 9 stays in force (`compliance-and-risk.md:19`) |
+| D-13 | Making the property description optional | No property step |
+| The Realtor question (AD-1) | A Realtor partner co-branded in the paid ad | Library ads carry only the loan officer's identity (OD-H). `REALTOR_ON_PAID_AD_POLICY` has one value: never |
+| AD-2 | Where property photos are stored | No photo upload, so no storage bucket |
+| AD-3 | Listing Studio's Firecrawl fallback | No link import |
 
 ---
 
-## D-1. Zillow or Redfin link import (legal)
+## 4. The open decisions in full
 
-**The question.** Should step 1 offer "paste a Zillow or Redfin link" to fill in the property?
+### D-16. Naming
 
-**What we know.** Listing Studio has a working import (recon, "Property import"). Its own security review says a public fetch "is not a license" and that live Redfin import is "not qualified"; live Redfin returns 403; Listing Studio's PRD flags photo copyright risk (VHT v. Zillow) for listing photos; no document reviews Zillow's or Redfin's Terms of Use. Here the photos would run in **paid ads**, which raises the stakes compared with a flyer.
+"Open House Boost" no longer describes the ads (OD-H). The owner's own examples were "Launch an ad" and "Ads library".
 
-**Recommendation: no, for now.** Manual entry is the default and is already short (one address field). If the owner wants import later, turn it on only after (1) a Terms of Use review for both sites and (2) a decision that imported photos are never used in an ad unless the loan officer or the Realtor confirms they hold the rights.
+**Recommendation:**
 
-- **If yes now:** step 1 gains a second way in; a few seconds faster per campaign; legal and copyright exposure on paid ads without a review; the import breaks whenever the sites change or block requests.
-- **If no:** nothing to build; the step 1 mockup already shows the manual path, with a dashed note marking where import would go.
-- **Blocks:** only the import variant of step 1.
+| Thing | Name |
+|---|---|
+| The collection | Ads library |
+| One entry | an ad |
+| The flow and its button | Launch an ad |
+| The three steps | Choose an ad, Set it up, Review and launch |
+| An ad a loan officer has set up | a campaign, named after the ad ("First home, start here") |
+| The menu item | Campaigns (unchanged; the owner approved the menu as shown) |
 
-## D-2. Light top bar or light left rail
+- **If yes:** every new string in `00-direction.md` section 9 stands; "Open House Boost" survives only in history documents.
+- **The alternative:** rename the menu item "Campaigns" to "Ads", so the menu, the button and the library all say "ad". Simpler for a loan officer, but it changes the menu the owner just approved, and "Ads" then holds both the library and the person's own campaigns.
+- **Blocks:** all copy.
 
-**Recommendation: top bar.** Measured on the mockups: six labels take 592px; one row at 1440 and 1180 with 147px and 127px to spare; a second row at 768; a Menu button at 390. No collapse toggle at any width.
+### D-17. Library filters
 
-- **If top bar:** the product reads like automatedre.com; inside HighLevel there is no second side menu next to HighLevel's own (UNVERIFIED until checked in a sandbox location); about 256 screenshots that show the rail are redrawn.
-- **If left rail:** matches Listing Studio's signed-in app (its rail is light, `automatedre-components.css:26`); costs about 240 to 272px of every frame, including the 1180 HighLevel frame; keeps the collapse-toggle rules from rubric D-008. Same redraw cost.
-- **Blocks:** the shell rebuild, which every screen sits inside.
+**Recommendation:** one row of topic chips with counts ("All 8", "First-time buyers 2", ...), one topic per ad, and these five topics to start: First-time buyers, Refinance, VA loans, Pre-approval, Down payment help. No search box and no sorting while the library fits on one or two screens; add search when it passes about 24 ads. Newest ads first within a topic.
 
-## D-3. Realtor partners in the menu, or inside Campaigns
+- **If yes:** the simplest browse there is; the topic is also the campaign list's Topic column.
+- **If the owner wants more:** a second filter (for example "Language: English, Spanish") or tags with several topics per ad. Each adds a catalog field and a row of chips.
+- **Blocks:** the library page and step 1.
 
-**Recommendation: in the menu.** The owner kept it explicitly (OD-C); a partner is reused across campaigns and is one of the four setup items; step 2 also lets a person add a partner without leaving the flow.
+### D-18. What "Where it shows" offers under the Special Ad Category rules
 
-- **If in the menu:** six items (five when homeowner reports is off).
-- **If inside Campaigns:** five items; partners become a tab on Campaigns; slightly harder to find for someone setting up before any campaign.
-- **Blocks:** the menu.
+Meta requires a Special Ad Category for housing and financial products (`compliance-and-risk.md:63`), and the product's own rules already block age, gender, marital and parental status, ZIP, protected-class proxies, custom and lookalike audiences, and contact uploads (`compliance-and-risk.md:65-72`). **The exact current Meta rules for these ads are UNVERIFIED in this pass:** which location types are allowed, whether a minimum radius applies around a city, whether Meta widens small areas on its own, and which placements are allowed.
 
-## D-4. Homeowner reports in the menu by default
+**Recommendation:**
 
-**Recommendation: keep the existing switch, off for new self-serve accounts.** It is a separate product line (PRD-007) that depends on valuation lookups and their allowance; a new loan officer who came for Facebook ads should see five calm items.
+- Offer **places only**: one or more cities or states, typed by name, saved by name, and matched to Meta's locations once Meta is connected (the connection already models country, region and city, `packages/ghl/src/meta-adapter.ts:287-293`).
+- Prefill the last area used, so only the first ad needs typing.
+- **No** radius control, ZIP codes, age, gender, interests, or audiences of any kind.
+- **Facebook feed only** in PRD-009 (D-23).
+- Show the area in the approval summary, as the compliance rules require (`compliance-and-risk.md:72`).
+- Before build, `meta-ads-guardian` confirms the current rules against Meta's documentation; the step 2 hint "Meta may also widen a small area" ships only if confirmed.
 
-- **If off by default:** five items for new accounts; workspaces that use reports keep it.
-- **If on for everyone:** six items; reports show an honest not-connected state until valuations are set up.
-- **Blocks:** the menu and the first-run Home.
+- **If yes:** one field the first time, none after; nothing on screen invites a targeting choice the rules forbid.
+- **If the owner wants a radius control:** only after Meta's minimum is confirmed, and the control can never go below it.
+- **Blocks:** step 2.
 
-## D-5. Light on first visit
+### D-19. Which Special Ad Category each ad uses
 
-The brief today follows the device setting on first visit (brief section 13). OD-E makes Light "the default that everything is designed and checked against".
+The product only knows `HOUSING` or `NONE` today (`packages/domain/src/campaign-foundation.ts:36`, `packages/contracts/src/campaign-foundation.ts:298`), and the checks fail anything that is not Housing (`campaign-foundation.ts:325-334`). Everyday loan officer ads (refinance, pre-approval) may belong in Meta's financial products category instead of, or as well as, Housing. UNVERIFIED.
 
-**Recommendation: Light on first visit; Dark and System stay one click away in the account menu.**
+**Recommendation:** the curator sets the category per ad in the catalog (`00-direction.md` 5.3). Until `meta-ads-guardian` confirms Meta's current classification, every library ad is Housing, which the product already enforces.
 
-- **If yes:** every new person sees the look the owner chose; brief section 13's first bullet changes.
-- **If no:** a person whose device is set to dark sees Dark first, which is checked but not the design target.
-- **Blocks:** the theme start-up script (`apps/web/src/theme/theme-bootstrap.ts`).
+- **If confirmed as Housing for all:** nothing changes.
+- **If some ads need the financial products category:** the domain enum and the check gain a value, and the catalog field already holds it.
+- **Blocks:** the catalog and the checks.
 
-## D-6. The other Marketing Suite pages
+### D-20. What Realtor partners is for now
 
-OD-D names Leads and Pipeline, Automations, Reports and Workspace tools. It does not name the five Marketing Suite sub-pages, which the new six-item menu has no room for: Email and SMS drafts (a working editor that saves drafts), Campaign templates, Property sites, Creative, Ads Manager.
+The owner kept Realtor partners in the menu (OD-C) and said its purpose without co-branded ads is open (OD-H). Compliance control 9 allows a Realtor's identity only on collateral that isn't paid advertising (property pages, flyers, PDFs, QR materials).
 
-**Recommendation:** take all five out of the menu and redirect them (`00-direction.md` section 3.3). Keep saved message drafts in the database; delete nothing.
+**Recommendation:** keep the page as it is (a plain list: name, brokerage, email, phone) with one honest line at the top, "Your ads show only you. Realtor partners never appear in paid ads.", and build nothing new for it in PRD-009. Take "Add a Realtor partner" out of the Home setup checklist and out of the launch flow. Decide its future job later, for example co-branded flyers or property pages, which control 9 permits.
 
-- **If yes:** a smaller, clearer product; Email and SMS drafts disappear from view (HighLevel sends email and SMS anyway).
-- **If the owner wants Email and SMS drafts kept:** it becomes a section inside each campaign ("Follow-up messages"), not a menu item.
-- **Blocks:** the removal lane.
+- **If yes:** the menu stays as approved; the page is honest about what it does.
+- **If the owner would rather hide it until it has a job:** five menu items; saved partners stay in the database.
+- **Blocks:** the Realtor partners page and the Home checklist.
 
-## D-7. The Realtor's permission, once per partner
+### D-21. Retiring an ad
 
-Today every campaign asks for two boxes: permission to market the property, and permission to use the Realtor's materials (`open-house-draft-builder.tsx:538-543`). Listing Studio records co-marketing consent once per agent and lender pair (`src/lib/co-marketing/types.ts:33-120`).
+**Recommendation** (the full table is in `00-direction.md` 5.5):
 
-**Recommendation: yes.** Record the Realtor's agreement to co-branded ads on the partner record (who agreed, when), show it in step 2 ("Agreed to co-branded ads"), and keep one box per campaign for the property and its photos. A compliance owner signs off before build.
+- A draft or an undecided version on a retired ad cannot be approved; "Choose another ad" keeps its budget, dates and area.
+- An approved campaign that has not launched cannot launch; the approval does not carry over to a new ad.
+- A running campaign finishes its run with a one-line notice; a retirement marked as a compliance withdrawal flags it "Needs attention". Stopping a live ad needs the future Meta publish work.
+- A finished campaign never changes.
+- New versions of an ad never change existing campaigns; drafts are offered the new version.
 
-- **If yes:** one box instead of two per campaign; the step 3 check "the Realtor partner agreed to co-branded ads" reads the partner record.
-- **If no:** two boxes stay on step 1.
-- **Blocks:** step 1 and the partner form.
+- **If yes:** the library can change without silently changing anything a person approved.
+- **If the owner wants retirement to stop running ads automatically:** it needs a Meta write, so it belongs to the publish PRD, not PRD-009.
+- **Blocks:** the campaign page and step 3.
 
-## D-8. Stripe and billing
+### D-22. Default budget and run length
 
-The approved not-connected sentences name Stripe ("HighLevel, Meta, and Stripe aren't connected ...", user-language contract section 5; `apps/web/src/copy/user-language.ts:17-41`). Stripe is how the workspace pays for the product (`library/knowledge/private/architecture/system-architecture.md:345`), not a connection a loan officer makes to run an ad. OD-C's Settings lists Account, HighLevel, Meta and where new leads go; it does not list billing.
+With no open house date there is no natural end. Today's floor is $25 a day and $125 in total (`features/guided-setup/model/profile.ts:94-95`).
 
-**Recommendation:** billing lives under Settings > Account as "Plan and usage" (today's `/settings/billing`, with its own honest "Billing isn't set up yet" state); ad-related sentences name only HighLevel and Meta.
+**Recommendation:** start when launched, run 14 days, $25 a day, total prefilled as daily times days ($350). All editable.
 
-- **If yes:** the contract's section 5 strings are revised through the normal copy review; the Home checklist stays at four items.
-- **If no:** Stripe joins the checklist as a fifth item, and every not-connected sentence keeps naming it.
-- **Blocks:** the copy constants and the Settings page.
+- **If yes:** zero typing for budget and dates.
+- **If the owner prefers another default:** one constant each; the mockup and copy change with it.
+- **Blocks:** step 2.
 
-## D-9. Approve and launch as two acts
+### D-23. Instagram
 
-**Recommendation: keep them separate.** Approval is a compliance act on one exact version and, by today's rule, "Nothing is published or sent." Launching spends money. Keeping them as two buttons, each with its own confirmation, keeps the record honest.
+The connection can describe Instagram placements (`packages/ghl/src/meta-adapter.ts:299-301`), but the owner's ask was Facebook ads and the button says "Launch on Facebook".
 
-- **If separate:** 6 clicks to approval, 8 to launch.
-- **If combined ("Approve and launch") for a person who can approve:** 6 clicks to launch; the approval record and the spend decision become one act; harder to explain if Meta rejects the ad after approval.
-- **Blocks:** step 3.
+**Recommendation:** Facebook feed only in PRD-009. Revisit with the publish PRD.
 
-## D-10. Default ad shape
+- **If yes:** one placement, one preview, one honest button label.
+- **If Instagram too:** a second preview frame and a placement choice in step 2; the button becomes "Launch on Facebook and Instagram".
+- **Blocks:** steps 2 and 3.
 
-**Recommendation: tall 4:5 (1080 by 1350) by default, square 1:1 (1080 by 1080) as the other option,** pending `meta-ads-guardian`'s check of the current feed specs (UNVERIFIED). The tall shape leaves room for the brand band under the photo without shrinking the home.
+### D-24. Brand colour on the ad
 
-- **If 4:5:** more of the phone screen; the band carries the open house time, both people and the disclosure.
-- **If 1:1:** the photo gets less height; text in the band gets smaller.
-- **Blocks:** the ad image renderer (Listing Studio's drawing pieces reuse; the layout is new).
+**Recommendation:** the brand band is white with navy text; the loan officer's brand colour appears only as the thin rule above the band and behind the logo tile. Contrast then never depends on a colour the loan officer picked, and every ad in the library still looks like the library.
 
-## D-11. Remove the shell-wide banner
+- **If yes:** no per-colour contrast check is needed on the band.
+- **If the whole band takes the brand colour:** the text colour must be chosen per brand and checked at 4.5:1, and a pale brand colour fails.
+- **Blocks:** the ad renderer.
 
-The shell shows "Not connected yet" on every page (`features/shell/components/app-shell.tsx:140-158`), and the identity card repeats it (`copy/user-language.ts:142-143`).
+### D-25. An ad without a logo
 
-**Recommendation: remove both.** State each fact once, where it changes what the person can do: the Home checklist, the disabled "Launch on Facebook", the results card. PRD-004 RGL-002 (an honest Home with no unlabelled demo data) still holds.
+**Recommendation:** allowed. The band shows an initials tile in the brand colour. The name and the NMLS number stay required: without them the checks send the version back with "Add your NMLS number in Brand".
 
-- **If yes:** "connection status appears once" becomes true on every page, not only Home.
-- **If no:** every page carries the banner, and Home says it twice.
-- **Blocks:** Home and the shell.
-
-## D-12. Addresses
-
-**Recommendation: keep today's addresses** for pages that survive (`/overview` is Home, `/marketing/campaigns` is Campaigns). Inside HighLevel nobody sees the address bar, and every test and baseline uses these.
-
-- **If keep:** no new redirects for surviving pages.
-- **If rename** (`/home`, `/campaigns`): cleaner addresses; one more redirect per page; the sign-up redirect (`password-authentication-handler.ts:1037`) and any Custom Page address registered in the HighLevel developer portal must be checked.
-- **Blocks:** the redirect table only.
-
-## D-13. The property description
-
-Today "Property description" is required. Step 1 makes it an optional single line used in the ad words.
-
-**Recommendation: optional,** if the existing campaign checks do not require it (to be confirmed in the code before build).
-
-- **If optional:** one fewer field; the ad words come from the profile, the address and the date.
-- **If required:** four fields to fill instead of three.
-- **Blocks:** step 1.
-
-## D-14. The product mark
-
-The repo has no Automated LO logo file. The mockups use a small navy "ALO" mark and the "Automated LO" wordmark.
-
-**Recommendation:** ship the wordmark; swap in a real logo when the owner supplies one (Listing Studio's brand pass used supplied SVG masters, `screens/automatedre-brand-release.md:13`).
-
-- **Blocks:** nothing; a logo is a later swap.
-
-## D-15. Retire the floating walkthrough
-
-PRD-006c built a seven-step floating walkthrough because the owner asked for guided setup under five minutes. It floats over the page and covers content (the owner saw it cover the numbers).
-
-**Recommendation: retire the floating panel.** Replace it with the inline "Get set up" checklist on Home, the "Step 1 of 3" indicator in the launch flow, and hints beside the fields. Keep the saved setup profile that prefills the ad, and keep the five-minute target, measured on the new flow.
-
-- **If yes:** nothing ever covers content; the criteria listed in `00-direction.md` section 4.4 are retired or rewritten in PRD-009.
-- **If no:** the panel must be re-placed so it never covers content, which at 390 and inside HighLevel means it can only dock in the page, which is what the inline checklist already is.
-- **Blocks:** Home and the PRD-006c criteria.
+- **If yes:** a new loan officer can launch before finding a logo file.
+- **If a logo is required:** Brand's "Done" state needs a logo too, and the first launch waits for one.
+- **Blocks:** Brand and the checks.

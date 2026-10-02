@@ -27,8 +27,8 @@ import {
  * (`helpers/activation-count.ts`), so a control the spec presses that is not a control, or a field
  * it fills that the product should have filled, shows up in the total.
  *
- * - The first campaign: Choose an ad, Use this ad, Add, Save and check, Approve this version, Yes,
- *   approve. Six activations and one typed field (one place).
+ * - The first campaign: Choose an ad (Home's primary link), Use this ad, Add, Save and check,
+ *   Approve this version, Yes, approve. Six activations and one typed field (one place).
  * - The second campaign: the same less Add, because the area the person used last time is already
  *   there. Five activations and no typed field.
  * - Neither touches a checkbox or a file input.
@@ -78,11 +78,13 @@ async function launchFromHome(
 ): Promise<void> {
   await page.goto("/overview", { waitUntil: "networkidle" });
   await resetActivations(page);
+  // Home's one primary control is a link named "Choose an ad" inside the start card, the way
+  // `home-first-run.spec.ts` asserts it (009B-AC-002). It is matched exactly and nowhere else, so a
+  // Home that stopped drawing it, or drew it as something else, fails here rather than being
+  // reached some other way.
   await page
-    .getByRole("main")
-    .getByRole("link", { name: "Choose an ad" })
-    .or(page.getByRole("main").getByRole("button", { name: "Choose an ad" }))
-    .first()
+    .getByRole("region", { name: "Launch an ad" })
+    .getByRole("link", { name: "Choose an ad", exact: true })
     .click();
   await expect(page.getByRole("heading", { level: 1, name: "Choose an ad" })).toBeVisible();
   await expect(page.locator("input[type='file' i], input[type='checkbox' i]")).toHaveCount(0);

@@ -1,20 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-import { captureNamedState } from "../helpers/design-quality.js";
-import { READY_OPEN_HOUSE, fillTheOpenHouseDraft } from "../helpers/open-house-draft.js";
+import { captureNamedState, expectAxeClean } from "../helpers/design-quality.js";
+import { SAMPLE_ADS, saveACampaign, verdictOnStepThree } from "../helpers/launch-an-ad.js";
 import {
   expectNoExternalRequests,
   guardLocalOrigin,
-  restartGuidedSetup,
   seededCredentials,
   signInExisting,
 } from "./helpers/guided-setup-journey.js";
-import {
-  chooseThemeFromTheHeader,
-  putTheWalkthroughAside,
-  REVIEW_THEMES,
-  waitForTheSavedResultToSettle,
-} from "./helpers/review-session.js";
+import { chooseThemeFromTheHeader, REVIEW_THEMES } from "./helpers/review-session.js";
 
 /**
  * PRD-006d D3's campaign-detail decision state, in a file of its own so that it runs last.
@@ -47,6 +41,12 @@ import {
  *
  * Neither person signs up. Two sign-ins against a limit of twenty in fifteen minutes is affordable;
  * a sign-up is not, for the reason recorded above the public states.
+ *
+ * PRD-009d. The creator saves through "Launch an ad" and lands on step 3, where the hand-off card
+ * stands in for the controls they cannot use. They save two campaigns: the approver decides the
+ * first on its campaign page, which is where PRD-006d's three pictures come from, and the second on
+ * step 3 itself (009D-AC-015). The walkthrough is retired (PRD-009b), so neither person restarts
+ * or dismisses it any more.
  */
 test("the campaign detail's already-decided state meets the bar", async ({ browser }) => {
   // Three named states, two themes, four frames each, with axe at every cell. F-18 added two of
@@ -68,29 +68,24 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
   const creatorGuard = await guardLocalOrigin(creatorPage);
   await creatorPage.setViewportSize({ width: 1440, height: 900 });
   await signInExisting(creatorPage, creatorEmail, password);
-  /**
-   * The walkthrough goes aside rather than being walked, and that is the whole reason this spec
-   * leaves PRD-006c's specs alone.
-   *
-   * An earlier version walked the seeded creator to step 4 and saved from inside the panel. It
-   * worked, and then `guided-setup.hand-off.spec.ts`, which walks the same person from step 1,
-   * failed on 2026-09-19 at a Continue that did not advance. This spec needs one campaign, not a
-   * journey; the journey belongs to the specs written to measure it. Restarting and dismissing is
-   * what the change-password test above already does, and the run has proven it safe.
-   */
-  await restartGuidedSetup(creatorPage);
-  await putTheWalkthroughAside(creatorPage);
-  await creatorPage.goto("/marketing/campaigns/new");
-  await fillTheOpenHouseDraft(creatorPage, READY_OPEN_HOUSE);
-  await creatorPage.getByRole("button", { name: "Save and run the checks" }).click();
-  await expect(creatorPage.getByRole("heading", { name: "Ready for approval" })).toBeVisible();
-  // The heading says the checks have run; this says the result has finished arriving. A person
-  // reads what came back before pressing the link on it, and a click that starts while the block
-  // is still settling is a click that can be overtaken by the next render.
-  await waitForTheSavedResultToSettle(creatorPage);
-  await creatorPage.getByRole("link", { name: "Open campaign" }).click();
-  await creatorPage.waitForURL(/\/marketing\/campaigns\/(?!new$)[^/]+$/u);
-  const campaignUrl = creatorPage.url();
+  const decidedOnItsPage = await saveACampaign(creatorPage, {
+    ad: SAMPLE_ADS.firstHome,
+    place: "Austin, TX",
+  });
+  await expect(verdictOnStepThree(creatorPage)).toContainText("Checks passed");
+  // A creator cannot approve: step 3 offers the hand-off instead of the controls (009D-AC-015).
+  const stepThree = creatorPage.locator("[data-launch-step='3']");
+  await expect(stepThree.locator("[data-hand-off]")).toBeVisible();
+  await expect(stepThree.getByRole("button", { name: "Copy the link" })).toBeVisible();
+  await expect(stepThree.getByRole("button", { name: "Approve this version" })).toHaveCount(0);
+  await expect(stepThree.getByRole("button", { name: "Launch on Facebook" })).toBeDisabled();
+  const decidedOnStepThree = await saveACampaign(creatorPage, {
+    ad: SAMPLE_ADS.preApproval,
+    place: "Austin, TX",
+  });
+  const stepThreeUrl = new URL(creatorPage.url()).pathname + new URL(creatorPage.url()).search;
+  const campaignUrl = `/marketing/campaigns/${decidedOnItsPage}`;
+  expect(decidedOnStepThree).not.toBe(decidedOnItsPage);
   expectNoExternalRequests(creatorGuard);
   await creatorContext.close();
 
@@ -99,10 +94,6 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
   const guard = await guardLocalOrigin(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await signInExisting(page, approverEmail, password);
-  // The approver's own walkthrough is in the way of the link they were sent, so they put it aside
-  // first, exactly as a person would.
-  await restartGuidedSetup(page);
-  await putTheWalkthroughAside(page);
   await page.goto(campaignUrl);
 
   /**
@@ -110,7 +101,7 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
    *
    * Until 2026-09-20 neither could be photographed. While the page still holds the version it
    * arrived with, the screen carries "Send back for changes", and that control was a raw
-   * `<button>` wearing `.hint` from `open-house-draft-builder.module.css` instead of the `Button`
+   * `<button>` wearing `.hint` from the campaign page's stylesheet instead of the `Button`
    * primitive: 152 by 21, measured by `expectTargetsAreLargeEnough` on 2026-09-19, against the 44
    * by 44 design brief section 14 and WCAG 2.2 SC 2.5.8 ask for. Capturing either state would have
    * meant a red gate or a weakened target-size check. The control is now the primitive, so both
@@ -196,6 +187,37 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
     });
   }
 
+  /**
+   * PRD-009d 009D-AC-015 and 016. The second campaign is decided on step 3 itself: the line says
+   * what an approval covers, "Approve this version" asks once more, and "Launch on Facebook" is a
+   * separate button that stays disabled before and after. A reload re-reads the decision (D8).
+   */
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(stepThreeUrl);
+  const review = page.locator("[data-launch-step='3']");
+  await expect(review).toHaveAttribute("data-review-state", "ready");
+  await expect(
+    review.getByText(
+      "Approving applies to this exact version, with your words. Nothing is published or sent.",
+    ),
+  ).toBeVisible();
+  await expect(review.getByRole("button", { name: "Send back for changes" })).toBeVisible();
+  const launch = review.getByRole("button", { name: "Launch on Facebook" });
+  await expect(launch).toBeDisabled();
+  await expectAxeClean(page);
+  await review.getByRole("button", { name: "Approve this version" }).click();
+  await page.getByRole("button", { name: "Yes, approve" }).click();
+  await expect(review.getByText("Approved by", { exact: false })).toBeVisible({ timeout: 30_000 });
+  await expect(launch).toBeDisabled();
+  await page.reload();
+  await expect(page.locator("[data-launch-step='3']")).toHaveAttribute(
+    "data-review-state",
+    "approved",
+  );
+  await expect(page.getByRole("button", { name: "Approve this version" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Launch on Facebook" })).toBeDisabled();
+  await expectAxeClean(page);
+
   expectNoExternalRequests(guard);
   await approverContext.close();
 });
@@ -222,12 +244,11 @@ test("the brand page is the person's own saved branding, and the demo campaign a
   const guard = await guardLocalOrigin(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await signInExisting(page, creatorEmail, password);
-  await restartGuidedSetup(page);
-  await putTheWalkthroughAside(page);
 
   await page.goto("/brand", { waitUntil: "networkidle" });
   const main = page.getByRole("main");
-  await expect(main.getByRole("heading", { level: 1, name: "Report branding" })).toBeVisible();
+  // PRD-009d D3: the page holds the ad brand as well as the report brand, so it is named for both.
+  await expect(main.getByRole("heading", { level: 1, name: "Brand" })).toBeVisible();
   await expect(main.getByLabel("Company name", { exact: true })).toBeVisible();
   // What the workspace's demo brand carries, which a signed-in person must never read as their own.
   await expect(main).not.toContainText("Alex Morgan");

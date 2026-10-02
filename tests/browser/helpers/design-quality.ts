@@ -256,11 +256,16 @@ export const TYPE_STEP_PIXELS = Object.freeze([28, 19, 16, 14, 12] as const);
  * Text the type-step check does not hold to the six steps, each named with the reason, the way
  * `tooling/tests/unit/design-quality/governed-controls.test.ts` names its exceptions. A selector
  * here has to be argued for once and is then visible to the next reviewer; nothing is exempt by
- * default. It is empty: after the D-009 fix every visible text measured at a step, on the synthetic
- * screens on a workstation and on the review project's screens on the runner.
+ * default.
  */
 export const TEXT_OFF_THE_TYPE_STEPS: readonly Readonly<{ selector: string; because: string }>[] =
-  Object.freeze([]);
+  Object.freeze([
+    {
+      selector: "[data-ad-preview]",
+      because:
+        "The orchestrator's ruling of 2026-10-02 (CI run 36989783019): a picture of the ad is the ad as Facebook shows it, not product interface text. Its band is sized as a share of the art (a card, step 2, and step 3 draw the same proportions), and its feed frame uses the feed's own type, so the brief's six steps govern everything outside it and nothing inside it. Every picture of the ad carries data-ad-preview on its root (the creative, the feed preview, and the Brand page's band preview); nothing else is exempt, and design-quality-helpers.spec.ts proves text beside one is still measured.",
+    },
+  ]);
 
 /**
  * Rubric axis 3 and rubric section 5, D-009 (ruled 2026-10-01): the body step is applied at the
@@ -277,7 +282,17 @@ export const TEXT_OFF_THE_TYPE_STEPS: readonly Readonly<{ selector: string; beca
  * step; the review still proves it is the right step for its role.
  */
 export async function expectTextAtTheTypeSteps(page: Page): Promise<void> {
-  const measured = await page.evaluate(
+  const measured = await measureTextAtTheTypeSteps(page);
+  expect.soft(measured.html, "html stays at the browser's 16px root").toBe(16);
+  expect.soft(measured.body, "body carries the 16px body step").toBe(16);
+  expect.soft(measured.offStep, "text rendered between the brief's six type steps").toEqual([]);
+}
+
+/** What `expectTextAtTheTypeSteps` measures, without asserting it, so the helper's own spec can. */
+export async function measureTextAtTheTypeSteps(
+  page: Page,
+): Promise<Readonly<{ html: number; body: number; offStep: readonly string[] }>> {
+  return page.evaluate(
     ({ steps, exceptions }) => {
       const size = (element: Element): number =>
         Number.parseFloat(getComputedStyle(element).fontSize);
@@ -331,10 +346,6 @@ export async function expectTextAtTheTypeSteps(page: Page): Promise<void> {
       exceptions: TEXT_OFF_THE_TYPE_STEPS.map((exception) => exception.selector),
     },
   );
-
-  expect.soft(measured.html, "html stays at the browser's 16px root").toBe(16);
-  expect.soft(measured.body, "body carries the 16px body step").toBe(16);
-  expect.soft(measured.offStep, "text rendered between the brief's six type steps").toEqual([]);
 }
 
 /**

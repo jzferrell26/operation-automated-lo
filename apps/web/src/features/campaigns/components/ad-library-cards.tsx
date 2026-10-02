@@ -11,6 +11,7 @@ import {
 import { shortDay, type LaunchAdCard, type LaunchBand } from "../launch-model.js";
 import { AdCreative } from "./ad-creative.js";
 import styles from "./ad-library-cards.module.css";
+import { TextWithDays } from "./text-with-days.js";
 
 /**
  * PRD-009d D2 and PRD-009c D2 (009C-AC-010, 011). The three pieces the library shows ads with: the
@@ -106,7 +107,10 @@ export function AdCard({ card, advertiser, action }: AdCardProps) {
         </h3>
         <p className={styles.cardWords}>{card.headline}</p>
         <p className={styles.cardVersion}>
-          {adCardVersionLine(card.version, shortDay(card.approvedOn))}
+          <TextWithDays
+            days={[{ dateTime: card.approvedOn.slice(0, 10), text: shortDay(card.approvedOn) }]}
+            text={adCardVersionLine(card.version, shortDay(card.approvedOn))}
+          />
         </p>
         <div className={styles.cardAction}>{action}</div>
       </div>

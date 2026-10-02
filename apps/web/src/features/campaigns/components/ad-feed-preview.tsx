@@ -42,6 +42,7 @@ export function AdFeedPreview({
     <article
       className={styles.feed}
       data-ad-feed-preview=""
+      data-ad-preview=""
       style={adColorVariables(advertiser.colorPresetId)}
     >
       <div className={styles.feedHeader}>

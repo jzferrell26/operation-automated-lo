@@ -6,12 +6,21 @@
  * 1. NFKC, which turns full-width and other compatibility forms into their plain letters and digits
  *    ("３.５％" reads "3.5%");
  * 2. lower case;
- * 3. format characters taken out (zero-width spaces and joiners, bidirectional controls, the byte
- *    order mark), so "rates" with a zero-width space inside reads "rates" here while `WORDS_INVALID_CHARACTERS` still
- *    refuses the raw text;
- * 4. accents taken off, and look-alike letters from the Cyrillic and Greek scripts folded to the
- *    Latin letter they imitate ("rаte" with a Cyrillic "а" reads "rate");
- * 5. curly apostrophes made straight, and every run of whitespace made one space.
+ * 3. format characters and blank fillers taken out (zero-width spaces and joiners, bidirectional
+ *    controls, the byte order mark, the Hangul fillers U+115F, U+1160, U+3164 and U+FFA0, the
+ *    Braille blank U+2800), so "rates" with one inside reads "rates" here while
+ *    `WORDS_INVALID_CHARACTERS` still refuses the raw text;
+ * 4. accents taken off, and look-alike letters folded to the Latin letter they imitate: Cyrillic,
+ *    Greek, Armenian, Cherokee, Lisu, and Latin small capitals ("rаte" with a Cyrillic "а" and
+ *    "ʀᴀᴛᴇ" both read "rate");
+ * 5. every full stop from another script (the ideographic "。" and its half-width form, and the
+ *    Arabic, Ethiopic, and Lisu stops) made a plain dot, so a web address written with one is still
+ *    a web address;
+ * 6. curly apostrophes made straight, and every run of whitespace made one space.
+ *
+ * An invisible character can stand inside a word or in place of a space, so the rules read the text
+ * twice: once with each invisible character taken out ("ra" + U+3164 + "tes" reads "rates") and once
+ * with each made a space ("low" + U+3164 + "rates" reads "low rates"). `libraryAdReadings` gives both.
  *
  * This module is pure: no `node:` import and no dependency, like the rest of the domain package.
  */
@@ -62,30 +71,172 @@ const CONFUSABLES: Readonly<Record<string, string>> = Object.freeze({
   τ: "t",
   υ: "y",
   χ: "x",
-  // Latin letters drawn like another Latin letter
+  ѡ: "w",
+  ϲ: "c",
+  ϳ: "j",
+  // Armenian, lower case (the capitals are lower-cased first)
+  ա: "w",
+  զ: "q",
+  հ: "h",
+  յ: "j",
+  լ: "l",
+  ո: "n",
+  ռ: "n",
+  ս: "u",
+  տ: "s",
+  ց: "g",
+  ք: "p",
+  օ: "o",
+  // Lisu, which has no case
+  ꓐ: "b",
+  ꓑ: "p",
+  ꓓ: "d",
+  ꓔ: "t",
+  ꓖ: "g",
+  ꓗ: "k",
+  ꓙ: "j",
+  ꓚ: "c",
+  ꓜ: "z",
+  ꓝ: "f",
+  ꓟ: "m",
+  ꓠ: "n",
+  ꓡ: "l",
+  ꓢ: "s",
+  ꓣ: "r",
+  ꓦ: "v",
+  ꓧ: "h",
+  ꓪ: "w",
+  ꓫ: "x",
+  ꓬ: "y",
+  ꓮ: "a",
+  ꓰ: "e",
+  ꓲ: "i",
+  ꓳ: "o",
+  ꓴ: "u",
+  // Latin letters drawn like another Latin letter, and the small capitals
   ı: "i",
   ȷ: "j",
   ɑ: "a",
   ɡ: "g",
+  ɩ: "i",
+  ʋ: "v",
+  ᴀ: "a",
+  ʙ: "b",
+  ᴄ: "c",
+  ᴅ: "d",
+  ᴇ: "e",
+  ꜰ: "f",
+  ɢ: "g",
+  ʜ: "h",
+  ɪ: "i",
+  ᴊ: "j",
+  ᴋ: "k",
+  ʟ: "l",
+  ᴍ: "m",
+  ɴ: "n",
+  ᴏ: "o",
+  ᴘ: "p",
+  ꞯ: "q",
   ʀ: "r",
+  ꜱ: "s",
+  ᴛ: "t",
+  ᴜ: "u",
+  ᴠ: "v",
+  ᴡ: "w",
+  ʏ: "y",
+  ᴢ: "z",
+  ...cherokeeLookAlikes(),
 });
 
-const FORMAT_CHARACTERS = /\p{Cf}/gu;
+/**
+ * Cherokee letters drawn like Latin capitals. Cherokee has case, so each is listed in both forms:
+ * the capital, and the small letter it lower-cases to (U+AB70 onward, or U+13F8 onward for the last
+ * six).
+ */
+function cherokeeLookAlikes(): Record<string, string> {
+  const capitals: Readonly<Record<number, string>> = {
+    0x13a0: "d",
+    0x13a1: "r",
+    0x13a2: "t",
+    0x13a5: "i",
+    0x13a9: "y",
+    0x13aa: "a",
+    0x13ab: "j",
+    0x13ac: "e",
+    0x13b3: "w",
+    0x13b7: "m",
+    0x13bb: "h",
+    0x13bd: "y",
+    0x13c0: "g",
+    0x13c2: "h",
+    0x13c3: "z",
+    0x13cf: "b",
+    0x13d2: "r",
+    0x13d4: "w",
+    0x13d5: "s",
+    0x13d9: "v",
+    0x13da: "s",
+    0x13de: "l",
+    0x13df: "c",
+    0x13e2: "p",
+    0x13e6: "k",
+    0x13f3: "g",
+    0x13f4: "b",
+  };
+  const folded: Record<string, string> = {};
+  for (const [codePoint, latin] of Object.entries(capitals)) {
+    const capital = Number(codePoint);
+    const small = capital >= 0x13f0 ? capital + 8 : capital - 0x13a0 + 0xab70;
+    folded[String.fromCodePoint(capital)] = latin;
+    folded[String.fromCodePoint(small)] = latin;
+  }
+  return folded;
+}
+
+/**
+ * Characters that draw nothing: the format characters, and the blank fillers that are letters or
+ * symbols to Unicode but print as empty space (Hangul U+115F, U+1160, U+3164, U+FFA0; Braille
+ * U+2800; Khmer U+17B4 and U+17B5).
+ */
+export const LIBRARY_AD_INVISIBLE = /[\p{Cf}\u115F\u1160\u3164\uFFA0\u2800\u17B4\u17B5]/gu;
 const COMBINING_MARKS = /\p{M}/gu;
+/** Full stops from other scripts. NFKC has already turned the half-width and small forms into these. */
+const OTHER_FULL_STOPS = /[\u3002\u06D4\u0701\u0702\u1362\u166E\uA4FF\uA60E\uA6F3\u2E3C]/gu;
 const CURLY_APOSTROPHES = /[‘’‛ʼ＇]/gu;
 const WHITESPACE_RUN = /\s+/gu;
 
-/** The normalised form every library-ad rule reads (D5). */
-export function normaliseLibraryAdText(text: string): string {
-  const lowered = text.normalize("NFKC").toLocaleLowerCase("en").replace(FORMAT_CHARACTERS, "");
+/**
+ * The normalised form every library-ad rule reads (D5). `invisible` says what becomes of a
+ * character that draws nothing: taken out (the default), or made a space.
+ */
+export function normaliseLibraryAdText(
+  text: string,
+  invisible: "removed" | "spaced" = "removed",
+): string {
+  const lowered = text
+    .normalize("NFKC")
+    .toLocaleLowerCase("en")
+    .replace(LIBRARY_AD_INVISIBLE, invisible === "removed" ? "" : " ");
   const unaccented = lowered.normalize("NFKD").replace(COMBINING_MARKS, "");
   let folded = "";
   for (const character of unaccented) folded += CONFUSABLES[character] ?? character;
   return folded
     .normalize("NFKC")
+    .replace(LIBRARY_AD_INVISIBLE, invisible === "removed" ? "" : " ")
+    .replace(OTHER_FULL_STOPS, ".")
     .replace(CURLY_APOSTROPHES, "'")
     .replace(WHITESPACE_RUN, " ")
     .trim();
+}
+
+/**
+ * Both readings of a text: invisible characters taken out, then made spaces. One reading when the
+ * two agree, which is whenever the text holds no invisible character.
+ */
+export function libraryAdReadings(text: string): readonly string[] {
+  const removed = normaliseLibraryAdText(text, "removed");
+  const spaced = normaliseLibraryAdText(text, "spaced");
+  return removed === spaced ? [removed] : [removed, spaced];
 }
 
 /**
@@ -133,12 +284,15 @@ export function libraryAdJoinedRuns(normalised: string): readonly string[] {
 }
 
 /**
- * The normalised text with each run of two or more single letters separated by dots or spaces
- * joined into one word (D5's private-details rule: "S.S.N." and "s s n" read "ssn").
+ * The normalised text with each run of two or more single letters joined into one word, whatever
+ * separates them: spaces, dots, hyphens, slashes, or other punctuation (D5's private-details and
+ * co-brand rules: "S.S.N.", "s s n", "S-S-N", and "S/S/N" read "ssn", and "R E A L T O R" reads
+ * "realtor").
  */
 export function joinSpacedLetters(normalised: string): string {
-  return normalised.replace(/(?<![\p{L}\p{N}])\p{L}(?:[.\s]+\p{L}(?![\p{L}\p{N}]))+\.?/gu, (run) =>
-    run.replace(/[.\s]+/gu, ""),
+  return normalised.replace(
+    /(?<![\p{L}\p{N}])\p{L}(?:[\s\p{P}|]+\p{L}(?![\p{L}\p{N}]))+\.?/gu,
+    (run) => run.replace(/[\s\p{P}|]+/gu, ""),
   );
 }
 

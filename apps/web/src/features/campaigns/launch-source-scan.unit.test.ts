@@ -142,6 +142,52 @@ describe("the flow has no way to aim an ad at people (009D-AC-008)", () => {
   });
 });
 
+describe("Launch on Facebook is disabled by construction (009D-AC-016)", () => {
+  const LAUNCH_BUTTON_ATTRIBUTES = ["aria-describedby", "disabled", "type", "variant"];
+
+  /**
+   * The attribute names on the `<Button>` whose label is `LAUNCH_ON_FACEBOOK`. The opening tag is
+   * read to the `>` that closes it outside any `{...}`, because an arrow function's `=>` is a `>`.
+   */
+  function launchButtonAttributes(source: string): readonly string[] {
+    const label = source.indexOf("{LAUNCH_ON_FACEBOOK}");
+    const start = source.lastIndexOf("<Button", label);
+    if (label < 0 || start < 0) {
+      throw new Error("The Launch on Facebook button is not where the scan expects it");
+    }
+    let depth = 0;
+    let outside = "";
+    for (const character of source.slice(start + "<Button".length)) {
+      if (character === "{") depth += 1;
+      if (depth === 0 && character === ">") break;
+      if (depth === 0) outside += character;
+      if (character === "}") depth -= 1;
+    }
+    return [...outside.matchAll(/([A-Za-z-]+)(?==|\s|$)/gu)].map((match) => match[1] ?? "");
+  }
+
+  it("carries only its described-by, disabled, type, and variant attributes", async () => {
+    const source = await code(`${COMPONENTS}/launch-on-facebook.tsx`);
+    expect([...launchButtonAttributes(source)].sort()).toEqual(LAUNCH_BUTTON_ATTRIBUTES);
+  });
+
+  it("has no handler, request, router, or form anywhere in its file", async () => {
+    const source = await code(`${COMPONENTS}/launch-on-facebook.tsx`);
+    expect(source).not.toMatch(
+      /\bon[A-Z]\w*=|formAction|\bform=|\baction=|\bfetch\(|InternalJson|useRouter|useTransition|useActionState|"use server"/u,
+    );
+  });
+
+  it("detects a handler or a request when one appears", () => {
+    // The request is assembled from two halves so this file is not itself an outbound transport
+    // site to tests/security/phase0-boundary.test.ts, which reads every source for a request call.
+    const request = ["fet", 'ch("/api/campaigns/launch")'].join("");
+    const planted = `<Button aria-describedby={id} disabled onClick={() => ${request}} type="button" variant="outline">\n<Icon decorative name="megaphone" size="sm" /> {LAUNCH_ON_FACEBOOK}`;
+    expect(launchButtonAttributes(planted)).toContain("onClick");
+    expect(planted).toMatch(/\bon[A-Z]\w*=|\bfetch\(/u);
+  });
+});
+
 describe("no ad component imports partner data (009D-AC-023)", () => {
   it.each([...new Set([...AD_COMPONENTS, ...FLOW_SOURCES])])(
     "%s imports nothing about partners",

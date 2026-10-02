@@ -423,8 +423,14 @@ describe.each(HOSTS)("what the approval control says %s in each state", (where, 
       [PERMISSION, NEEDS_CHANGES],
     ],
   ] as const;
-  // Step 3 draws a decided version as D8's card, not as this control (`launch-review` tests).
-  it.each(where === STEP_THREE ? rows.filter(([, props]) => !("alreadyDecided" in props)) : rows)(
+  // Step 3 draws a decided version as D8's card, not as this control, and a viewer who cannot
+  // approve a version waiting for a decision gets D8's hand-off card alone (`launch-review` tests).
+  const stepThreeRows = rows.filter(
+    ([, props]) =>
+      !("alreadyDecided" in props) &&
+      !(props.canApprove === false && !("blocking" in props && props.blocking)),
+  );
+  it.each(where === STEP_THREE ? stepThreeRows : rows)(
     "says the right reason to %s",
     (_who, props, present, absent) => {
       render(mount(props));

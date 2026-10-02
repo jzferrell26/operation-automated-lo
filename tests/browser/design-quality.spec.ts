@@ -560,34 +560,47 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
     });
     await expectThemeResolved(page, theme);
     await expect(verdictOnStepThree(page)).toContainText("Needs changes");
-    // PRD-009d: the findings with their notes are on the campaign's own page.
+    /**
+     * PRD-009e direction section 6.5: the campaign page's needs-changes state has no heading of its
+     * own. It is the "Needs changes" chip, the plain fix in a "What to fix" region, and "Make a new
+     * version" (lane 009e's ruling of 2026-10-02).
+     */
     await page.goto(`/marketing/campaigns/${ref}`);
-    await expect(page.getByRole("heading", { name: "Needs changes" })).toBeVisible();
+    const main = page.getByRole("main");
+    await expect(main.locator("[data-campaign-standing='preflight_failed']")).toHaveText(
+      "Needs changes",
+    );
+    await expect(page.getByRole("region", { name: "What to fix" })).toContainText(
+      "Ads can't state rate claims.",
+    );
+    await expect(main.getByRole("link", { name: "Make a new version" })).toBeVisible();
 
     /**
-     * Rubric axis 2. PRD-008d, the second redraw of 2026-10-01, finding R-18: a finding's note
-     * ("Fix this before approving") ran inline and touched the support details under it. It keeps
-     * `--space-3` between itself and what follows, at every frame.
+     * Rubric axis 2. PRD-008d, the second redraw of 2026-10-01, finding R-18: a finding's note ran
+     * into what followed it. The page's findings are now the "What to fix" list, so the rule is held
+     * there: each fix keeps `--space-3` between itself and the next, at every frame. The fixture's
+     * headline trips two rules, so there is a pair to measure.
      */
     for (const frame of REVIEW_FRAMES) {
       await page.setViewportSize({ width: frame.width, height: frame.height });
       await settleForScreenshot(page);
-      const tight = await page.locator("main [class*='__findings'] article").evaluateAll((cards) =>
-        cards.flatMap((card) => {
-          const note = card.querySelector(":scope > small");
-          const next = note?.nextElementSibling;
-          if (note === null || note === undefined || next === null || next === undefined) return [];
+      const fixes = page.locator("[data-fixes] li");
+      expect(await fixes.count(), "the fixes to measure").toBeGreaterThan(1);
+      const tight = await fixes.evaluateAll((items) =>
+        items.flatMap((item) => {
+          const next = item.nextElementSibling;
+          if (next === null) return [];
           const probe = document.createElement("span");
           probe.style.display = "none";
           probe.style.width = "var(--space-3)";
-          card.append(probe);
+          item.append(probe);
           const space3 = Number.parseFloat(getComputedStyle(probe).width);
           probe.remove();
-          const between = next.getBoundingClientRect().top - note.getBoundingClientRect().bottom;
+          const between = next.getBoundingClientRect().top - item.getBoundingClientRect().bottom;
           return between < space3 - 0.5 ? [`${String(Math.round(between))}px`] : [];
         }),
       );
-      expect(tight, `at ${frame.name} a finding's note touches what follows it`).toEqual([]);
+      expect(tight, `at ${frame.name} a fix runs into the next one`).toEqual([]);
     }
     await page.setViewportSize({ width: 1440, height: 900 });
 

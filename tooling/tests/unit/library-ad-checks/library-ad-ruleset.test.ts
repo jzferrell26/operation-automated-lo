@@ -70,6 +70,7 @@ function cleanManifest() {
       title: "Loan officer",
       company: "Prairie Home Lending",
       nmls: "0000000",
+      companyNmls: "",
     },
     schedule: { startsAt: null, endsAt: "2026-10-16T23:59:59.000Z" },
     meta: {
@@ -193,6 +194,41 @@ describe("the library-ad ruleset (009D-AC-010)", () => {
       ["NMLS_NUMBER_REQUIRED", "Add your NMLS number in Brand."],
       ["EQUAL_HOUSING_REQUIRED", "Add the Equal Housing line to your disclosure in Brand."],
     ]);
+  });
+
+  it("refuses an NMLS number that is not 4 to 12 digits, for the person and the company (verifier, 2026-10-02)", () => {
+    const manifest = cleanManifest();
+    const short = evaluateCampaignPreflight(
+      { ...manifest, advertiser: { ...manifest.advertiser, nmls: "123" } },
+      rules(),
+    );
+    expect(short).toContainEqual(
+      expect.objectContaining({
+        ruleCode: "NMLS_NUMBER_REQUIRED",
+        affected: "advertiser.nmls",
+        remediation: "Correct your NMLS number in Brand. It has 4 to 12 digits.",
+      }),
+    );
+    const company = evaluateCampaignPreflight(
+      { ...manifest, advertiser: { ...manifest.advertiser, companyNmls: "12" } },
+      rules(),
+    );
+    expect(company).toContainEqual(
+      expect.objectContaining({
+        ruleCode: "NMLS_NUMBER_REQUIRED",
+        affected: "advertiser.companyNmls",
+        remediation: "Correct your company's NMLS number in Brand. It has 4 to 12 digits.",
+      }),
+    );
+    for (const nmls of ["1234", "123456789012"]) {
+      expect(
+        evaluateCampaignPreflight(
+          { ...manifest, advertiser: { ...manifest.advertiser, nmls, companyNmls: "" } },
+          rules(),
+        ).map((finding) => finding.ruleCode),
+        nmls,
+      ).not.toContain("NMLS_NUMBER_REQUIRED");
+    }
   });
 
   it("refuses an end date that is not after today", () => {

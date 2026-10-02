@@ -51,7 +51,13 @@ interface SavedBody {
   readonly reviewHref: string;
   readonly persistenceKind: string;
   readonly providerPublicationAuthorized: boolean;
-  readonly findings: readonly { ruleCode: string; remediation: string }[];
+  readonly findings: readonly {
+    ruleCode: string;
+    severity: string;
+    description: string;
+    affected: string;
+    remediation: string;
+  }[];
 }
 
 describe("Save and check (009D-AC-011)", () => {
@@ -270,6 +276,52 @@ describe("the brand comes from saved Brand, never from the request (009D-AC-024)
         ruleCode: "WORDS_RATE_PAYMENT_OR_TERM_CLAIM",
         remediation: "Take 'low rates' out of the headline. Ads can't state rate claims.",
       }),
+    );
+  });
+});
+
+describe("each finding names the field it is about (009D-AC-010, 019)", () => {
+  it.each([
+    ["WORDS_TOO_LONG", { headline: "h".repeat(61) }, "content.headline"],
+    ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM", { headline: "Ask about low rates" }, "content.headline"],
+    ["WORDS_PRIVATE_INFO_REQUEST", { primaryText: "Send me your SSN." }, "content.body"],
+    ["WORDS_CO_BRAND", { primaryText: "Ask my Realtor about it." }, "content.body"],
+  ])("answers %s with the field it found it in", async (code, change, affected) => {
+    await store.enter();
+    const response = await save({ ...LIBRARY_AD_SAVE_INPUT, ...change });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as SavedBody;
+    expect(body.state).toBe("preflight_failed");
+    expect(body.findings).toContainEqual(expect.objectContaining({ ruleCode: code, affected }));
+  });
+
+  it("answers every finding with its rule, severity, description, field, and fix, and nothing else", async () => {
+    await store.enter();
+    const response = await save({
+      ...LIBRARY_AD_SAVE_INPUT,
+      headline: "h".repeat(61),
+      primaryText: "Send me your SSN.",
+    });
+    const body = (await response.json()) as SavedBody;
+    expect(body.findings.length).toBeGreaterThan(1);
+    for (const finding of body.findings) {
+      expect(Object.keys(finding).sort()).toEqual([
+        "affected",
+        "description",
+        "remediation",
+        "ruleCode",
+        "severity",
+      ]);
+    }
+    const stored = await loadLocalCampaign(body.campaignRef, environment());
+    expect(body.findings).toEqual(
+      stored?.preflight.findings.map((finding) => ({
+        ruleCode: finding.ruleCode,
+        severity: finding.severity,
+        description: finding.description,
+        affected: finding.affected,
+        remediation: finding.remediation,
+      })),
     );
   });
 });

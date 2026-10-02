@@ -70,8 +70,31 @@ export const LIBRARY_AD_PLACE_LIMITS = Object.freeze({ states: 5, cities: 10 });
 
 const CITY = /^[A-Za-z][A-Za-z .'-]{1,59}, ([A-Z]{2})$/u;
 
-/** Whole words (delimited by non-letters) that aim at people rather than places. */
-const PEOPLE_WORDS = /(?<!\p{L})(?:zip|radius|miles?|within|age|male|female|men|women)(?!\p{L})/iu;
+/**
+ * Whole words (delimited by non-letters) that aim at people or a distance rather than a place: the
+ * same list as `AD_PLACE_AUDIENCE_WORDS` in `@oalo/contracts`, held equal by a unit test.
+ */
+export const LIBRARY_AD_PLACE_AUDIENCE_WORDS: readonly string[] = Object.freeze(
+  [
+    // Distance and postal codes: places are cities and states, never a radius or a ZIP code.
+    "zip zips zipcode zipcodes postal radius within mile miles mi km kms kilometer kilometers kilometre kilometres",
+    // Age.
+    "age ages aged senior seniors elderly retiree retirees retired teen teens teenager teenagers youth adult adults millennial millennials boomer boomers kids children student students",
+    // Gender.
+    "male males female females men women woman ladies gentlemen girls boys mom moms mothers dad dads fathers gay lesbian lgbt lgbtq transgender nonbinary",
+    // Family.
+    "single singles married divorced widowed widow widows widower widowers parent parents family families couple couples newlyweds pregnant",
+    // Status, and the protected classes Meta's Housing category forbids aiming at.
+    "income wealthy affluent poor unemployed disabled disability veteran veterans military immigrant immigrants renters homeowners hispanic latino latinos latina latinas asian asians christian christians muslim muslims jewish catholic catholics",
+  ]
+    .join(" ")
+    .split(" "),
+);
+
+const PEOPLE_WORDS = new RegExp(
+  `(?<!\\p{L})(?:${LIBRARY_AD_PLACE_AUDIENCE_WORDS.join("|")})(?!\\p{L})`,
+  "iu",
+);
 
 /** Why a stored state or city falls outside D4, or `undefined` when it does not. */
 function placeProblem(kind: "state" | "city", value: string): string | undefined {

@@ -161,18 +161,36 @@ function approveRequest(body: unknown, headers: HeadersInit = {}): Request {
 async function persistDraft(
   ports: CampaignCommandPorts = createDefaultCampaignCommandPorts(),
   headers: HeadersInit = {},
+  body: Readonly<Record<string, unknown>> = LIBRARY_AD_SAVE_INPUT,
 ) {
   const response = await handleCampaignPreflight(
     new Request("https://app.operation-automated-lo.test/api/campaigns/preflight", {
       method: "POST",
       headers: { "content-type": "application/json", ...headers },
-      body: JSON.stringify(LIBRARY_AD_SAVE_INPUT),
+      body: JSON.stringify(body),
     }),
     storeWithSamples(),
     ports,
   );
   expect(response.status).toBe(200);
-  return persistedDraftFromPreflightBody(await response.json());
+  const saved: unknown = await response.json();
+  return {
+    ...persistedDraftFromPreflightBody(saved),
+    state: (saved as { state: string }).state,
+    versionNo: (saved as { versionNo: number }).versionNo,
+  };
+}
+
+/** The approval a browser sends for one saved version, with the row version it last read. */
+function approvalFor(draft: Awaited<ReturnType<typeof persistDraft>>, expectedRowVersion: number) {
+  return {
+    campaignRef: draft.campaignRef,
+    decision: "approved" as const,
+    expectedCampaignVersionRef: draft.campaignVersionRef,
+    expectedManifestHash: draft.manifestHash,
+    expectedPreflightResultHash: draft.resultHash,
+    expectedRowVersion,
+  };
 }
 
 describe("campaign approval handler", () => {
@@ -403,4 +421,76 @@ describe("campaign approval handler, library-ad versions", () => {
       expect(stored?.rowVersion).toBe(1);
     },
   );
+});
+
+/**
+ * PRD-009d 009D-AC-020. The Postgres suite proves this against the database; this proves the same
+ * path offline, through the same two route handlers, against the filesystem store.
+ */
+describe("approving after a new version (009D-AC-020)", () => {
+  it("drops the earlier approval when version 2 is saved, refuses the old approval, and approves version 2", async () => {
+    await store.enter();
+    const session = sessionFixture();
+    const first = await persistDraft(session.ports, session.creatorHeaders);
+    expect(first.state).toBe("awaiting_approval");
+    const approvedFirst = await handleCampaignApproval(
+      approveRequest(approvalFor(first, 1), session.approverHeaders),
+      storeWithSamples(),
+      session.ports,
+    );
+    expect(approvedFirst.status).toBe(200);
+
+    const second = await persistDraft(session.ports, session.creatorHeaders, {
+      ...LIBRARY_AD_SAVE_INPUT,
+      campaignRef: first.campaignRef,
+      headline: "Ready for your first home? Start here.",
+    });
+    expect(second.campaignRef).toBe(first.campaignRef);
+    expect(second.versionNo).toBe(2);
+    expect(second.state).toBe("awaiting_approval");
+    const afterSave = await loadLocalCampaign(first.campaignRef, storeWithSamples());
+    expect(afterSave?.approval).toBeUndefined();
+    expect(afterSave?.version.campaignVersionRef).toBe(second.campaignVersionRef);
+    const rowVersion = afterSave?.rowVersion ?? 0;
+
+    // The approval of version 1 does not carry over, and replaying it does not approve version 2.
+    const replayed = await handleCampaignApproval(
+      approveRequest(approvalFor(first, rowVersion), session.approverHeaders),
+      storeWithSamples(),
+      session.ports,
+    );
+    expect(replayed.status).toBe(409);
+    await expect(replayed.json()).resolves.toEqual({ error: "CAMPAIGN_APPROVAL_CONFLICT" });
+
+    const approvedSecond = await handleCampaignApproval(
+      approveRequest(approvalFor(second, rowVersion), session.approverHeaders),
+      storeWithSamples(),
+      session.ports,
+    );
+    expect(approvedSecond.status).toBe(200);
+    await expect(approvedSecond.json()).resolves.toMatchObject({
+      decision: "approved",
+      duplicate: false,
+      state: "approved",
+    });
+    const afterApproval = await loadLocalCampaign(first.campaignRef, storeWithSamples());
+    expect(afterApproval?.approval?.campaignVersionRef).toBe(second.campaignVersionRef);
+  });
+
+  it("refuses with 409 a version whose checks sent it back, which is what a blank NMLS number causes", async () => {
+    await store.enter();
+    const session = sessionFixture();
+    const sentBack = await persistDraft(session.ports, session.creatorHeaders, {
+      ...LIBRARY_AD_SAVE_INPUT,
+      headline: "Ask about low rates",
+    });
+    expect(sentBack.state).toBe("preflight_failed");
+    const refused = await handleCampaignApproval(
+      approveRequest(approvalFor(sentBack, 1), session.approverHeaders),
+      storeWithSamples(),
+      session.ports,
+    );
+    expect(refused.status).toBe(409);
+    await expect(refused.json()).resolves.toEqual({ error: "CAMPAIGN_APPROVAL_NOT_READY" });
+  });
 });

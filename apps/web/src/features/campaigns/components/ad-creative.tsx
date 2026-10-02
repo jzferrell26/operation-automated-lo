@@ -44,6 +44,7 @@ export function AdCreative({ art, alt, shape, advertiser, sample }: AdCreativePr
     <div
       className={styles.creative}
       data-ad-creative=""
+      data-ad-preview=""
       data-shape={shape}
       style={adColorVariables(advertiser.colorPresetId)}
     >

@@ -9,6 +9,7 @@ import {
 } from "../../../copy/launch-messages.js";
 import { launchSentenceFor, type LaunchState } from "../launch-model.js";
 import styles from "./launch.module.css";
+import { TextWithDays } from "./text-with-days.js";
 
 /**
  * PRD-009d D7, 009D-AC-016 and 009D-AC-017. "Launch on Facebook", a button of its own, separate
@@ -19,14 +20,19 @@ import styles from "./launch.module.css";
  * from D7's function is tied to it through `aria-describedby`; the Meta sentence links to the
  * connections page, where connecting Meta is explained.
  */
-export function LaunchOnFacebook({ state }: Readonly<{ state: LaunchState }>) {
+export function LaunchOnFacebook({
+  state,
+  retiredDateTime,
+}: Readonly<{ state: LaunchState; retiredDateTime?: string | undefined }>) {
   const sentenceId = useId();
   const sentence = launchSentenceFor(state);
   return (
     <Card className={styles.launchCard} data-launch-card="" padding="md">
       <h2 className={styles.cardTitle}>{LAUNCH_TITLE}</h2>
       <Button aria-describedby={sentenceId} disabled type="button" variant="outline">
-        <Icon decorative name="megaphone" size="sm" /> {LAUNCH_ON_FACEBOOK}
+        <span className={styles.withIcon}>
+          <Icon decorative name="megaphone" size="sm" /> {LAUNCH_ON_FACEBOOK}
+        </span>
       </Button>
       <p className={styles.note} id={sentenceId}>
         {sentence.kind === "meta-not-connected" ? (
@@ -36,7 +42,14 @@ export function LaunchOnFacebook({ state }: Readonly<{ state: LaunchState }>) {
             {LAUNCH_SENTENCES.metaNotConnected.after}
           </>
         ) : sentence.kind === "retired" ? (
-          launchRetiredSentence(sentence.retiredOn)
+          <TextWithDays
+            days={
+              retiredDateTime === undefined
+                ? []
+                : [{ dateTime: retiredDateTime.slice(0, 10), text: sentence.retiredOn }]
+            }
+            text={launchRetiredSentence(sentence.retiredOn)}
+          />
         ) : sentence.kind === "not-approved" ? (
           LAUNCH_SENTENCES.notApproved
         ) : (

@@ -68,6 +68,7 @@ export {
 } from "./library-ad-words.js";
 export { normaliseLibraryAdText } from "./library-ad-text.js";
 export {
+  LIBRARY_AD_PLACE_AUDIENCE_WORDS,
   LIBRARY_AD_PLACE_LIMITS,
   US_STATE_CODES,
   libraryAdPlacesProblem,

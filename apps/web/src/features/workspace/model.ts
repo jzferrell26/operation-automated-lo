@@ -75,9 +75,19 @@ export const WorkspacePreferencesSchema = z
   .strict();
 export type WorkspacePreferences = z.infer<typeof WorkspacePreferencesSchema>;
 const RevisionSchema = z.uuid().nullable();
+/**
+ * The brand as the Brand page saves it. A saved brand is read with the report contract as it is, so
+ * a value saved before this rule still loads; a new save carries each NMLS number as 4 to 12 digits,
+ * or none (verifier, 2026-10-02).
+ */
+const NMLS_ON_SAVE = z.string().regex(/^(?:\d{4,12})?$/u);
+export const BrandSaveSchema = HomeBrandSchema.extend({
+  nmls: NMLS_ON_SAVE,
+  companyNmls: NMLS_ON_SAVE,
+}).strict();
 export const WorkspacePreferenceCommandSchema = z.union([
   z
-    .object({ key: z.literal("brand"), expectedRevision: RevisionSchema, value: HomeBrandSchema })
+    .object({ key: z.literal("brand"), expectedRevision: RevisionSchema, value: BrandSaveSchema })
     .strict(),
   z
     .object({ key: z.literal("ad_brand"), expectedRevision: RevisionSchema, value: AdBrandSchema })

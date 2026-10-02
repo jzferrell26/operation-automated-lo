@@ -74,3 +74,31 @@ describe("authenticated workspace contracts", () => {
     ).toBe(false);
   });
 });
+
+describe("the Brand NMLS numbers (verifier, 2026-10-02)", () => {
+  const brand = {
+    name: "Casey Rivera",
+    company: "Evergreen Example Lending",
+    email: "",
+    phone: "",
+    nmls: "123456",
+    companyNmls: "",
+    tagline: "",
+  };
+  const command = (value: typeof brand) =>
+    WorkspacePreferenceCommandSchema.safeParse({ key: "brand", expectedRevision: null, value });
+
+  it("saves an NMLS number of 4 to 12 digits, or none", () => {
+    for (const nmls of ["", "1234", "123456789012"]) {
+      expect(command({ ...brand, nmls }).success, nmls).toBe(true);
+      expect(command({ ...brand, companyNmls: nmls }).success, nmls).toBe(true);
+    }
+  });
+
+  it("refuses one of 1 to 3 digits for the person or the company", () => {
+    for (const nmls of ["1", "12", "123"]) {
+      expect(command({ ...brand, nmls }).success, nmls).toBe(false);
+      expect(command({ ...brand, companyNmls: nmls }).success, nmls).toBe(false);
+    }
+  });
+});

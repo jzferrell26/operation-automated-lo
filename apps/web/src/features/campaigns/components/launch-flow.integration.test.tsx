@@ -148,7 +148,10 @@ describe("step 1, Choose an ad (009D-AC-002)", () => {
       .getAllByRole("article")
       .map((card) => card.getAttribute("aria-labelledby"));
     expect(titles).toEqual(["ad-card-sample-first-home", "ad-card-sample-first-home-checklist"]);
-    expect(screen.getByText("Version 1. Reviewed Sep 28, 2026.")).toBeInTheDocument();
+    const [first] = screen.getAllByRole("article");
+    expect(first).toHaveTextContent("Version 1. Reviewed Sep 28, 2026.");
+    // The day is a time element, so it draws in tabular figures like every date in the product.
+    expect(within(first as HTMLElement).getByText("Sep 28, 2026").tagName).toBe("TIME");
   });
 
   it.each([

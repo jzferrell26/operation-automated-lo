@@ -1,9 +1,11 @@
 import {
+  LIBRARY_AD_INVISIBLE,
   isOrdinalToken,
   joinSpacedLetters,
   lettersAndDigitsOnly,
   libraryAdClosedUpText,
   libraryAdJoinedRuns,
+  libraryAdReadings,
   libraryAdTokens,
   libraryAdWordText,
   normaliseLibraryAdText,
@@ -72,9 +74,16 @@ export interface LibraryAdWordFinding {
 const NUMBER_WORDS =
   "zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million";
 const NUMBER_WORD_UNIT = new RegExp(
-  `\\b(?:${NUMBER_WORDS}) (?:percent|percentage|pct|years?|yrs?|months?|mos?|monthly|payments?|points?)\\b`,
+  `\\b(?:${NUMBER_WORDS}) (?:percent|per cent|percentage|pct|years?|yrs?|months?|mos?|monthly|payments?|points?)\\b`,
   "u",
 );
+/** Fractions written as words: "half a percent", "three quarters of a point". */
+const FRACTION_WORDS =
+  "half|halves|quarter|quarters|third|thirds|fourth|fourths|fifth|fifths|eighth|eighths|tenth|tenths|hundredth|hundredths";
+/** A quantity written in words: at least one number or fraction word, with "a", "and", "of" between. */
+const QUANTITY_IN_WORDS = `(?:(?:a|an|and|of) )*(?:${NUMBER_WORDS}|${FRACTION_WORDS})(?: (?:and|a|an|of|${NUMBER_WORDS}|${FRACTION_WORDS}))*`;
+/** What can stand between "fixed" and the length of time it is fixed for. */
+const FIXED_SPAN = `(?: rate)?(?: (?:for|over|through|until|till))?(?: (?:a|an|the|full|whole|next|entire|first|several|many|\\d+|${NUMBER_WORDS}))*`;
 
 type ClaimKind = "rate" | "payment" | "term";
 
@@ -90,6 +99,21 @@ const CLAIM_PATTERNS: readonly Readonly<{ kind: ClaimKind; pattern: RegExp }>[] 
   { kind: "rate", pattern: /\bapr\b/u },
   { kind: "rate", pattern: /\bannual percentage\b/u },
   { kind: "rate", pattern: /\b(?:interest only|no interest)\b/u },
+  {
+    kind: "rate",
+    pattern:
+      /\b(?:low|lower|lowest|great|better|best|record low|reduced|cheap|cheaper|cheapest|competitive|attractive|minimal|small|tiny|zero|discounted) interest\b/u,
+  },
+  { kind: "rate", pattern: /\binterest free\b/u },
+  { kind: "rate", pattern: /\b(?:per cents?|percent|pct)\b/u },
+  { kind: "rate", pattern: /\b(?:basis points?|bps)\b/u },
+  {
+    kind: "rate",
+    pattern: new RegExp(
+      `\\b${QUANTITY_IN_WORDS} (?:percent|per cent|percentage|pct|points?|basis points?)\\b`,
+      "u",
+    ),
+  },
   { kind: "rate", pattern: /\d+ (?:\d+ )?%/u },
   {
     kind: "rate",
@@ -106,6 +130,15 @@ const CLAIM_PATTERNS: readonly Readonly<{ kind: ClaimKind; pattern: RegExp }>[] 
     pattern: /\b(?:low|lower|lowest|small|affordable|reduced) (?:monthly )?payments?\b/u,
   },
   { kind: "payment", pattern: /\bpayments? (?:as low as|of|from|under|starting)\b/u },
+  {
+    kind: "payment",
+    pattern: /\b(?:dollars?|bucks|usd)(?: (?:a|per|each|every))? (?:month|mo|week|year)\b/u,
+  },
+  { kind: "payment", pattern: new RegExp(`\\b(?:${NUMBER_WORDS}) (?:dollars?|bucks)\\b`, "u") },
+  {
+    kind: "payment",
+    pattern: new RegExp(`\\b(?:${NUMBER_WORDS}) (?:a|per|each|every) (?:month|mo|week)\\b`, "u"),
+  },
   { kind: "payment", pattern: /\b\d+ (?:\d+ )?(?:a|per|each|every)? ?(?:month|mo|week)\b/u },
   { kind: "payment", pattern: /\b(?:zero|no|nothing|\d+) (?:money )?down\b/u },
   { kind: "payment", pattern: /\bdown payment of\b/u },
@@ -118,6 +151,11 @@ const CLAIM_PATTERNS: readonly Readonly<{ kind: ClaimKind; pattern: RegExp }>[] 
     pattern: new RegExp(`\\b(?:${NUMBER_WORDS}) (?:years?|yrs?|months?|mos?)\\b`, "u"),
   },
   { kind: "term", pattern: /\b(?:year|yr) fixed\b/u },
+  {
+    kind: "term",
+    pattern: new RegExp(`\\bfixed${FIXED_SPAN} (?:decades?|years?|yrs?|months?)\\b`, "u"),
+  },
+  { kind: "term", pattern: /\bdecades? (?:fixed|loans?|mortgages?|term)\b/u },
   { kind: "term", pattern: /\b\d+ \d+ arm\b/u },
   { kind: "term", pattern: /\badjustable\b/u },
 ];
@@ -146,7 +184,19 @@ const RUN_SIGNATURES: readonly Readonly<{ kind: ClaimKind; pattern: RegExp }>[] 
  * caught").
  */
 export function findRatePaymentOrTermClaim(text: string): string | undefined {
-  return findClaim(normaliseLibraryAdText(text))?.term;
+  return firstInReadings(libraryAdReadings(text), findClaim)?.term;
+}
+
+/** The first answer `find` gives on any reading of a text, in reading order. */
+function firstInReadings<T>(
+  readings: readonly string[],
+  find: (normalised: string) => T | undefined,
+): T | undefined {
+  for (const reading of readings) {
+    const found = find(reading);
+    if (found !== undefined) return found;
+  }
+  return undefined;
 }
 
 /**
@@ -197,16 +247,29 @@ const INVALID_CHARACTER = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}\p{Co}\p{Cs}<>]/u;
 
 function hasInvalidCharacter(field: LibraryAdTextField, text: string): boolean {
   const checked = field === "primaryText" ? text.replaceAll("\n", " ") : text;
-  return INVALID_CHARACTER.test(checked) || INVALID_CHARACTER.test(checked.normalize("NFKC"));
+  // The blank fillers too (Hangul, Braille, Khmer), which Unicode counts as letters or symbols.
+  const invisible = new RegExp(LIBRARY_AD_INVISIBLE.source, "u");
+  return [checked, checked.normalize("NFKC")].some(
+    (form) => INVALID_CHARACTER.test(form) || invisible.test(form),
+  );
 }
 
 /**
- * A license reference (D5): 4 to 12 digits, which single spaces or hyphens may separate, directly
- * after "nmls", "nmls id", "license", "lic", or "lic.", each optionally followed by "#" or ":". A
- * bare "#" is not a keyword.
+ * A license reference (D5): 4 to 12 digits directly after "nmls", "nmls id", "license", "lic", or
+ * "lic.", each optionally followed by "#" or ":". A bare "#" is not a keyword. The digits run
+ * together, or form the one hyphenated shape the PRD names for a state license ("Lic. 12-3456"):
+ * two groups joined by one hyphen that are not a phone number's "555-1212". Digits spaced into
+ * groups, dotted, or hyphenated into a phone number ("NMLS 800-555-1212") are not a license
+ * reference, so they are a number like any other.
  */
 const LICENSE_REFERENCE =
-  /(?<![\p{L}\p{N}])(?:nmls(?: id)?|license|lic\.?) ?[#:]? ?(\p{N}(?:[ -]?\p{N})*)(?![\p{N}])/gu;
+  /(?<![\p{L}\p{N}])(?:nmls(?: id)?|license|lic\.?) ?[#:]? ?(\p{N}+(?:-\p{N}+)?)(?![ .-]?\p{N})/gu;
+
+/** The digits of a license reference, when they are 4 to 12 and not shaped like a phone number. */
+function isLicenseDigits(digits: string): boolean {
+  const count = [...digits.matchAll(/\p{N}/gu)].length;
+  return count >= 4 && count <= 12 && !/^\p{N}{3}-\p{N}{4}$/u.test(digits);
+}
 
 const TERM_WORDS: ReadonlySet<string> = new Set([
   "year",
@@ -243,8 +306,7 @@ function hasUnlicensedDigit(normalised: string, allowOrdinals: boolean): boolean
     });
   for (const match of normalised.matchAll(LICENSE_REFERENCE)) {
     const digits = match[1] ?? "";
-    const count = [...digits.matchAll(/\p{N}/gu)].length;
-    if (count < 4 || count > 12) continue;
+    if (!isLicenseDigits(digits)) continue;
     const start = match.index + match[0].length - digits.length;
     const end = match.index + match[0].length;
     const inside = tokens
@@ -316,10 +378,9 @@ const PHONE_NUMBER =
   /(?<!\p{N})(?:\+?1[\s.-]?)?(?:\(\d{3}\)|\d{3})[\s.-]?\d{3}[\s.-]?\d{4}(?!\p{N})|(?<![\p{N}-])\d{3}[\s.-]\d{4}(?!\p{N})/gu;
 
 function phoneTerm(normalised: string): string | undefined {
-  const licenses = [...normalised.matchAll(LICENSE_REFERENCE)].map((match) => [
-    match.index,
-    match.index + match[0].length,
-  ]);
+  const licenses = [...normalised.matchAll(LICENSE_REFERENCE)]
+    .filter((match) => isLicenseDigits(match[1] ?? ""))
+    .map((match) => [match.index, match.index + match[0].length]);
   for (const match of normalised.matchAll(PHONE_NUMBER)) {
     const start = match.index;
     const end = start + match[0].length;
@@ -330,17 +391,29 @@ function phoneTerm(normalised: string): string | undefined {
   return undefined;
 }
 
+/** Co-brand words as substrings of a run of single characters closed up ("r e a l t o r"). */
+const CO_BRAND_RUN = /realtors?|brokerages?|brokers?|listedby|courtesyof|presentedby|sponsoredby/u;
+
 function coBrandTerm(
   field: LibraryAdTextField,
   normalised: string,
-  partners: readonly Readonly<{ saved: string; compared: string }>[],
+  partners: readonly SavedPartner[],
+  own: ReadonlySet<string>,
 ): string | undefined {
-  const words = libraryAdWordText(normalised);
-  for (const term of CO_BRAND_TERMS) {
-    const match = term.exec(words);
+  for (const words of [
+    libraryAdWordText(normalised),
+    libraryAdWordText(joinSpacedLetters(normalised)),
+  ]) {
+    for (const term of CO_BRAND_TERMS) {
+      const match = term.exec(words);
+      if (match !== null) return match[0];
+    }
+  }
+  for (const run of libraryAdJoinedRuns(normalised)) {
+    const match = CO_BRAND_RUN.exec(run);
     if (match !== null) return match[0];
   }
-  const broker = brokerTerm(normalised);
+  const broker = brokerTerm(normalised) ?? brokerTerm(joinSpacedLetters(normalised));
   if (broker !== undefined) return broker;
   if (normalised.includes("®")) return "the registered mark";
   if (normalised.includes("@")) return "the at sign";
@@ -348,8 +421,115 @@ function coBrandTerm(
   if (address !== undefined) return address;
   const phone = phoneTerm(normalised);
   if (phone !== undefined) return phone;
+  return partnerTerm(normalised, partners, own);
+}
+
+/**
+ * PRD-009d D5, compliance control 9. A saved Realtor partner, as the checks compare it:
+ *
+ * - the whole saved name, letters and digits only, anywhere in the text ("PRIYA  NADEEM");
+ * - for a brokerage (a name ending in a corporate word such as Realty, Inc, or LLC), the name
+ *   without that ending, as whole words ("Keller Williams Realty" refuses "Keller Williams");
+ * - for a person, each given and family name of three letters or more, as a whole word ("Priya",
+ *   "Nadeem").
+ *
+ * A word on `PARTNER_WORDS_NOT_COMPARED` is never compared alone (a partner named "Home" would
+ * otherwise refuse every ad), and neither is a word the person's own Brand name or company carries
+ * (a loan officer named Alex with a partner named Alex is still allowed to say their own name).
+ */
+interface SavedPartner {
+  readonly saved: string;
+  readonly compared: string;
+  readonly phrases: readonly Readonly<{ shown: string; pattern: RegExp }>[];
+}
+
+const CORPORATE_ENDING =
+  /(?: (?:realty|realtors?|real estate|properties|property|group|team|brokerage|brokers?|associates|partners|holdings|company|co|corp|corporation|inc|incorporated|llc|l l c|ltd|limited|pllc|lp|llp|plc))+$/u;
+
+const PARTNER_WORDS_NOT_COMPARED: ReadonlySet<string> = new Set([
+  "the",
+  "and",
+  "for",
+  "with",
+  "your",
+  "home",
+  "homes",
+  "house",
+  "houses",
+  "loan",
+  "loans",
+  "lending",
+  "lender",
+  "mortgage",
+  "mortgages",
+  "first",
+  "buyer",
+  "buyers",
+  "team",
+  "group",
+  "real",
+  "estate",
+  "realty",
+  "best",
+  "new",
+  "top",
+  "city",
+  "state",
+  "national",
+  "american",
+  "united",
+  "family",
+  "help",
+]);
+
+function wholeWords(words: readonly string[]): RegExp {
+  const escaped = words.map((word) => word.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"));
+  return new RegExp(
+    `(?<![\\p{L}\\p{N}])${escaped.join("[^\\p{L}\\p{N}]+")}(?![\\p{L}\\p{N}])`,
+    "u",
+  );
+}
+
+function savedPartner(saved: string): SavedPartner {
+  const normalised = normaliseLibraryAdText(saved);
+  const words = libraryAdWordText(normalised).split(" ").filter(Boolean);
+  const phrases: { shown: string; pattern: RegExp }[] = [];
+  const spoken = words.join(" ");
+  const withoutEnding = spoken.replace(CORPORATE_ENDING, "").trim();
+  if (withoutEnding !== spoken && withoutEnding !== "") {
+    const brokerage = withoutEnding.split(" ");
+    const single = brokerage.length === 1 ? (brokerage[0] ?? "") : "";
+    if (single === "" || (single.length >= 3 && !PARTNER_WORDS_NOT_COMPARED.has(single))) {
+      phrases.push({ shown: brokerage.join(" "), pattern: wholeWords(brokerage) });
+    }
+  } else {
+    for (const word of words) {
+      if (!/^\p{L}{3,}$/u.test(word) || PARTNER_WORDS_NOT_COMPARED.has(word)) continue;
+      phrases.push({ shown: word, pattern: wholeWords([word]) });
+    }
+  }
+  return { saved: saved.trim(), compared: lettersAndDigitsOnly(normalised), phrases };
+}
+
+function partnerTerm(
+  normalised: string,
+  partners: readonly SavedPartner[],
+  own: ReadonlySet<string>,
+): string | undefined {
   const compared = lettersAndDigitsOnly(normalised);
-  return partners.find((partner) => compared.includes(partner.compared))?.saved;
+  const whole = partners.find(
+    (partner) => [...partner.compared].length >= 4 && compared.includes(partner.compared),
+  );
+  if (whole !== undefined) return whole.saved;
+  for (const partner of partners) {
+    for (const phrase of partner.phrases) {
+      if (own.has(phrase.shown)) continue;
+      const match =
+        phrase.pattern.exec(normalised) ?? phrase.pattern.exec(joinSpacedLetters(normalised));
+      if (match !== null) return phrase.shown;
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -377,21 +557,34 @@ const PRIVATE_DETAILS: readonly string[] = [
   "cvv",
   "security code",
   "pin number",
+  "pin code",
   "password",
   "maiden name",
+  "acct",
+  // A PIN asked for: after a word that asks for it or says whose it is.
+  "(?:your|my|their|his|her|our|enter|share|send|give|provide|type|text|tell|need|with|bank|atm|debit|card) pin",
 ];
 const PRIVATE_DETAIL_PATTERNS: readonly RegExp[] = PRIVATE_DETAILS.map(
   (phrase) =>
-    new RegExp(`(?<![\\p{L}\\p{N}])${phrase.replaceAll(" ", SEPARATOR)}(?![\\p{L}\\p{N}])`, "u"),
+    new RegExp(
+      `(?<![\\p{L}\\p{N}])${phrase.replaceAll(" ", SEPARATOR)}(?:'?s)?(?![\\p{L}\\p{N}])`,
+      "u",
+    ),
 );
 
-function privateDetailTerm(normalised: string): string | undefined {
+/** "PIN" in capitals is the code, whatever surrounds it; "Pin Oak Lending" is not. */
+const PIN_IN_CAPITALS = /(?<![\p{L}\p{N}])PINS?(?![\p{L}\p{N}])/u;
+
+function privateDetailTerm(raw: string, normalised: string): string | undefined {
   const joined = joinSpacedLetters(normalised);
   for (const pattern of PRIVATE_DETAIL_PATTERNS) {
     const match = pattern.exec(joined);
     if (match !== null) return match[0].replace(/[\s\p{P}]+/gu, (gap) => (gap === "'" ? "'" : " "));
   }
-  return undefined;
+  const capitals = joinSpacedLetters(
+    raw.normalize("NFKC").replace(new RegExp(LIBRARY_AD_INVISIBLE.source, "gu"), ""),
+  );
+  return PIN_IN_CAPITALS.test(capitals) ? "PIN" : undefined;
 }
 
 function quoted(term: string): string {
@@ -423,17 +616,20 @@ export function evaluateLibraryAdWords(
   partnerNames: readonly string[],
 ): readonly LibraryAdWordFinding[] {
   const partners = partnerNames
-    .map((saved) => ({
-      saved: saved.trim(),
-      compared: lettersAndDigitsOnly(normaliseLibraryAdText(saved)),
-    }))
-    .filter((partner) => [...partner.compared].length >= 4);
+    .map((saved) => savedPartner(saved))
+    .filter((partner) => [...partner.compared].length >= 3);
+  const own = new Set(
+    [texts.name, texts.company].flatMap((text) =>
+      libraryAdWordText(normaliseLibraryAdText(text)).split(" ").filter(Boolean),
+    ),
+  );
   const findings: LibraryAdWordFinding[] = [];
   for (const field of LIBRARY_AD_TEXT_FIELDS) {
     const raw = texts[field];
     const name = FIELD_NAMES[field];
-    const normalised = normaliseLibraryAdText(raw);
-    const claim = findClaim(normalised);
+    const readings = libraryAdReadings(raw);
+    const normalised = readings[0] ?? "";
+    const claim = firstInReadings(readings, findClaim);
     if (claim !== undefined) {
       findings.push(
         wordFinding(
@@ -464,7 +660,9 @@ export function evaluateLibraryAdWords(
         ),
       );
     }
-    const coBrand = coBrandTerm(field, normalised, partners);
+    const coBrand = firstInReadings(readings, (reading) =>
+      coBrandTerm(field, reading, partners, own),
+    );
     if (coBrand !== undefined) {
       findings.push(
         wordFinding(
@@ -475,7 +673,7 @@ export function evaluateLibraryAdWords(
         ),
       );
     }
-    const privateDetail = privateDetailTerm(normalised);
+    const privateDetail = firstInReadings(readings, (reading) => privateDetailTerm(raw, reading));
     if (privateDetail !== undefined) {
       findings.push(
         wordFinding(

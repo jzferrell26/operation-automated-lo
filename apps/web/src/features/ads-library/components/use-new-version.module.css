@@ -1,0 +1,16 @@
+/*
+ * PRD-009c D4. The newer-version notice and its action: one line, and one secondary button under
+ * it, in whatever column the campaign page puts them.
+ */
+
+.notice {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.line {
+  margin: 0;
+  color: var(--tx-body);
+}

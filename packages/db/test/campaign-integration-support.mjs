@@ -528,6 +528,38 @@ export async function seedReviewLocationWithoutInstallation(pool, displayName) {
   return locationId;
 }
 
+/**
+ * PRD-009b 009B-AC-004. Puts a review location's installation into one of the six statuses the
+ * table allows, so the Home checklist's read can be driven through each row of D2. `app_runtime`
+ * can only select from `platform.marketplace_installations`, so the write is an owner statement,
+ * and it lives here with the other owner statements. The status is checked against the table's
+ * own list before it reaches SQL, which is the one part of the statement a caller supplies.
+ */
+export const REVIEW_INSTALLATION_STATUSES = Object.freeze([
+  "pending",
+  "active",
+  "missing_scope",
+  "reconnect_required",
+  "revoked",
+  "uninstalled",
+]);
+
+export async function setReviewInstallationStatus(pool, locationId, status) {
+  if (!REVIEW_INSTALLATION_STATUSES.includes(status)) {
+    throw new Error(`Unknown installation status: ${String(status)}`);
+  }
+  await withMigrationOwnerTransaction(pool, async (connection) => {
+    await connection.execute(
+      request(
+        "test.review-installation-status",
+        "update platform.marketplace_installations set status = $2::text, updated_at = now()" +
+          " where location_id = $1::uuid",
+        [locationId, status],
+      ),
+    );
+  });
+}
+
 /** Runs one PRD-005b definer contract as `app_runtime`, with no tenant context and no elevation. */
 async function withRuntimeRole(pool, work) {
   const connection = await pool.connect();

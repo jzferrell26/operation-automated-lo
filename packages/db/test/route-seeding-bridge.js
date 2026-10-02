@@ -32,5 +32,6 @@ export {
   seedReviewCredential,
   seedReviewLocation,
   seedReviewLocationWithoutInstallation,
+  setReviewInstallationStatus,
   suspendReviewActor,
 } from "./campaign-integration-support.mjs";

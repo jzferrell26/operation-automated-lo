@@ -1,11 +1,18 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { OWNER, libraryCampaign, pageOf } from "../../../../server/campaign-page.test-support.js";
+import {
+  OWNER,
+  earlierFlowCampaign,
+  libraryCampaign,
+  pageOf,
+} from "../../../../server/campaign-page.test-support.js";
 import { CampaignWorkspaceStoreUnavailableError } from "../../../../server/campaign-persistence-runtime.js";
 import { useReviewModeEnvironment } from "../../review-mode-test-support.js";
-import CampaignPage from "./[campaignRef]/page.js";
-import CampaignVersionPage from "./[campaignRef]/versions/[versionNo]/page.js";
+import CampaignPage, { generateMetadata as campaignMetadata } from "./[campaignRef]/page.js";
+import CampaignVersionPage, {
+  generateMetadata as versionMetadata,
+} from "./[campaignRef]/versions/[versionNo]/page.js";
 
 /**
  * PRD-009e D3 and 009E-AC-005. The campaign's own address and an older version's address. An older
@@ -134,5 +141,59 @@ describe("the campaign's own address", () => {
     await expect(
       CampaignPage({ params: Promise.resolve({ campaignRef: "x" }) }),
     ).rejects.toMatchObject(NOT_FOUND);
+  });
+});
+
+/**
+ * Writing review W-13. A campaign page is titled by its ad's name, as its heading is, and the root
+ * layout's template adds the product after it. What the read cannot say falls back to "Campaign"
+ * and leaves the answer to the page.
+ */
+describe("the tab's title on a campaign page", () => {
+  const CAMPAIGN = { params: Promise.resolve({ campaignRef: "campaign_01LibraryPage" }) };
+
+  it("is the library ad's name, the same words as the page's heading", async () => {
+    const page = await pageOf(await libraryCampaign(), { principal: OWNER });
+    mocked.read.mockResolvedValue({ authenticated: true, campaign: { kind: "page", page } });
+
+    expect(await campaignMetadata(CAMPAIGN)).toEqual({ title: "Sample: First home, start here" });
+    expect(await versionMetadata(versionParams("1"))).toEqual({
+      title: "Sample: First home, start here",
+    });
+  });
+
+  it("is the saved headline of a campaign made before PRD-009", async () => {
+    const page = await pageOf(await earlierFlowCampaign(), { principal: OWNER });
+    mocked.read.mockResolvedValue({ authenticated: true, campaign: { kind: "page", page } });
+
+    expect(await campaignMetadata(CAMPAIGN)).toEqual({ title: "Tour this home this weekend" });
+  });
+
+  it.each([
+    ["no session", { authenticated: false, campaign: undefined }],
+    ["no such campaign", { authenticated: true, campaign: undefined }],
+    [
+      "a redirect to the newest version",
+      { authenticated: true, campaign: { kind: "redirect", href: "/x" } },
+    ],
+  ])("falls back to Campaign for %s, and does not throw", async (_label, answer) => {
+    mocked.read.mockResolvedValue(answer);
+
+    expect(await campaignMetadata(CAMPAIGN)).toEqual({ title: "Campaign" });
+  });
+
+  it("falls back to Campaign, and does not throw, when the store is down", async () => {
+    mocked.read.mockRejectedValue(new CampaignWorkspaceStoreUnavailableError());
+
+    expect(await campaignMetadata(CAMPAIGN)).toEqual({ title: "Campaign" });
+    // The page still reaches the route error boundary with the same failure.
+    await expect(CampaignPage(CAMPAIGN)).rejects.toBeInstanceOf(
+      CampaignWorkspaceStoreUnavailableError,
+    );
+  });
+
+  it("reads nothing for a version number that is not a version", async () => {
+    expect(await versionMetadata(versionParams("abc"))).toEqual({ title: "Campaign" });
+    expect(mocked.read).not.toHaveBeenCalled();
   });
 });

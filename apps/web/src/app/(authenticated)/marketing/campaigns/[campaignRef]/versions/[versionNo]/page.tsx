@@ -1,10 +1,23 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation.js";
 
+import { PAGE_TITLES } from "../../../../../../../copy/page-titles.js";
 import { canRenderDashboardPreview } from "../../../../../../../server/dashboard-preview.js";
-import { renderCampaignRoute } from "../../campaign-route.js";
+import { campaignRouteMetadata, renderCampaignRoute } from "../../campaign-route.js";
 
 /** A version number is a positive integer of at most six digits, with no sign, point, or leading zero. */
 const VERSION_NUMBER = /^[1-9][0-9]{0,5}$/u;
+
+/** Writing review W-13: the tab names the ad, as the page's heading does. */
+export async function generateMetadata({
+  params,
+}: Readonly<{ params: Promise<{ campaignRef: string; versionNo: string }> }>): Promise<Metadata> {
+  const { campaignRef, versionNo: typed } = await params;
+  if (!VERSION_NUMBER.test(typed) || canRenderDashboardPreview()) {
+    return { title: PAGE_TITLES.campaign };
+  }
+  return campaignRouteMetadata(campaignRef, Number(typed));
+}
 
 /**
  * PRD-009e D3 and 009E-AC-005. An older version of a campaign, opened read-only at an address of its

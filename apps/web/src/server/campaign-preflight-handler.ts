@@ -1,4 +1,5 @@
 import { projectCampaignWorkspace } from "@oalo/application";
+import type { PreflightResult } from "@oalo/contracts";
 import { ZodError } from "zod";
 
 import { reviewHref } from "../features/campaigns/launch-model.js";
@@ -44,6 +45,24 @@ function campaignCommandErrorResponse(error: unknown): Response {
 }
 
 /**
+ * PRD-009d D5, D8, and 009D-AC-019. What the save answers about each finding.
+ *
+ * The workspace projection carries no `affected`, because the campaign page and the list never
+ * needed to say where a finding sits. Step 3's "Fix it" does: a word finding opens step 2 at the
+ * words, and a finding in Brand text names the Brand field. So the answer is read from the stored
+ * result, field by field, and carries exactly the five things a finding is.
+ */
+function answeredFindings(preflight: PreflightResult) {
+  return preflight.findings.map((finding) => ({
+    ruleCode: finding.ruleCode,
+    severity: finding.severity,
+    description: finding.description,
+    affected: finding.affected,
+    remediation: finding.remediation,
+  }));
+}
+
+/**
  * "Save and check" (PRD-009d D1): saves one library-ad version and runs the checks on it, then
  * answers with where step 3 is. Nothing is published or sent, and the answer says so.
  */
@@ -85,7 +104,7 @@ export async function handleCampaignPreflight(
           manifestHash: projection.manifestHash,
           preflightResultHash: projection.preflight.resultHash,
           blocking: projection.preflight.blocking,
-          findings: projection.preflight.findings,
+          findings: answeredFindings(campaign.preflight),
           persistenceKind: projection.persistenceKind,
           providerPublicationAuthorized: false,
         },

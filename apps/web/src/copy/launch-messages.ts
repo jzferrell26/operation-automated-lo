@@ -179,8 +179,8 @@ export function adRetiredNotice(retiredOn: string): string {
 export const CHOOSE_ANOTHER_AD = "Choose another ad";
 
 /**
- * D8's hand-off card, for a person who cannot approve. It moved here from the guided setup's copy
- * (`guided-setup-messages.ts`), which PRD-009b removes.
+ * D8's hand-off card, for a person who cannot approve. It moved here from the guided setup's copy,
+ * which PRD-009b removed.
  */
 export const HAND_OFF = Object.freeze({
   body: "You can't approve campaigns in this workspace. Send this link to an approver.",

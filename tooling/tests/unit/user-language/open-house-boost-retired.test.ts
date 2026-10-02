@@ -35,11 +35,6 @@ type PendingFile = Readonly<{ path: string; lane: string }>;
  * touch neighbouring lines.
  */
 const PENDING: readonly PendingFile[] = [
-  // 009b, Wave 3: the walkthrough's messages, deleted with the guided setup folder once nothing
-  // imports them (D4). The fixture behind the local demo's shell and the old overview screen left
-  // this list in Wave 2: Home and the fixture say "Launch an ad" and "set up an ad".
-  { path: "apps/web/src/copy/guided-setup-messages.ts", lane: "009b" },
-
   // 009e, Wave 3: the campaign page and the list.
   { path: "apps/web/src/app/(authenticated)/marketing/campaigns/page.tsx", lane: "009e" },
   {

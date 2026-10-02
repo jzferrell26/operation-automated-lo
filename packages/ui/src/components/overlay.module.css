@@ -176,8 +176,8 @@
  * sticky surface never covers a field, an error, or the safe-area inset.
  *
  * The boundary is 767.98px, not 768px. 768 is the tablet frame the brief names
- * in section 14, and `model/panel-placement.ts`'s `SIDE_ANCHOR_MIN_WIDTH` treats
- * it as wide (`viewport.width < 768` is the mobile branch). At exactly 768 a
+ * in section 14, and the walkthrough's placement model, since removed, treated
+ * it as wide (`viewport.width < 768` was the mobile branch). At exactly 768 a
  * `max-width: 768px` rule made this a bottom sheet while the model anchored the
  * panel beside the element, so the two disagreed on the one frame the rubric
  * scores tablet at. `app-shell.module.css` already draws its mobile boundary at

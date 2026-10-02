@@ -11,12 +11,9 @@ import { describe, expect, it } from "vitest";
  * made (the evidence rule of `library/knowledge/private/ux-ui/03-components/onboarding-checklist.md`).
  *
  * 009B-AC-011: the floating walkthrough is gone from the product. Its provider, panel, steps, chip,
- * panel placement, anchor registry, and the help menu's "Show me around again" are removed in two
- * parts (D4): this lane removes every use in Wave 2, and the Wave 3 cleanup deletes the folder
- * itself once both lanes have merged. Until then the folder is on a ratchet list, the way
- * `open-house-boost-retired.test.ts` handles its own two-wave removal: a file that is not listed has
- * to be clean, a listed file that has gone fails the second test until its row is deleted, so the
- * list only ever gets shorter, and the criterion is met when it is empty.
+ * panel placement, anchor registry, and the help menu's "Show me around again" are removed, and the
+ * guided setup folder is deleted except for the saved profile model (D4). The scan reads every
+ * source file under `apps/web/src` and skips none, so a use that comes back anywhere fails it.
  */
 
 const repositoryRoot = resolve(import.meta.dirname, "../../../../..");
@@ -89,35 +86,13 @@ describe("009B-AC-005: Home reads nothing from the browser", () => {
 const WALKTHROUGH =
   /GuidedSetupProvider|useGuidedSetup|GuidedSetupShellControls|GUIDED_SETUP_ANCHORS|guided-setup-provider|guided-setup-progress|guided-setup-step|guided-setup-context|anchor-registry|panel-placement|guided-setup\.module|guided-setup-messages|guided-setup\/model\/(?:progress|campaign-result)|GUIDED_SETUP_PREFERENCE_KEY|GuidedSetupProgress|SetupCampaignResult|data-tour|data-guided-setup|Show me around again|Finish setup/u;
 
-/**
- * Where walkthrough code may still be, until the Wave 3 cleanup deletes it (D4): the whole guided
- * setup folder except the saved profile model, which stays, and its messages file. Each row is a
- * prefix.
- */
-const PENDING_WAVE_3: readonly string[] = [
-  "apps/web/src/features/guided-setup/",
-  "apps/web/src/copy/guided-setup-messages.ts",
-];
-
 /** What D4 keeps: the saved setup profile that prefills the Brand form (009B-AC-012). */
 const KEPT = ["apps/web/src/features/guided-setup/model/profile.ts"] as const;
 
-/**
- * Lane 009d owns `apps/web/src/features/campaigns/**` in Wave 2 and removes its own uses in the same
- * wave (D4). This lane cannot edit it, so the scan leaves it out until the Wave 3 cleanup, which
- * deletes this row with the folder.
- */
-const OWNED_BY_009D_UNTIL_WAVE_3 = "apps/web/src/features/campaigns/";
-
-function pending(path: string): boolean {
-  return PENDING_WAVE_3.some((prefix) => path.startsWith(prefix));
-}
-
 describe("009B-AC-011: the walkthrough is gone", () => {
-  it("finds no walkthrough code outside the folder the Wave 3 cleanup deletes", async () => {
+  it("finds no walkthrough code anywhere in the web app's source", async () => {
     const offenders: string[] = [];
     for (const path of await sourceFiles(WEB_SOURCE, [".ts", ".tsx", ".css"])) {
-      if (pending(path) || path.startsWith(OWNED_BY_009D_UNTIL_WAVE_3)) continue;
       const source = withoutComments(await readFile(join(repositoryRoot, path), "utf8"));
       if (WALKTHROUGH.test(source)) offenders.push(path);
     }
@@ -136,14 +111,15 @@ describe("009B-AC-011: the walkthrough is gone", () => {
     }
   });
 
-  it("keeps the pending list to files that still exist, so it only ever gets shorter", async () => {
-    const files = await sourceFiles(WEB_SOURCE, [".ts", ".tsx", ".css"]);
-    const stale = PENDING_WAVE_3.filter((prefix) => !files.some((path) => path.startsWith(prefix)));
+  it("leaves the saved profile model as the only source in the guided setup folder", async () => {
+    const left = (await sourceFiles(WEB_SOURCE, [".ts", ".tsx", ".css"])).filter((path) =>
+      path.startsWith("apps/web/src/features/guided-setup/"),
+    );
 
-    expect(
-      stale,
-      `Delete these rows from PENDING_WAVE_3, they are gone:\n${stale.join("\n")}`,
-    ).toEqual([]);
+    expect(left).toEqual([...KEPT]);
+    await expect(
+      readFile(join(repositoryRoot, "apps/web/src/copy/guided-setup-messages.ts"), "utf8"),
+    ).rejects.toThrow();
   });
 
   it("is a scan that can fail", () => {

@@ -337,7 +337,11 @@
   inline-size: 100%;
   min-block-size: 0;
   max-inline-size: calc(var(--content-max) + 2 * var(--space-8));
+  /* PRD-009a: the column is the bar's own measure, so a page starts at its inline start, under
+   * the wordmark, rather than centring a narrower composition inside a wider column (the bootstrap
+   * `main` rule's `place-items: center`). */
   align-items: start;
+  justify-items: stretch;
   margin-inline: auto;
   padding: var(--space-6) var(--space-8);
   padding-block-end: calc(var(--space-6) + var(--guided-setup-panel-room, 0px));

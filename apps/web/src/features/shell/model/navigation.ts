@@ -1,5 +1,3 @@
-import type { IconName } from "@oalo/ui";
-
 import {
   deepFreeze,
   type Capability,
@@ -10,12 +8,19 @@ import {
 
 export type ProjectedNavigationItem = DeepReadonly<NavigationItem>;
 
+/**
+ * The icon names the menu draws, each one of `@oalo/ui`'s `IconName`s. Written out rather than
+ * imported so this model, which the synthetic fixture and the tooling read, stays free of the UI
+ * package's component graph.
+ */
+export type MainMenuIcon = "home" | "megaphone" | "building" | "users" | "file-text" | "settings";
+
 export type MainMenuEntry = Readonly<{
   id: string;
   label: string;
   href: string;
   /** Drawn in the Menu sheet at the mobile frame; the desktop bar shows the labels alone. */
-  icon: IconName;
+  icon: MainMenuIcon;
   requiredCapability?: Capability;
 }>;
 
@@ -66,7 +71,7 @@ export function mainMenuNavigation(): DeepReadonly<Navigation> {
 }
 
 /** The icon of a menu item, found by its address. */
-export function mainMenuIcon(href: string): IconName {
+export function mainMenuIcon(href: string): MainMenuIcon | "circle-dot" {
   return MAIN_MENU.find((entry) => entry.href === href)?.icon ?? "circle-dot";
 }
 

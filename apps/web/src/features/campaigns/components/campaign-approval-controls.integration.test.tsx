@@ -254,7 +254,7 @@ describe.each(HOSTS)("the approval control %s when the route refuses", (_where, 
 
     await waitFor(() => {
       expect(screen.getByRole("status")).toHaveTextContent(
-        "Approved. This campaign won't run as an ad yet. HighLevel and Meta aren't connected.",
+        "Approved. This campaign won't run as an ad yet. Launching isn't turned on, and HighLevel and Meta aren't connected.",
       );
     });
     expect(screen.queryByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeNull();
@@ -288,7 +288,7 @@ describe.each(HOSTS)(
         "an approval",
         approve,
         { decision: "approved", duplicate: false } as const,
-        "Approved. This campaign won't run as an ad yet. HighLevel and Meta aren't connected.",
+        "Approved. This campaign won't run as an ad yet. Launching isn't turned on, and HighLevel and Meta aren't connected.",
       ],
       [
         "a duplicate approval",

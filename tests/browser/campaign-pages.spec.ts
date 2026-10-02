@@ -201,7 +201,7 @@ test.describe("the campaign page (009E-AC-001 to 007)", () => {
         await expect(main.getByRole("link", { name: "Make a new version" })).toBeVisible();
         const reasonId = await launch.getAttribute("aria-describedby");
         await expect(page.locator(`[id="${reasonId ?? ""}"]`)).toContainText(
-          "Meta isn't connected yet, so connect it in Settings to launch this ad.",
+          "Launching on Facebook isn't turned on yet, and it needs Meta connected. See what's needed for Meta.",
         );
 
         // The results card comes first and counts nothing yet.

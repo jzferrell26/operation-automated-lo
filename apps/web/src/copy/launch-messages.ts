@@ -138,7 +138,12 @@ export function runsFact(endsOn: string): string {
   return `From launch until ${endsOn}`;
 }
 export const FACEBOOK_FEED = "the Facebook feed";
-export const LEADS_NOT_CONNECTED = "Your HighLevel account, once it's connected";
+/**
+ * Amended 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-25). "Once it's connected" was
+ * a promise that connecting is the one thing between a person and their leads; nothing in PRD-009
+ * can connect HighLevel, so the line says where leads will go and that it isn't connected yet.
+ */
+export const LEADS_NOT_CONNECTED = "Your HighLevel account. It isn't connected yet.";
 /** 009D-AC-015: the line that replaces "Approving applies to this exact version." */
 export const APPROVE_LINE =
   "Approving applies to this exact version, with your words. Nothing is published or sent.";
@@ -149,16 +154,21 @@ export const LAUNCH_ON_FACEBOOK = "Launch on Facebook";
 /**
  * D7. The one sentence tied to "Launch on Facebook". The Meta sentence carries a link, so it is
  * stored in three parts: the words before the link, the link's words, and the words after.
+ *
+ * Amended 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-25). The Meta sentence used
+ * to say "connect it in Settings", which promised that connecting is the missing step (launching
+ * stays off even with both accounts connected) and named a control the connections page does not
+ * have. It now says launching is off, that it needs Meta, and links with Home's own words. The
+ * "turned on" row drops "for your workspace", which suggested a switch the owner can flip.
  */
 export const LAUNCH_SENTENCES = Object.freeze({
   metaNotConnected: Object.freeze({
-    before: "Meta isn't connected yet, so ",
-    link: "connect it in Settings",
-    after: " to launch this ad.",
+    before: "Launching on Facebook isn't turned on yet, and it needs Meta connected. ",
+    link: "See what's needed for Meta",
+    after: ".",
   }),
   notApproved: "Approve this version first.",
-  notTurnedOn:
-    "Launching on Facebook isn't turned on for your workspace yet. Nothing has been published.",
+  notTurnedOn: "Launching on Facebook isn't turned on yet. Nothing has been published.",
 });
 export function launchRetiredSentence(retiredOn: string): string {
   return `This ad was taken out of the library on ${retiredOn}, so this campaign can't launch.`;

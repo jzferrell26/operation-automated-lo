@@ -129,8 +129,9 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
    *
    * PRD-009e's campaign page: the "Approval" region names who decided and when, the date in a
    * `time` element, and a decided version carries no approve card at all. So once the refresh has
-   * landed, the control's own outcome sentence (writing review W-2: "Approved. This campaign won't
-   * run as an ad yet. HighLevel and Meta aren't connected.") is gone with the card, and the region
+   * landed, the control's own outcome sentence (writing review W-2 and W-28: "Approved. This
+   * campaign won't run as an ad yet. Launching isn't turned on, and HighLevel and Meta aren't
+   * connected.") is gone with the card, and the region
    * is what says the version was approved. The assertions are scoped to the page's main region.
    */
   const main = page.getByRole("main");
@@ -148,7 +149,7 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
   await expect(main.locator("[data-approval-card]")).toHaveCount(0);
   await expect(
     main.getByText(
-      "Approved. This campaign won't run as an ad yet. HighLevel and Meta aren't connected.",
+      "Approved. This campaign won't run as an ad yet. Launching isn't turned on, and HighLevel and Meta aren't connected.",
     ),
   ).toHaveCount(0);
 

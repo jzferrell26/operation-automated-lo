@@ -1,15 +1,10 @@
-import { Button, Card, Icon, Link } from "@oalo/ui";
+import { Button, Card, Icon } from "@oalo/ui";
 import { useId } from "react";
 
-import {
-  LAUNCH_ON_FACEBOOK,
-  LAUNCH_SENTENCES,
-  LAUNCH_TITLE,
-  launchRetiredSentence,
-} from "../../../copy/launch-messages.js";
+import { LAUNCH_ON_FACEBOOK, LAUNCH_TITLE } from "../../../copy/launch-messages.js";
 import { launchSentenceFor, type LaunchState } from "../launch-model.js";
+import { LaunchSentenceWords } from "./launch-sentence.js";
 import styles from "./launch.module.css";
-import { TextWithDays } from "./text-with-days.js";
 
 /**
  * PRD-009d D7, 009D-AC-016 and 009D-AC-017. "Launch on Facebook", a button of its own, separate
@@ -18,7 +13,8 @@ import { TextWithDays } from "./text-with-days.js";
  * It is disabled by construction: it renders the `disabled` attribute and is given no `onClick`, no
  * `formAction`, and no `href`, because no launch route exists for it to reach. Exactly one sentence
  * from D7's function is tied to it through `aria-describedby`; the Meta sentence links to the
- * connections page, where connecting Meta is explained.
+ * connections page, where what Meta needs is explained. The sentence is drawn by
+ * `LaunchSentenceWords`, which the campaign page's header uses too (writing review W-25).
  */
 export function LaunchOnFacebook({
   state,
@@ -35,26 +31,10 @@ export function LaunchOnFacebook({
         </span>
       </Button>
       <p className={styles.note} id={sentenceId}>
-        {sentence.kind === "meta-not-connected" ? (
-          <>
-            {LAUNCH_SENTENCES.metaNotConnected.before}
-            <Link href="/settings/connections">{LAUNCH_SENTENCES.metaNotConnected.link}</Link>
-            {LAUNCH_SENTENCES.metaNotConnected.after}
-          </>
-        ) : sentence.kind === "retired" ? (
-          <TextWithDays
-            days={
-              retiredDateTime === undefined
-                ? []
-                : [{ dateTime: retiredDateTime.slice(0, 10), text: sentence.retiredOn }]
-            }
-            text={launchRetiredSentence(sentence.retiredOn)}
-          />
-        ) : sentence.kind === "not-approved" ? (
-          LAUNCH_SENTENCES.notApproved
-        ) : (
-          LAUNCH_SENTENCES.notTurnedOn
-        )}
+        <LaunchSentenceWords
+          retiredOnDay={retiredDateTime === undefined ? null : retiredDateTime.slice(0, 10)}
+          sentence={sentence}
+        />
       </p>
     </Card>
   );

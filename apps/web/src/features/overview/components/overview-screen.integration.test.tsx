@@ -434,6 +434,7 @@ describe("state it once (009B-AC-008)", () => {
     expect(text).not.toContain("HighLevel, Meta, and Stripe aren't connected");
     expect(text).not.toContain("Not connected yet.");
     expect(text).not.toContain("Connect HighLevel and Meta when you're ready");
+    expect(text).not.toContain("Connecting HighLevel and Meta isn't available in the app yet");
     expect(text).not.toMatch(/Not live yet/iu);
     expect(text).not.toMatch(/Stripe/u);
     expect(container.querySelector(".oalo-metric__value")).toBeNull();

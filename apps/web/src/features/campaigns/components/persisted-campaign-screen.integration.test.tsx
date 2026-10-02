@@ -122,11 +122,11 @@ describe("the campaign page header (009E-AC-001)", () => {
       `#${CSS.escape(launch.getAttribute("aria-describedby") ?? "")}`,
     );
     expect(sentence).toHaveTextContent(
-      "Meta isn't connected yet, so connect it in Settings to launch this ad.",
+      "Launching on Facebook isn't turned on yet, and it needs Meta connected. See what's needed for Meta.",
     );
     expect(sentence?.previousElementSibling).toBe(actions.firstElementChild);
     expect(
-      within(sentence as HTMLElement).getByRole("link", { name: "connect it in Settings" }),
+      within(sentence as HTMLElement).getByRole("link", { name: "See what's needed for Meta" }),
     ).toHaveAttribute("href", "/settings/connections");
   });
 

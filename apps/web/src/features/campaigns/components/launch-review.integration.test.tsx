@@ -116,7 +116,7 @@ describe("what you approve (009D-AC-014)", () => {
     expect(within(facts).getByText("Texas")).toBeInTheDocument();
     expect(within(facts).getByText("the Facebook feed")).toBeInTheDocument();
     expect(
-      within(facts).getByText("Your HighLevel account, once it's connected"),
+      within(facts).getByText("Your HighLevel account. It isn't connected yet."),
     ).toBeInTheDocument();
     const changes = screen.getAllByRole("link", { name: "Change" });
     expect(changes).toHaveLength(1);
@@ -169,14 +169,13 @@ describe("Launch on Facebook (009D-AC-016)", () => {
     expect(launch).not.toHaveAttribute("formaction");
     expect(launch).not.toHaveAttribute("href");
     expect(launch).toHaveAccessibleDescription(
-      "Meta isn't connected yet, so connect it in Settings to launch this ad.",
+      "Launching on Facebook isn't turned on yet, and it needs Meta connected. See what's needed for Meta.",
     );
     const describedBy = launch.getAttribute("aria-describedby") ?? "";
     const sentence = document.getElementById(describedBy) as HTMLElement;
-    expect(within(sentence).getByRole("link", { name: "connect it in Settings" })).toHaveAttribute(
-      "href",
-      "/settings/connections",
-    );
+    expect(
+      within(sentence).getByRole("link", { name: "See what's needed for Meta" }),
+    ).toHaveAttribute("href", "/settings/connections");
     expect(launch.closest("[data-launch-card]")?.querySelector("[data-approval-card]")).toBeNull();
   });
 

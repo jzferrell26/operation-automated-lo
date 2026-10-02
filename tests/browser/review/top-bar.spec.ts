@@ -1,6 +1,21 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { HOME_SETUP } from "../../../apps/web/src/copy/home-messages.js";
+import {
+  CAMPAIGN_NOT_AN_AD_YET,
+  CAMPAIGN_SAVED_NOTICE,
+  NOT_CONNECTED_DETAIL,
+  NOT_CONNECTED_DISCLOSURE,
+  NOT_CONNECTED_HEADLINE,
+  NOT_CONNECTED_NAVIGATION_DETAIL,
+  NOT_CONNECTED_NEXT_STEP,
+  NOT_CONNECTED_SETUP_OWNER,
+  NOT_CONNECTED_SETUP_REASON,
+  NOT_CONNECTED_SOURCE,
+  NOT_LIVE_METRIC_SOURCE,
+  NOT_LIVE_YET,
+} from "../../../apps/web/src/copy/user-language.js";
 import {
   expectNoExternalRequests,
   guardLocalOrigin,
@@ -28,6 +43,51 @@ const THE_SIX = [
   "Homeowner reports",
   "Settings",
 ] as const;
+
+/**
+ * Every sentence and label the app uses to say a connection is missing, read from the copy files so
+ * a new wording is covered by the file that changes it.
+ *
+ * The check is on these and not on words. The account sheet shows the workspace's own name, and the
+ * seeded one is "Review location (not connected)" (`seed-review-location.mjs`): a person's data, not
+ * app copy, so a ban on the word "connected", or on "Meta", would fail on a name and say nothing
+ * about the product. A statement the app makes is a whole sentence, and that is what is absent.
+ */
+const CONNECTION_STATEMENTS: readonly string[] = [
+  NOT_CONNECTED_HEADLINE,
+  NOT_CONNECTED_DISCLOSURE,
+  NOT_CONNECTED_DETAIL,
+  NOT_CONNECTED_SOURCE,
+  NOT_CONNECTED_NEXT_STEP,
+  NOT_CONNECTED_NAVIGATION_DETAIL,
+  NOT_CONNECTED_SETUP_REASON,
+  NOT_CONNECTED_SETUP_OWNER,
+  NOT_LIVE_METRIC_SOURCE,
+  NOT_LIVE_YET,
+  CAMPAIGN_NOT_AN_AD_YET,
+  CAMPAIGN_SAVED_NOTICE,
+  HOME_SETUP.intro,
+];
+
+function squashed(text: string): string {
+  return text.replace(/\s+/gu, " ").trim().toLowerCase();
+}
+
+/** The statements from `CONNECTION_STATEMENTS` that `text` carries, so a failure names them. */
+function connectionStatementsIn(text: string): readonly string[] {
+  const said = squashed(text);
+  return CONNECTION_STATEMENTS.filter((statement) => said.includes(squashed(statement)));
+}
+
+test("the check for a connection statement can fail, and a workspace name is not one", () => {
+  expect(connectionStatementsIn(`Dana Reyes ${NOT_CONNECTED_SOURCE}`)).toEqual([
+    NOT_CONNECTED_SOURCE,
+  ]);
+  expect(connectionStatementsIn(NOT_CONNECTED_DISCLOSURE)).toContain(NOT_CONNECTED_DISCLOSURE);
+  expect(connectionStatementsIn("Review creator Review location (not connected) Sign out")).toEqual(
+    [],
+  );
+});
 
 async function signIn(page: Page): Promise<void> {
   const { creatorEmail, password } = seededCredentials();
@@ -62,11 +122,20 @@ test("the review top bar holds six labels, Help, and an account that names only 
   // 009A-AC-013: no shell-wide banner, and the account says who is signed in and nothing else.
   await expect(page.getByLabel("Not connected yet: HighLevel, Meta, and Stripe")).toHaveCount(0);
   await expect(page.locator("aside")).toHaveCount(0);
-  await banner.getByRole("button", { name: /^Your account: / }).click();
+  const accountButton = banner.getByRole("button", { name: /^Your account: / });
+  const signedInAs = (await accountButton.getAttribute("aria-label"))?.replace(
+    /^Your account: /u,
+    "",
+  );
+  expect(signedInAs, "the account button names the person").toBeTruthy();
+  await accountButton.click();
   const account = page.getByRole("dialog", { name: "Your account" });
   await expect(account.getByRole("button", { name: "Sign out" })).toBeVisible();
   await expect(account.getByRole("radiogroup", { name: "Appearance theme" })).toBeVisible();
-  expect(await account.textContent()).not.toMatch(/connected|HighLevel|Meta|Stripe/u);
+  // It says who is signed in, and makes no statement about a connection. The workspace's own name
+  // is shown there too and is the person's data, which is why this is not a search for words.
+  await expect(account).toContainText(signedInAs ?? "");
+  expect(connectionStatementsIn((await account.textContent()) ?? "")).toEqual([]);
   await page.keyboard.press("Escape");
   expectNoExternalRequests(guard);
 });

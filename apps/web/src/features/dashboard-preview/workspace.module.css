@@ -515,7 +515,7 @@
   color: var(--tx-faint);
 }
 .page .roundLink:hover {
-  color: var(--ac-primary);
+  color: var(--st-info-fg);
   background: var(--sf-sunken);
 }
 .partnerStrip {

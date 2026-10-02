@@ -102,7 +102,7 @@ a.rowLink.rowLink {
 }
 
 a.rowLink.rowLink:hover {
-  color: var(--ac-primary-hover);
+  color: var(--tx-strong);
   text-decoration: underline;
 }
 

@@ -147,6 +147,8 @@ main {
   padding: var(--space-6);
 }
 
+/* Text in the action colour fails AA on the Dark card (3.19:1); text takes the link colour of
+ * design section 2.6, `--st-info-fg`, which holds in both themes. */
 code {
-  color: var(--ac-primary);
+  color: var(--st-info-fg);
 }

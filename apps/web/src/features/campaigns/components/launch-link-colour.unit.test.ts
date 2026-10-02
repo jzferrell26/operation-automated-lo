@@ -1,7 +1,8 @@
-import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import { readCssRules } from "../../../testing/css-rules.js";
 
 /**
  * The "See what we checked" summary on the campaign page's decided state drew `--ac-primary`
@@ -14,23 +15,9 @@ import { describe, expect, it } from "vitest";
  * `tests/browser/review/review-campaign-decision.spec.ts`.
  */
 
-const source = (
-  await readFile(join(resolve(import.meta.dirname), "launch.module.css"), "utf8")
-).replaceAll(/\/\*[\s\S]*?\*\//gu, "");
-
-/** The declarations of the rule whose whole selector is `selector`. */
-function declarationsOf(selector: string): Readonly<Record<string, string>> {
-  const escaped = selector.replaceAll(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`);
-  const body = new RegExp(`(?:^|\\})\\s*${escaped}\\s*\\{([^}]*)\\}`, "u").exec(source)?.[1];
-  expect(body, `a rule for ${selector}`).toBeDefined();
-  return Object.fromEntries(
-    (body ?? "")
-      .split(";")
-      .map((declaration) => declaration.split(":"))
-      .filter((pair): pair is [string, string] => pair.length === 2)
-      .map(([property, value]) => [property.trim(), value.trim()]),
-  );
-}
+const { source, declarationsOf } = await readCssRules(
+  join(resolve(import.meta.dirname), "launch.module.css"),
+);
 
 describe("the Launch an ad disclosure summary takes the link colour, not the action fill", () => {
   it("colours 'See what we checked' with --st-info-fg", () => {

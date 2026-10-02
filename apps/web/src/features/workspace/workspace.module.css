@@ -182,7 +182,7 @@
   border: 1px solid var(--bd-hairline);
 }
 .metrics strong {
-  font-size: 27px;
+  font-size: var(--text-page-size);
   letter-spacing: -0.04em;
 }
 .metrics span,

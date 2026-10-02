@@ -63,7 +63,7 @@
   gap: var(--space-4);
   padding-block-end: var(--space-6);
   border-block-end: 1px solid var(--bd-hairline);
-  scroll-margin-block-start: calc(var(--topbar-height) + var(--space-4));
+  scroll-margin-block-start: var(--topbar-offset, calc(var(--topbar-height) + var(--space-4)));
 }
 
 .section h2,
@@ -302,7 +302,7 @@
 
 .preview {
   position: sticky;
-  inset-block-start: calc(var(--topbar-height) + var(--space-4));
+  inset-block-start: var(--topbar-offset, calc(var(--topbar-height) + var(--space-4)));
   display: grid;
   gap: var(--space-3);
   padding: var(--space-5);
@@ -348,6 +348,14 @@
 
 .shapeOption + .shapeOption {
   border-inline-start: 1px solid var(--bd-input);
+}
+
+/* 009G-AC-010. The two shape radios and the "See what we checked" summary take the brief's ring, 2px
+ * at a 3px offset, in the focus colour. Without these rules they showed the browser's own 1px ring. */
+.shapeOption input:focus-visible,
+.checked summary:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 
 .reviewSide {

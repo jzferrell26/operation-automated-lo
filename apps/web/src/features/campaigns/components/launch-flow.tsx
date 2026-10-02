@@ -571,6 +571,7 @@ function StepOne({
         )}
         advertiser={advertiser}
         cards={cards}
+        titleLevel={2}
         topic={address.topic}
       />
       <div className={styles.actions}>

@@ -82,15 +82,24 @@ export function TopicChipContent({ label, count }: Readonly<{ label: string; cou
   );
 }
 
+/**
+ * The level of an ad's name. A heading may only go down one level at a time, so it is 3 under the
+ * library tab's own "Ads library" section heading and 2 on step 1, where the page title is the only
+ * heading above the cards (009G-AC-001: axe reports a jump from 1 to 3 as `heading-order`).
+ */
+export type AdCardTitleLevel = 2 | 3;
+
 export type AdCardProps = Readonly<{
   card: LaunchAdCard;
   advertiser: LaunchBand;
   /** "Use this ad": a secondary control, so no single blue button competes with the ads (D2). */
   action: ReactNode;
+  titleLevel?: AdCardTitleLevel;
 }>;
 
 /** One ad: the art with the viewer's own brand band applied, its topic, name, words, and version. */
-export function AdCard({ card, advertiser, action }: AdCardProps) {
+export function AdCard({ card, advertiser, action, titleLevel = 3 }: AdCardProps) {
+  const Title = titleLevel === 2 ? "h2" : "h3";
   return (
     <article aria-labelledby={`ad-card-${card.id}`} className={styles.card} data-ad-card={card.id}>
       <AdCreative
@@ -102,9 +111,9 @@ export function AdCard({ card, advertiser, action }: AdCardProps) {
       />
       <div className={styles.cardBody}>
         <span className={styles.topic}>{TOPIC_LABELS[card.topic]}</span>
-        <h3 className={styles.cardTitle} id={`ad-card-${card.id}`}>
+        <Title className={styles.cardTitle} id={`ad-card-${card.id}`}>
           {card.name}
-        </h3>
+        </Title>
         <p className={styles.cardWords}>{card.headline}</p>
         <p className={styles.cardVersion}>
           <TextWithDays
@@ -123,13 +132,15 @@ export type AdCardGridProps = Readonly<{
   topic: AdsLibraryTopic | undefined;
   advertiser: LaunchBand;
   actionFor: (card: LaunchAdCard) => ReactNode;
+  /** The level of each card's name; see `AdCardTitleLevel`. */
+  titleLevel?: AdCardTitleLevel;
 }>;
 
 /**
  * Four cards a row at 1440, three at 1180, two at 768, and one at 390 (design section 5.2). With no
  * active ad it says so in one sentence and shows no grid (009C-AC-012).
  */
-export function AdCardGrid({ cards, topic, advertiser, actionFor }: AdCardGridProps) {
+export function AdCardGrid({ cards, topic, advertiser, actionFor, titleLevel }: AdCardGridProps) {
   if (cards.length === 0) {
     return (
       <p className={styles.empty} data-empty-library="">
@@ -142,7 +153,12 @@ export function AdCardGrid({ cards, topic, advertiser, actionFor }: AdCardGridPr
     <ul className={styles.grid} data-ad-card-grid="">
       {shown.map((card) => (
         <li key={`${card.id}-${String(card.version)}`}>
-          <AdCard action={actionFor(card)} advertiser={advertiser} card={card} />
+          <AdCard
+            action={actionFor(card)}
+            advertiser={advertiser}
+            card={card}
+            {...(titleLevel === undefined ? {} : { titleLevel })}
+          />
         </li>
       ))}
     </ul>

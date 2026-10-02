@@ -111,6 +111,13 @@ describe("the Ads library tab, with the sample ads on (009C-AC-010)", () => {
       screen.getByRole("heading", { level: 2, name: ADS_LIBRARY_HEADING }),
     ).toBeInTheDocument();
     expect(screen.getByText(ADS_LIBRARY_LEAD)).toBeInTheDocument();
+    // 009G-AC-001: the cards sit under that section heading, so each ad is named at the next level
+    // down. Step 1 has no section heading and names them one level up (`launch-flow` tests).
+    const cardHeadings = screen
+      .getAllByRole("heading")
+      .filter((heading) => heading.closest("article") !== null);
+    expect(cardHeadings.length).toBeGreaterThan(0);
+    for (const heading of cardHeadings) expect(heading.tagName).toBe("H3");
     // 009d D3: the product has no logo upload, so the lead never promises one.
     expect(ADS_LIBRARY_LEAD).not.toMatch(/logo/iu);
     expect(ADS_LIBRARY_LEAD).toBe(

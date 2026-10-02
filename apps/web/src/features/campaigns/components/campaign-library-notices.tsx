@@ -5,7 +5,7 @@ import { adRetiredNotice } from "../../../copy/launch-messages.js";
 import type { CampaignNotice } from "../campaign-page-model.js";
 import { shortDay } from "../launch-model.js";
 import styles from "./campaign-page.module.css";
-import { UseNewVersion } from "./use-new-version.js";
+import { NewerVersionNotice } from "./newer-version-notice.js";
 
 /**
  * PRD-009e 009E-AC-006. One-line library notices, only when they apply, each with at most one
@@ -27,16 +27,14 @@ function noticeSentence(notice: CampaignNotice): string {
     case "missing":
       return notice.blocksApproval ? NOTICES.missingUndecided : NOTICES.missingApproved;
     case "newer-version":
-      return NOTICES.newerVersion;
+      // Drawn by the seam, `NewerVersionNotice`, which says its own sentence.
+      return "";
     case "brand-changed":
       return NOTICES.brandChanged;
   }
 }
 
 function noticeAction(notice: CampaignNotice) {
-  if (notice.kind === "newer-version" && notice.useNewVersion !== undefined) {
-    return <UseNewVersion request={notice.useNewVersion} />;
-  }
   if (
     (notice.kind === "retired" || notice.kind === "missing") &&
     notice.chooseAnotherAdHref !== undefined
@@ -57,6 +55,13 @@ export function CampaignLibraryNotices({
   return (
     <ul className={styles.notices} data-library-notices="">
       {notices.map((notice) => {
+        if (notice.kind === "newer-version") {
+          return (
+            <li className={styles.notice} data-notice={notice.kind} key={notice.kind}>
+              <NewerVersionNotice notice={notice} />
+            </li>
+          );
+        }
         const action = noticeAction(notice);
         return (
           <li className={styles.notice} data-notice={notice.kind} key={notice.kind}>

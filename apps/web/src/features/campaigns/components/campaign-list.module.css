@@ -176,6 +176,63 @@ a.primaryLink.primaryLink:hover {
   color: var(--tx-on-action);
 }
 
+/* Between 720px and the tablet frame the table keeps all six columns, so the cells tighten, the
+   decorative thumbnail steps aside, and the name takes the room it needs. */
+@media (max-width: 63.99rem) {
+  .table th,
+  .table td {
+    padding: var(--space-3);
+  }
+
+  .thumb {
+    display: none;
+  }
+
+  .adCell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .table {
+    table-layout: fixed;
+  }
+
+  .table th {
+    white-space: normal;
+  }
+
+  .table .nowrap {
+    white-space: normal;
+  }
+
+  .table th:nth-child(1) {
+    inline-size: 28%;
+  }
+
+  .table th:nth-child(2) {
+    inline-size: 15%;
+  }
+
+  .table th:nth-child(3) {
+    inline-size: 12%;
+  }
+
+  .table th:nth-child(4) {
+    inline-size: 16%;
+  }
+
+  .table th:nth-child(5) {
+    inline-size: 17%;
+  }
+
+  .table th:nth-child(6) {
+    inline-size: 12%;
+  }
+}
+
+.adName > span {
+  white-space: nowrap;
+}
+
 @media (max-width: 719.98px) {
   .tableWrap {
     display: none;

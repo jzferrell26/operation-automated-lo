@@ -328,3 +328,40 @@ Fix: add to D5: "A license reference has 4 to 12 digits (spaces or hyphens allow
 ### Verdict after Re-review 2
 
 **FIX FIRST** on N-7 alone. Nothing else is open at Medium or above. Once the adjacency sentence and the four cases are in `009d`, a read of D5 and `009D-AC-010` turns this to PASS. The MTK-003 close-out audit on the final tree remains required.
+
+
+---
+
+## Re-review 3 at `888052e`
+
+**Scope:** commit `888052e` read as a diff against `9aa108a` (`prd-009d` D5 "What is checked", the host exception, `009D-AC-010`, and the index amendment). Read and report only; nothing pushed.
+**Verdict:** **PASS.** N-7 is closed and the commit introduced nothing at Medium or above. Twelve Medium findings in total (M-1 to M-9, N-1, N-2, N-7) have all been closed in the documents. One new Low, N-8, is recorded below and does not block.
+
+### N-7 traced against the new text
+
+The license reference now needs 4 to 12 digits (digits counted alone, single spaces or hyphens between them), and a license reference or an ordinal within two tokens of year, yr, years, month, mo, payment, payments, percent, pct, down, fixed, arm, apr, or rate is refused, with tokens split at every digit and letter boundary except an ordinal's suffix. Each string traced:
+
+| String | Result | Rule that refuses or passes it |
+|---|---|---|
+| Company "Acme #30yr Lending" | Refused | "30" has 2 digits, so it is not a license reference; "yr" is also in the list |
+| Company "30th Year Fixed Lending" | Refused | ordinal "30th" is within two tokens of "year" and "fixed" |
+| Company "1st Payment Free Mortgage" | Refused | ordinal "1st" is next to "payment" |
+| Disclosure "Lic #30 year fixed" and "NMLS 123" | Refused | under 4 digits; also adjacent to "year" and "fixed" |
+| Company "1st Choice Mortgage", "21st Century Lending" | Pass | no listed word within two tokens |
+| Disclosure "NMLS 0000000", "NMLS 1234567", "Lic. 12-3456" | Pass | 6 or 7 digits after a keyword, no listed word beside them |
+| `nmlsconsumeraccess.org/lookup`, `?id=1`, `#x` in the disclosure line | Refused | the host is host-only (an empty path or one "/" only) |
+| `www.nmlsconsumeraccess.org`, `nmlsconsumeraccess.org/` in the disclosure line | Pass | exact host, host-only |
+
+The 4-digit minimum is what closes the rate and term paths: loan terms in years or months are 2 or 3 digits, and a rate needs a decimal point, a `%`, or a number word, all of which the other rules refuse. The host-only change also closes the Info item from Re-review 2.
+
+### New finding
+
+**N-8 (Low). A 4 to 12 digit run after a keyword can still sit next to a payment-like word that is not on the list.** `prd-009d-...md` D5 "What is checked". The bare "#" is accepted as a keyword, so a company of "Acme #1200 monthly Lending" or "Acme #5000 Grant Lending" gives a 4-digit amount a license shape, and "monthly", "pmt", "grant", "credit", "months", "yrs", "rates", "term", and "points" are not among the listed words. This is Low, not Medium, because it needs a 4-digit amount (not a rate or a term), it applies only to the name, company, and disclosure line, the claim rule and `WORDS_CO_BRAND` still read the same text, a person approves each version, and launch is disabled. Fix when convenient: drop the bare "#" as a keyword (keep "NMLS #", "license #", and add "lic #"), add months, yrs, mos, rates, term, terms, points, monthly, and pmt to the adjacency list, and add "Acme #1200 monthly Lending" as a refusal.
+
+### Still open at Low (none block)
+
+L-6 (the seven mockup files still carry "Jordan Rivera", "NMLS 123456", and "NMLS 100200"; routed to `design-system-guardian`), N-8 (above).
+
+### Verdict after Re-review 3
+
+**PASS** for the authoring-time review. The MTK-003 close-out security audit on the final tree remains required and is not satisfied by this document.

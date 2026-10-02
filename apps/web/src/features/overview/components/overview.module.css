@@ -112,9 +112,12 @@
   padding: var(--space-8);
 }
 
+/* The page title step (28px). The mockup draws this one at 34px and the primary button at 17px, which
+ * are between the brief's six type steps (28, 19, 16, 14, 12); `expectTypographyOnBrief` refuses text
+ * between them, so Home uses the steps and gets its weight from the bold face and the card's space. */
 .startTitle {
   color: var(--tx-strong);
-  font-size: 2.125rem;
+  font-size: var(--text-page-size);
   font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-page);
   line-height: var(--leading-tight);
@@ -192,7 +195,7 @@
   background: var(--ac-primary);
   box-shadow: none;
   color: var(--tx-on-action);
-  font-size: 1.0625rem;
+  font-size: var(--text-body-size);
   font-weight: var(--weight-semibold);
 }
 
@@ -373,10 +376,6 @@
 
   .start {
     padding: var(--space-6);
-  }
-
-  .startTitle {
-    font-size: var(--text-page-size);
   }
 
   .card {

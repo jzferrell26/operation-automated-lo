@@ -11,11 +11,11 @@ import {
 } from "react";
 
 import {
+  FIRST_VISIT_THEME_PREFERENCE,
   applyResolvedTheme,
   readStoredThemePreference,
   resolveTheme,
   writeThemePreference,
-  THEME_STORAGE_KEY,
   type ResolvedTheme,
   type ThemePreference,
 } from "./theme-preference.js";
@@ -41,20 +41,22 @@ function resolveBrowserTheme(preference: ThemePreference): ResolvedTheme {
   return resolveTheme(preference, window.matchMedia("(prefers-color-scheme: dark)").matches);
 }
 
+/**
+ * PRD-009a D4. The runtime agrees with the head script in `theme-bootstrap.ts`: nothing stored is
+ * a first visit, which is Light, and a stored System follows the device and keeps following it.
+ * The first visit is not written to storage, so a person who never chooses keeps getting the
+ * product default if it ever changes.
+ */
 export function ThemeRuntimeProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [isReady, setIsReady] = useState(false);
-  const [preference, setPreferenceState] = useState<ThemePreference>("system");
+  const [preference, setPreferenceState] = useState<ThemePreference>(FIRST_VISIT_THEME_PREFERENCE);
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>("light");
 
   useEffect(() => {
     const storage = getBrowserStorage();
     const storedPreference = storage ? readStoredThemePreference(storage) : null;
 
-    if (storage?.getItem(THEME_STORAGE_KEY) === "system") {
-      storage.removeItem(THEME_STORAGE_KEY);
-    }
-
-    setPreferenceState(storedPreference ?? "system");
+    setPreferenceState(storedPreference ?? FIRST_VISIT_THEME_PREFERENCE);
     setIsReady(true);
   }, []);
 

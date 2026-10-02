@@ -105,8 +105,10 @@
   outline: var(--focus-width) solid var(--focus-color);
   outline-offset: var(--focus-offset);
 }
+/* 009G-AC-001. The description under a Settings card is the secondary step, 14px; 13px sits between
+ * the brief's six steps. */
 .toolCard p {
-  font-size: 13px;
+  font-size: var(--text-secondary-size);
 }
 .openLink {
   display: flex;

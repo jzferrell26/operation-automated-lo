@@ -659,150 +659,6 @@ export async function expectKeyboardReachesEveryControl(
 }
 
 /**
- * 006D-AC-009 for a layer that is not in any page's tab order, which on this product means the
- * guided setup's panel.
- *
- * The page walk above starts on a screen and tabs through it, so every control it has ever
- * measured is a control some screen owns. The walkthrough's panel is a non-modal `Sheet`: it is
- * placed over whichever screen the step is about, it is not part of that screen, and no walk of
- * any screen in the review suite has ever had it open. Its Continue, its "Not now", its Done, and
- * its close control were therefore held to D7's three ring properties by nothing at all, while
- * `guided-setup.accessibility.spec.ts` asserted only that focus moved to the right places. Focus
- * arriving somewhere and focus being visible there are two different promises, and until
- * 2026-09-20 this product only kept the first one on its own panel.
- *
- * It walks the panel's own tab order rather than reading its controls off the DOM, for the reason
- * the ring rules make unavoidable: every ring in `packages/ui` is drawn on `:focus-visible`, and a
- * control focused from a script while the last interaction was a pointer press matches `:focus`
- * and not `:focus-visible`. A walk that called `focus()` on each control would measure an absent
- * ring on a correct product and pass only by accident. So the walk puts the browser in keyboard
- * modality the way a person does: it steps back out of the panel's first control and tabs into it.
- *
- * Every stop is measured by `measureTheFocusedControl`, the same function the page walk uses, so
- * the panel is held to `--focus-width` at 2px, `--focus-offset` at 3px, `--focus-color` resolved
- * from the control's own cascade, and SC 2.4.11's hit test, with nothing weakened for it. The walk
- * ends when Tab leaves the panel, which is the contract the panel is built to: PRD-006c D6 says
- * Tab leaves the panel for the page, so leaving is the end of the panel's tab order and not a
- * defect.
- */
-export async function expectTheRingOnThePanelsOwnControls(
-  page: Page,
-  options: Readonly<{ containerSelector: string; where: string }>,
-): Promise<void> {
-  const { containerSelector, where } = options;
-  const controls = page.locator(containerSelector).locator(FOCUSABLE_SELECTOR);
-  const count = await controls.count();
-  expect(count, `${where}: the panel has controls of its own`).toBeGreaterThan(0);
-
-  /**
-   * Out of the panel's first control, then back in by Tab, so every stop the walk measures was
-   * arrived at by a key press and matches `:focus-visible`.
-   *
-   * Usually that is one Tab: Shift+Tab steps to whatever precedes the panel in tab order and the
-   * Tab after it comes straight back. When the panel holds the first control on the screen,
-   * Shift+Tab leaves the document instead and the next Tab re-enters at the document's first
-   * control, which may be some way above the panel. So the Tab is repeated until focus is inside
-   * the panel, bounded by the document's own focusable count. The panel's controls are contiguous
-   * in tab order either way, so the stop this ends on is the panel's first control.
-   */
-  await controls.first().focus();
-  await page.keyboard.press("Shift+Tab");
-  const documentBudget = await page.evaluate(
-    (selector) => document.querySelectorAll(selector).length + 2,
-    FOCUSABLE_SELECTOR,
-  );
-  let entered = false;
-  for (let step = 0; step < documentBudget && !entered; step += 1) {
-    await page.keyboard.press("Tab");
-    entered = await page.evaluate((selector) => {
-      const element = document.activeElement;
-      const container = document.querySelector(selector);
-      return element !== null && container !== null && container.contains(element);
-    }, containerSelector);
-  }
-  expect(entered, `${where}: Tab reaches the panel's own controls`).toBe(true);
-
-  const seen: string[] = [];
-  const ringless: string[] = [];
-  const obscured: string[] = [];
-
-  for (let stop = 0; stop < count + 1; stop += 1) {
-    const focused = await page.evaluate(measureTheFocusedControl, containerSelector);
-    if (focused === undefined || !focused.inside) break;
-    /**
-     * Every stop is recorded, including a name already seen.
-     *
-     * The page walk above stops when it comes back to where it started, because a page's tab order
-     * is a cycle. A non-modal panel's is not: Tab leaves it, which is what ends this loop. So a
-     * repeated name here would mean focus is not moving or the panel is holding it, which is a
-     * defect this should report rather than a signal to stop early; the count below is what says
-     * so, because the stops and the panel's own controls would no longer be the same number.
-     */
-    const key = `${focused.tag}:${focused.name}`;
-    seen.push(key);
-    if (focused.wrong.length > 0) {
-      ringless.push(
-        `${key} (class "${focused.classes}", ${focused.diagnostic}): ${focused.wrong.join("; ")}`,
-      );
-    }
-    if (focused.covering.length > 0) {
-      obscured.push(`${key} is covered by ${focused.covering.join(", ")}`);
-    }
-    await page.keyboard.press("Tab");
-  }
-
-  expect(seen.length, `${where}: the panel's own tab order reaches every one of its controls`).toBe(
-    count,
-  );
-  expect(ringless, `${where}: the panel's own controls carry the brief's ring`).toEqual([]);
-  expect(
-    obscured,
-    `${where}: SC 2.4.11, a focused control in the panel is behind something else`,
-  ).toEqual([]);
-}
-
-/**
- * PRD-006c D7, "the footer stays visible", and PRD-006d's reopened row 2.
- *
- * The step-1 guided-setup panel's footer controls were below the fold at 1440: the placement
- * clamped against a panel measurement that was one render behind, and the sheet scrolled its own
- * footer out of its capped box. Both are fixed, in
- * `apps/web/src/features/guided-setup/model/panel-placement.ts` and in the primitive's stylesheet.
- * This is what says so from the outside, wherever a panel is on screen.
- *
- * It measures the controls rather than the panel. A panel whose box is inside the viewport but
- * whose Continue control has scrolled out of it is the same dead end for the person using it, and
- * only the control's own rectangle tells the two apart.
- */
-export async function expectPanelFooterIsOnScreen(
-  page: Page,
-  frame: Readonly<{ width: number; height: number }>,
-  controlNames: readonly string[] = ["Continue", "Not now"],
-): Promise<void> {
-  const dialog = page.getByRole("dialog");
-  for (const name of controlNames) {
-    const control = dialog.getByRole("button", { name, exact: true });
-    if ((await control.count()) === 0) continue;
-    const box = await control.first().boundingBox();
-    expect(box, `at ${String(frame.width)} "${name}" has a box`).not.toBeNull();
-    const measured = box as NonNullable<typeof box>;
-    expect(
-      measured.y,
-      `at ${String(frame.width)} "${name}" starts inside the viewport`,
-    ).toBeGreaterThanOrEqual(0);
-    expect(
-      measured.y + measured.height,
-      `at ${String(frame.width)} "${name}" ends inside the viewport`,
-    ).toBeLessThanOrEqual(frame.height);
-    expect(
-      measured.x + measured.width,
-      `at ${String(frame.width)} "${name}" ends inside the frame`,
-    ).toBeLessThanOrEqual(frame.width);
-  }
-  await expectNothingShowsBelowThePanelFooter(page, frame);
-}
-
-/**
  * Rubric axis 2, "vertical rhythm is consistent ... across sibling screens". A page in the shell
  * opens at the top of the main landmark, whatever its length.
  *
@@ -838,33 +694,6 @@ export async function expectThePageFillsTheContentColumn(page: Page): Promise<vo
   expect(
     Math.abs(gap ?? Number.POSITIVE_INFINITY),
     "the page starts at the column's edge",
-  ).toBeLessThan(1);
-}
-
-/**
- * PRD-006c D7 and `03-components/sheet-and-dialog.md`, "the footer stays visible": the footer is
- * pinned at the end of the panel's scroll box, so the panel ends with its controls.
- *
- * PRD-008d, the scored baseline review of 2026-10-01. The footer stuck to the scroll box's content
- * edge, which sat the sheet's end padding inside the panel's border, and the progress list scrolled
- * through that band: every capped panel showed a sliver of its next row below Continue. A picture
- * of that is only compared on the runner that drew it, so this measures it everywhere: the
- * footer's end is the panel's inner end, to the pixel.
- */
-export async function expectNothingShowsBelowThePanelFooter(
-  page: Page,
-  frame: Readonly<{ width: number }>,
-): Promise<void> {
-  const gap = await page.getByRole("dialog").evaluate((panel) => {
-    const footer = panel.lastElementChild;
-    if (footer === null || footer.querySelector("button") === null) return undefined;
-    const innerEnd = panel.getBoundingClientRect().top + panel.clientTop + panel.clientHeight;
-    return innerEnd - footer.getBoundingClientRect().bottom;
-  });
-  expect(gap, `at ${String(frame.width)} the panel has a footer to measure`).toBeDefined();
-  expect(
-    Math.abs(gap ?? Number.POSITIVE_INFINITY),
-    `at ${String(frame.width)} the panel's body shows below its footer`,
   ).toBeLessThan(1);
 }
 
@@ -906,17 +735,13 @@ export function screenshotName(
  * is still travelling, such as the create screen's saving state. There the request in flight is the
  * state, so waiting for the network to go quiet would wait for the state to end.
  *
- * `keepScroll` is true for exactly one kind of state too: one whose subject is a panel pointing at
- * an element somewhere down the page. The guided setup scrolls the page itself so the step's own
- * element sits clear of its panel (`model/panel-placement.ts`), and scrolling back to the top would
- * photograph a walkthrough pointing at something outside the picture. The position is the product's
- * own arithmetic from the same viewport, so it is as repeatable as the top of the page is.
+ * (A `keepScroll` option used to exist for the guided setup's panel, which scrolled the page itself
+ * and pointed at an element down it. PRD-009b retired the panel, so every picture starts at the top.)
  */
 export async function settleForScreenshot(
   page: Page,
-  options: Readonly<{ idleNetwork?: boolean; keepScroll?: boolean }> = {},
+  options: Readonly<{ idleNetwork?: boolean }> = {},
 ): Promise<void> {
-  const keepScroll = options.keepScroll ?? false;
   /**
    * Every stylesheet the route needs has been applied.
    *
@@ -971,10 +796,10 @@ export async function settleForScreenshot(
         (animation) => !(animation instanceof CSSTransition) || animation.playState !== "running",
       ),
   );
-  await page.evaluate(async (keep) => {
-    if (!keep) window.scrollTo(0, 0);
+  await page.evaluate(async () => {
+    window.scrollTo(0, 0);
     await document.fonts.ready;
-  }, keepScroll);
+  });
   if (options.idleNetwork ?? true) await page.waitForLoadState("networkidle");
 }
 
@@ -1041,8 +866,6 @@ export async function captureNamedState(
     frames?: readonly ReviewFrame[];
     fullPage?: boolean;
     idleNetwork?: boolean;
-    /** See `settleForScreenshot`: true for a panel that points at something down the page. */
-    keepScroll?: boolean;
     /**
      * Regions whose content is a fact about this run rather than about the design: a decision's
      * timestamp, for instance. Painted over so the picture still fails on a spacing token, a colour
@@ -1055,10 +878,7 @@ export async function captureNamedState(
   await parkThePointer(page);
   for (const frame of input.frames ?? REVIEW_FRAMES) {
     await page.setViewportSize({ width: frame.width, height: frame.height });
-    await settleForScreenshot(page, {
-      idleNetwork: input.idleNetwork ?? true,
-      keepScroll: input.keepScroll ?? false,
-    });
+    await settleForScreenshot(page, { idleNetwork: input.idleNetwork ?? true });
 
     await expectAxeClean(page, input.axe ?? {});
     await expectNoHorizontalOverflow(page);

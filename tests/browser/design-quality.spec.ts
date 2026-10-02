@@ -39,8 +39,8 @@ import {
  * check is checked here, at all four frames in both themes, so a reviewer's eye is spent on
  * hierarchy and consistency rather than on re-counting pixels.
  *
- * The account screens and the seven guided-setup steps are not here. They need a session and a
- * real database, so they run in the `review` project inside `pnpm test:db`
+ * The account screens are not here (the seven guided-setup steps are gone with the walkthrough,
+ * PRD-009b D4). They need a session and a real database, so they run in the `review` project inside `pnpm test:db`
  * (`tests/browser/review/design-quality.spec.ts`), against the same helpers.
  *
  * Every screen carries synthetic data only. No baseline in `tests/visual/screens/` contains a real

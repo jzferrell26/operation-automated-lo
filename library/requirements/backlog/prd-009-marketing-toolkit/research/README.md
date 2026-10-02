@@ -5,10 +5,13 @@ The inputs PRD-009 was written from. Each file is a copy of what the authoring s
 | File | What it is | Used by |
 |---|---|---|
 | [`2026-10-01-owner-direction.md`](2026-10-01-owner-direction.md) | The product owner's binding decisions OD-A to OD-G and his answers on the design proposal (D-1, D-2, D-4, D-9, and "follow the designer" for the rest) | Every sub-PRD; quoted in the index under "Owner decisions" |
+| [`2026-10-01-owner-direction-od-h.md`](2026-10-01-owner-direction-od-h.md) | OD-H, added to the owner's direction after the first draft: a curated, platform-wide ads library replaces the open house ad builder. Where it and the first record disagree, OD-H wins | Every sub-PRD; quoted in the index |
 | [`2026-10-01-oalo-toolkit-recon.md`](2026-10-01-oalo-toolkit-recon.md) | Read-only recon of this repository: the removal footprint with file and line, the prior criteria to supersede, the campaign flow today, the Overview and walkthrough causes | 009a, 009b, 009d, 009f |
-| [`2026-10-01-listing-studio-recon.md`](2026-10-01-listing-studio-recon.md) | Read-only recon of the owner's other product, Listing Studio (AutomatedRE): its link import, branding and co-marketing model, tokens, and reuse ratings | 009a (tokens), 009c (link import), 009d (review and confirm patterns) |
+| [`2026-10-01-listing-studio-recon.md`](2026-10-01-listing-studio-recon.md) | Read-only recon of the owner's other product, Listing Studio (AutomatedRE): its link import, branding and co-marketing model, tokens, and reuse ratings. Its link import section is history since OD-H | 009a (tokens), 009d (review and confirm patterns, the frozen brand snapshot) |
 
 The approved design proposal these documents led to is in [`../design/`](../design/).
+
+During the run, `meta-ads-guardian` adds `<date>-meta-special-ad-category-check.md` here with Meta's current rules and their sources (009D-AC-012).
 
 ## Rules for this folder
 

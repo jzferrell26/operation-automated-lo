@@ -16,6 +16,8 @@ import { describe, expect, it } from "vitest";
  *    against the mockup's 14px.
  * 4. With no approval card (a person who cannot approve, 009B D3) "Running now" filled the whole
  *    column, because `repeat(auto-fit, ...)` drops an empty track.
+ * 5. The topic question drew at the 16px body step where the mockup has the 14px secondary step,
+ *    and sat 12px above its chips where the mockup has 20px.
  *
  * jsdom has no layout, so these read the stylesheet. The measurements themselves are in
  * `tests/browser/home-first-run-geometry.spec.ts` (needs a browser run).
@@ -135,6 +137,19 @@ describe("the state chip reads at the secondary step (verifier: larger text in t
     expect(chip["font-size"]).toBe("var(--text-secondary-size)");
     expect(chip["padding-inline"]).toBe("var(--space-2) var(--space-3)");
     expect(pixels(chip["padding-block"])).toBe(2);
+  });
+});
+
+describe("the topic question is the secondary step, 20px above its chips (coordinator, mockup)", () => {
+  it("is 14px semibold, a step the brief allows, where it was the 16px body step", () => {
+    const question = rule(".question");
+
+    expect(question["font-size"]).toBe("var(--text-secondary-size)");
+    expect(question["font-weight"]).toBe("var(--weight-semibold)");
+  });
+
+  it("sits --space-5 above the chips, the gap the mockup puts between its start card's children", () => {
+    expect(rule(".topics")["gap"]).toBe("var(--space-5)");
   });
 });
 

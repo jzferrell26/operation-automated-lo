@@ -172,15 +172,20 @@
   order: 2;
 }
 
+/* The mockup's `.topic-question`: the secondary step (14px), semibold. It was the 16px body step. */
 .question {
   color: var(--tx-strong);
-  font-size: var(--text-body-size);
+  font-size: var(--text-secondary-size);
   font-weight: var(--weight-semibold);
 }
 
+/*
+ * The question sits `--space-5` (20px) above its chips, the same gap the mockup's start card puts
+ * between every one of its children (`.start { gap: var(--space-5) }`). It was `--space-3` (12px).
+ */
 .topics {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-5);
 }
 
 .emptyLibrary {

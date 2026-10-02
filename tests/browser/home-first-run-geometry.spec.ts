@@ -44,17 +44,25 @@ async function measureAt(page: Page, frame: Frame) {
     .getByRole("region", { name: "Launch an ad" })
     .getByText("Pick a ready-made Facebook ad");
   const running = page.getByRole("region", { name: "Running now" });
+  const question = page
+    .getByRole("region", { name: "Launch an ad" })
+    .getByText("What do you want to promote?");
+  const topics = page.getByRole("list", { name: "What do you want to promote?" });
 
-  const [introBox, progressBox, titleBox, runningBox, rowBox] = await Promise.all([
-    intro.boundingBox(),
-    progress.boundingBox(),
-    firstTitle.boundingBox(),
-    running.boundingBox(),
-    running.locator("xpath=..").boundingBox(),
-  ]);
+  const [introBox, progressBox, titleBox, runningBox, rowBox, questionBox, topicsBox] =
+    await Promise.all([
+      intro.boundingBox(),
+      progress.boundingBox(),
+      firstTitle.boundingBox(),
+      running.boundingBox(),
+      running.locator("xpath=..").boundingBox(),
+      question.boundingBox(),
+      topics.boundingBox(),
+    ]);
   if (!introBox || !progressBox || !titleBox || !runningBox || !rowBox) {
     throw new Error(`Home did not lay out at ${frame.name}`);
   }
+  if (!questionBox || !topicsBox) throw new Error(`The topic question did not lay out`);
   const leadWidths = await lead.evaluate((element) => {
     const parent = element.parentElement;
     if (parent === null) throw new Error("The lead has no card");
@@ -65,8 +73,9 @@ async function measureAt(page: Page, frame: Frame) {
         parent.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
     };
   });
-  const [chipFont, glyphSize] = await Promise.all([
+  const [chipFont, questionFont, glyphSize] = await Promise.all([
     firstChip.evaluate((element) => getComputedStyle(element).fontSize),
+    question.evaluate((element) => getComputedStyle(element).fontSize),
     firstGlyph.evaluate((element) => {
       const { width, height } = element.getBoundingClientRect();
       return { width, height };
@@ -80,6 +89,9 @@ async function measureAt(page: Page, frame: Frame) {
     runningWidth: runningBox.width,
     rowWidth: rowBox.width,
     chipFont,
+    questionFont,
+    // Edge to edge, so it holds whatever line height the question's own box ends up with.
+    questionToTopics: topicsBox.y - (questionBox.y + questionBox.height),
     glyphSize,
   };
 }
@@ -114,6 +126,12 @@ for (const theme of ["light", "dark"] as const) {
       const expectedWidth =
         frame.width >= TWO_COLUMN_FROM ? (measured.rowWidth - CARD_GAP) / 2 : measured.rowWidth;
       expect(measured.runningWidth, `Running now width at ${at}`).toBeCloseTo(expectedWidth, 0);
+
+      // The topic question is the secondary step and sits 20px (`--space-5`) above its chips. It
+      // was 16px and 12px. The gap is measured between box edges, so it does not move when the
+      // body's line height becomes `--leading-normal`.
+      expect(measured.questionFont, `topic question text at ${at}`).toBe("14px");
+      expect(measured.questionToTopics, `question to topic buttons at ${at}`).toBeCloseTo(20, 0);
 
       // The state chip reads at the secondary step, and the item glyph is the 24px step.
       expect(measured.chipFont, `state chip text at ${at}`).toBe("14px");

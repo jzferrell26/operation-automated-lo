@@ -19,6 +19,9 @@ const workspaceResolve = {
     "@oalo/test-support": resolve("packages/test-support/src/index.ts"),
     "@oalo/ui/product-tokens.css": resolve("packages/ui/src/product-tokens.css"),
     "@oalo/ui": resolve("packages/ui/src/index.ts"),
+    // PRD-009c, 009C-AC-013. The ads library loader imports `server-only`. Next aliases it; no
+    // package is installed (MTK-010), so a test run resolves it to an empty module.
+    "server-only": resolve("apps/web/src/testing/server-only.ts"),
   },
 };
 

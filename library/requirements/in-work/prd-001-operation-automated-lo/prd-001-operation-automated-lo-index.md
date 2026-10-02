@@ -6,11 +6,11 @@ In Work. Repository implementation for the PRD-001 core is actively maintained u
 
 ## Objective
 
-Deliver an approval-gated HighLevel Marketplace application that lets a mortgage loan officer turn one property into co-branded Realtor collateral plus a separate loan-officer or lender-branded paid campaign, publish the ad through the location's connected Meta account, route leads into HighLevel, and report outcomes through the mortgage pipeline.
+Deliver an approval-gated HighLevel Marketplace application that lets a mortgage loan officer turn one property into co-branded Realtor collateral plus a separate loan-officer or lender-branded paid campaign, publish the ad through the location's connected Meta account, route leads into HighLevel, and report outcomes through the mortgage pipeline. _(Superseded in part on 2026-10-01 by PRD-009 (S-01; OD-H): the loan officer chooses a curated library ad and launches it, collateral is not in this product's scope, and leads still go to HighLevel.)_
 
 ## Primary user story
 
-As a loan officer, I can select a Realtor, enter one property, generate the page and campaign assets, obtain required approvals, publish a Meta campaign, and see the resulting leads and loan outcomes without leaving my HighLevel operating environment.
+As a loan officer, I can select a Realtor, enter one property, generate the page and campaign assets, obtain required approvals, publish a Meta campaign, and see the resulting leads and loan outcomes without leaving my HighLevel operating environment. _(Superseded in part on 2026-10-01 by PRD-009 (S-01; OD-H): the loan officer chooses a curated library ad and launches it; there is no Realtor or property input and no collateral.)_
 
 ## Product principles
 
@@ -21,7 +21,7 @@ As a loan officer, I can select a Realtor, enter one property, generate the page
 5. External writes are explicit, allowlisted, idempotent, and audited.
 6. The product is compliance-aware, not a substitute for counsel or lender approval.
 7. Property and consumer data are minimized.
-8. The initial release is Meta-only and Open House Boost-only.
+8. The initial release is Meta-only and Open House Boost-only. _(Superseded in part on 2026-10-01 by PRD-009 (S-02; OD-H): Meta-only and library-ads-only.)_
 9. The authenticated dashboard supports switchable light and dark modes without changing approved campaign output.
 10. A prepared customer can complete permissions, configuration, verification, and launch readiness without required operator onboarding.
 11. Product-owned LLM APIs assist brand and campaign drafting, while deterministic rules and humans retain compliance, approval, and publish authority.
@@ -49,13 +49,13 @@ The first production release is limited to this complete vertical slice:
 
 1. Install the application for one HighLevel location and establish a server-verified session from signed user context.
 2. Configure one loan officer profile, one Realtor profile, one lender-approved compliance profile, and one existing HighLevel lead-routing workflow.
-3. Create one Open House Boost campaign from user-supplied property facts and authorized media.
+3. Create one Open House Boost campaign from user-supplied property facts and authorized media. _(Superseded on 2026-10-01 by PRD-009 (S-03; OD-H): one campaign from a library ad.)_
 4. Generate one frozen co-branded page, PDF, and QR destination plus a separate loan-officer or lender-branded Meta creative set. The paid-ad projection must exclude all Realtor and brokerage identity.
 5. Run deterministic preflight and obtain a named human approval for the exact campaign version.
 6. Create a HighLevel Meta draft, read it back, compare all material fields with the approved version, and require a separate explicit publish confirmation.
 7. Observe publish progress and support explicit pause and resume without exposing delete, audience upload, integration mutation, reselling, Google, or LinkedIn operations.
 8. Prove one no-spend test lead reaches the configured HighLevel contact, tag, opportunity, owner, workflow, notification, and attribution path.
-9. Show basic campaign status, spend, leads, appointments, and normalized pipeline outcomes.
+9. Show basic campaign status, spend, leads, appointments, and normalized pipeline outcomes. _(Superseded in part on 2026-10-01 by PRD-009 (S-04; OD-A, OD-D): spend, leads sent to HighLevel, and cost per lead on the campaign page; appointments and pipeline stay in HighLevel.)_
 
 The founding slice excludes rate, APR, payment, down-payment, and financing-scenario claims. It also excludes MLS scraping, customer-list audiences, lookalike audiences, Realtor reimbursement, shared ad spend, autonomous publishing, autonomous budget changes, and a product-owned messaging engine.
 
@@ -72,7 +72,7 @@ Synthetic completeness does not authorize production. New feature expansion paus
 | Lead routing | One test lead proves contact, tag, opportunity, assignment, workflow, notification, and attribution behavior |
 | Billing | Stripe success, cancellation, duplicate and delayed webhook handling, subscription cancellation, and HighLevel billing authorization per location |
 | Cloud environment | Isolated preview, staging, and dark production resources with production traffic disabled until release approval |
-| Compliance | Mortgage counsel and lender approval of the Open House Boost operating model, disclosures, consent evidence, targeting, retention, deletion, and Realtor relationship rules |
+| Compliance | Mortgage counsel and lender approval of the Open House Boost operating model, disclosures, consent evidence, targeting, retention, deletion, and Realtor relationship rules _(Amended on 2026-10-01 by PRD-009 (S-05; OD-H): counsel and lender approve the library-ad operating model and each library ad.)_ |
 | Release safety | Dependency alerts resolved or formally accepted, required CI checks enforced, browser suite stable, security review complete, and quality verification complete |
 
 The compliance-aware campaign compiler, immutable evidence chain, and HighLevel-native execution path are the differentiated product. Generic AI generation and broad marketing-tool scope are not the initial moat.
@@ -84,7 +84,7 @@ The compliance-aware campaign compiler, immutable evidence chain, and HighLevel-
 | [001j](prd-001j-operation-automated-lo-platform-foundation-runtime-and-delivery.md) | Monorepo, tenant database, runtime contracts, durable tasks, rendering plane, environments, CI, observability, and recovery | None, Phase 0 prerequisite for all product modules |
 | [001a](prd-001a-tenant-installation-and-ghl-oauth.md) | Tenant foundation, Marketplace install, signed user context, OAuth, token lifecycle | 001j |
 | [001b](prd-001b-brand-partner-and-compliance-profile.md) | Versioned loan officer brand, Realtor partner, compliance, and routing profiles | 001a |
-| [001c](prd-001c-campaign-blueprint-and-preflight.md) | Open House Boost blueprint, campaign versions, deterministic preflight, approval state | 001a, 001b |
+| [001c](prd-001c-campaign-blueprint-and-preflight.md) | Open House Boost blueprint, campaign versions, deterministic preflight, approval state _(Amended on 2026-10-01 by PRD-009 (S-06; OD-H): the library-ad blueprint joins it; open house versions stay readable.)_ | 001a, 001b |
 | [001d](prd-001d-page-pdf-and-creative-rendering.md) | Public campaign page, PDF, QR link, and Meta creative rendering | 001c |
 | [001e](prd-001e-meta-ad-launch.md) | GHL Ad Manager discovery, draft, approval, publish, pause, resume, and reporting | 001c, 001d |
 | [001f](prd-001f-ghl-lead-routing-and-attribution.md) | Lead capture, GHL contact/opportunity routing, workflow handoff, and outcomes | 001a, 001c, 001d |
@@ -105,11 +105,11 @@ The compliance-aware campaign compiler, immutable evidence chain, and HighLevel-
 
 ### Campaign creation
 
-- A user can complete the loan officer, Realtor, property, routing, and Meta inputs required by Open House Boost.
-- The user must attest to property-marketing and asset rights before generation.
+- A user can complete the loan officer, Realtor, property, routing, and Meta inputs required by Open House Boost. _(Superseded on 2026-10-01 by PRD-009 (S-07; OD-H): for library ads there is no property or Realtor input; the curator answers for the art.)_
+- The user must attest to property-marketing and asset rights before generation. _(Superseded on 2026-10-01 by PRD-009 (S-07; OD-H): for library ads, the curator answers for the art.)_
 - The system creates immutable campaign input and blueprint versions.
 - A deterministic preflight blocks missing disclosures, unapproved targeting, unconfirmed tokens, and asset-rights gaps.
-- A user can search and filter prior campaigns by Realtor, property, status, event date, and publish date.
+- A user can search and filter prior campaigns by Realtor, property, status, event date, and publish date. _(Superseded on 2026-10-01 by PRD-009 (S-08; OD-H, D-17): no search or filters yet.)_
 - Duplicating a prior campaign creates a new draft with current dependency checks and never mutates the prior campaign or its artifacts.
 
 ### Assets
@@ -137,7 +137,7 @@ The compliance-aware campaign compiler, immutable evidence chain, and HighLevel-
 - A synthetic lead creates or matches a HighLevel contact idempotently.
 - The lead receives the configured namespaced campaign tag and opportunity mapping.
 - The app can add the contact to one configured existing workflow when enabled.
-- The dashboard connects campaign spend and leads to appointments, applications, and funded or closed outcomes using GHL IDs and events.
+- The dashboard connects campaign spend and leads to appointments, applications, and funded or closed outcomes using GHL IDs and events. _(Superseded on 2026-10-01 by PRD-009 (S-09; OD-A, OD-D): appointments, applications, and funded outcomes stay in HighLevel.)_
 
 ### Security and compliance
 
@@ -145,7 +145,7 @@ The compliance-aware campaign compiler, immutable evidence chain, and HighLevel-
 - Webhooks verify HighLevel's current Ed25519 signature and reject replay.
 - Every consequential write has tenant, actor, campaign version, approval, idempotency key, safe request summary, outcome, and correlation ID.
 - Cross-tenant, public-page injection, malicious upload, approval bypass, OAuth, webhook, and replay tests pass.
-- Mortgage counsel and lender compliance approve the implemented Open House Boost rules before production traffic.
+- Mortgage counsel and lender compliance approve the implemented Open House Boost rules before production traffic. _(Amended on 2026-10-01 by PRD-009 (S-05; OD-H): lender compliance approves each library ad and its disclosures.)_
 
 ### Operations
 

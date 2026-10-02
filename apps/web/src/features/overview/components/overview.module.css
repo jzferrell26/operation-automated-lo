@@ -10,6 +10,12 @@
  * aligned; below 1100px everything stacks in document order, which is start, checklist, running,
  * approval (D1). Every control is at least 44px tall at every width, and no figure appears on the
  * page, so nothing here styles a number.
+ *
+ * Wave 3 polish, against the mockup and its previews at 1440, 1180, 768 and 390 in Light and Dark:
+ * the card rhythm is no longer outranked by the element reset, so the checklist intro sits 20px
+ * above the first item; the lead has the previews' measure; the two lists are always two equal
+ * columns, so "Running now" stays half width when a person who cannot approve gets no approval card
+ * (009B D3); the item glyphs are 24px; and the state chips read at the secondary step.
  */
 
 .home {
@@ -53,10 +59,17 @@
   }
 }
 
+/*
+ * Two equal columns, always (the mockup's `.home-lists`). It was `repeat(auto-fit, ...)`, which
+ * drops an empty track, so a lone "Running now" (no approval card for a person who cannot approve,
+ * 009B D3) grew to the whole column. A fixed pair keeps it at half width, and the second track
+ * stays empty rather than holding an approval card that would say "Nothing to approve" to someone
+ * who never approves.
+ */
 .lists {
   display: grid;
   gap: var(--space-6);
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   min-inline-size: 0;
 }
 
@@ -71,18 +84,19 @@
   box-shadow: var(--shadow-card);
 }
 
+/* The card rhythm: one `--space-4` between a card's direct children (the mockup's `.card > * + *`). */
 .card > * + * {
   margin-block-start: var(--space-4);
 }
 
-.card h2,
-.card h3,
-.card p,
-.card ul,
-.start h1,
-.start p,
-.start ul,
-.start ol {
+/*
+ * The reset takes the browser's default margins off headings, paragraphs, and lists. It is written
+ * with `:where` so it has no specificity of its own. As `.card p` (0,1,1) it outranked the rhythm
+ * above (0,1,0) on every paragraph and list that is a direct child of a card, so the checklist
+ * intro sat 4px above its first item where the mockup has 20px, and the progress bar sat flush on
+ * the intro. The mockup's reset is the bare element selector, which is also the weakest rule.
+ */
+:where(.card, .start) :where(h1, h2, h3, p, ul, ol) {
   margin: 0;
 }
 
@@ -123,8 +137,15 @@
   line-height: var(--leading-tight);
 }
 
+/*
+ * The lead's measure is the previews': 518px, which is 32.375rem at the 16px body step. The mockup
+ * writes it as `60ch`, and the previews were drawn in Segoe UI because no Inter file was on the
+ * machine that drew them (design section 12), where 60ch is 517.5px. In Inter, which the product
+ * loads, 60ch is 603.75px and the lead ran 86px wider than the picture it is checked against. A
+ * length in rem keeps the picture's measure whichever face draws it.
+ */
 .lead {
-  max-inline-size: 60ch;
+  max-inline-size: 32.375rem;
   color: var(--tx-body);
   font-size: var(--text-body-size);
   line-height: var(--leading-normal);
@@ -151,15 +172,20 @@
   order: 2;
 }
 
+/* The mockup's `.topic-question`: the secondary step (14px), semibold. It was the 16px body step. */
 .question {
   color: var(--tx-strong);
-  font-size: var(--text-body-size);
+  font-size: var(--text-secondary-size);
   font-weight: var(--weight-semibold);
 }
 
+/*
+ * The question sits `--space-5` (20px) above its chips, the same gap the mockup's start card puts
+ * between every one of its children (`.start { gap: var(--space-5) }`). It was `--space-3` (12px).
+ */
 .topics {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-5);
 }
 
 .emptyLibrary {
@@ -311,6 +337,18 @@
 
 .stateBadge {
   margin-block-start: var(--space-2);
+}
+
+/*
+ * The mockup's chip (`.badge`): words at the secondary step (14px) in a pill with 2px above and
+ * below and 8px before the glyph and 12px after the words. The shared `Badge` draws 12px words in
+ * 4px by 8px padding, so Home sets its own size here; the primitive is not Home's to change. Written
+ * as `.card .stateChip` so it outranks the primitive's single class whichever stylesheet loads last.
+ */
+.card .stateChip {
+  padding-block: 0.125rem;
+  padding-inline: var(--space-2) var(--space-3);
+  font-size: var(--text-secondary-size);
 }
 
 .itemAction {

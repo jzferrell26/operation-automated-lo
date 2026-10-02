@@ -18,6 +18,8 @@ Give each loan officer a clear campaign-to-loan view and give Cuantico an except
 
 ### Loan officer dashboard
 
+> **Superseded in part on 2026-10-01 by PRD-009** (S-10; OD-A, OD-D, OD-H): three figures (spend, leads sent to HighLevel, and cost per lead) on each campaign's own page (PRD-009e), no history search yet, and the library ad is the founding output. The lines that require source and freshness, missing data shown as unavailable, and test-lead exclusion still hold.
+
 - Each campaign shows current version, status, approvers, publish time, budget, spend, leads, cost per lead, appointments, applications, and funded or closed outcomes when available.
 - Campaign history can be searched and filtered by Realtor, property, status, event date, generation date, and publish date.
 - Campaign detail presents page, PDF, QR destination, creative, email and SMS package, approval, Meta state, lead count, and GHL outcome summary as one record.
@@ -28,6 +30,8 @@ Give each loan officer a clear campaign-to-loan view and give Cuantico an except
 - Users can open the underlying public page, artifact, provider entity, GHL contact, or opportunity only when their role and platform permit it.
 
 ### Health and exceptions
+
+> **Superseded in part on 2026-10-01 by PRD-009** (S-11; OD-C, OD-D): connection problems show on Home's checklist as "Needs attention" and on the campaign page.
 
 - Dashboard surfaces expired or failed tokens, disconnected Meta assets, disapproved ads, stale reporting, failed lead routes, missing mappings, approval age, and reconciliation gaps.
 - Every exception has a stable code, tenant-safe explanation, last attempt, correlation ID, and next action.
@@ -43,12 +47,16 @@ Give each loan officer a clear campaign-to-loan view and give Cuantico an except
 
 ### Founding cohort
 
+> **Superseded on 2026-10-01 by PRD-009** (S-12; OD-D): founding-cohort reporting is no longer a loan officer product surface, because the Reports page and its support-time entry are removed.
+
 - Internal reporting tracks purchase, install, setup, first generation, first approval, first publish, first lead, first appointment or application, support time, and continuation.
 - Internal reporting tracks permission preflight, routing verification, Meta verification, synthetic lead pass, Launch Ready, blocker code, and time to readiness.
 - Cohort metrics support the product gates in PRD 001.
 - Support-time entry is simple enough to be used consistently.
 
 ### Agency portfolio
+
+> **Superseded on 2026-10-01 by PRD-009** (S-13; OD-D): the `/reports` page is removed.
 
 - Agency rollup is disabled until an agency installation and role explicitly authorize every included location.
 - Agency users cannot access locations where the app is not installed.
@@ -65,9 +73,9 @@ Give each loan officer a clear campaign-to-loan view and give Cuantico an except
 ### Theme switching
 
 - The dashboard exposes Light, Dark, and System choices from a keyboard-accessible control with a visible selected state.
-- A first-time user receives the resolved browser or operating-system preference.
+- A first-time user receives the resolved browser or operating-system preference. _(Superseded on 2026-10-01 by PRD-009 (S-14; OD-E, D-5): a first-time user receives Light.)_
 - A manual Light or Dark choice persists under a product-specific browser storage key and wins over later system changes.
-- Choosing System clears the manual override and follows live `prefers-color-scheme` changes.
+- Choosing System clears the manual override and follows live `prefers-color-scheme` changes. _(Amended on 2026-10-01 by PRD-009 (S-14; OD-E, D-5): choosing System now stores `system` (PRD-009a D4) and still follows the device; the line above it holds.)_
 - Switching applies immediately without navigation, data refetch, dashboard-state loss, or page reload.
 - The resolved theme is applied before first paint with no visible flash of the wrong theme.
 - Server rendering and hydration complete without theme-related warnings or content mismatch.

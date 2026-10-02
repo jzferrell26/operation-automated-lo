@@ -12,9 +12,9 @@
 
 **Initial market:** Jonathan's AutomatedLO community, currently 343 members according to the internal portfolio factsheet reviewed for this research
 
-**Initial wedge:** Realtor partner campaign execution
+**Initial wedge:** Realtor partner campaign execution _(Superseded on 2026-10-01 by PRD-009 (S-72; OD-H): the first product is "Launch an ad" from the curated library; Realtor partners keep a plain list and never appear in paid ads.)_
 
-**First campaign:** Open House Boost
+**First campaign:** Open House Boost _(Superseded on 2026-10-01 by PRD-009 (S-72; OD-H): the first campaign is a library ad that the loan officer launches ("Launch an ad"); open house campaigns saved earlier stay readable.)_
 
 ## The job to be done
 
@@ -46,6 +46,8 @@ The Realtor is a collaborator, not the first paid seat. Realtor access should be
 
 ## First vertical slice: Open House Boost
 
+> **Superseded on 2026-10-01 by PRD-009** (S-72; OD-H): the first vertical slice is "Launch an ad": a loan officer chooses a curated library ad, changes only its words, sets budget, dates, and places, and reviews and approves it; leads still go to HighLevel. The inputs and outputs below describe the earlier open house flow and are kept as history.
+
 ### Inputs
 
 - Loan officer brand and required disclosure profile
@@ -74,7 +76,7 @@ The job is complete when the campaign is live in the client-owned Meta ad accoun
 
 | Order | Blueprint | User outcome |
 | --- | --- | --- |
-| 1 | Open House Boost | Realtor gets co-branded page, PDF, and QR materials while the loan officer runs a separately branded lead-generation ad and captures attributed leads. |
+| 1 | Open House Boost | Realtor gets co-branded page, PDF, and QR materials while the loan officer runs a separately branded lead-generation ad and captures attributed leads. _(Superseded on 2026-10-01 by PRD-009 (S-72; OD-H): the first product is "Launch an ad" from the curated library; the later blueprints in this table stand as history.)_ |
 | 2 | New Listing Spotlight | Realtor and loan officer receive co-branded listing collateral while paid promotion remains loan-officer or lender branded. |
 | 3 | Realtor Partner Campaign | Loan officer creates a reusable partner-facing campaign without a specific listing. |
 | 4 | Homebuyer Education Event | Loan officer fills a workshop or webinar and routes registrations into HighLevel. |
@@ -87,7 +89,7 @@ The job is complete when the campaign is live in the client-owned Meta ad accoun
 - One GHL location per tenant installation
 - Loan officer brand profile plus Realtor co-brand profile for collateral only
 - AI-assisted brand-profile drafting from approved marketing samples, with field-level human confirmation
-- Open House Boost blueprint
+- Open House Boost blueprint _(Superseded on 2026-10-01 by PRD-009 (S-72; OD-H): the first release builds "Launch an ad" over the curated library instead.)_
 - External single-property page and PDF generation
 - Meta connection discovery through HighLevel
 - Draft, review, explicit publish, pause, and read-only reporting

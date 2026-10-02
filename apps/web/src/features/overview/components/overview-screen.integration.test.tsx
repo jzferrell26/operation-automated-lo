@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { AdsLibraryTopic } from "@oalo/contracts";
+import { Icon, type IconName, type IconSize } from "@oalo/ui";
 
 import { buildHomeChecklist, type SavedBrandRecord } from "../model/home-checklist.js";
 import type { HomeCampaignRow, HomeList } from "../model/home-campaigns.js";
@@ -537,5 +538,62 @@ describe("sample ads are labelled wherever they appear (009B-AC-014, 009C-AC-005
     renderHome(homeData({ running: { rows: [row()], total: 1 } }));
 
     expect(screen.queryByText("Sample ad")).toBeNull();
+  });
+});
+
+describe("the two lists row (Wave 3 polish, 009B D3)", () => {
+  it("holds both cards for a person who can approve, side by side in one row", () => {
+    renderHome();
+    const row = card("Running now").parentElement;
+
+    expect(row).toBe(card("Needs your approval").parentElement);
+    expect(row?.children).toHaveLength(2);
+  });
+
+  it("holds Running now alone, not an empty approval card, for a person who cannot approve", () => {
+    renderHome(homeData({ approval: undefined }));
+    const row = card("Running now").parentElement;
+
+    // The stylesheet keeps two equal columns (home-polish.unit.test.ts), so the card stays half width.
+    expect(row?.children).toHaveLength(1);
+    expect(screen.queryByText("Nothing to approve")).toBeNull();
+  });
+});
+
+describe("the checklist glyphs and chips (Wave 3 polish)", () => {
+  /** What `Icon` draws for a name at a size, to compare an item's glyph against, class names included. */
+  function iconMarkup(name: IconName, size: IconSize): string {
+    const { container, unmount } = render(<Icon decorative name={name} size={size} />);
+    const markup = container.innerHTML;
+    unmount();
+    return markup;
+  }
+
+  it("draws both connections as the Connections glyph and the brand as the Brand kit glyph, at 24px", () => {
+    renderHome();
+    const drawn = [...card("Get set up").querySelectorAll("li[data-item] > span svg")].map(
+      (svg) => svg.outerHTML,
+    );
+
+    expect(drawn).toEqual([
+      iconMarkup("globe", "lg"),
+      iconMarkup("globe", "lg"),
+      iconMarkup("sparkles", "lg"),
+    ]);
+  });
+
+  it("sets every state chip at Home's chip size, in the checklist and in both lists", () => {
+    const { container } = renderHome(
+      homeData({
+        running: { rows: [row({ sample: true })], total: 1 },
+        approval: { rows: [row({ statusLabel: "Ready for approval" })], total: 1 },
+      }),
+    );
+    const chips = [...container.querySelectorAll(".oalo-state-label")];
+
+    // Three checklist chips, then the status and the sample label in Running now, then the status in
+    // Needs your approval.
+    expect(chips).toHaveLength(6);
+    for (const chip of chips) expect(chip.className).toMatch(/stateChip/u);
   });
 });

@@ -3,6 +3,8 @@ export * from "./homeowner-reports.js";
 
 export * from "./tenant-installation.js";
 
+export * from "./ads-library.js";
+
 export const contractVersion = "2026-07-20" as const;
 
 export const FixtureValidationRequestSchema = z

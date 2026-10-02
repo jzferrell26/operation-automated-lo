@@ -316,6 +316,8 @@ Mockup: [`mockups/home-first-run.html`](mockups/home-first-run.html). Previews a
 
 "Add a Realtor partner" leaves the checklist: under OD-H a partner changes nothing about an ad. The rest of revision 1's rules hold: one sentence states the consequence once ("You can set up an ad now. It runs once HighLevel and Meta are connected."); progress comes only from saved records; the card collapses to "You're set up" when done and reopens if something breaks.
 
+_Amended 2026-10-02 by the PRD-009 writing review (MTK-008, W-2/W-3): the Meta sentence is "Your Facebook page and ad account. Meta needs both before an ad can launch.", and the action while nothing is connected is "See what's needed" in place of "Connect", because launching stays off in PRD-009 even when both accounts are connected and the page the action opens has no connect control. "Fix" stays for Needs attention. The intro sentence quoted above is replaced in section 9._
+
 ### 4.3 Connection status appears once
 
 Unchanged: the shell-wide banner and its copy in the identity card go (D-11, recommendation applied). Each other page states a connection fact only where it changes what the person can do. PRD-004 RGL-002 still holds.
@@ -527,7 +529,7 @@ Mockup: [`mockups/campaigns-list.html`](mockups/campaigns-list.html).
 - **Table at 720px and wider:** Ad (a small thumbnail, decorative, and the name as the link), Topic, Runs, Where it shows, Status, Last change. **Cards below 720px** with the same facts.
 - No results column (results live on each campaign page).
 - Status chips read the recorded decision (`campaignStateLabel`).
-- Empty state: "No campaigns yet", "Pick an ad from the library to set up your first one.", action "Launch an ad".
+- Empty state: "No campaigns yet", "Pick an ad from the library to set up your first one.", action "Launch an ad". _(Amended 2026-10-02 by the PRD-009 writing review (MTK-008, W-10): with no ad in the library the sentence is the library's own, "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then.", because there is nothing to pick.)_
 
 ---
 
@@ -551,6 +553,10 @@ Every sentence in the mockups follows the user-language contract: second person,
 | Newer version | A newer version of this ad is in the library. |
 | Launch, Meta not connected | Meta isn't connected yet, so connect it in Settings to launch this ad. |
 | Launch, not turned on | Launching on Facebook isn't turned on for your workspace yet. Nothing has been published. |
+
+_Amended 2026-10-02 by the PRD-009 writing review (MTK-008, W-2/W-3): the checklist intro is "You can set up an ad now. Launching it on Facebook isn't turned on yet, and it needs HighLevel and Meta connected.", because launching stays off in PRD-009 even when both accounts are connected, and the connection actions say "See what's needed" while nothing is connected, because the page they open has no connect control._
+
+_Amended 2026-10-02 by the PRD-009 writing review (MTK-008, W-8): the retired-ad sentence for an approved campaign ends "This campaign keeps its approved version.", because the reader may not be the person who approved it._
 
 The area hint states the product's own rule (it never offers those choices, `compliance-and-risk.md:65-72`). The clause "Meta may also widen a small area" depends on Meta's current rules and stays UNVERIFIED until checked (D-18).
 

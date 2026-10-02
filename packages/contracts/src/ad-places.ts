@@ -8,11 +8,12 @@ import { z } from "zod";
  * city NAME may hold a whole word from `AD_PLACE_AUDIENCE_WORDS` (postal and radius words, and the
  * age, gender, family, and status words the targeting rule refuses) or end in a unit of distance
  * (`AD_PLACE_DISTANCE_UNITS`), so "Page, AZ" and "Mendota Heights, MN" pass and "78701",
- * "10 miles around Austin", "women 25-40", "Seniors, TX", and "Austin mi, TX" do not. The words are
- * matched against the city name only, never against the state code, so "MI" is Michigan and
- * "Detroit, MI" is Detroit. A distance unit is refused only where it reads as a distance (beside a
- * digit, in a phrase with "within", or as the last word of the name), so "Miles City, MT" passes. A short
- * list of real places whose names hold a refused word (`AD_PLACE_NAMED_EXCEPTIONS`) passes by exact
+ * "10 miles around Austin", "ten miles around Austin", "women 25-40", "Seniors, TX", and "Austin mi,
+ * TX" do not. The words are matched against the city name only, never against the state code, so "MI"
+ * is Michigan and "Detroit, MI" is Detroit. A distance unit is refused only where it reads as a
+ * distance (beside a digit, beside a number word (`AD_PLACE_NUMBER_WORDS`), in a phrase with "within",
+ * or as the last word of the name, with or without a full stop after it), so "Miles City, MT" passes.
+ * A list of real places whose names hold a refused word (`AD_PLACE_NAMED_EXCEPTIONS`) passes by exact
  * match. A list of every real place would be stricter still; it is not used because it would be a
  * large new data dependency the product does not have.
  * At most 5 states and 10 cities. The domain's extended `TARGETING_NOT_ALLOWED` refuses a stored
@@ -215,24 +216,99 @@ export const AD_PLACE_DISTANCE_UNITS: readonly string[] = Object.freeze([
 ]);
 
 /**
- * Real places (checked against Wikipedia on 2026-10-02) whose names hold a refused word, passed by
- * exact match on "Name, ST" and nothing looser: a person who serves Gay, GA is not refused, and
- * "Gay, TX" still is. The domain holds the same list (`LIBRARY_AD_PLACE_NAMED_EXCEPTIONS`).
+ * Number words that, beside a unit of distance, spell a radius ("ten miles around Austin", "five mi
+ * from Dallas", "a few miles", "twenty-five kilometres"). The domain holds the same list
+ * (`LIBRARY_AD_PLACE_NUMBER_WORDS`), held equal by a unit test. A number word beside the plural or
+ * abbreviated units (mi, miles, km, kms, kilometers, kilometres) is refused. Beside the singular
+ * "mile", "kilometer" or "kilometre" only "one" is refused ("one mile from Austin"), because real
+ * names hold a number word and the singular "Mile" (Nine Mile Falls, WA; Three Mile Bay, NY).
+ */
+export const AD_PLACE_NUMBER_WORDS: readonly string[] = Object.freeze([
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+  "eleven",
+  "twelve",
+  "thirteen",
+  "fourteen",
+  "fifteen",
+  "sixteen",
+  "seventeen",
+  "eighteen",
+  "nineteen",
+  "twenty",
+  "thirty",
+  "forty",
+  "fifty",
+  "sixty",
+  "seventy",
+  "eighty",
+  "ninety",
+  "hundred",
+  "hundreds",
+  "thousand",
+  "thousands",
+  "dozen",
+  "dozens",
+  "few",
+  "several",
+]);
+
+/**
+ * Real places whose names hold a refused word, passed by exact match on "Name, ST" and nothing
+ * looser: a person who serves Gay, GA is not refused, and "Gay, TX" still is. The domain holds the
+ * same list (`LIBRARY_AD_PLACE_NAMED_EXCEPTIONS`).
+ *
+ * Source: every pair below is a place in the USGS Geographic Names Information System (GNIS), the
+ * federal gazetteer of place names, read on 2026-10-02 through The National Map Gazetteer service
+ * (`https://carto.nationalmap.gov/arcgis/rest/services/geonames/MapServer`, layers 1 to 3: incorporated
+ * places, Census unincorporated places, and populated places), by exact name and state code. The
+ * state is the one the gazetteer gives, so a pair the gazetteer does not hold ("Miles, VA" is not
+ * there) is not listed. Pass Christian MS and Fort Gay WV are also incorporated municipalities, and
+ * Mount Gay-Shamrock WV is a Census designated place. A name that holds a refused word and is not
+ * listed (Christian Hill, PA) is refused; a person who serves it can add its state instead.
  */
 export const AD_PLACE_NAMED_EXCEPTIONS: readonly string[] = Object.freeze([
   "Gay, GA",
+  "Gay, ID",
   "Gay, MI",
+  "Gay, NC",
+  "Gay, OK",
+  "Gay, WV",
+  "Fort Gay, WV",
+  "Mount Gay, WV",
+  "Mount Gay-Shamrock, WV",
   "Boomer, NC",
+  "Boomer, TN",
   "Boomer, WV",
   "Boys Town, NE",
   "Boys Ranch, TX",
   "Ages, KY",
-  "Miles, TX",
+  "Miles, CA",
   "Miles, IA",
+  "Miles, LA",
+  "Miles, NC",
+  "Miles, OH",
+  "Miles, TX",
+  "Miles, WA",
+  "Miles, WI",
+  "Miles, WV",
   "Six Mile, SC",
+  "Seven Mile, OH",
   "Eight Mile, AL",
   "Ten Mile, TN",
   "Twelve Mile, IN",
+  "Pass Christian, MS",
+  "Veteran, NY",
+  "Veteran, WY",
+  "Zip City, AL",
 ]);
 
 const PEOPLE_WORDS = new RegExp(
@@ -240,7 +316,17 @@ const PEOPLE_WORDS = new RegExp(
   "iu",
 );
 const UNIT_CLOSES_NAME = new RegExp(
-  `(?:^|\\p{L}[^\\p{L}]+)(?:${AD_PLACE_DISTANCE_UNITS.join("|")})$`,
+  `(?:^|\\p{L}[^\\p{L}]+)(?:${AD_PLACE_DISTANCE_UNITS.join("|")})[^\\p{L}]*$`,
+  "iu",
+);
+const SINGULAR_UNITS: readonly string[] = ["mile", "kilometer", "kilometre"];
+const COUNTED_UNITS = AD_PLACE_DISTANCE_UNITS.filter((unit) => !SINGULAR_UNITS.includes(unit));
+// "ten miles", "five mi", "a few km", "dozens of miles": a number word, an optional "of", a plural or
+// abbreviated unit. Or "one" and a singular unit ("one mile"); any other number beside "Mile" is a
+// name (Nine Mile Falls).
+const NUMBER_BESIDE_UNIT = new RegExp(
+  `(?<!\\p{L})(?:${AD_PLACE_NUMBER_WORDS.join("|")})(?:[^\\p{L}]+of)?[^\\p{L}]+(?:${COUNTED_UNITS.join("|")})(?!\\p{L})` +
+    `|(?<!\\p{L})one[^\\p{L}]+(?:${SINGULAR_UNITS.join("|")})(?!\\p{L})`,
   "iu",
 );
 const NAMED_EXCEPTIONS: ReadonlySet<string> = new Set(
@@ -273,7 +359,9 @@ export function parseAdPlace(typed: string): AdPlace | undefined {
     if (!CITY_NAME.test(name) || !Object.hasOwn(US_STATES, code)) return undefined;
     // The words are matched against the name only: the code after the comma is a state, never a word.
     if (!NAMED_EXCEPTIONS.has(`${name}, ${code}`.toLowerCase())) {
-      if (PEOPLE_WORDS.test(name) || UNIT_CLOSES_NAME.test(name)) return undefined;
+      if (PEOPLE_WORDS.test(name) || UNIT_CLOSES_NAME.test(name) || NUMBER_BESIDE_UNIT.test(name)) {
+        return undefined;
+      }
     }
     return Object.freeze({ kind: "city", value: `${name}, ${code}` });
   }

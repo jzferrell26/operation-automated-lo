@@ -37,8 +37,10 @@ import {
  * The review project runs the same checks signed in (`review/ads-library.spec.ts`).
  *
  * The last block is the empty library (009C-AC-012). It needs a server started without the sample
- * flag, which neither project's server is, so it runs only when `OALO_EXPECT_EMPTY_LIBRARY` is
- * `true`: 009G-AC-001's sample-less review server sets it, and so can anyone checking by hand.
+ * flag, which this project's server is not, so it runs only when `OALO_EXPECT_EMPTY_LIBRARY` is
+ * `true`, for anyone who starts such a server by hand. The review run starts one itself, as its
+ * second pass (`tooling/scripts/database/review-browser-run.mjs`), and checks and photographs the
+ * same three pages signed in (`review/real-catalog/first-impression.spec.ts`, 009G-AC-001).
  */
 
 test.describe("The Ads library tab in a browser", () => {

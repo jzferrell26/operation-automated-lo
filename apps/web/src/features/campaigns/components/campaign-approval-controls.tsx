@@ -292,7 +292,7 @@ function resolveDecision(input: {
   return {
     state: "ready",
     explanation:
-      "Read the wording, the budget, where the ad runs, the dates, and the disclosures before you approve.",
+      "Read the wording, the budget, where the ad shows, the dates, and the disclosures before you approve.",
     requiredRole: APPROVER_OR_OWNER,
     confirmation: {
       title: "Approve this version",

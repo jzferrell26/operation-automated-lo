@@ -99,9 +99,75 @@ describe("what you approve (009D-AC-014)", () => {
     expect(screen.getAllByText(CHECK_RESULT_NEEDS_CHANGES).length).toBeGreaterThan(0);
   });
 
+  /**
+   * Writing review pass 2, W-26. The list used to show every check name in one style, each a
+   * positive sentence ("Ends after today"), so the one that failed read as an achievement. The state
+   * is now said in words next to each name, and the failed checks come first.
+   */
+  describe("says which check failed (writing review W-26)", () => {
+    function openedList(): HTMLElement {
+      return screen.getByText("See what we checked").closest("details") as HTMLElement;
+    }
+
+    it("puts the failed check first, with 'Needs changes:' in visible text", () => {
+      render(<LaunchReview review={reviewFixture({}, [CLAIM])} />);
+      const items = within(openedList()).getAllByRole("listitem");
+      expect(items).toHaveLength(22);
+      expect(items[0]).toHaveTextContent(
+        "Needs changes: No rate, payment or term claims in your words",
+      );
+      // The state is text a sighted person reads, never a screen reader's alone.
+      expect(items[0]?.querySelector(".oalo-visually-hidden")).toBeNull();
+      expect(within(openedList()).getAllByText(/^Needs changes:/u)).toHaveLength(1);
+    });
+
+    it("says 'Passed' to a screen reader before every other check, beside a decorative check icon", () => {
+      render(<LaunchReview review={reviewFixture({}, [CLAIM])} />);
+      const items = within(openedList()).getAllByRole("listitem");
+      for (const item of items.slice(1)) {
+        expect(item).toHaveTextContent(/^Passed: /u);
+        expect(item.querySelector(".oalo-visually-hidden")).toHaveTextContent("Passed:");
+        expect(item.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+      }
+    });
+
+    it("lists failed checks in the order the ruleset runs them, ahead of every passed one", () => {
+      const second = {
+        ruleCode: "NMLS_NUMBER_REQUIRED",
+        affected: "advertiser.nmls",
+        remediation: "Add your NMLS number in Brand.",
+      };
+      render(<LaunchReview review={reviewFixture({}, [CLAIM, second])} />);
+      const items = within(openedList()).getAllByRole("listitem");
+      const states = items.map((item) =>
+        (item.textContent ?? "").startsWith("Needs changes: ") ? "failed" : "passed",
+      );
+      expect(states.slice(0, 2)).toEqual(["failed", "failed"]);
+      expect(states.slice(2).every((state) => state === "passed")).toBe(true);
+      expect(items[0]).toHaveTextContent("No rate, payment or term claims in your words");
+      expect(items[1]).toHaveTextContent("NMLS number on the ad");
+    });
+
+    it("says 'Passed' on all of them, and 'Needs changes' on none, when nothing failed", () => {
+      render(<LaunchReview review={reviewFixture()} />);
+      const items = within(openedList()).getAllByRole("listitem");
+      expect(items.every((item) => (item.textContent ?? "").startsWith("Passed: "))).toBe(true);
+      expect(within(openedList()).queryByText(/Needs changes/u)).toBeNull();
+    });
+  });
+
   it("lists the facts the approval covers, with one Change link to step 2", () => {
     render(<LaunchReview from="home" review={reviewFixture()} />);
     const facts = document.querySelector("dl") as HTMLElement;
+    // Writing review W-33: the same names the campaign page and the list use for the same facts.
+    expect([...facts.querySelectorAll("dt")].map((term) => term.textContent)).toEqual([
+      "Library ad",
+      "Words",
+      "Budget",
+      "Dates",
+      "Where it shows",
+      "New leads go to",
+    ]);
     expect(
       within(facts).getByText("Sample: First home, start here, library version 2"),
     ).toBeInTheDocument();
@@ -116,7 +182,7 @@ describe("what you approve (009D-AC-014)", () => {
     expect(within(facts).getByText("Texas")).toBeInTheDocument();
     expect(within(facts).getByText("the Facebook feed")).toBeInTheDocument();
     expect(
-      within(facts).getByText("Your HighLevel account, once it's connected"),
+      within(facts).getByText("Your HighLevel account. It isn't connected yet."),
     ).toBeInTheDocument();
     const changes = screen.getAllByRole("link", { name: "Change" });
     expect(changes).toHaveLength(1);
@@ -169,14 +235,13 @@ describe("Launch on Facebook (009D-AC-016)", () => {
     expect(launch).not.toHaveAttribute("formaction");
     expect(launch).not.toHaveAttribute("href");
     expect(launch).toHaveAccessibleDescription(
-      "Meta isn't connected yet, so connect it in Settings to launch this ad.",
+      "Launching on Facebook isn't turned on yet, and it needs Meta connected. See what's needed for Meta.",
     );
     const describedBy = launch.getAttribute("aria-describedby") ?? "";
     const sentence = document.getElementById(describedBy) as HTMLElement;
-    expect(within(sentence).getByRole("link", { name: "connect it in Settings" })).toHaveAttribute(
-      "href",
-      "/settings/connections",
-    );
+    expect(
+      within(sentence).getByRole("link", { name: "See what's needed for Meta" }),
+    ).toHaveAttribute("href", "/settings/connections");
     expect(launch.closest("[data-launch-card]")?.querySelector("[data-approval-card]")).toBeNull();
   });
 
@@ -336,7 +401,7 @@ describe("the PRD-008b states on step 3 (D8, 009D-AC-018)", () => {
     expect(
       screen.getByText(
         sentenceWithDays(
-          "This ad was taken out of the library on Sep 30, 2026, so this draft can't be approved. Your budget, dates and area are kept.",
+          "This ad was taken out of the library on Sep 30, 2026, so this version can't be approved. Your budget, dates and area are kept.",
         ),
       ),
     ).toBeInTheDocument();
@@ -400,7 +465,8 @@ describe("Fix it (009D-AC-019)", () => {
       {
         ruleCode: "BUDGET_OUT_OF_BOUNDS",
         affected: "meta.dailyBudgetMinor",
-        remediation: "Choose a daily and total budget within the active ruleset.",
+        remediation:
+          "Choose a daily budget from $5 to $1,000 and a total budget from $5 to $5,000.",
       },
       "#budget",
     ],

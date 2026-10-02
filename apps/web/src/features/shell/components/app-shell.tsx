@@ -7,7 +7,6 @@ import { useId, useState, type ReactNode } from "react";
 import {
   SHELL_ACCOUNT_CLOSE,
   SHELL_ACCOUNT_TITLE,
-  SHELL_HELP_BODY,
   SHELL_HELP_BUTTON,
   SHELL_HELP_CLOSE,
   SHELL_HELP_TITLE,
@@ -20,6 +19,7 @@ import {
   SHELL_WORDMARK,
   SHELL_WORDMARK_INITIALS,
   shellAccountButtonLabel,
+  shellHelpBody,
 } from "../../../copy/shell-messages.js";
 import { ThemeControl } from "../../../theme/index.js";
 import type { DeepReadonly, Navigation } from "../../ui-foundation/model/synthetic-ui.js";
@@ -132,7 +132,7 @@ export function AppShell({
           />
 
           <div className={styles.cluster}>
-            <ShellHelp />
+            <ShellHelp roleLabel={session.user.roleLabel} />
             <AccountControl accountControls={accountControls} session={session} />
           </div>
         </div>
@@ -230,7 +230,7 @@ function MenuItem({ item, onNavigate, pathname, variant }: MenuItemProps) {
   );
 }
 
-function ShellHelp() {
+function ShellHelp({ roleLabel }: Readonly<{ roleLabel: string }>) {
   const [isOpen, setOpen] = useState(false);
   return (
     <SheetAnchor className={styles.anchorEnd}>
@@ -253,7 +253,7 @@ function ShellHelp() {
         open={isOpen}
         title={SHELL_HELP_TITLE}
       >
-        <p className={styles.sheetText}>{SHELL_HELP_BODY}</p>
+        <p className={styles.sheetText}>{shellHelpBody(roleLabel)}</p>
       </Sheet>
     </SheetAnchor>
   );

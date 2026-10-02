@@ -52,6 +52,8 @@ A topic button opens step 1 filtered to that topic; "Choose an ad" opens step 1 
 
 _Amended 2026-10-02 by the PRD-009 writing review (MTK-008, W-2/W-3): the intro is "You can set up an ad now. Launching it on Facebook isn't turned on yet, and it needs HighLevel and Meta connected.", the Meta item is "Your Facebook page and ad account. Meta needs both before an ad can launch.", and the two connection links say "See what's needed" (accessible names "See what's needed for HighLevel" and "See what's needed for Meta") while nothing is connected instead of "Connect" ("Fix" and "Review" stay for the other states), because launching stays off in PRD-009 even when both accounts are connected and the page those links open has no connect control._
 
+_Amended 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-2 follow-on): while the library holds no active ad the intro is "Launching an ad on Facebook isn't turned on yet, and it needs HighLevel and Meta connected.", because the start card says there is nothing to set up until then (009C-AC-012, unchanged) and the intro cannot say "You can set up an ad now" on the same page._
+
 ### D3. "Needs your approval" is for people who can approve
 
 A person who can approve (`location_admin` or `campaign_approver`) sees the card. Anyone else does not, because "Nothing to approve" would be the wrong sentence for someone who never approves. The list reads the recorded decision, as PRD-008b requires (008B-AC-009).

@@ -254,7 +254,7 @@ describe.each(HOSTS)("the approval control %s when the route refuses", (_where, 
 
     await waitFor(() => {
       expect(screen.getByRole("status")).toHaveTextContent(
-        "Approved. This campaign won't run as an ad yet. HighLevel and Meta aren't connected.",
+        "Approved. This campaign won't run as an ad yet. Launching isn't turned on, and HighLevel and Meta aren't connected.",
       );
     });
     expect(screen.queryByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeNull();
@@ -288,7 +288,7 @@ describe.each(HOSTS)(
         "an approval",
         approve,
         { decision: "approved", duplicate: false } as const,
-        "Approved. This campaign won't run as an ad yet. HighLevel and Meta aren't connected.",
+        "Approved. This campaign won't run as an ad yet. Launching isn't turned on, and HighLevel and Meta aren't connected.",
       ],
       [
         "a duplicate approval",
@@ -388,7 +388,7 @@ describe.each(HOSTS)("what the approval control says %s in each state", (where, 
   const ALREADY_DECIDED = "Someone has already decided on this version.";
   const READ_WHO_DECIDED = "Read who decided, above. Nothing else happens from this page.";
   const READY =
-    "Read the wording, the budget, where the ad runs, the dates, and the disclosures before you approve.";
+    "Read the wording, the budget, where the ad shows, the dates, and the disclosures before you approve.";
 
   const rows = [
     ["an approver on a version waiting for a decision", { ...APPROVABLE }, [READY], [PERMISSION]],

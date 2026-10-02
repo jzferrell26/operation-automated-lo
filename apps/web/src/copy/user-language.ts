@@ -32,16 +32,27 @@ export const NOT_CONNECTED_DETAIL = "Not connected yet.";
 /** Where a region's value would have come from. */
 export const NOT_CONNECTED_SOURCE = "HighLevel and Meta aren't connected.";
 
-/** A metric's source line: what is missing, and what connecting it would show. */
+/**
+ * A metric's source line: why there is no figure, and what the figure needs. Amended 2026-10-02 by
+ * the PRD-009 writing review pass 2 (MTK-008, W-28): connecting is a necessary condition, not a
+ * promise, and no screen in PRD-009 can connect either account, so the line no longer asks the
+ * reader to.
+ */
 export const NOT_LIVE_METRIC_SOURCE =
-  "Not live yet. Connect Meta and HighLevel to see spend and leads here.";
+  "Not live yet. Spend and leads can't show here until Meta and HighLevel are connected.";
 
 /** A metric's freshness line when there is no reading to be fresh or stale about. */
 export const NOT_LIVE_YET = "Not live yet";
 
-/** What the user can do. The second sentence is the promise that nothing changes meanwhile. */
+/**
+ * What is true about connecting, and that nothing changes meanwhile. Amended 2026-10-02 by the
+ * PRD-009 writing review pass 2 (MTK-008, W-28): the Connections page, which every "See what's
+ * needed" link opens, has no connect control, and PRD-009's non-goal is making the connections
+ * work, so a "connect when you're ready" sentence there named an action nobody could take
+ * (contract section 2 rule 3: name what the product cannot do yet).
+ */
 export const NOT_CONNECTED_NEXT_STEP =
-  "Connect HighLevel and Meta when you're ready. Nothing here changes until you do.";
+  "Connecting HighLevel and Meta isn't available in the app yet. Nothing here changes in the meantime.";
 
 /** A navigation item the user cannot open until an account is connected. */
 export const NOT_CONNECTED_NAVIGATION_DETAIL = "Available once your accounts are connected.";
@@ -229,9 +240,7 @@ export const CAMPAIGN_FIELD_NEEDS_A_LOOK = "This one needs another look.";
 
 /** What a campaign can and cannot do once it is saved and approved. */
 export const CAMPAIGN_NOT_AN_AD_YET =
-  "This campaign won't run as an ad yet. HighLevel and Meta aren't connected.";
-export const CAMPAIGN_SAVED_NOTICE =
-  "Saved to your workspace. This campaign won't run as an ad yet: HighLevel and Meta aren't connected.";
+  "This campaign won't run as an ad yet. Launching isn't turned on, and HighLevel and Meta aren't connected.";
 
 /**
  * Where a campaign stands, in the words a loan officer uses for it (contract sections 3 and 4).

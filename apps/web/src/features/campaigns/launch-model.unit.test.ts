@@ -172,6 +172,18 @@ describe("Fix it (009D-AC-019) and See what we checked (009D-AC-014)", () => {
     expect(RULE_PLAIN_NAMES.WORDS_PRIVATE_INFO_REQUEST).toBe("Doesn't ask for private details");
   });
 
+  // Writing review pass 2, W-32. A name says what the check does, in the same shape as its
+  // neighbours ("Images are large enough"), and never that an ad "runs", which nothing can in PRD-009.
+  it("names the checks that said less, or something untrue, by what they check", () => {
+    expect(RULE_PLAIN_NAMES.META_HOUSING_CATEGORY_REQUIRED).toBe("Marked as a housing ad for Meta");
+    expect(RULE_PLAIN_NAMES.WORDS_NUMBER).toBe("No numbers in the words, except your NMLS number");
+    expect(RULE_PLAIN_NAMES.WORDS_TOO_LONG).toBe("Words are within this ad's length limit");
+    expect(RULE_PLAIN_NAMES.IMAGE_QUALITY_LOW).toBe("Images are large enough");
+    for (const [code, name] of Object.entries(RULE_PLAIN_NAMES)) {
+      expect(name, code).not.toMatch(/runs?/iu);
+    }
+  });
+
   it("sends the words, budget, dates, and area to step 2, and a retired ad to step 1", () => {
     expect(fixTargetFor({ ruleCode: "WORDS_TOO_LONG", affected: "content.headline" })).toEqual({
       step: 2,

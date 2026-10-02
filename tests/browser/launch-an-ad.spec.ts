@@ -337,7 +337,12 @@ test.describe("Launch an ad in a browser", () => {
       await page.getByRole("button", { name: "Add", exact: true }).click();
       await saveAndCheck(page);
       const first = await readActivations(page);
-      expect(first.activations).toEqual(["Use this ad", "Add", "Save and check"]);
+      // Writing review W-31: each "Use this ad" button carries its ad's name as a hidden suffix.
+      expect(first.activations).toEqual([
+        `Use this ad: ${SAMPLE_ADS.firstHome.name}`,
+        "Add",
+        "Save and check",
+      ]);
       expect(first.typedFields).toHaveLength(1);
       expect(first.typedFields[0]).toMatch(/^Add a city or state/u);
       expect(first.forbidden).toEqual([]);
@@ -350,7 +355,10 @@ test.describe("Launch an ad in a browser", () => {
       );
       await saveAndCheck(page);
       const second = await readActivations(page);
-      expect(second.activations).toEqual(["Use this ad", "Save and check"]);
+      expect(second.activations).toEqual([
+        `Use this ad: ${SAMPLE_ADS.preApproval.name}`,
+        "Save and check",
+      ]);
       expect(second.typedFields).toEqual([]);
       expect(second.forbidden).toEqual([]);
     });

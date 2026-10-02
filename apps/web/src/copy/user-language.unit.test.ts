@@ -6,6 +6,7 @@ import * as userLanguage from "./user-language.js";
 import {
   CAMPAIGN_AD_RETIRED_LABEL,
   CAMPAIGN_NEXT_ACTION_LABELS,
+  CAMPAIGN_NOT_AN_AD_YET,
   CAMPAIGN_SENT_BACK_LABEL,
   CAMPAIGN_STATE_LABELS,
   CAMPAIGN_VERSION_REPLACED_LABEL,
@@ -14,6 +15,7 @@ import {
   NOT_CONNECTED_DISCLOSURE,
   NOT_CONNECTED_NEXT_STEP,
   NOT_CONNECTED_SOURCE,
+  NOT_LIVE_METRIC_SOURCE,
   ROLE_LABELS,
   SIGNED_IN_SOURCE,
   campaignStateLabel,
@@ -174,6 +176,40 @@ describe("the connection sentences", () => {
     ]) {
       expect(sentence).toMatch(/HighLevel and Meta/u);
     }
+  });
+
+  /**
+   * Writing review pass 2, W-28. No screen can connect HighLevel or Meta in PRD-009 (its non-goal),
+   * and launching is off even with both connected. So no connection sentence asks the reader to
+   * connect, and none says connecting is all an ad needs. They say what is true: it is not
+   * available in the app yet, and what the ad needs.
+   */
+  it("never asks the reader to connect an account, because no screen can do that yet", () => {
+    for (const sentence of [
+      NOT_CONNECTED_NEXT_STEP,
+      NOT_LIVE_METRIC_SOURCE,
+      CAMPAIGN_NOT_AN_AD_YET,
+    ]) {
+      expect(sentence).not.toMatch(/\bconnect\b/iu);
+      expect(sentence).not.toMatch(/when you.re ready/iu);
+    }
+    expect(NOT_CONNECTED_NEXT_STEP).toBe(
+      "Connecting HighLevel and Meta isn't available in the app yet. Nothing here changes in the meantime.",
+    );
+    expect(NOT_LIVE_METRIC_SOURCE).toBe(
+      "Not live yet. Spend and leads can't show here until Meta and HighLevel are connected.",
+    );
+  });
+
+  it("says launching is off as well as the accounts, when it says a campaign won't run", () => {
+    expect(CAMPAIGN_NOT_AN_AD_YET).toBe(
+      "This campaign won't run as an ad yet. Launching isn't turned on, and HighLevel and Meta aren't connected.",
+    );
+    expect(CAMPAIGN_NEXT_ACTION_LABELS.provider_publish).toBe(CAMPAIGN_NOT_AN_AD_YET);
+  });
+
+  it("has no constant left that nothing reads", () => {
+    expect(Object.keys(userLanguage)).not.toContain("CAMPAIGN_SAVED_NOTICE");
   });
 
   it("says only who is signed in on the account line", () => {

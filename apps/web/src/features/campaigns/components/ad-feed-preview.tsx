@@ -1,6 +1,6 @@
 import type { AdsLibraryCallToAction } from "@oalo/contracts";
 
-import { SPONSORED } from "../../../copy/launch-messages.js";
+import { BAND_PLACEHOLDER, SPONSORED } from "../../../copy/launch-messages.js";
 import { brandInitials } from "../../workspace/ad-brand.js";
 import { CALL_TO_ACTION_LABELS, type LaunchBand } from "../launch-model.js";
 import { AdCreative, adColorVariables, type AdShape } from "./ad-creative.js";
@@ -35,9 +35,14 @@ export function AdFeedPreview({
   primaryText,
   callToAction,
 }: AdFeedPreviewProps) {
-  const poster = [advertiser.name.trim(), advertiser.company.trim()]
-    .filter((part) => part !== "")
-    .join(", ");
+  // Writing review pass 2 (MTK-008, W-35): a person with no saved name sees the band's own
+  // placeholder where the poster's name goes, as the band underneath does, not a blank line.
+  const poster =
+    advertiser.name.trim() === ""
+      ? BAND_PLACEHOLDER
+      : [advertiser.name.trim(), advertiser.company.trim()]
+          .filter((part) => part !== "")
+          .join(", ");
   return (
     <article
       className={styles.feed}

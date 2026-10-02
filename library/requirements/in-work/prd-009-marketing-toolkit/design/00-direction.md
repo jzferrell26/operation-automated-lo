@@ -474,7 +474,7 @@ The library grid inside the step indicator (5.2), filtered when the person came 
 - **The actual ad** in a generic Facebook feed frame (no Meta branding), with the Tall (4:5) and Square (1:1) switch; tall is the default (D-10, recommendation applied). A caption says the image is the library's and the band is the loan officer's brand.
 - **"What you approve":** "Checks passed" and the count, "See what we checked" (NMLS on the ad, Equal Housing line on the ad, no rate, payment or term claims in your words, no age, gender or ZIP targeting), then the facts the approval covers: the library ad and version, which words were changed, budget, run dates, who sees it and where, and where new leads go. One "Change" link back to step 2.
 - **Approve this version:** the existing control and copy (`features/campaigns/components/campaign-approval-controls.tsx:169-170`), now "Approving applies to this exact version, with your words. Nothing is published or sent."
-- **Launch:** "Launch on Facebook", disabled until Meta is connected, with one sentence tied by `aria-describedby`: "Meta isn't connected yet, so connect it in Settings to launch this ad." In PRD-009 it stays disabled even when Meta is connected, with "Launching on Facebook isn't turned on for your workspace yet. Nothing has been published." (PRD-009 index: no launch route in this PRD).
+- **Launch:** "Launch on Facebook", disabled until Meta is connected, with one sentence tied by `aria-describedby`: "Meta isn't connected yet, so connect it in Settings to launch this ad." In PRD-009 it stays disabled even when Meta is connected, with "Launching on Facebook isn't turned on for your workspace yet. Nothing has been published." (PRD-009 index: no launch route in this PRD). _(Amended 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-25): the first sentence is "Launching on Facebook isn't turned on yet, and it needs Meta connected. See what's needed for Meta." and the second "Launching on Facebook isn't turned on yet. Nothing has been published.", because connecting Meta is not enough and the connections page has no connect control.)_
 - **Details for support:** collapsed; holds the version, the library ad id and version, and the support reference.
 
 ### 6.4 Clicks and fields, today against target
@@ -555,6 +555,14 @@ Every sentence in the mockups follows the user-language contract: second person,
 | Launch, not turned on | Launching on Facebook isn't turned on for your workspace yet. Nothing has been published. |
 
 _Amended 2026-10-02 by the PRD-009 writing review (MTK-008, W-2/W-3): the checklist intro is "You can set up an ad now. Launching it on Facebook isn't turned on yet, and it needs HighLevel and Meta connected.", because launching stays off in PRD-009 even when both accounts are connected, and the connection actions say "See what's needed" while nothing is connected, because the page they open has no connect control._
+
+_Amended 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-25): "Launch, Meta not connected" is "Launching on Facebook isn't turned on yet, and it needs Meta connected. See what's needed for Meta." and "Launch, not turned on" is "Launching on Facebook isn't turned on yet. Nothing has been published.", because the old Meta sentence promised that connecting is enough and named a control the connections page does not have._
+
+_Amended 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-29): the retired-ad sentence for an unapproved campaign ends "so this version can't be approved.", because every sibling sentence says version._
+
+_Amended 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-35): the "Step 2 brand line" for a person with no saved name is "Nothing is added yet. Add your name and NMLS number in Brand before you save. The image and layout come from the library and can't be changed.", because nothing was added from Brand._
+
+_Amended 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-2 follow-on): while the library holds no active ad the checklist intro is "Launching an ad on Facebook isn't turned on yet, and it needs HighLevel and Meta connected.", because the start card says there is nothing to set up until then._
 
 _Amended 2026-10-02 by the PRD-009 writing review (MTK-008, W-8): the retired-ad sentence for an approved campaign ends "This campaign keeps its approved version.", because the reader may not be the person who approved it._
 

@@ -38,7 +38,8 @@ export const CAMPAIGNS_PAGE = Object.freeze({
 export const CAMPAIGN_COLUMNS = Object.freeze({
   ad: "Ad",
   topic: "Topic",
-  runs: "Runs",
+  /** Amended 2026-10-02 (MTK-008, W-33): "Dates", as on the phone card; "Runs" states a fact nothing can do yet. */
+  runs: "Dates",
   where: "Where it shows",
   status: "Status",
   lastChange: "Last change",
@@ -92,7 +93,12 @@ export const EARLIER_FLOW_EYEBROW = "Campaign";
 export const EARLIER_FLOW_LINE = "Made with the earlier open house tool.";
 export const LAUNCH_AN_AD_INSTEAD = "Launch an ad";
 
-/** "Runs from launch until Oct 20, 2026, in Austin, TX. $25 a day, up to $350 in total." */
+/**
+ * "Set to run from launch until Oct 20, 2026, in Austin, TX. $25 a day, up to $350 in total."
+ *
+ * Amended 2026-10-02 (MTK-008, W-33): "Set to run", as step 2 says ("Set to run for 14 days."). "Runs
+ * from" stated a fact the Results card directly below denies ("This ad isn't running").
+ */
 export function runLine(parts: {
   startsOn: string | undefined;
   endsOn: string;
@@ -102,8 +108,8 @@ export function runLine(parts: {
 }): string {
   const when =
     parts.startsOn === undefined
-      ? `Runs from launch until ${parts.endsOn}`
-      : `Runs from ${parts.startsOn} until ${parts.endsOn}`;
+      ? `Set to run from launch until ${parts.endsOn}`
+      : `Set to run from ${parts.startsOn} until ${parts.endsOn}`;
   return `${when}, in ${parts.places}. ${parts.daily} a day, up to ${parts.total} in total.`;
 }
 
@@ -148,8 +154,11 @@ export const AD_CARD = Object.freeze({
   pictureMissing: "The picture for this ad isn't available.",
   libraryAd: "Library ad",
   words: "Words",
-  /** Amended 2026-10-02 (MTK-008, W-15): "Shows in", the words step 2 uses for where an ad shows. */
-  shows: "Shows in",
+  /**
+   * Amended 2026-10-02 (MTK-008, W-33, after W-15): "Where it shows", the label four other screens use
+   * for the whole fact. "Shows in:" names only the placement and stays step 2's sentence.
+   */
+  shows: "Where it shows",
 });
 export function versionLabel(versionNo: number): string {
   return `Version ${String(versionNo)}`;

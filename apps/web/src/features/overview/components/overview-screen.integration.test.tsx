@@ -255,6 +255,52 @@ describe("the Get set up card (009B-AC-004, 009B-AC-007)", () => {
     ).toBeInTheDocument();
   });
 
+  /**
+   * Writing review pass 2. With no active ad the start card says there is nothing to set up
+   * (009C-AC-012, fixed criterion text), so the setup card cannot say "You can set up an ad now" on
+   * the same page. It says only what is true: launching is off, and what it needs.
+   */
+  describe("when the library has no ad", () => {
+    const WITH_ADS =
+      "You can set up an ad now. Launching it on Facebook isn't turned on yet, and it needs HighLevel and Meta connected.";
+    const NO_ADS =
+      "Launching an ad on Facebook isn't turned on yet, and it needs HighLevel and Meta connected.";
+
+    it("does not tell a person they can set up an ad now", () => {
+      renderHome(homeData({ topics: [] }));
+      const setup = card("Get set up");
+
+      expect(within(setup).getByText(NO_ADS)).toBeInTheDocument();
+      expect(within(setup).queryByText(WITH_ADS)).toBeNull();
+      expect(document.body.textContent).not.toContain("You can set up an ad now");
+    });
+
+    it("keeps the start card's own sentence exactly (009C-AC-012)", () => {
+      renderHome(homeData({ topics: [] }));
+
+      expect(
+        within(card("Launch an ad")).getByText(
+          "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it("still says it once, inside the card, like every connection statement", () => {
+      const { container } = renderHome(homeData({ topics: [] }));
+
+      expect(connectionStatementsOutsideTheSetupCard(container)).toEqual([]);
+      expect(repeatedConnectionStatements(container)).toEqual([]);
+    });
+
+    it("says an ad can be set up now as soon as the library has one", () => {
+      renderHome(homeData({ topics: ["refinance"] }));
+      const setup = card("Get set up");
+
+      expect(within(setup).getByText(WITH_ADS)).toBeInTheDocument();
+      expect(within(setup).queryByText(NO_ADS)).toBeNull();
+    });
+  });
+
   it("shows each state as a glyph plus words", () => {
     renderHome();
     const setup = card("Get set up");
@@ -434,6 +480,7 @@ describe("state it once (009B-AC-008)", () => {
     expect(text).not.toContain("HighLevel, Meta, and Stripe aren't connected");
     expect(text).not.toContain("Not connected yet.");
     expect(text).not.toContain("Connect HighLevel and Meta when you're ready");
+    expect(text).not.toContain("Connecting HighLevel and Meta isn't available in the app yet");
     expect(text).not.toMatch(/Not live yet/iu);
     expect(text).not.toMatch(/Stripe/u);
     expect(container.querySelector(".oalo-metric__value")).toBeNull();

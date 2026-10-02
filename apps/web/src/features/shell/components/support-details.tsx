@@ -1,6 +1,6 @@
 import { SUPPORT_DETAILS_LABELS, SUPPORT_DETAILS_SUMMARY } from "../../../copy/user-language.js";
 import type { InternalRefusal } from "../../http/internal-api.js";
-import { isMappedErrorCode } from "../../http/user-messages.js";
+import { showsSupportReference } from "../../http/user-messages.js";
 
 /** One labelled value: a plain label a user can read aloud, and the value support asks for. */
 export type SupportDetailRow = readonly [label: string, value: string];
@@ -36,17 +36,21 @@ export function SupportDetails({ rows }: Readonly<{ rows: readonly SupportDetail
 }
 
 /**
- * The support reference beside a refusal, shown exactly when the code has no sentence of its own.
+ * The support reference beside a refusal, shown when the code has no sentence of its own, and when
+ * its own sentence points at the reference.
  *
  * PRD-006b D7. A code the product has words for is answered with those words and nothing else: a
  * person told "This campaign changed since you opened it" has everything they need and a reference
  * would only be clutter. A code the product has no words for is answered with the generic sentence,
- * which asks them to contact support, and support cannot find a request nobody can name. The four
- * surfaces that can show a generic sentence render this, so the rule is written once rather than
- * remembered four times.
+ * which asks them to contact support, and support cannot find a request nobody can name.
+ *
+ * Writing review pass 2 (MTK-008, W-27) adds the second half of the rule: a mapped code whose own
+ * sentence says "the support reference below" shows it too, because a sentence that points below
+ * must have something below it. `showsSupportReference` holds the rule, and every surface that can
+ * show a refusal renders this, so it is written once rather than remembered per screen.
  */
 export function SupportReference({ refusal }: Readonly<{ refusal: InternalRefusal | undefined }>) {
-  if (refusal === undefined || isMappedErrorCode(refusal.code)) {
+  if (refusal === undefined || !showsSupportReference(refusal.code)) {
     return null;
   }
 

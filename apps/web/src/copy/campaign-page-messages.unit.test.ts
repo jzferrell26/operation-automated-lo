@@ -7,6 +7,7 @@ import {
   APPROVAL,
   APPROVER_ROLE_NOUNS,
   CAMPAIGN_CARD_LABELS,
+  CAMPAIGN_COLUMNS,
   CAMPAIGNS_PAGE,
   CAMPAIGNS_TABS,
   EARLIER_FLOW_LINE,
@@ -80,8 +81,15 @@ describe("the campaign page's words", () => {
     expect(CAMPAIGNS_PAGE.emptyDescriptionNoAds).not.toMatch(/pick an ad/iu);
   });
 
-  it("say where an ad shows the same way step 2 does (W-15)", () => {
-    expect(AD_CARD.shows).toBe("Shows in");
+  // W-15 chose "Shows in" for the campaign page; W-33 found four other places calling the whole fact
+  // "Where it shows", and "Shows in:" names only the placement (the Facebook feed), so the fact is
+  // labelled "Where it shows" everywhere and "Shows in:" stays step 2's sentence about the feed.
+  it("say where an ad shows, and when it runs, the way every other screen does (W-33)", () => {
+    expect(AD_CARD.shows).toBe("Where it shows");
+    expect(AD_CARD.shows).toBe(CAMPAIGN_COLUMNS.where);
+    expect(AD_CARD.shows).toBe(CAMPAIGN_CARD_LABELS.where);
+    expect(CAMPAIGN_COLUMNS.runs).toBe("Dates");
+    expect(CAMPAIGN_COLUMNS.runs).toBe(CAMPAIGN_CARD_LABELS.dates);
   });
 
   it("do not tell a reader they approved what someone else approved (W-8)", () => {
@@ -141,10 +149,10 @@ describe("the sentences the helpers build", () => {
     const base = { endsOn: "Tue, Oct 20, 2026", places: "Austin, TX", daily: "$25", total: "$350" };
 
     expect(runLine({ ...base, startsOn: undefined })).toBe(
-      "Runs from launch until Tue, Oct 20, 2026, in Austin, TX. $25 a day, up to $350 in total.",
+      "Set to run from launch until Tue, Oct 20, 2026, in Austin, TX. $25 a day, up to $350 in total.",
     );
     expect(runLine({ ...base, startsOn: "Tue, Oct 6, 2026" })).toBe(
-      "Runs from Tue, Oct 6, 2026 until Tue, Oct 20, 2026, in Austin, TX. $25 a day, up to $350 in total.",
+      "Set to run from Tue, Oct 6, 2026 until Tue, Oct 20, 2026, in Austin, TX. $25 a day, up to $350 in total.",
     );
   });
 

@@ -3,6 +3,8 @@ import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NEWER_VERSION_NOTICE } from "../../../copy/ads-library-messages.js";
+import { SUPPORT_DETAILS_LABELS } from "../../../copy/user-language.js";
+import { SUPPORT_REFERENCE_HEADER } from "../../http/internal-api.js";
 import type { NewerVersionOffer } from "../newer-version.js";
 import { UseNewVersion } from "./use-new-version.js";
 
@@ -166,7 +168,51 @@ describe("saving the new version", () => {
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("We couldn't save the new version. Nothing was saved.");
     expect(alert).toHaveTextContent("This ad isn't in the library any more");
+    // W-30: "Choose another ad" is the link the campaign page's notices carry; "pick it again" was not.
+    expect(alert).toHaveTextContent(
+      "Choose another ad. Check the words, budget and area before you save.",
+    );
     expect(mocked.push).not.toHaveBeenCalled();
+  });
+
+  // Writing review pass 2, W-27. The same save route answers here as on step 2, so the same
+  // sentence that says "the support reference below" has a reference below it.
+  it("shows the support reference its own sentence points at, for a failed save", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          Response.json(
+            { error: "CAMPAIGN_PREFLIGHT_FAILED" },
+            {
+              status: 400,
+              headers: { [SUPPORT_REFERENCE_HEADER]: "correlation_save_1a2b3c4d5e6f" },
+            },
+          ),
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    render(<UseNewVersion canUse offer={OFFER} />);
+
+    await user.click(screen.getByRole("button", { name: "Use the new version" }));
+    await user.click(screen.getByRole("button", { name: "Yes, use the new version" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("the support reference below");
+    expect(screen.getByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeInTheDocument();
+    expect(screen.getByText("correlation_save_1a2b3c4d5e6f")).toBeInTheDocument();
+  });
+
+  it("shows no support reference for a code whose own sentence needs none", async () => {
+    stubSave({ error: "LIBRARY_AD_NOT_AVAILABLE" }, 400);
+    const user = userEvent.setup();
+    render(<UseNewVersion canUse offer={OFFER} />);
+
+    await user.click(screen.getByRole("button", { name: "Use the new version" }));
+    await user.click(screen.getByRole("button", { name: "Yes, use the new version" }));
+
+    await screen.findByRole("alert");
+    expect(screen.queryByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeNull();
   });
 
   it("says when nothing answered, and opens nothing", async () => {

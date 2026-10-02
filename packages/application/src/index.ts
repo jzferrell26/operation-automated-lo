@@ -113,7 +113,11 @@ export {
 export {
   CampaignApprovalNotReadyError,
   CampaignApprovalStaleError,
+  CampaignLibraryAdRefusedError,
   executeHumanCampaignApproval,
+  type LibraryAdCatalogPort,
+  type LibraryAdCatalogStanding,
+  type LibraryAdRefusalReason,
   type CampaignApprovalCommitInput,
   type CampaignApprovalCommitResult,
   type CampaignApprovalEvidence,

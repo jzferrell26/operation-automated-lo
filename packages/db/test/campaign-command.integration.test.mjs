@@ -28,6 +28,16 @@ import {
 
 const databaseUrl = requiredTestDatabaseUrl();
 
+/**
+ * PRD-009c D4. `executeHumanCampaignApproval` requires a library-ad catalog port. These versions are
+ * open house versions, which never consult the catalog, so this port fails the test if it is asked.
+ */
+const OPEN_HOUSE_ONLY_CATALOG = Object.freeze({
+  async standingOf() {
+    throw new Error("An open house version must not consult the ads library catalog.");
+  },
+});
+
 describe("campaign command PostgreSQL integration", { concurrency: false }, () => {
   it("GGL-008 creates an Open House Boost through commands and reloads it from a fresh pool", async () => {
     const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
@@ -121,6 +131,7 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
           pool,
           createPrincipalBoundTenantContextAuthority(creator, `${tenant.correlationId}_denied`),
         ),
+        OPEN_HOUSE_ONLY_CATALOG,
       );
       assert.deepEqual(denied, { kind: "denied" });
 
@@ -131,6 +142,7 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
           pool,
           createPrincipalBoundTenantContextAuthority(approver, `${tenant.correlationId}_approved`),
         ),
+        OPEN_HOUSE_ONLY_CATALOG,
       );
       assert.equal(committed.kind, "committed");
       if (committed.kind === "committed") {

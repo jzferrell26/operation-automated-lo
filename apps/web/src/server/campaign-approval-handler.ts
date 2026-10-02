@@ -2,12 +2,15 @@ import { createHash } from "node:crypto";
 
 import {
   CAMPAIGN_APPROVAL_ROLES,
+  CampaignLibraryAdRefusedError,
   executeHumanCampaignApproval,
   type AuthenticatedPrincipal,
+  type LibraryAdRefusalReason,
 } from "@oalo/application";
 import { OpaqueReferenceSchema } from "@oalo/contracts";
 import { z } from "zod";
 
+import { createLibraryAdCatalogPort } from "../features/ads-library/server/approval-catalog-port.js";
 import {
   resolveAuthenticatedPrincipal,
   type CampaignCommandPorts,
@@ -29,6 +32,18 @@ const CampaignApprovalRequestSchema = z
     expectedRowVersion: z.number().int().positive().optional(),
   })
   .strict();
+
+/**
+ * PRD-009c D4, 009C-AC-008. The command refuses a version whose library ad is missing, retired,
+ * replaced, or whose art changed; the route answers each with 409 and its own code, so the page can
+ * show the matching notice. Nothing is written for any of them.
+ */
+const LIBRARY_AD_REFUSAL_CODES: Readonly<Record<LibraryAdRefusalReason, string>> = {
+  missing: "LIBRARY_AD_MISSING",
+  retired: "LIBRARY_AD_RETIRED",
+  replaced: "LIBRARY_AD_REPLACED",
+  art_changed: "LIBRARY_AD_ART_CHANGED",
+};
 
 function ipAuditHashFor(principal: Readonly<AuthenticatedPrincipal>): string {
   return createHash("sha256").update(`${principal.sessionId}:approval`).digest("hex");
@@ -74,6 +89,9 @@ export async function handleCampaignApproval(
       },
       principal,
       adapter.approvalRepository,
+      // PRD-009c D4: the required catalog port, composed from the ads library loader under the
+      // same raw environment, so a deployment resolves only real ads.
+      createLibraryAdCatalogPort(environment),
     );
     if (result.kind === "denied") {
       return withCorrelationHeaders(jsonCommandError(403, "FORBIDDEN"), correlation);
@@ -95,6 +113,12 @@ export async function handleCampaignApproval(
       correlation,
     );
   } catch (error) {
+    if (error instanceof CampaignLibraryAdRefusedError) {
+      return withCorrelationHeaders(
+        jsonCommandError(409, LIBRARY_AD_REFUSAL_CODES[error.reason]),
+        correlation,
+      );
+    }
     const response =
       campaignCommandAuthErrorResponse(error) ?? jsonCommandError(400, "CAMPAIGN_APPROVAL_FAILED");
     return withCorrelationHeaders(response, correlation);

@@ -63,8 +63,9 @@ const connectionsAllowances: readonly ReviewSurfaceAllowance[] = [
   },
   {
     path: "navigation.items[*].id",
-    value: "reports",
-    because: "Substring of the allowed capability label 'Read agency reports'.",
+    value: "campaigns",
+    because:
+      "Substring of the allowed capability label 'Create campaigns'. The one six-item menu (PRD-009a) names this item 'campaigns'.",
   },
   {
     path: "overview.activeWork[*].type",
@@ -109,7 +110,10 @@ describe("authenticated settings connections route", () => {
   it("sweeps the whole fixture rather than a curated list of permission keys", () => {
     const fixture = loadSyntheticUiFixture();
 
-    expect(collectFixtureStrings(fixture).length).toBeGreaterThan(400);
+    // 426 strings before PRD-009a, 382 after. The whole drop is the navigation block: nine items
+    // and six marketing items (71 strings) became the one six-item menu (26 strings), and the
+    // session gained one `reports:read` grant. Every string outside `navigation` is still swept.
+    expect(collectFixtureStrings(fixture).length).toBeGreaterThan(350);
     expect(forbiddenReviewStrings(fixture, connectionsAllowances).length).toBeGreaterThan(200);
     expect(staleAllowances(fixture, connectionsAllowances)).toEqual([]);
   });

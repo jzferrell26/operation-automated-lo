@@ -53,8 +53,14 @@ const STATE_TONES: Readonly<Record<HomeChecklistState, BadgeTone>> = {
 
 export function HomeSetupCard({
   checklist,
+  libraryEmpty = false,
   reviewing,
-}: Readonly<{ checklist: HomeChecklist; reviewing: boolean }>) {
+}: Readonly<{
+  checklist: HomeChecklist;
+  /** True when no ad is active in the library, so the card cannot say an ad can be set up now. */
+  libraryEmpty?: boolean;
+  reviewing: boolean;
+}>) {
   const needsAttention = checklist.items.some((item) => item.state === "needs_attention");
   const allDone = checklist.doneCount === checklist.total;
 
@@ -95,7 +101,7 @@ export function HomeSetupCard({
       >
         <span style={{ inlineSize: `${String(percent)}%` }} />
       </div>
-      <p className={styles.secondary}>{HOME_SETUP.intro}</p>
+      <p className={styles.secondary}>{libraryEmpty ? HOME_SETUP.introNoAds : HOME_SETUP.intro}</p>
       <ul className={styles.checklist}>
         {checklist.items.map((item) => (
           <ChecklistRow item={item} key={item.id} />

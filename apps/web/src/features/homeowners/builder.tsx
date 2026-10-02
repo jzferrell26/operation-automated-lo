@@ -54,7 +54,7 @@ export function HomeBrandFields({
         onChange={(event) => update("phone", event.target.value)}
       />
       <TextField
-        label="Loan officer NMLS"
+        label="Your NMLS number"
         value={value.nmls}
         maxLength={12}
         inputMode="numeric"
@@ -62,7 +62,7 @@ export function HomeBrandFields({
         onChange={(event) => update("nmls", event.target.value)}
       />
       <TextField
-        label="Company NMLS"
+        label="Company NMLS number"
         value={value.companyNmls}
         maxLength={12}
         inputMode="numeric"

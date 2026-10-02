@@ -382,6 +382,27 @@
   list-style: none;
 }
 
+/*
+ * Writing review W-26. Each check says its state in words beside its name. A passed check carries a
+ * check icon and a visually hidden "Passed: "; a failed one carries "Needs changes:" in visible text,
+ * in the critical text colour, so the state never rests on colour or an icon alone.
+ */
+.checked .ruleList {
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+.ruleList li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.ruleNeedsChanges {
+  color: var(--st-critical-fg);
+  font-weight: var(--weight-medium);
+}
+
 .factsTitle {
   margin: 0;
   color: var(--tx-strong);

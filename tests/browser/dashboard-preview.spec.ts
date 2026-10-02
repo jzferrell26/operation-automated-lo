@@ -40,7 +40,7 @@ async function expectTheEmptyLibrary(page: Page, path: string) {
   const main = page.getByRole("main");
   await expect(main.getByRole("heading", { level: 1, name: "Choose an ad" })).toBeVisible();
   await expect(main.getByText(EMPTY_LIBRARY, { exact: true })).toBeVisible();
-  await expect(main.getByRole("button", { name: "Use this ad" })).toHaveCount(0);
+  await expect(main.getByRole("button", { name: /^Use this ad/u })).toHaveCount(0);
   await expect(main.getByRole("button", { name: "Save and check" })).toHaveCount(0);
 }
 

@@ -46,7 +46,10 @@ const OWNER_CAPABILITIES: readonly Capability[] = [
   "settings:read",
 ];
 
-function signedIn(capabilities: readonly Capability[]): RuntimeShellSession {
+function signedIn(
+  capabilities: readonly Capability[],
+  roleLabel = "Workspace owner",
+): RuntimeShellSession {
   return Object.freeze({
     mode: "review" as const,
     authenticated: true,
@@ -60,7 +63,7 @@ function signedIn(capabilities: readonly Capability[]): RuntimeShellSession {
       }),
       user: Object.freeze({
         displayName: "Dana Reyes",
-        roleLabel: "Workspace owner",
+        roleLabel,
         capabilities: Object.freeze([...capabilities]),
       }),
       location: Object.freeze({
@@ -256,11 +259,13 @@ describe("the Help control in the top bar (009B-AC-015)", () => {
     await user.click(screen.getByRole("button", { name: "Help" }));
 
     const panel = screen.getByRole("dialog", { name: "Help" });
+    // Writing review pass 2, W-36. A sign-up makes a person the workspace owner, so for the owner
+    // "Ask your workspace owner" sent the usual reader to themselves. The owner is told what is true
+    // and nothing they cannot follow.
     expect(
-      within(panel).getByText(
-        "Questions about Automated LO? Ask your workspace owner, and tell them which page you were on.",
-      ),
+      within(panel).getByText("Questions about Automated LO? Write down which page you were on."),
     ).toBeInTheDocument();
+    expect(panel.textContent).not.toMatch(/ask your workspace owner/iu);
     const controls = within(panel).queryAllByRole("button");
     expect(
       controls.map((control) => control.getAttribute("aria-label") ?? control.textContent),
@@ -268,6 +273,23 @@ describe("the Help control in the top bar (009B-AC-015)", () => {
     expect(within(panel).queryAllByRole("link")).toEqual([]);
     expect(panel.textContent).not.toMatch(WALKTHROUGH_CONTROL);
   });
+
+  it.each(["Campaign creator", "Approver", "Publisher", "Viewer"])(
+    "still points a %s at their workspace owner, who is somebody else",
+    async (roleLabel) => {
+      shell = signedIn(OWNER_CAPABILITIES, roleLabel);
+      const user = userEvent.setup();
+      await renderLayout();
+
+      await user.click(screen.getByRole("button", { name: "Help" }));
+
+      expect(
+        within(screen.getByRole("dialog", { name: "Help" })).getByText(
+          "Questions about Automated LO? Ask your workspace owner, and tell them which page you were on.",
+        ),
+      ).toBeInTheDocument();
+    },
+  );
 
   it("puts no walkthrough control anywhere in the bar, open or closed", async () => {
     const { container } = await renderLayout();

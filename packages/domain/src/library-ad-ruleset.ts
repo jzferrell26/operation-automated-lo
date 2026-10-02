@@ -217,7 +217,7 @@ export function evaluateLibraryAdRules(
         "EQUAL_HOUSING_REQUIRED",
         "Your disclosure line has no Equal Housing statement.",
         "content.disclosureText",
-        "Add the Equal Housing line to your disclosure in Brand.",
+        "Add the Equal Housing line to your disclosure line in Brand.",
       ),
     );
   }

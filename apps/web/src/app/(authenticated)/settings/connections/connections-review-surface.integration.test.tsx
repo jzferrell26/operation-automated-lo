@@ -63,6 +63,12 @@ const connectionsAllowances: readonly ReviewSurfaceAllowance[] = [
       "Substring of the group label 'Access this app tells you about when something is blocked'.",
   },
   {
+    path: "navigation.items[*].state",
+    value: "available",
+    because:
+      "Substring of the not-connected next step, 'Connecting HighLevel and Meta isn't available in the app yet.' (writing review pass 2, W-28).",
+  },
+  {
     path: "navigation.items[*].id",
     value: "campaigns",
     because:

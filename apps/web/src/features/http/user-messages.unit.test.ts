@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { findVocabularyHits } from "../../copy/forbidden-vocabulary.js";
 import {
   isMappedErrorCode,
+  showsSupportReference,
   UNKNOWN_ERROR_MESSAGE,
   USER_MESSAGES_BY_CODE,
   userMessageForCode,
@@ -124,10 +125,19 @@ describe("error codes become sentences", () => {
       "This ad was taken out of the library, so this version can't be approved. Choose another ad. Your budget, dates and area are kept.",
     );
     expect(userMessageSentence("LIBRARY_AD_REPLACED")).toBe(
-      "A newer version of this ad is in the library, so this version can't be approved. Use the new version of the ad, then approve that one.",
+      "A newer version of this ad is in the library, so this version can't be approved. Open this campaign from Campaigns, use the new version of the ad, then approve that one.",
     );
     expect(userMessageSentence("LIBRARY_AD_ART_CHANGED")).toBe(
-      "The picture for this ad changed after this version was saved, so this version can't be approved. Make a new version from the ad, then approve that one.",
+      "The picture for this ad changed after this version was saved, so this version can't be approved. Open this campaign from Campaigns, make a new version, then approve that one.",
+    );
+  });
+
+  // Writing review pass 2, W-30. "Pick it again" cannot work for an ad that was taken out, "kept" is
+  // untrue for a new campaign (its drafts are held per ad), and the campaign page has no "Choose an
+  // ad" to go back to. "Choose another ad" is true on both.
+  it("tells a person whose ad has left the library to choose another, and to check what they set", () => {
+    expect(userMessageSentence("LIBRARY_AD_NOT_AVAILABLE")).toBe(
+      "This ad isn't in the library any more, or a newer version replaced it. Choose another ad. Check the words, budget and area before you save.",
     );
   });
 
@@ -143,6 +153,45 @@ describe("error codes become sentences", () => {
       "The guided setup isn't available in this workspace. You can still launch an ad from Campaigns.",
     );
     expect(userMessageSentence("SETUP_PREFERENCE_UNAVAILABLE")).not.toMatch(/Marketing menu/u);
+  });
+
+  /**
+   * Writing review pass 2, W-27. "Contact support with the reference below" was said, and nothing
+   * was below: a mapped code showed no support reference, and the step that said it never drew one.
+   * The rule is written down once, in `showsSupportReference`: a reference shows for a code with no
+   * sentence of its own, and for a code whose own sentence points at it.
+   */
+  describe("the support reference a sentence points at (writing review W-27)", () => {
+    it("says what to give support, and where it is, for a failed save", () => {
+      expect(userMessageSentence("CAMPAIGN_PREFLIGHT_FAILED")).toBe(
+        "We couldn't finish the checks on this campaign. Try again. If it keeps happening, contact support and give them the support reference below.",
+      );
+    });
+
+    it('shows a reference for every code whose sentence says "reference below"', () => {
+      const pointing = Object.entries(USER_MESSAGES_BY_CODE).filter(([, message]) =>
+        /reference below/u.test(`${message.what} ${message.whatToDo}`),
+      );
+      expect(pointing.map(([code]) => code)).toContain("CAMPAIGN_PREFLIGHT_FAILED");
+      for (const [code] of pointing) {
+        expect(showsSupportReference(code), code).toBe(true);
+      }
+    });
+
+    it("also shows one for a code with no sentence of its own, and for a request that never answered", () => {
+      expect(showsSupportReference("A_CODE_FROM_THE_FUTURE")).toBe(true);
+      expect(showsSupportReference(undefined)).toBe(true);
+    });
+
+    it("shows none for a code whose sentence needs none", () => {
+      expect(showsSupportReference("LIBRARY_AD_NOT_AVAILABLE")).toBe(false);
+      expect(showsSupportReference("CAMPAIGN_APPROVAL_CONFLICT")).toBe(false);
+      expect(showsSupportReference("UNAUTHENTICATED")).toBe(false);
+    });
+
+    it("never points at a reference from the generic sentence, which the reference always accompanies", () => {
+      expect(userMessageSentence(undefined)).not.toMatch(/reference below/u);
+    });
   });
 
   it("states a reason for every code it does not map", () => {

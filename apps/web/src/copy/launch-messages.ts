@@ -34,6 +34,11 @@ export const CHOOSE_LEAD =
 export const TOPIC_CHIPS_LABEL = "Show ads about";
 export const ALL_TOPICS = "All";
 export const USE_THIS_AD = "Use this ad";
+/**
+ * Writing review pass 2 (MTK-008, W-30). Said above the chips when the address names an ad the
+ * library no longer holds, which used to land on step 1 without a word.
+ */
+export const AD_NOT_IN_LIBRARY_NOTICE = "That ad isn't in the library any more. Choose another ad.";
 export const CANCEL = "Cancel";
 export const SAMPLE_AD_LABEL = "Sample ad";
 /** 009C-AC-012: the library with no active ad, said once, with what happens next. */
@@ -44,13 +49,25 @@ export function adCardVersionLine(version: number, reviewedOn: string): string {
 }
 
 /** Step 2, Set it up. */
+/**
+ * Amended 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-34): "library version", because
+ * this version is the ad's in the library, and two screens later "Approve this version" means the
+ * campaign's own version. Step 3 and the campaign page already say "library version" (`adFact`).
+ */
 export function setUpLead(name: string, topic: string, version: number): string {
-  return `${name}. ${topic}, version ${String(version)}.`;
+  return `${name}. ${topic}, library version ${String(version)}.`;
 }
 export const BRAND_CARD_TITLE = "Your brand on the ad";
 export const BRAND_CARD_LINE =
   "Added for you from Brand. The image and layout come from the library and can't be changed.";
 export const CHANGE_IN_BRAND = "Change in Brand";
+/**
+ * Writing review pass 2 (MTK-008, W-35). A person with no saved name has nothing added from Brand and
+ * nothing to change there, so the card says so, and its link says what it does.
+ */
+export const BRAND_CARD_LINE_EMPTY =
+  "Nothing is added yet. Add your name and NMLS number in Brand before you save. The image and layout come from the library and can't be changed.";
+export const ADD_IN_BRAND = "Add in Brand";
 /** The placeholder band when a person has no brand yet (D3). */
 export const BAND_PLACEHOLDER = "Your name and NMLS number go here";
 export const WORDS_TITLE = "Ad words";
@@ -114,13 +131,26 @@ export function checksCount(passed: number, run: number): string {
   return `${String(passed)} of ${String(run)} checks passed.`;
 }
 export const SEE_WHAT_WE_CHECKED = "See what we checked";
+/**
+ * Writing review pass 2 (MTK-008, W-26). The state of each check, said in words beside its name, so
+ * a failed check is never worded as an achievement ("Ends after today") and the state never rests on
+ * colour or an icon alone. A passed check carries its word visually hidden, because its icon says it
+ * to a sighted person; a failed check carries it in visible text.
+ */
+export const RULE_PASSED = "Passed";
+export const RULE_NEEDS_CHANGES = "Needs changes";
 export const FACTS_TITLE = "The ad, budget and area";
 export const CHANGE = "Change";
+/**
+ * Amended 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-33): the labels the campaign page
+ * and the list use for the same facts. "Library ad", because its value says "library version 3", and
+ * "Dates", because "Runs" states as fact what nothing can do in PRD-009.
+ */
 export const FACT_LABELS = Object.freeze({
-  ad: "Ad",
+  ad: "Library ad",
   words: "Words",
   budget: "Budget",
-  runs: "Runs",
+  runs: "Dates",
   shows: "Where it shows",
   leads: "New leads go to",
 });
@@ -138,7 +168,12 @@ export function runsFact(endsOn: string): string {
   return `From launch until ${endsOn}`;
 }
 export const FACEBOOK_FEED = "the Facebook feed";
-export const LEADS_NOT_CONNECTED = "Your HighLevel account, once it's connected";
+/**
+ * Amended 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-25). "Once it's connected" was
+ * a promise that connecting is the one thing between a person and their leads; nothing in PRD-009
+ * can connect HighLevel, so the line says where leads will go and that it isn't connected yet.
+ */
+export const LEADS_NOT_CONNECTED = "Your HighLevel account. It isn't connected yet.";
 /** 009D-AC-015: the line that replaces "Approving applies to this exact version." */
 export const APPROVE_LINE =
   "Approving applies to this exact version, with your words. Nothing is published or sent.";
@@ -149,16 +184,21 @@ export const LAUNCH_ON_FACEBOOK = "Launch on Facebook";
 /**
  * D7. The one sentence tied to "Launch on Facebook". The Meta sentence carries a link, so it is
  * stored in three parts: the words before the link, the link's words, and the words after.
+ *
+ * Amended 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-25). The Meta sentence used
+ * to say "connect it in Settings", which promised that connecting is the missing step (launching
+ * stays off even with both accounts connected) and named a control the connections page does not
+ * have. It now says launching is off, that it needs Meta, and links with Home's own words. The
+ * "turned on" row drops "for your workspace", which suggested a switch the owner can flip.
  */
 export const LAUNCH_SENTENCES = Object.freeze({
   metaNotConnected: Object.freeze({
-    before: "Meta isn't connected yet, so ",
-    link: "connect it in Settings",
-    after: " to launch this ad.",
+    before: "Launching on Facebook isn't turned on yet, and it needs Meta connected. ",
+    link: "See what's needed for Meta",
+    after: ".",
   }),
   notApproved: "Approve this version first.",
-  notTurnedOn:
-    "Launching on Facebook isn't turned on for your workspace yet. Nothing has been published.",
+  notTurnedOn: "Launching on Facebook isn't turned on yet. Nothing has been published.",
 });
 export function launchRetiredSentence(retiredOn: string): string {
   return `This ad was taken out of the library on ${retiredOn}, so this campaign can't launch.`;
@@ -174,7 +214,8 @@ export function approvedLine(approver: string, decidedOn: string): string {
 export const MAKE_A_NEW_VERSION = "Make a new version";
 export const AD_RETIRED_CHIP = "Ad retired";
 export function adRetiredNotice(retiredOn: string): string {
-  return `This ad was taken out of the library on ${retiredOn}, so this draft can't be approved. Your budget, dates and area are kept.`;
+  // Amended 2026-10-02 (MTK-008, W-29): "version", the word every sibling sentence uses.
+  return `This ad was taken out of the library on ${retiredOn}, so this version can't be approved. Your budget, dates and area are kept.`;
 }
 export const CHOOSE_ANOTHER_AD = "Choose another ad";
 
@@ -201,14 +242,14 @@ export const RULE_PLAIN_NAMES: Readonly<Record<PreflightRuleCode, string>> = Obj
   MERGE_TOKEN_NOT_ALLOWED: "No fill-in placeholders",
   CLAIM_POLICY_BLOCKED: "No unreviewed claims",
   FINANCING_TERMS_BLOCKED: "No financing terms",
-  META_HOUSING_CATEGORY_REQUIRED: "Runs as a housing ad on Meta",
+  META_HOUSING_CATEGORY_REQUIRED: "Marked as a housing ad for Meta",
   TARGETING_NOT_ALLOWED: "No age, gender or ZIP code targeting",
   BUDGET_OUT_OF_BOUNDS: "Budget within the limits",
   GHL_ROUTING_INCOMPLETE: "New leads have somewhere to go",
-  WORDS_TOO_LONG: "Words within this ad's length",
+  WORDS_TOO_LONG: "Words are within this ad's length limit",
   WORDS_RATE_PAYMENT_OR_TERM_CLAIM: "No rate, payment or term claims in your words",
   WORDS_INVALID_CHARACTERS: "No hidden or special characters",
-  WORDS_NUMBER: "No numbers that state rates, payments or terms",
+  WORDS_NUMBER: "No numbers in the words, except your NMLS number",
   WORDS_CO_BRAND: "Shows only you, never a Realtor or brokerage",
   WORDS_PRIVATE_INFO_REQUEST: "Doesn't ask for private details",
   NMLS_NUMBER_REQUIRED: "NMLS number on the ad",

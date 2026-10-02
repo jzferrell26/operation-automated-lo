@@ -229,7 +229,31 @@ const LIBRARY_AD_SHARED_FIXES = Object.freeze({
   DISCLOSURE_REQUIRED: "Add your disclosure line in Brand.",
   CONSENT_REQUIRED: "Add your lead form wording in Brand.",
   TARGETING_NOT_ALLOWED: "Choose one or more cities or states, and nothing else.",
+  /*
+   * Writing review pass 2 (MTK-008, W-16). A library ad's picture, category and routing are the
+   * catalog's and the app's, not the person's: the product has no upload and no category control, and
+   * "Choose another ad" is where "Fix it" already sends these three rules (`FIX_TARGETS`). The
+   * open house sentences, which told a person to upload and to approve, stay for open house versions.
+   */
+  IMAGE_NOT_APPROVED: "This ad's picture isn't approved. Choose another ad.",
+  IMAGE_QUALITY_LOW: "This ad's picture is too small to use. Choose another ad.",
+  META_HOUSING_CATEGORY_REQUIRED: "This ad isn't set up as a housing ad. Choose another ad.",
+  GHL_ROUTING_INCOMPLETE: "New leads need somewhere to go in HighLevel.",
+  BRAND_BANNED_PHRASE: (phrase: string) =>
+    `Take '${phrase}' out of the headline or ad text. Ads can't make promises like that.`,
+  MERGE_TOKEN_NOT_ALLOWED: (token: string) =>
+    `Take the fill-in placeholder ${token} out of the ad.`,
 });
+
+/** "$1,000", for a limit a fix sentence states. The limits come from the ruleset that ran. */
+function budgetDollars(minor: number): string {
+  return `$${(minor / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+}
+
+/** A library ad's budget fix names the limits, as step 2's own budget sentences do. */
+function libraryAdBudgetFix(rules: PreflightRules): string {
+  return `Choose a daily budget from ${budgetDollars(rules.minimumDailyBudgetMinor)} to ${budgetDollars(rules.maximumDailyBudgetMinor)} and a total budget from ${budgetDollars(rules.minimumDailyBudgetMinor)} to ${budgetDollars(rules.maximumTotalBudgetMinor)}.`;
+}
 
 function libraryAdContext(manifest: CampaignManifest, rules: PreflightRules) {
   if (manifest.blueprintId !== "library-ad") return undefined;
@@ -276,7 +300,9 @@ export function evaluateCampaignPreflight(
         "IMAGE_NOT_APPROVED",
         "Every source image must be approved before campaign approval.",
         "images",
-        "Remove or approve pending, rejected, and quarantined images.",
+        libraryAd === undefined
+          ? "Remove or approve pending, rejected, and quarantined images."
+          : LIBRARY_AD_SHARED_FIXES.IMAGE_NOT_APPROVED,
       ),
     );
   }
@@ -290,7 +316,9 @@ export function evaluateCampaignPreflight(
         "IMAGE_QUALITY_LOW",
         "A source image is below the minimum pixel dimensions.",
         "images",
-        "Upload an image that meets the active ruleset dimensions.",
+        libraryAd === undefined
+          ? "Upload an image that meets the active ruleset dimensions."
+          : LIBRARY_AD_SHARED_FIXES.IMAGE_QUALITY_LOW,
       ),
     );
   }
@@ -320,7 +348,9 @@ export function evaluateCampaignPreflight(
         "BRAND_BANNED_PHRASE",
         "Campaign copy contains language prohibited by the confirmed brand rules.",
         "content",
-        `Remove the prohibited phrase: ${bannedPhrase}`,
+        libraryAd === undefined
+          ? `Remove the prohibited phrase: ${bannedPhrase}`
+          : LIBRARY_AD_SHARED_FIXES.BRAND_BANNED_PHRASE(bannedPhrase),
       ),
     );
   }
@@ -333,7 +363,9 @@ export function evaluateCampaignPreflight(
         "MERGE_TOKEN_NOT_ALLOWED",
         "Campaign copy contains a merge token outside the allowlist.",
         "content.mergeTokens",
-        `Remove or approve the merge token: ${disallowedToken}`,
+        libraryAd === undefined
+          ? `Remove or approve the merge token: ${disallowedToken}`
+          : LIBRARY_AD_SHARED_FIXES.MERGE_TOKEN_NOT_ALLOWED(disallowedToken),
       ),
     );
   }
@@ -346,7 +378,7 @@ export function evaluateCampaignPreflight(
         "CLAIM_POLICY_BLOCKED",
         "Campaign copy contains a claim outside the approved claim policy.",
         "content.claims",
-        "Remove the claim or obtain an explicit tenant policy approval.",
+        "Take the claim out of the ad. Only reviewed claims are allowed.",
       ),
     );
   }
@@ -356,7 +388,7 @@ export function evaluateCampaignPreflight(
         "FINANCING_TERMS_BLOCKED",
         "The initial blueprint does not permit rate, APR, payment, or program terms.",
         "content.financingTerms",
-        "Remove financing terms or activate an explicitly approved tenant rule.",
+        "Take the rate, payment or loan terms out of the ad. Ads can't state them.",
       ),
     );
   }
@@ -386,7 +418,9 @@ export function evaluateCampaignPreflight(
         "META_HOUSING_CATEGORY_REQUIRED",
         "Housing promotion must use the Meta Housing Special Ad Category.",
         "meta.specialAdCategory",
-        "Set the approved Housing category before launch.",
+        libraryAd === undefined
+          ? "Set the approved Housing category before launch."
+          : LIBRARY_AD_SHARED_FIXES.META_HOUSING_CATEGORY_REQUIRED,
       ),
     );
   }
@@ -406,7 +440,7 @@ export function evaluateCampaignPreflight(
     findings.push(
       finding(
         "TARGETING_NOT_ALLOWED",
-        "The first blueprint allows Meta country and region targeting only.",
+        "Ads can be aimed at cities and states only.",
         "meta.targeting",
         libraryAd === undefined
           ? "Remove ZIP, custom-audience, protected-dimension, Google, and LinkedIn targeting."
@@ -422,9 +456,11 @@ export function evaluateCampaignPreflight(
     findings.push(
       finding(
         "BUDGET_OUT_OF_BOUNDS",
-        "Campaign budget is outside the approved tenant bounds.",
+        "The budget is outside the allowed limits.",
         "meta.dailyBudgetMinor",
-        "Choose a daily and total budget within the active ruleset.",
+        libraryAd === undefined
+          ? "Choose a daily and total budget within the active ruleset."
+          : libraryAdBudgetFix(rules),
       ),
     );
   }
@@ -434,7 +470,9 @@ export function evaluateCampaignPreflight(
         "GHL_ROUTING_INCOMPLETE",
         "HighLevel routing mappings are missing or stale.",
         "routing.mappingVersionRef",
-        "Reconnect and revalidate the selected routing objects.",
+        libraryAd === undefined
+          ? "Reconnect and revalidate the selected routing objects."
+          : LIBRARY_AD_SHARED_FIXES.GHL_ROUTING_INCOMPLETE,
       ),
     );
   }
@@ -508,7 +546,7 @@ export function evaluatePaidAdBrandBoundary(
           "PAID_AD_REALTOR_IDENTITY",
           "Paid-ad presentation contains Realtor, brokerage, contact, or co-brand language.",
           affected,
-          "Remove Realtor and brokerage identity from the lender-branded paid-ad projection.",
+          "Take the Realtor and brokerage names out of the ad. Paid ads show only you.",
         ),
       );
     }
@@ -556,7 +594,7 @@ export function evaluatePaidAdBrandBoundary(
           "PAID_AD_IDENTITY_ASSET_NOT_APPROVED",
           "Paid-ad creative contains an identity asset that is not approved for the lender-branded ad.",
           affected,
-          "Use only identity assets approved for the loan officer or lender paid-ad projection.",
+          "Use only a logo or picture approved for your own ads.",
         ),
       );
     }
@@ -569,7 +607,7 @@ export function evaluatePaidAdBrandBoundary(
         "PAID_AD_PROPERTY_ASSET_NOT_APPROVED",
         "Paid-ad creative contains a property image that is not approved for this campaign.",
         "paidAd.creative.propertyImageAssetRefs",
-        "Use only approved property images from the immutable campaign version.",
+        "Use only the approved property pictures saved with this version.",
       ),
     );
   }

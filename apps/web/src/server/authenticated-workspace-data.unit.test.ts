@@ -29,7 +29,7 @@ const stubSynthetic = {
  * PRD-004 RGL-002 requires and what these assertions exist to hold.
  */
 const REVIEW_NEXT_STEP_TEXT =
-  "Connect HighLevel and Meta when you're ready. Nothing here changes until you do.";
+  "Connecting HighLevel and Meta isn't available in the app yet. Nothing here changes in the meantime.";
 const REVIEW_NOT_LIVE_TEXT = "Not live yet";
 
 const reviewProduction = {
@@ -113,7 +113,7 @@ describe("authenticated workspace data boundary", () => {
       const metric = byLabel.get(label);
       expect(metric?.state).toBe("not_connected");
       expect(metric?.source).toBe(
-        "Not live yet. Connect Meta and HighLevel to see spend and leads here.",
+        "Not live yet. Spend and leads can't show here until Meta and HighLevel are connected.",
       );
       expect(metric && "value" in metric).toBe(false);
     }

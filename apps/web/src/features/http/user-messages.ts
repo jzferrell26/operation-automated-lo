@@ -90,7 +90,7 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
   /** PRD-009d 009D-AC-011: the chosen ad was retired, replaced by a newer version, or is unknown. */
   LIBRARY_AD_NOT_AVAILABLE: {
     what: "This ad isn't in the library any more, or a newer version replaced it.",
-    whatToDo: "Go back to Choose an ad and pick it again. Your words and budget are kept.",
+    whatToDo: "Choose another ad. Check the words, budget and area before you save.",
   },
   /**
    * PRD-009c 009C-AC-008, and the writing review W-1. The approve route refuses a version whose
@@ -105,17 +105,24 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
     what: "This ad was taken out of the library, so this version can't be approved.",
     whatToDo: "Choose another ad. Your budget, dates and area are kept.",
   },
+  /**
+   * Writing review pass 2, W-37. The approve control shows on step 3 and on the campaign page, and
+   * only the campaign page has "Use the new version" and "Make a new version". These sentences name
+   * the page that has them, so they are true wherever the control was pressed.
+   */
   LIBRARY_AD_REPLACED: {
     what: "A newer version of this ad is in the library, so this version can't be approved.",
-    whatToDo: "Use the new version of the ad, then approve that one.",
+    whatToDo:
+      "Open this campaign from Campaigns, use the new version of the ad, then approve that one.",
   },
   LIBRARY_AD_ART_CHANGED: {
     what: "The picture for this ad changed after this version was saved, so this version can't be approved.",
-    whatToDo: "Make a new version from the ad, then approve that one.",
+    whatToDo: "Open this campaign from Campaigns, make a new version, then approve that one.",
   },
   CAMPAIGN_PREFLIGHT_FAILED: {
     what: "We couldn't finish the checks on this campaign.",
-    whatToDo: "Try again. If it keeps happening, contact support with the reference below.",
+    whatToDo:
+      "Try again. If it keeps happening, contact support and give them the support reference below.",
   },
   CAMPAIGN_APPROVAL_CONFLICT: {
     what: "This campaign changed since you opened it.",
@@ -229,6 +236,23 @@ export function userMessageForCode(code: string | undefined): UserMessage {
 /** Whether a code has its own sentences, so a caller can decide to show the support reference. */
 export function isMappedErrorCode(code: string | undefined): boolean {
   return code !== undefined && Object.hasOwn(USER_MESSAGES_BY_CODE, code);
+}
+
+/** The words a sentence uses to point at the support reference drawn under it. */
+const POINTS_AT_REFERENCE = /reference below/u;
+
+/**
+ * Whether the support reference is drawn under this code's sentence (writing review pass 2, W-27).
+ *
+ * The rule, written once: a reference shows for a code with no sentence of its own, because support
+ * cannot find a request nobody can name (contract section 7), and for a mapped code whose own
+ * sentence points at it ("the support reference below"), because a sentence that says "below" must
+ * have something below it. `SupportReference` reads this, and a unit test asserts that every
+ * sentence in the table that says "reference below" belongs to a code this returns true for.
+ */
+export function showsSupportReference(code: string | undefined): boolean {
+  if (!isMappedErrorCode(code)) return true;
+  return POINTS_AT_REFERENCE.test(userMessageSentence(code));
 }
 
 /** One line for a status region: what happened, then what to do. */

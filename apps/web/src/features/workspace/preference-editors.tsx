@@ -42,16 +42,25 @@ function Feedback({ error, message }: { error: string; message: string }) {
   );
 }
 
-/** The feedback, the save button, and the reload that both Brand cards end with. */
+/**
+ * The feedback, the save button, and the reload that both Brand cards end with.
+ *
+ * Both cards sit on one page, so the save and the reload each say which card they belong to
+ * ("Save your details" and "Load latest saved details", "Save ad settings" and "Load latest saved ad
+ * settings"): two buttons with one accessible name cannot be told apart by a screen reader, and a
+ * test that asks for one by name finds two.
+ */
 function SaveAndReload({
   canEdit,
   onLoaded,
+  reloadLabel,
   saveLabel,
   state,
   validation,
 }: {
   canEdit: boolean;
   onLoaded: (next: WorkspacePreferences) => void;
+  reloadLabel: string;
   saveLabel: string;
   state: ReturnType<typeof useWorkspacePreferences>;
   validation: string;
@@ -72,7 +81,7 @@ function SaveAndReload({
             });
           }}
         >
-          Load latest saved details
+          {reloadLabel}
         </Button>
       </div>
       {!canEdit ? (
@@ -92,7 +101,7 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
     const parsed = BrandSaveSchema.safeParse(brand);
     if (!parsed.success) {
       setValidation(
-        "Check the name, company, email and license numbers before saving. Each NMLS number has 4 to 12 digits.",
+        "Check the name, company, email and NMLS numbers before saving. Each NMLS number has 4 to 12 digits.",
       );
       return;
     }
@@ -108,13 +117,16 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
       <Card className={styles.panel} padding="lg">
         <form className={styles.stack} onSubmit={(event) => void submit(event)}>
           <div>
-            <h2>Your report identity</h2>
-            {/* The branding is saved either way. Whether anything uses it yet depends on whether
+            {/* Writing review pass 2 (MTK-008, W-4): "Your details", because this card holds the name,
+                company, email, phone and tagline as well as the NMLS numbers, and only the reports use
+                the last three. "Report identity" and "report branding" were two more names for it. */}
+            <h2>Your details</h2>
+            {/* The details are saved either way. Whether the reports use them yet depends on whether
                 homeowner reports are on for the workspace, and the sentence says which. */}
             <p>
               {data.reportsEnabled
-                ? "Saved for your account in this workspace and used when you create a new homeowner report."
-                : "Saved for your account in this workspace. It will be used on a new homeowner report once homeowner reports are turned on."}
+                ? "Saved for your account in this workspace. Your name, company and NMLS numbers go on every ad, and all of it is used when you create a new homeowner report."
+                : "Saved for your account in this workspace. Your name, company and NMLS numbers go on every ad. All of it goes on new homeowner reports once those are turned on."}
             </p>
           </div>
           <fieldset className={styles.fields} disabled={state.busy || !data.canEdit}>
@@ -130,7 +142,8 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
           <SaveAndReload
             canEdit={data.canEdit}
             onLoaded={(next) => setBrand(next.brand?.value ?? data.defaultBrand)}
-            saveLabel="Save report branding"
+            reloadLabel="Load latest saved details"
+            saveLabel="Save your details"
             state={state}
             validation={validation}
           />
@@ -216,8 +229,8 @@ export function PartnersEditor({ data }: { data: WorkspacePageData }) {
         </Button>
       </div>
       <p className={styles.note}>
-        Your personal partner list is saved to this account and workspace. Adding a partner sends no
-        invitation and does not confirm permission to use their materials.
+        Your Realtor partner list is saved to this account and workspace. Adding a partner sends no
+        invitation.
       </p>
       <Feedback error={state.error} message={state.message} />
       {filtered.length ? (
@@ -268,7 +281,7 @@ export function PartnersEditor({ data }: { data: WorkspacePageData }) {
           <p>
             {partners.length
               ? "Try a different name or company."
-              : "Keep your partner's details ready for the next campaign. Nothing is imported from HighLevel."}
+              : "Keep your Realtor partners' details in one place. Nothing is imported from HighLevel, and partners never appear in your ads."}
           </p>
         </Card>
       )}
@@ -277,7 +290,7 @@ export function PartnersEditor({ data }: { data: WorkspacePageData }) {
           Load latest saved details
         </Button>
         <Link href="/marketing/campaigns/new" variant="action">
-          Create a campaign
+          Launch an ad
         </Link>
       </div>
       <Dialog
@@ -408,7 +421,7 @@ export function AdBrandEditor({ data }: { data: WorkspacePageData }) {
           <div>
             <h2>Your brand on ads</h2>
             <p>
-              Your name and NMLS number go on every ad automatically, with the title, colour and
+              Your name and NMLS number go on every ad automatically, with the title, color and
               disclosure line you choose here. The checks read all of them before an ad can be
               approved.
             </p>
@@ -423,7 +436,7 @@ export function AdBrandEditor({ data }: { data: WorkspacePageData }) {
             />
             <Select
               description="It fills the small tile with your initials and the thin line above your name."
-              label="Brand colour"
+              label="Brand color"
               onValueChange={(value) => {
                 const preset = AD_BRAND_COLOR_PRESETS.find((item) => item.id === value);
                 if (preset) edit({ colorPresetId: preset.id });
@@ -455,7 +468,8 @@ export function AdBrandEditor({ data }: { data: WorkspacePageData }) {
           <SaveAndReload
             canEdit={data.canEdit}
             onLoaded={(next) => setAdBrand(next.adBrand?.value ?? data.defaultAdBrand)}
-            saveLabel="Save ad brand"
+            reloadLabel="Load latest saved ad settings"
+            saveLabel="Save ad settings"
             state={state}
             validation={validation}
           />
@@ -481,8 +495,8 @@ export function AdBrandEditor({ data }: { data: WorkspacePageData }) {
           />
         </div>
         <p>
-          Your name, company and NMLS numbers come from your report identity. A change applies to
-          new ad versions; an approved version keeps the brand it was approved with.
+          Your name, company and NMLS numbers come from Your details above. A change applies to new
+          ad versions; an approved version keeps the brand it was approved with.
         </p>
         <Link href="/marketing/campaigns/new" variant="action">
           Launch an ad

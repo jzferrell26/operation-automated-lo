@@ -4,7 +4,6 @@ import { expect, test, type Page } from "@playwright/test";
 import { HOME_SETUP } from "../../../apps/web/src/copy/home-messages.js";
 import {
   CAMPAIGN_NOT_AN_AD_YET,
-  CAMPAIGN_SAVED_NOTICE,
   NOT_CONNECTED_DETAIL,
   NOT_CONNECTED_DISCLOSURE,
   NOT_CONNECTED_HEADLINE,
@@ -65,8 +64,8 @@ const CONNECTION_STATEMENTS: readonly string[] = [
   NOT_LIVE_METRIC_SOURCE,
   NOT_LIVE_YET,
   CAMPAIGN_NOT_AN_AD_YET,
-  CAMPAIGN_SAVED_NOTICE,
   HOME_SETUP.intro,
+  HOME_SETUP.introNoAds,
 ];
 
 function squashed(text: string): string {

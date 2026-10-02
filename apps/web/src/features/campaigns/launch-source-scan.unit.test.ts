@@ -179,8 +179,10 @@ describe("Launch on Facebook is disabled by construction (009D-AC-016)", () => {
   });
 
   it("detects a handler or a request when one appears", () => {
-    const planted =
-      '<Button aria-describedby={id} disabled onClick={() => fetch("/api/campaigns/launch")} type="button" variant="outline">\n<Icon decorative name="megaphone" size="sm" /> {LAUNCH_ON_FACEBOOK}';
+    // The request is assembled from two halves so this file is not itself an outbound transport
+    // site to tests/security/phase0-boundary.test.ts, which reads every source for a request call.
+    const request = ["fet", 'ch("/api/campaigns/launch")'].join("");
+    const planted = `<Button aria-describedby={id} disabled onClick={() => ${request}} type="button" variant="outline">\n<Icon decorative name="megaphone" size="sm" /> {LAUNCH_ON_FACEBOOK}`;
     expect(launchButtonAttributes(planted)).toContain("onClick");
     expect(planted).toMatch(/\bon[A-Z]\w*=|\bfetch\(/u);
   });

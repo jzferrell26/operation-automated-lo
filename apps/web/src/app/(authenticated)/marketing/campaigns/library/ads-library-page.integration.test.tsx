@@ -223,14 +223,17 @@ describe("a library card (009C-AC-011, 009C-AC-013)", () => {
       // The band is text a screen reader reads: the name and the NMLS number.
       expect(within(card).getByText("Alex Morgan")).toBeInTheDocument();
       expect(within(card).getByText("Loan officer, NMLS 0000000")).toBeInTheDocument();
-      expect(within(card).getByText("Prairie Home Lending, NMLS 0000000")).toBeInTheDocument();
+      // PRD-009d's band draws the company and its NMLS number as two lines, so the company wraps
+      // instead of being cut off at a card's width.
+      expect(within(card).getByText("Prairie Home Lending")).toBeInTheDocument();
+      expect(within(card).getByText("NMLS 0000000")).toBeInTheDocument();
       expect(within(card).getByText("Equal Housing Opportunity.")).toBeInTheDocument();
       expect(within(card).getByText(entry.defaults.headline)).toBeInTheDocument();
-      expect(
-        within(card).getByText(
-          `Version ${String(entry.version)}. Reviewed ${shortDay(entry.approval.approvedOn)}.`,
-        ),
-      ).toBeInTheDocument();
+      // The version line draws its day as a time element, in tabular figures like every date.
+      expect(card).toHaveTextContent(
+        `Version ${String(entry.version)}. Reviewed ${shortDay(entry.approval.approvedOn)}.`,
+      );
+      expect(within(card).getByText(shortDay(entry.approval.approvedOn)).tagName).toBe("TIME");
       const use = within(card).getByRole("link", { name: /^Use this ad/u });
       expect(use).toHaveAccessibleName(`Use this ad: ${entry.name}`);
       expect(use).toHaveAttribute(
@@ -238,7 +241,7 @@ describe("a library card (009C-AC-011, 009C-AC-013)", () => {
         `/marketing/campaigns/new?step=2&ad=${entry.id}&from=library`,
       );
     }
-    expect(screen.getByText("Version 2. Reviewed Sep 28, 2026.")).toBeInTheDocument();
+    expect(document.body).toHaveTextContent("Version 2. Reviewed Sep 28, 2026.");
   });
 
   it("names each card's topic", async () => {

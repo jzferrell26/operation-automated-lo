@@ -10,7 +10,7 @@ import {
 } from "@oalo/contracts";
 
 import { campaignManifestFixture } from "../../../../packages/db/test/campaign-manifest-fixture.mjs";
-import { compileOpenHouseDraft } from "../../../../apps/web/src/server/open-house-draft.js";
+import { compileOpenHouseDraft } from "../../../../apps/web/src/server/open-house-draft.test-support.js";
 import { createLocalSyntheticPrincipal } from "../../../../apps/web/src/server/local-synthetic-principal.js";
 import {
   LOCAL_SYNTHETIC_ENV,

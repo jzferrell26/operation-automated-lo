@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { POST as approvePost } from "../app/api/campaigns/approve/route.js";
 import { POST as preflightPost } from "../app/api/campaigns/preflight/route.js";
 import { ADS_LIBRARY_SAMPLES_FLAG } from "../features/ads-library/server/catalog-loader.js";
-import { OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
+import { LIBRARY_AD_SAVE_INPUT } from "./campaign-command-test-support.js";
 import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
 import {
   approvalPayload,
@@ -92,7 +92,7 @@ async function createDraft(): Promise<PersistedDraft> {
     session: creatorSession,
     csrfServerSecret,
     environment,
-    body: OPEN_HOUSE_DRAFT_INPUT,
+    body: LIBRARY_AD_SAVE_INPUT,
   });
 }
 

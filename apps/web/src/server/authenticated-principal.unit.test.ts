@@ -23,7 +23,7 @@ import {
   type CampaignCommandPorts,
 } from "./authenticated-principal.js";
 import { LOCAL_SYNTHETIC_ENV, OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
-import { compileOpenHouseDraft } from "./open-house-draft.js";
+import { compileOpenHouseDraft } from "./open-house-draft.test-support.js";
 
 const reviewEnv = {
   ...LOCAL_SYNTHETIC_ENV,

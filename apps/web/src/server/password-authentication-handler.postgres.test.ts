@@ -20,7 +20,7 @@ import {
 import { POST as signInRoutePost } from "../app/api/auth/sign-in/route.js";
 import { POST as preflightPost } from "../app/api/campaigns/preflight/route.js";
 import type { CampaignCommandPorts } from "./authenticated-principal.js";
-import { OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
+import { LIBRARY_AD_SAVE_INPUT } from "./campaign-command-test-support.js";
 import type { CredentialPort } from "./credential-ports.js";
 import {
   REVIEW_HOST,
@@ -348,7 +348,7 @@ describe("POST /api/auth/sign-in", () => {
             sessionId: sessionRef,
           }),
         },
-        body: JSON.stringify(OPEN_HOUSE_DRAFT_INPUT),
+        body: JSON.stringify(LIBRARY_AD_SAVE_INPUT),
       }),
     );
 

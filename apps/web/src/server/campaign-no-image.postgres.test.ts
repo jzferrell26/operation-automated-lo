@@ -1,14 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { POST as approvePost } from "../app/api/campaigns/approve/route.js";
-import { POST as preflightPost } from "../app/api/campaigns/preflight/route.js";
 import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
 import { OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
+import { compileOpenHouseDraft } from "./open-house-draft.test-support.js";
 import {
   approvalPayload,
   browserRequest,
   closeApprovalSuite,
-  createDraftThroughPreflight,
+  currentRowVersion,
   openApprovalSuite,
   principalForSession,
   routeEnvironment,
@@ -26,9 +26,12 @@ import {
  * version: it is stored with an empty image list, deterministic preflight raises neither image
  * finding, and an approver can sign off on it.
  *
- * Every request goes through the exported route handlers with the headers a browser sends, and the
- * stored version is read back through the production read repository, so what is asserted is what
- * a person's next page load would read from the database, not what the compiler returned.
+ * PRD-009d. The create route now saves only library ads, so an open house version can no longer be
+ * made through it. Versions saved before PRD-009 still exist on the hosted app (R-6), and this suite
+ * stands for them: the version is compiled the way the open house builder compiled it and written
+ * through the same persistence adapter the route used, under the creator's own session. The approval
+ * still goes through the exported route handler with the headers a browser sends, and the stored
+ * version is read back through the production read repository.
  */
 
 const environment: RoutePostgresEnvironment = routeEnvironment();
@@ -48,12 +51,21 @@ afterAll(async () => {
 });
 
 async function createDraft(): Promise<PersistedDraft> {
-  return createDraftThroughPreflight({
-    preflight: preflightPost,
-    session: creatorSession,
-    csrfServerSecret,
+  const principal = await principalForSession(creatorSession, environment);
+  const adapter = createCampaignPersistenceAdapter(principal, environment);
+  const compiled = await compileOpenHouseDraft(
+    OPEN_HOUSE_DRAFT_INPUT,
+    principal,
     environment,
-    body: OPEN_HOUSE_DRAFT_INPUT,
+    adapter.versionRepository,
+  );
+  await adapter.persistDraft(compiled.version, compiled.preflight);
+  return Object.freeze({
+    campaignRef: compiled.version.campaignRef,
+    campaignVersionRef: compiled.version.campaignVersionRef,
+    manifestHash: compiled.version.manifestHash,
+    preflightResultHash: compiled.preflight.resultHash,
+    rowVersion: await currentRowVersion(creatorSession, compiled.version.campaignRef, environment),
   });
 }
 

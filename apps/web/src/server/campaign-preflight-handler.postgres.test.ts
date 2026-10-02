@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { POST } from "../app/api/campaigns/preflight/route.js";
 import { resolveAuthenticatedReadPrincipal } from "./authenticated-principal.js";
-import { OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
+import { LIBRARY_AD_SAVE_INPUT } from "./campaign-command-test-support.js";
 import {
   applyRouteEnvironment,
   browserRequest,
@@ -16,6 +16,7 @@ import {
   issueSession,
   revokeBinding,
   routeEnvironment,
+  saveTestBrandFor,
   seedActor,
   seedLocation,
   tableCountsFor,
@@ -81,6 +82,8 @@ beforeAll(async () => {
   creatorSession = await issueSession(pool, location, creator);
   approverSession = await issueSession(pool, location, approver);
   outsiderSession = await issueSession(pool, outsiderLocation, outsiderAdmin);
+  // PRD-009d: the version carries the creator's own saved Brand, so its checks can pass.
+  await saveTestBrandFor(creatorSession, environment);
 });
 
 afterAll(async () => {
@@ -94,7 +97,7 @@ function preflightRequest(
 ): Request {
   return browserRequest({
     path: "/api/campaigns/preflight",
-    body: OPEN_HOUSE_DRAFT_INPUT,
+    body: LIBRARY_AD_SAVE_INPUT,
     session,
     csrfServerSecret,
     overrides,

@@ -7,6 +7,7 @@ import {
   CampaignResourceNotAccessibleError,
   type CampaignApprovalRepository,
   type CampaignApprovalTransaction,
+  type CampaignVersionRepository,
   type CampaignEventPort,
   type CampaignWorkspaceReadRecord,
   type CampaignWorkspaceReadRepository,
@@ -134,16 +135,24 @@ export async function persistLocalCampaign(
   await queueWrite(async () => {
     const store = await readStore(storePath);
     const existing = store.campaigns[version.campaignRef];
-    if (existing !== undefined) {
-      if (existing.version.campaignVersionRef !== version.campaignVersionRef) {
-        throw new Error("Local campaign reference already points to a different immutable version");
-      }
+    if (
+      existing !== undefined &&
+      existing.version.campaignVersionRef === version.campaignVersionRef
+    ) {
       persisted = freezeLocalCampaign(existing);
       return;
     }
+    /*
+     * PRD-009d 009D-AC-020. A new version of a campaign replaces the record's version with the next
+     * number, as the database appends one: the campaign keeps its reference, the earlier decision
+     * does not carry over, and the state follows the new version's checks.
+     */
+    if (existing !== undefined && version.versionNo !== existing.version.versionNo + 1) {
+      throw new Error("Local campaign reference already points to a different immutable version");
+    }
 
-    let state: CampaignState = "draft";
-    const events: CampaignEvent[] = [];
+    let state: CampaignState = existing?.state ?? "draft";
+    const events: CampaignEvent[] = [...(existing?.events ?? [])];
     const eventPort: CampaignEventPort = {
       async currentState() {
         return state;
@@ -154,7 +163,11 @@ export async function persistLocalCampaign(
       },
     };
     const occurredAt = new Date().toISOString();
-    const suffix = version.campaignRef.slice(-12);
+    const suffix =
+      existing === undefined
+        ? version.campaignRef.slice(-12)
+        : `${version.campaignRef.slice(-12)}_v${String(version.versionNo)}`;
+    const fromState = state;
     await appendCampaignTransition(
       {
         schemaVersion: 1,
@@ -162,7 +175,7 @@ export async function persistLocalCampaign(
         locationRef: version.locationRef,
         campaignRef: version.campaignRef,
         campaignVersionRef: version.campaignVersionRef,
-        fromState: "draft",
+        fromState,
         toState: "generated",
         actorRef: version.createdBy,
         occurredAt,
@@ -192,7 +205,7 @@ export async function persistLocalCampaign(
       state,
       events,
       updatedAt: occurredAt,
-      rowVersion: 1,
+      rowVersion: existing === undefined ? 1 : existing.rowVersion + 1,
     });
     store.campaigns[version.campaignRef] = record;
     await writeStore(storePath, store);
@@ -230,6 +243,41 @@ export function localCampaignToReadRecord(
     updatedAt: record.updatedAt,
     ...(record.approval === undefined ? {} : { approval: record.approval }),
   });
+}
+
+/**
+ * PRD-009d 009D-AC-020. The version numbers of the local demo's store, so a new version of a saved
+ * campaign is numbered after its latest one, as the database numbers it. The version itself is
+ * written by `persistLocalCampaign` with its check result, so `append` writes nothing.
+ */
+export function createLocalCampaignVersionRepository(
+  environment: unknown = process.env,
+): CampaignVersionRepository {
+  return {
+    async run(work) {
+      const store = await readStore(resolveStorePath(environment));
+      return work({
+        async getByCampaignVersionRef(locationRef, campaignVersionRef) {
+          return Object.values(store.campaigns)
+            .map((record) => record.version)
+            .find(
+              (version) =>
+                version.locationRef === locationRef &&
+                version.campaignVersionRef === campaignVersionRef,
+            );
+        },
+        async getLatestVersionNo(locationRef, campaignRef) {
+          const record = store.campaigns[campaignRef];
+          return record !== undefined && record.version.locationRef === locationRef
+            ? record.version.versionNo
+            : 0;
+        },
+        async append() {
+          return undefined;
+        },
+      });
+    },
+  };
 }
 
 export function createFilesystemCampaignReadRepository(

@@ -8,6 +8,8 @@ import {
   rulesetRuleCodes,
 } from "@oalo/domain";
 
+import { findVocabularyHits } from "../../../../apps/web/src/copy/forbidden-vocabulary.js";
+
 /**
  * PRD-009d D5, 009D-AC-010 and 009D-AC-014. The library-ad ruleset as a whole.
  *
@@ -147,6 +149,67 @@ describe("the ruleset registry (009D-AC-014)", () => {
   });
 });
 
+/**
+ * Writing review pass 2, W-16. Only `remediation` is drawn for a library ad, so each fix sentence a
+ * library ad can raise reads in plain words and names what the person can actually do: the checks
+ * say "Choose another ad" where the picture or category is the catalog's, because the product has no
+ * upload and no category control, and "in Brand" (by the label the field has) where the person's own
+ * Brand is the cause.
+ */
+describe("the fix sentences a library ad can raise (writing review W-16)", () => {
+  const findings = evaluateCampaignPreflight(everythingWrong(), rules({ retiredOn: "2026-10-01" }));
+  const fixOf = (ruleCode: string) =>
+    findings.find((finding) => finding.ruleCode === ruleCode)?.remediation;
+
+  it.each([
+    [
+      "BRAND_BANNED_PHRASE",
+      "Take 'guaranteed approval' out of the headline or ad text. Ads can't make promises like that.",
+    ],
+    ["MERGE_TOKEN_NOT_ALLOWED", "Take the fill-in placeholder {{first_name}} out of the ad."],
+    ["CLAIM_POLICY_BLOCKED", "Take the claim out of the ad. Only reviewed claims are allowed."],
+    [
+      "FINANCING_TERMS_BLOCKED",
+      "Take the rate, payment or loan terms out of the ad. Ads can't state them.",
+    ],
+    ["IMAGE_NOT_APPROVED", "This ad's picture isn't approved. Choose another ad."],
+    ["IMAGE_QUALITY_LOW", "This ad's picture is too small to use. Choose another ad."],
+    ["META_HOUSING_CATEGORY_REQUIRED", "This ad isn't set up as a housing ad. Choose another ad."],
+    [
+      "BUDGET_OUT_OF_BOUNDS",
+      "Choose a daily budget from $5 to $1,000 and a total budget from $5 to $5,000.",
+    ],
+    ["GHL_ROUTING_INCOMPLETE", "New leads need somewhere to go in HighLevel."],
+    ["EQUAL_HOUSING_REQUIRED", "Add the Equal Housing line to your disclosure line in Brand."],
+  ])("says %s in plain words", (ruleCode, sentence) => {
+    expect(fixOf(ruleCode)).toBe(sentence);
+  });
+
+  it("carries no engineering word, and asks for nothing the product has no control for", () => {
+    expect(findings.length).toBeGreaterThanOrEqual(20);
+    for (const finding of findings) {
+      expect(findVocabularyHits(finding.remediation), finding.ruleCode).toEqual([]);
+      expect(findVocabularyHits(finding.description), finding.ruleCode).toEqual([]);
+      expect(finding.remediation, finding.ruleCode).not.toMatch(
+        /ruleset|routing objects|revalidate|quarantine|upload|approve pending|tenant|attestation/iu,
+      );
+    }
+  });
+
+  it("takes the budget limits from the ruleset it ran, so the sentence cannot drift from the check", () => {
+    const manifest = everythingWrong();
+    const changed = evaluateCampaignPreflight(manifest, {
+      ...rules(),
+      minimumDailyBudgetMinor: 1_000,
+      maximumDailyBudgetMinor: 250_000,
+      maximumTotalBudgetMinor: 1_234_500,
+    });
+    expect(
+      changed.find((finding) => finding.ruleCode === "BUDGET_OUT_OF_BOUNDS")?.remediation,
+    ).toBe("Choose a daily budget from $10 to $2,500 and a total budget from $10 to $12,345.");
+  });
+});
+
 describe("the library-ad ruleset (009D-AC-010)", () => {
   it("passes a clean version", () => {
     expect(evaluateCampaignPreflight(cleanManifest(), rules())).toEqual([]);
@@ -192,7 +255,7 @@ describe("the library-ad ruleset (009D-AC-010)", () => {
     );
     expect(findings.map((finding) => [finding.ruleCode, finding.remediation])).toEqual([
       ["NMLS_NUMBER_REQUIRED", "Add your NMLS number in Brand."],
-      ["EQUAL_HOUSING_REQUIRED", "Add the Equal Housing line to your disclosure in Brand."],
+      ["EQUAL_HOUSING_REQUIRED", "Add the Equal Housing line to your disclosure line in Brand."],
     ]);
   });
 

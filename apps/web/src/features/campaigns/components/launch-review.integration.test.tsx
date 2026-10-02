@@ -465,7 +465,8 @@ describe("Fix it (009D-AC-019)", () => {
       {
         ruleCode: "BUDGET_OUT_OF_BOUNDS",
         affected: "meta.dailyBudgetMinor",
-        remediation: "Choose a daily and total budget within the active ruleset.",
+        remediation:
+          "Choose a daily budget from $5 to $1,000 and a total budget from $5 to $5,000.",
       },
       "#budget",
     ],

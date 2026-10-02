@@ -29,29 +29,6 @@ function dataFontConsumers(path: string): readonly string[] {
     .map(([, selector]) => `${path}: ${(selector ?? "").replaceAll(/\s+/gu, " ").trim()}`);
 }
 
-/**
- * Consumers in files 009a does not own in PRD-009's Wave 1. Each is a one-line swap to
- * `var(--font-interface)` with `font-variant-numeric: tabular-nums`, named for its owner in the
- * 009a lane report. 009A-AC-007's source-scan clause is NOT met until this list is empty; the test
- * below fails if an entry is fixed and left here, so the list can only shrink.
- */
-const AWAITING_OWNER_EDITS: readonly string[] = [
-  "apps/web/src/features/brand/components/brand-profile.module.css: .sourceText",
-  "apps/web/src/features/campaigns/components/open-house-draft-builder.module.css: .builderTools nav a span",
-  "apps/web/src/features/campaigns/components/open-house-draft-builder.module.css: .sectionTitle > span",
-  "apps/web/src/features/dashboard-preview/workspace.module.css: .stepNumber",
-  "apps/web/src/features/reporting/components/reporting.module.css: .assetGrid code",
-  "apps/web/src/features/reporting/components/reporting.module.css: .tableRegion td",
-  "apps/web/src/features/reporting/components/reporting.module.css: .metricGrid strong",
-  "packages/ui/src/components/Button.module.css: .dataText",
-  'packages/ui/src/components/field.module.css: .control[data-tone="data"]',
-  "packages/ui/src/components/primitives.css: .oalo-metric__value",
-  "packages/ui/src/components/primitives.css: .oalo-data-text",
-  "packages/ui/src/components/primitives.css: .oalo-checklist__progress",
-  "packages/ui/src/components/stepper.module.css: .position",
-  "packages/ui/src/components/stepper.module.css: .marker",
-];
-
 describe("the interface font (009A-AC-007)", () => {
   it("declares one @font-face for Inter from /fonts/, swap, and the variable weight range", () => {
     const faces = [...stripComments(globals).matchAll(/@font-face\s*\{([^}]*)\}/gu)].map(
@@ -82,16 +59,14 @@ describe("the interface font (009A-AC-007)", () => {
     expect(rule).toContain("font-variant-numeric: tabular-nums");
   });
 
-  it("uses the data font only inside Details for support, apart from the named owner edits", () => {
+  // 009A-AC-007's source-scan clause: zero consumers outside "Details for support", so any other
+  // `var(--font-data)` rule in a delivered stylesheet fails here.
+  it("uses the data font only inside Details for support", () => {
     const consumers = deliveredStylesheets().flatMap((path) =>
       dataFontConsumers(path.replaceAll("\\", "/")),
     );
     const outside = consumers.filter((consumer) => !consumer.includes("[data-support-details]"));
-    expect(outside.filter((consumer) => !AWAITING_OWNER_EDITS.includes(consumer))).toEqual([]);
-    expect(
-      AWAITING_OWNER_EDITS.filter((entry) => !outside.includes(entry)),
-      "an owner fixed one of these: remove it from AWAITING_OWNER_EDITS",
-    ).toEqual([]);
+    expect(outside).toEqual([]);
     expect(consumers.some((consumer) => consumer.includes("[data-support-details]"))).toBe(true);
   });
 });

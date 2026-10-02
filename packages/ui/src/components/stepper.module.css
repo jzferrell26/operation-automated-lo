@@ -19,7 +19,8 @@
 
 .position {
   color: var(--tx-strong);
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
   font-size: var(--text-secondary-size);
   font-weight: var(--weight-medium);
   line-height: var(--leading-normal);
@@ -81,7 +82,8 @@
   background: var(--sf-sunken);
   border: 1px solid var(--bd-input);
   border-radius: var(--radius-pill);
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
   font-size: var(--text-caption-size);
   font-weight: var(--weight-bold);
   line-height: var(--leading-tight);

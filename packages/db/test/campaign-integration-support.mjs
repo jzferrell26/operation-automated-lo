@@ -1,7 +1,14 @@
 import { createHash, randomUUID } from "node:crypto";
 
+import { createCampaignVersion, runCampaignPreflight } from "@oalo/application";
+import { formatActorRef, formatLocationRef } from "@oalo/contracts";
+
 import { databaseRoleForApplicationRole } from "../../auth/dist/role-binding-map.js";
-import { createPostgresPool } from "../dist/index.js";
+import {
+  createPostgresCampaignReadRepository,
+  createPostgresCampaignVersionRepository,
+  createPostgresPool,
+} from "../dist/index.js";
 import { campaignManifestFixture } from "./campaign-manifest-fixture.mjs";
 
 export const campaignManifest = campaignManifestFixture;
@@ -976,4 +983,193 @@ export async function readAuthRateLimitRows(pool, scope) {
       ),
     );
   });
+}
+
+/**
+ * PRD-009g, 009G-AC-002. Campaign history for the review run's own accounts.
+ *
+ * The campaign page and step 3 have states the product refuses to create through its own flow: it
+ * never saves a version against a retired, replaced, or missing library ad (009D-AC-011), so no
+ * browser can reach "Ad retired", the "newer version" notice, or an ad version the library has
+ * moved on from by using the product. A campaign saved before PRD-009 (an open house version) is out
+ * of reach the same way, because the flow that made it is gone. The pictures of those states have to
+ * come from somewhere, and the way that stays honest is to store what the product stored back when
+ * those ads were current, and let the product read it today.
+ *
+ * What is written is a campaign version and its check, through the same two product functions the
+ * save runs (`createCampaignVersion` and `runCampaignPreflight`) and the same Postgres repository
+ * the save writes with, under the account's own workspace and person. The caller supplies the
+ * manifests and the rules, built by the product's own builders in the review specs
+ * (`tests/browser/review/helpers/campaign-history.ts`), so nothing about an ad's shape is copied into
+ * this file. Nothing is approved here, no decision row is written, and no audit row is forged:
+ * `persistPreflight` writes what it writes for a real save.
+ *
+ * It is the one sanctioned way to put such a campaign in the review database, and it refuses to run
+ * anywhere else. `assertReviewRunDatabase` is the whole of that rule, and it is called before a
+ * connection is opened.
+ */
+const REVIEW_RUN_DATABASE_PATH = /^\/oalo_test_[a-z0-9_]{1,40}$/u;
+/** The reserved top-level domain every account the review run makes or seeds is under. */
+const REVIEW_ACCOUNT_EMAIL_SUFFIX = "@oalo.invalid";
+
+/**
+ * The guard that keeps review campaign history out of every database but the review run's. All of
+ * these have to hold, and a failure names the rule and never the connection string, which carries a
+ * credential: the run flag `pnpm test:db` sets for the browser project, a loopback host, a database
+ * named `oalo_test_` and a lowercase identifier, and no production environment in this shell.
+ * Answers the database name.
+ */
+export function assertReviewRunDatabase(connectionString, environment = process.env) {
+  if (environment.OALO_REVIEW_BROWSER_RUN !== "true") {
+    throw new Error(
+      "Review campaign history is seeded only inside the review browser run of pnpm test:db",
+    );
+  }
+  if (environment.OALO_ENVIRONMENT === "production") {
+    throw new Error("Review campaign history is never seeded while OALO_ENVIRONMENT=production");
+  }
+  let parsed;
+  try {
+    parsed = new URL(connectionString);
+  } catch {
+    throw new Error("The review run's database address is not a valid connection URL");
+  }
+  if (!LOOPBACK_DATABASE_HOSTNAMES.has(parsed.hostname.replace(/^\[|\]$/gu, ""))) {
+    throw new Error(
+      "Review campaign history is seeded only in a database on the loopback interface",
+    );
+  }
+  if (!REVIEW_RUN_DATABASE_PATH.test(parsed.pathname)) {
+    throw new Error("Review campaign history is seeded only in an oalo_test_ database");
+  }
+  return parsed.pathname.slice(1);
+}
+
+/**
+ * The workspace and person a review account address belongs to, read as the owner because the
+ * credential and role tables grant nothing to a runtime role. An address with no account, or whose
+ * person is bound to more than one workspace, is refused rather than guessed at.
+ */
+async function resolveReviewAccount(pool, emailNormalized) {
+  const rows = await withMigrationOwnerTransaction(pool, async (connection) => {
+    const result = await connection.execute(
+      request(
+        "test.review-account-for-email",
+        `select b.location_id::text as location_id, b.user_id::text as user_id
+         from platform.user_credentials c
+         join platform.role_bindings b on b.user_id = c.user_id
+         where c.email_normalized = $1::text and b.revoked_at is null
+         order by b.id`,
+        [emailNormalized],
+      ),
+    );
+    return result.rows;
+  });
+  const locations = new Set(rows.map((row) => row.location_id));
+  if (rows.length === 0 || locations.size !== 1) {
+    throw new Error(
+      `The review account must have exactly one workspace, and this one has ${String(locations.size)}`,
+    );
+  }
+  const { location_id: locationId, user_id: actorId } = rows[0];
+  return Object.freeze({
+    locationId,
+    actorId,
+    locationRef: formatLocationRef(locationId),
+    actorRef: formatActorRef(actorId),
+  });
+}
+
+/** The product's own campaign repositories, bound to one account's workspace and person. */
+function openAccountRepositories(pool, account) {
+  const authority = {
+    async resolveTenantDatabaseContext() {
+      return Object.freeze({
+        locationId: account.locationId,
+        actorId: account.actorId,
+        correlationId: `correlation_reviewhistory_${randomUUID().replaceAll("-", "").slice(0, 16)}`,
+      });
+    },
+  };
+  return Object.freeze({
+    versions: createPostgresCampaignVersionRepository(pool, authority),
+    reads: createPostgresCampaignReadRepository(pool, authority),
+  });
+}
+
+/**
+ * Stores campaign versions and their checks for one review account, as the product stored them when
+ * the ads they name were current.
+ *
+ * `input.build` is handed the account's references and the version of `input.templateCampaignRef`
+ * (a campaign the account saved through the product, so its brand, budget, area, and routing are
+ * exactly what the person had) and answers one seed per campaign: a `label`, the time it was
+ * "saved", the version as `createCampaignVersion` takes it, and the rules its check runs under. Each
+ * seed's version has to name this account's workspace and person, and its check has to pass: a seed
+ * that does not is a builder that has drifted from the ruleset, and it fails here with the rule
+ * codes instead of becoming a picture of the wrong state.
+ *
+ * Answers one summary per stored campaign, in the order given.
+ */
+export async function seedReviewAccountCampaigns(input, dependencies = {}) {
+  const environment = dependencies.environment ?? process.env;
+  assertReviewRunDatabase(input.connectionString, environment);
+  const emailNormalized = String(input.email).trim().toLowerCase();
+  if (!emailNormalized.endsWith(REVIEW_ACCOUNT_EMAIL_SUFFIX)) {
+    throw new Error(
+      `Review campaign history is seeded only for an account under ${REVIEW_ACCOUNT_EMAIL_SUFFIX}`,
+    );
+  }
+
+  const pool = (dependencies.openPool ?? testPool)(input.connectionString);
+  try {
+    const account = await (dependencies.resolveAccount ?? resolveReviewAccount)(
+      pool,
+      emailNormalized,
+    );
+    const repositories = (dependencies.openRepositories ?? openAccountRepositories)(pool, account);
+    const template = await repositories.reads.getByCampaignRef(input.templateCampaignRef);
+    if (template === undefined || template.version.manifest.blueprintId !== "library-ad") {
+      throw new Error("The template campaign is not a library-ad campaign in this account");
+    }
+
+    const seeds = await input.build({
+      account: Object.freeze({ locationRef: account.locationRef, actorRef: account.actorRef }),
+      template: Object.freeze({
+        inputVersions: template.version.inputVersions,
+        manifest: template.version.manifest,
+      }),
+    });
+
+    const stored = [];
+    for (const seed of seeds) {
+      if (
+        seed.version.locationRef !== account.locationRef ||
+        seed.version.createdBy !== account.actorRef
+      ) {
+        throw new Error(`The ${seed.label} seed does not name this account's workspace and person`);
+      }
+      const version = await createCampaignVersion(
+        { createdAt: new Date(seed.createdAt), version: seed.version },
+        repositories.versions,
+      );
+      const preflight = runCampaignPreflight(version, seed.rules);
+      if (preflight.blocking) {
+        const codes = preflight.findings.map((finding) => finding.ruleCode).join(", ");
+        throw new Error(`The ${seed.label} seed did not pass its checks: ${codes}`);
+      }
+      await repositories.versions.persistPreflight(preflight);
+      stored.push(
+        Object.freeze({
+          label: seed.label,
+          campaignRef: version.campaignRef,
+          campaignVersionRef: version.campaignVersionRef,
+          versionNo: version.versionNo,
+        }),
+      );
+    }
+    return Object.freeze(stored);
+  } finally {
+    await pool.close();
+  }
 }

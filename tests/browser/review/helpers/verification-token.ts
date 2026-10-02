@@ -1,13 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
 
 import { createPostgresCredentialPort } from "../../../../apps/web/src/server/postgres-credential-ports.js";
-import {
-  GATE_SEEDED_CREDENTIALS,
-  TEST_DATABASE_NAME,
-  assertDisposableTestDatabaseName,
-  localDatabaseUrl,
-  readLocalDatabasePort,
-} from "../../../../tooling/scripts/database/run-real-database-tests.mjs";
+import { GATE_SEEDED_CREDENTIALS } from "../../../../tooling/scripts/database/run-real-database-tests.mjs";
+import { reviewDatabaseUrl } from "./review-database.js";
 
 /**
  * PRD-008d 008D-AC-007, S-1. A fresh `email_verification` token for the verify-email page's
@@ -62,30 +57,13 @@ function sha256Hex(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
-async function disposableDatabaseUrl(): Promise<string> {
-  if (process.env["OALO_REVIEW_BROWSER_RUN"] !== "true") {
-    throw new Error(
-      "A verification token is issued only inside the review browser run of `pnpm test:db`",
-    );
-  }
-  const databaseName = assertDisposableTestDatabaseName(TEST_DATABASE_NAME);
-  const url = localDatabaseUrl(await readLocalDatabasePort(), databaseName, {
-    withPassword: true,
-  });
-  const parsed = new URL(url);
-  if (parsed.hostname !== "127.0.0.1" || parsed.pathname !== `/${databaseName}`) {
-    throw new Error("The verification token is issued only in the loopback disposable database");
-  }
-  return url;
-}
-
 /**
  * Issues one live `email_verification` token for the seeded outsider admin and returns the URL
  * token a confirmation email would have carried. Issuing supersedes that person's earlier
  * verification tokens, exactly as a second email would, so the newest token is the one that works.
  */
 export async function issueVerificationTokenForTheSeededOutsider(): Promise<string> {
-  const connectionString = await disposableDatabaseUrl();
+  const connectionString = await reviewDatabaseUrl();
   const databasePackageUrl = new URL("../../../../packages/db/dist/index.js", import.meta.url);
   const { createPostgresPool } = (await import(databasePackageUrl.href)) as DatabasePackage;
   const pool = createPostgresPool({

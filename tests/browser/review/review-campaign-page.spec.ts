@@ -109,7 +109,14 @@ test("the campaign page names who approved, lists every version, and opens an ol
   await expect(rows.nth(1)).toContainText(
     /Approved on [A-Z][a-z]{2} \d{1,2}, \d{4} by Review approver, approver/u,
   );
-  await expect(creator.getByRole("main").getByText("Version 2")).toBeVisible();
+  // The page is on version 2, and the ad card is labelled with it. Four elements say "Version 2":
+  // that label, the versions list's row, the card's "library version 2" fact, and the support
+  // details' "version 2". So the label is read inside the card the page names for it, whole, and the
+  // page's own attribute says which version it is showing.
+  await expect(creator.locator("[data-campaign-page]")).toHaveAttribute("data-version-no", "2");
+  await expect(
+    creator.getByRole("region", { name: "The ad" }).getByText("Version 2", { exact: true }),
+  ).toBeVisible();
 
   // Version 1 opens read-only at its own address, with the approval it received.
   await rows

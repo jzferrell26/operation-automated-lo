@@ -21,6 +21,7 @@ import {
   sortCampaignListRows,
 } from "./campaign-page-data.js";
 import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
+import { activeLibraryCards } from "./launch-an-ad.js";
 import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
 import { WorkspacePreferenceError } from "./workspace-preferences.js";
 
@@ -99,6 +100,18 @@ export async function listCampaignRows(
       }
     }),
   );
+}
+
+/**
+ * 009C-AC-012 and the writing review's W-10. True when the ads library holds no ad a person could
+ * choose today: the real catalog ships empty, and the sample ads load only in a local run with the
+ * sample flag on. The Campaigns list reads it only when it has no campaign to show, so a new real
+ * account is told what the library says instead of being invited to pick an ad that is not there.
+ */
+export async function readLibraryHasNoActiveAd(
+  environment: unknown = process.env,
+): Promise<boolean> {
+  return activeLibraryCards(await loadAdsLibrary({ environment })).length === 0;
 }
 
 export interface WorkspaceCampaignReadResult {

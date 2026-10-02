@@ -2,12 +2,14 @@ import { Badge, EmptyState, Link, Surface } from "@oalo/ui";
 
 import {
   CAMPAIGNS_PAGE,
+  CAMPAIGN_CARD_LABELS,
   CAMPAIGN_COLUMNS,
   EARLIER_FLOW_TOPIC,
   RUNS_NOT_SET,
   THUMBNAIL_ALT,
   TOPIC_NOT_IN_LIBRARY,
   WHERE_NOT_SET,
+  cardFact,
   runsRange,
   wherePreview,
 } from "../../../copy/campaign-page-messages.js";
@@ -82,7 +84,16 @@ function LaunchLink() {
 export function CampaignList({
   rows,
   now = new Date(),
-}: Readonly<{ rows: readonly CampaignListRow[]; now?: Date }>) {
+  libraryEmpty = false,
+}: Readonly<{
+  rows: readonly CampaignListRow[];
+  now?: Date;
+  /**
+   * True when the ads library holds no ad a person could choose. The empty list then says what the
+   * library says (009C-AC-012) instead of inviting a choice that does not exist (writing review W-10).
+   */
+  libraryEmpty?: boolean;
+}>) {
   const year = now.getUTCFullYear();
   return (
     <div className={styles.page} data-campaigns-page="">
@@ -96,7 +107,9 @@ export function CampaignList({
       <CampaignsTabs current="campaigns" />
       {rows.length === 0 ? (
         <EmptyState
-          description={CAMPAIGNS_PAGE.emptyDescription}
+          description={
+            libraryEmpty ? CAMPAIGNS_PAGE.emptyDescriptionNoAds : CAMPAIGNS_PAGE.emptyDescription
+          }
           primaryAction={<LaunchLink />}
           title={CAMPAIGNS_PAGE.emptyTitle}
         />
@@ -163,12 +176,17 @@ export function CampaignList({
                     </Link>
                     <SampleLabel row={row} />
                   </div>
+                  {/* A card has no column header, so each fact is named (writing review W-9). */}
                   <p className={styles.cardFacts}>
-                    {topicWords(row)}. {runsWords(row, year)}. {whereWords(row)}.
+                    {cardFact(CAMPAIGN_CARD_LABELS.topic, topicWords(row))}{" "}
+                    {cardFact(CAMPAIGN_CARD_LABELS.dates, runsWords(row, year))}{" "}
+                    {cardFact(CAMPAIGN_CARD_LABELS.where, whereWords(row))}
                   </p>
                   <p>
                     <StatusChip row={row} />{" "}
-                    <span className={styles.cardFacts}>{monthDay(row.updatedAt, year)}</span>
+                    <span className={styles.cardFacts}>
+                      {CAMPAIGN_CARD_LABELS.lastChange}: {monthDay(row.updatedAt, year)}
+                    </span>
                   </p>
                 </Surface>
               </li>

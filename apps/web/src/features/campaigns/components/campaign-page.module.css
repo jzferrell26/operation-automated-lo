@@ -315,6 +315,13 @@ a.primaryLink.primaryLink:hover {
   font-weight: var(--weight-semibold);
 }
 
+/* The row for the version on screen: the words "Viewing now" in place of the "Open" link. */
+.viewingNow {
+  color: var(--tx-strong);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+}
+
 /* One-line library notices (009E-AC-006), each with at most one action. */
 .notices {
   display: grid;

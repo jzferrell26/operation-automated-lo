@@ -61,7 +61,7 @@ An open house campaign saved before PRD-009 opens read-only with one line, "Made
 | 009E-AC-006 | One-line library notices appear only when they apply, each with at most one action: the ad was retired (009c D4, with "Choose another ad" for an undecided version); a newer version of the ad exists (with "Use the new version" for an undecided version, 009C-AC-009); Brand changed after this version was saved ("Make a new version to use it."). | Integration |
 | 009E-AC-007 | "Details for support" is a collapsed `<details>` holding only the version reference, the library ad's `id` and version, and the support reference (user-language contract section 6). | Component |
 | 009E-AC-008 | The page renders no address, open house time, Realtor partner, contact list, lead table, pipeline, appointment, application, or funded figure, and no link to `/leads`. A source scan of both pages' components agrees. | Integration, Source scan |
-| 009E-AC-009 | The Campaigns page has the tabs "Your campaigns" and "Ads library" (009C-AC-010) and one primary action, "Launch an ad". At 720 px and wider "Your campaigns" is a table with Ad (a decorative thumbnail and the name as the link), Topic, Runs, Where it shows, Status, and Last change; below 720 px it is cards with the same facts. It has no results column, no search, and no filters. | Integration, Browser (review) |
+| 009E-AC-009 | The Campaigns page owns the tab strip "Your campaigns" and "Ads library" (the library tab's content is 009C-AC-010) and one primary action, "Launch an ad". At 720 px and wider "Your campaigns" is a table with Ad (a decorative thumbnail and the name as the link), Topic, Runs, Where it shows, Status, and Last change; below 720 px it is cards with the same facts. It has no results column, no search, and no filters. | Integration, Browser (review) |
 | 009E-AC-010 | Every status on the list comes from `campaignStateLabel`, extended for "Ad retired": a sent-back version reads "Sent back for changes" and a version whose checks found something reads "Needs changes". The existing `campaign-list-decisions.integration.test.tsx` cases still pass and new cases cover every state of 009d D8. | Integration |
 | 009E-AC-011 | With no campaigns, "Your campaigns" shows "No campaigns yet", "Pick an ad from the library to set up your first one.", and the primary "Launch an ad" inside the empty state, so the page still has exactly one primary action. | Integration |
 | 009E-AC-012 | A campaign saved before PRD-009 renders as D4 states: read-only, the one line, its words and decisions, no property field, no "Make a new version", and "Launch an ad" offered instead; on the list it shows its saved headline as its name and "Earlier flow" as its topic. A Postgres test seeds one such version. | Postgres route, Integration |
@@ -69,9 +69,11 @@ An open house campaign saved before PRD-009 opens read-only with one line, "Made
 ## Files expected to change
 
 - `apps/web/src/app/(authenticated)/marketing/campaigns/[campaignRef]/page.tsx` and `apps/web/src/features/campaigns/components/persisted-campaign-screen.tsx` (rewritten) and their tests
-- `apps/web/src/app/(authenticated)/marketing/campaigns/page.tsx` and its tests
+- `apps/web/src/app/(authenticated)/marketing/campaigns/page.tsx` and its tests: this lane alone owns the page and its tab strip ("Your campaigns", "Ads library"); 009c owns only `library/page.tsx`
 - The campaign workspace read (approver name, version history, library notices), with Postgres route tests
 - `apps/web/src/copy/campaign-page-messages.ts` (new)
+- `packages/application/src/campaign-approval-command.ts` and `apps/web/src/server/campaign-approval-handler.ts` (recording the decider's own display name, 009E-AC-004)
+- `docs/operations/retention-and-deletion.md` and `docs/operations/export.md` (the recorded name as personal data)
 
 ## Test plan
 

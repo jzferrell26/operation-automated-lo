@@ -21,10 +21,10 @@ import {
 import { z } from "zod";
 
 import { loadAdsLibrary } from "../features/ads-library/server/catalog-loader.js";
+import type { HomeData } from "../features/overview/model/home-view.js";
 import {
   buildHomeChecklist,
   INSTALLATION_STATUSES,
-  type HomeChecklist,
   type InstallationStatus,
   type SavedBrandRecord,
 } from "../features/overview/model/home-checklist.js";
@@ -33,7 +33,6 @@ import {
   buildRunningList,
   libraryAdStillApprovable,
   type HomeCampaignFacts,
-  type HomeList,
 } from "../features/overview/model/home-campaigns.js";
 import {
   resolveAuthenticatedReadPrincipal,
@@ -67,15 +66,7 @@ import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js"
  * database: nothing has been saved there, so its checklist reads nothing and says so.
  */
 
-/** Everything the page needs from the server, with no identifier a person would read. */
-export type HomeData = Readonly<{
-  checklist: HomeChecklist;
-  /** The topics that have an active ad, in the library's own order. Empty means an empty library. */
-  topics: readonly AdsLibraryTopic[];
-  running: HomeList;
-  /** Absent for a person who cannot approve (D3): the card is not drawn for them. */
-  approval: HomeList | undefined;
-}>;
+export type { HomeData };
 
 export type HomeRead =
   Readonly<{ authenticated: false }> | Readonly<{ authenticated: true; home: HomeData }>;

@@ -181,12 +181,20 @@ describe("the library as Home reads it (009C-AC-012)", () => {
 
   it("offers a topic only when it has an ad that is active", async () => {
     await store.enter();
+    const entry = (
+      id: string,
+      topic: "refinance" | "va-loans" | "pre-approval",
+      status: "active" | "retired" | "replaced",
+    ) => ({
+      entry: { id, version: 1, topic, status, name: id.toUpperCase() },
+      source: "real" as const,
+    });
     const library: HomeLibrary = {
       entries: [
-        { entry: { id: "a", version: 1, topic: "refinance", status: "retired", name: "A" } },
-        { entry: { id: "b", version: 1, topic: "va-loans", status: "replaced", name: "B" } },
-        { entry: { id: "c", version: 1, topic: "pre-approval", status: "active", name: "C" } },
-      ].map((item) => ({ ...item, source: "real" as const })),
+        entry("a", "refinance", "retired"),
+        entry("b", "va-loans", "replaced"),
+        entry("c", "pre-approval", "active"),
+      ],
       find: () => undefined,
       standingOf: () => undefined,
     };

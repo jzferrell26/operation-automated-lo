@@ -1,102 +1,558 @@
-import { render, screen } from "@testing-library/react";
-import { userEvent } from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { render, screen, within } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 
-import { loadSyntheticUiFixture } from "../../ui-foundation/data/load-synthetic-ui.js";
+import type { AdsLibraryTopic } from "@oalo/contracts";
+
+import { buildHomeChecklist, type SavedBrandRecord } from "../model/home-checklist.js";
+import type { HomeCampaignRow, HomeList } from "../model/home-campaigns.js";
+import type { HomeData } from "../model/home-view.js";
 import {
-  OverviewEdgeStateMatrix,
-  OverviewState,
-  SafeRetryState,
-} from "./overview-edge-state-matrix.js";
+  connectionStatements,
+  connectionStatementsOutsideTheSetupCard,
+  repeatedConnectionStatements,
+} from "./connection-statements.test-support.js";
 import { OverviewScreen } from "./overview-screen.js";
-import { ProjectedSafeAction } from "./projected-safe-action.js";
 
-// Under a loaded integration run this file's renders can exceed the 5s project default; give it
-// real headroom here rather than raising the default for every other suite.
-vi.setConfig({ testTimeout: 20000 });
+/**
+ * PRD-009b 009B-AC-001, 002, 004, 006, 007, 008, 009, 010, and 014, at the screen.
+ *
+ * The screen takes the server read's answer and draws it, so each case here hands it the answer a
+ * real account would get: a brand-new owner, an owner with everything saved, an approver with a
+ * campaign waiting. The server read's own rules are in `home-reads.unit.test.ts` and, against real
+ * rows, `home-reads.postgres.test.ts`.
+ */
 
-describe("Platform Overview", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
+const ALL_TOPICS: readonly AdsLibraryTopic[] = [
+  "first-time-buyers",
+  "refinance",
+  "va-loans",
+  "pre-approval",
+  "down-payment-help",
+];
+
+const NO_ROWS: HomeList = { rows: [], total: 0 };
+
+function homeData(
+  overrides: Partial<{
+    topics: readonly AdsLibraryTopic[];
+    installationStatuses: Parameters<typeof buildHomeChecklist>[0]["installationStatuses"];
+    brand: SavedBrandRecord;
+    running: HomeList;
+    approval: HomeList | undefined;
+  }> = {},
+): HomeData {
+  return {
+    checklist: buildHomeChecklist({
+      installationStatuses: overrides.installationStatuses ?? [],
+      brand: overrides.brand,
+    }),
+    topics: overrides.topics ?? ALL_TOPICS,
+    running: overrides.running ?? NO_ROWS,
+    approval: "approval" in overrides ? overrides.approval : NO_ROWS,
+  };
+}
+
+function row(overrides: Partial<HomeCampaignRow> = {}): HomeCampaignRow {
+  return {
+    campaignRef: "campaign_one",
+    name: "First home, start here",
+    href: "/marketing/campaigns/campaign_one",
+    startsAt: "2026-10-03T14:00:00.000Z",
+    endsAt: "2026-10-17T14:00:00.000Z",
+    statusLabel: "Live",
+    sample: false,
+    ...overrides,
+  };
+}
+
+function renderHome(data: HomeData = homeData(), props: { reviewSetup?: boolean } = {}) {
+  return render(<OverviewScreen firstName="Alex" home={data} {...props} />);
+}
+
+function card(name: string): HTMLElement {
+  const section = screen.getByRole("region", { name });
+  return section;
+}
+
+describe("the composition (009B-AC-001)", () => {
+  it("draws the greeting, the start card, the checklist, the two lists, and the footer, in that order", () => {
+    const { container } = renderHome();
+    const text = container.textContent ?? "";
+    const positions = [
+      "Welcome, Alex.",
+      "Launch an ad",
+      "Get set up",
+      "Running now",
+      "Needs your approval",
+      "HighLevel stays your CRM. Your contacts, pipelines and follow-up live there.",
+    ].map((fragment) => text.indexOf(fragment));
+
+    expect(positions.every((position) => position >= 0)).toBe(true);
+    expect([...positions].sort((left, right) => left - right)).toEqual(positions);
   });
 
-  it("renders tenant campaigns instead of the synthetic campaign fixture", () => {
-    const fixture = loadSyntheticUiFixture();
-    render(
-      <OverviewScreen
-        overview={fixture.overview}
-        session={fixture.session}
-        workspaceCampaigns={[]}
-      />,
-    );
-    expect(screen.getByText("No campaigns yet")).toBeInTheDocument();
-    expect(screen.queryByText("Summer buyer education")).not.toBeInTheDocument();
-  });
+  it("draws nothing a CRM would: no metric, numbers, quick actions, coming-later row, or gallery", () => {
+    const { container } = renderHome();
 
-  it("renders every required region and source-bearing metric truth state", () => {
-    const fixture = loadSyntheticUiFixture();
-    render(<OverviewScreen overview={fixture.overview} session={fixture.session} />);
-
-    for (const heading of [
-      "How things stand",
-      "Quick actions",
+    for (const gone of [
       "Your numbers",
-      "What you have going on",
+      "More numbers",
+      "Quick actions",
+      "More quick actions",
+      "Coming later",
+      "How things stand",
       "Needs your attention",
+      "What you have going on",
       "What happened lately",
       "Your workspace",
+      "Examples only",
     ]) {
-      expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
+      expect(screen.queryByText(gone)).toBeNull();
     }
-    // PRD-006b D4 and D5. The `synthetic` prop keeps its meaning, which is that the value is not a
-    // live reading; the row now says that in words a loan officer uses.
-    expect(screen.getAllByText("Not live data")).toHaveLength(8);
+    expect(container.querySelector(".oalo-metric")).toBeNull();
+    expect(container.querySelector("[data-overview-state]")).toBeNull();
+    expect(container.querySelector("[data-demo-label]")).toBeNull();
+    expect(screen.queryByText(/Realtor partner/iu)).toBeNull();
+  });
+
+  it("links to no section the product removed", () => {
+    const { container } = renderHome(
+      homeData({ running: { rows: [row()], total: 1 }, approval: { rows: [row()], total: 1 } }),
+    );
+    const hrefs = [...container.querySelectorAll("a")].map((anchor) => anchor.getAttribute("href"));
+
     expect(
-      screen.getByText("Unavailable", { selector: ".oalo-metric__value" }),
-    ).toBeInTheDocument();
-    expect(screen.getAllByText("Uncertain, reconciling").length).toBeGreaterThan(0);
-    expect(screen.getByText("Synthetic HighLevel contact summary")).toBeInTheDocument();
-    expect(screen.getByText("Observed 8 minutes ago")).toBeInTheDocument();
+      hrefs.filter((href) =>
+        /^\/(?:leads|automations|reports|marketplace|onboarding)\b/u.test(href ?? ""),
+      ),
+    ).toEqual([]);
+    expect(hrefs.filter((href) => /synthetic/iu.test(href ?? ""))).toEqual([]);
   });
 
-  it("keeps consequential actions disabled with persistent reasons", () => {
-    render(<ProjectedSafeAction label="Create an Open House Boost" />);
+  it("greets by first name, and plainly when the account has no name", () => {
+    const { unmount } = renderHome();
+    expect(screen.getByText("Welcome, Alex.")).toBeInTheDocument();
+    unmount();
 
-    expect(screen.getByRole("button", { name: "Create an Open House Boost" })).toBeDisabled();
+    render(<OverviewScreen firstName={undefined} home={homeData()} />);
+    expect(screen.getByText("Welcome.")).toBeInTheDocument();
+  });
+});
+
+describe("the start card (009B-AC-002)", () => {
+  it("has the page's one h1, the corrected lead, and the question", () => {
+    renderHome();
+
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole("heading", { level: 1, name: "Launch an ad" })).toBeInTheDocument();
     expect(
-      screen.getByText("HighLevel, Meta, and Stripe connected to your workspace"),
+      screen.getByText(
+        "Pick a ready-made Facebook ad for loan officers. Your name and NMLS number go on it for you. You set the budget, dates and area, then approve it.",
+      ),
     ).toBeInTheDocument();
-    expect(screen.getByText("Automated LO")).toBeInTheDocument();
-    expect(screen.getByText("Connect your accounts when you're ready.")).toBeInTheDocument();
+    expect(screen.getByText("What do you want to promote?")).toBeInTheDocument();
+    // 009d D3: the design's lead promised a logo, which PRD-009 cannot put on an ad.
+    expect(screen.queryByText(/logo/iu)).toBeNull();
   });
 
-  it("retries only the local safe read and performs no network request", async () => {
-    const user = userEvent.setup();
-    const network = vi.fn();
-    vi.stubGlobal("fetch", network);
-    render(<SafeRetryState state="safe_retry" />);
+  it("has one secondary button per topic that has an active ad, each opening step 1 with its topic", () => {
+    renderHome(homeData({ topics: ["refinance", "va-loans"] }));
+    const start = card("Launch an ad");
+    const topics = within(start).getByRole("list", { name: "What do you want to promote?" });
 
-    await user.click(screen.getByRole("button", { name: "Try again" }));
-
-    expect(screen.getByText("Tries: 1")).toBeInTheDocument();
-    expect(network).not.toHaveBeenCalled();
+    const links = within(topics).getAllByRole("link");
+    expect(links.map((link) => link.textContent)).toEqual(["Refinance", "VA loans"]);
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/marketing/campaigns/new?topic=refinance",
+      "/marketing/campaigns/new?topic=va-loans",
+    ]);
   });
 
-  it("renders restricted state semantics without protected values", () => {
-    render(<OverviewState state="restricted_viewer" />);
+  it("has the one primary action, which opens step 1 with every ad", () => {
+    const { container } = renderHome();
 
-    const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("No access");
-    expect(status).toHaveTextContent("A workspace owner");
-    expect(status).toHaveTextContent(
-      "Nothing from another workspace is shown here, and nothing is guessed at.",
+    const primary = within(card("Launch an ad")).getByRole("link", { name: "Choose an ad" });
+    expect(primary).toHaveAttribute("href", "/marketing/campaigns/new");
+    // One primary per screen: the page carries exactly one control drawn as the primary action.
+    expect(container.querySelectorAll("[data-home-primary]")).toHaveLength(1);
+    expect(container.querySelectorAll("button")).toHaveLength(0);
+  });
+
+  it("names the three steps", () => {
+    renderHome();
+    const steps = within(card("Launch an ad")).getByRole("list", { name: "What happens next" });
+
+    expect(
+      within(steps)
+        .getAllByRole("listitem")
+        .map((item) => item.textContent?.replace(/^\d/u, "")),
+    ).toEqual(["Choose an ad", "Set it up", "Review and launch"]);
+  });
+
+  it("says the library is empty, and shows no topic, when no ad is active (009C-AC-012)", () => {
+    renderHome(homeData({ topics: [] }));
+    const start = card("Launch an ad");
+
+    expect(
+      within(start).getByText(
+        "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(start).queryByText("What do you want to promote?")).toBeNull();
+    expect(within(start).queryByRole("list", { name: "What do you want to promote?" })).toBeNull();
+    // "Choose an ad" still opens step 1, which says the same.
+    expect(within(start).getByRole("link", { name: "Choose an ad" })).toHaveAttribute(
+      "href",
+      "/marketing/campaigns/new",
     );
   });
 
-  it("renders all eleven edge states", () => {
-    const { stateMatrix } = loadSyntheticUiFixture().overview;
-    render(<OverviewEdgeStateMatrix states={stateMatrix} />);
+  it("puts 'Choose an ad' first in the focus order, then the topics (009B-AC-003)", () => {
+    const { container } = renderHome();
+    const order = [...container.querySelectorAll("a[href]")].map((anchor) => anchor.textContent);
 
-    expect(document.querySelectorAll("[data-overview-state]")).toHaveLength(11);
+    expect(order.slice(0, 6)).toEqual([
+      "Choose an ad",
+      "First-time buyers",
+      "Refinance",
+      "VA loans",
+      "Pre-approval",
+      "Down payment help",
+    ]);
+  });
+});
+
+describe("the Get set up card (009B-AC-004, 009B-AC-007)", () => {
+  it("shows the three items of D2 with their sentences, in order", () => {
+    renderHome();
+    const setup = card("Get set up");
+    const items = within(setup).getAllByRole("listitem");
+
+    expect(
+      items.map((item) => within(item).getByRole("heading", { level: 3 }).textContent),
+    ).toEqual(["Connect HighLevel", "Connect Meta", "Add your brand"]);
+    expect(
+      within(setup).getByText(
+        "You can set up an ad now. It runs once HighLevel and Meta are connected.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(setup).getByText("New leads from your ads go to your HighLevel account."),
+    ).toBeInTheDocument();
+    expect(
+      within(setup).getByText("Your Facebook page and ad account, so your ads can run."),
+    ).toBeInTheDocument();
+    // 009d D3: "logo" is not promised.
+    expect(
+      within(setup).getByText("Your name and NMLS number. They go on every ad automatically."),
+    ).toBeInTheDocument();
+  });
+
+  it("shows each state as a glyph plus words", () => {
+    renderHome();
+    const setup = card("Get set up");
+    const labels = [...setup.querySelectorAll("[data-checklist-state]")];
+
+    expect(labels.map((label) => label.textContent)).toEqual([
+      "Not connected yet",
+      "Not connected yet",
+      "Not started",
+    ]);
+    for (const label of labels) {
+      expect(label.querySelector("svg")).not.toBeNull();
+    }
+  });
+
+  it("shows Connected, Needs attention, and Done in words as well", () => {
+    renderHome(
+      homeData({
+        installationStatuses: ["reconnect_required"],
+        brand: { name: "Alex Morgan", nmls: "1234567" },
+      }),
+    );
+    const labels = [...card("Get set up").querySelectorAll("[data-checklist-state]")];
+
+    expect(
+      labels.map((label) => [label.getAttribute("data-checklist-state"), label.textContent]),
+    ).toEqual([
+      ["needs_attention", "Needs attention"],
+      ["not_connected", "Not connected yet"],
+      ["done", "Done"],
+    ]);
+  });
+
+  it("counts Connected and Done, and no more (009B-AC-005)", () => {
+    const { unmount } = renderHome();
+    expect(within(card("Get set up")).getByText("0 of 3 done")).toBeInTheDocument();
+    expect(
+      within(card("Get set up")).getByRole("img", { name: "0 of 3 setup steps done" }),
+    ).toBeInTheDocument();
+    unmount();
+
+    renderHome(
+      homeData({
+        installationStatuses: ["active"],
+        brand: { name: "Alex Morgan", nmls: "1234567" },
+      }),
+    );
+    expect(within(card("Get set up")).getByText("2 of 3 done")).toBeInTheDocument();
+  });
+
+  it("gives each item a link named for it: both connections to Settings, the brand to Brand", () => {
+    renderHome();
+    const setup = card("Get set up");
+
+    expect(within(setup).getByRole("link", { name: "Connect HighLevel" })).toHaveAttribute(
+      "href",
+      "/settings/connections",
+    );
+    expect(within(setup).getByRole("link", { name: "Connect Meta" })).toHaveAttribute(
+      "href",
+      "/settings/connections",
+    );
+    expect(within(setup).getByRole("link", { name: "Add your brand" })).toHaveAttribute(
+      "href",
+      "/brand",
+    );
+  });
+
+  it("keeps each item's name in its link in every state", () => {
+    renderHome(
+      homeData({
+        installationStatuses: ["missing_scope"],
+        brand: { name: "Alex Morgan", nmls: "" },
+      }),
+    );
+    const setup = card("Get set up");
+
+    expect(within(setup).getByRole("link", { name: "Fix HighLevel" })).toHaveAttribute(
+      "href",
+      "/settings/connections",
+    );
+    expect(within(setup).getByRole("link", { name: "Connect Meta" })).toBeInTheDocument();
+    expect(within(setup).getByRole("link", { name: "Fix your brand" })).toHaveAttribute(
+      "href",
+      "/brand",
+    );
+  });
+});
+
+describe("the card when setup is done or broken (009B-AC-006)", () => {
+  const everything = {
+    installationStatuses: ["active"] as const,
+    brand: { name: "Alex Morgan", nmls: "1234567" },
+  };
+
+  it("collapses to one line, with a link to review the items, when all three are done", () => {
+    // Meta can never be connected in PRD-009, so "all three done" is an injected state.
+    const done: HomeData = {
+      ...homeData(everything),
+      checklist: {
+        items: [
+          { id: "highlevel", state: "connected" },
+          { id: "meta", state: "connected" },
+          { id: "brand", state: "done" },
+        ],
+        doneCount: 3,
+        total: 3,
+      },
+    };
+    renderHome(done);
+    const setup = card("You're set up");
+
+    expect(within(setup).queryAllByRole("listitem")).toHaveLength(0);
+    expect(within(setup).getByRole("link", { name: "Review your setup" })).toHaveAttribute(
+      "href",
+      "/overview?review=setup",
+    );
+  });
+
+  it("opens the items again when the person asks to review them", () => {
+    const done: HomeData = {
+      ...homeData(everything),
+      checklist: {
+        items: [
+          { id: "highlevel", state: "connected" },
+          { id: "meta", state: "connected" },
+          { id: "brand", state: "done" },
+        ],
+        doneCount: 3,
+        total: 3,
+      },
+    };
+    renderHome(done, { reviewSetup: true });
+
+    expect(within(card("Get set up")).getAllByRole("listitem")).toHaveLength(3);
+  });
+
+  it("stays open, with the item marked, when anything needs attention", () => {
+    renderHome(homeData({ installationStatuses: ["reconnect_required"] }));
+    const setup = card("Get set up");
+
+    expect(within(setup).getAllByRole("listitem")).toHaveLength(3);
+    const marked = [...setup.querySelectorAll("li[data-state='needs_attention']")];
+    expect(
+      marked.map((item) => within(item as HTMLElement).getByRole("heading").textContent),
+    ).toEqual(["Connect HighLevel"]);
+  });
+});
+
+describe("state it once (009B-AC-008)", () => {
+  it("says a connection is missing only inside the Get set up card, and says nothing twice", () => {
+    const { container } = renderHome();
+
+    expect(connectionStatementsOutsideTheSetupCard(container)).toEqual([]);
+    expect(repeatedConnectionStatements(container)).toEqual([]);
+  });
+
+  it("holds when the page also has campaigns to show", () => {
+    const { container } = renderHome(
+      homeData({
+        running: { rows: [row()], total: 1 },
+        approval: { rows: [row({ statusLabel: "Ready for approval" })], total: 1 },
+      }),
+    );
+
+    expect(connectionStatementsOutsideTheSetupCard(container)).toEqual([]);
+    expect(repeatedConnectionStatements(container)).toEqual([]);
+  });
+
+  it("carries none of the old statements or the old metric text", () => {
+    const { container } = renderHome();
+    const text = container.textContent ?? "";
+
+    expect(text).not.toContain("HighLevel and Meta aren't connected.");
+    expect(text).not.toContain("HighLevel, Meta, and Stripe aren't connected");
+    expect(text).not.toContain("Not connected yet.");
+    expect(text).not.toContain("Connect HighLevel and Meta when you're ready");
+    expect(text).not.toMatch(/Not live yet/iu);
+    expect(text).not.toMatch(/Stripe/u);
+    expect(container.querySelector(".oalo-metric__value")).toBeNull();
+  });
+
+  it("is a test that can fail: it flags a repeat and a statement outside the card", () => {
+    const { container } = render(
+      <main>
+        <section data-home="setup">
+          <p>HighLevel and Meta aren&apos;t connected.</p>
+        </section>
+        <p>HighLevel and Meta aren&apos;t connected.</p>
+        <span data-checklist-state="not_connected">Not connected yet</span>
+      </main>,
+    );
+
+    expect(connectionStatements(container)).toHaveLength(2);
+    expect(connectionStatementsOutsideTheSetupCard(container)).toEqual([
+      "HighLevel and Meta aren't connected.",
+    ]);
+    expect(repeatedConnectionStatements(container)).toEqual([
+      "highlevel and meta aren't connected.",
+    ]);
+  });
+});
+
+describe("Running now (009B-AC-009)", () => {
+  it("shows the empty state, with a link to launch an ad, when nothing is live", () => {
+    renderHome();
+    const running = card("Running now");
+
+    expect(within(running).getByText("No ads running")).toBeInTheDocument();
+    expect(
+      within(running).getByText("An ad shows here, with its spend and leads, once you launch it."),
+    ).toBeInTheDocument();
+    const launch = within(running).getByRole("link", { name: "Launch an ad" });
+    expect(launch).toHaveAttribute("href", "/marketing/campaigns/new");
+    expect(within(running).queryByRole("button")).toBeNull();
+  });
+
+  it("shows one live campaign: its name, run dates, status, and one link", () => {
+    renderHome(homeData({ running: { rows: [row()], total: 1 } }));
+    const running = card("Running now");
+
+    expect(within(running).queryByText("No ads running")).toBeNull();
+    const links = within(running).getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveTextContent("First home, start here");
+    expect(links[0]).toHaveAttribute("href", "/marketing/campaigns/campaign_one");
+    expect(within(running).getByText("Live")).toBeInTheDocument();
+    expect(within(running).getByText(/Oct 3, 2026/u)).toBeInTheDocument();
+    expect(within(running).getByText(/Oct 17, 2026/u)).toBeInTheDocument();
+  });
+
+  it("says when a campaign starts as soon as it is launched", () => {
+    renderHome(homeData({ running: { rows: [row({ startsAt: undefined })], total: 1 } }));
+
+    expect(within(card("Running now")).getByText(/Starts when you launch it/u)).toBeInTheDocument();
+  });
+
+  it("offers See all campaigns only when there are more than the three shown", () => {
+    const three = {
+      rows: [row({ campaignRef: "a" }), row({ campaignRef: "b" }), row({ campaignRef: "c" })],
+      total: 3,
+    };
+    const { unmount } = renderHome(homeData({ running: three }));
+    expect(
+      within(card("Running now")).queryByRole("link", { name: "See all campaigns" }),
+    ).toBeNull();
+    unmount();
+
+    renderHome(homeData({ running: { ...three, total: 5 } }));
+    expect(
+      within(card("Running now")).getByRole("link", { name: "See all campaigns" }),
+    ).toHaveAttribute("href", "/marketing/campaigns");
+  });
+});
+
+describe("Needs your approval (009B-AC-010)", () => {
+  it("shows the empty state for an approver with nothing waiting", () => {
+    renderHome();
+    const approval = card("Needs your approval");
+
+    expect(within(approval).getByText("Nothing to approve")).toBeInTheDocument();
+    expect(
+      within(approval).getByText(
+        "A campaign waits here after its checks pass, until someone approves it or sends it back.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("lists a campaign that waits, with its status words and one link", () => {
+    renderHome(
+      homeData({ approval: { rows: [row({ statusLabel: "Ready for approval" })], total: 1 } }),
+    );
+    const approval = card("Needs your approval");
+
+    expect(within(approval).getByRole("link", { name: "First home, start here" })).toHaveAttribute(
+      "href",
+      "/marketing/campaigns/campaign_one",
+    );
+    expect(within(approval).getByText("Ready for approval")).toBeInTheDocument();
+  });
+
+  it("is not drawn at all for a person who cannot approve, rather than saying nothing waits", () => {
+    renderHome(homeData({ approval: undefined }));
+
+    expect(screen.queryByRole("region", { name: "Needs your approval" })).toBeNull();
+    expect(screen.queryByText("Nothing to approve")).toBeNull();
+  });
+});
+
+describe("sample ads are labelled wherever they appear (009B-AC-014, 009C-AC-005)", () => {
+  it("labels a campaign built on a sample ad, in both lists", () => {
+    renderHome(
+      homeData({
+        running: { rows: [row({ sample: true })], total: 1 },
+        approval: { rows: [row({ sample: true, statusLabel: "Ready for approval" })], total: 1 },
+      }),
+    );
+
+    expect(within(card("Running now")).getByText("Sample ad")).toBeInTheDocument();
+    expect(within(card("Needs your approval")).getByText("Sample ad")).toBeInTheDocument();
+  });
+
+  it("does not label a real ad as a sample", () => {
+    renderHome(homeData({ running: { rows: [row()], total: 1 } }));
+
+    expect(screen.queryByText("Sample ad")).toBeNull();
   });
 });

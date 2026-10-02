@@ -49,8 +49,6 @@ const SAVED_PROFILE: WorkspacePageData = {
     messages: {},
   },
   defaultBrand: SAVED_BRAND,
-  campaigns: [],
-  properties: [],
   reportsEnabled: false,
   valuationConfigured: false,
   contactConfigured: false,

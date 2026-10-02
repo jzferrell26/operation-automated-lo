@@ -7,9 +7,10 @@ import type { WorkspacePageData, WorkspaceView } from "./model.js";
 /**
  * PRD-008c 008C-AC-007, finding W1 of the 2026-10-01 writing review.
  *
- * The valuation card on the "Follow-up routing" and "Automations" pages used to promise that "you
- * confirm each one before it runs". That is true of a lookup the loan officer starts: the new
- * report form asks for the confirmation, and so does "Request a fresh valuation?". It is not true
+ * The valuation card on the routing page, and on the Automations page that PRD-009f removed, used
+ * to promise that "you confirm each one before it runs". That is true of a lookup the loan officer
+ * starts: the new report form asks for the confirmation, and so does "Request a fresh
+ * valuation?". It is not true
  * of a monthly update. Once someone saves "Monthly valuation refresh" for a property, the
  * scheduled refresh (`apps/web/src/server/homeowners/scheduler.ts`) makes a fresh valuation lookup
  * against the same monthly allowance with nobody there to confirm it, and the schedule dialog says
@@ -45,8 +46,6 @@ function workspaceData(
     canEdit: true,
     preferences: { brand: null, partners: null, messages: {} },
     defaultBrand: BRAND,
-    campaigns: [],
-    properties: [],
     reportsEnabled: true,
     valuationConfigured: true,
     contactConfigured: false,
@@ -63,7 +62,7 @@ const CONNECTED_SENTENCE =
 const NOT_CONNECTED_SENTENCE =
   "A valuation connection and an approved workspace allowance are needed before requesting live values.";
 
-describe.each(["routing", "automations"] as const)("the valuation card on the %s page", (view) => {
+describe.each(["routing"] as const)("the valuation card on the %s page", (view) => {
   it("says what is true about confirming a lookup once the connection is set up", () => {
     render(<WorkspaceScreen data={workspaceData(view)} />);
 

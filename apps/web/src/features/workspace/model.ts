@@ -1,25 +1,24 @@
 import { z } from "zod";
 import { HomeBrandSchema, type HomeBrand } from "@oalo/contracts";
 
+/**
+ * The addresses the catch-all serves in review mode. PRD-009f D1: the Marketing Suite hub and its
+ * five sub-pages, Leads and Pipeline, Automations, Workspace tools, the report branding address,
+ * and Workspace access are no longer here. Each answers a redirect or the gone page instead
+ * (`apps/web/next.config.ts`, `apps/web/src/app/(gone)`), and a key left in this table would be a
+ * page that no longer exists.
+ */
 export const workspaceRoutes = {
-  "/marketing": "marketing",
-  "/marketing/property-sites": "property-sites",
-  "/marketing/creative": "creative",
-  "/marketing/ads": "ads",
-  "/marketing/messaging": "messaging",
-  "/marketing/blueprints": "blueprints",
   "/partners": "partners",
-  "/leads": "leads",
-  "/leads/pipeline": "pipeline",
-  "/automations": "automations",
-  "/marketplace": "marketplace",
   "/settings": "settings",
-  "/settings/profile": "profile",
   "/settings/routing": "routing",
-  "/settings/team": "team",
   "/settings/billing": "billing",
 } as const;
-export type WorkspaceView = (typeof workspaceRoutes)[keyof typeof workspaceRoutes];
+/**
+ * `profile` is the one view with no address in this table: `/brand` renders it
+ * (`apps/web/src/app/(authenticated)/brand/page.tsx`), and `/settings/profile` redirects there.
+ */
+export type WorkspaceView = (typeof workspaceRoutes)[keyof typeof workspaceRoutes] | "profile";
 
 export const PartnerSchema = z
   .object({
@@ -118,22 +117,6 @@ export interface WorkspacePageData {
   canEdit: boolean;
   preferences: WorkspacePreferences;
   defaultBrand: HomeBrand;
-  campaigns: {
-    id: string;
-    headline: string;
-    address: string;
-    state: string;
-    href: string;
-    updatedAt: string;
-  }[];
-  properties: {
-    id: string;
-    address: string;
-    reportCount: number;
-    updatedAt: string;
-    monthly: boolean;
-    paused: boolean;
-  }[];
   reportsEnabled: boolean;
   valuationConfigured: boolean;
   contactConfigured: boolean;

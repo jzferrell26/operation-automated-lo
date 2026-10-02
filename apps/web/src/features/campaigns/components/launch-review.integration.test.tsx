@@ -35,6 +35,18 @@ const CLAIM = {
   remediation: "Take 'low rates' out of the headline. Ads can't state rate claims.",
 };
 
+/**
+ * A sentence whose day is drawn as a `time` element (so it lines up in tabular figures): matched on
+ * the element that holds the whole sentence, whose only child elements are its days.
+ */
+function sentenceWithDays(text: string) {
+  return (_content: string, element: Element | null): boolean =>
+    element !== null &&
+    element.textContent === text &&
+    element.children.length > 0 &&
+    [...element.children].every((child) => child.tagName === "TIME");
+}
+
 describe("the actual ad in a feed frame (009D-AC-013)", () => {
   it("shows the ad tall by default, with a square switch that changes only the view", async () => {
     const { container } = render(<LaunchReview review={reviewFixture()} />);
@@ -95,7 +107,9 @@ describe("what you approve (009D-AC-014)", () => {
     ).toBeInTheDocument();
     expect(within(facts).getByText(/Headline changed\. Ad text unchanged/u)).toBeInTheDocument();
     expect(within(facts).getByText("$25 a day, up to $350 in total")).toBeInTheDocument();
-    expect(within(facts).getByText("From launch until Tue, Oct 20, 2026")).toBeInTheDocument();
+    expect(
+      within(facts).getByText(sentenceWithDays("From launch until Tue, Oct 20, 2026")),
+    ).toBeInTheDocument();
     expect(
       within(facts).getByText("Austin, TX and everything within 15 miles"),
     ).toBeInTheDocument();
@@ -238,16 +252,21 @@ describe("the PRD-008b states on step 3 (D8, 009D-AC-018)", () => {
     expect(screen.getByRole("button", { name: "Launch on Facebook" })).toBeDisabled();
   });
 
-  it("ready, viewer can't approve: the hand-off card with Copy the link, and no approve", () => {
-    render(<LaunchReview review={reviewFixture({ canApprove: false })} />);
+  it("ready, viewer can't approve: the chip, the reason and Copy the link, and no approve control at all", () => {
+    const { container } = render(<LaunchReview review={reviewFixture({ canApprove: false })} />);
+    const card = container.querySelector("[data-decision-card='cannot-approve']") as HTMLElement;
+    expect(card).not.toBeNull();
+    expect(within(card).getByText("Ready for approval")).toBeInTheDocument();
     expect(
-      screen.getByText(
+      within(card).getByText(
         "You can't approve campaigns in this workspace. Send this link to an approver.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Copy the link" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Approve this version" })).toBeDisabled();
+    expect(within(card).getByRole("button", { name: "Copy the link" })).toBeInTheDocument();
+    // D8 and the PRD-008b cannot-approve state: nothing this viewer could press that would not work.
+    expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Send back for changes" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Launch on Facebook" })).toBeDisabled();
   });
 
   it("needs changes: the chip, the plain fix, Fix it, and Approve disabled with its reason", () => {
@@ -280,7 +299,9 @@ describe("the PRD-008b states on step 3 (D8, 009D-AC-018)", () => {
     expect(screen.getByText("Approved")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Approved by Dana Reyes on Oct 2, 2026. The approval covers this version only.",
+        sentenceWithDays(
+          "Approved by Dana Reyes on Oct 2, 2026. The approval covers this version only.",
+        ),
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
@@ -314,7 +335,9 @@ describe("the PRD-008b states on step 3 (D8, 009D-AC-018)", () => {
     expect(screen.getByText("Ad retired")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "This ad was taken out of the library on Sep 30, 2026, so this draft can't be approved. Your budget, dates and area are kept.",
+        sentenceWithDays(
+          "This ad was taken out of the library on Sep 30, 2026, so this draft can't be approved. Your budget, dates and area are kept.",
+        ),
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Choose another ad" })).toHaveAttribute(

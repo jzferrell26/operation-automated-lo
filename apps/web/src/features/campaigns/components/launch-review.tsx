@@ -59,8 +59,10 @@ import {
 import { AdFeedPreview } from "./ad-feed-preview.js";
 import type { AdShape } from "./ad-creative.js";
 import { CampaignApprovalControls } from "./campaign-approval-controls.js";
+import { CampaignHandOff } from "./campaign-hand-off.js";
 import { LaunchHeader } from "./launch-flow.js";
 import { LaunchOnFacebook } from "./launch-on-facebook.js";
+import { TextWithDays } from "./text-with-days.js";
 import styles from "./launch.module.css";
 
 /**
@@ -237,7 +239,14 @@ export function LaunchReview({
                 )}
               </dd>
               <dt>{FACT_LABELS.runs}</dt>
-              <dd>{runsFact(readableDay(review.endsOn))}</dd>
+              <dd>
+                <TextWithDays
+                  days={[
+                    { dateTime: review.endsOn.slice(0, 10), text: readableDay(review.endsOn) },
+                  ]}
+                  text={runsFact(readableDay(review.endsOn))}
+                />
+              </dd>
               <dt>{FACT_LABELS.shows}</dt>
               <dd>
                 <ul className={styles.factList}>
@@ -253,6 +262,7 @@ export function LaunchReview({
           </Card>
           <LaunchDecision changeHref={changeHref} from={from} review={review} state={state} />
           <LaunchOnFacebook
+            retiredDateTime={review.retiredOn ?? undefined}
             state={{
               metaConnected: false,
               retiredOn: review.retiredOn === null ? null : shortDay(review.retiredOn),
@@ -289,7 +299,17 @@ function LaunchDecision({
     return (
       <Card data-decision-card="approved" padding="md">
         <Badge tone="success">{APPROVED_CHIP}</Badge>
-        <p>{approvedLine(review.decision.approver, shortDay(review.decision.decidedAt))}</p>
+        <p>
+          <TextWithDays
+            days={[
+              {
+                dateTime: review.decision.decidedAt,
+                text: shortDay(review.decision.decidedAt),
+              },
+            ]}
+            text={approvedLine(review.decision.approver, shortDay(review.decision.decidedAt))}
+          />
+        </p>
       </Card>
     );
   }
@@ -308,7 +328,12 @@ function LaunchDecision({
     return (
       <Card data-decision-card="retired" padding="md">
         <Badge tone="neutral">{AD_RETIRED_CHIP}</Badge>
-        <p>{adRetiredNotice(shortDay(review.retiredOn))}</p>
+        <p>
+          <TextWithDays
+            days={[{ dateTime: review.retiredOn.slice(0, 10), text: shortDay(review.retiredOn) }]}
+            text={adRetiredNotice(shortDay(review.retiredOn))}
+          />
+        </p>
         <Link
           className={styles.primaryLink}
           href={launchHref({ step: 1, campaign: review.campaignRef, from })}
@@ -316,6 +341,16 @@ function LaunchDecision({
         >
           {CHOOSE_ANOTHER_AD}
         </Link>
+      </Card>
+    );
+  }
+  if (state === "cannot-approve") {
+    // D8, "Ready for approval, viewer can't approve": the reason and the hand-off, and nothing this
+    // viewer could press that would not work.
+    return (
+      <Card data-decision-card="cannot-approve" padding="md">
+        <Badge tone="info">{CHECK_RESULT_READY}</Badge>
+        <CampaignHandOff campaignHref={review.detailHref} />
       </Card>
     );
   }

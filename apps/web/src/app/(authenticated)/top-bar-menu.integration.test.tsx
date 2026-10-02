@@ -5,11 +5,7 @@ import { render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  NOT_CONNECTED_BANNER_LABEL,
-  NOT_CONNECTED_DISCLOSURE,
-  NOT_CONNECTED_HEADLINE,
-} from "../../copy/user-language.js";
+import { NOT_CONNECTED_DISCLOSURE, NOT_CONNECTED_HEADLINE } from "../../copy/user-language.js";
 import type { Capability } from "../../features/ui-foundation/model/synthetic-ui.js";
 import type { RuntimeShellSession } from "../../server/runtime-authentication.js";
 import { useReviewModeEnvironment } from "./review-mode-test-support.js";
@@ -87,6 +83,12 @@ function mainMenuLabels(): readonly string[] {
     .getAllByRole("listitem")
     .map((item) => (item.querySelector("[data-menu-label]")?.textContent ?? "").trim());
 }
+
+/**
+ * The retired shell banner's accessible name, written out: PRD-009f removes its constant from the
+ * copy module with the banner, and this suite has to keep looking for it to prove it is gone.
+ */
+const OLD_BANNER_LABEL = "Not connected yet: HighLevel, Meta, and Stripe";
 
 const THE_SIX = [
   "Home",
@@ -177,7 +179,7 @@ describe("no shell-wide not-connected banner in review mode (009A-AC-013)", () =
       const user = userEvent.setup();
       await renderLayout();
 
-      expect(screen.queryByLabelText(NOT_CONNECTED_BANNER_LABEL)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(OLD_BANNER_LABEL)).not.toBeInTheDocument();
       expect(screen.queryByText(NOT_CONNECTED_HEADLINE)).not.toBeInTheDocument();
       expect(screen.queryByText(NOT_CONNECTED_DISCLOSURE)).not.toBeInTheDocument();
       expect(document.querySelector("aside")).toBeNull();
@@ -200,7 +202,7 @@ describe("no shell-wide not-connected banner in review mode (009A-AC-013)", () =
     });
     await renderLayout();
 
-    expect(screen.queryByLabelText(NOT_CONNECTED_BANNER_LABEL)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(OLD_BANNER_LABEL)).not.toBeInTheDocument();
     expect(screen.queryByText(NOT_CONNECTED_HEADLINE)).not.toBeInTheDocument();
     expect(mainMenuLabels()).toEqual(THE_SIX);
   });
@@ -222,7 +224,7 @@ describe("the synthetic demo keeps one sample-data line (009A-AC-013, 009a D3)",
     expect(within(screen.getByRole("banner")).getByText("Local demo with sample data.")).toBe(
       lines[0],
     );
-    expect(screen.queryByLabelText(NOT_CONNECTED_BANNER_LABEL)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(OLD_BANNER_LABEL)).not.toBeInTheDocument();
     expect(mainMenuLabels()).toEqual(THE_SIX);
   });
 });

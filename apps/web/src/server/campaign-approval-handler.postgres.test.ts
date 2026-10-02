@@ -4,7 +4,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { POST as approvePost } from "../app/api/campaigns/approve/route.js";
 import { POST as preflightPost } from "../app/api/campaigns/preflight/route.js";
+import { ADS_LIBRARY_SAMPLES_FLAG } from "../features/ads-library/server/catalog-loader.js";
 import { OPEN_HOUSE_DRAFT_INPUT } from "./campaign-command-test-support.js";
+import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
 import {
   approvalPayload,
   browserRequest,
@@ -13,6 +15,7 @@ import {
   grantBinding,
   issueSession,
   openApprovalSuite,
+  principalForSession,
   revokeBinding,
   revokeSession,
   routeEnvironment,
@@ -27,6 +30,12 @@ import {
   type SeededActor,
   type SeededLocation,
 } from "./campaign-route-postgres-support.js";
+import {
+  libraryAdApprovalPayload,
+  sampleEntry,
+  saveLibraryAdDraft,
+  type SavedLibraryAdDraft,
+} from "./library-ad-test-support.js";
 
 /**
  * PRD-005a 005A-AC-013 and the approve half of 005A-AC-014, against a disposable Postgres.
@@ -40,7 +49,11 @@ import {
  * forbidden approval, which the command specifies writes exactly one denied-attempt row.
  */
 
-const environment: RoutePostgresEnvironment = routeEnvironment();
+// PRD-009c D3. A local route run with the sample flag, so the library-ad cases below can build on
+// and approve the labelled sample ads; an open house approval never consults the catalog.
+const environment: RoutePostgresEnvironment = routeEnvironment({
+  [ADS_LIBRARY_SAMPLES_FLAG]: "enabled",
+});
 
 let suite: ApprovalSuiteFixture;
 let pool: PostgresDatabasePool;
@@ -214,5 +227,143 @@ describe("POST /api/campaigns/approve with a real first-party session", () => {
     expect(await tableCounts()).toEqual(before);
 
     approverSession = await issueSession(pool, location, approver);
+  });
+});
+
+/**
+ * PRD-009c D4 and D5, 009C-AC-007 and the route half of 009C-AC-008, against a disposable Postgres.
+ *
+ * A library-ad version is saved through the application layer (the builder, `createCampaignVersion`,
+ * the library-ad ruleset, and the persistence adapter, exactly what 009d's save composes) and
+ * approved through the exported route. Its approval binds that version's manifest hash, so a version
+ * that differs in its words, its library ad version, an art digest, or a brand value has a different
+ * hash and is not covered. A version whose ad is retired, replaced, missing, or whose art changed is
+ * refused with 409 and writes nothing.
+ */
+describe("POST /api/campaigns/approve with a library-ad version", () => {
+  async function saveDraft(
+    entryId: string,
+    entryVersion: number,
+    overrides: Readonly<{ headline?: string; brandName?: string; tallSha256?: string }> = {},
+  ): Promise<SavedLibraryAdDraft> {
+    const entry = await sampleEntry(entryId, entryVersion);
+    return saveLibraryAdDraft({
+      principal: await principalForSession(creatorSession, environment),
+      environment,
+      entry:
+        overrides.tallSha256 === undefined
+          ? entry
+          : {
+              ...entry,
+              images: {
+                ...entry.images,
+                tall: { ...entry.images.tall, sha256: overrides.tallSha256 },
+              },
+            },
+      ...(overrides.headline === undefined ? {} : { headline: overrides.headline }),
+      ...(overrides.brandName === undefined ? {} : { brandName: overrides.brandName }),
+    });
+  }
+
+  async function storedRecord(campaignRef: string) {
+    const adapter = createCampaignPersistenceAdapter(
+      await principalForSession(approverSession, environment),
+      environment,
+    );
+    return adapter.readRepository.getByCampaignRef(campaignRef);
+  }
+
+  it("binds the approval to the exact ad version, art, words, and brand (009C-AC-007)", async () => {
+    const first = await saveDraft("sample-first-home", 2);
+    expect(first.preflight.blocking).toBe(false);
+
+    const response = await approvePost(
+      approvalRequest(approverSession, libraryAdApprovalPayload(first)),
+    );
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { state: string; manifestHash: string };
+    expect(body.state).toBe("approved");
+    expect(body.manifestHash).toBe(first.version.manifestHash);
+
+    const approved = await storedRecord(first.version.campaignRef);
+    expect(approved?.state).toBe("approved");
+    const decision = approved?.approval;
+    expect(decision?.manifestHash).toBe(first.version.manifestHash);
+    expect(decision?.snapshot).toMatchObject({
+      blueprintId: "library-ad",
+      libraryAdId: "sample-first-home",
+      libraryAdVersion: 2,
+    });
+
+    const variants: ReadonlyArray<readonly [string, SavedLibraryAdDraft]> = [
+      [
+        "different words",
+        await saveDraft("sample-first-home", 2, { headline: "A first home starts with a plan." }),
+      ],
+      ["a different library ad version", await saveDraft("sample-first-home", 1)],
+      [
+        "a different art digest",
+        await saveDraft("sample-first-home", 2, { tallSha256: "9".repeat(64) }),
+      ],
+      [
+        "different brand values",
+        await saveDraft("sample-first-home", 2, { brandName: "Alex M. Morgan" }),
+      ],
+    ];
+    for (const [label, variant] of variants) {
+      expect(variant.version.manifestHash, label).not.toBe(first.version.manifestHash);
+      // An approval covers one campaign version and its manifest hash, and nothing else.
+      expect(decision?.campaignVersionRef, label).not.toBe(variant.version.campaignVersionRef);
+      expect(decision?.manifestHash, label).not.toBe(variant.version.manifestHash);
+      const record = await storedRecord(variant.version.campaignRef);
+      expect(record?.state, label).toBe("awaiting_approval");
+      expect(record?.approval, label).toBeUndefined();
+    }
+  });
+
+  it.each([
+    ["a retired ad", "sample-spring-search", 1, {}, "LIBRARY_AD_RETIRED"],
+    ["a replaced version", "sample-first-home", 1, {}, "LIBRARY_AD_REPLACED"],
+    [
+      "changed art",
+      "sample-first-home",
+      2,
+      { tallSha256: "9".repeat(64) },
+      "LIBRARY_AD_ART_CHANGED",
+    ],
+  ] as const)(
+    "refuses %s with 409 and writes nothing (009C-AC-008)",
+    async (_label, entryId, entryVersion, overrides, code) => {
+      const draft = await saveDraft(entryId, entryVersion, overrides);
+      const before = await tableCounts();
+
+      const response = await approvePost(
+        approvalRequest(approverSession, libraryAdApprovalPayload(draft)),
+      );
+
+      expect(response.status).toBe(409);
+      await expect(response.json()).resolves.toEqual({ error: code });
+      expect(await tableCounts()).toEqual(before);
+      expect((await storedRecord(draft.version.campaignRef))?.approval).toBeUndefined();
+    },
+  );
+
+  it("refuses a version whose ad the catalog does not hold, and writes nothing (009C-AC-008)", async () => {
+    const draft = await saveDraft("sample-first-home", 2);
+    const before = await tableCounts();
+    const previous = process.env[ADS_LIBRARY_SAMPLES_FLAG];
+    // Without the flag the route loads the real catalog alone, as a deployment does, and a version
+    // built on a sample ad is not in it.
+    delete process.env[ADS_LIBRARY_SAMPLES_FLAG];
+    try {
+      const response = await approvePost(
+        approvalRequest(approverSession, libraryAdApprovalPayload(draft)),
+      );
+      expect(response.status).toBe(409);
+      await expect(response.json()).resolves.toEqual({ error: "LIBRARY_AD_MISSING" });
+    } finally {
+      if (previous !== undefined) process.env[ADS_LIBRARY_SAMPLES_FLAG] = previous;
+    }
+    expect(await tableCounts()).toEqual(before);
   });
 });

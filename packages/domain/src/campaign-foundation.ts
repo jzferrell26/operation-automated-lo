@@ -1,3 +1,10 @@
+import { libraryAdPlacesProblem } from "./library-ad-places.js";
+import {
+  evaluateLibraryAdRules,
+  type LibraryAdRuleContext,
+  type LibraryAdRuleInput,
+} from "./library-ad-ruleset.js";
+
 type CampaignState =
   | "draft"
   | "generated"
@@ -57,6 +64,14 @@ interface OpenHouseCampaignManifest extends CampaignManifestCommon {
 
 interface LibraryAdCampaignManifest extends CampaignManifestCommon {
   readonly blueprintId: "library-ad";
+  readonly advertiser: LibraryAdRuleInput["advertiser"];
+  readonly schedule: LibraryAdRuleInput["schedule"];
+  readonly meta: CampaignManifestCommon["meta"] & {
+    readonly targeting: CampaignManifestCommon["meta"]["targeting"] & {
+      readonly regions: readonly string[];
+      readonly cities: readonly string[];
+    };
+  };
 }
 
 type CampaignManifest = OpenHouseCampaignManifest | LibraryAdCampaignManifest;
@@ -70,6 +85,7 @@ interface PreflightFinding {
 }
 
 interface PreflightRules {
+  readonly evaluatedAt: string;
   readonly minimumImageWidth: number;
   readonly minimumImageHeight: number;
   readonly earliestStartAt: string;
@@ -81,6 +97,8 @@ interface PreflightRules {
   readonly maximumDailyBudgetMinor: number;
   readonly maximumTotalBudgetMinor: number;
   readonly warnings: readonly Omit<PreflightFinding, "severity">[];
+  /** PRD-009d D5. Present exactly when the rules are the library-ad ruleset's. */
+  readonly libraryAd?: LibraryAdRuleContext | undefined;
 }
 
 interface CampaignVersion {
@@ -203,10 +221,29 @@ function finding(
   return { severity: "blocking", ruleCode, description, affected, remediation };
 }
 
+/**
+ * PRD-009d D5. A library ad's disclosure and lead form wording come from the person's own Brand, so
+ * the shared rules' fixes say where to make the change. An open house version keeps its sentences.
+ */
+const LIBRARY_AD_SHARED_FIXES = Object.freeze({
+  DISCLOSURE_REQUIRED: "Add your disclosure line in Brand.",
+  CONSENT_REQUIRED: "Add your lead form wording in Brand.",
+  TARGETING_NOT_ALLOWED: "Choose one or more cities or states, and nothing else.",
+});
+
+function libraryAdContext(manifest: CampaignManifest, rules: PreflightRules) {
+  if (manifest.blueprintId !== "library-ad") return undefined;
+  if (rules.libraryAd === undefined) {
+    throw new CampaignPolicyError("A library ad is checked only with the library-ad ruleset");
+  }
+  return rules.libraryAd;
+}
+
 export function evaluateCampaignPreflight(
   manifest: CampaignManifest,
   rules: PreflightRules,
 ): readonly PreflightFinding[] {
+  const libraryAd = libraryAdContext(manifest, rules);
   const findings: PreflightFinding[] = [];
 
   if (manifest.content.disclosureText.length === 0) {
@@ -215,7 +252,9 @@ export function evaluateCampaignPreflight(
         "DISCLOSURE_REQUIRED",
         "The campaign has no approved disclosure text.",
         "content.disclosureText",
-        "Select an approved disclosure profile version.",
+        libraryAd === undefined
+          ? "Select an approved disclosure profile version."
+          : LIBRARY_AD_SHARED_FIXES.DISCLOSURE_REQUIRED,
       ),
     );
   }
@@ -225,7 +264,9 @@ export function evaluateCampaignPreflight(
         "CONSENT_REQUIRED",
         "The lead experience has no consent disclosure.",
         "content.consentText",
-        "Select an approved consent disclosure version.",
+        libraryAd === undefined
+          ? "Select an approved consent disclosure version."
+          : LIBRARY_AD_SHARED_FIXES.CONSENT_REQUIRED,
       ),
     );
   }
@@ -353,14 +394,23 @@ export function evaluateCampaignPreflight(
     manifest.meta.platform !== "meta" ||
     manifest.meta.targeting.zipCodes.length > 0 ||
     manifest.meta.targeting.customAudienceRefs.length > 0 ||
-    manifest.meta.targeting.protectedDimensions.length > 0
+    manifest.meta.targeting.protectedDimensions.length > 0 ||
+    // PRD-009d D4: a library ad's stored states and cities must be ones the request schema would
+    // have produced, so a ZIP code, a radius, or a demographic never reaches a saved version.
+    (manifest.blueprintId === "library-ad" &&
+      libraryAdPlacesProblem({
+        states: manifest.meta.targeting.regions,
+        cities: manifest.meta.targeting.cities,
+      }) !== undefined)
   ) {
     findings.push(
       finding(
         "TARGETING_NOT_ALLOWED",
         "The first blueprint allows Meta country and region targeting only.",
         "meta.targeting",
-        "Remove ZIP, custom-audience, protected-dimension, Google, and LinkedIn targeting.",
+        libraryAd === undefined
+          ? "Remove ZIP, custom-audience, protected-dimension, Google, and LinkedIn targeting."
+          : LIBRARY_AD_SHARED_FIXES.TARGETING_NOT_ALLOWED,
       ),
     );
   }
@@ -387,6 +437,9 @@ export function evaluateCampaignPreflight(
         "Reconnect and revalidate the selected routing objects.",
       ),
     );
+  }
+  if (manifest.blueprintId === "library-ad" && libraryAd !== undefined) {
+    findings.push(...evaluateLibraryAdRules(manifest, libraryAd, rules.evaluatedAt));
   }
   findings.push(...rules.warnings.map((warning) => ({ ...warning, severity: "warning" as const })));
   return Object.freeze(findings);

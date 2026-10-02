@@ -29,9 +29,9 @@ import {
   createFilesystemCampaignReadRepository,
   createLocalCampaignApprovalRepository,
   localCampaignToReadRecord,
+  createLocalCampaignVersionRepository,
   persistLocalCampaign,
 } from "./local-campaign-store.js";
-import { createMemoryCampaignVersionRepository } from "./open-house-draft.js";
 
 export class CampaignWorkspaceStoreUnavailableError extends Error {
   public constructor() {
@@ -166,7 +166,7 @@ export function createCampaignPersistenceAdapter(
     const readRepository = createFilesystemCampaignReadRepository(environment);
     return {
       kind,
-      versionRepository: createMemoryCampaignVersionRepository(),
+      versionRepository: createLocalCampaignVersionRepository(environment),
       approvalRepository: createLocalCampaignApprovalRepository(environment),
       readRepository,
       async persistDraft(version, preflight) {

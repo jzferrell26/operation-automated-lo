@@ -17,7 +17,7 @@ import {
   resetCampaignDatabasePoolForTests,
   workspaceCorrelationReferenceFor,
 } from "./campaign-persistence-runtime.js";
-import { compileOpenHouseDraft } from "./open-house-draft.js";
+import { compileOpenHouseDraft } from "./open-house-draft.test-support.js";
 
 const store = createTemporaryCampaignStore("oalo-persist-runtime-");
 

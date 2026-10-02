@@ -3,9 +3,8 @@
 import { Button, Icon } from "@oalo/ui";
 import { useState } from "react";
 
-import { GUIDED_SETUP_STEPS } from "../../../copy/guided-setup-messages.js";
-import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
-import styles from "./open-house-draft-builder.module.css";
+import { HAND_OFF } from "../../../copy/launch-messages.js";
+import styles from "./campaign-page.module.css";
 
 /**
  * PRD-006c D3 step 6, the branch for everyone who cannot approve.
@@ -14,9 +13,8 @@ import styles from "./open-house-draft-builder.module.css";
  * It points at the campaign in the user's own workspace and is useless to anyone without a session
  * for that workspace, which is what makes it safe to send.
  *
- * It lives on the campaign screen rather than inside the walkthrough panel because a user who
- * dismissed the walkthrough still needs it, and a control that exists only inside a guided step is
- * a control most people never find.
+ * PRD-009d D8: the same card sits on step 3 of "Launch an ad" and on the campaign page. Its words
+ * live in `launch-messages.ts`.
  *
  * The clipboard write is wrapped: a browser that refuses it must not break the page. When it fails
  * the address is still on screen and still selectable, so nobody is stuck.
@@ -34,7 +32,7 @@ export function CampaignHandOff({ campaignHref }: Readonly<{ campaignHref: strin
   }
 
   return (
-    <div className={styles.handOff} data-tour={GUIDED_SETUP_ANCHORS.campaignHandoffLink}>
+    <div className={styles.handOff} data-hand-off="">
       <Button
         onClick={() => {
           void copyLink();
@@ -42,16 +40,16 @@ export function CampaignHandOff({ campaignHref }: Readonly<{ campaignHref: strin
         size="sm"
         variant="secondary"
       >
-        {GUIDED_SETUP_STEPS.approveOrHandOff.copyLinkLabel}
+        {HAND_OFF.copyLinkLabel}
       </Button>
       <p aria-live="polite" className={styles.hint}>
         {copied ? (
           <>
             <Icon decorative name="check" size="sm" tone="success" />
-            {GUIDED_SETUP_STEPS.approveOrHandOff.copiedNotice}
+            {HAND_OFF.copiedNotice}
           </>
         ) : (
-          GUIDED_SETUP_STEPS.approveOrHandOff.handOffBody
+          HAND_OFF.body
         )}
       </p>
     </div>

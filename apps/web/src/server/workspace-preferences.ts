@@ -19,6 +19,7 @@ import {
   type WorkspacePreferenceCommand,
   type WorkspacePreferences,
 } from "../features/workspace/model.js";
+import { AdBrandSchema } from "../features/workspace/ad-brand.js";
 import {
   resolveAuthenticatedPrincipal,
   resolveAuthenticatedReadPrincipal,
@@ -85,9 +86,11 @@ function assertReader(principal: Readonly<AuthenticatedPrincipal>) {
 function parseRow(key: PreferenceKey, value: unknown) {
   return key === "brand"
     ? parseStoredPreference(versioned(HomeBrandSchema), value)
-    : key === "partners"
-      ? parseStoredPreference(versioned(PartnersSchema), value)
-      : parseStoredPreference(versioned(MessageSchema), value);
+    : key === "ad_brand"
+      ? parseStoredPreference(versioned(AdBrandSchema), value)
+      : key === "partners"
+        ? parseStoredPreference(versioned(PartnersSchema), value)
+        : parseStoredPreference(versioned(MessageSchema), value);
 }
 function parseStoredPreference<S extends z.ZodType>(schema: S, value: unknown): z.output<S> {
   const parsed = schema.safeParse(value);
@@ -116,6 +119,8 @@ function projectPreferences(rows: readonly z.infer<typeof RowSchema>[]): Workspa
     const key = PreferenceKeySchema.parse(row.key.slice("workspace.".length, -".v1".length));
     if (key === "brand")
       result.brand = parseStoredPreference(versioned(HomeBrandSchema), row.value);
+    else if (key === "ad_brand")
+      result.adBrand = parseStoredPreference(versioned(AdBrandSchema), row.value);
     else if (key === "partners")
       result.partners = parseStoredPreference(versioned(PartnersSchema), row.value);
     else result.messages[key] = parseStoredPreference(versioned(MessageSchema), row.value);

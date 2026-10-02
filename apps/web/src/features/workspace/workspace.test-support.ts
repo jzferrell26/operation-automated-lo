@@ -1,3 +1,4 @@
+import { DEFAULT_AD_BRAND } from "./ad-brand.js";
 import type { WorkspacePageData, WorkspaceView } from "./model.js";
 
 /**
@@ -27,8 +28,9 @@ export function workspaceData(
       role: "Workspace owner",
     },
     canEdit: true,
-    preferences: { brand: null, partners: null, messages: {} },
+    preferences: { brand: null, adBrand: null, partners: null, messages: {} },
     defaultBrand: TEST_BRAND,
+    defaultAdBrand: DEFAULT_AD_BRAND,
     reportsEnabled: true,
     valuationConfigured: true,
     contactConfigured: false,

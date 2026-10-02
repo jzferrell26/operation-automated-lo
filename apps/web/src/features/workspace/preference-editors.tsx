@@ -12,17 +12,20 @@ import {
   TextArea,
   TextField,
 } from "@oalo/ui";
+import { adColorVariables } from "../campaigns/components/ad-creative.js";
+import { BrandBand } from "../campaigns/components/brand-band.js";
 import { HomeBrandFields } from "../homeowners/builder.js";
 import {
-  messageKeys,
-  messageLabels,
-  starterMessage,
-  MessageKeySchema,
-  MessageSchema,
+  AD_BRAND_COLOR_PRESETS,
+  AD_BRAND_LIMITS,
+  AdBrandSchema,
+  type AdBrand,
+} from "./ad-brand.js";
+import {
   PartnerSchema,
-  type MessageKey,
   type WorkspacePageData,
   type WorkspacePartner,
+  type WorkspacePreferences,
 } from "./model.js";
 import { useWorkspacePreferences } from "./use-workspace-preferences.js";
 import styles from "./workspace.module.css";
@@ -34,6 +37,46 @@ function Feedback({ error, message }: { error: string; message: string }) {
         <LiveRegion urgency="alert" visible message={error} />
       ) : message ? (
         <LiveRegion visible message={message} />
+      ) : null}
+    </>
+  );
+}
+
+/** The feedback, the save button, and the reload that both Brand cards end with. */
+function SaveAndReload({
+  canEdit,
+  onLoaded,
+  saveLabel,
+  state,
+  validation,
+}: {
+  canEdit: boolean;
+  onLoaded: (next: WorkspacePreferences) => void;
+  saveLabel: string;
+  state: ReturnType<typeof useWorkspacePreferences>;
+  validation: string;
+}) {
+  return (
+    <>
+      <Feedback error={validation || state.error} message={state.message} />
+      <div className={styles.actions}>
+        <Button type="submit" disabled={!canEdit || state.busy}>
+          {state.busy ? "Saving…" : saveLabel}
+        </Button>
+        <Button
+          variant="outline"
+          disabled={state.busy}
+          onClick={() => {
+            void state.reload().then((next) => {
+              if (next) onLoaded(next);
+            });
+          }}
+        >
+          Load latest saved details
+        </Button>
+      </div>
+      {!canEdit ? (
+        <p className={styles.note}>Your role has read-only access to these details.</p>
       ) : null}
     </>
   );
@@ -82,26 +125,13 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
               }}
             />
           </fieldset>
-          <Feedback error={validation || state.error} message={state.message} />
-          <div className={styles.actions}>
-            <Button type="submit" disabled={!data.canEdit || state.busy}>
-              {state.busy ? "Saving…" : "Save report branding"}
-            </Button>
-            <Button
-              variant="outline"
-              disabled={state.busy}
-              onClick={() => {
-                void state.reload().then((next) => {
-                  if (next) setBrand(next.brand?.value ?? data.defaultBrand);
-                });
-              }}
-            >
-              Load latest saved details
-            </Button>
-          </div>
-          {!data.canEdit ? (
-            <p className={styles.note}>Your role has read-only access to these details.</p>
-          ) : null}
+          <SaveAndReload
+            canEdit={data.canEdit}
+            onLoaded={(next) => setBrand(next.brand?.value ?? data.defaultBrand)}
+            saveLabel="Save report branding"
+            state={state}
+            validation={validation}
+          />
         </form>
       </Card>
       <Card className={styles.brandPreview} padding="lg">
@@ -336,171 +366,122 @@ export function PartnersEditor({ data }: { data: WorkspacePageData }) {
   );
 }
 
-export function MessageDraftEditor({ data }: { data: WorkspacePageData }) {
+/**
+ * PRD-009d D3 and 009D-AC-003. The four Brand fields a library ad's band needs beyond the report
+ * identity: a title, the brand colour, the disclosure line, and the lead form wording. They are
+ * saved beside the report brand under their own key, and the save of a campaign version reads them
+ * here, on the server, never from the request (009D-AC-024).
+ */
+export function AdBrandEditor({ data }: { data: WorkspacePageData }) {
   const state = useWorkspacePreferences(data.preferences);
-  const [key, setKey] = useState<MessageKey>(messageKeys[0]);
-  const [draft, setDraft] = useState(
-    state.preferences.messages[key]?.value ?? starterMessage(key, data.identity.name),
-  );
+  const [adBrand, setAdBrand] = useState<AdBrand>(data.defaultAdBrand);
   const [validation, setValidation] = useState("");
-  const [copyStatus, setCopyStatus] = useState("");
-  const [dirty, setDirty] = useState(false);
-  const [pendingKey, setPendingKey] = useState<typeof key | null>(null);
-  function select(next: typeof key) {
+  const brand = state.preferences.brand?.value ?? data.defaultBrand;
+  function edit(change: Partial<AdBrand>) {
+    setAdBrand({ ...adBrand, ...change });
     state.clearFeedback();
-    setKey(next);
-    setDraft(state.preferences.messages[next]?.value ?? starterMessage(next, data.identity.name));
-    setDirty(false);
     setValidation("");
-    setCopyStatus("");
   }
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const parsed = MessageSchema.safeParse(draft);
+    setValidation("");
+    const parsed = AdBrandSchema.safeParse(adBrand);
     if (!parsed.success) {
-      setValidation("Add message text before saving.");
+      setValidation(
+        "Check the title, the disclosure line and the lead form wording before saving. The disclosure line and the lead form wording can't be empty.",
+      );
       return;
     }
-    setValidation("");
     const saved = await state.save({
-      key,
-      expectedRevision: state.preferences.messages[key]?.revision ?? null,
+      key: "ad_brand",
+      expectedRevision: state.preferences.adBrand?.revision ?? null,
       value: parsed.data,
     });
-    if (saved) {
-      setDraft(saved.messages[key]?.value ?? parsed.data);
-      setCopyStatus("");
-      setDirty(false);
-    }
-  }
-  async function copyDraft() {
-    setCopyStatus("");
-    try {
-      await navigator.clipboard.writeText(
-        `${key.endsWith("_email") && draft.subject ? `Subject: ${draft.subject}\n\n` : ""}${draft.body}`,
-      );
-      setCopyStatus("Draft copied. No message was sent.");
-    } catch {
-      setCopyStatus("Clipboard access is unavailable. Select the message text to copy it.");
-    }
-  }
-  function edited() {
-    state.clearFeedback();
-    setValidation("");
-    setCopyStatus("");
-    setDirty(true);
+    if (saved?.adBrand) setAdBrand(saved.adBrand.value);
   }
   return (
     <div className={styles.columns}>
-      <Card padding="lg" className={styles.panel}>
+      <Card className={styles.panel} padding="lg">
         <form className={styles.stack} onSubmit={(event) => void submit(event)}>
-          <Select
-            label="Message draft"
-            disabled={state.busy}
-            value={key}
-            options={messageKeys.map((value) => ({ value, label: messageLabels[value] }))}
-            onValueChange={(value) => {
-              const next = MessageKeySchema.parse(value);
-              if (next === key) return;
-              if (dirty) setPendingKey(next);
-              else select(next);
-            }}
-          />
-          <p className={styles.note}>
-            Starter wording is a draft. Replace the bracketed fields and review contact permission
-            before using it in HighLevel.
-          </p>
-          {key.endsWith("_email") ? (
-            <TextField
-              label="Email subject"
-              disabled={state.busy || !data.canEdit}
-              value={draft.subject}
-              maxLength={160}
-              onChange={(event) => {
-                setDraft({ ...draft, subject: event.target.value });
-                edited();
-              }}
-            />
-          ) : null}
-          <TextArea
-            label="Message text"
-            disabled={state.busy || !data.canEdit}
-            value={draft.body}
-            maxLength={2500}
-            rows={10}
-            requirement="required"
-            onChange={(event) => {
-              setDraft({ ...draft, body: event.target.value });
-              edited();
-            }}
-          />
-          <small>{draft.body.length.toLocaleString()} / 2,500 characters</small>
-          <Feedback error={validation || state.error} message={copyStatus || state.message} />
-          <div className={styles.actions}>
-            <Button type="submit" disabled={!data.canEdit || state.busy}>
-              {state.busy ? "Saving…" : "Save message draft"}
-            </Button>
-            <Button
-              variant="outline"
-              disabled={!draft.body.trim()}
-              onClick={() => void copyDraft()}
-            >
-              Copy draft
-            </Button>
-            <Button
-              variant="ghost"
-              disabled={state.busy}
-              onClick={() => {
-                void state.reload().then((next) => {
-                  if (next) {
-                    setDraft(next.messages[key]?.value ?? starterMessage(key, data.identity.name));
-                    setDirty(false);
-                    setValidation("");
-                    setCopyStatus("");
-                  }
-                });
-              }}
-            >
-              Load latest saved details
-            </Button>
+          <div>
+            <h2>Your brand on ads</h2>
+            <p>
+              Your name and NMLS number go on every ad automatically, with the title, colour and
+              disclosure line you choose here. The checks read all of them before an ad can be
+              approved.
+            </p>
           </div>
+          <fieldset className={styles.fields} disabled={state.busy || !data.canEdit}>
+            <TextField
+              description="For example, Loan officer. Leave it empty to show only your name."
+              label="Title on your ads"
+              maxLength={AD_BRAND_LIMITS.title}
+              onChange={(event) => edit({ title: event.target.value })}
+              value={adBrand.title}
+            />
+            <Select
+              description="It fills the small tile with your initials and the thin line above your name."
+              label="Brand colour"
+              onValueChange={(value) => {
+                const preset = AD_BRAND_COLOR_PRESETS.find((item) => item.id === value);
+                if (preset) edit({ colorPresetId: preset.id });
+              }}
+              options={AD_BRAND_COLOR_PRESETS.map((preset) => ({
+                value: preset.id,
+                label: preset.label,
+              }))}
+              value={adBrand.colorPresetId}
+            />
+            <TextField
+              description="Your lender-approved line, printed along the bottom of every ad."
+              label="Disclosure line"
+              maxLength={AD_BRAND_LIMITS.disclosureLine}
+              onChange={(event) => edit({ disclosureLine: event.target.value })}
+              requirement="required"
+              value={adBrand.disclosureLine}
+            />
+            <TextArea
+              description="What a person agrees to when they send you their details from an ad."
+              label="Lead form wording"
+              maxLength={AD_BRAND_LIMITS.leadFormWording}
+              onChange={(event) => edit({ leadFormWording: event.target.value })}
+              requirement="required"
+              rows={3}
+              value={adBrand.leadFormWording}
+            />
+          </fieldset>
+          <SaveAndReload
+            canEdit={data.canEdit}
+            onLoaded={(next) => setAdBrand(next.adBrand?.value ?? data.defaultAdBrand)}
+            saveLabel="Save ad brand"
+            state={state}
+            validation={validation}
+          />
         </form>
       </Card>
-      <Card padding="lg" className={styles.panel}>
-        <Icon name="file-text" decorative size="lg" />
-        <h2>Prepared here. Reviewed in HighLevel.</h2>
+      <Card className={styles.brandPreview} padding="lg">
+        <span className={styles.eyebrow}>On every ad</span>
+        <div className={styles.adBandPreview} style={adColorVariables(adBrand.colorPresetId)}>
+          <BrandBand
+            advertiser={{
+              name: brand.name,
+              title: adBrand.title,
+              company: brand.company,
+              nmls: brand.nmls,
+              companyNmls: brand.companyNmls,
+              colorPresetId: adBrand.colorPresetId,
+              disclosureLine: adBrand.disclosureLine,
+            }}
+          />
+        </div>
         <p>
-          Your email and SMS drafts are stored separately, so editing one channel keeps the other
-          intact.
+          Your name, company and NMLS numbers come from your report identity. A change applies to
+          new ad versions; an approved version keeps the brand it was approved with.
         </p>
-        <p>
-          Saving and copying do not send messages, add contacts, or start workflows. Use the
-          approved messaging workflow in your HighLevel account.
-        </p>
-        <Link href="/settings/connections" variant="action">
-          Review workspace connections
+        <Link href="/marketing/campaigns/new" variant="action">
+          Launch an ad
         </Link>
       </Card>
-      <Dialog
-        title="Discard unsaved draft changes?"
-        open={pendingKey !== null}
-        onClose={() => setPendingKey(null)}
-      >
-        <p>Your current edits have not been saved. Switching drafts will discard them.</p>
-        <div className={styles.actions}>
-          <Button variant="outline" onClick={() => setPendingKey(null)}>
-            Keep editing
-          </Button>
-          <Button
-            onClick={() => {
-              if (pendingKey) select(pendingKey);
-              setPendingKey(null);
-            }}
-          >
-            Discard edits and switch
-          </Button>
-        </div>
-      </Dialog>
     </div>
   );
 }

@@ -7,6 +7,8 @@ import { issueEmbeddedSessionToken } from "@oalo/auth";
 import type { ApplicationRole } from "@oalo/contracts";
 import { createPostgresPool, type PostgresDatabasePool } from "@oalo/db";
 
+import { ADS_LIBRARY_SAMPLES_FLAG } from "../features/ads-library/server/catalog-loader.js";
+
 import {
   createStaticIdentityDirectory,
   createStaticRoleBindingPort,
@@ -37,6 +39,40 @@ export const OPEN_HOUSE_DRAFT_INPUT = Object.freeze({
   totalBudgetDollars: 125,
   propertyPermissionConfirmed: true,
   realtorPermissionConfirmed: true,
+});
+
+/**
+ * PRD-009d. What step 2 of "Launch an ad" posts to "Save and check": the chosen sample ad and its
+ * words, the end date, the budgets, and the places, and nothing about the brand, which the server
+ * reads from the person's saved Brand. The sample ads load only with the sample flag on in a local
+ * run (`SAMPLE_LIBRARY_ENV`).
+ */
+export const LIBRARY_AD_SAVE_INPUT = Object.freeze({
+  adId: "sample-first-home",
+  adVersion: 2,
+  headline: "Thinking about your first home? Start here.",
+  primaryText:
+    "I walk first-time buyers through each step, from pre-approval to closing day. Send me a message and let's talk about your plans.",
+  endsOn: "2030-06-12",
+  dailyBudgetDollars: 25,
+  totalBudgetDollars: 350,
+  places: Object.freeze(["TX", "Austin, TX"]),
+});
+
+export const SAMPLE_LIBRARY_ENV: Readonly<Record<string, string>> = Object.freeze({
+  OALO_ENVIRONMENT: "local",
+  [ADS_LIBRARY_SAMPLES_FLAG]: "enabled",
+});
+
+/** A Brand a test person saves, so a library-ad version carries a name and an NMLS number. */
+export const SAVED_TEST_BRAND = Object.freeze({
+  name: "Casey Rivera",
+  company: "Evergreen Example Lending",
+  email: "",
+  phone: "",
+  nmls: "123456",
+  companyNmls: "234567",
+  tagline: "",
 });
 
 export function openHouseDraftInputWithHeadline(

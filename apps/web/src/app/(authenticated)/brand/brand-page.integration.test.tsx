@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DashboardPreviewScreen } from "../../../features/dashboard-preview/dashboard-screen.js";
+import { DEFAULT_AD_BRAND } from "../../../features/workspace/ad-brand.js";
 import type { WorkspacePageData } from "../../../features/workspace/model.js";
 import { OALO_REVIEW_SURFACE_AUTHORIZED } from "../../../server/authenticated-workspace-data.js";
 import BrandProfilePage from "./page.js";
@@ -45,10 +46,12 @@ const SAVED_PROFILE: WorkspacePageData = {
   canEdit: true,
   preferences: {
     brand: { revision: "3b1f6f5e-6c0e-4a39-9f0e-6d7f3c1a9b22", value: SAVED_BRAND },
+    adBrand: null,
     partners: null,
     messages: {},
   },
   defaultBrand: SAVED_BRAND,
+  defaultAdBrand: DEFAULT_AD_BRAND,
   reportsEnabled: false,
   valuationConfigured: false,
   contactConfigured: false,
@@ -142,11 +145,10 @@ describe("the brand page in synthetic mode", () => {
  * `reportsEnabled` from the same flag, so each case feeds the page what the loader would.
  */
 describe("what the brand page says about homeowner reports", () => {
-  const ON_HEADING = "A consistent identity on every new homeowner report.";
+  /** PRD-009d D3: Brand holds the ad brand too, so the page lead speaks for both and names no report. */
+  const PAGE_LEAD = "Your name and NMLS number go on every ad automatically.";
   const ON_EDITOR =
     "Saved for your account in this workspace and used when you create a new homeowner report.";
-  const OFF_HEADING =
-    "Your branding is saved here for homeowner reports, which aren't turned on for this workspace yet.";
   const OFF_EDITOR =
     "Saved for your account in this workspace. It will be used on a new homeowner report once homeowner reports are turned on.";
 
@@ -156,7 +158,8 @@ describe("what the brand page says about homeowner reports", () => {
 
     render(await BrandProfilePage());
 
-    expect(screen.getByText(ON_HEADING)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Brand" })).toBeInTheDocument();
+    expect(screen.getByText(PAGE_LEAD)).toBeInTheDocument();
     expect(screen.getByText(ON_EDITOR)).toBeInTheDocument();
     expect(document.body.textContent).not.toContain("aren't turned on");
     expect(document.body.textContent).not.toContain(OFF_EDITOR);
@@ -168,9 +171,8 @@ describe("what the brand page says about homeowner reports", () => {
 
     render(await BrandProfilePage());
 
-    expect(screen.getByText(OFF_HEADING)).toBeInTheDocument();
+    expect(screen.getByText(PAGE_LEAD)).toBeInTheDocument();
     expect(screen.getByText(OFF_EDITOR)).toBeInTheDocument();
-    expect(document.body.textContent).not.toContain(ON_HEADING);
     expect(document.body.textContent).not.toContain(ON_EDITOR);
     expect(document.body.textContent).not.toMatch(/on every new homeowner report/u);
     expect(document.body.textContent).not.toMatch(/used when you create a new homeowner report/u);

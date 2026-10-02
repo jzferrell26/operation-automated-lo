@@ -22,7 +22,7 @@ import {
   readWorkspaceCampaignForRequest,
   readWorkspaceCampaignsForRequest,
 } from "./campaign-workspace-reads.js";
-import { compileOpenHouseDraft } from "./open-house-draft.js";
+import { compileOpenHouseDraft } from "./open-house-draft.test-support.js";
 
 const store = createTemporaryCampaignStore("oalo-workspace-reads-");
 

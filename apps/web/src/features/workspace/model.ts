@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { HomeBrandSchema, type HomeBrand } from "@oalo/contracts";
+import { AdBrandSchema, type AdBrand } from "./ad-brand.js";
 
 /**
  * The addresses the catch-all serves in review mode. PRD-009f D1: the Marketing Suite hub and its
@@ -55,13 +56,19 @@ export const MessageSchema = z
   .object({ subject: z.string().max(160), body: z.string().trim().min(1).max(2500) })
   .strict();
 export type WorkspaceMessage = z.infer<typeof MessageSchema>;
-export const PreferenceKeySchema = z.enum(["brand", "partners", ...messageKeys]);
+/**
+ * `ad_brand` is stored as `workspace.ad_brand.v1` (PRD-009d D3), which satisfies the preference key
+ * check `^[a-z][a-z0-9_.]{1,63}$` (`supabase/migrations/20260919160000_user_preferences.sql:43`).
+ * Saved message drafts stay readable; nothing in the product edits them any more.
+ */
+export const PreferenceKeySchema = z.enum(["brand", "ad_brand", "partners", ...messageKeys]);
 export type PreferenceKey = z.infer<typeof PreferenceKeySchema>;
 export const versioned = <S extends z.ZodType>(schema: S) =>
   z.object({ revision: z.uuid(), value: schema }).strict();
 export const WorkspacePreferencesSchema = z
   .object({
     brand: versioned(HomeBrandSchema).nullable(),
+    adBrand: versioned(AdBrandSchema).nullable(),
     partners: versioned(PartnersSchema).nullable(),
     messages: z.partialRecord(MessageKeySchema, versioned(MessageSchema)),
   })
@@ -73,6 +80,9 @@ export const WorkspacePreferenceCommandSchema = z.union([
     .object({ key: z.literal("brand"), expectedRevision: RevisionSchema, value: HomeBrandSchema })
     .strict(),
   z
+    .object({ key: z.literal("ad_brand"), expectedRevision: RevisionSchema, value: AdBrandSchema })
+    .strict(),
+  z
     .object({ key: z.literal("partners"), expectedRevision: RevisionSchema, value: PartnersSchema })
     .strict(),
   z
@@ -82,34 +92,10 @@ export const WorkspacePreferenceCommandSchema = z.union([
 export type WorkspacePreferenceCommand = z.infer<typeof WorkspacePreferenceCommandSchema>;
 export const emptyWorkspacePreferences = (): WorkspacePreferences => ({
   brand: null,
+  adBrand: null,
   partners: null,
   messages: {},
 });
-
-export const messageLabels: Record<MessageKey, string> = {
-  invitation_email: "Open house invitation · Email",
-  invitation_sms: "Open house invitation · SMS",
-  followup_email: "Buyer follow-up · Email",
-  followup_sms: "Buyer follow-up · SMS",
-  partner_update_email: "Partner update · Email",
-  partner_update_sms: "Partner update · SMS",
-};
-export function starterMessage(key: MessageKey, name: string): WorkspaceMessage {
-  const subject = key.startsWith("invitation")
-    ? "You're invited to an open house"
-    : key.startsWith("followup")
-      ? "Thank you for stopping by"
-      : "Our property campaign update";
-  const line = key.startsWith("invitation")
-    ? "Join us at [property address] on [date and time]. Details: [property link]"
-    : key.startsWith("followup")
-      ? "Thank you for visiting [property address]. What questions can I help answer?"
-      : "Here is our update for [property address]: [add verified results and next steps].";
-  return {
-    subject: key.endsWith("_email") ? subject : "",
-    body: `Hi [first name],${key.endsWith("_email") ? "\n\n" : " "}${line}${key.endsWith("_email") ? "\n\n" : " "}${name}`,
-  };
-}
 
 export interface WorkspacePageData {
   view: WorkspaceView;
@@ -117,6 +103,8 @@ export interface WorkspacePageData {
   canEdit: boolean;
   preferences: WorkspacePreferences;
   defaultBrand: HomeBrand;
+  /** PRD-009d D3. The saved ad brand, or the defaults a person starts from. */
+  defaultAdBrand: AdBrand;
   reportsEnabled: boolean;
   valuationConfigured: boolean;
   contactConfigured: boolean;

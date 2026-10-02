@@ -21,15 +21,19 @@ export const AdsLibraryTopicSchema = z.enum(ADS_LIBRARY_TOPICS);
 export type AdsLibraryTopic = z.infer<typeof AdsLibraryTopicSchema>;
 
 /**
- * A fixed list, `LEARN_MORE` by default. Meta's own allowed list for a Housing lead ad is
- * UNVERIFIED (009D-AC-012 checks it); this list only keeps a curator from typing free text here.
+ * The six values Meta allows on a lead-form ad, `LEARN_MORE` by default (VERIFIED on 2026-10-02 in
+ * the Meta rules check, section 5, 009D-AC-012 E4). `CONTACT_US` and every message button are not
+ * on Meta's lead-form list, so no library ad can carry one. Which of the six a given account is
+ * offered is UNVERIFIED, and `GET_QUOTE` and `APPLY_NOW` wait for a counsel and lender decision
+ * before an ad uses them.
  */
 export const ADS_LIBRARY_CALLS_TO_ACTION = [
-  "LEARN_MORE",
-  "CONTACT_US",
-  "GET_QUOTE",
   "APPLY_NOW",
+  "DOWNLOAD",
+  "GET_QUOTE",
+  "LEARN_MORE",
   "SIGN_UP",
+  "SUBSCRIBE",
 ] as const;
 export const AdsLibraryCallToActionSchema = z.enum(ADS_LIBRARY_CALLS_TO_ACTION);
 export type AdsLibraryCallToAction = z.infer<typeof AdsLibraryCallToActionSchema>;

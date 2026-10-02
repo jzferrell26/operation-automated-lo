@@ -52,7 +52,16 @@ describe("ads library catalog entry schema (009C-AC-001)", () => {
       "pre-approval",
       "down-payment-help",
     ]);
-    expect(ADS_LIBRARY_CALLS_TO_ACTION).toContain("LEARN_MORE");
+    // 009D-AC-012 E4: exactly the six values Meta allows on a lead-form ad (Meta rules check,
+    // section 5), in the order the record lists them.
+    expect(ADS_LIBRARY_CALLS_TO_ACTION).toEqual([
+      "APPLY_NOW",
+      "DOWNLOAD",
+      "GET_QUOTE",
+      "LEARN_MORE",
+      "SIGN_UP",
+      "SUBSCRIBE",
+    ]);
   });
 
   it("refuses an id that is not lower-case kebab case or is longer than 60 characters", () => {
@@ -200,6 +209,14 @@ describe("ads library catalog entry schema (009C-AC-001)", () => {
   it("refuses an unlisted call to action and defaults a missing one to LEARN_MORE", () => {
     expect(entryAccepts({ ...realEntry(), callToAction: "BUY_NOW" })).toBe(false);
     expect(entryAccepts({ ...realEntry(), callToAction: "learn_more" })).toBe(false);
+    // Not on Meta's lead-form list, so never a library ad's button: CONTACT_US and the message
+    // buttons (Meta rules check, section 5).
+    for (const refused of ["CONTACT_US", "MESSAGE_PAGE", "SEND_MESSAGE", "CALL_NOW"]) {
+      expect(entryAccepts({ ...realEntry(), callToAction: refused }), refused).toBe(false);
+    }
+    for (const allowed of ADS_LIBRARY_CALLS_TO_ACTION) {
+      expect(entryAccepts({ ...realEntry(), callToAction: allowed }), allowed).toBe(true);
+    }
     const { callToAction: _omitted, ...withoutCallToAction } = realEntry();
     const parsed = AdsLibraryEntrySchema.parse(withoutCallToAction);
     expect(parsed.callToAction).toBe("LEARN_MORE");

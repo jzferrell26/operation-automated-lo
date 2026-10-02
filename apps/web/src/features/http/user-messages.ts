@@ -87,6 +87,11 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
     what: "Something in this request didn't look right to us.",
     whatToDo: "Refresh the page and try again.",
   },
+  /** PRD-009d 009D-AC-011: the chosen ad was retired, replaced by a newer version, or is unknown. */
+  LIBRARY_AD_NOT_AVAILABLE: {
+    what: "This ad isn't in the library any more, or a newer version replaced it.",
+    whatToDo: "Go back to Choose an ad and pick it again. Your words and budget are kept.",
+  },
   CAMPAIGN_PREFLIGHT_FAILED: {
     what: "We couldn't finish the checks on this campaign.",
     whatToDo: "Try again. If it keeps happening, contact support with the reference below.",

@@ -10,8 +10,7 @@ import {
   NEEDS_CHANGES_NEXT_ACTION,
   WORKSPACE_OWNER_PARTY,
 } from "../../../copy/user-language.js";
-import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
-import { useGuidedSetup } from "../../guided-setup/guided-setup-context.js";
+import { APPROVE_LINE } from "../../../copy/launch-messages.js";
 import { CampaignHandOff } from "./campaign-hand-off.js";
 import { userMessageSentence } from "../../http/user-messages.js";
 import {
@@ -78,7 +77,6 @@ export function CampaignApprovalControls({
    */
   const [decided, setDecided] = useState(false);
   const router = useRouter();
-  const guidedSetup = useGuidedSetup();
   const outcomeRef = useRef<HTMLParagraphElement | null>(null);
 
   /*
@@ -128,9 +126,6 @@ export function CampaignApprovalControls({
       };
       setStatus(recorded(decisionStatus(body.decision, body.duplicate === true)));
       setDecided(true);
-      // 008B-AC-010. The guided walkthrough, when there is one, hears what was recorded now, so its
-      // step agrees with this card without waiting for the refreshed page to carry the decision.
-      guidedSetup?.reportCampaignDecided({ campaignRef, decision: body.decision });
       /*
        * The server-rendered regions around this card (where the campaign stands, the check result,
        * what to do next, who signed off) were written before the decision existed. Refreshing
@@ -150,13 +145,12 @@ export function CampaignApprovalControls({
   }
 
   if (decided) {
-    // PRD-008b D2. A recorded decision is not offered again. The card keeps its walkthrough anchor
-    // so the guided step that points at it still finds it, and says only what was recorded.
+    // PRD-008b D2. A recorded decision is not offered again. The card says only what was recorded.
     // PRD-008d's baseline review of 2026-10-01: it also keeps its title, so the card a person has
     // just decided on is the same card, by name, as the one a later visit shows, and not the only
     // untitled card on the page.
     return (
-      <Card data-tour={GUIDED_SETUP_ANCHORS.campaignApproveControl} padding="md">
+      <Card data-approval-card="" padding="md">
         <strong>Approve this campaign</strong>
         <p ref={outcomeRef} role="status" tabIndex={-1}>
           {status?.sentence}
@@ -166,9 +160,9 @@ export function CampaignApprovalControls({
   }
 
   return (
-    <Card data-tour={GUIDED_SETUP_ANCHORS.campaignApproveControl} padding="md">
+    <Card data-approval-card="" padding="md">
       <strong>Approve this campaign</strong>
-      <p>Approving applies to this exact version. Nothing is published or sent.</p>
+      <p>{APPROVE_LINE}</p>
       <SafeAction
         confirmLabel="Yes, approve"
         decision={decision}

@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { POST } from "../app/api/campaigns/preflight/route.js";
 import {
   CORRELATION_HEADER_MATRIX,
-  OPEN_HOUSE_DRAFT_INPUT,
+  LIBRARY_AD_SAVE_INPUT,
 } from "./campaign-command-test-support.js";
 import {
   applyRouteEnvironment,
@@ -65,7 +65,7 @@ describe("campaign preflight handler correlation matrix (real Postgres)", () => 
       const response = await POST(
         browserRequest({
           path: "/api/campaigns/preflight",
-          body: OPEN_HOUSE_DRAFT_INPUT,
+          body: LIBRARY_AD_SAVE_INPUT,
           session: creatorSession,
           csrfServerSecret,
           ...(header === undefined ? {} : { correlationId: header }),

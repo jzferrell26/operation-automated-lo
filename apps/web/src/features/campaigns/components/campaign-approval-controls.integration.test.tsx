@@ -9,7 +9,12 @@ import {
 import { SUPPORT_REFERENCE_HEADER } from "../../http/internal-api.js";
 import { stubRefusedFetch, stubUnreachedFetch } from "../../http/refusal.test-support.js";
 import { userMessageSentence } from "../../http/user-messages.js";
-import { CampaignApprovalControls } from "./campaign-approval-controls.js";
+import {
+  CampaignApprovalControls,
+  type CampaignApprovalControlsProps,
+} from "./campaign-approval-controls.js";
+import { reviewFixture } from "./launch-flow.test-support.js";
+import { LaunchReview } from "./launch-review.js";
 
 /**
  * PRD-006b 006B-AC-007 on the approval control.
@@ -51,6 +56,48 @@ const APPROVABLE = {
   state: "awaiting_approval",
 } as const;
 
+/**
+ * PRD-009d 009D-AC-015. Step 3 of "Launch an ad" reuses this control, so every test of it runs in
+ * both places: alone, as the campaign page shows it, and inside step 3 built from the same version.
+ * Step 3 draws a recorded decision as its own card (D8) rather than as this control, so the tests
+ * about a decision the page already stored run on the campaign page only.
+ */
+const CAMPAIGN_PAGE = "on the campaign page";
+const STEP_THREE = "on step 3 of Launch an ad";
+
+function stepThree(props: CampaignApprovalControlsProps) {
+  const finding = {
+    ruleCode: "WORDS_RATE_PAYMENT_OR_TERM_CLAIM",
+    affected: "content.headline",
+    remediation: "Take 'low rates' out of the headline. Ads can't state rate claims.",
+  };
+  return (
+    <LaunchReview
+      review={reviewFixture(
+        {
+          campaignRef: props.campaignRef,
+          campaignVersionRef: props.campaignVersionRef,
+          manifestHash: props.manifestHash,
+          preflightResultHash: props.preflightResultHash,
+          rowVersion: props.rowVersion,
+          canApprove: props.canApprove,
+          state: props.state,
+          detailHref: props.campaignHref,
+        },
+        props.blocking ? [finding] : [],
+      )}
+    />
+  );
+}
+
+const HOSTS = [
+  [
+    CAMPAIGN_PAGE,
+    (props: CampaignApprovalControlsProps) => <CampaignApprovalControls {...props} />,
+  ],
+  [STEP_THREE, stepThree],
+] as const;
+
 const APPROVE_LABEL = "Approve this version";
 const SEND_BACK_LABEL = "Send back for changes";
 
@@ -91,14 +138,14 @@ function expectDecisionStillOffered(): void {
   expect(mocked.refresh).not.toHaveBeenCalled();
 }
 
-describe("the approval control when the route refuses", () => {
+describe.each(HOSTS)("the approval control %s when the route refuses", (_where, mount) => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
   it("shows the generic sentence and the support reference for a code it cannot map", async () => {
     stubRefusedFetch("CAMPAIGN_ELEVENTH_HOUR_SURPRISE", SUPPORT_REFERENCE, 409);
-    render(<CampaignApprovalControls {...APPROVABLE} />);
+    render(mount(APPROVABLE));
 
     await approve();
 
@@ -116,7 +163,7 @@ describe("the approval control when the route refuses", () => {
 
   it("shows the mapped sentence and no reference for a code it knows", async () => {
     stubRefusedFetch("CAMPAIGN_APPROVAL_CONFLICT", SUPPORT_REFERENCE, 409);
-    render(<CampaignApprovalControls {...APPROVABLE} />);
+    render(mount(APPROVABLE));
 
     await approve();
 
@@ -132,7 +179,7 @@ describe("the approval control when the route refuses", () => {
 
   it("still shows the row, and says so, when the refusal carried no reference", async () => {
     stubRefusedFetch(undefined, undefined, 409);
-    render(<CampaignApprovalControls {...APPROVABLE} />);
+    render(mount(APPROVABLE));
 
     await approve();
 
@@ -143,7 +190,7 @@ describe("the approval control when the route refuses", () => {
 
   it("says the same thing when nothing answered at all", async () => {
     stubUnreachedFetch();
-    render(<CampaignApprovalControls {...APPROVABLE} />);
+    render(mount(APPROVABLE));
 
     await approve();
 
@@ -156,7 +203,7 @@ describe("the approval control when the route refuses", () => {
 
   it("keeps both controls, and does not refresh, when a send-back is refused", async () => {
     stubRefusedFetch("CAMPAIGN_APPROVAL_CONFLICT", SUPPORT_REFERENCE, 409);
-    render(<CampaignApprovalControls {...APPROVABLE} />);
+    render(mount(APPROVABLE));
 
     await sendBack();
 
@@ -168,7 +215,7 @@ describe("the approval control when the route refuses", () => {
 
   it("leaves no support region behind on a decision that landed", async () => {
     stubDecisionFetch({ decision: "approved", duplicate: false });
-    render(<CampaignApprovalControls {...APPROVABLE} />);
+    render(mount(APPROVABLE));
 
     await approve();
 
@@ -190,91 +237,97 @@ describe("the approval control when the route refuses", () => {
  * the screen reads. The cases where a decision did not land are the refusal tests above, which each
  * end by checking that both controls are still offered (008B-AC-005).
  */
-describe("the approval control once a decision has been recorded", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("offers both controls before anyone has decided", () => {
-    render(<CampaignApprovalControls {...APPROVABLE} />);
-
-    expectDecisionStillOffered();
-  });
-
-  it.each([
-    [
-      "an approval",
-      approve,
-      { decision: "approved", duplicate: false } as const,
-      "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.",
-    ],
-    [
-      "a duplicate approval",
-      approve,
-      { decision: "approved", duplicate: true } as const,
-      "Already approved.",
-    ],
-    [
-      "a send-back",
-      sendBack,
-      { decision: "rejected", duplicate: false } as const,
-      "Sent back for changes. The campaign creator can fix it and save a new version.",
-    ],
-    [
-      "a duplicate send-back",
-      sendBack,
-      { decision: "rejected", duplicate: true } as const,
-      "Already sent back for changes.",
-    ],
-  ])(
-    "replaces both controls with the outcome and refreshes after %s",
-    async (_label, decide, body, sentence) => {
-      stubDecisionFetch(body);
-      render(<CampaignApprovalControls {...APPROVABLE} />);
-
-      await decide();
-
-      await waitFor(() => {
-        expect(screen.getByRole("status")).toHaveTextContent(sentence);
-      });
-      expect(screen.queryByRole("button", { name: APPROVE_LABEL })).toBeNull();
-      expect(screen.queryByRole("button", { name: SEND_BACK_LABEL })).toBeNull();
-      // The card keeps its own title once a decision replaces its controls.
-      expect(screen.getByText("Approve this campaign")).toBeInTheDocument();
-      expect(mocked.refresh).toHaveBeenCalledTimes(1);
-    },
-  );
-
-  it("moves focus to the outcome, because the control that had it is gone", async () => {
-    stubDecisionFetch({ decision: "approved", duplicate: false });
-    render(<CampaignApprovalControls {...APPROVABLE} />);
-
-    await approve();
-
-    await waitFor(() => {
-      expect(screen.getByRole("status")).toHaveFocus();
-    });
-  });
-
-  it("keeps the outcome on screen when the refreshed page hands it the stored decision", async () => {
-    stubDecisionFetch({ decision: "approved", duplicate: false });
-    const { rerender } = render(<CampaignApprovalControls {...APPROVABLE} />);
-
-    await approve();
-    await waitFor(() => {
-      expect(screen.getByRole("status")).toHaveTextContent("Approved.");
+describe.each(HOSTS)(
+  "the approval control %s once a decision has been recorded",
+  (where, mount) => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
     });
 
-    // What `router.refresh()` does to this card: the same component, new props from the server.
-    rerender(
-      <CampaignApprovalControls {...APPROVABLE} alreadyDecided="approved" state="approved" />,
+    it("offers both controls before anyone has decided", () => {
+      render(mount(APPROVABLE));
+
+      expectDecisionStillOffered();
+    });
+
+    it.each([
+      [
+        "an approval",
+        approve,
+        { decision: "approved", duplicate: false } as const,
+        "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.",
+      ],
+      [
+        "a duplicate approval",
+        approve,
+        { decision: "approved", duplicate: true } as const,
+        "Already approved.",
+      ],
+      [
+        "a send-back",
+        sendBack,
+        { decision: "rejected", duplicate: false } as const,
+        "Sent back for changes. The campaign creator can fix it and save a new version.",
+      ],
+      [
+        "a duplicate send-back",
+        sendBack,
+        { decision: "rejected", duplicate: true } as const,
+        "Already sent back for changes.",
+      ],
+    ])(
+      "replaces both controls with the outcome and refreshes after %s",
+      async (_label, decide, body, sentence) => {
+        stubDecisionFetch(body);
+        render(mount(APPROVABLE));
+
+        await decide();
+
+        await waitFor(() => {
+          expect(screen.getByRole("status")).toHaveTextContent(sentence);
+        });
+        expect(screen.queryByRole("button", { name: APPROVE_LABEL })).toBeNull();
+        expect(screen.queryByRole("button", { name: SEND_BACK_LABEL })).toBeNull();
+        // The card keeps its own title once a decision replaces its controls.
+        expect(screen.getByText("Approve this campaign")).toBeInTheDocument();
+        expect(mocked.refresh).toHaveBeenCalledTimes(1);
+      },
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent("Approved.");
-    expect(screen.queryByRole("button", { name: APPROVE_LABEL })).toBeNull();
-    expect(screen.queryByRole("button", { name: SEND_BACK_LABEL })).toBeNull();
-  });
-});
+    it("moves focus to the outcome, because the control that had it is gone", async () => {
+      stubDecisionFetch({ decision: "approved", duplicate: false });
+      render(mount(APPROVABLE));
+
+      await approve();
+
+      await waitFor(() => {
+        expect(screen.getByRole("status")).toHaveFocus();
+      });
+    });
+
+    it.runIf(where === CAMPAIGN_PAGE)(
+      "keeps the outcome on screen when the refreshed page hands it the stored decision",
+      async () => {
+        stubDecisionFetch({ decision: "approved", duplicate: false });
+        const { rerender } = render(mount(APPROVABLE));
+
+        await approve();
+        await waitFor(() => {
+          expect(screen.getByRole("status")).toHaveTextContent("Approved.");
+        });
+
+        // What `router.refresh()` does to this card: the same component, new props from the server.
+        rerender(
+          <CampaignApprovalControls {...APPROVABLE} alreadyDecided="approved" state="approved" />,
+        );
+
+        expect(screen.getByRole("status")).toHaveTextContent("Approved.");
+        expect(screen.queryByRole("button", { name: APPROVE_LABEL })).toBeNull();
+        expect(screen.queryByRole("button", { name: SEND_BACK_LABEL })).toBeNull();
+      },
+    );
+  },
+);
 
 /**
  * Finding H1 of the 2026-10-01 writing re-review, and the guard that nothing else moved with it.
@@ -291,7 +344,7 @@ describe("the approval control once a decision has been recorded", () => {
  * the checks, and it used to be the viewer's permission. Every other row is what the control said
  * before, so a change to the order of the tests cannot quietly change what it says for them.
  */
-describe("what the approval control says in each state", () => {
+describe.each(HOSTS)("what the approval control says %s in each state", (where, mount) => {
   const PERMISSION = "Only an approver or your workspace owner can approve a campaign.";
   const SEND_IT_ON = "Send them this page and ask them to look at this version.";
   const NEEDS_CHANGES = "This version needs changes before anyone can approve it.";
@@ -304,7 +357,7 @@ describe("what the approval control says in each state", () => {
   const READY =
     "Read the wording, the budget, where the ad runs, the dates, and the disclosures before you approve.";
 
-  it.each([
+  const rows = [
     ["an approver on a version waiting for a decision", { ...APPROVABLE }, [READY], [PERMISSION]],
     [
       "somebody who cannot approve a version waiting for a decision",
@@ -336,12 +389,17 @@ describe("what the approval control says in each state", () => {
       [ALREADY_DECIDED, READ_WHO_DECIDED],
       [PERMISSION, NEEDS_CHANGES],
     ],
-  ] as const)("says the right reason to %s", (_who, props, present, absent) => {
-    render(<CampaignApprovalControls {...props} />);
+  ] as const;
+  // Step 3 draws a decided version as D8's card, not as this control (`launch-review` tests).
+  it.each(where === STEP_THREE ? rows.filter(([, props]) => !("alreadyDecided" in props)) : rows)(
+    "says the right reason to %s",
+    (_who, props, present, absent) => {
+      render(mount(props));
 
-    for (const sentence of present)
-      expect(screen.getByText(sentence), sentence).toBeInTheDocument();
-    for (const sentence of absent) expect(screen.queryByText(sentence), sentence).toBeNull();
-    expect(screen.queryByText(/Read the decision below/u)).toBeNull();
-  });
+      for (const sentence of present)
+        expect(screen.getByText(sentence), sentence).toBeInTheDocument();
+      for (const sentence of absent) expect(screen.queryByText(sentence), sentence).toBeNull();
+      expect(screen.queryByText(/Read the decision below/u)).toBeNull();
+    },
+  );
 });

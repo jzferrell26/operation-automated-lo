@@ -6,7 +6,7 @@ import { loadSyntheticBrandProfile } from "../model/synthetic-brand-profile.js";
 import { BrandProfileScreen } from "./brand-profile-screen.js";
 
 describe("Brand profile screen", () => {
-  it("shows one set of saved details and the exact missing Open House Boost fields", () => {
+  it("shows one set of saved details and the exact missing fields every ad needs", () => {
     const { container } = render(<BrandProfileScreen profile={loadSyntheticBrandProfile()} />);
 
     expect(screen.getByRole("heading", { name: "Your current details" })).toBeInTheDocument();

@@ -3,7 +3,6 @@ import { previewPaths } from "../dashboard-preview/model.js";
 import {
   workspaceRoutes,
   WorkspacePreferenceCommandSchema,
-  starterMessage,
   messageKeys,
   PartnerSchema,
 } from "./model.js";
@@ -36,14 +35,15 @@ describe("authenticated workspace contracts", () => {
       expect(Object.hasOwn(previewPaths, removed), removed).toBe(false);
     }
   });
-  it("starts each channel with explicit placeholder wording, not invented property facts", () => {
+  it("still reads a saved message draft, though nothing in the product edits one any more", () => {
     for (const key of messageKeys) {
-      const value = starterMessage(key, "Test Officer");
-      expect(value.body).toContain("[property address]");
-      expect(value.body).toContain("Test Officer");
-      expect(value.subject.length > 0).toBe(key.endsWith("_email"));
       expect(
-        WorkspacePreferenceCommandSchema.safeParse({ key, expectedRevision: null, value }).success,
+        WorkspacePreferenceCommandSchema.safeParse({
+          key,
+          expectedRevision: null,
+          value: { subject: "", body: "A saved draft." },
+        }).success,
+        key,
       ).toBe(true);
     }
   });

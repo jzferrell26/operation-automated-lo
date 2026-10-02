@@ -12,8 +12,9 @@ import {
 } from "./authenticated-principal.js";
 import { handleCampaignApproval } from "./campaign-approval-handler.js";
 import {
+  LIBRARY_AD_SAVE_INPUT,
   LOCAL_SYNTHETIC_ENV,
-  OPEN_HOUSE_DRAFT_INPUT,
+  SAMPLE_LIBRARY_ENV,
   createTemporaryCampaignStore,
   persistedDraftFromPreflightBody,
 } from "./campaign-command-test-support.js";
@@ -36,6 +37,14 @@ const INSTALLATION_REF = "installation_approval001";
 afterEach(async () => {
   await store.restore();
 });
+
+/**
+ * PRD-009d. A draft is a library-ad version now, so the run that saves and approves one loads the
+ * sample ads it is built from.
+ */
+function storeWithSamples() {
+  return { ...store.env(), ...SAMPLE_LIBRARY_ENV };
+}
 
 function mutationGate() {
   return {
@@ -157,9 +166,9 @@ async function persistDraft(
     new Request("https://app.operation-automated-lo.test/api/campaigns/preflight", {
       method: "POST",
       headers: { "content-type": "application/json", ...headers },
-      body: JSON.stringify(OPEN_HOUSE_DRAFT_INPUT),
+      body: JSON.stringify(LIBRARY_AD_SAVE_INPUT),
     }),
-    store.env(),
+    storeWithSamples(),
     ports,
   );
   expect(response.status).toBe(200);
@@ -177,13 +186,13 @@ describe("campaign approval handler", () => {
         actorKind: "human",
         actorRole: "approver",
       }),
-      store.env(),
+      storeWithSamples(),
       createDefaultCampaignCommandPorts(),
     );
     expect(forbidden.status).toBe(400);
     const creator = await handleCampaignApproval(
       approveRequest({ campaignRef: draft.campaignRef, decision: "approved" }),
-      store.env(),
+      storeWithSamples(),
       createDefaultCampaignCommandPorts(),
     );
     expect(creator.status).toBe(403);
@@ -204,7 +213,7 @@ describe("campaign approval handler", () => {
     };
     const first = await handleCampaignApproval(
       approveRequest(approvalPayload, session.approverHeaders),
-      store.env(),
+      storeWithSamples(),
       session.ports,
     );
     expect(first.status).toBe(200);
@@ -217,7 +226,7 @@ describe("campaign approval handler", () => {
     // requires this to resolve as the idempotent duplicate, not a 409 conflict.
     const retry = await handleCampaignApproval(
       approveRequest(approvalPayload, session.approverHeaders),
-      store.env(),
+      storeWithSamples(),
       session.ports,
     );
     expect(retry.status).toBe(200);
@@ -235,7 +244,7 @@ describe("campaign approval handler", () => {
         { campaignRef: draft.campaignRef, decision: "approved", expectedRowVersion: 1 },
         { ...session.approverHeaders, "x-correlation-id": "3fa85f64-5717-4562-b3fc-2c963f66afa6" },
       ),
-      store.env(),
+      storeWithSamples(),
       session.ports,
     );
     expect(withUuidHeader.status).toBe(200);
@@ -251,7 +260,7 @@ describe("campaign approval handler", () => {
         { campaignRef: draft.campaignRef, decision: "approved" },
         session.approverHeaders,
       ),
-      store.env(),
+      storeWithSamples(),
       session.ports,
     );
     expect(withoutHeader.headers.get("x-correlation-id")).toBeNull();
@@ -269,7 +278,7 @@ describe("campaign approval handler", () => {
         { campaignRef: draft.campaignRef, decision: "approved", expectedRowVersion: 99 },
         session.approverHeaders,
       ),
-      store.env(),
+      storeWithSamples(),
       session.ports,
     );
     expect(response.status).toBe(409);

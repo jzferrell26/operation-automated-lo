@@ -25,10 +25,12 @@ import {
   withAPopulatedCampaignWorkspace,
 } from "./helpers/populated-campaign-workspace.js";
 import {
-  FINISHED_OPEN_HOUSE,
-  READY_OPEN_HOUSE,
-  fillTheOpenHouseDraft,
-} from "./helpers/open-house-draft.js";
+  RATE_CLAIM_HEADLINE,
+  SAMPLE_ADS,
+  saveACampaign,
+  stepTwoPath,
+  verdictOnStepThree,
+} from "./helpers/launch-an-ad.js";
 
 /**
  * PRD-006d 006D-AC-007 through 006D-AC-014, for the screens synthetic mode serves.
@@ -188,11 +190,10 @@ for (const { screen, path } of SYNTHETIC_SCREENS) {
  * fourteen fields, unconnected to any of them and announced to nobody, which is three of the four
  * things 006D-AC-011 asks for missing at once.
  *
- * So the failure is produced, from the real server, and then measured. A two-letter state is the
- * shortest honest way in: the control's `maxLength` caps it at two characters and the browser's
- * own required check passes on one, so the refusal comes from the draft schema
- * (`apps/web/src/server/open-house-draft.ts:18-24`) rather than from a stubbed answer, and it
- * comes back naming the control it is about.
+ * So the failure is produced and then measured. PRD-009d replaced the create screen with step 2 of
+ * "Launch an ad", where a daily budget under the ruleset's floor is refused before anything is
+ * sent: the message is said once at the top of the form, focus moves to it, and the budget field
+ * carries its own sentence.
  *
  * Four claims, the four the criterion makes: the message announces, it is above the first field,
  * it is on screen at 390 without scrolling, and the control the refusal named carries it through
@@ -204,23 +205,24 @@ test("a failed save on the create screen is announced, connected, and on screen 
   await blockAnythingOffOrigin(page);
   await useStoredTheme(page, "light");
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/marketing/campaigns/new");
+  // PRD-009d: the create screen is step 2 of "Launch an ad". A daily budget under the ruleset's
+  // floor is a refusal the page makes before anything is sent.
+  await page.goto(stepTwoPath(SAMPLE_ADS.firstHome));
   await settleForScreenshot(page);
 
-  await fillTheOpenHouseDraft(page, READY_OPEN_HOUSE);
-  const state = page.getByLabel("State", { exact: true });
-  await state.fill("T");
-  await page.getByRole("button", { name: "Save and run the checks" }).click();
+  const state = page.getByLabel("Daily budget", { exact: false });
+  await state.fill("1");
+  await page.getByRole("button", { name: "Save and check" }).click();
 
-  // Scoped to the form: Next renders its own route announcer as an empty `role="alert"` at the end
+  // Scoped to step 2: Next renders its own route announcer as an empty `role="alert"` at the end
   // of the body, and an unscoped query finds that instead of the message.
-  const problem = page.locator("form").getByRole("alert");
+  const problem = page.locator("[data-launch-step='2']").getByRole("alert");
   await expect(problem).toBeVisible();
   await expect(problem).toHaveAttribute("aria-live", "assertive");
   await expect(problem).toContainText("Look over the fields marked below and try again.");
 
   const problemBox = await problem.boundingBox();
-  const firstFieldBox = await page.getByLabel("Property address").boundingBox();
+  const firstFieldBox = await page.getByLabel("Headline", { exact: false }).boundingBox();
   expect(problemBox?.y ?? -1, "the message is on screen at 390").toBeGreaterThanOrEqual(0);
   expect(
     (problemBox?.y ?? 0) + (problemBox?.height ?? 0),
@@ -246,8 +248,8 @@ test("a failed save on the create screen is announced, connected, and on screen 
       .map((id) => document.getElementById(id)?.textContent?.trim() ?? "")
       .join(" | "),
   );
-  expect(describedText, "the state control is described by its inline error").toContain(
-    "This one needs another look.",
+  expect(describedText, "the daily budget is described by its inline error").toContain(
+    "Choose a daily budget from $5 to $1,000.",
   );
 
   await expectNoHorizontalOverflow(page);
@@ -354,8 +356,8 @@ test("every notice title carries the informational tone, whatever order the styl
 }) => {
   await blockAnythingOffOrigin(page);
   await page.setViewportSize({ width: 1180, height: 900 });
+  // PRD-009d: "Launch an ad" replaced the create screen and carries no notice card of its own.
   const notices = [
-    { path: "/marketing/campaigns/new", title: "Nothing goes out from this page" },
     { path: "/brand", title: "Suggestions only. You decide what's saved." },
   ] as const;
   for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
@@ -497,11 +499,11 @@ test("the overview's action links keep their own height at every frame", async (
 });
 
 /**
- * PRD-006d D3's named states on the create screen and on a campaign a person has actually saved.
+ * PRD-006d D3's named states on a campaign a person has actually saved.
  *
- * The draft itself, and the two open-house windows that separate a ready campaign from one that
- * needs changes, live in `helpers/open-house-draft.ts`, so the review suite reaches the same
- * campaign by the same route.
+ * PRD-009d: each campaign is saved through "Launch an ad" (`helpers/launch-an-ad.ts`), so the
+ * review suite reaches the same campaign by the same route. Words that claim a rate are what
+ * separate a campaign that needs changes from one that is ready.
  */
 
 for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
@@ -521,15 +523,12 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
     const externalRequests = await blockAnythingOffOrigin(page);
     await useStoredTheme(page, theme);
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/marketing/campaigns/new");
+    const ref = await saveACampaign(page, { ad: SAMPLE_ADS.firstHome, place: "Austin, TX" });
     await expectThemeResolved(page, theme);
-    await settleForScreenshot(page);
-    await fillTheOpenHouseDraft(page, READY_OPEN_HOUSE);
-    await page.getByRole("button", { name: "Save and run the checks" }).click();
-    await expect(page.getByRole("heading", { name: "Ready for approval" })).toBeVisible();
+    await expect(verdictOnStepThree(page)).toContainText("Checks passed");
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.getByRole("link", { name: "Open campaign" }).click();
+    await page.goto(`/marketing/campaigns/${ref}`);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await settleForScreenshot(page);
     await expect(page.getByRole("button", { name: "Approve this version" })).toBeDisabled();
@@ -554,11 +553,15 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
     const externalRequests = await blockAnythingOffOrigin(page);
     await useStoredTheme(page, theme);
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/marketing/campaigns/new");
+    const ref = await saveACampaign(page, {
+      ad: SAMPLE_ADS.firstHome,
+      place: "Austin, TX",
+      headline: RATE_CLAIM_HEADLINE,
+    });
     await expectThemeResolved(page, theme);
-    await settleForScreenshot(page);
-    await fillTheOpenHouseDraft(page, FINISHED_OPEN_HOUSE);
-    await page.getByRole("button", { name: "Save and run the checks" }).click();
+    await expect(verdictOnStepThree(page)).toContainText("Needs changes");
+    // PRD-009d: the findings with their notes are on the campaign's own page.
+    await page.goto(`/marketing/campaigns/${ref}`);
     await expect(page.getByRole("heading", { name: "Needs changes" })).toBeVisible();
 
     /**
@@ -681,7 +684,6 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
         await expect(cards.nth(index).getByRole("heading", { level: 2 })).toHaveText(
           campaign.headline,
         );
-        await expect(cards.nth(index)).toContainText(campaign.address);
         await expect(cards.nth(index)).toContainText(campaign.verdict);
       }
       await expectThePageOpensAtTheTopOfItsContent(page);

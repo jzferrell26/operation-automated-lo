@@ -7,6 +7,7 @@ import {
   type WorkspacePageData,
 } from "../features/workspace/model.js";
 import { blankHomeBrand } from "../features/homeowners/model.js";
+import { DEFAULT_AD_BRAND } from "../features/workspace/ad-brand.js";
 import {
   campaignDatabasePool,
   workspaceCorrelationReferenceFor,
@@ -74,6 +75,7 @@ export async function loadWorkspacePageData(
     canEdit: canEditWorkspacePreferences(principal),
     preferences,
     defaultBrand,
+    defaultAdBrand: preferences.adBrand?.value ?? DEFAULT_AD_BRAND,
     reportsEnabled,
     valuationConfigured: connections?.valuation !== null && connections?.valuation !== undefined,
     contactConfigured: connections?.contacts !== null && connections?.contacts !== undefined,

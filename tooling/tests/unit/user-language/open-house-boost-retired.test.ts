@@ -42,11 +42,6 @@ const PENDING: readonly PendingFile[] = [
   { path: "apps/web/src/features/overview/components/overview-screen.tsx", lane: "009b" },
   { path: "apps/web/src/copy/guided-setup-messages.ts", lane: "009b" },
 
-  // 009d, Wave 2: the flow that replaces the open house builder, and the Brand page.
-  { path: "apps/web/src/features/campaigns/components/open-house-draft-builder.tsx", lane: "009d" },
-  { path: "apps/web/src/features/brand/components/brand-profile-screen.tsx", lane: "009d" },
-  { path: "apps/web/src/features/brand/model/synthetic-brand-profile.ts", lane: "009d" },
-
   // 009e, Wave 3: the campaign page and the list.
   { path: "apps/web/src/app/(authenticated)/marketing/campaigns/page.tsx", lane: "009e" },
   {

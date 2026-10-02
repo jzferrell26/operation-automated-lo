@@ -28,7 +28,7 @@ Method:
 
 ## Summary
 
-**Current status: see "Re-check (2026-10-01)" at the end of this report; the audit below is as written at `1b9a113`.**
+**Current status: SHIP after "Re-check 2 (2026-10-01)" at the end of this report; the audit below is as written at `1b9a113`.**
 
 **Verdict: FIX FIRST.** The set is strong: all eight owner decisions land as criteria and nothing contradicts them; counts, IDs, links, and every one of more than 100 spot-checked citations hold; all 81 register rows match their sources; the scope contract, model routing, and operator boundary are right. But one Blocking gap would ship the old blue, 14 px type, and old Dark surfaces on four of the six menu pages while every 009a criterion passes (B-1: `packages/ui/src/product-tokens.css` is in no criterion). Ten Warnings follow: an unsatisfiable font-integrity criterion, an incomplete supersession register, a removal footprint that stops where the recon stops, file collisions between parallel lanes, Wave 1 criteria that cannot be proved until later waves, three run rules the contract omits (heavy suite, expected red CI, ledger writer), a sample guard that would block the Playwright synthetic server, a rule count that is not stored, an unphotographed hosted first impression, and a design sample entry that contradicts 009c. All are short document edits. Apply B-1 and W-1 to W-10, add one row to `qa/README.md` for this report, then launch.
 
@@ -400,3 +400,39 @@ Info items: I-1 (N-8) is applied as recommended (bare "#" removed as a keyword, 
 ### Verdict after the re-check
 
 **FIX FIRST, narrowly.** B-1 and W-1 to W-10 are closed, and nothing is open at Blocking. Two Warnings introduced by the fixes remain, N-1 and N-2, each a one-sentence edit (N-2's flawed wording came from my own W-2 suggestion). After them the set is ready to execute: a read of `index:107`, `009c:153`, and `009F-AC-011` is enough to turn this to SHIP. The MTK-004 close-out audit on the final tree remains required.
+
+---
+
+## Re-check 2 (2026-10-01)
+
+**Head read:** `3ee34d1` (one author commit after the re-check commit `7905066`; five files). Read from the files, not the message. Mechanical checks at this head: 215 links and anchors resolve, 0 broken; 120 criteria defined once each, contiguous, every cross-reference resolves; all 7,429 added lines against `origin/main` are ASCII with 0 dash or hidden-Unicode hits.
+
+| ID | Result | Evidence at `3ee34d1` |
+|---|---|---|
+| N-1 | **Closed** | 009c part 1 now owns the command's one caller `apps/web/src/server/campaign-approval-handler.ts` (the call at `:55`, which composes the catalog port from the loader and passes it) and its three tests (`campaign-approval-handler.unit.test.ts`, `.postgres.test.ts`, `.correlation.postgres.test.ts`; all three exist), in `index:107`, `009c:153`, and 009c D4. The port is a required parameter, and 009C-AC-008 adds a `@ts-expect-error` line showing a call without it does not type-check. 009e edits the handler and command again in Wave 3, after 009c, for the name. A new run rule says a lane that changes a signature owns every caller in that wave and never makes a parameter optional to avoid one. I checked that `executeHumanCampaignApproval` has exactly one non-test caller. |
+| N-2 | **Closed** | 009F-AC-011 now has two parts: live descriptions with the narrowed patterns and paths, and a per-file disposition list for everything else. The stated counts are right: the first command returns 1 line (`what-is-automated-lo.md:28`) and the second returns 7 (`README.md:5`, `open-house-boost-faq.md:1,39,42`, `what-is-automated-lo.md:9,21,29`), and the criterion names each and says which two sit on no register row and are rewritten by the lane. Satisfiable. |
+| I-14, scope line | **Closed** | `prd-009c-...md:36` now reads "inside the Campaigns tab strip that 009e owns (009E-AC-009)". |
+
+**Nothing new at Warning or above.** One Info item:
+
+- [ ] **I-15. Widen the new run rule from "signature" to "signature or exported type".** The manifest and approval snapshot become unions in Wave 1 (009c D5), and three non-test consumers of the manifest type sit in files other lanes own later: `packages/domain/src/campaign-foundation.ts` (009d, Wave 2), `packages/application/src/campaign-workspace-read.ts` (009e, Wave 3), and `apps/web/src/server/dashboard-preview-handler.ts` (its route, `api/preview/campaigns/check`, is removed by 009d in Wave 2). The new rule resolves the order if "signature" includes an exported type. One edit to the run rule: "A lane that changes a function's signature or an exported type owns every consumer of it in the same wave."
+
+### The dashboard-preview files from I-14: which 009f criterion covers them
+
+Product code under `apps/web/src/features/dashboard-preview/`. My I-14 over-stated it; checked against the imports:
+
+| File | State after the removals | Covered today by |
+|---|---|---|
+| `setup-wizard.tsx` | deleted | 009F-AC-005 (names it) and 009f D4 |
+| `product-walkthrough.tsx`, `product-guides.ts` | deleted | 009A scope and Files expected (009a lane); 009F-AC-005's "the preview's walkthrough is retired (with 009a)" |
+| `setup.module.css` | **unreferenced**: its only importer is `setup-wizard.tsx` | **nothing** |
+| `walkthrough.module.css` | still imported by `product-help.tsx` (`helpGrid`, `helpSummary`, `helpNote`), so the file stays; the walkthrough-only classes become dead | nothing |
+| `setup-model.ts` and its unit test | the file stays: `model.ts:3` imports `initialProductSetup` and `productSetupSchema`; `setupTasks`, `setupStepIds`, `setupCanFinish`, `guideIds`, `guideForPath` become dead exports | nothing |
+
+009F-AC-005 names files to delete and scans for imports of removed modules, which finds dangling imports but not files and exports that lose their last user. No criterion covers `setup.module.css` (an unreferenced file) or the dead walkthrough exports and classes.
+
+Recommended one-line edit to 009F-AC-005 (`prd-009f-...md:226`), appended after the clause that retires the preview's walkthrough: "and nothing is left behind by those removals under `apps/web/src/features/dashboard-preview/`: `setup.module.css` is deleted with `setup-wizard.tsx`, and `setup-model.ts` and `walkthrough.module.css` keep only the names that `model.ts` and `product-help.tsx` still use (a script lists every file in that directory that no other file imports, and the list is empty)." Ownership for the CSS pruning: 009a (it edits `product-help.tsx` in Wave 1); `setup.module.css` and `setup-model.ts`: 009f (Wave 1).
+
+### Verdict after Re-check 2
+
+**SHIP.** B-1, W-1 to W-10, N-1, and N-2 are closed, nothing is open at Warning or above, and the set carries two optional Info items (I-15 and the 009F-AC-005 edit above). Apply them if convenient; neither blocks the run. The MTK-004 close-out audit on the final tree remains required.

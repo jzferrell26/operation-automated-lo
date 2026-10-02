@@ -1,7 +1,7 @@
 # PRD-009f: Marketing Toolkit - Removals and Records
 
 > **Parent:** [PRD-009](./prd-009-marketing-toolkit-index.md)
-> **Status:** Backlog. Authored 2026-10-01; revised the same day for OD-H (the register gains the Open House Boost scope and naming, and drops the co-branding and storage rows the first draft carried).
+> **Status:** In Work (Gauntlet run started 2026-10-01). Authored 2026-10-01; revised the same day for OD-H (the register gains the Open House Boost scope and naming, and drops the co-branding and storage rows the first draft carried).
 > **Priority:** P0 for the removals (OD-D); P1 for the records.
 > **Schema changes:** None
 > **Owner Guardians:** `react-guardian` (removals, redirects, the gone page, the Realtor partners line); `technical-writing-craft-guardian` (copy under the contract); `library-guardian` (the register, ledger, README, maps, operator checklist)

@@ -1,7 +1,7 @@
 # PRD-009d: Marketing Toolkit - Launch an Ad
 
 > **Parent:** [PRD-009](./prd-009-marketing-toolkit-index.md)
-> **Status:** Backlog. Authored 2026-10-01 after OD-H. It replaces the three-step open house launch of the first draft (commit `22e6b87`).
+> **Status:** In Work (Gauntlet run started 2026-10-01). Authored 2026-10-01 after OD-H. It replaces the three-step open house launch of the first draft (commit `22e6b87`).
 > **Priority:** P0. This is the product's core: "They select the one they want and launch. Nothing crazy." (OD-H)
 > **Schema changes:** None in the database. It uses 009c's manifest variant and adds rules to the domain checks.
 > **Owner Guardians:** `react-guardian` (the flow, the brand band, the Brand page fields); `typescript-node-guardian` (the save, the checks); `meta-ads-guardian` (verifies Meta's current Special Ad Category rules during the run, 009D-AC-012)

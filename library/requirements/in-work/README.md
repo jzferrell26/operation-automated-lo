@@ -28,6 +28,9 @@ Current in-work PRDs:
 - PRD-007 Homeowner reports (the authorized homeowner-intelligence slice of PRD-002e)
   - implementation merged in PRs #69, #71, and #72; live valuation and HighLevel delivery wait on operator configuration (finish-line operator checklist steps 6a and 6b)
   - its evidence lives in `reports/` rather than `qa/`
+- [PRD-009 Marketing Toolkit](./prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md) (the product owner's direction and OD-H of 2026-10-01)
+  - moved from `backlog/` to `in-work/` on 2026-10-01 when the Gauntlet run started on branch `claude/prd-009-marketing-toolkit`; the orchestrator writes its `MKR-` ledger section in [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md)
+  - 009a light look and top menu, 009b Home for a new account, 009c Ads library, 009d Launch an ad, 009e campaign page and list, 009f removals and records, 009g verification
 
 Moved out of `in-work/`:
 

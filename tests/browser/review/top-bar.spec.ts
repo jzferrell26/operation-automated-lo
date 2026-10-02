@@ -65,6 +65,7 @@ const CONNECTION_STATEMENTS: readonly string[] = [
   NOT_LIVE_YET,
   CAMPAIGN_NOT_AN_AD_YET,
   HOME_SETUP.intro,
+  HOME_SETUP.introNoAds,
 ];
 
 function squashed(text: string): string {

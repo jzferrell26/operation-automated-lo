@@ -51,6 +51,14 @@ export const HOME_SETUP = Object.freeze({
    */
   intro:
     "You can set up an ad now. Launching it on Facebook isn't turned on yet, and it needs HighLevel and Meta connected.",
+  /**
+   * Amended 2026-10-02 by the writing review pass 2 (MTK-008, coordinator item 2). With no active ad
+   * the start card says "there's nothing to set up until then" (009C-AC-012, criterion text), so the
+   * intro cannot say "You can set up an ad now" on the same page. This variant says only what is
+   * true: launching is off, and what it needs.
+   */
+  introNoAds:
+    "Launching an ad on Facebook isn't turned on yet, and it needs HighLevel and Meta connected.",
   /** What the card says when all three are done, in place of the items. */
   doneHeading: "You're set up",
   reviewAction: "Review your setup",

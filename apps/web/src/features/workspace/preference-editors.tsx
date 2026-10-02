@@ -42,16 +42,25 @@ function Feedback({ error, message }: { error: string; message: string }) {
   );
 }
 
-/** The feedback, the save button, and the reload that both Brand cards end with. */
+/**
+ * The feedback, the save button, and the reload that both Brand cards end with.
+ *
+ * Both cards sit on one page, so the save and the reload each say which card they belong to
+ * ("Save your details" and "Load latest saved details", "Save ad settings" and "Load latest saved ad
+ * settings"): two buttons with one accessible name cannot be told apart by a screen reader, and a
+ * test that asks for one by name finds two.
+ */
 function SaveAndReload({
   canEdit,
   onLoaded,
+  reloadLabel,
   saveLabel,
   state,
   validation,
 }: {
   canEdit: boolean;
   onLoaded: (next: WorkspacePreferences) => void;
+  reloadLabel: string;
   saveLabel: string;
   state: ReturnType<typeof useWorkspacePreferences>;
   validation: string;
@@ -72,7 +81,7 @@ function SaveAndReload({
             });
           }}
         >
-          Load latest saved details
+          {reloadLabel}
         </Button>
       </div>
       {!canEdit ? (
@@ -133,6 +142,7 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
           <SaveAndReload
             canEdit={data.canEdit}
             onLoaded={(next) => setBrand(next.brand?.value ?? data.defaultBrand)}
+            reloadLabel="Load latest saved details"
             saveLabel="Save your details"
             state={state}
             validation={validation}
@@ -458,6 +468,7 @@ export function AdBrandEditor({ data }: { data: WorkspacePageData }) {
           <SaveAndReload
             canEdit={data.canEdit}
             onLoaded={(next) => setAdBrand(next.adBrand?.value ?? data.defaultAdBrand)}
+            reloadLabel="Load latest saved ad settings"
             saveLabel="Save ad settings"
             state={state}
             validation={validation}

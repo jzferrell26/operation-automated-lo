@@ -217,3 +217,55 @@ describe("the Brand page names its parts consistently (writing review W-4)", () 
     expect(document.body.textContent).not.toMatch(/colour/iu);
   });
 });
+
+/**
+ * Two controls with one accessible name on one page are a defect: a screen reader's list of buttons
+ * cannot tell them apart, and a test that asks for one by name finds two. The Brand page has two
+ * cards, each ending in a save and a reload, so each button says which card it belongs to.
+ */
+describe("the Brand page gives every button its own name (writing review pass 2)", () => {
+  function brandPage() {
+    return render(
+      <>
+        <ReportBrandEditor data={workspaceData("profile")} />
+        <AdBrandEditor data={workspaceData("profile")} />
+      </>,
+    );
+  }
+
+  it("has no two buttons with the same accessible name", () => {
+    brandPage();
+    const names = screen.getAllByRole("button").map((button) => button.textContent?.trim());
+    expect(names.length).toBeGreaterThan(3);
+    expect(new Set(names).size, `${names.join(" | ")}`).toBe(names.length);
+  });
+
+  it("names the reload under each card by what it reloads", () => {
+    brandPage();
+    expect(screen.getByRole("button", { name: "Load latest saved details" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Load latest saved ad settings" }),
+    ).toBeInTheDocument();
+  });
+
+  it("reloads only its own card", async () => {
+    const fresh = {
+      title: "Mortgage loan officer",
+      colorPresetId: "forest",
+      disclosureLine: "NMLS 123456. Equal Housing Opportunity.",
+      leadFormWording: "By sending this, you agree that Casey Rivera may contact you.",
+    } satisfies AdBrand;
+    network.mockResolvedValueOnce(savedAs(fresh));
+    brandPage();
+    fireEvent.change(screen.getByLabelText(/^Brand tagline/u), { target: { value: "Unsaved." } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Load latest saved ad settings" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("textbox", { name: /Title on your ads/u })).toHaveValue(
+        "Mortgage loan officer",
+      ),
+    );
+    expect(screen.getByLabelText(/^Brand tagline/u)).toHaveValue("Unsaved.");
+  });
+});

@@ -132,6 +132,18 @@ test.describe.serial("signed-in workspace pages", () => {
   });
   test("report identity saves, survives reload and rejects an outdated tab without losing its draft", async () => {
     await open("/brand");
+    // Two cards end in a save and a reload, so each button names its card: no two share a name, for a
+    // screen reader's list of buttons or for a test that asks for one by name.
+    const buttonNames = await page
+      .getByRole("main")
+      .getByRole("button")
+      .evaluateAll((buttons) =>
+        buttons.map((button) => (button.textContent ?? "").replace(/\s+/gu, " ").trim()),
+      );
+    expect(new Set(buttonNames).size, buttonNames.join(" | ")).toBe(buttonNames.length);
+    await expect(
+      page.getByRole("button", { name: "Load latest saved ad settings", exact: true }),
+    ).toHaveCount(1);
     await page.getByLabel("Loan officer name", { exact: true }).fill("Casey Example");
     await page.getByLabel("Company name", { exact: true }).fill("Evergreen Example Lending");
     await page.getByLabel("Loan officer email", { exact: true }).fill("casey@example.test");

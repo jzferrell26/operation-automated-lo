@@ -38,7 +38,11 @@ export function OverviewScreen({ firstName, home, reviewSetup = false }: Overvie
       <p className={styles.welcome}>{homeGreeting(firstName)}</p>
       <div className={styles.grid}>
         <HomeStartCard topics={home.topics} />
-        <HomeSetupCard checklist={home.checklist} reviewing={reviewSetup} />
+        <HomeSetupCard
+          checklist={home.checklist}
+          libraryEmpty={home.topics.length === 0}
+          reviewing={reviewSetup}
+        />
         <div className={styles.lists}>
           <HomeRunningNow list={home.running} />
           {home.approval === undefined ? null : <HomeNeedsApproval list={home.approval} />}

@@ -28,6 +28,8 @@ Method:
 
 ## Summary
 
+**Current status: see "Re-check (2026-10-01)" at the end of this report; the audit below is as written at `1b9a113`.**
+
 **Verdict: FIX FIRST.** The set is strong: all eight owner decisions land as criteria and nothing contradicts them; counts, IDs, links, and every one of more than 100 spot-checked citations hold; all 81 register rows match their sources; the scope contract, model routing, and operator boundary are right. But one Blocking gap would ship the old blue, 14 px type, and old Dark surfaces on four of the six menu pages while every 009a criterion passes (B-1: `packages/ui/src/product-tokens.css` is in no criterion). Ten Warnings follow: an unsatisfiable font-integrity criterion, an incomplete supersession register, a removal footprint that stops where the recon stops, file collisions between parallel lanes, Wave 1 criteria that cannot be proved until later waves, three run rules the contract omits (heavy suite, expected red CI, ledger writer), a sample guard that would block the Playwright synthetic server, a rule count that is not stored, an unphotographed hosted first impression, and a design sample entry that contradicts 009c. All are short document edits. Apply B-1 and W-1 to W-10, add one row to `qa/README.md` for this report, then launch.
 
 ## Scorecard
@@ -346,3 +348,55 @@ Added by this audit:
 - `library/requirements/backlog/prd-009-marketing-toolkit/qa/2026-10-01-authoring-qa-report.md` (A): this report
 
 Not done here, by the one-file rule: a row for this report in `qa/README.md`, which also needs its security row refreshed (I-2f).
+
+---
+
+## Re-check (2026-10-01)
+
+**Head read:** `259b425` (the author's `af7536d`, `5c6a4ba`, `14f72b2`, `a3d344e`, and `259b425`; the designer's `00b3bed`), six commits after the audit commit `03923b5`. Everything below was read from the files at that head, not from the commit messages. The criteria total is still 120 (IDs 009A to 009G and MTK defined once each, contiguous, every cross-reference resolves).
+
+**Mechanical checks at the new head.** 214 relative links and anchors resolve, 0 broken. All 7,372 added lines against `origin/main` are ASCII, with 0 U+2013, U+2014, or hidden-Unicode hits. The 7 mockups and every quoted PRD sentence give no hit against the 57 forbidden terms except internal prose and the sample identity, which 009c D2 now confines to art pixels. The mockups no longer carry "Jordan Rivera", "NMLS 123456", "NMLS 100200", or a user-visible "logo". Every new file:line citation I opened is accurate: the 009f D4 views and keys (`workspace-screen.tsx:404-566,615-619`, `model.ts:5-20`, `workspace-page-data.ts:38-48`, `dashboard-preview/model.ts:182-196`, `workspace-screens.tsx:551,1007,1274-1314`, `marketing-workspaces.tsx:492,748`), the spec lines (`design-quality.spec.ts:56,58,59,637,675,741`; `review/design-quality.spec.ts:815,830,842`; `ui-foundation-ux.spec.ts:224,279,311,399,422`; `review-campaign-decision.spec.ts:82,105,226`; `review-session.ts:19`; `guided-setup-journey.ts:201`), the heavy-suite ports (`playwright.config.ts:105,107`, `playwright.dashboard-preview.config.ts:35,37`), `runtime-authentication.ts:566-571`, `design-surfaces/page.tsx:69,89`, and the six installation statuses (`platform_foundation.sql:168-169`). The vendored-font facts match upstream (read-only `gh api`): tag `v4.1` is commit `e3a3d4c57d5ecc01453a575621882a384c1995a3`, `InterVariable.woff2` is 352,240 bytes at blob `5a8d3e72ad7ffb62af3b146e1b1f54ab5813a212`, `LICENSE.txt` is 4,380 bytes at blob `9b2ca37b3ffc77391d8b2ebef4a974ef32bf46ea`.
+
+### Previous findings
+
+| ID | Result | Evidence at `259b425` |
+|---|---|---|
+| B-1 | **Closed** | `product-tokens.css` is in 009a Scope, Background 6, new D5, 009A-AC-001 (the file declares none of the section 2.4 and 2.6 tokens, plus a scan for 18 retired colour values and any `--text-body-size` other than `1rem`), 009A-AC-002 (`type-tokens-defined.unit.test.ts:20` stops excluding `homeowners` and `workspace`), and 009A-AC-004 (computed `--ac-primary` and a 16 px body, checked separately on Home, `/brand`, `/partners`, `/settings`, `/homeowners`, and the Dark surfaces from `tokens.css`). The dashboard preview's navy navigation is stated as exempt. |
+| W-1 | **Closed** | 009A-AC-006 now takes both files from the upstream git tree at a tag, records tag commit, upstream path, size, git blob SHA-1, and SHA-256, records that the release API reports `digest: null`, and the unit test recomputes the blob SHA-1 and SHA-256. The index scope contract downloads the two files, not the 33 MB archive. Satisfiable, and the values are right. |
+| W-2 | **Closed, with N-2 on the sweep** | Register rows S-82 to S-103 cover all 15 criteria and the six knowledge files; S-88 re-scopes `006D-AC-011` and the Kept list is corrected; S-14 now amends `:70`; 009F-AC-012 lists `CRR-002`, `078`, `091`, `093`, `094`, `134`, `135`, `173`, `180`, `GGL-008`, `GGL-B03`, `FLR-052`, `053`, `055`, `072`, `073`. Every new source line and ledger row I opened matches. The sweep sentence added to 009F-AC-011 is a new finding, N-2. |
+| W-3 | **Closed** | 009f D4 lists routes and views, the dashboard preview cases and files, tests and specs with lines, and the 144 baselines by name and count; 009F-AC-005 and 007 name it; 009a, 009b, 009d, and 009f split the guided-setup, onboarding, and preview files by wave. R-9 reads "about 232 change and 144 are deleted". Residue is Info (I-14). |
+| W-4 | **Closed** | 009e alone owns `campaigns/page.tsx` and the tab strip, 009c owns `library/page.tsx` (009C-AC-010, 009E-AC-009, 009c Files expected); 009d removes the anchors and `useGuidedSetup` from the three campaign components and moves the hand-off strings to `launch-messages.ts` before 009b's Wave 3 deletion; 009d builds the cards, chips with counts, and grid (009D-AC-002), and 009c part 2 reuses them. |
+| W-5 | **Closed** | 009C-AC-005, the UI and launch halves of 008, and 009 are in Wave 3 part 2 (the two parts together list all 16 criteria); 009F-AC-005 is verified after Wave 2, 009F-AC-007 and 009B-AC-011 after Wave 3, with their ledger rows OPEN until then. |
+| W-6 | **Closed** | Run rules in the index: orchestrator-only ledger (including 009f records), existing tests follow the change in the same wave, one heavy suite at a time with the three real ports and a named gate owner per wave, expected red with each `verify:offline` command run on its own. I checked the `&&` chain (`package.json:34`) and the ports. |
+| W-7 | **Closed** | 009C-AC-004's allowlist adds `playwright.config.ts` and `review-browser-run.test.ts`; the synthetic `webServer.env` sets `OALO_ENVIRONMENT: "local"` and the flag; the preview config sets neither; 009c Files expected and the index lane list carry both files. |
+| W-8 | **Closed** | 009D-AC-014 derives rules run from a registry keyed by `rulesetVersionRef` (the example `ruleset_libraryAd001` satisfies `OpaqueReferenceSchema`) and rules passed as run minus the distinct stored `ruleCode` values, with no schema change and a test pinning the registry length. |
+| W-9 | **Closed** | 009G-AC-001 adds the second server start without the flag (Home, library tab, step 1 at four frames and both themes) and a synthetic design-surface state for Home under the unverified-email notice; 009G Background 6 and 7 explain why; 009C-AC-012's sentence now ends "so there's nothing to set up until then." |
+| W-10 | **Closed** | `design/00-direction.md` section 5.3 now carries 009c D1's field table (art 1080 by 1080 and 1080 by 842, composed with the 270 px and 238 px bands, `sha256`, `sample`, handle `jzferrell26`), says 009c governs, and the sample entry uses placeholder digests. |
+
+Info items: I-1 (N-8) is applied as recommended (bare "#" removed as a keyword, the adjacency list extended without "term" or "terms", seven new cases in 009D-AC-010, an index amendment). I-2 (a) to (g), I-3 to I-8, I-10, I-11, I-12, and I-13 are applied; I-12 (h) is fixed in design 2.2 (no `inter-latin` remains in the design folder).
+
+### New findings from the fixes
+
+- [ ] **N-1 (Warning). The catalog port has no Wave 1 owner for its call site.**
+
+  Location: `prd-009-...-index.md:107` (009c part 1 files) and `:114` (009e files); `prd-009c-...md:95,137,153`; `prd-009e-...md:75`. Code: `apps/web/src/server/campaign-approval-handler.ts:55` calls `executeHumanCampaignApproval`; `apps/web/src/server/campaign-approval-handler.correlation.postgres.test.ts` calls it directly; `packages/application` cannot import a loader from `apps/web` (`audit:boundaries`), so the port is injected from the web server.
+
+  009c D4 and 009C-AC-008 make the approval command resolve the library ad "through a catalog port" so "the route and any other caller get the same refusal", and the index gives 009c part 1 the command and the application layer. The quality review's fix moved the handler out of 009c's Files expected and into 009e's, which edits it in Wave 3 for the name recording. So in Wave 1 the command's signature changes with no owner for its caller or for the composition that supplies the port, and the "own its files alone for its wave" rule leaves a lane two bad options: leave the port optional (fail-open until Wave 3) or edit a file it does not own. The run rule "existing tests follow the change" covers tests, not callers.
+
+  Suggested: add `apps/web/src/server/campaign-approval-handler.ts`, `apps/web/src/server/campaign-persistence-runtime.ts` (wherever the port is composed), and `campaign-approval-handler.correlation.postgres.test.ts` to 009c part 1's files in `index:107` and `009c:153`, with "009e edits the handler in Wave 3 to record the name"; and say the port is required, not optional.
+
+- [ ] **N-2 (Warning). The sweep in 009F-AC-011 cannot pass as written. The wording is the sweep I suggested in W-2, and it was too wide.**
+
+  Location: `prd-009f-...md:190` (009F-AC-011, last sentence).
+
+  "`git grep ... -- library/requirements library/knowledge docs EXECUTION_LEDGER.md` returns only lines that are in the register, in the Kept list, or in a document the register names as history." At the audit base the pattern returns 1,721 lines in 152 files (490 in `library/requirements`, 60 in the ledger, 1,133 in `library/knowledge`, most of them the Claude Design canvases), and the register, the Kept list, and the named history documents account for a few hundred at most. Even confined to the live knowledge, product, standards, operations, `docs`, `README.md`, and `.cursor` paths it returns 477 lines. A literal run fails the criterion or invents its own meaning.
+
+  Suggested: replace the sentence with two parts. (1) "Live descriptions: `git grep -n -i -E 'guided setup|walkthrough|Finish setup|Show me around|Expand Marketing' -- library/knowledge/public README.md .cursor/rules/core/the-map.mdc library/knowledge/private/product library/knowledge/private/operations` and `git grep -n -i 'Open House Boost' -- library/knowledge/public README.md` return only lines on a register row, in a changelog, or inside a line that carries a dated PRD-009 note (today 1 and 7 lines)." (2) "Everything else: the lane report lists, per file, every hit of the full pattern in `library/knowledge`, `docs`, `library/requirements`, and `EXECUTION_LEDGER.md` outside `ux-ui/05-html-examples/`, with a disposition (register row, Kept, history, fixed); the register rows are the only enforced set."
+
+### Info
+
+- [ ] **I-14. Small residue.** `prd-009c-...md:36` (Scope) still says "and the Campaigns tabs"; 009e now owns them. `apps/web/src/features/dashboard-preview/walkthrough.module.css`, `setup-model.ts` with `setup-model.unit.test.ts`, and `setup.module.css` serve only the walkthrough and `setup-wizard.tsx` that 009a and 009f remove, and no list names them. `qa/README.md` should record this re-check's result beside the quality row.
+
+### Verdict after the re-check
+
+**FIX FIRST, narrowly.** B-1 and W-1 to W-10 are closed, and nothing is open at Blocking. Two Warnings introduced by the fixes remain, N-1 and N-2, each a one-sentence edit (N-2's flawed wording came from my own W-2 suggestion). After them the set is ready to execute: a read of `index:107`, `009c:153`, and `009F-AC-011` is enough to turn this to SHIP. The MTK-004 close-out audit on the final tree remains required.

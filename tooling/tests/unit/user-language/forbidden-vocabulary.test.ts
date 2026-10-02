@@ -90,7 +90,7 @@ const EXCLUDED: readonly Readonly<{ path: string; because: string }>[] = [
   {
     path: "apps/web/src/features/reporting/model",
     because:
-      "Demo fixture data for the reporting screens, out of scope by the same Non-Goals carve-out, with one exception fixed 2026-09-20: `synthetic-reporting.ts`'s approved artifact `previewSummary` reached the product's one unauthenticated page, `apps/web/src/app/public/synthetic-open-house-v3/page.tsx`, and has been rewritten to the D1 register. The rest of this directory (reporting-acceptance.ts and the superseded artifacts) has no path to a rendered screen today.",
+      "Demo fixture data for the reporting screens, out of scope by the same Non-Goals carve-out, with one exception fixed 2026-09-20: `synthetic-reporting.ts`'s approved artifact `previewSummary` reached the product's one unauthenticated page, `apps/web/src/app/public/synthetic-open-house-v3/page.tsx`, and has been rewritten to the D1 register. The rest of this directory (the superseded artifacts) has no path to a rendered screen today. PRD-009f deleted reporting-acceptance.ts with the Reports page.",
   },
   {
     path: "apps/web/src/features/ui-foundation/evidence",

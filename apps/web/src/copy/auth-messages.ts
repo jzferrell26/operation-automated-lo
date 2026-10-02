@@ -38,7 +38,7 @@ export function chooseWorkspaceOptionLabel(workspaceName: string, roleLabel: str
 
 export const SIGN_UP = Object.freeze({
   title: "Create your account",
-  lead: "Takes about a minute. Then we'll set up your first Open House Boost together.",
+  lead: "Takes about a minute. Then you can set up your first ad.",
   nameLabel: "Your name",
   emailLabel: "Email",
   passwordLabel: "Password",

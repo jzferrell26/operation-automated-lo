@@ -79,22 +79,12 @@ const connectionsAllowances: readonly ReviewSurfaceAllowance[] = [
   {
     path: "overview.health[*].label",
     value: "HighLevel",
-    because: "Substring of the not-connected disclosure, which names all three accounts.",
+    because: "Substring of the not-connected disclosure, which names both accounts.",
   },
   {
     path: "overview.health[*].label",
     value: "Meta",
     because: "Substring of the not-connected disclosure.",
-  },
-  {
-    path: "navigation.items[*].id",
-    value: "leads",
-    because: "Substring of the allowed business purpose about where new leads land.",
-  },
-  {
-    path: "navigation.marketingItems[*].id",
-    value: "campaigns",
-    because: "Substring of the allowed capability label 'Create campaigns'.",
   },
 ];
 

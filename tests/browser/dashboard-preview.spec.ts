@@ -1,30 +1,18 @@
 import { expect, test, type Page } from "@playwright/test";
 import { AxeBuilder } from "@axe-core/playwright";
 
+/** PRD-009f D1. The pages that survive; the rest redirect or are gone (`removed-addresses.spec.ts`). */
 const routes = [
   "/overview",
-  "/marketing",
   "/marketing/campaigns",
   "/marketing/campaigns/new",
-  "/marketing/property-sites",
-  "/marketing/creative",
-  "/marketing/ads",
-  "/marketing/messaging",
-  "/marketing/blueprints",
   "/partners",
-  "/leads",
-  "/leads/pipeline",
   "/brand",
-  "/reports",
-  "/onboarding",
   "/settings",
   "/settings/connections",
   "/settings/routing",
   "/settings/account",
-  "/settings/team",
   "/settings/billing",
-  "/automations",
-  "/marketplace",
 ];
 test.beforeEach(async ({ baseURL }, info) => {
   test.skip(
@@ -116,7 +104,7 @@ test("campaign checks, test approval, reload, and browser isolation", async ({ p
   ).toBeVisible();
 });
 
-test("partners, pipeline, brand, routing, and reset persist accurately", async ({ page }) => {
+test("partners, brand, routing, and reset persist accurately", async ({ page }) => {
   await open(page, "/partners");
   await page.getByRole("button", { name: "Add partner" }).click();
   await page.getByLabel("Partner name").fill("Preview QA Partner");
@@ -125,14 +113,6 @@ test("partners, pipeline, brand, routing, and reset persist accurately", async (
   await page.getByRole("button", { name: "Save partner" }).click();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Preview QA Partner" })).toBeVisible();
-  await open(page, "/leads/pipeline");
-  await chooseOption(page, "Stage for Morgan Ellis", "Application");
-  await page.reload();
-  await expect(
-    page.getByRole("combobox", { name: "Stage for Morgan Ellis", exact: true }),
-  ).toHaveText("Application");
-  await open(page, "/reports");
-  await expect(page.getByRole("img", { name: /Pipeline:.*2 application/u })).toBeVisible();
   await open(page, "/brand");
   await page.getByLabel("Company name").fill("Preview QA Lending");
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -177,13 +157,7 @@ test("storage failure never displays a saved result", async ({ page }) => {
 test("desktop, embedded, tablet, mobile, themes, and accessibility", async ({ page }, info) => {
   for (const width of [1440, 1180, 768, 390]) {
     await page.setViewportSize({ width, height: 1000 });
-    for (const route of [
-      "/overview",
-      "/settings",
-      "/leads/pipeline",
-      "/marketing/campaigns/new",
-      "/reports",
-    ]) {
+    for (const route of ["/overview", "/settings", "/marketing/campaigns/new"]) {
       await open(page, route);
       const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
       if (documentWidth > width) {
@@ -248,7 +222,7 @@ test("desktop, embedded, tablet, mobile, themes, and accessibility", async ({ pa
   expect(dark.violations).toEqual([]);
 });
 
-test("workspace search, partner editing, campaign views, and report downloads work", async ({
+test("workspace search, partner editing, campaign views, and connections work", async ({
   page,
 }) => {
   await open(page, "/overview");
@@ -277,17 +251,9 @@ test("workspace search, partner editing, campaign views, and report downloads wo
   await expect(page.getByLabel("Company name")).toHaveValue("Instant Brand Preview");
   await open(page, "/marketing/campaigns");
   await page.getByRole("button", { name: "Cards", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Cedar Street Open House Boost" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cedar Street open house" })).toBeVisible();
   await page.getByRole("button", { name: "List", exact: true }).click();
   await expect(page.getByRole("table")).toBeVisible();
-  await open(page, "/reports");
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download report" }).click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("automatedlo-demo-pipeline.csv");
-  expect(await download.failure()).toBeNull();
-  await page.getByRole("button", { name: "Campaigns", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Campaign performance" })).toBeVisible();
   await open(page, "/settings/connections");
   await page.getByRole("button", { name: "View setup" }).first().click();
   await expect(page.getByRole("dialog", { name: "HighLevel connection" })).toBeVisible();
@@ -312,7 +278,6 @@ test("redesigned screens and interactive states remain accessible in both themes
       "/overview",
       "/settings",
       "/partners",
-      "/reports",
       "/marketing/campaigns/new",
       "/settings/connections",
     ]) {

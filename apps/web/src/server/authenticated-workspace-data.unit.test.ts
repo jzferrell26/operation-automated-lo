@@ -29,7 +29,7 @@ const stubSynthetic = {
  * PRD-004 RGL-002 requires and what these assertions exist to hold.
  */
 const REVIEW_NEXT_STEP_TEXT =
-  "Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do.";
+  "Connect HighLevel and Meta when you're ready. Nothing here changes until you do.";
 const REVIEW_NOT_LIVE_TEXT = "Not live yet";
 
 const reviewProduction = {
@@ -101,7 +101,7 @@ describe("authenticated workspace data boundary", () => {
     expect(workspace.brand.safety.disclosure).toBe(REVIEW_SURFACE_DISCLOSURE);
     expect(workspace.reporting.safety.disclosure).toBe(REVIEW_SURFACE_DISCLOSURE);
     expect(REVIEW_SURFACE_DISCLOSURE).toBe(
-      "HighLevel, Meta, and Stripe aren't connected to this workspace yet, so nothing here is live and nothing can be published.",
+      "HighLevel and Meta aren't connected to this workspace yet, so nothing here is live and nothing can be published.",
     );
   });
 

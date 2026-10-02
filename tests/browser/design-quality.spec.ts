@@ -53,10 +53,7 @@ const applicationOrigin = "http://127.0.0.1:3100";
 const SYNTHETIC_SCREENS = Object.freeze([
   { screen: "overview", path: "/overview" },
   { screen: "campaigns", path: "/marketing/campaigns" },
-  { screen: "campaign-create", path: "/marketing/campaigns/new" },
   { screen: "campaign-detail", path: "/marketing/campaigns/synthetic-open-house-001" },
-  { screen: "reports", path: "/reports" },
-  { screen: "onboarding", path: "/onboarding" },
   { screen: "settings-connections", path: "/settings/connections" },
   { screen: "brand", path: "/brand" },
   { screen: "email-preview", path: "/email-preview" },
@@ -334,8 +331,8 @@ test("no screen links to the demo route", async ({ page }) => {
 });
 
 /**
- * Brief section 9, "blue means informational", and the notice pattern `onboarding.module.css`
- * pinned: every "nothing goes out" notice title carries the informational tone, on every screen.
+ * Brief section 9, "blue means informational", and the notice pattern `permission-screen.module.css`
+ * carries over from the setup page's styles: every "nothing goes out" notice title carries the informational tone, on every screen.
  *
  * PRD-008d, the scored baseline review of 2026-10-01. The title's colour was decided by the order
  * the bundle loaded two equally specific rules in, so it was blue on some screens and dark on
@@ -349,9 +346,7 @@ test("every notice title carries the informational tone, whatever order the styl
   await page.setViewportSize({ width: 1180, height: 900 });
   const notices = [
     { path: "/marketing/campaigns/new", title: "Nothing goes out from this page" },
-    { path: "/reports", title: "Sample data, nothing live" },
     { path: "/brand", title: "Suggestions only. You decide what's saved." },
-    { path: "/onboarding", title: "We only mark a step done after we've checked it." },
   ] as const;
   for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
     await useStoredTheme(page, theme);
@@ -529,69 +524,6 @@ test("the rail's titles are drawn above its navigation links", async ({ page }) 
 });
 
 /**
- * Rubric axes 1, 2, and 10 on the reports screen.
- *
- * PRD-008d, the second redraw of 2026-10-01. R-15: each group of actions laid its items out with
- * `space-between`, so once D-010 gave the sections the whole column, "Open Public page v3" and
- * "Open Feed creative v3", or "Open the campaign" and "See what went wrong", sat at opposite edges
- * of their card instead of together. R-16: a campaign card's parts had no space between them, so
- * its metric cards touched the line above and the details below, at every frame.
- */
-test("the reports screen keeps its actions together and its campaign cards on the spacing scale", async ({
-  page,
-}) => {
-  await blockAnythingOffOrigin(page);
-  await useStoredTheme(page, "light");
-  await page.goto("/reports");
-  for (const frame of REVIEW_FRAMES) {
-    await page.setViewportSize({ width: frame.width, height: frame.height });
-    await settleForScreenshot(page);
-    const measured = await page.evaluate(() => {
-      const probe = document.createElement("span");
-      probe.style.display = "none";
-      probe.style.width = "var(--space-4)";
-      document.body.append(probe);
-      const space4 = Number.parseFloat(getComputedStyle(probe).width);
-      probe.remove();
-
-      const spread = [...document.querySelectorAll("main [class*='__inlineLinks']")].flatMap(
-        (group) => {
-          const gap = Number.parseFloat(getComputedStyle(group).columnGap) || 0;
-          const items = [...group.children].map((child) => child.getBoundingClientRect());
-          return items.slice(1).flatMap((item, index) => {
-            const before = items[index];
-            if (before === undefined || Math.abs(item.top - before.top) > 2) return [];
-            const between = item.left - before.right;
-            return between > gap + 1
-              ? [`${String(Math.round(between))}px between two actions`]
-              : [];
-          });
-        },
-      );
-
-      const cramped = [...document.querySelectorAll("main [data-campaign-id]")].flatMap((card) => {
-        const parts = [...card.children].map((child) => child.getBoundingClientRect());
-        return parts.slice(1).flatMap((part, index) => {
-          const before = parts[index];
-          if (before === undefined) return [];
-          const between = part.top - before.bottom;
-          return Math.abs(between - space4) > 1
-            ? [
-                `${card.getAttribute("data-campaign-id") ?? "a card"}: ${String(Math.round(between))}px`,
-              ]
-            : [];
-        });
-      });
-      return { spread, cramped };
-    });
-    expect.soft(measured.spread, `at ${frame.name} actions are pushed apart`).toEqual([]);
-    expect
-      .soft(measured.cramped, `at ${frame.name} a campaign card's parts are not --space-4 apart`)
-      .toEqual([]);
-  }
-});
-
-/**
  * PRD-006d D3's named states on the create screen and on a campaign a person has actually saved.
  *
  * The draft itself, and the two open-house windows that separate a ready campaign from one that
@@ -600,54 +532,6 @@ test("the reports screen keeps its actions together and its campaign cards on th
  */
 
 for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
-  /**
-   * The saving state is the one state a person only ever sees while a request is still travelling,
-   * so it is held by slowing the request rather than by pretending to make one: the real route is
-   * called, its answer is simply not delivered until the pictures are taken. The button carries the
-   * label change the brief asks for, which is why the label is asserted before anything is captured.
-   */
-  test(`the create screen's saving state meets the bar at every frame in ${theme}`, async ({
-    page,
-  }) => {
-    test.setTimeout(240_000);
-    const externalRequests = await blockAnythingOffOrigin(page);
-    await useStoredTheme(page, theme);
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/marketing/campaigns/new");
-    await expectThemeResolved(page, theme);
-    await settleForScreenshot(page);
-    await fillTheOpenHouseDraft(page, READY_OPEN_HOUSE);
-
-    let deliverTheAnswer: () => void = () => undefined;
-    const held = new Promise<void>((resolve) => {
-      deliverTheAnswer = resolve;
-    });
-    await page.route("**/api/campaigns/preflight", async (route) => {
-      await held;
-      await route.continue();
-    });
-
-    await page.getByRole("button", { name: "Save and run the checks" }).click();
-    const saving = page.getByRole("button", { name: "Running the checks" });
-    await expect(saving).toBeVisible();
-    await expect(saving).toBeDisabled();
-
-    try {
-      await captureNamedState(page, {
-        screen: "campaign-create",
-        state: "saving",
-        theme,
-        // The request in flight is the state, so there is no idle network to wait for.
-        idleNetwork: false,
-      });
-    } finally {
-      deliverTheAnswer();
-    }
-    await expect(page.getByRole("heading", { name: "Ready for approval" })).toBeVisible();
-
-    expect(externalRequests).toEqual([]);
-  });
-
   /**
    * The ready result, and then the campaign's own page as the person who wrote it sees it.
    *
@@ -670,12 +554,6 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
     await fillTheOpenHouseDraft(page, READY_OPEN_HOUSE);
     await page.getByRole("button", { name: "Save and run the checks" }).click();
     await expect(page.getByRole("heading", { name: "Ready for approval" })).toBeVisible();
-
-    await captureNamedState(page, {
-      screen: "campaign-create",
-      state: "ready-for-approval",
-      theme,
-    });
 
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.getByRole("link", { name: "Open campaign" }).click();
@@ -736,12 +614,6 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
       expect(tight, `at ${frame.name} a finding's note touches what follows it`).toEqual([]);
     }
     await page.setViewportSize({ width: 1440, height: 900 });
-
-    await captureNamedState(page, {
-      screen: "campaign-create",
-      state: "needs-changes",
-      theme,
-    });
 
     await page.setViewportSize({ width: 1180, height: 900 });
     await settleForScreenshot(page);

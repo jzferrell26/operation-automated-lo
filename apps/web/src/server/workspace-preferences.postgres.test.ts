@@ -322,13 +322,58 @@ describe.sequential("authenticated personal workspace preferences", () => {
     const profile = await loadWorkspacePageData(read(owner), "profile", environment);
     expect(profile.defaultBrand).toEqual((await prefs()).brand?.value);
     expect(profile.identity.name).toBe("Settings owner");
-    const marketing = await loadWorkspacePageData(read(owner), "marketing", environment);
-    expect(marketing.campaigns).toEqual([]);
-    expect(marketing.properties).toEqual([]);
-    expect(marketing.valuationConfigured).toBe(false);
+    const routing = await loadWorkspacePageData(read(owner), "routing", environment);
+    expect(routing.valuationConfigured).toBe(false);
     const unrelated = await loadWorkspacePageData(read(teammate), "profile", environment);
     expect(unrelated.defaultBrand.name).toBe("Teammate identity");
     expect(fetcher).not.toHaveBeenCalled();
+  });
+  /**
+   * PRD-009f 009F-AC-006. Removing the Marketing Suite pages deletes no saved data.
+   *
+   * The message drafts and the partners are rows of `platform.user_preferences`, and nothing in the
+   * removal reads, rewrites, or deletes one: a draft saved before the pages went is still read back
+   * through the same page loader that serves what is left, and so is a partner. Saving a draft here
+   * is what the Email and SMS drafts page used to do, through the route that stays.
+   */
+  it("still reads a saved message draft and a saved partner now that the Marketing Suite pages are gone", async () => {
+    const partner = {
+      id: randomUUID(),
+      name: "Partner Three",
+      company: "Third Realty",
+      email: "three@example.test",
+      phone: "",
+    };
+    const current = await prefs();
+    expect(
+      (
+        await POST(
+          write({
+            key: "partners",
+            expectedRevision: current.partners?.revision ?? null,
+            value: { items: [...(current.partners?.value.items ?? []), partner] },
+          }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await POST(
+          write({
+            key: "partner_update_email",
+            expectedRevision: current.messages.partner_update_email?.revision ?? null,
+            value: { subject: "Update", body: "A draft saved before the pages were removed" },
+          }),
+        )
+      ).status,
+    ).toBe(200);
+
+    const page = await loadWorkspacePageData(read(owner), "partners", environment);
+
+    expect(page.preferences.partners?.value.items).toContainEqual(partner);
+    expect(page.preferences.messages.partner_update_email?.value.body).toBe(
+      "A draft saved before the pages were removed",
+    );
   });
   it("refuses support access even before taking a database connection", async () => {
     const principal = await principalForSession(owner, environment);

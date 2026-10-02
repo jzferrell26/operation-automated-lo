@@ -1,17 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import {
-  Button,
-  Card,
-  Dialog,
-  EmptyState,
-  Icon,
-  Link,
-  LiveRegion,
-  TextField,
-  type IconName,
-} from "@oalo/ui";
+import { Button, Card, Dialog, EmptyState, Icon, Link, LiveRegion, TextField } from "@oalo/ui";
 import {
   dollars,
   leadStages,
@@ -26,26 +16,14 @@ import {
   Badge,
   CampaignBadge,
   exampleCampaignHref,
-  MarketingTabs,
   PageHeader,
   PipelineVisual,
   ProfileAvatar,
-  QuietNote,
   SectionTitle,
   SelectField,
   StatCards,
 } from "./product-components.js";
-import { SetupWizard } from "./setup-wizard.js";
 import { SettingsWorkspace } from "./workspace-settings.js";
-import {
-  AdsWorkspace,
-  AutomationsWorkspace,
-  ExploreWorkspace,
-  MessagingWorkspace,
-  TemplatesWorkspace,
-} from "./marketing-workspaces.js";
-import { AssetWorkspace } from "./asset-workspace.js";
-import { buildWorkspaceReport, type ReportView } from "./workspace-report.js";
 import styles from "./workspace.module.css";
 
 function CampaignRows({
@@ -110,7 +88,7 @@ function CampaignRows({
                     <Icon name="home" decorative />
                   </span>
                   <div>
-                    <strong>Cedar Street Open House Boost</strong>
+                    <strong>Cedar Street open house</strong>
                     <small>214 Cedar Street · Example campaign</small>
                   </div>
                 </div>
@@ -146,7 +124,7 @@ function BoostCard() {
       <span className={styles.featureIcon}>
         <Icon name="sparkles" decorative />
       </span>
-      <span className={styles.eyebrow}>Open House Boost</span>
+      <span className={styles.eyebrow}>Launch an ad</span>
       <h2>
         One property.
         <br />
@@ -182,9 +160,6 @@ function Overview() {
         description="The relationships, campaigns, and next steps that move you forward."
         eyebrow="Overview"
       >
-        <ActionLink href="/leads/pipeline" secondary>
-          View pipeline
-        </ActionLink>
         <ActionLink href="/marketing/campaigns/new">
           <Icon name="plus" decorative size="sm" /> Create campaign
         </ActionLink>
@@ -196,14 +171,12 @@ function Overview() {
             value: newLeads.length,
             detail: "Ready for a conversation",
             icon: "users",
-            href: "/leads",
           },
           {
             label: "Appointments",
             value: sampleLeads.filter((lead) => stageOf(lead) === "Appointment").length,
             detail: "The next step toward home",
             icon: "calendar",
-            href: "/leads/pipeline",
           },
           {
             label: "Realtor partners",
@@ -223,12 +196,7 @@ function Overview() {
       />
       <div className={styles.columns}>
         <Card className={styles.panel} padding="none">
-          <SectionTitle
-            title="Pipeline at a glance"
-            detail="Every conversation has a next step."
-            href="/leads/pipeline"
-            link="Open pipeline"
-          />
+          <SectionTitle title="Pipeline at a glance" detail="Every conversation has a next step." />
           <PipelineVisual state={state} />
           <div className={styles.panelFoot}>
             <span>
@@ -241,24 +209,6 @@ function Overview() {
         <Card className={styles.panel} padding="none">
           <SectionTitle title="Your next moves" detail="A little focus goes a long way." />
           <div className={styles.nextMoves}>
-            <Link href="/leads">
-              <span className={styles.iconTile}>
-                <Icon name="users" decorative />
-              </span>
-              <span>
-                <strong>
-                  {newLeads.length
-                    ? `${newLeads.length} leads need a first touch`
-                    : "Your leads are moving forward"}
-                </strong>
-                <small>
-                  {newLeads.length
-                    ? newLeads.map((lead) => lead.name.split(" ")[0]).join(" and ")
-                    : "Review the next conversation"}
-                </small>
-              </span>
-              <Icon name="arrow-right" decorative size="sm" />
-            </Link>
             <Link href="/marketing/campaigns">
               <span className={styles.iconTile} data-accent="2">
                 <Icon name="shield" decorative />
@@ -286,11 +236,6 @@ function Overview() {
                 <small>{state.partners.length} relationships to build on</small>
               </span>
               <Icon name="arrow-right" decorative size="sm" />
-            </Link>
-          </div>
-          <div className={styles.panelFoot}>
-            <Link href="/onboarding" className={styles.textLink}>
-              Make the most of AutomatedLO <Icon name="arrow-right" decorative size="sm" />
             </Link>
           </div>
         </Card>
@@ -362,7 +307,7 @@ function Overview() {
   );
 }
 
-function Campaigns({ marketing = false }: { marketing?: boolean }) {
+function Campaigns() {
   const { state } = useRequiredDashboardPreview();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("All campaigns");
@@ -381,94 +326,45 @@ function Campaigns({ marketing = false }: { marketing?: boolean }) {
   );
   const showExample =
     status === "All campaigns" &&
-    "cedar street open house boost 214 jordan avery example".includes(query.toLowerCase());
+    "cedar street open house 214 jordan avery example".includes(query.toLowerCase());
   return (
     <>
       <PageHeader
-        title={marketing ? "A bigger stage for your business." : "Campaigns"}
-        eyebrow={marketing ? "Marketing studio" : undefined}
-        description={
-          marketing
-            ? "Turn great properties and strong partnerships into your next conversation."
-            : "Create, review, and manage your property marketing."
-        }
+        title="Campaigns"
+        description="Create, review, and manage your property marketing."
       >
         <ActionLink href="/marketing/campaigns/new">
           <Icon name="plus" decorative size="sm" /> Create campaign
         </ActionLink>
       </PageHeader>
-      <MarketingTabs />
-      {marketing ? (
-        <div className={styles.studioHero}>
-          <div>
-            <Badge tone="info">Your first campaign starts here</Badge>
-            <h2>
-              Make every open house
-              <br />
-              an opportunity.
-            </h2>
-            <p>A property page, creative, and a clear next step for every interested buyer.</p>
-            <ActionLink href="/marketing/campaigns/new">
-              Build an Open House Boost <Icon name="arrow-right" decorative size="sm" />
-            </ActionLink>
-          </div>
-          <div className={styles.packageVisual} aria-label="Open House Boost package">
-            <span className={styles.packageHouse}>
-              <Icon name="home" decorative size="lg" />
-            </span>
-            <div>
-              <Icon name="globe" decorative />
-              <span>
-                Property website<small>A home for the listing</small>
-              </span>
-              <Icon name="check" decorative size="sm" />
-            </div>
-            <div>
-              <Icon name="image" decorative />
-              <span>
-                Social creative<small>A reason to stop scrolling</small>
-              </span>
-              <Icon name="check" decorative size="sm" />
-            </div>
-            <div>
-              <Icon name="users" decorative />
-              <span>
-                Lead experience<small>A conversation worth starting</small>
-              </span>
-              <Icon name="check" decorative size="sm" />
-            </div>
-          </div>
-        </div>
-      ) : (
-        <StatCards
-          items={[
-            {
-              label: "Your drafts",
-              value: state.campaigns.length,
-              detail: "Created in this workspace",
-              icon: "file-text",
-            },
-            {
-              label: "Awaiting approval",
-              value: state.campaigns.filter((c) => !c.blocking && c.state !== "approved").length,
-              detail: "Ready for your review",
-              icon: "shield",
-            },
-            {
-              label: "Approved",
-              value: state.campaigns.filter((c) => c.state === "approved").length,
-              detail: "Demo approvals",
-              icon: "check",
-            },
-            {
-              label: "Needs changes",
-              value: state.campaigns.filter((c) => c.blocking).length,
-              detail: "A few details to revisit",
-              icon: "file-text",
-            },
-          ]}
-        />
-      )}
+      <StatCards
+        items={[
+          {
+            label: "Your drafts",
+            value: state.campaigns.length,
+            detail: "Created in this workspace",
+            icon: "file-text",
+          },
+          {
+            label: "Awaiting approval",
+            value: state.campaigns.filter((c) => !c.blocking && c.state !== "approved").length,
+            detail: "Ready for your review",
+            icon: "shield",
+          },
+          {
+            label: "Approved",
+            value: state.campaigns.filter((c) => c.state === "approved").length,
+            detail: "Demo approvals",
+            icon: "check",
+          },
+          {
+            label: "Needs changes",
+            value: state.campaigns.filter((c) => c.blocking).length,
+            detail: "A few details to revisit",
+            icon: "file-text",
+          },
+        ]}
+      />
       <Card className={styles.panel} padding="none">
         <div className={styles.listToolbar}>
           <TextField
@@ -528,7 +424,7 @@ function Campaigns({ marketing = false }: { marketing?: boolean }) {
                   <Icon name="home" decorative size="lg" />
                 </span>
                 <Badge tone="info">Example</Badge>
-                <h2>Cedar Street Open House Boost</h2>
+                <h2>Cedar Street open house</h2>
                 <p>214 Cedar Street</p>
                 <ActionLink href={exampleCampaignHref} secondary>
                   Explore campaign
@@ -541,281 +437,8 @@ function Campaigns({ marketing = false }: { marketing?: boolean }) {
           <span>
             {filtered.length} saved campaigns{showExample ? " · 1 example" : ""}
           </span>
-          <span>Open House Boost</span>
         </div>
       </Card>
-    </>
-  );
-}
-
-function Leads({ pipeline = false }: { pipeline?: boolean }) {
-  const { state, save } = useRequiredDashboardPreview();
-  const [query, setQuery] = useState("");
-  const [stage, setStage] = useState("All stages");
-  const [source, setSource] = useState("All sources");
-  const [message, setMessage] = useState("");
-  const [selected, setSelected] = useState<(typeof sampleLeads)[number] | null>(null);
-  const leads = sampleLeads.filter(
-    (lead) =>
-      `${lead.name} ${lead.email} ${lead.partner}`.toLowerCase().includes(query.toLowerCase()) &&
-      (stage === "All stages" || (state.leadStages[lead.id] ?? lead.stage) === stage) &&
-      (source === "All sources" || lead.source === source),
-  );
-  const stageControl = (lead: (typeof sampleLeads)[number]) => (
-    <SelectField
-      compact
-      label={`Stage for ${lead.name}`}
-      value={state.leadStages[lead.id] ?? lead.stage}
-      options={leadStages}
-      onChange={(value) => {
-        const next = leadStages.find((item) => item === value);
-        if (
-          next &&
-          save((current) => ({
-            ...current,
-            leadStages: { ...current.leadStages, [lead.id]: next },
-          }))
-        )
-          setMessage(`${lead.name} moved to ${next}.`);
-      }}
-    />
-  );
-  return (
-    <>
-      <PageHeader
-        title={pipeline ? "Every lead. A next step." : "Leads"}
-        eyebrow={pipeline ? "Your pipeline" : undefined}
-        description="Build a clear path from first conversation to closing."
-      >
-        <ActionLink href={pipeline ? "/leads" : "/leads/pipeline"} secondary>
-          <Icon name={pipeline ? "menu" : "layers"} decorative size="sm" />
-          {pipeline ? "List view" : "Pipeline view"}
-        </ActionLink>
-        <ActionLink href="/settings/routing" secondary>
-          Lead routing
-        </ActionLink>
-      </PageHeader>
-      <StatCards
-        items={[
-          {
-            label: "New conversations",
-            value: sampleLeads.filter((lead) => (state.leadStages[lead.id] ?? lead.stage) === "New")
-              .length,
-            detail: "Ready for a first touch",
-            icon: "users",
-          },
-          {
-            label: "Appointments",
-            value: sampleLeads.filter(
-              (lead) => (state.leadStages[lead.id] ?? lead.stage) === "Appointment",
-            ).length,
-            detail: "A chance to understand their goals",
-            icon: "calendar",
-          },
-          {
-            label: "Applications",
-            value: sampleLeads.filter(
-              (lead) => (state.leadStages[lead.id] ?? lead.stage) === "Application",
-            ).length,
-            detail: "Moving toward a decision",
-            icon: "file-text",
-          },
-          {
-            label: "Closed",
-            value: sampleLeads.filter(
-              (lead) => (state.leadStages[lead.id] ?? lead.stage) === "Closed",
-            ).length,
-            detail: "Completed conversations",
-            icon: "check",
-          },
-        ]}
-      />
-      <div className={styles.listToolbar}>
-        <TextField
-          label="Search leads"
-          placeholder="Name, email, or Realtor partner"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-        <SelectField
-          label="Filter by stage"
-          value={stage}
-          onChange={setStage}
-          options={["All stages", ...leadStages]}
-        />
-        <SelectField
-          label="Filter by source"
-          value={source}
-          onChange={setSource}
-          options={["All sources", "Cedar Street open house", "Partner referral"]}
-        />
-        <Badge tone="info">{leads.length} leads</Badge>
-      </div>
-      {query || stage !== "All stages" || source !== "All sources" ? (
-        <div className={styles.row}>
-          <span className={styles.muted}>
-            Showing {leads.length} of {sampleLeads.length} demo leads
-          </span>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setQuery("");
-              setStage("All stages");
-              setSource("All sources");
-            }}
-          >
-            Clear filters
-          </Button>
-        </div>
-      ) : null}
-      {message ? <LiveRegion message={message} visible /> : null}
-      {pipeline ? (
-        <div
-          className={styles.board}
-          role="region"
-          aria-label="Lead pipeline, scroll horizontally for more stages"
-          data-product-guide="lead-stages"
-          tabIndex={0}
-        >
-          {leadStages.map((lane, index) => (
-            <section className={styles.lane} key={lane}>
-              <div className={styles.laneHeading}>
-                <span className={styles.legendDot} data-stage={index} />
-                <h2>{lane}</h2>
-                <span>
-                  {
-                    leads.filter((lead) => (state.leadStages[lead.id] ?? lead.stage) === lane)
-                      .length
-                  }
-                </span>
-              </div>
-              {leads
-                .filter((lead) => (state.leadStages[lead.id] ?? lead.stage) === lane)
-                .map((lead) => (
-                  <Card className={styles.leadCard} padding="none" key={lead.id}>
-                    <div className={styles.row}>
-                      <ProfileAvatar name={lead.name} index={index} />
-                      <Icon name="arrow-up-right" decorative size="sm" />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      className={styles.nameButton}
-                      onClick={() => setSelected(lead)}
-                    >
-                      {lead.name}
-                    </Button>
-                    <p>{lead.source}</p>
-                    <span className={styles.leadPartner}>
-                      <Icon name="building" decorative size="sm" />
-                      {lead.partner}
-                    </span>
-                    {stageControl(lead)}
-                  </Card>
-                ))}
-              {!leads.some((lead) => (state.leadStages[lead.id] ?? lead.stage) === lane) ? (
-                <p className={styles.emptyLane}>
-                  A new milestone
-                  <br />
-                  is waiting here.
-                </p>
-              ) : null}
-            </section>
-          ))}
-        </div>
-      ) : (
-        <div className={styles.tableRegion} role="region" aria-label="Lead list" tabIndex={0}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Source</th>
-                <th scope="col">Realtor partner</th>
-                <th scope="col">Stage</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leads.map((lead, index) => (
-                <tr key={lead.id}>
-                  <td>
-                    <div className={styles.personCell}>
-                      <ProfileAvatar name={lead.name} index={index} />
-                      <div>
-                        <Button
-                          className={styles.nameButton}
-                          variant="ghost"
-                          onClick={() => setSelected(lead)}
-                        >
-                          {lead.name}
-                        </Button>
-                        <small>{lead.email}</small>
-                      </div>
-                    </div>
-                  </td>
-                  <td>{lead.source}</td>
-                  <td>{lead.partner}</td>
-                  <td>{stageControl(lead)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {!leads.length ? (
-        <EmptyState
-          title="No leads found"
-          description="Try a different name or choose All stages."
-        />
-      ) : null}
-      <Dialog
-        title={selected?.name ?? "Lead details"}
-        open={selected !== null}
-        onClose={() => setSelected(null)}
-        description="Keep the next conversation in view."
-      >
-        {selected ? (
-          <div className={styles.stack}>
-            <div className={styles.profileIntro}>
-              <ProfileAvatar name={selected.name} />
-              <div>
-                <strong>{selected.name}</strong>
-                <p>{selected.email}</p>
-              </div>
-            </div>
-            <div className={styles.detailRows}>
-              <div>
-                <span>Source</span>
-                <strong>{selected.source}</strong>
-              </div>
-              <div>
-                <span>Realtor partner</span>
-                <strong>{selected.partner}</strong>
-              </div>
-            </div>
-            {stageControl(selected)}
-            <Card padding="md" className={styles.card}>
-              <h3>Suggested next step</h3>
-              <p>
-                {
-                  {
-                    New: "Introduce yourself and ask what they are looking for in their next home.",
-                    Contacted: "Offer a time to discuss their questions and next steps.",
-                    Appointment: "Confirm the conversation and prepare the details they need.",
-                    Application: "Review outstanding items and keep the buyer informed.",
-                    Closed:
-                      "Thank them for working with you and stay available for future questions.",
-                  }[state.leadStages[selected.id] ?? selected.stage]
-                }
-              </p>
-              <ActionLink href="/marketing/messaging" secondary>
-                Prepare a follow-up draft
-              </ActionLink>
-            </Card>
-            <QuietNote>
-              Calling and messaging become available when HighLevel is connected.
-            </QuietNote>
-          </div>
-        ) : null}
-      </Dialog>
     </>
   );
 }
@@ -1004,251 +627,6 @@ function Partners() {
   );
 }
 
-function Reports() {
-  const { state } = useRequiredDashboardPreview();
-  const [view, setView] = useState<ReportView>("Pipeline");
-  const [message, setMessage] = useState("");
-  const stages = sampleLeads.map((lead) => state.leadStages[lead.id] ?? lead.stage);
-  function exportReport() {
-    try {
-      const csv = buildWorkspaceReport(state, view);
-      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `automatedlo-demo-${view.toLowerCase()}.csv`;
-      document.body.append(anchor);
-      anchor.click();
-      anchor.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setMessage(`Your ${view.toLowerCase()} report is ready.`);
-    } catch {
-      setMessage("The report could not be downloaded. Please try again.");
-    }
-  }
-  return (
-    <>
-      <PageHeader
-        title="See what moves your business."
-        eyebrow="Reports"
-        description="Follow the connection between your marketing, partners, and pipeline."
-      >
-        <Button variant="outline" onClick={exportReport} data-product-guide="download-report">
-          <Icon name="download" decorative size="sm" /> Download report
-        </Button>
-      </PageHeader>
-      <div className={styles.reportHeading}>
-        <div className={styles.viewToggle} role="group" aria-label="Report view">
-          {(["Pipeline", "Campaigns", "Partners"] as const).map((tab) => (
-            <Button
-              variant="ghost"
-              key={tab}
-              aria-pressed={view === tab}
-              onClick={() => {
-                setView(tab);
-                setMessage("");
-              }}
-            >
-              {tab}
-            </Button>
-          ))}
-        </div>
-        <Badge tone="info">Demo data</Badge>
-      </div>
-      {message ? <LiveRegion message={message} visible /> : null}
-      <StatCards
-        items={
-          view === "Campaigns"
-            ? [
-                {
-                  label: "Saved campaigns",
-                  value: state.campaigns.length,
-                  detail: "Included in this report",
-                  icon: "megaphone",
-                },
-                {
-                  label: "Approved",
-                  value: state.campaigns.filter(
-                    (campaign) => campaign.state === "approved" && !campaign.blocking,
-                  ).length,
-                  detail: "Demo approvals",
-                  icon: "shield",
-                },
-                {
-                  label: "Planned budget",
-                  value: dollars(
-                    state.campaigns.reduce(
-                      (total, campaign) => total + campaign.totalBudgetMinor,
-                      0,
-                    ),
-                  ),
-                  detail: "Planned, not actual spend",
-                  icon: "credit-card",
-                },
-                {
-                  label: "Live results",
-                  value: "Unavailable",
-                  detail: "Requires connected reporting",
-                  icon: "chart",
-                },
-              ]
-            : [
-                {
-                  label: "Total leads",
-                  value: sampleLeads.length,
-                  detail: "Across your pipeline",
-                  icon: "users",
-                },
-                {
-                  label: "Appointments",
-                  value: stages.filter((stage) => stage === "Appointment").length,
-                  detail: "Conversations taking shape",
-                  icon: "calendar",
-                },
-                {
-                  label: "Applications",
-                  value: stages.filter((stage) => stage === "Application").length,
-                  detail: "The next step toward closing",
-                  icon: "file-text",
-                },
-                {
-                  label: "Ad spend",
-                  value: "Unavailable",
-                  detail: "Connect an ad account to see spend",
-                  icon: "credit-card",
-                },
-              ]
-        }
-      />
-      {view === "Pipeline" ? (
-        <div className={styles.columns}>
-          <Card className={styles.panel} padding="none">
-            <SectionTitle title="Lead distribution" detail="A clear picture of every stage." />
-            <PipelineVisual state={state} />
-            <div className={styles.panelFoot}>
-              <Link href="/leads/pipeline">Manage pipeline</Link>
-              <span>{sampleLeads.length} demo leads</span>
-            </div>
-          </Card>
-          <Card className={styles.panel} padding="none">
-            <SectionTitle title="Where conversations begin" />
-            <div className={styles.sourceRows}>
-              {["Cedar Street open house", "Partner referral"].map((source, index) => (
-                <div key={source}>
-                  <span className={styles.iconTile} data-accent={index}>
-                    <Icon name={index ? "users" : "home"} decorative />
-                  </span>
-                  <span>
-                    <strong>{source}</strong>
-                    <small>
-                      {sampleLeads.filter((lead) => lead.source === source).length} leads
-                    </small>
-                  </span>
-                  <strong>
-                    {Math.round(
-                      (sampleLeads.filter((lead) => lead.source === source).length /
-                        sampleLeads.length) *
-                        100,
-                    )}
-                    %
-                  </strong>
-                </div>
-              ))}
-            </div>
-            <QuietNote>
-              Live attribution and funded volume appear after HighLevel is connected.
-            </QuietNote>
-          </Card>
-        </div>
-      ) : view === "Campaigns" ? (
-        <Card className={styles.panel} padding="none">
-          <SectionTitle
-            title="Campaign performance"
-            detail="Review your campaign progress before launch."
-          />
-          {state.campaigns.length ? (
-            <CampaignRows campaigns={state.campaigns} example={false} />
-          ) : (
-            <div className={styles.panelInset}>
-              <EmptyState
-                title="No saved campaigns to report yet"
-                description="Create a campaign to review its status and planned budget here."
-              />
-              <ActionLink href="/marketing/campaigns/new">Create campaign</ActionLink>
-            </div>
-          )}
-          <QuietNote>
-            Spend and delivery results become available when an ad account is connected.
-          </QuietNote>
-        </Card>
-      ) : (
-        <Card className={styles.panel} padding="none">
-          <SectionTitle
-            title="Partner contributions"
-            detail="Sample lead attribution alongside your saved campaign activity."
-            href="/partners"
-            link="Manage partners"
-          />
-          <div
-            className={styles.tableRegion}
-            role="region"
-            aria-label="Partner report"
-            tabIndex={0}
-          >
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th scope="col">Partner</th>
-                  <th scope="col">Brokerage</th>
-                  <th scope="col">Demo leads</th>
-                  <th scope="col">Saved campaigns</th>
-                </tr>
-              </thead>
-              <tbody>
-                {state.partners.map((partner, index) => (
-                  <tr key={partner.id}>
-                    <td>
-                      <div className={styles.personCell}>
-                        <ProfileAvatar name={partner.name} index={index} />
-                        <strong>{partner.name}</strong>
-                      </div>
-                    </td>
-                    <td>{partner.company}</td>
-                    <td>{sampleLeads.filter((lead) => lead.partner === partner.name).length}</td>
-                    <td>
-                      {
-                        state.campaigns.filter(
-                          (campaign) => campaign.realtorDisplayName === partner.name,
-                        ).length
-                      }
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
-      <Card className={styles.panel} padding="none">
-        <SectionTitle title="Your partner network" href="/partners" />
-        <div className={styles.partnerStrip}>
-          {state.partners.map((partner, index) => (
-            <div key={partner.id}>
-              <ProfileAvatar name={partner.name} index={index} />
-              <span>
-                <strong>{partner.name}</strong>
-                <small>
-                  {sampleLeads.filter((lead) => lead.partner === partner.name).length} leads ·{" "}
-                  {partner.company}
-                </small>
-              </span>
-            </div>
-          ))}
-        </div>
-      </Card>
-    </>
-  );
-}
-
 export function DashboardPreviewScreen({ view }: { view: PreviewView }) {
   const { ready } = useRequiredDashboardPreview();
   if (!ready)
@@ -1262,56 +640,19 @@ export function DashboardPreviewScreen({ view }: { view: PreviewView }) {
     case "overview":
       content = <Overview />;
       break;
-    case "marketing":
-      content = <Campaigns marketing />;
-      break;
     case "campaigns":
       content = <Campaigns />;
       break;
     case "partners":
       content = <Partners />;
       break;
-    case "leads":
-      content = <Leads />;
-      break;
-    case "pipeline":
-      content = <Leads pipeline />;
-      break;
-    case "reports":
-      content = <Reports />;
-      break;
-    case "property-sites":
-      content = <AssetWorkspace />;
-      break;
-    case "creative":
-      content = <AssetWorkspace creative />;
-      break;
-    case "onboarding":
-      content = <SetupWizard />;
-      break;
     case "settings":
     case "brand":
     case "account":
     case "connections":
     case "routing":
-    case "team":
     case "billing":
       content = <SettingsWorkspace view={view} />;
-      break;
-    case "ads":
-      content = <AdsWorkspace />;
-      break;
-    case "messaging":
-      content = <MessagingWorkspace />;
-      break;
-    case "automations":
-      content = <AutomationsWorkspace />;
-      break;
-    case "blueprints":
-      content = <TemplatesWorkspace />;
-      break;
-    case "marketplace":
-      content = <ExploreWorkspace />;
       break;
   }
   return <div className={styles.page}>{content}</div>;
@@ -1369,7 +710,7 @@ export function DashboardPreviewCampaign({ campaignRef }: { campaignRef: string 
             detail: "Planned spend",
             icon: "credit-card",
           },
-          { label: "Ad category", value: "Housing", detail: "Open House Boost", icon: "home" },
+          { label: "Ad category", value: "Housing", detail: "Special ad category", icon: "home" },
         ]}
       />
       <div className={styles.columns}>
@@ -1413,30 +754,6 @@ export function DashboardPreviewCampaign({ campaignRef }: { campaignRef: string 
               )}
             </div>
           </Card>
-          <Card className={styles.panel} padding="none">
-            <SectionTitle
-              title="Your property marketing package"
-              detail="See how the complete experience comes together."
-            />
-            <div className={styles.packageLinks}>
-              {[
-                ["Property website", "/marketing/property-sites", "globe"],
-                ["Creative library", "/marketing/creative", "image"],
-              ].map(([label, href, icon]) => (
-                <Link key={href} href={href ?? "/marketing"}>
-                  <Icon name={icon as IconName} decorative />
-                  <span>
-                    <strong>{label}</strong>
-                    <small>Explore example assets</small>
-                  </span>
-                  <Icon name="arrow-up-right" decorative size="sm" />
-                </Link>
-              ))}
-            </div>
-            <QuietNote>
-              New asset generation and publishing will be available with connected accounts.
-            </QuietNote>
-          </Card>
         </div>
         <Card className={styles.approvalPanel} padding="md" data-product-guide="campaign-approval">
           <span className={styles.iconTile}>
@@ -1455,11 +772,6 @@ export function DashboardPreviewCampaign({ campaignRef }: { campaignRef: string 
           <Link href="/marketing/campaigns/new">Create another draft</Link>
           <div className={styles.divider} />
           <Button disabled>Publish campaign</Button>
-          {state.setup.campaignRef === campaignRef ? (
-            <Link href="/onboarding" variant="action">
-              Continue my setup
-            </Link>
-          ) : null}
           <small>
             Connect an ad account to publish. This demo does not launch ads or spend money.
           </small>

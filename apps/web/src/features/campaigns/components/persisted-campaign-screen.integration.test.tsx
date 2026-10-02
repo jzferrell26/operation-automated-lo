@@ -226,7 +226,9 @@ describe("persisted campaign approval screen", () => {
         within(control).getByText("This version needs changes before anyone can approve it."),
       ).toBeInTheDocument();
       expect(
-        within(control).getByText("Fix what the checks found, then save it again."),
+        within(control).getByText(
+          "The campaign creator fixes what the checks found and saves it again.",
+        ),
       ).toBeInTheDocument();
       expect(within(control).getByRole("button", { name: "Approve this version" })).toBeDisabled();
     });

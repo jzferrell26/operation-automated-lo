@@ -6,11 +6,20 @@
  * three at 1180, two at 768, and one at 390 (the grid's own rules, in `ad-library-cards.module.css`).
  * Every direct child may shrink below its content, which is what lets the chip row scroll sideways
  * at 390 instead of stretching the page.
+ *
+ * Every grid that holds the cards, however far up, has ONE track of `minmax(0, 1fr)` and not the
+ * implicit `auto` track. An `auto` track is sized from its content, and the content here is eight
+ * cards that are size containers with container-query units inside: each level of `auto` track asks
+ * the level below for its intrinsic size several times, and three levels of that held the main
+ * thread for about 2.5 seconds per load, three times over (9,000 style recalculations; measured on
+ * 2026-10-02 after CI's full synthetic run lost a 240 second attempt to a page that never settled).
+ * A `1fr` track with a zero minimum takes its width from the column and measures nothing.
  */
 
 .page {
   display: grid;
   inline-size: 100%;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-6);
   color: var(--tx-strong);
   min-inline-size: 0;
@@ -28,11 +37,13 @@
 
 .section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
 }
 
 .heading {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2);
 }
 
@@ -50,6 +61,7 @@
 
 .browser {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
   min-inline-size: 0;
 }

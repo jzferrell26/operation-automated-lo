@@ -16,8 +16,14 @@ import {
   USE_NEW_VERSION_WHO,
 } from "../../../copy/ads-library-messages.js";
 import { reviewHref } from "../../campaigns/launch-model.js";
-import { postInternalJson, refusalFrom, UNREACHED_REFUSAL } from "../../http/internal-api.js";
+import {
+  postInternalJson,
+  refusalFrom,
+  UNREACHED_REFUSAL,
+  type InternalRefusal,
+} from "../../http/internal-api.js";
 import { userMessageSentence } from "../../http/user-messages.js";
+import { SupportReference } from "../../shell/components/support-details.js";
 import { newVersionRequest, type NewerVersionOffer } from "../newer-version.js";
 import styles from "./use-new-version.module.css";
 
@@ -46,23 +52,33 @@ export type UseNewVersionProps = Readonly<{
 export function UseNewVersion({ offer, canUse }: UseNewVersionProps) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState("");
+  // The sentence, and the whole refusal behind it, so the support reference a sentence points at
+  // is drawn under it (writing review pass 2, W-27).
+  const [problem, setProblem] = useState<
+    Readonly<{ sentence: string; refusal: InternalRefusal }> | undefined
+  >(undefined);
   const offered = offer.undecided && canUse;
 
   async function save() {
     setBusy(true);
-    setProblem("");
+    setProblem(undefined);
     try {
       const response = await postInternalJson("/api/campaigns/preflight", newVersionRequest(offer));
       if (!response.ok) {
         const refusal = await refusalFrom(response);
-        setProblem(`${USE_NEW_VERSION_FAILED} ${userMessageSentence(refusal.code)}`);
+        setProblem({
+          sentence: `${USE_NEW_VERSION_FAILED} ${userMessageSentence(refusal.code)}`,
+          refusal,
+        });
         return;
       }
       const saved = (await response.json()) as { campaignRef: string };
       router.push(reviewHref(saved.campaignRef));
     } catch {
-      setProblem(`${USE_NEW_VERSION_FAILED} ${userMessageSentence(UNREACHED_REFUSAL.code)}`);
+      setProblem({
+        sentence: `${USE_NEW_VERSION_FAILED} ${userMessageSentence(UNREACHED_REFUSAL.code)}`,
+        refusal: UNREACHED_REFUSAL,
+      });
     } finally {
       setBusy(false);
     }
@@ -95,7 +111,12 @@ export function UseNewVersion({ offer, canUse }: UseNewVersionProps) {
           variant="secondary"
         />
       ) : null}
-      {problem === "" ? null : <LiveRegion message={problem} urgency="alert" visible />}
+      {problem === undefined ? null : (
+        <>
+          <LiveRegion message={problem.sentence} urgency="alert" visible />
+          <SupportReference refusal={problem.refusal} />
+        </>
+      )}
     </div>
   );
 }

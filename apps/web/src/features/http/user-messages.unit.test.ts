@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { findVocabularyHits } from "../../copy/forbidden-vocabulary.js";
 import {
   isMappedErrorCode,
+  showsSupportReference,
   UNKNOWN_ERROR_MESSAGE,
   USER_MESSAGES_BY_CODE,
   userMessageForCode,
@@ -131,6 +132,15 @@ describe("error codes become sentences", () => {
     );
   });
 
+  // Writing review pass 2, W-30. "Pick it again" cannot work for an ad that was taken out, "kept" is
+  // untrue for a new campaign (its drafts are held per ad), and the campaign page has no "Choose an
+  // ad" to go back to. "Choose another ad" is true on both.
+  it("tells a person whose ad has left the library to choose another, and to check what they set", () => {
+    expect(userMessageSentence("LIBRARY_AD_NOT_AVAILABLE")).toBe(
+      "This ad isn't in the library any more, or a newer version replaced it. Choose another ad. Check the words, budget and area before you save.",
+    );
+  });
+
   it("sends the approver to the campaign creator when the checks are not passing", () => {
     expect(userMessageSentence("CAMPAIGN_APPROVAL_NOT_READY")).toBe(
       "This campaign isn't ready to approve yet. Ask the campaign creator to fix what the checks found and save a new version, then approve that one.",
@@ -143,6 +153,45 @@ describe("error codes become sentences", () => {
       "The guided setup isn't available in this workspace. You can still launch an ad from Campaigns.",
     );
     expect(userMessageSentence("SETUP_PREFERENCE_UNAVAILABLE")).not.toMatch(/Marketing menu/u);
+  });
+
+  /**
+   * Writing review pass 2, W-27. "Contact support with the reference below" was said, and nothing
+   * was below: a mapped code showed no support reference, and the step that said it never drew one.
+   * The rule is written down once, in `showsSupportReference`: a reference shows for a code with no
+   * sentence of its own, and for a code whose own sentence points at it.
+   */
+  describe("the support reference a sentence points at (writing review W-27)", () => {
+    it("says what to give support, and where it is, for a failed save", () => {
+      expect(userMessageSentence("CAMPAIGN_PREFLIGHT_FAILED")).toBe(
+        "We couldn't finish the checks on this campaign. Try again. If it keeps happening, contact support and give them the support reference below.",
+      );
+    });
+
+    it('shows a reference for every code whose sentence says "reference below"', () => {
+      const pointing = Object.entries(USER_MESSAGES_BY_CODE).filter(([, message]) =>
+        /reference below/u.test(`${message.what} ${message.whatToDo}`),
+      );
+      expect(pointing.map(([code]) => code)).toContain("CAMPAIGN_PREFLIGHT_FAILED");
+      for (const [code] of pointing) {
+        expect(showsSupportReference(code), code).toBe(true);
+      }
+    });
+
+    it("also shows one for a code with no sentence of its own, and for a request that never answered", () => {
+      expect(showsSupportReference("A_CODE_FROM_THE_FUTURE")).toBe(true);
+      expect(showsSupportReference(undefined)).toBe(true);
+    });
+
+    it("shows none for a code whose sentence needs none", () => {
+      expect(showsSupportReference("LIBRARY_AD_NOT_AVAILABLE")).toBe(false);
+      expect(showsSupportReference("CAMPAIGN_APPROVAL_CONFLICT")).toBe(false);
+      expect(showsSupportReference("UNAUTHENTICATED")).toBe(false);
+    });
+
+    it("never points at a reference from the generic sentence, which the reference always accompanies", () => {
+      expect(userMessageSentence(undefined)).not.toMatch(/reference below/u);
+    });
   });
 
   it("states a reason for every code it does not map", () => {

@@ -11,6 +11,8 @@ import {
   TOTAL_BUDGET_FIX,
   WORDS_HINT,
 } from "../../../copy/launch-messages.js";
+import { SUPPORT_DETAILS_LABELS, SUPPORT_DETAILS_SUMMARY } from "../../../copy/user-language.js";
+import { SUPPORT_REFERENCE_HEADER } from "../../http/internal-api.js";
 import { parseLaunchAddress, type LaunchAddress } from "../launch-model.js";
 import { LaunchFlow, type LaunchFlowProps } from "./launch-flow.js";
 import { TEST_BAND, TEST_CARDS } from "./launch-flow.test-support.js";
@@ -44,6 +46,24 @@ function stubSave(body: unknown = { campaignRef: "campaign_0123456789abcdef" }, 
       new Response(JSON.stringify(body), {
         status,
         headers: { "content-type": "application/json" },
+      }),
+  );
+  vi.stubGlobal("fetch", fetch);
+  return fetch;
+}
+
+const SUPPORT_REFERENCE = "correlation_save_7f3c1d9e5a2b4c6d8e0f1a2b";
+
+/** A refused save, carrying the reference header every answer from the route carries. */
+function stubRefusedSave(code: string): ReturnType<typeof vi.fn> {
+  const fetch = vi.fn(
+    async () =>
+      new Response(JSON.stringify({ error: code }), {
+        status: 400,
+        headers: {
+          "content-type": "application/json",
+          [SUPPORT_REFERENCE_HEADER]: SUPPORT_REFERENCE,
+        },
       }),
   );
   vi.stubGlobal("fetch", fetch);
@@ -109,6 +129,65 @@ describe("the three steps (009D-AC-001)", () => {
       ),
     );
     expect(screen.getByLabelText(/^Headline/u)).toHaveValue("My own words");
+  });
+});
+
+/**
+ * Writing review pass 2, W-30. A step 2 address that names an ad the library no longer holds used to
+ * show step 1 with no explanation. It now says why, above the chips, once.
+ */
+describe("an address that names an ad that has left the library (writing review W-30)", () => {
+  const SAID = "That ad isn't in the library any more. Choose another ad.";
+
+  it("shows step 1 and says the ad is gone, for a new campaign", () => {
+    renderFlow({ step: 2, ad: "sample-no-longer-here" });
+    expect(screen.getByRole("heading", { level: 1, name: "Choose an ad" })).toBeInTheDocument();
+    expect(screen.getByText(SAID)).toBeInTheDocument();
+  });
+
+  it("says it for a saved campaign whose ad is gone", () => {
+    renderFlow(
+      { step: 2, campaign: "campaign_0123456789abcdef" },
+      {
+        campaign: {
+          campaignRef: "campaign_0123456789abcdef",
+          adId: "sample-no-longer-here",
+          prefill: {
+            headline: "Saved headline",
+            primaryText: "Saved words",
+            dailyBudgetDollars: 40,
+            totalBudgetDollars: 400,
+            endsOn: "2026-10-30",
+            places: ["TX"],
+          },
+        },
+      },
+    );
+    expect(screen.getByRole("heading", { level: 1, name: "Choose an ad" })).toBeInTheDocument();
+    expect(screen.getByText(SAID)).toBeInTheDocument();
+  });
+
+  it("says nothing when no ad was named, or the named ad is in the library", () => {
+    const { unmount } = renderFlow({ step: 1 });
+    expect(screen.queryByText(SAID)).toBeNull();
+    unmount();
+    renderFlow({ step: 2, ad: "sample-first-home" });
+    expect(screen.queryByText(SAID)).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "Set it up" })).toBeInTheDocument();
+  });
+
+  it("stops saying it once the person chooses another ad", async () => {
+    const user = userEvent.setup();
+    renderFlow({ step: 2, ad: "sample-no-longer-here" });
+    await user.click(
+      within(screen.getByRole("article", { name: "Sample: Your first home checklist" })).getByRole(
+        "button",
+        { name: /^Use this ad/u },
+      ),
+    );
+    expect(screen.getByRole("heading", { level: 1, name: "Set it up" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.queryByText(SAID)).toBeNull();
   });
 });
 
@@ -397,10 +476,101 @@ describe("step 2, Where it shows (009D-AC-008)", () => {
     renderFlow(STEP_TWO, { rememberedPlaces: ["TX"] });
     await user.click(screen.getByRole("button", { name: "Save and check" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "We couldn't save this version. Nothing was saved.",
+      "We couldn't save this version. Nothing was saved. This ad isn't in the library any more, or a newer version replaced it. Choose another ad. Check the words, budget and area before you save.",
     );
     expect(mocked.push).not.toHaveBeenCalled();
     expect(screen.getByRole("heading", { level: 1, name: "Set it up" })).toBeInTheDocument();
+  });
+
+  // Writing review pass 2, W-30. "Pick it again" cannot work when the ad was taken out, and "your
+  // words and budget are kept" is untrue for a new campaign, whose drafts are held per ad.
+  it("does not promise words and budget that a different ad would not keep", async () => {
+    stubSave({ error: "LIBRARY_AD_NOT_AVAILABLE" }, 400);
+    const user = userEvent.setup();
+    renderFlow(STEP_TWO, { rememberedPlaces: ["TX"] });
+    await user.click(screen.getByRole("button", { name: "Save and check" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).not.toHaveTextContent(/pick it again/iu);
+    expect(alert).not.toHaveTextContent(/kept/iu);
+  });
+
+  /**
+   * Writing review pass 2, W-27. The failed-save sentence says "the support reference below", so a
+   * reference is below it: for that code, and for a code the product has no words for, which
+   * contract section 7 says always shows one. A code whose own sentence needs none shows none.
+   */
+  describe("the support reference under a refused save (writing review W-27)", () => {
+    async function refuse(code: string): Promise<void> {
+      stubRefusedSave(code);
+      const user = userEvent.setup();
+      renderFlow(STEP_TWO, { rememberedPlaces: ["TX"] });
+      await user.click(screen.getByRole("button", { name: "Save and check" }));
+      await screen.findByRole("alert");
+    }
+
+    it("shows it for CAMPAIGN_PREFLIGHT_FAILED, whose sentence points at it", async () => {
+      await refuse("CAMPAIGN_PREFLIGHT_FAILED");
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "We couldn't save this version. Nothing was saved. We couldn't finish the checks on this campaign. Try again. If it keeps happening, contact support and give them the support reference below.",
+      );
+      const details = screen.getByText(SUPPORT_DETAILS_SUMMARY).closest("details") as HTMLElement;
+      expect(
+        within(details).getByText(SUPPORT_DETAILS_LABELS.supportReference),
+      ).toBeInTheDocument();
+      expect(within(details).getByText(SUPPORT_REFERENCE)).toBeInTheDocument();
+      expect(details).not.toHaveAttribute("open");
+    });
+
+    it("comes after the sentence that points at it, and stays on step 2", async () => {
+      await refuse("CAMPAIGN_PREFLIGHT_FAILED");
+      const alert = screen.getByRole("alert");
+      const details = screen.getByText(SUPPORT_DETAILS_SUMMARY).closest("details") as HTMLElement;
+      expect(
+        alert.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(screen.getByRole("heading", { level: 1, name: "Set it up" })).toBeInTheDocument();
+    });
+
+    it("shows it for a code the product has no words for", async () => {
+      await refuse("A_CODE_FROM_THE_FUTURE");
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "We couldn't save this version. Nothing was saved. Something went wrong on our side.",
+      );
+      expect(screen.getByText(SUPPORT_REFERENCE)).toBeInTheDocument();
+    });
+
+    it("shows it, as 'not recorded', when nothing answered at all", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => {
+          throw new TypeError("offline");
+        }),
+      );
+      const user = userEvent.setup();
+      renderFlow(STEP_TWO, { rememberedPlaces: ["TX"] });
+      await user.click(screen.getByRole("button", { name: "Save and check" }));
+      await screen.findByRole("alert");
+      expect(screen.getByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeInTheDocument();
+      expect(screen.getByText("Not recorded")).toBeInTheDocument();
+    });
+
+    it("shows none for a code whose own sentence needs none, and none after a later save works", async () => {
+      stubRefusedSave("LIBRARY_AD_NOT_AVAILABLE");
+      const user = userEvent.setup();
+      renderFlow(STEP_TWO, { rememberedPlaces: ["TX"] });
+      await user.click(screen.getByRole("button", { name: "Save and check" }));
+      await screen.findByRole("alert");
+      expect(screen.queryByText(SUPPORT_DETAILS_LABELS.supportReference)).toBeNull();
+
+      stubRefusedSave("CAMPAIGN_PREFLIGHT_FAILED");
+      await user.click(screen.getByRole("button", { name: "Save and check" }));
+      await screen.findByText(SUPPORT_REFERENCE);
+
+      stubSave();
+      await user.click(screen.getByRole("button", { name: "Save and check" }));
+      await waitFor(() => expect(mocked.push).toHaveBeenCalled());
+      expect(screen.queryByText(SUPPORT_REFERENCE)).toBeNull();
+    });
   });
 
   it("saves a new version of the campaign it was opened from", async () => {

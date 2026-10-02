@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation.js";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import {
+  AD_NOT_IN_LIBRARY_NOTICE,
   AD_TEXT_LABEL,
   BACK,
   BAND_PLACEHOLDER,
@@ -47,8 +48,14 @@ import {
   runLengthNote,
   setUpLead,
 } from "../../../copy/launch-messages.js";
-import { postInternalJson, refusalFrom, UNREACHED_REFUSAL } from "../../http/internal-api.js";
+import {
+  postInternalJson,
+  refusalFrom,
+  UNREACHED_REFUSAL,
+  type InternalRefusal,
+} from "../../http/internal-api.js";
 import { userMessageSentence } from "../../http/user-messages.js";
+import { SupportReference } from "../../shell/components/support-details.js";
 import {
   budgetProblems,
   cancelHref,
@@ -106,6 +113,15 @@ interface Draft {
 
 type FieldErrors = Partial<Record<"daily" | "total" | "endsOn" | "places", string>>;
 
+/**
+ * A refused save: the sentence said at the top of the form, and the whole refusal behind it, so
+ * `SupportReference` can show the reference a sentence points at (writing review pass 2, W-27).
+ */
+interface SaveFailure {
+  readonly sentence: string;
+  readonly refusal: InternalRefusal;
+}
+
 const STEP_IDS = ["choose", "set-up", "review"] as const;
 
 export function launchSteps(current: 1 | 2 | 3) {
@@ -160,7 +176,12 @@ export function LaunchFlow({
   const [address, setAddress] = useState<LaunchAddress>(initial);
   const [drafts, setDrafts] = useState<Readonly<Record<string, Draft>>>({});
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [status, setStatus] = useState("");
+  const [failure, setFailure] = useState<SaveFailure | undefined>(undefined);
+  // W-30. An address that names an ad the library no longer holds shows step 1; this says why.
+  const [adGone, setAdGone] = useState(() => {
+    const named = initial.ad ?? (initial.step === 2 ? campaign?.adId : undefined);
+    return named !== undefined && !cards.some((item) => item.id === named);
+  });
   const [busy, setBusy] = useState(false);
   // Counts refused attempts, so a second refusal moves focus to the message again.
   const [refusals, setRefusals] = useState(0);
@@ -185,7 +206,8 @@ export function LaunchFlow({
 
   function go(next: LaunchAddress) {
     setAddress(next);
-    setStatus("");
+    setFailure(undefined);
+    setAdGone(false);
     setErrors({});
     setRefusals(0);
     window.history.pushState(null, "", launchHref(next));
@@ -199,6 +221,7 @@ export function LaunchFlow({
     return (
       <StepOne
         address={address}
+        adGone={adGone}
         advertiser={advertiser}
         cards={cards}
         onTopic={(topic) => {
@@ -226,7 +249,7 @@ export function LaunchFlow({
           : String(amount(next.daily) * days);
       return { ...current, [key]: { ...next, total } };
     });
-    setStatus("");
+    setFailure(undefined);
   }
 
   async function saveAndCheck() {
@@ -247,7 +270,7 @@ export function LaunchFlow({
     }
     setRefusals(0);
     setBusy(true);
-    setStatus("");
+    setFailure(undefined);
     try {
       const response = await postInternalJson("/api/campaigns/preflight", {
         adId: card.id,
@@ -262,13 +285,19 @@ export function LaunchFlow({
       });
       if (!response.ok) {
         const refusal = await refusalFrom(response);
-        setStatus(`${SAVE_FAILED} ${userMessageSentence(refusal.code)}`);
+        setFailure({
+          sentence: `${SAVE_FAILED} ${userMessageSentence(refusal.code)}`,
+          refusal,
+        });
         return;
       }
       const saved = (await response.json()) as { campaignRef: string };
       router.push(reviewHref(saved.campaignRef, address.from));
     } catch {
-      setStatus(`${SAVE_FAILED} ${userMessageSentence(UNREACHED_REFUSAL.code)}`);
+      setFailure({
+        sentence: `${SAVE_FAILED} ${userMessageSentence(UNREACHED_REFUSAL.code)}`,
+        refusal: UNREACHED_REFUSAL,
+      });
     } finally {
       setBusy(false);
     }
@@ -406,7 +435,12 @@ export function LaunchFlow({
             </Button>
           </div>
           <p className={styles.saveNote}>{SAVE_NOTE}</p>
-          {status === "" ? null : <LiveRegion message={status} urgency="alert" visible />}
+          {failure === undefined ? null : (
+            <>
+              <LiveRegion message={failure.sentence} urgency="alert" visible />
+              <SupportReference refusal={failure.refusal} />
+            </>
+          )}
         </Card>
         <aside aria-labelledby="launch-preview-title" className={styles.preview}>
           <div className={styles.sectionHeading}>
@@ -481,12 +515,15 @@ function BrandSummary({ advertiser }: Readonly<{ advertiser: LaunchBand }>) {
 
 function StepOne({
   address,
+  adGone,
   cards,
   advertiser,
   onTopic,
   onUse,
 }: Readonly<{
   address: LaunchAddress;
+  /** The address named an ad the library no longer holds (writing review W-30). */
+  adGone: boolean;
   cards: readonly LaunchAdCard[];
   advertiser: LaunchBand;
   onTopic: (topic: AdsLibraryTopic | undefined) => void;
@@ -495,6 +532,11 @@ function StepOne({
   return (
     <div className={styles.page} data-launch-step="1">
       <LaunchHeader lead={CHOOSE_LEAD} step={1} title={LAUNCH_STEP_TITLES.choose} />
+      {adGone ? (
+        <p className={styles.lead} data-ad-gone="">
+          {AD_NOT_IN_LIBRARY_NOTICE}
+        </p>
+      ) : null}
       {cards.length === 0 ? null : (
         <TopicChips
           cards={cards}

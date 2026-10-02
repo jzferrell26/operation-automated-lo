@@ -99,6 +99,63 @@ describe("what you approve (009D-AC-014)", () => {
     expect(screen.getAllByText(CHECK_RESULT_NEEDS_CHANGES).length).toBeGreaterThan(0);
   });
 
+  /**
+   * Writing review pass 2, W-26. The list used to show every check name in one style, each a
+   * positive sentence ("Ends after today"), so the one that failed read as an achievement. The state
+   * is now said in words next to each name, and the failed checks come first.
+   */
+  describe("says which check failed (writing review W-26)", () => {
+    function openedList(): HTMLElement {
+      return screen.getByText("See what we checked").closest("details") as HTMLElement;
+    }
+
+    it("puts the failed check first, with 'Needs changes:' in visible text", () => {
+      render(<LaunchReview review={reviewFixture({}, [CLAIM])} />);
+      const items = within(openedList()).getAllByRole("listitem");
+      expect(items).toHaveLength(22);
+      expect(items[0]).toHaveTextContent(
+        "Needs changes: No rate, payment or term claims in your words",
+      );
+      // The state is text a sighted person reads, never a screen reader's alone.
+      expect(items[0]?.querySelector(".oalo-visually-hidden")).toBeNull();
+      expect(within(openedList()).getAllByText(/^Needs changes:/u)).toHaveLength(1);
+    });
+
+    it("says 'Passed' to a screen reader before every other check, beside a decorative check icon", () => {
+      render(<LaunchReview review={reviewFixture({}, [CLAIM])} />);
+      const items = within(openedList()).getAllByRole("listitem");
+      for (const item of items.slice(1)) {
+        expect(item).toHaveTextContent(/^Passed: /u);
+        expect(item.querySelector(".oalo-visually-hidden")).toHaveTextContent("Passed:");
+        expect(item.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+      }
+    });
+
+    it("lists failed checks in the order the ruleset runs them, ahead of every passed one", () => {
+      const second = {
+        ruleCode: "NMLS_NUMBER_REQUIRED",
+        affected: "advertiser.nmls",
+        remediation: "Add your NMLS number in Brand.",
+      };
+      render(<LaunchReview review={reviewFixture({}, [CLAIM, second])} />);
+      const items = within(openedList()).getAllByRole("listitem");
+      const states = items.map((item) =>
+        /^Needs changes: /u.test(item.textContent ?? "") ? "failed" : "passed",
+      );
+      expect(states.slice(0, 2)).toEqual(["failed", "failed"]);
+      expect(states.slice(2).every((state) => state === "passed")).toBe(true);
+      expect(items[0]).toHaveTextContent("No rate, payment or term claims in your words");
+      expect(items[1]).toHaveTextContent("NMLS number on the ad");
+    });
+
+    it("says 'Passed' on all of them, and 'Needs changes' on none, when nothing failed", () => {
+      render(<LaunchReview review={reviewFixture()} />);
+      const items = within(openedList()).getAllByRole("listitem");
+      expect(items.every((item) => /^Passed: /u.test(item.textContent ?? ""))).toBe(true);
+      expect(within(openedList()).queryByText(/Needs changes/u)).toBeNull();
+    });
+  });
+
   it("lists the facts the approval covers, with one Change link to step 2", () => {
     render(<LaunchReview from="home" review={reviewFixture()} />);
     const facts = document.querySelector("dl") as HTMLElement;

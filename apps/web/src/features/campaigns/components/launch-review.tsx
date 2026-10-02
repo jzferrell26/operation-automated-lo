@@ -2,7 +2,7 @@
 
 import type { AdsLibraryCallToAction, AdsLibraryTopic } from "@oalo/contracts";
 import { adPlaceLabel } from "@oalo/contracts";
-import { Badge, Card, Link } from "@oalo/ui";
+import { Badge, Card, Icon, Link } from "@oalo/ui";
 import { useState } from "react";
 
 import {
@@ -23,6 +23,8 @@ import {
   LAUNCH_STEP_TITLES,
   MAKE_A_NEW_VERSION,
   REVIEW_LEAD,
+  RULE_NEEDS_CHANGES,
+  RULE_PASSED,
   SEE_WHAT_WE_CHECKED,
   SHAPE_LABEL,
   SHAPE_SQUARE,
@@ -133,6 +135,16 @@ export function launchReviewState(
   return review.canApprove ? "ready" : "cannot-approve";
 }
 
+/**
+ * W-26. A check that found something comes first, so a person scanning "See what we checked" for the
+ * problem meets it at the top; each group keeps the order the ruleset runs its checks in.
+ */
+function failedFirst(
+  rules: LaunchReviewData["checks"]["rules"],
+): LaunchReviewData["checks"]["rules"] {
+  return [...rules.filter((rule) => !rule.passed), ...rules.filter((rule) => rule.passed)];
+}
+
 function placeLabels(places: LaunchReviewData["places"]): readonly string[] {
   return [
     ...places.cities.map((value) => adPlaceLabel({ kind: "city", value })),
@@ -204,9 +216,17 @@ export function LaunchReview({
             </p>
             <details className={styles.checked}>
               <summary>{SEE_WHAT_WE_CHECKED}</summary>
-              <ul>
-                {review.checks.rules.map((rule) => (
+              <ul className={styles.ruleList}>
+                {failedFirst(review.checks.rules).map((rule) => (
                   <li data-rule-passed={rule.passed} key={rule.code}>
+                    {rule.passed ? (
+                      <>
+                        <Icon decorative name="check" size="sm" tone="success" />
+                        <span className="oalo-visually-hidden">{RULE_PASSED}: </span>
+                      </>
+                    ) : (
+                      <strong className={styles.ruleNeedsChanges}>{RULE_NEEDS_CHANGES}:</strong>
+                    )}{" "}
                     {rule.name}
                   </li>
                 ))}

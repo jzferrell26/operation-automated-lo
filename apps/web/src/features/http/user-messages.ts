@@ -90,7 +90,7 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
   /** PRD-009d 009D-AC-011: the chosen ad was retired, replaced by a newer version, or is unknown. */
   LIBRARY_AD_NOT_AVAILABLE: {
     what: "This ad isn't in the library any more, or a newer version replaced it.",
-    whatToDo: "Go back to Choose an ad and pick it again. Your words and budget are kept.",
+    whatToDo: "Choose another ad. Check the words, budget and area before you save.",
   },
   /**
    * PRD-009c 009C-AC-008, and the writing review W-1. The approve route refuses a version whose
@@ -115,7 +115,8 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
   },
   CAMPAIGN_PREFLIGHT_FAILED: {
     what: "We couldn't finish the checks on this campaign.",
-    whatToDo: "Try again. If it keeps happening, contact support with the reference below.",
+    whatToDo:
+      "Try again. If it keeps happening, contact support and give them the support reference below.",
   },
   CAMPAIGN_APPROVAL_CONFLICT: {
     what: "This campaign changed since you opened it.",
@@ -229,6 +230,23 @@ export function userMessageForCode(code: string | undefined): UserMessage {
 /** Whether a code has its own sentences, so a caller can decide to show the support reference. */
 export function isMappedErrorCode(code: string | undefined): boolean {
   return code !== undefined && Object.hasOwn(USER_MESSAGES_BY_CODE, code);
+}
+
+/** The words a sentence uses to point at the support reference drawn under it. */
+const POINTS_AT_REFERENCE = /reference below/u;
+
+/**
+ * Whether the support reference is drawn under this code's sentence (writing review pass 2, W-27).
+ *
+ * The rule, written once: a reference shows for a code with no sentence of its own, because support
+ * cannot find a request nobody can name (contract section 7), and for a mapped code whose own
+ * sentence points at it ("the support reference below"), because a sentence that says "below" must
+ * have something below it. `SupportReference` reads this, and a unit test asserts that every
+ * sentence in the table that says "reference below" belongs to a code this returns true for.
+ */
+export function showsSupportReference(code: string | undefined): boolean {
+  if (!isMappedErrorCode(code)) return true;
+  return POINTS_AT_REFERENCE.test(userMessageSentence(code));
 }
 
 /** One line for a status region: what happened, then what to do. */

@@ -34,6 +34,11 @@ export const CHOOSE_LEAD =
 export const TOPIC_CHIPS_LABEL = "Show ads about";
 export const ALL_TOPICS = "All";
 export const USE_THIS_AD = "Use this ad";
+/**
+ * Writing review pass 2 (MTK-008, W-30). Said above the chips when the address names an ad the
+ * library no longer holds, which used to land on step 1 without a word.
+ */
+export const AD_NOT_IN_LIBRARY_NOTICE = "That ad isn't in the library any more. Choose another ad.";
 export const CANCEL = "Cancel";
 export const SAMPLE_AD_LABEL = "Sample ad";
 /** 009C-AC-012: the library with no active ad, said once, with what happens next. */
@@ -114,6 +119,14 @@ export function checksCount(passed: number, run: number): string {
   return `${String(passed)} of ${String(run)} checks passed.`;
 }
 export const SEE_WHAT_WE_CHECKED = "See what we checked";
+/**
+ * Writing review pass 2 (MTK-008, W-26). The state of each check, said in words beside its name, so
+ * a failed check is never worded as an achievement ("Ends after today") and the state never rests on
+ * colour or an icon alone. A passed check carries its word visually hidden, because its icon says it
+ * to a sighted person; a failed check carries it in visible text.
+ */
+export const RULE_PASSED = "Passed";
+export const RULE_NEEDS_CHANGES = "Needs changes";
 export const FACTS_TITLE = "The ad, budget and area";
 export const CHANGE = "Change";
 export const FACT_LABELS = Object.freeze({

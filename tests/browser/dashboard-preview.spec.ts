@@ -27,19 +27,21 @@ async function open(page: Page, path: string) {
   expect(response?.status(), path).toBe(200);
   await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
 }
-async function createCampaign(page: Page, headline: string) {
-  await open(page, "/marketing/campaigns/new");
-  await page.getByRole("button", { name: "Use example property" }).click();
-  await page.getByLabel("Headline", { exact: true }).fill(headline);
-  const response = page.waitForResponse(
-    (response) =>
-      response.url().endsWith("/api/preview/campaigns/check") &&
-      response.request().method() === "POST",
-  );
-  await page.getByRole("button", { name: "Save & review campaign" }).click();
-  expect((await response).status()).toBe(200);
-  await page.getByRole("link", { name: "Open campaign", exact: true }).click();
-  await expect(page.getByRole("heading", { name: headline, exact: true })).toBeVisible();
+/**
+ * PRD-009d D1 and 009c D3. "Launch an ad" in the preview: the preview has no session and its
+ * library is the real one, which is empty, so step 1 says so in one sentence and nothing on the
+ * page can be saved or checked. The preview's own check route is gone.
+ */
+const EMPTY_LIBRARY =
+  "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then.";
+
+async function expectTheEmptyLibrary(page: Page, path: string) {
+  await open(page, path);
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1, name: "Choose an ad" })).toBeVisible();
+  await expect(main.getByText(EMPTY_LIBRARY, { exact: true })).toBeVisible();
+  await expect(main.getByRole("button", { name: "Use this ad" })).toHaveCount(0);
+  await expect(main.getByRole("button", { name: "Save and check" })).toHaveCount(0);
 }
 
 async function chooseOption(page: Page, label: string, option: string) {
@@ -75,33 +77,29 @@ test("all dashboard routes, assets, and entry links work", async ({ page, reques
   expect(errors).toEqual([]);
 });
 
-test("campaign checks, test approval, reload, and browser isolation", async ({ page, browser }) => {
-  await createCampaign(page, "Dashboard QA open house");
-  await expect(page.getByRole("button", { name: "Publish campaign", exact: true })).toBeDisabled();
-  await page.getByRole("button", { name: "Approve campaign", exact: true }).click();
-  await page.getByRole("button", { name: "Confirm approval", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Approval recorded" })).toBeDisabled();
-  const campaignURL = page.url();
-  await page.reload();
-  await expect(page.getByRole("button", { name: "Approval recorded" })).toBeVisible();
-  await open(page, "/marketing/campaigns");
-  await page.getByLabel("Search campaigns").fill("Dashboard QA");
-  await expect(page.getByRole("cell", { name: /^Dashboard QA open house/u })).toBeVisible();
-  const other = await browser.newContext();
-  try {
-    const isolated = await other.newPage();
-    await isolated.goto(campaignURL);
-    await expect(
-      isolated.getByRole("heading", { name: "We couldn't find this campaign." }),
-    ).toBeVisible();
-  } finally {
-    await other.close();
+test("Launch an ad in the preview shows the empty library, whatever the address asks for, and sends nothing", async ({
+  page,
+}) => {
+  const requests: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.startsWith("/api/")) requests.push(request.url());
+  });
+  for (const path of [
+    "/marketing/campaigns/new",
+    "/marketing/campaigns/new?step=2&ad=sample-first-home",
+    "/marketing/campaigns/new?step=3&campaign=campaign_0123456789abcdef",
+  ]) {
+    await expectTheEmptyLibrary(page, path);
   }
-  await createCampaign(page, "Guaranteed approval");
-  await expect(page.getByRole("button", { name: "Approve campaign", exact: true })).toBeDisabled();
-  await expect(
-    page.getByRole("heading", { name: "A few details need your attention." }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Launch on Facebook" })).toHaveCount(0);
+  expect(requests).toEqual([]);
+  // The preview's own check route is gone, not merely unused: the address answers with the
+  // not-found page, which Next may stream with a 200 once headers flush, rather than a handler's JSON.
+  const removed = await page.request.get("/api/preview/campaigns/check");
+  expect(removed.headers()["content-type"] ?? "").toContain("text/html");
+  expect(await removed.text()).toContain("404");
+  await open(page, "/brand");
+  await expect(page.getByLabel("Company name")).toHaveValue("Prairie Home Lending");
 });
 
 test("partners, brand, routing, and reset persist accurately", async ({ page }) => {
@@ -142,15 +140,10 @@ test("storage failure never displays a saved result", async ({ page }) => {
       throw new DOMException("Storage disabled", "QuotaExceededError");
     };
   });
-  await open(page, "/marketing/campaigns/new");
-  await page.getByRole("button", { name: "Use example property" }).click();
-  await page.getByRole("button", { name: "Save & review campaign" }).click();
-  await expect(
-    page.getByText(
-      "This draft was not saved. Check browser storage or reset the preview in Settings, then try again.",
-      { exact: true },
-    ),
-  ).toBeVisible();
+  // PRD-009d: "Launch an ad" keeps nothing in browser storage, so a storage failure changes nothing
+  // there, and the page claims no saved result.
+  await expectTheEmptyLibrary(page, "/marketing/campaigns/new");
+  await expect(page.getByRole("main")).not.toContainText(/saved/iu);
   await expect(page.getByRole("link", { name: "Open campaign", exact: true })).toHaveCount(0);
 });
 

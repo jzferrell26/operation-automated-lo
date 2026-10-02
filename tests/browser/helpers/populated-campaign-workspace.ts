@@ -2,11 +2,12 @@ import { expect, type Page } from "@playwright/test";
 
 import { withAnEmptyCampaignWorkspace } from "./empty-campaign-workspace.js";
 import {
-  FINISHED_OPEN_HOUSE,
-  READY_OPEN_HOUSE,
-  fillTheOpenHouseDraft,
-  type OpenHouseWindow,
-} from "./open-house-draft.js";
+  RATE_CLAIM_HEADLINE,
+  SAMPLE_ADS,
+  saveACampaign,
+  verdictOnStepThree,
+  type SampleAd,
+} from "./launch-an-ad.js";
 
 /**
  * PRD-008d 008D-AC-010, the sign-off's "Campaigns list, populated" row. The synthetic workspace
@@ -19,48 +20,47 @@ import {
  * behind, which is the problem `empty-campaign-workspace.ts` exists to remove.
  *
  * So the populated workspace is the empty one plus the product's own saves. It starts from the
- * empty fixture, saves each campaign below through the create screen with the controls a person
- * uses, so every record is one the server made and checked rather than a file written by hand, and
- * puts the original store back afterwards through the same fixture. Saves are sequential and the
- * store keeps campaigns in the order they were saved, so the list's order is the order here.
+ * empty fixture, saves each campaign below through "Launch an ad" with the controls a person uses,
+ * so every record is one the server made and checked rather than a file written by hand, and puts
+ * the original store back afterwards through the same fixture. Saves are sequential and the store
+ * keeps campaigns in the order they were saved, so the list's order is the order here.
  *
  * Two campaigns, because a list of one does not show what a list is for, and the two the product's
- * checks can tell apart: one ready for approval and one that needs changes. Each has its own
- * headline and address, as two campaigns a person wrote would, so the two cards differ by what a
- * person reads first and not only by the badge. Left alone, both would carry the create screen's
- * one starter headline.
+ * checks can tell apart: one ready for approval and one that needs changes. PRD-009d: each is a
+ * library ad with its own headline, so the two cards differ by what a person reads first and not
+ * only by the badge. The second claims a rate, which the checks send back.
  */
 
 export type PopulatedCampaign = Readonly<{
+  ad: SampleAd;
   headline: string;
-  address: string;
-  openHouse: OpenHouseWindow;
-  /** The create screen's verdict once the checks have run, which is also the list's badge. */
+  place: string;
+  /** The verdict on step 3 once the checks have run. */
+  checks: "Checks passed" | "Needs changes";
+  /** The list's badge for the same campaign. */
   verdict: "Ready for approval" | "Needs changes";
 }>;
 
 export const POPULATED_CAMPAIGNS: readonly PopulatedCampaign[] = Object.freeze([
   Object.freeze({
-    headline: "Open house on Cedar Street this Saturday",
-    address: "48 Cedar Street, Austin",
-    openHouse: READY_OPEN_HOUSE,
+    ad: SAMPLE_ADS.firstHome,
+    headline: "Your first home starts with a plan",
+    place: "Austin, TX",
+    checks: "Checks passed",
     verdict: "Ready for approval",
   }),
   Object.freeze({
-    headline: "Tour the Birch Lane home",
-    address: "12 Birch Lane, Austin",
-    openHouse: FINISHED_OPEN_HOUSE,
+    ad: SAMPLE_ADS.preApproval,
+    headline: RATE_CLAIM_HEADLINE,
+    place: "Austin, TX",
+    checks: "Needs changes",
     verdict: "Needs changes",
   }),
 ]);
 
-async function saveThroughTheCreateScreen(page: Page, campaign: PopulatedCampaign): Promise<void> {
-  await page.goto("/marketing/campaigns/new");
-  await fillTheOpenHouseDraft(page, campaign.openHouse);
-  await page.getByLabel("Property address").fill(campaign.address);
-  await page.getByLabel("Headline", { exact: true }).fill(campaign.headline);
-  await page.getByRole("button", { name: "Save and run the checks" }).click();
-  await expect(page.getByRole("heading", { name: campaign.verdict })).toBeVisible();
+async function saveThroughLaunchAnAd(page: Page, campaign: PopulatedCampaign): Promise<void> {
+  await saveACampaign(page, campaign);
+  await expect(verdictOnStepThree(page)).toContainText(campaign.checks);
 }
 
 /** Runs `work` against a synthetic workspace holding exactly `POPULATED_CAMPAIGNS`. */
@@ -70,7 +70,7 @@ export async function withAPopulatedCampaignWorkspace(
 ): Promise<void> {
   await withAnEmptyCampaignWorkspace(async () => {
     for (const campaign of POPULATED_CAMPAIGNS) {
-      await saveThroughTheCreateScreen(page, campaign);
+      await saveThroughLaunchAnAd(page, campaign);
     }
     await work();
   });

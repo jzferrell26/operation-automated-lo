@@ -45,12 +45,12 @@ step, or the completed count when no step is current.
 | Part | Rule |
 | --- | --- |
 | Root | `<nav>` with `aria-label`, `display: grid`, `gap: var(--space-3)`. |
-| Position label | `Step n of m` in `var(--font-data)` at `--text-secondary-size` and `--weight-medium`, because it is a count. |
+| Position label | `Step n of m` in `var(--font-interface)` with tabular numerals at `--text-secondary-size` and `--weight-medium`, because it is a count. _(Amended on 2026-10-01 by PRD-009 (OD-E, 009A-AC-007): was `var(--font-data)`; a count uses Inter with tabular figures.)_ |
 | Current title | `--text-secondary-size` in `--tx-body`, truncated with an ellipsis, hidden at 768px and below where the step list carries it. |
 | Track | `block-size: var(--space-1)`, `background: var(--bd-input)`, `border-radius: var(--radius-pill)`, `overflow: hidden`. |
 | Fill | `--ac-primary`, width set from `percentComplete`, transitioned over `--motion-base` with `--ease-standard`, 0ms under reduced motion. |
 | Step row | `grid-template-columns: var(--space-6) minmax(0, 1fr)`, `gap: var(--space-3)`. |
-| Marker | `var(--space-6)` square, `--radius-pill`, `var(--font-data)` at `--text-caption-size` and `--weight-bold`. Carries the ordinal, or the `check` glyph when the step is complete. `aria-hidden`, because the state is already in the badge. |
+| Marker | `var(--space-6)` square, `--radius-pill`, `var(--font-interface)` with tabular numerals at `--text-caption-size` and `--weight-bold`. Carries the ordinal, or the `check` glyph when the step is complete. `aria-hidden`, because the state is already in the badge. _(Amended on 2026-10-01 by PRD-009 (OD-E, 009A-AC-007): was `var(--font-data)`; the ordinal uses Inter with tabular figures.)_ |
 | Step title | `--text-body-size` at `--weight-medium`, `--tx-body`, moving to `--tx-strong` for the current and complete steps so the eye lands on where the user is. |
 | Step description | `--text-caption-size` in `--tx-faint`. |
 

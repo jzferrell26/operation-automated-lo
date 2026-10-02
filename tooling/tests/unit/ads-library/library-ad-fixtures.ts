@@ -169,5 +169,13 @@ export function libraryAdRulesFor(evaluatedAt = "2026-10-01T16:00:00.000Z"): Pre
     maximumDailyBudgetMinor: 100_000,
     maximumTotalBudgetMinor: 500_000,
     warnings: [],
+    // PRD-009d D5: the library-ad ruleset checks with the ad's word limits, the person's saved
+    // partners, and whether the ad was retired before the check ran.
+    libraryAd: {
+      headlineMaxLength: 60,
+      primaryTextMaxLength: 300,
+      partnerNames: [],
+      retiredOn: null,
+    },
   };
 }

@@ -456,7 +456,7 @@ export const CampaignVersionInputSchema = CampaignVersionSchema.omit({
 });
 export type CampaignVersionInput = z.infer<typeof CampaignVersionInputSchema>;
 
-export const PreflightRulesSchema = z
+const SharedPreflightRulesSchema = z
   .object({
     schemaVersion: z.literal(1),
     rulesetVersionRef: OpaqueReferenceSchema,
@@ -485,6 +485,29 @@ export const PreflightRulesSchema = z
       .max(50),
   })
   .strict();
+
+/**
+ * PRD-009d D5. What the library-ad ruleset needs to know about one check beyond the shared values:
+ * the ad's own word limits (`WORDS_TOO_LONG`), the person's saved Realtor partners' names and
+ * companies (`WORDS_CO_BRAND`), and whether the ad was retired before the check ran
+ * (`LIBRARY_AD_RETIRED`). It is present exactly when the rules are the library-ad ruleset's, which
+ * is why the rules are a union rather than one object with an optional block: an open house check
+ * cannot carry it, and the domain refuses to check a library ad without it.
+ */
+export const LibraryAdRuleContextSchema = z
+  .object({
+    headlineMaxLength: z.number().int().min(1).max(60),
+    primaryTextMaxLength: z.number().int().min(1).max(300),
+    partnerNames: z.array(z.string().trim().min(1).max(160)).max(50),
+    retiredOn: z.iso.date().nullable(),
+  })
+  .strict();
+export type LibraryAdRuleContext = z.infer<typeof LibraryAdRuleContextSchema>;
+
+export const PreflightRulesSchema = z.union([
+  SharedPreflightRulesSchema,
+  SharedPreflightRulesSchema.extend({ libraryAd: LibraryAdRuleContextSchema }).strict(),
+]);
 export type PreflightRules = z.infer<typeof PreflightRulesSchema>;
 
 export const PreflightFindingSchema = z

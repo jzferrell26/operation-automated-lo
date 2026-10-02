@@ -18,6 +18,7 @@ import {
   LIBRARY_AD_MINIMUM_IMAGE,
   LIBRARY_AD_RULESET_VERSION_REF,
   libraryAdPreflightRules,
+  libraryAdRuleContext,
 } from "../../../../apps/web/src/features/ads-library/server/library-ad-ruleset.js";
 
 import { LIBRARY_AD_INPUT_VERSIONS, libraryAdVersion } from "./library-ad-fixtures.js";
@@ -172,7 +173,10 @@ describe("the library-ad manifest builder (009C-AC-006)", () => {
 describe("the library-ad ruleset (D6)", () => {
   it("sets its own image minimum to the library's smallest art, 1080 by 842", () => {
     expect(LIBRARY_AD_MINIMUM_IMAGE).toEqual({ width: 1_080, height: 842 });
-    const rules = libraryAdPreflightRules(new Date("2026-10-01T16:00:00.000Z"));
+    const rules = libraryAdPreflightRules(
+      new Date("2026-10-01T16:00:00.000Z"),
+      libraryAdRuleContext(entry("sample-first-home", 2), []),
+    );
     expect(rules.rulesetVersionRef).toBe(LIBRARY_AD_RULESET_VERSION_REF);
     expect(LIBRARY_AD_INPUT_VERSIONS.rulesetVersionRef).toBe(LIBRARY_AD_RULESET_VERSION_REF);
     expect(rules.minimumImageWidth).toBe(1_080);
@@ -183,7 +187,10 @@ describe("the library-ad ruleset (D6)", () => {
 
   it("passes the library's own art, which the open house minimum of 1200 by 630 refuses", async () => {
     const manifest = buildLibraryAdManifest(input());
-    const rules = libraryAdPreflightRules(new Date("2026-10-01T16:00:00.000Z"));
+    const rules = libraryAdPreflightRules(
+      new Date("2026-10-01T16:00:00.000Z"),
+      libraryAdRuleContext(entry("sample-first-home", 2), []),
+    );
     expect(evaluateCampaignPreflight(manifest, rules).map((item) => item.ruleCode)).toEqual([]);
     expect(
       evaluateCampaignPreflight(manifest, {

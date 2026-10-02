@@ -7,7 +7,6 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   ADS_LIBRARY_SAMPLES_FLAG,
-  AdsLibraryArtRefusedError,
   defaultAdsLibraryRoots,
   loadAdsLibrary,
   readContainedArt,
@@ -151,6 +150,36 @@ describe("the ads library loader", () => {
     });
   });
 
+  /**
+   * The containment check, proven on every platform. A derived name cannot climb out of the root by
+   * itself, so the only way out is a link inside the root. A directory junction needs no special
+   * permission on Windows (where the file-link test above is skipped) and is an ordinary directory
+   * link on Linux, so this test runs on every machine and turns red if the containment check is
+   * removed: the bytes it would read are the right ones, with the right digest, only outside.
+   */
+  it("refuses a derived name whose directory is a link out of the root, on every platform", async () => {
+    const roots = await copiedSamples();
+    const outside = join(roots.directory, "outside-v1");
+    const linked = join(roots.sampleArtRoot, "sample-stronger-offer/v1");
+    await cp(linked, outside, { recursive: true });
+    await rm(linked, { recursive: true, force: true });
+    await symlink(outside, linked, "junction");
+    const bytes = await readFile(join(outside, "tall.png"));
+    const digest = createHash("sha256").update(bytes).digest("hex");
+
+    await expect(
+      readContainedArt(roots.sampleArtRoot, "sample-stronger-offer/v1/tall.png", digest),
+    ).rejects.toMatchObject({ name: "AdsLibraryArtRefusedError", reason: "art-outside-root" });
+
+    const library = await loadAdsLibrary({ environment: SAMPLES_ON, roots });
+    expect(library.find("sample-stronger-offer", 1)).toBeUndefined();
+    expect(library.refused).toContainEqual({
+      id: "sample-stronger-offer",
+      version: 1,
+      reason: "art-outside-root",
+    });
+  });
+
   it("reads only a derived name, contained in the root, with the expected digest", async () => {
     const roots = defaultAdsLibraryRoots(repositoryRoot);
     const name = "sample-first-home/v2/tall.png";
@@ -160,6 +189,13 @@ describe("the ads library loader", () => {
     expect(art.contentType).toBe("image/png");
     expect(Buffer.from(art.bytes).equals(bytes)).toBe(true);
 
+    /*
+     * Each name is refused by the name guard itself, before the file system is touched: the reason
+     * says so. Asserting only the error class let a loader with no name guard pass, because the
+     * containment check (or a missing file) then refused the same names for another reason. The
+     * first two resolve to a real file outside the art root, so without the guard they are read
+     * through the containment check and refused there as "art-outside-root".
+     */
     for (const name of [
       "../sample-catalog.json",
       "..\\sample-catalog.json",
@@ -171,11 +207,15 @@ describe("the ads library loader", () => {
       "sample-first-home/v2/tall.svg",
       "sample-first-home/v2/tall.png\u0000.svg",
       "",
+      "sample-first-home/v2/../v2/tall.png",
+      "./sample-first-home/v2/tall.png",
+      "sample-first-home//v2/tall.png",
+      "sample-first-home/v02/tall.png",
+      "Sample-first-home/v2/tall.png",
     ]) {
-      await expect(
-        readContainedArt(roots.sampleArtRoot, name, digest),
-        name,
-      ).rejects.toBeInstanceOf(AdsLibraryArtRefusedError);
+      await expect(readContainedArt(roots.sampleArtRoot, name, digest), name).rejects.toMatchObject(
+        { name: "AdsLibraryArtRefusedError", reason: "art-name-not-derived" },
+      );
     }
     await expect(readContainedArt(roots.sampleArtRoot, name, "0".repeat(64))).rejects.toMatchObject(
       {

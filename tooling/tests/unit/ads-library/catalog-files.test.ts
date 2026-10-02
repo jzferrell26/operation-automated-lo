@@ -14,6 +14,7 @@ import {
   type AdsLibraryCatalogKind,
   type AdsLibraryEntry,
 } from "@oalo/contracts";
+import { evaluateLibraryAdWords } from "@oalo/domain";
 
 import {
   lockProblems,
@@ -78,23 +79,25 @@ async function filesUnder(directory: string): Promise<string[]> {
 }
 
 /**
- * The word checks of 009d D5 that a curated default must already pass. 009d builds the domain's
- * detector in Wave 2 and replaces this conservative stand-in with it (009C-AC-002's last clause):
- * no digit, percent sign, or dollar sign; no angle bracket; no rate, payment, or term claim; and no
- * co-brand term, web address, at sign, or phone number.
+ * 009C-AC-002's last clause: a curated default passes the word checks of 009d D5. These are the
+ * domain's own checks (`packages/domain/src/library-ad-words.ts`), the same ones a person's edited
+ * words meet at "Save and check", so an ad cannot ship words its own campaigns would be sent back
+ * for. The default sits in the headline or ad text slot it fills, and every Brand slot holds the
+ * repository's clean sample identity, so a finding can only come from the default itself.
  */
-const INTERIM_BLOCKED_WORDS: readonly RegExp[] = [
-  /\d/u,
-  /[%$<>@]/u,
-  /\b(?:apr|rates?|interest|points|fixed|arm|years?|months?|monthly|lowest|guarantee[ds]?|approved\s+today)\b/iu,
-  /\b(?:realtor|brokerage|real\s+estate\s+agent|listed\s+by|listing\s+agent|in\s+partnership\s+with|presented\s+by|courtesy\s+of|sponsored\s+by)\b/iu,
-  /\bbroker\b/iu,
-  /\b[a-z0-9-]+\.(?:com|org|net|io|us)\b/iu,
-  /[\p{Cc}\p{Cf}]/u,
-];
+const CLEAN_BRAND = Object.freeze({
+  name: "Alex Morgan",
+  title: "Loan officer",
+  company: "Prairie Home Lending",
+  disclosureLine: "Equal Housing Opportunity.",
+  leadFormWording:
+    "By submitting, you agree to be contacted about home financing and related mortgage services.",
+});
 
-function interimWordFindings(text: string): string[] {
-  return INTERIM_BLOCKED_WORDS.filter((pattern) => pattern.test(text)).map(String);
+function wordFindings(headline: string, primaryText = "Send me a message."): string[] {
+  return evaluateLibraryAdWords({ ...CLEAN_BRAND, headline, primaryText }, []).map(
+    (finding) => `${finding.ruleCode}: ${finding.remediation}`,
+  );
 }
 
 describe("ads library catalogs and their files (009C-AC-002)", () => {
@@ -148,9 +151,13 @@ describe("ads library catalogs and their files (009C-AC-002)", () => {
 
       it("has default words that pass the word checks", async () => {
         for (const entry of await entriesOf(kind)) {
-          for (const text of [entry.defaults.headline, entry.defaults.primaryText, entry.name]) {
-            expect(interimWordFindings(text), `${entry.id}: ${text}`).toEqual([]);
-          }
+          const label = `${entry.id} v${String(entry.version)}`;
+          expect(
+            wordFindings(entry.defaults.headline, entry.defaults.primaryText),
+            `${label}: ${entry.defaults.headline} / ${entry.defaults.primaryText}`,
+          ).toEqual([]);
+          // The name is the card's title and the campaign's name, so it is held to the same words.
+          expect(wordFindings(entry.name), `${label}: ${entry.name}`).toEqual([]);
         }
       });
 
@@ -178,6 +185,20 @@ describe("ads library catalogs and their files (009C-AC-002)", () => {
       });
     });
   }
+
+  it("checks the defaults with 009d's own detector, which reads what a stand-in would miss", () => {
+    for (const text of [
+      "Send me your SSN",
+      "Have your date of birth ready",
+      "Ask about our r a t e s",
+      "Down payment of a few thousand",
+      "Mortgage brokers association member",
+      "Ten percent down",
+    ]) {
+      expect(wordFindings(text), text).not.toEqual([]);
+    }
+    expect(wordFindings("Down payment help may be closer than you think.")).toEqual([]);
+  });
 
   it("keeps the two catalogs' ids apart, so an id names one kind of ad", async () => {
     const real = new Set((await entriesOf("real")).map((entry) => entry.id));

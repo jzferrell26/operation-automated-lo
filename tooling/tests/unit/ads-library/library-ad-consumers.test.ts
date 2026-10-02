@@ -49,7 +49,8 @@ describe("manifest consumers narrow on blueprintId", () => {
       minimumImageWidth: 1_200,
       minimumImageHeight: 630,
     }).map((finding) => finding.ruleCode);
-    expect(codes).toEqual(["DISCLOSURE_REQUIRED", "IMAGE_QUALITY_LOW"]);
+    // PRD-009d D5: an empty disclosure line also has no Equal Housing statement.
+    expect(codes).toEqual(["DISCLOSURE_REQUIRED", "IMAGE_QUALITY_LOW", "EQUAL_HOUSING_REQUIRED"]);
     for (const openHouseOnly of [
       "OPEN_HOUSE_DATES_INVALID",
       "PARTNER_PERMISSION_REQUIRED",

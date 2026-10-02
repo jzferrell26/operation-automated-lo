@@ -18,6 +18,7 @@ import {
 import {
   LIBRARY_AD_RULESET_VERSION_REF,
   libraryAdPreflightRules,
+  libraryAdRuleContext,
 } from "../features/ads-library/server/library-ad-ruleset.js";
 import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
 
@@ -123,7 +124,15 @@ export async function saveLibraryAdDraft(
     },
     adapter.versionRepository,
   );
-  const preflight = runCampaignPreflight(version, libraryAdPreflightRules(createdAt));
+  // The draft stands for a version saved while its ad was still current, so its check runs as it
+  // did then: an ad retired since is the approval command's refusal to prove, not the check's.
+  const preflight = runCampaignPreflight(
+    version,
+    libraryAdPreflightRules(createdAt, {
+      ...libraryAdRuleContext(request.entry, []),
+      retiredOn: null,
+    }),
+  );
   const record = await adapter.persistDraft(version, preflight);
   return Object.freeze({ version, preflight, rowVersion: record.rowVersion });
 }

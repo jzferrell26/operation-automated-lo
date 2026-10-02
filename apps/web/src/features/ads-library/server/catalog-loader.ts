@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile, realpath, stat } from "node:fs/promises";
@@ -27,7 +29,10 @@ import { contentTypeForArt, inspectAdsLibraryArt } from "./art-file.js";
  * the build's file tracer to ignore, so a deployment's output holds neither its entries nor its art.
  *
  * Nothing here is reachable from a client component (009C-AC-013): it reads the file system, and
- * the entries it returns carry `compliance` and `approval`, which no browser needs.
+ * the entries it returns carry `compliance` and `approval`, which no browser needs. The `server-only`
+ * import makes that a build error rather than a convention: Next aliases it to an empty module for
+ * the server and to one that throws for the browser, with no package installed, and the Vitest
+ * config aliases it to an empty module (`apps/web/src/testing/server-only.ts`).
  */
 
 /** The one switch for the samples. It is set by local runs and tests, and never by a deployment. */

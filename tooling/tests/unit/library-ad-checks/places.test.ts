@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  AD_PLACE_AUDIENCE_WORDS,
   AD_PLACE_LIMITS,
   AdPlacesInputSchema,
   US_STATES,
   adPlaceLabel,
   parseAdPlace,
 } from "@oalo/contracts";
-import { US_STATE_CODES, libraryAdPlacesProblem } from "@oalo/domain";
+import {
+  LIBRARY_AD_PLACE_AUDIENCE_WORDS,
+  US_STATE_CODES,
+  libraryAdPlacesProblem,
+} from "@oalo/domain";
 
 /**
  * PRD-009d D4 and 009D-AC-008. Places, not people: each value is a state (stored as its code) or a
@@ -34,6 +39,19 @@ const REFUSED: readonly string[] = [
   "",
   "   ",
   "A, TX",
+  // The independent verifier's bypasses of 2026-10-02: audience words and distance tokens.
+  "Seniors, TX",
+  "Single Moms, TX",
+  "Austin mi, TX",
+  "Austin km, TX",
+  "Retirees, FL",
+  "Young Families, TX",
+  "Veterans, TX",
+  "Married Couples, TX",
+  "Teens, TX",
+  "Low Income, TX",
+  "Hispanic, TX",
+  "Austin kilometers, TX",
 ];
 
 const ACCEPTED: readonly Readonly<[typed: string, stored: string]>[] = [
@@ -50,6 +68,11 @@ const ACCEPTED: readonly Readonly<[typed: string, stored: string]>[] = [
   ["St. Louis, MO", "St. Louis, MO"],
   ["Coeur d'Alene, ID", "Coeur d'Alene, ID"],
   ["Winston-Salem, NC", "Winston-Salem, NC"],
+  // Real towns whose names hold words a looser vocabulary would refuse.
+  ["Old Saybrook, CT", "Old Saybrook, CT"],
+  ["Young Harris, GA", "Young Harris, GA"],
+  ["Man, WV", "Man, WV"],
+  ["White Plains, NY", "White Plains, NY"],
 ];
 
 describe("the place rules (009D-AC-008)", () => {
@@ -110,6 +133,13 @@ describe("the place rules (009D-AC-008)", () => {
     expect(adPlaceLabel({ kind: "state", value: "TX" })).toBe("Texas");
   });
 
+  it("holds one audience vocabulary in the contract and the domain", () => {
+    expect([...AD_PLACE_AUDIENCE_WORDS]).toEqual([...LIBRARY_AD_PLACE_AUDIENCE_WORDS]);
+    expect(AD_PLACE_AUDIENCE_WORDS).toEqual(
+      expect.arrayContaining(["mi", "km", "seniors", "moms", "single"]),
+    );
+  });
+
   it("agrees with the domain's stored-value rule on every value", () => {
     for (const [typed] of ACCEPTED) {
       const place = parseAdPlace(typed);
@@ -121,7 +151,16 @@ describe("the place rules (009D-AC-008)", () => {
           : { states: [], cities: [place.value] };
       expect(libraryAdPlacesProblem(stored), typed).toBeUndefined();
     }
-    for (const value of ["ZZ", "Austin, ZZ", "Women, TX", "Mile, TX", "Austin 78701, TX"]) {
+    for (const value of [
+      "ZZ",
+      "Austin, ZZ",
+      "Women, TX",
+      "Mile, TX",
+      "Austin 78701, TX",
+      "Seniors, TX",
+      "Single Moms, TX",
+      "Austin mi, TX",
+    ]) {
       expect(libraryAdPlacesProblem({ states: [], cities: [value] }), value).toBeDefined();
     }
     expect(libraryAdPlacesProblem({ states: ["ZZ"], cities: [] })).toBeDefined();

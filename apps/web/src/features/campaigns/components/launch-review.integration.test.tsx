@@ -140,7 +140,7 @@ describe("what you approve (009D-AC-014)", () => {
       render(<LaunchReview review={reviewFixture({}, [CLAIM, second])} />);
       const items = within(openedList()).getAllByRole("listitem");
       const states = items.map((item) =>
-        /^Needs changes: /u.test(item.textContent ?? "") ? "failed" : "passed",
+        (item.textContent ?? "").startsWith("Needs changes: ") ? "failed" : "passed",
       );
       expect(states.slice(0, 2)).toEqual(["failed", "failed"]);
       expect(states.slice(2).every((state) => state === "passed")).toBe(true);
@@ -151,7 +151,7 @@ describe("what you approve (009D-AC-014)", () => {
     it("says 'Passed' on all of them, and 'Needs changes' on none, when nothing failed", () => {
       render(<LaunchReview review={reviewFixture()} />);
       const items = within(openedList()).getAllByRole("listitem");
-      expect(items.every((item) => /^Passed: /u.test(item.textContent ?? ""))).toBe(true);
+      expect(items.every((item) => (item.textContent ?? "").startsWith("Passed: "))).toBe(true);
       expect(within(openedList()).queryByText(/Needs changes/u)).toBeNull();
     });
   });

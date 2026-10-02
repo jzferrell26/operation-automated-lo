@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   APPROVER_OR_OWNER,
   CAMPAIGN_CREATOR_PARTY,
+  NEEDS_CHANGES_NEXT_ACTION,
   WORKSPACE_OWNER_PARTY,
 } from "../../../copy/user-language.js";
 import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
@@ -235,7 +236,7 @@ function needsChanges(): SafeActionDecision {
     requiredRole: APPROVER_OR_OWNER,
     prerequisite: "A version where the checks find nothing to fix",
     responsibleParty: CAMPAIGN_CREATOR_PARTY,
-    nextAction: "Fix what the checks found, then save it again.",
+    nextAction: NEEDS_CHANGES_NEXT_ACTION,
   };
 }
 

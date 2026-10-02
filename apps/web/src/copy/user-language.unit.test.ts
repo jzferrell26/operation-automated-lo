@@ -2,12 +2,18 @@ import { CampaignStateSchema } from "@oalo/contracts";
 import { describe, expect, it } from "vitest";
 
 import { findVocabularyHits } from "./forbidden-vocabulary.js";
+import * as userLanguage from "./user-language.js";
 import {
   CAMPAIGN_NEXT_ACTION_LABELS,
   CAMPAIGN_SENT_BACK_LABEL,
   CAMPAIGN_STATE_LABELS,
   CHECK_RESULT_PASSED,
+  NEEDS_CHANGES_NEXT_ACTION,
+  NOT_CONNECTED_DISCLOSURE,
+  NOT_CONNECTED_NEXT_STEP,
+  NOT_CONNECTED_SOURCE,
   ROLE_LABELS,
+  SIGNED_IN_SOURCE,
   campaignStateLabel,
 } from "./user-language.js";
 
@@ -89,6 +95,62 @@ describe("the campaign next-step phrases", () => {
       expect(findVocabularyHits(phrase), `${id} reads "${phrase}"`).toEqual([]);
       expect(phrase.trim().length).toBeGreaterThan(0);
     }
+  });
+});
+
+/**
+ * PRD-009f 009F-AC-008, and decision D-8.
+ *
+ * Ads need two accounts, HighLevel for the leads and Meta for the ads, so a sentence about them
+ * names those two and no other. Billing lives under Settings, Account, "Plan and usage", where the
+ * page says what it says; a connection sentence that names a payment provider tells a loan officer
+ * something the ads do not need. The check reads every string the module exports, nested ones
+ * included, so a new constant is held to it the moment it is added.
+ */
+function everyString(
+  value: unknown,
+  path: string,
+): readonly Readonly<{ path: string; text: string }>[] {
+  if (typeof value === "string") return [{ path, text: value }];
+  if (typeof value !== "object" || value === null) return [];
+  return Object.entries(value).flatMap(([key, inner]) => everyString(inner, `${path}.${key}`));
+}
+
+describe("the connection sentences", () => {
+  it("name HighLevel and Meta and never a payment provider", () => {
+    for (const { path, text } of everyString({ ...userLanguage }, "user-language")) {
+      expect(text, path).not.toMatch(/stripe/iu);
+    }
+    for (const sentence of [
+      NOT_CONNECTED_DISCLOSURE,
+      NOT_CONNECTED_SOURCE,
+      NOT_CONNECTED_NEXT_STEP,
+    ]) {
+      expect(sentence).toMatch(/HighLevel and Meta/u);
+    }
+  });
+
+  it("says only who is signed in on the account line", () => {
+    expect(SIGNED_IN_SOURCE).toBe("Signed in with your email.");
+  });
+
+  it("no longer carries a name for the shell-wide banner that is gone", () => {
+    expect(Object.keys(userLanguage)).not.toContain("NOT_CONNECTED_BANNER_LABEL");
+  });
+});
+
+/**
+ * PRD-008 follow-up Quality L-2, closed by 009F-AC-008. "Fix what the checks found, then save it
+ * again." was said to every reader of a version whose checks need changes, including an approver who
+ * cannot make a new version. The sentence now says who can.
+ */
+describe("what to do about a version whose checks found something", () => {
+  it("names the person who can make the new version, for every reader", () => {
+    expect(NEEDS_CHANGES_NEXT_ACTION).toBe(
+      "The campaign creator fixes what the checks found and saves it again.",
+    );
+    expect(CAMPAIGN_NEXT_ACTION_LABELS.remediate_preflight).toBe(NEEDS_CHANGES_NEXT_ACTION);
+    expect(findVocabularyHits(NEEDS_CHANGES_NEXT_ACTION)).toEqual([]);
   });
 });
 

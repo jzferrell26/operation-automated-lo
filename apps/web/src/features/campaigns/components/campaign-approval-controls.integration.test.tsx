@@ -295,7 +295,10 @@ describe("what the approval control says in each state", () => {
   const PERMISSION = "Only an approver or your workspace owner can approve a campaign.";
   const SEND_IT_ON = "Send them this page and ask them to look at this version.";
   const NEEDS_CHANGES = "This version needs changes before anyone can approve it.";
-  const FIX_IT = "Fix what the checks found, then save it again.";
+  const FIX_IT = "The campaign creator fixes what the checks found and saves it again.";
+  // PRD-008 follow-up Quality L-2 (009F-AC-008): addressed to nobody in particular, it asked an
+  // approver who cannot edit to do what they cannot.
+  const OLD_FIX_IT = "Fix what the checks found, then save it again.";
   const ALREADY_DECIDED = "Someone has already decided on this version.";
   const READ_WHO_DECIDED = "Read who decided, above. Nothing else happens from this page.";
   const READY =
@@ -313,13 +316,13 @@ describe("what the approval control says in each state", () => {
       "somebody who cannot approve a version whose checks need changes",
       { ...APPROVABLE, canApprove: false, blocking: true, state: "preflight_failed" },
       [NEEDS_CHANGES, FIX_IT],
-      [PERMISSION, SEND_IT_ON],
+      [PERMISSION, SEND_IT_ON, OLD_FIX_IT],
     ],
     [
       "an approving role on a version whose checks need changes",
       { ...APPROVABLE, canApprove: true, blocking: true, state: "preflight_failed" },
       [NEEDS_CHANGES, FIX_IT],
-      [PERMISSION, SEND_IT_ON],
+      [PERMISSION, SEND_IT_ON, OLD_FIX_IT],
     ],
     [
       "anybody on a version that was approved",

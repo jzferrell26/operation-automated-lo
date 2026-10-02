@@ -12,23 +12,25 @@ import type { ApplicationRole, CampaignState } from "@oalo/contracts";
  * The not-connected strings are shared constants rather than literals in screens on purpose: they
  * are a compliance commitment (PRD-004 RGL-002), and a commitment that lives in nine components
  * drifts. Their meaning is fixed; only their wording moved when PRD-006b landed.
+ *
+ * PRD-009f D-8 and 009F-AC-008: a sentence about the ads names the two accounts the ads need,
+ * HighLevel and Meta, and no other. Billing belongs to Settings, under Account, where "Plan and
+ * usage" says what it says; no connection sentence names a payment provider. The shell-wide banner
+ * these strings once fed is gone (PRD-009a), so its accessible name went with it.
  */
 
-/** One headline for the not-connected banner, used by the shell and by the not-connected screen. */
+/** One headline for a not-connected region, used by the shell and by the not-connected screen. */
 export const NOT_CONNECTED_HEADLINE = "Not connected yet";
 
-/** The banner body. Names all three accounts and both things that cannot happen without them. */
+/** The not-connected disclosure. Names both accounts and both things that cannot happen without them. */
 export const NOT_CONNECTED_DISCLOSURE =
-  "HighLevel, Meta, and Stripe aren't connected to this workspace yet, so nothing here is live and nothing can be published.";
-
-/** The banner's accessible name. A screen reader hears the same fact the banner shows. */
-export const NOT_CONNECTED_BANNER_LABEL = "Not connected yet: HighLevel, Meta, and Stripe";
+  "HighLevel and Meta aren't connected to this workspace yet, so nothing here is live and nothing can be published.";
 
 /** One region's state, where the region names itself and the detail states the truth. */
 export const NOT_CONNECTED_DETAIL = "Not connected yet.";
 
 /** Where a region's value would have come from. */
-export const NOT_CONNECTED_SOURCE = "HighLevel, Meta, and Stripe aren't connected.";
+export const NOT_CONNECTED_SOURCE = "HighLevel and Meta aren't connected.";
 
 /** A metric's source line: what is missing, and what connecting it would show. */
 export const NOT_LIVE_METRIC_SOURCE =
@@ -39,7 +41,7 @@ export const NOT_LIVE_YET = "Not live yet";
 
 /** What the user can do. The second sentence is the promise that nothing changes meanwhile. */
 export const NOT_CONNECTED_NEXT_STEP =
-  "Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do.";
+  "Connect HighLevel and Meta when you're ready. Nothing here changes until you do.";
 
 /** A navigation item the user cannot open until an account is connected. */
 export const NOT_CONNECTED_NAVIGATION_DETAIL = "Available once your accounts are connected.";
@@ -149,9 +151,8 @@ export const APPROVER_OR_OWNER = "An approver or the workspace owner";
 export const CAMPAIGN_CREATOR_PARTY = "The campaign creator";
 export const WORKSPACE_OWNER_PARTY = "Your workspace owner";
 
-/** The signed-in shell's account line. Two facts, neither borrowed from the other. */
-export const SIGNED_IN_SOURCE =
-  "Signed in with your email. HighLevel, Meta, and Stripe aren't connected yet.";
+/** The signed-in shell's account line. It says who is signed in and nothing about connections. */
+export const SIGNED_IN_SOURCE = "Signed in with your email.";
 
 /** The shell above the workspace name. */
 export const WORKSPACE_EYEBROW = "Your workspace";
@@ -278,6 +279,15 @@ export function campaignStateLabel(
 }
 
 /**
+ * What to do about a version whose checks found something, said the same way to everyone who reads
+ * it. PRD-008 follow-up Quality L-2: "Fix what the checks found, then save it again." was addressed
+ * to every reader, including an approver who cannot edit, so it asked people to do what they
+ * cannot. This one names the person who can, and is true for the creator reading it too.
+ */
+export const NEEDS_CHANGES_NEXT_ACTION =
+  "The campaign creator fixes what the checks found and saves it again.";
+
+/**
  * What to do next about one campaign, keyed by the step the application layer named.
  *
  * The application layer used to carry these sentences itself, which put five user-facing lines
@@ -295,6 +305,6 @@ export const CAMPAIGN_NEXT_ACTION_LABELS: Readonly<Record<CampaignNextActionId, 
     approve_version: "Approve this version.",
     already_decided: "Someone has already decided on this version.",
     wait_for_approver: "Waiting for an approver to look at this version.",
-    remediate_preflight: "Fix what the checks found, then save it again.",
+    remediate_preflight: NEEDS_CHANGES_NEXT_ACTION,
     provider_publish: CAMPAIGN_NOT_AN_AD_YET,
   });

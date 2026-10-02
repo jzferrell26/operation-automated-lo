@@ -1,6 +1,6 @@
 # User Language Contract
 
-> Category: Standard | Version: 1.1 | Date: October 2026 | Status: Approved
+> Category: Standard | Version: 1.2 | Date: October 2026 | Status: Approved
 > Source: [PRD-006b](../../../requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/prd-006b-first-party-sign-in-and-guided-experience-user-language.md) D1 through D4 and D8, extended by [PRD-008c](../../../requirements/completed/prd-008-finish-line-hardening/prd-008c-finish-line-hardening-user-language-completion.md) (`adapter`, `origin`, the administrator-instruction phrase rule, and the user-facing error classes) and recorded here under PRD-008e `008E-AC-015`
 
 Every word a user reads in Operation Automated LO is written for a mortgage loan officer who has never seen this codebase. This document is the rule. It governs product copy, page titles, the site description, accessible names, placeholders, help text, error messages, and the account emails. It does not govern code identifiers, database column names, log lines, test names, or anything else a user never sees.
@@ -70,7 +70,7 @@ Most terms are banned outright and matched case-insensitively on a word boundary
 | preflight, deterministic gate | the checks, campaign check |
 | preflight passed / blocked | Ready for approval / Needs changes |
 | finding, rule code | what to fix (with the plain explanation first) |
-| provider publication remains disabled | This campaign won't run as an ad yet. HighLevel and Meta aren't connected. |
+| provider publication remains disabled | This campaign won't run as an ad yet. HighLevel and Meta aren't connected. _(Amended on 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-28): now "This campaign won't run as an ad yet. Launching isn't turned on, and HighLevel and Meta aren't connected.", because launching stays off even with both accounts connected.)_ |
 | adapter | connection ("Your valuation connection is set up for this workspace.") |
 | origin | web address |
 | not connected (kept), no live observation | not connected yet, not live yet |
@@ -99,9 +99,9 @@ The product's not-connected states are a compliance commitment, not a style choi
 | Banner accessible name | Not connected yet: HighLevel, Meta, and Stripe _(Superseded on 2026-10-01 by PRD-009 (S-77; D-11): deleted with the banner.)_ |
 | A section's detail | Not connected yet. |
 | A section's source | HighLevel, Meta, and Stripe aren't connected. _(Amended on 2026-10-01 by PRD-009 (S-77; D-8): now "HighLevel and Meta aren't connected.")_ |
-| A metric's source | Not live yet. Connect Meta and HighLevel to see spend and leads here. |
+| A metric's source | Not live yet. Connect Meta and HighLevel to see spend and leads here. _(Amended on 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-28): now "Not live yet. Spend and leads can't show here until Meta and HighLevel are connected.", because connecting is a necessary condition and not a promise, and no PRD-009 screen can connect an account.)_ |
 | A metric's freshness | Not live yet |
-| What to do next | Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do. _(Amended on 2026-10-01 by PRD-009 (S-77; D-8): now "Connect HighLevel and Meta when you're ready. Nothing here changes until you do.")_ |
+| What to do next | Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do. _(Amended on 2026-10-01 by PRD-009 (S-77; D-8): now "Connect HighLevel and Meta when you're ready. Nothing here changes until you do.")_ _(Amended on 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-28): now "Connecting HighLevel and Meta isn't available in the app yet. Nothing here changes in the meantime.", because the Connections page has no connect control and PRD-009 makes none work, and section 2 rule 3 asks the product to name what it cannot do yet.)_ |
 | A locked navigation item | Available once your accounts are connected. |
 | A setup step with nothing to check | Nothing to check yet. This step waits for a connected account. |
 | Who does that step | You, once you connect |
@@ -142,3 +142,8 @@ No `SCREAMING_SNAKE` code ever reaches a status line. Every code a route can ret
 | `technical-writing-craft-guardian` | The reader lens. A string can pass both guards and still be written for the wrong person. A blocking finding stops the merge. |
 
 The guards are a floor, not the contract. When a guard and this document disagree, this document wins and the guard is fixed.
+
+## Changelog
+
+- **v1.2, 2026-10-02.** The PRD-009 writing review pass 2 (MTK-008, W-28) reworded section 4's row for provider publication and section 5's rows for a metric's source and the next step, so no connection sentence asks the reader to connect while no screen can. No rule was added or removed.
+- **v1.1, 2026-10-01.** PRD-009 amended sections 1, 2, 5 and the related links in place (S-76, S-77, S-98, S-99), each with a dated note.

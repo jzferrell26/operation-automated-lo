@@ -34,5 +34,15 @@ export const PAGE_TITLES = Object.freeze({
   /** A campaign's page is titled by its ad's name; this is what a tab says when the name is not known. */
   campaign: "Campaign",
   brand: "Brand",
+  /**
+   * Writing review closing check, N-1. The five pages pass 1 left out. "Connections" is the page every
+   * "See what's needed" link opens, "Realtor partners" is a menu item, and the other three are the
+   * Settings page and the two it links to. Each is the page's own name, as its heading and its link say it.
+   */
+  connections: "Connections",
+  settings: "Settings",
+  partners: "Realtor partners",
+  routing: "Where new leads go",
+  billing: "Plan and usage",
   gone: "Page gone",
 });

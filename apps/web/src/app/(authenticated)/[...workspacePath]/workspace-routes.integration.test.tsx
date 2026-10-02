@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorkspaceView } from "../../../features/workspace/model.js";
 import { workspaceData } from "../../../features/workspace/workspace.test-support.js";
 import { useReviewModeEnvironment } from "../review-mode-test-support.js";
-import WorkspaceModulePage from "./page.js";
+import WorkspaceModulePage, { generateMetadata } from "./page.js";
 
 /**
  * PRD-009f 009F-AC-003, 009F-AC-004, 009F-AC-010, and the part of 009F-AC-001 that says an
@@ -147,5 +147,32 @@ describe("009F-AC-010: Realtor partners stays a plain list with one honest line 
     const addButton = screen.getByRole("button", { name: /Add Realtor partner/u });
     expect(line.compareDocumentPosition(addButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByLabelText("Search your Realtor partners")).toBeInTheDocument();
+  });
+});
+
+/**
+ * PRD-009 writing review closing check, N-1. The four addresses this page serves were the only
+ * menu pages whose tab still read "Automated LO", so a person with three tabs open could not tell
+ * Realtor partners from Settings. Each address now names itself, and the root layout's template
+ * adds the product after it.
+ */
+describe("N-1: each address the catch-all serves names itself in the tab", () => {
+  async function titleOf(address: string) {
+    const path = address.split("/").filter(Boolean);
+    return (await generateMetadata({ params: Promise.resolve({ workspacePath: path }) })).title;
+  }
+
+  it.each([
+    ["/partners", "Realtor partners"],
+    ["/settings", "Settings"],
+    ["/settings/routing", "Where new leads go"],
+    ["/settings/billing", "Plan and usage"],
+  ] as const)("%s is titled %s", async (address, title) => {
+    expect(await titleOf(address)).toBe(title);
+  });
+
+  it("leaves an address it does not serve to the default title, as the page answers it not-found", async () => {
+    expect(await titleOf("/nothing")).toBeUndefined();
+    expect(await titleOf("/settings/not-a-page")).toBeUndefined();
   });
 });

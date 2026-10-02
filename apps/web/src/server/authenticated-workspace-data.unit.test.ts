@@ -169,7 +169,7 @@ describe("authenticated workspace data boundary", () => {
       );
       for (const capability of group.capabilities) {
         expect(capability.evidence).toBe("Nothing checked yet.");
-        expect(capability.impact).toBe("No effect until you connect.");
+        expect(capability.impact).toBe("No effect yet. Nothing is connected.");
         expect(capability.nextAction).toBe(REVIEW_NEXT_STEP_TEXT);
       }
     }

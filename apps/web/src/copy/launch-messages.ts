@@ -38,7 +38,7 @@ export const USE_THIS_AD = "Use this ad";
  * Writing review pass 2 (MTK-008, W-30). Said above the chips when the address names an ad the
  * library no longer holds, which used to land on step 1 without a word.
  */
-export const AD_NOT_IN_LIBRARY_NOTICE = "That ad isn't in the library any more. Choose another ad.";
+export const AD_NOT_IN_LIBRARY_NOTICE = "That ad isn't in the library anymore. Choose another ad.";
 export const CANCEL = "Cancel";
 export const SAMPLE_AD_LABEL = "Sample ad";
 /** 009C-AC-012: the library with no active ad, said once, with what happens next. */

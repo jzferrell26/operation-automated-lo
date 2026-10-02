@@ -29,18 +29,18 @@ export function useWorkspacePreferences(initial: WorkspacePreferences) {
       if (!response.ok) {
         const failure = z.object({ message: z.string() }).safeParse(payload);
         throw new Error(
-          failure.success ? failure.data.message : "The saved details could not be confirmed.",
+          failure.success ? failure.data.message : "The saved version could not be confirmed.",
         );
       }
       const next = envelope.parse(payload).preferences;
       setPreferences(next);
-      setMessage(command ? "Your changes are saved." : "The latest saved details are loaded.");
+      setMessage(command ? "Your changes are saved." : "The latest saved version is loaded.");
       return next;
     } catch (failure) {
       setError(
         failure instanceof Error && failure.name !== "ZodError"
           ? failure.message
-          : "The saved details could not be read. Your edits are still here.",
+          : "The saved version could not be read. Your edits are still here.",
       );
       return null;
     } finally {

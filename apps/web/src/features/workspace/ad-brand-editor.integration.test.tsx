@@ -269,3 +269,61 @@ describe("the Brand page gives every button its own name (writing review pass 2)
     expect(screen.getByLabelText(/^Brand tagline/u)).toHaveValue("Unsaved.");
   });
 });
+
+/**
+ * Closing check, N-3. Each Brand card's reload button names its own card, so the sentences around a
+ * reload cannot name a button label: "The latest saved details are loaded" appeared under a button
+ * that said "Load latest saved ad settings". They say "version" instead, which is true on both.
+ */
+describe("what a card says around its reload, in words that fit both Brand cards (closing check N-3)", () => {
+  function brandPage() {
+    return render(
+      <>
+        <ReportBrandEditor data={workspaceData("profile")} />
+        <AdBrandEditor data={workspaceData("profile")} />
+      </>,
+    );
+  }
+
+  it("says the latest saved version is loaded, without naming a button", async () => {
+    network.mockResolvedValueOnce(savedAs(DEFAULT_AD_BRAND));
+    brandPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Load latest saved ad settings" }));
+
+    expect(await screen.findByText("The latest saved version is loaded.")).toBeInTheDocument();
+    expect(screen.queryByText("The latest saved details are loaded.")).toBeNull();
+  });
+
+  it("says the saved version could not be read when the answer is not one it understands", async () => {
+    network.mockResolvedValueOnce(
+      new Response(JSON.stringify({ preferences: "not saved settings" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    brandPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Load latest saved ad settings" }));
+
+    expect(
+      await screen.findByText("The saved version could not be read. Your edits are still here."),
+    ).toBeInTheDocument();
+  });
+
+  it("says the saved version could not be confirmed when a refusal carries no sentence", async () => {
+    network.mockResolvedValueOnce(
+      new Response(JSON.stringify({}), {
+        status: 503,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    brandPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Load latest saved ad settings" }));
+
+    expect(
+      await screen.findByText("The saved version could not be confirmed."),
+    ).toBeInTheDocument();
+  });
+});

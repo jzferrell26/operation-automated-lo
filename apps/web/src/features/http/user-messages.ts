@@ -12,6 +12,8 @@
  * safety net rather than the usual path.
  */
 
+import { SUPPORT_DETAILS_SUMMARY } from "../../copy/user-language.js";
+
 export type UserMessage = Readonly<{
   /** What happened, in the user's terms. Never a variable name, a value, or a stack. */
   what: string;
@@ -31,9 +33,15 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
     what: "This account cannot change the requested workspace settings.",
     whatToDo: "Sign in to the correct account or ask the workspace owner to review your role.",
   },
+  /**
+   * Writing review closing check, N-3. The Brand page has two cards and each reload button names its
+   * own ("Load latest saved details", "Load latest saved ad settings"), so a sentence cannot name a
+   * button label. "The latest saved version of this card" is true on both Brand cards and on Realtor partners.
+   */
   WORKSPACE_WRITE_CONFLICT: {
     what: "Another tab saved newer settings.",
-    whatToDo: "Keep a copy of your edits, then load the latest saved details before trying again.",
+    whatToDo:
+      "Keep a copy of your edits, then load the latest saved version of this card before trying again.",
   },
   WORKSPACE_PREFERENCE_INVALID: {
     what: "Some workspace details need attention.",
@@ -45,7 +53,7 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
   },
   WORKSPACE_PREFERENCES_UNAVAILABLE: {
     what: "Your saved workspace settings could not be confirmed.",
-    whatToDo: "Reload the saved details before making another change.",
+    whatToDo: "Load the latest saved version of this card before making another change.",
   },
   HANDOFF_UNCERTAIN: {
     what: "HighLevel did not confirm the report handoff.",
@@ -89,7 +97,7 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
   },
   /** PRD-009d 009D-AC-011: the chosen ad was retired, replaced by a newer version, or is unknown. */
   LIBRARY_AD_NOT_AVAILABLE: {
-    what: "This ad isn't in the library any more, or a newer version replaced it.",
+    what: "This ad isn't in the library anymore, or a newer version replaced it.",
     whatToDo: "Choose another ad. Check the words, budget and area before you save.",
   },
   /**
@@ -119,10 +127,14 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
     what: "The picture for this ad changed after this version was saved, so this version can't be approved.",
     whatToDo: "Open this campaign from Campaigns, make a new version, then approve that one.",
   },
+  /**
+   * Writing review closing check, N-4. The reference sits in a region that is closed by default and
+   * shows only its name (contract section 6), so the sentence names that region. "The support
+   * reference below" pointed at a line the person could not see was a reference.
+   */
   CAMPAIGN_PREFLIGHT_FAILED: {
     what: "We couldn't finish the checks on this campaign.",
-    whatToDo:
-      "Try again. If it keeps happening, contact support and give them the support reference below.",
+    whatToDo: `Try again. If it keeps happening, contact support and give them the reference in ${SUPPORT_DETAILS_SUMMARY}, below.`,
   },
   CAMPAIGN_APPROVAL_CONFLICT: {
     what: "This campaign changed since you opened it.",
@@ -238,21 +250,22 @@ export function isMappedErrorCode(code: string | undefined): boolean {
   return code !== undefined && Object.hasOwn(USER_MESSAGES_BY_CODE, code);
 }
 
-/** The words a sentence uses to point at the support reference drawn under it. */
-const POINTS_AT_REFERENCE = /reference below/u;
+/** The region a sentence points at when it sends a person to the support reference drawn under it. */
+const POINTS_AT_REFERENCE = SUPPORT_DETAILS_SUMMARY;
 
 /**
  * Whether the support reference is drawn under this code's sentence (writing review pass 2, W-27).
  *
  * The rule, written once: a reference shows for a code with no sentence of its own, because support
  * cannot find a request nobody can name (contract section 7), and for a mapped code whose own
- * sentence points at it ("the support reference below"), because a sentence that says "below" must
- * have something below it. `SupportReference` reads this, and a unit test asserts that every
- * sentence in the table that says "reference below" belongs to a code this returns true for.
+ * sentence points at it ("the reference in Details for support, below", closing check N-4), because
+ * a sentence that sends a person below must have that region below it. `SupportReference` reads
+ * this, and a unit test asserts that every sentence in the table that names "Details for support"
+ * belongs to a code this returns true for, and that none mentions a reference without naming it.
  */
 export function showsSupportReference(code: string | undefined): boolean {
   if (!isMappedErrorCode(code)) return true;
-  return POINTS_AT_REFERENCE.test(userMessageSentence(code));
+  return userMessageSentence(code).includes(POINTS_AT_REFERENCE);
 }
 
 /** One line for a status region: what happened, then what to do. */

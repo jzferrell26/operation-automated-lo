@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { findVocabularyHits } from "../../copy/forbidden-vocabulary.js";
+import { SUPPORT_DETAILS_SUMMARY } from "../../copy/user-language.js";
 import {
   isMappedErrorCode,
   showsSupportReference,
@@ -137,7 +138,7 @@ describe("error codes become sentences", () => {
   // ad" to go back to. "Choose another ad" is true on both.
   it("tells a person whose ad has left the library to choose another, and to check what they set", () => {
     expect(userMessageSentence("LIBRARY_AD_NOT_AVAILABLE")).toBe(
-      "This ad isn't in the library any more, or a newer version replaced it. Choose another ad. Check the words, budget and area before you save.",
+      "This ad isn't in the library anymore, or a newer version replaced it. Choose another ad. Check the words, budget and area before you save.",
     );
   });
 
@@ -160,21 +161,35 @@ describe("error codes become sentences", () => {
    * was below: a mapped code showed no support reference, and the step that said it never drew one.
    * The rule is written down once, in `showsSupportReference`: a reference shows for a code with no
    * sentence of its own, and for a code whose own sentence points at it.
+   *
+   * Closing check, N-4. "The support reference below" still pointed at a region that is closed by
+   * default and shows only the words "Details for support", so a person looking below it saw no
+   * reference. The sentence now names the region they will see, and says the reference is in it.
    */
   describe("the support reference a sentence points at (writing review W-27)", () => {
     it("says what to give support, and where it is, for a failed save", () => {
       expect(userMessageSentence("CAMPAIGN_PREFLIGHT_FAILED")).toBe(
-        "We couldn't finish the checks on this campaign. Try again. If it keeps happening, contact support and give them the support reference below.",
+        "We couldn't finish the checks on this campaign. Try again. If it keeps happening, contact support and give them the reference in Details for support, below.",
       );
     });
 
-    it('shows a reference for every code whose sentence says "reference below"', () => {
+    it('shows a reference for every code whose sentence points at "Details for support"', () => {
       const pointing = Object.entries(USER_MESSAGES_BY_CODE).filter(([, message]) =>
-        /reference below/u.test(`${message.what} ${message.whatToDo}`),
+        `${message.what} ${message.whatToDo}`.includes(SUPPORT_DETAILS_SUMMARY),
       );
       expect(pointing.map(([code]) => code)).toContain("CAMPAIGN_PREFLIGHT_FAILED");
       for (const [code] of pointing) {
         expect(showsSupportReference(code), code).toBe(true);
+      }
+    });
+
+    it("never mentions a reference without naming the closed region it is in", () => {
+      expect(SUPPORT_DETAILS_SUMMARY).toBe("Details for support");
+      for (const [code, message] of Object.entries(USER_MESSAGES_BY_CODE)) {
+        const sentence = `${message.what} ${message.whatToDo}`;
+        if (/reference/u.test(sentence)) {
+          expect(sentence, code).toContain(SUPPORT_DETAILS_SUMMARY);
+        }
       }
     });
 
@@ -190,7 +205,34 @@ describe("error codes become sentences", () => {
     });
 
     it("never points at a reference from the generic sentence, which the reference always accompanies", () => {
-      expect(userMessageSentence(undefined)).not.toMatch(/reference below/u);
+      expect(userMessageSentence(undefined)).not.toContain(SUPPORT_DETAILS_SUMMARY);
+    });
+  });
+
+  /**
+   * Closing check, N-3. The Brand page has two cards, and each reload button names its own card
+   * ("Load latest saved details", "Load latest saved ad settings"). A sentence that told a person to
+   * "load the latest saved details" named a label the second card does not have, so the sentences
+   * for a conflict and for an unconfirmed save say "version of this card", which is true on both
+   * Brand cards and on Realtor partners.
+   */
+  describe("the sentences after a clash of saves name no button label (closing check N-3)", () => {
+    it("says what to do for a conflict without naming a button", () => {
+      expect(userMessageSentence("WORKSPACE_WRITE_CONFLICT")).toBe(
+        "Another tab saved newer settings. Keep a copy of your edits, then load the latest saved version of this card before trying again.",
+      );
+    });
+
+    it("says what to do when the saved settings could not be confirmed, without naming a button", () => {
+      expect(userMessageSentence("WORKSPACE_PREFERENCES_UNAVAILABLE")).toBe(
+        "Your saved workspace settings could not be confirmed. Load the latest saved version of this card before making another change.",
+      );
+    });
+
+    it("never tells a person to load or reload the saved details, which is one card's button", () => {
+      for (const [code, message] of Object.entries(USER_MESSAGES_BY_CODE)) {
+        expect(`${message.what} ${message.whatToDo}`, code).not.toMatch(/saved details/iu);
+      }
     });
   });
 

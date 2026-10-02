@@ -143,7 +143,7 @@ test("the campaign detail's already-decided state meets the bar", async ({ brows
   const decidedNow = page.getByRole("region", { name: "Approval" });
   await expect(decidedNow).toContainText("Approved by", { timeout: 30_000 });
   await expect(decidedNow.locator("time")).toHaveCount(1);
-  await expect(decidedNow.locator("time")).toHaveAttribute("datetime", /^d{4}-d{2}-d{2}T/u);
+  await expect(decidedNow.locator("time")).toHaveAttribute("datetime", /^\d{4}-\d{2}-\d{2}T/u);
   await expect(decidedNow).toContainText("The approval covers this version only.");
   await expect(main.getByText("Ready for approval", { exact: false })).toHaveCount(0);
   await expect(main.getByText("An approver can sign off on it now.", { exact: false })).toHaveCount(

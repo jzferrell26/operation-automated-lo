@@ -250,3 +250,30 @@ describe("what each capability affects, while nothing can be connected", () => {
     expect(container.textContent).not.toContain("No effect until you connect");
   });
 });
+
+describe("the next step, said once (009G-AC-009, D2)", () => {
+  it("states a next step every capability shares once, under the notice, and on no card", () => {
+    const { container, workspace } = renderConnections(
+      "production",
+      OALO_REVIEW_SURFACE_AUTHORIZED,
+    );
+    const shared = workspace.ui.onboarding.permissionGroups[0]?.capabilities[0]?.nextAction ?? "";
+    expect(shared).not.toBe("");
+    const text = container.textContent ?? "";
+    expect(text.split(shared).length - 1).toBe(1);
+    expect(container.querySelector("[data-shared-next-action]")?.textContent).toContain(shared);
+    expect(within(container).queryAllByText("What to do next", { selector: "dt" })).toHaveLength(0);
+  });
+
+  it("keeps a next step on each card when the capabilities' steps differ", () => {
+    const { container, workspace } = renderConnections("local", undefined);
+    const actions = workspace.ui.onboarding.permissionGroups.flatMap((group) =>
+      group.capabilities.map((capability) => capability.nextAction),
+    );
+    expect(new Set(actions).size).toBeGreaterThan(1);
+    expect(container.querySelector("[data-shared-next-action]")).toBeNull();
+    expect(within(container).queryAllByText("What to do next", { selector: "dt" })).toHaveLength(
+      actions.length,
+    );
+  });
+});

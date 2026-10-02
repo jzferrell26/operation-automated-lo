@@ -8,7 +8,22 @@ type PermissionScreenProps = Readonly<{
   onboarding: DeepReadonly<Onboarding>;
 }>;
 
+/**
+ * PRD-009g D2 (009G-AC-009): a page says each connection sentence once. When every capability
+ * shares one next step, as the review surface's do ("Connecting HighLevel and Meta isn't available
+ * in the app yet..."), the page states it once under the notice instead of on every card.
+ */
+function sharedNextAction(onboarding: DeepReadonly<Onboarding>): string | undefined {
+  const actions = new Set(
+    onboarding.permissionGroups.flatMap((group) =>
+      group.capabilities.map((capability) => capability.nextAction),
+    ),
+  );
+  return actions.size === 1 ? [...actions][0] : undefined;
+}
+
 export function PermissionScreen({ onboarding }: PermissionScreenProps) {
+  const sharedNext = sharedNextAction(onboarding);
   return (
     <div className={styles.onboarding}>
       <header className={styles.pageHeader}>
@@ -27,6 +42,11 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
         <div>
           <strong>Nothing is connected from this page</strong>
           <p>{onboarding.safety.disclosure}</p>
+          {sharedNext === undefined ? null : (
+            <p data-shared-next-action="">
+              <strong>What to do next:</strong> {sharedNext}
+            </p>
+          )}
         </div>
       </Card>
 
@@ -57,10 +77,12 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
                       <dt>What it affects</dt>
                       <dd>{capability.impact}</dd>
                     </div>
-                    <div>
-                      <dt>What to do next</dt>
-                      <dd>{capability.nextAction}</dd>
-                    </div>
+                    {sharedNext === undefined ? (
+                      <div>
+                        <dt>What to do next</dt>
+                        <dd>{capability.nextAction}</dd>
+                      </div>
+                    ) : null}
                   </dl>
                 </Card>
               ))}

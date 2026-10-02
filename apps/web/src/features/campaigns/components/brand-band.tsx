@@ -41,12 +41,8 @@ export function BrandBand({ advertiser }: Readonly<{ advertiser: LaunchBand }>) 
       </div>
     );
   }
-  const company = [
-    advertiser.company.trim(),
-    advertiser.companyNmls.trim() === "" ? "" : `NMLS ${advertiser.companyNmls.trim()}`,
-  ]
-    .filter((part) => part !== "")
-    .join(", ");
+  const company = advertiser.company.trim();
+  const companyNmls = advertiser.companyNmls.trim();
   return (
     <div className={styles.band} data-brand-band="brand">
       <div className={styles.bandRow}>
@@ -59,7 +55,14 @@ export function BrandBand({ advertiser }: Readonly<{ advertiser: LaunchBand }>) 
           </strong>
           <span className={styles.detail}>{nmlsLine(advertiser.title, advertiser.nmls)}</span>
         </span>
-        {company === "" ? null : <span className={styles.company}>{company}</span>}
+        {company === "" && companyNmls === "" ? null : (
+          <span className={styles.company} data-band-company="">
+            {company === "" ? null : <span className={styles.companyName}>{company}</span>}
+            {companyNmls === "" ? null : (
+              <span className={styles.companyNmls}>{`NMLS ${companyNmls}`}</span>
+            )}
+          </span>
+        )}
       </div>
       <p className={styles.disclosure}>{advertiser.disclosureLine}</p>
     </div>

@@ -68,11 +68,18 @@
 
 .section h2,
 .preview h2,
-.adCard h2,
-.cardTitle {
+.adCard h2 {
   margin: 0;
   color: var(--tx-strong);
   font-size: var(--text-section-size);
+}
+
+/* A side card's title is at the card step, as in the launch-step-3 mockup. */
+.cardTitle {
+  margin: 0;
+  color: var(--tx-strong);
+  font-size: var(--text-card-size);
+  line-height: var(--leading-tight);
 }
 
 .sectionHeading {
@@ -117,16 +124,82 @@
 }
 
 .brandSummary {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   align-items: center;
-  justify-content: space-between;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: var(--space-3);
   padding: var(--space-4);
   border: 1px solid var(--bd-hairline);
   border-radius: var(--radius-control);
   background: var(--sf-sunken);
   color: var(--tx-strong);
+}
+
+/* The initials tile, in the person's brand colour, as the band draws it. */
+.summaryTile {
+  display: grid;
+  place-items: center;
+  inline-size: 3rem;
+  block-size: 3rem;
+  border-radius: var(--radius-control);
+  background: var(--ad-brand, var(--ac-primary));
+  color: var(--ad-tile-letters, var(--tx-on-action));
+  font-weight: var(--weight-semibold);
+}
+
+.summaryDetail {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+}
+
+@media (max-width: 47.99rem) {
+  .brandSummary {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .brandSummary > :last-child {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+/* The character count sits under its field, at the end of the line (the launch-step-2 mockup). The
+   field is a grid, so `order` moves the count after the field without moving it in the reading
+   order a screen reader follows, where it is the field's description. */
+.countBelow > div > [id$="-description"] {
+  order: 1;
+  justify-self: end;
+  font-size: var(--text-caption-size);
+}
+
+/* A dollar amount: the sign is drawn inside the field, before the number, and is not part of it. */
+.money > div {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.money > div::after {
+  content: "$";
+  grid-column: 1;
+  grid-row: 2;
+  align-self: center;
+  justify-self: start;
+  margin-inline-start: var(--space-3);
+  color: var(--tx-body);
+  pointer-events: none;
+}
+
+.money .moneyInput {
+  grid-column: 1;
+  grid-row: 2;
+  padding-inline-start: calc(var(--space-3) + 1.5ch);
+}
+
+/* An icon and its words on one line inside a button. */
+.withIcon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
 }
 
 .locked {
@@ -193,9 +266,22 @@
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+/* On a phone the field takes the whole line and Add goes under it, so the placeholder is not cut
+   short. */
+@media (max-width: 47.99rem) {
+  .placeAdd {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .placeAdd > button {
+    justify-self: start;
+  }
+}
+
 .showsIn {
   margin: 0;
   color: var(--tx-strong);
+  font-size: var(--text-secondary-size);
 }
 
 .actions {
@@ -204,6 +290,14 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+}
+
+/* On a phone, Back and "Save and check" stack, the save first. */
+@media (max-width: 47.99rem) {
+  .actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
 }
 
 .preview {
@@ -291,7 +385,7 @@
 .factsTitle {
   margin: 0;
   color: var(--tx-strong);
-  font-size: var(--text-body-size);
+  font-size: var(--text-secondary-size);
 }
 
 .facts {
@@ -299,6 +393,7 @@
   gap: var(--space-2) var(--space-4);
   grid-template-columns: minmax(6rem, auto) minmax(0, 1fr);
   margin: 0;
+  font-size: var(--text-secondary-size);
 }
 
 .facts dt {

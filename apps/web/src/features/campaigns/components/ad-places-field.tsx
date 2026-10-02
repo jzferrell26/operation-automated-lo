@@ -106,7 +106,9 @@ export function AdPlacesField({ places, onChange, error }: AdPlacesFieldProps) {
           value={typed}
         />
         <Button onClick={() => add()} type="button" variant="outline">
-          <Icon decorative name="plus" size="sm" /> {ADD_PLACE}
+          <span className={styles.withIcon}>
+            <Icon decorative name="plus" size="sm" /> {ADD_PLACE}
+          </span>
         </Button>
       </div>
       <p className={styles.hint} data-area-hint="">

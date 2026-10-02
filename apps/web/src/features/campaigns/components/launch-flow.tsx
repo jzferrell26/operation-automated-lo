@@ -62,6 +62,8 @@ import {
   type LaunchBand,
   type LaunchPrefill,
 } from "../launch-model.js";
+import { brandInitials } from "../../workspace/ad-brand.js";
+import { adColorVariables } from "./ad-creative.js";
 import { AdCardGrid, TopicChipContent, TopicChips } from "./ad-library-cards.js";
 import chips from "./ad-library-cards.module.css";
 import { AdFeedPreview } from "./ad-feed-preview.js";
@@ -307,23 +309,27 @@ export function LaunchFlow({
                 {USE_LIBRARY_WORDS}
               </Button>
             </div>
-            <TextField
-              description={characterCount(draft.headline.length, card.headlineMaxLength)}
-              label={HEADLINE_LABEL}
-              maxLength={card.headlineMaxLength}
-              onChange={(event) => update({ headline: event.target.value })}
-              requirement="required"
-              value={draft.headline}
-            />
-            <TextArea
-              description={characterCount(draft.primaryText.length, card.primaryTextMaxLength)}
-              label={AD_TEXT_LABEL}
-              maxLength={card.primaryTextMaxLength}
-              onChange={(event) => update({ primaryText: event.target.value })}
-              requirement="required"
-              rows={4}
-              value={draft.primaryText}
-            />
+            <div className={styles.countBelow}>
+              <TextField
+                description={characterCount(draft.headline.length, card.headlineMaxLength)}
+                label={HEADLINE_LABEL}
+                maxLength={card.headlineMaxLength}
+                onChange={(event) => update({ headline: event.target.value })}
+                requirement="required"
+                value={draft.headline}
+              />
+            </div>
+            <div className={styles.countBelow}>
+              <TextArea
+                description={characterCount(draft.primaryText.length, card.primaryTextMaxLength)}
+                label={AD_TEXT_LABEL}
+                maxLength={card.primaryTextMaxLength}
+                onChange={(event) => update({ primaryText: event.target.value })}
+                requirement="required"
+                rows={4}
+                value={draft.primaryText}
+              />
+            </div>
             <p className={styles.locked} data-locked-disclosure="">
               <Icon decorative name="lock" size="sm" />
               <strong>{DISCLOSURE_LOCKED_LABEL}</strong> {advertiser.disclosureLine}
@@ -333,20 +339,26 @@ export function LaunchFlow({
           <section aria-labelledby="launch-budget-title" className={styles.section} id="budget">
             <h2 id="launch-budget-title">{BUDGET_TITLE}</h2>
             <div className={styles.pair}>
-              <TextField
-                error={errors.daily}
-                inputMode="decimal"
-                label={DAILY_BUDGET_LABEL}
-                onChange={(event) => update({ daily: event.target.value })}
-                value={draft.daily}
-              />
-              <TextField
-                error={errors.total}
-                inputMode="decimal"
-                label={TOTAL_BUDGET_LABEL}
-                onChange={(event) => update({ total: event.target.value, totalEdited: true })}
-                value={draft.total}
-              />
+              <div className={styles.money}>
+                <TextField
+                  className={styles.moneyInput}
+                  error={errors.daily}
+                  inputMode="decimal"
+                  label={DAILY_BUDGET_LABEL}
+                  onChange={(event) => update({ daily: event.target.value })}
+                  value={draft.daily}
+                />
+              </div>
+              <div className={styles.money}>
+                <TextField
+                  className={styles.moneyInput}
+                  error={errors.total}
+                  inputMode="decimal"
+                  label={TOTAL_BUDGET_LABEL}
+                  onChange={(event) => update({ total: event.target.value, totalEdited: true })}
+                  value={draft.total}
+                />
+              </div>
               <TextField label={STARTS_LABEL} readOnly value={STARTS_VALUE} />
               <TextField
                 error={errors.endsOn}
@@ -448,10 +460,17 @@ function BrandSummary({ advertiser }: Readonly<{ advertiser: LaunchBand }>) {
     .join(". ");
   return (
     <div className={styles.brandSummary} data-brand-summary="">
+      <span
+        aria-hidden="true"
+        className={styles.summaryTile}
+        style={adColorVariables(advertiser.colorPresetId)}
+      >
+        {advertiser.name.trim() === "" ? "" : brandInitials(advertiser.name)}
+      </span>
       <span>
         <strong>{nameLine}</strong>
         <br />
-        <span>{detail}</span>
+        <span className={styles.summaryDetail}>{detail}</span>
       </span>
       <Link href="/brand" variant="action">
         {CHANGE_IN_BRAND}

@@ -35,7 +35,12 @@ describe("the brand band (009D-AC-004)", () => {
     expect(container.querySelector("[data-ad-creative]")).toHaveAttribute("data-shape", shape);
     expect(within(band).getByText("Alex Morgan")).toBeInTheDocument();
     expect(within(band).getByText("Loan officer, NMLS 0000000")).toBeInTheDocument();
-    expect(within(band).getByText("Prairie Home Lending, NMLS 0000000")).toBeInTheDocument();
+    // The company and its NMLS number are two lines, so a long company name wraps instead of being
+    // cut off at the width of a card (verifier, 2026-10-02).
+    const company = band.querySelector<HTMLElement>("[data-band-company]");
+    expect(company).not.toBeNull();
+    expect(within(company as HTMLElement).getByText("Prairie Home Lending")).toBeInTheDocument();
+    expect(within(company as HTMLElement).getByText("NMLS 0000000")).toBeInTheDocument();
     expect(within(band).getByText("Equal Housing Opportunity.")).toBeInTheDocument();
     expect(within(band).getByText("AM")).toHaveAttribute("aria-hidden", "true");
     expect(container.querySelector("img")).toHaveAttribute(

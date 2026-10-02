@@ -11,6 +11,10 @@ import {
 } from "@oalo/application";
 import { US_STATES, type LibraryAdCampaignManifest } from "@oalo/contracts";
 
+import {
+  newerVersionOffer,
+  type NewerVersionOffer,
+} from "../features/ads-library/newer-version.js";
 import type { LoadedAdsLibrary } from "../features/ads-library/server/catalog-loader.js";
 import {
   NO_LIVE_RESULTS,
@@ -19,7 +23,6 @@ import {
   type CampaignPageCommon,
   type CampaignPageData,
   type LibraryAdCampaignPage,
-  type UseNewVersionRequest,
 } from "../features/campaigns/campaign-page-model.js";
 import type { CampaignApprovalControlsProps } from "../features/campaigns/components/campaign-approval-controls.js";
 import { launchHref, type LaunchBand } from "../features/campaigns/launch-model.js";
@@ -41,8 +44,6 @@ interface LibraryStanding {
   readonly inLibrary: boolean;
   readonly retired: boolean;
   readonly retiredOn: string | null;
-  /** A newer version of the ad exists and is in the library (`undefined` when none does). */
-  readonly newer: Readonly<{ version: number; headline: string; primaryText: string }> | undefined;
 }
 
 function libraryStandingOf(
@@ -51,23 +52,14 @@ function libraryStandingOf(
 ): LibraryStanding {
   const standing = library.standingOf(manifest.libraryAd);
   if (standing === undefined) {
-    return { inLibrary: false, retired: false, retiredOn: null, newer: undefined };
+    return { inLibrary: false, retired: false, retiredOn: null };
   }
   const highest = library.find(manifest.libraryAd.id, standing.highestVersion);
   const retired = standing.highestStatus === "retired";
-  const newer =
-    !retired && standing.highestVersion > manifest.libraryAd.version && highest !== undefined
-      ? Object.freeze({
-          version: standing.highestVersion,
-          headline: highest.entry.defaults.headline,
-          primaryText: highest.entry.defaults.primaryText,
-        })
-      : undefined;
   return {
     inLibrary: true,
     retired,
     retiredOn: retired ? (highest?.entry.retired?.on ?? null) : null,
-    newer,
   };
 }
 
@@ -148,8 +140,9 @@ function approvalControlsFor(
 
 function noticesFor(
   input: Readonly<{
-    manifest: LibraryAdCampaignManifest;
     library: LibraryStanding;
+    /** The ads library's offer to use a newer version, when the ad has one (009C-AC-009). */
+    offer: NewerVersionOffer | undefined;
     undecided: boolean;
     canEdit: boolean;
     campaignRef: string;
@@ -174,26 +167,10 @@ function noticesFor(
       chooseAnotherAdHref: input.undecided ? chooseAnotherAdHref : undefined,
     });
   }
-  const newer = input.library.newer;
-  if (newer !== undefined) {
-    const request: UseNewVersionRequest | undefined =
-      input.undecided && input.canEdit
-        ? {
-            campaignRef: input.campaignRef,
-            adId: input.manifest.libraryAd.id,
-            adVersion: newer.version,
-            headline: newer.headline,
-            primaryText: newer.primaryText,
-            endsOn: input.manifest.schedule.endsAt.slice(0, 10),
-            dailyBudgetDollars: input.manifest.meta.dailyBudgetMinor / 100,
-            totalBudgetDollars: input.manifest.meta.totalBudgetMinor / 100,
-            places: [
-              ...input.manifest.meta.targeting.regions,
-              ...input.manifest.meta.targeting.cities,
-            ],
-          }
-        : undefined;
-    notices.push({ kind: "newer-version", useNewVersion: request });
+  // The ads library decides whether a newer version is offered and what taking it saves; its action
+  // is for a version nobody has decided on, and for a person who can save a version.
+  if (input.offer !== undefined) {
+    notices.push({ kind: "newer-version", offer: input.offer, canUse: input.canEdit });
   }
   if (input.brandChanged) notices.push({ kind: "brand-changed" });
   return Object.freeze(notices);
@@ -264,10 +241,16 @@ export function buildCampaignPage(input: CampaignPageInput): CampaignPageData | 
   const undecided = shown.decision?.decision !== "approved";
   const brandChanged =
     isLatest && shown.savedByViewer && brandChangedSince(shownManifest, input.brand);
+  const offer = newerVersionOffer({
+    campaignRef: projection.campaignRef,
+    manifest: shownManifest,
+    decided: shown.decision !== undefined,
+    library,
+  });
   const notices = isLatest
     ? noticesFor({
-        manifest: shownManifest,
         library: shownStanding,
+        offer,
         undecided,
         canEdit,
         campaignRef: projection.campaignRef,
@@ -277,8 +260,7 @@ export function buildCampaignPage(input: CampaignPageInput): CampaignPageData | 
   // 009c D4. A version nobody approved whose ad is retired, missing, or replaced cannot be approved,
   // so the page does not offer a control that would only be refused; the notice says what to do.
   const approvalBlockedByLibrary =
-    undecided &&
-    (shownStanding.retired || !shownStanding.inLibrary || shownStanding.newer !== undefined);
+    undecided && (shownStanding.retired || !shownStanding.inLibrary || offer !== undefined);
   const page: LibraryAdCampaignPage = {
     ...common,
     kind: "library-ad",

@@ -2,16 +2,17 @@ import { Icon, Link } from "@oalo/ui";
 
 import { NOTICES, retiredKept } from "../../../copy/campaign-page-messages.js";
 import { adRetiredNotice } from "../../../copy/launch-messages.js";
+import { UseNewVersion } from "../../ads-library/components/use-new-version.js";
 import type { CampaignNotice } from "../campaign-page-model.js";
 import { shortDay } from "../launch-model.js";
 import styles from "./campaign-page.module.css";
-import { NewerVersionNotice } from "./newer-version-notice.js";
 
 /**
  * PRD-009e 009E-AC-006. One-line library notices, only when they apply, each with at most one
  * action: the ad was retired or is no longer in the library (with "Choose another ad" for a version
- * nobody has approved), a newer version of the ad exists (with "Use the new version" for a version
- * nobody has approved), and Brand changed after this version was saved.
+ * nobody has approved), a newer version of the ad exists (the ads library's own notice, with its
+ * "Use the new version" for a version nobody has decided on, 009C-AC-009), and Brand changed after
+ * this version was saved.
  *
  * A notice on an approved version only says what changed: the approval covers the version that was
  * approved, so nothing here asks the person to redo it.
@@ -27,7 +28,7 @@ function noticeSentence(notice: CampaignNotice): string {
     case "missing":
       return notice.blocksApproval ? NOTICES.missingUndecided : NOTICES.missingApproved;
     case "newer-version":
-      // Drawn by the seam, `NewerVersionNotice`, which says its own sentence.
+      // Drawn by the ads library's `UseNewVersion`, which says its own sentence.
       return "";
     case "brand-changed":
       return NOTICES.brandChanged;
@@ -58,7 +59,7 @@ export function CampaignLibraryNotices({
         if (notice.kind === "newer-version") {
           return (
             <li className={styles.notice} data-notice={notice.kind} key={notice.kind}>
-              <NewerVersionNotice notice={notice} />
+              <UseNewVersion canUse={notice.canUse} offer={notice.offer} />
             </li>
           );
         }

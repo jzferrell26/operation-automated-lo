@@ -10,6 +10,7 @@ import type {
   ReportingMetric,
 } from "@oalo/contracts";
 
+import type { NewerVersionOffer } from "../ads-library/newer-version.js";
 import type { CampaignApprovalControlsProps } from "./components/campaign-approval-controls.js";
 import type { LaunchBand } from "./launch-model.js";
 
@@ -51,25 +52,14 @@ export type CampaignNotice =
       chooseAnotherAdHref: string | undefined;
     }>
   | Readonly<{ kind: "missing"; blocksApproval: boolean; chooseAnotherAdHref: string | undefined }>
-  | Readonly<{ kind: "newer-version"; useNewVersion: UseNewVersionRequest | undefined }>
+  | Readonly<{
+      kind: "newer-version";
+      /** The ads library's offer (009C-AC-009): its notice, and its action for an undecided version. */
+      offer: NewerVersionOffer;
+      /** Whether the viewer may save a campaign version, which the action needs. */
+      canUse: boolean;
+    }>
   | Readonly<{ kind: "brand-changed" }>;
-
-/**
- * 009C-AC-009. The save the "Use the new version" action makes: the same campaign, the library ad's
- * highest version, that version's own words, and the budget, dates, and area the campaign already
- * has. It is exactly the body `POST /api/campaigns/preflight` takes, and carries nothing else.
- */
-export interface UseNewVersionRequest {
-  readonly campaignRef: string;
-  readonly adId: string;
-  readonly adVersion: number;
-  readonly headline: string;
-  readonly primaryText: string;
-  readonly endsOn: string;
-  readonly dailyBudgetDollars: number;
-  readonly totalBudgetDollars: number;
-  readonly places: readonly string[];
-}
 
 export interface CampaignPageCommon {
   readonly campaignRef: string;

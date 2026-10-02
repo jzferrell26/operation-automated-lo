@@ -410,14 +410,26 @@ describe("the library notices on the page (009E-AC-006)", () => {
     expect(within(item).getAllByRole("button")).toHaveLength(1);
   });
 
-  it("only says a newer version exists for an approved campaign, with no action", async () => {
-    await renderCampaign({ adVersion: 1, decision: "approved" });
+  it("only says a newer version exists for a version somebody has decided on, with no action", async () => {
+    for (const decision of ["approved", "rejected"] as const) {
+      const { unmount } = await renderCampaign({ adVersion: 1, decision });
+
+      const item = screen
+        .getByText("A newer version of this ad is in the library.")
+        .closest("li") as HTMLElement;
+      expect(within(item).queryByRole("button"), decision).toBeNull();
+      expect(within(item).queryByRole("link"), decision).toBeNull();
+      unmount();
+    }
+  });
+
+  it("only says a newer version exists to somebody who cannot save a version", async () => {
+    await renderCampaign({ adVersion: 1 }, APPROVER);
 
     const item = screen
       .getByText("A newer version of this ad is in the library.")
       .closest("li") as HTMLElement;
     expect(within(item).queryByRole("button")).toBeNull();
-    expect(within(item).queryByRole("link")).toBeNull();
   });
 
   it("says the ad is not in the library when the catalog does not hold it", async () => {

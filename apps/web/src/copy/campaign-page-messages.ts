@@ -195,8 +195,6 @@ export const OLDER_VERSION = Object.freeze({
 /** The library notices, 009E-AC-006. */
 export const NOTICES = Object.freeze({
   chooseAnotherAd: "Choose another ad",
-  useNewVersion: "Use the new version",
-  newerVersion: "A newer version of this ad is in the library.",
   brandChanged: "Brand changed after this version was saved. Make a new version to use it.",
   missingUndecided: "This ad isn't in the library, so this version can't be approved.",
   missingApproved: "This ad isn't in the library. This campaign keeps the version you approved.",
@@ -204,15 +202,6 @@ export const NOTICES = Object.freeze({
 export function retiredKept(retiredOn: string): string {
   return `This ad was taken out of the library on ${retiredOn}. This campaign keeps the version you approved.`;
 }
-
-/** "Use the new version" asks first (009C-AC-009), then saves a new version of the campaign. */
-export const USE_NEW_VERSION = Object.freeze({
-  question:
-    "Use the new version of this ad? Your headline and ad text are replaced with the new version's words. Your budget, dates and area are kept.",
-  confirm: "Yes, use the new version",
-  cancel: "Cancel",
-  saving: "Saving the new version",
-});
 
 /** The earlier open house flow, D4 and 009E-AC-012. */
 export const EARLIER_FLOW = Object.freeze({

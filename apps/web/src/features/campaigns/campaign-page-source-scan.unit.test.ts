@@ -31,7 +31,6 @@ const PAGE_SOURCES = [
   `${COMPONENTS}/campaign-results-card.tsx`,
   `${COMPONENTS}/campaign-versions-card.tsx`,
   `${COMPONENTS}/campaigns-tabs.tsx`,
-  `${COMPONENTS}/use-new-version.tsx`,
   "apps/web/src/features/campaigns/campaign-page-model.ts",
   "apps/web/src/server/campaign-page-data.ts",
   "apps/web/src/copy/campaign-page-messages.ts",

@@ -63,7 +63,7 @@ describe("the campaign page's words", () => {
     expect(APPROVAL.covers).toBe(
       "The approval covers this version and these words only. A new version needs its own approval.",
     );
-    expect(NOTICES.newerVersion).toBe("A newer version of this ad is in the library.");
+    expect(NOTICES.chooseAnotherAd).toBe("Choose another ad");
     expect(AD_CARD.title).toBe("The ad");
   });
 

@@ -260,40 +260,66 @@ describe("the library notices (009E-AC-006)", () => {
     expect(page.notices[0]).toMatchObject({ kind: "retired", blocksApproval: true });
   });
 
-  it("offers the new version of an ad, with the new version's own words, for a version nobody approved", async () => {
+  it("carries the ads library's offer to use the new version, with the new words and what is kept, for a version nobody has decided on", async () => {
     const page = await libraryPageOf({ adVersion: 1 });
 
     expect(page.notices).toEqual([
       {
         kind: "newer-version",
-        useNewVersion: {
+        canUse: true,
+        offer: {
           campaignRef: "campaign_01LibraryPage",
-          adId: "sample-first-home",
-          adVersion: 2,
-          headline: "Thinking about your first home? Start here.",
-          primaryText: expect.stringMatching(/\S/u),
-          endsOn: "2099-10-20",
-          dailyBudgetDollars: 25,
-          totalBudgetDollars: 350,
-          places: ["TX", "Austin, TX"],
+          ad: { id: "sample-first-home", name: expect.stringMatching(/\S/u) },
+          fromVersion: 1,
+          toVersion: 2,
+          newWords: {
+            headline: "Thinking about your first home? Start here.",
+            primaryText: expect.stringMatching(/\S/u),
+          },
+          kept: {
+            dailyBudgetDollars: 25,
+            totalBudgetDollars: 350,
+            endsOn: "2099-10-20",
+            places: ["TX", "Austin, TX"],
+          },
+          undecided: true,
         },
       },
     ]);
     expect(page.approvalControls).toBeUndefined();
   });
 
-  it("only mentions the new version, with no action, for an approved version", async () => {
-    const page = await libraryPageOf({ adVersion: 1, decision: "approved" });
+  it("only mentions the new version, with no action, for a version somebody has decided on", async () => {
+    for (const decision of ["approved", "rejected"] as const) {
+      const page = await libraryPageOf({ adVersion: 1, decision });
 
-    expect(page.notices).toEqual([{ kind: "newer-version", useNewVersion: undefined }]);
+      expect(page.notices, decision).toEqual([
+        expect.objectContaining({
+          kind: "newer-version",
+          offer: expect.objectContaining({ undecided: false }),
+        }),
+      ]);
+    }
   });
 
-  it("offers no action to somebody who cannot save a version", async () => {
+  it("tells the notice that somebody who cannot save a version cannot use the new one", async () => {
     const page = (await pageOf(await libraryCampaign({ adVersion: 1 }), {
       principal: APPROVER,
     })) as LibraryAdCampaignPage;
 
-    expect(page.notices).toEqual([{ kind: "newer-version", useNewVersion: undefined }]);
+    expect(page.notices).toEqual([
+      expect.objectContaining({
+        kind: "newer-version",
+        canUse: false,
+        offer: expect.objectContaining({ undecided: true }),
+      }),
+    ]);
+  });
+
+  it("offers no new version when the ad's newest version is the one the campaign has", async () => {
+    const page = await libraryPageOf({ adVersion: 2 });
+
+    expect(page.notices.map((notice) => notice.kind)).not.toContain("newer-version");
   });
 
   it("says the ad is not in the library when the catalog does not hold it", async () => {

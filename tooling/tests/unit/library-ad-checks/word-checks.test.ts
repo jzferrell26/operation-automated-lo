@@ -48,6 +48,23 @@ const CLAIMS: readonly string[] = [
   "Pay no points",
   "Two points off",
   "Down payment of a few thousand",
+  // The independent verifier's bypasses of 2026-10-02: claims written in words.
+  "Low interest loans",
+  "Lower interest this spring",
+  "Interest-free for a year",
+  "Five per cent down",
+  "Just a few per cent down",
+  "Save fifty basis points",
+  "Fifty bps off",
+  "Three hundred dollars a month",
+  "Only a few dollars per month",
+  "Drop half a percent",
+  "A quarter point lower",
+  "Three quarters of a percent off",
+  "One and a half percent down",
+  "Fixed for a decade",
+  "Fixed for years",
+  "Fixed for the next ten years",
 ];
 
 const CLEAN: readonly string[] = [
@@ -66,6 +83,10 @@ const CLEAN: readonly string[] = [
   "VA loans can help eligible veterans and service members buy a home.",
   "Interested in buying this spring?",
   "Equal Housing Opportunity.",
+  // What the new claim words must leave alone.
+  "A decade of helping first-time buyers",
+  "Your interest in owning a home starts here",
+  "We fixed the hardest part: the paperwork",
 ];
 
 describe("the rate, payment, and term claim detector (009D-AC-010)", () => {
@@ -190,6 +211,61 @@ const EVASIONS: readonly Readonly<{
     text: "Our ΑΡR is here",
     expected: ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM"],
   },
+  // The independent verifier's bypasses of 2026-10-02: fillers and look-alikes.
+  {
+    label: "a Hangul filler (U+3164) inside rates",
+    field: "headline",
+    text: "Great ra\u3164tes this week",
+    expected: ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM", "WORDS_INVALID_CHARACTERS"],
+  },
+  {
+    label: "a Hangul choseong filler (U+115F) inside rates",
+    field: "headline",
+    text: "Great ra\u115Ftes this week",
+    expected: ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM", "WORDS_INVALID_CHARACTERS"],
+  },
+  {
+    label: "a Hangul jungseong filler (U+1160) inside rates",
+    field: "headline",
+    text: "Great ra\u1160tes this week",
+    expected: ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM", "WORDS_INVALID_CHARACTERS"],
+  },
+  {
+    label: "a Braille blank (U+2800) inside rates",
+    field: "headline",
+    text: "Great ra\u2800tes this week",
+    expected: ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM", "WORDS_INVALID_CHARACTERS"],
+  },
+  {
+    label: "a filler standing in for a space",
+    field: "headline",
+    text: "Low\u3164rates this week",
+    expected: ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM", "WORDS_INVALID_CHARACTERS"],
+  },
+  {
+    label: "small capitals",
+    field: "headline",
+    text: "The best ʀᴀᴛᴇs in town",
+    expected: ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM"],
+  },
+  {
+    label: "Cherokee look-alikes",
+    field: "headline",
+    text: "The best ᏒᎪᎢᎬs in town",
+    expected: ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM"],
+  },
+  {
+    label: "an Armenian look-alike (U+0578) inside a word",
+    field: "primaryText",
+    text: "Put five perce\u0578t down",
+    expected: ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM", "WORDS_NUMBER"],
+  },
+  {
+    label: "Lisu look-alikes",
+    field: "headline",
+    text: "Ask about our ꓮꓑꓣ",
+    expected: ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM"],
+  },
 ];
 
 describe("evasions (009D-AC-010)", () => {
@@ -209,7 +285,21 @@ describe("evasions (009D-AC-010)", () => {
   });
 
   it("refuses every listed invisible range", () => {
-    for (const character of ["​", "‏", "‪", "‮", "⁠", "⁩", "﻿", "\u0007"]) {
+    for (const character of [
+      "​",
+      "‏",
+      "‪",
+      "‮",
+      "⁠",
+      "⁩",
+      "﻿",
+      "\u0007",
+      "\u3164",
+      "\u115F",
+      "\u1160",
+      "\u2800",
+      "\uFFA0",
+    ]) {
       expect(
         codesFor("title", `Loan${character} officer`),
         character.codePointAt(0)?.toString(16),
@@ -253,6 +343,13 @@ describe("the number rule (009D-AC-010)", () => {
     ["name", "Alex Morgan 2"],
     ["primaryText", "Call 4 details"],
     ["headline", "Save one hundred percent of the hassle"],
+    // The independent verifier's bypasses of 2026-10-02: a license reference is 4 to 12
+    // consecutive digits, or the PRD's one hyphenated shape ("12-3456"), never a phone shape.
+    ["disclosureLine", "Equal Housing Opportunity. NMLS 800-555-1212"],
+    ["disclosureLine", "Equal Housing Opportunity. NMLS 555-1212"],
+    ["disclosureLine", "Equal Housing Opportunity. License 1234 5678"],
+    ["name", "Alex Morgan, NMLS 800 555 1212"],
+    ["company", "Prairie Home Lending NMLS 800.555.1212"],
   ];
   const passed: readonly Readonly<[field: Parameters<typeof codesFor>[0], text: string]>[] = [
     ["disclosureLine", "Equal Housing Opportunity. NMLS 0000000"],
@@ -262,7 +359,6 @@ describe("the number rule (009D-AC-010)", () => {
     ["disclosureLine", "Equal Housing Opportunity. Lic #12-3456"],
     ["disclosureLine", "Equal Housing Opportunity. NMLS ID: 1234567"],
     ["disclosureLine", "NMLS 1234567. Equal Housing Lender"],
-    ["disclosureLine", "Equal Housing Opportunity. License 1234 5678"],
     ["company", "1st Choice Mortgage"],
     ["company", "21st Century Lending"],
     ["company", "Prairie Home Lending NMLS 0000000"],
@@ -341,6 +437,16 @@ describe("the co-brand rule (009D-AC-010, compliance control 9)", () => {
     ["disclosureLine", "Equal Housing Opportunity. nmlsconsumeraccess.org?id=1"],
     ["disclosureLine", "Equal Housing Opportunity. nmlsconsumeraccess.org#x"],
     ["disclosureLine", "Equal Housing Opportunity. nmlsconsumeraccess.org and example.com"],
+    // The independent verifier's bypasses of 2026-10-02.
+    ["headline", "Ask my R E A L T O R"],
+    ["headline", "Ask my R.E.A.L.T.O.R"],
+    ["primaryText", "Your R-E-A-L-T-O-R and I"],
+    ["primaryText", "A B R O K E R A G E near you"],
+    ["headline", "Ask my Re\u3164altor"],
+    ["headline", "Find me at example\u3002com"],
+    ["headline", "Find me at example\uFF61com"],
+    ["disclosureLine", "Equal Housing Opportunity. nmlsconsumeraccess\u3002org/lookup"],
+    ["disclosureLine", "Equal Housing Opportunity. NMLS 1234567. Call 800-555-1212"],
   ];
   const passed: readonly Readonly<[field: Parameters<typeof codesFor>[0], text: string]>[] = [
     ["title", "Mortgage Broker"],
@@ -372,6 +478,32 @@ describe("the co-brand rule (009D-AC-010, compliance control 9)", () => {
       "WORDS_CO_BRAND",
     );
     expect(codesFor("primaryText", "Bo knows homes", partners)).not.toContain("WORDS_CO_BRAND");
+  });
+
+  it("refuses each saved partner's given and family name and the brokerage without its suffix (verifier, 2026-10-02)", () => {
+    const partners = ["Priya Nadeem", "Keller Williams Realty"];
+    for (const text of [
+      "Ask Priya about it",
+      "Nadeem and I can help",
+      "Keller Williams agents welcome",
+      "keller-williams buyers",
+    ]) {
+      expect(codesFor("primaryText", text, partners), text).toContain("WORDS_CO_BRAND");
+    }
+    for (const company of ["Acme Holdings LLC", "Oak Street Realty Inc.", "Brightway Group"]) {
+      expect(codesFor("primaryText", "Ask about Acme", [company]), company).toEqual(
+        company.startsWith("Acme") ? ["WORDS_CO_BRAND"] : [],
+      );
+    }
+    expect(
+      codesFor("primaryText", "Ask about Oak Street homes", ["Oak Street Realty Inc."]),
+    ).toContain("WORDS_CO_BRAND");
+    // A token shorter than three letters, or one the person's own Brand name carries, is not one.
+    expect(codesFor("primaryText", "Al can help", ["Al Brooks"])).toEqual([]);
+    expect(codesFor("primaryText", "Alex can help", ["Alex Rivera"])).toEqual([]);
+    expect(codesFor("primaryText", "Rivera can help", ["Alex Rivera"])).toContain("WORDS_CO_BRAND");
+    // Whole words only.
+    expect(codesFor("primaryText", "Priyanka can help", partners)).toEqual([]);
   });
 
   it("names the term and the field in the plain fix", () => {
@@ -406,12 +538,25 @@ describe("the private-details rule (009D-AC-010, Meta rules check E3)", () => {
     ["primaryText", "Your s s n please"],
     ["primaryText", "Your mother’s maiden name"],
     ["title", "Tax ID helper"],
+    // The independent verifier's bypasses of 2026-10-02.
+    ["headline", "Send me your S-S-N"],
+    ["headline", "Your S/S/N please"],
+    ["primaryText", "Send your SSNs"],
+    ["primaryText", "Share your passwords"],
+    ["primaryText", "Enter your PIN"],
+    ["primaryText", "Text me your pin"],
+    ["leadFormWording", "Your PIN code to start"],
+    ["leadFormWording", "Your acct number"],
+    ["leadFormWording", "Send acct details"],
+    ["primaryText", "Your D.O.B. please"],
   ];
   const passed: readonly Readonly<[field: Parameters<typeof codesFor>[0], text: string]>[] = [
     ["primaryText", "We accept Social Security income"],
     ["headline", "ITIN loans available"],
     ["company", "Pin Oak Lending"],
     ["disclosureLine", "NMLS 1234567. Equal Housing Lender"],
+    ["primaryText", "Pin down your budget with me"],
+    ["primaryText", "Social Security income counts"],
   ];
 
   it("has at least 14 cases", () => {

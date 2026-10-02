@@ -324,7 +324,7 @@ describe("Running now (009B-AC-009)", () => {
     expect(home.running.rows[0]).toMatchObject({
       campaignRef: saved.version.campaignRef,
       name: "Sample: Home loans for veterans",
-      statusLabel: "Live",
+      statusLabel: "With Meta",
     });
   });
 });

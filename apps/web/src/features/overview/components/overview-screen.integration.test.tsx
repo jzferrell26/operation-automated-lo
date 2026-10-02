@@ -60,7 +60,7 @@ function row(overrides: Partial<HomeCampaignRow> = {}): HomeCampaignRow {
     href: "/marketing/campaigns/campaign_one",
     startsAt: "2026-10-03T14:00:00.000Z",
     endsAt: "2026-10-17T14:00:00.000Z",
-    statusLabel: "Live",
+    statusLabel: "With Meta",
     sample: false,
     ...overrides,
   };
@@ -458,7 +458,7 @@ describe("Running now (009B-AC-009)", () => {
     expect(links).toHaveLength(1);
     expect(links[0]).toHaveTextContent("First home, start here");
     expect(links[0]).toHaveAttribute("href", "/marketing/campaigns/campaign_one");
-    expect(within(running).getByText("Live")).toBeInTheDocument();
+    expect(within(running).getByText("With Meta")).toBeInTheDocument();
     expect(within(running).getByText(/Oct 3, 2026/u)).toBeInTheDocument();
     expect(within(running).getByText(/Oct 17, 2026/u)).toBeInTheDocument();
   });

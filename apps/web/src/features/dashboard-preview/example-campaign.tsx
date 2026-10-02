@@ -63,7 +63,7 @@ export function ExampleCampaign() {
             detail: "Northside Realty",
             icon: "users",
           },
-          { label: "Campaign type", value: "Open house", detail: "Open House Boost", icon: "home" },
+          { label: "Campaign type", value: "Open house", detail: "A housing ad", icon: "home" },
         ]}
       />
       {tab === "Campaign overview" ? (

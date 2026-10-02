@@ -211,7 +211,7 @@ const rawSyntheticReporting: unknown = {
   },
   campaign: {
     id: "synthetic-campaign-open-house-001",
-    title: "Cedar Street Open House Boost",
+    title: "Cedar Street open house",
     propertyLabel: "214 Cedar Street",
     currentVersion: 3,
     history: [

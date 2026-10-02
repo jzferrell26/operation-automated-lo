@@ -189,30 +189,31 @@ test("a first visit on a dark device paints Light, and System is stored and foll
   await assertGuardClean(guard);
 });
 
-test("1180 and 390 layouts preserve the required Overview priorities", async ({ page }) => {
+/**
+ * Amended on 2026-10-01 by PRD-009b: Home replaced the CRM overview, so the priorities this test
+ * held (the numbers, what you have going on, what needs attention) are gone with those sections. What
+ * Home promises is its composition: the start card first, then "Get set up", then the two short
+ * lists, in that order at 390 and as two columns at 1180 (D1).
+ */
+test("1180 and 390 layouts keep Home's cards in their order", async ({ page }) => {
   const guard = await guardSyntheticLocalPage(page);
   await page.setViewportSize({ width: 1180, height: 900 });
   await page.goto("/overview");
-  for (const heading of ["Your numbers", "What you have going on", "Needs your attention"]) {
-    await expect(page.getByRole("heading", { name: heading, exact: true })).toBeAttached();
+  for (const name of ["Launch an ad", "Get set up", "Running now"]) {
+    await expect(page.getByRole("region", { name })).toBeAttached();
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
-  const readiness = page.getByText("Still to do", { exact: true }).last();
-  const quickActions = page.getByRole("heading", { name: "Quick actions", exact: true });
-  const businessPulse = page.getByRole("heading", { name: "Your numbers", exact: true });
-  const attention = page.getByRole("heading", { name: "Needs your attention", exact: true });
-  const moreActions = page.getByRole("heading", { name: "More quick actions", exact: true });
-  const prioritySection = businessPulse.locator("xpath=ancestor::section");
-  const priorityActions = quickActions
-    .locator("xpath=ancestor::section")
-    .locator("button, a[href]");
+  const startCard = page.getByRole("region", { name: "Launch an ad" });
+  const setup = page.getByRole("region", { name: "Get set up" });
+  const running = page.getByRole("region", { name: "Running now" });
 
-  await expect(priorityActions).toHaveCount(2);
-  await expect(prioritySection.locator("article")).toHaveCount(4);
+  // One primary action, "Choose an ad", leads the page; the checklist's three actions are secondary.
+  await expect(page.locator("main [data-home-primary]")).toHaveCount(1);
+  await expect(setup.getByRole("link")).toHaveCount(3);
   const verticalOrder = await Promise.all(
-    [readiness, quickActions, businessPulse, attention, moreActions].map(async (locator) =>
+    [startCard, setup, running].map(async (locator) =>
       locator.evaluate((element) => element.getBoundingClientRect().top + window.scrollY),
     ),
   );
@@ -655,9 +656,12 @@ test("the 768 tablet frame uses the two-row top bar and single-column content", 
   await assertGuardClean(guard);
 });
 
-test("the open Menu sheet and the Overview state gallery meet accessibility contracts", async ({
-  page,
-}) => {
+/**
+ * Amended on 2026-10-01 by PRD-009b: the Overview state gallery this test also photographed (the
+ * design-reference cards under "How this page looks in every state") is retired with the CRM
+ * overview, so only the open Menu sheet is checked and photographed.
+ */
+test("the open Menu sheet meets accessibility contracts", async ({ page }) => {
   const guard = await guardSyntheticLocalPage(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/overview");
@@ -670,20 +674,6 @@ test("the open Menu sheet and the Overview state gallery meet accessibility cont
     screenshots.push("overview-light-menu-sheet-open-390x844.png");
   }
 
-  await page.setViewportSize({ width: 1180, height: 900 });
-  await page.goto("/overview");
-  await chooseTheme(page, "Dark");
-  await page.getByRole("banner").evaluate((element) => {
-    element.style.position = "static";
-  });
-  const gallery = page
-    .getByRole("heading", { name: "How this page looks in every state" })
-    .locator("xpath=ancestor::section");
-  await gallery.scrollIntoViewIfNeeded();
-  if (regenerateEvidence) {
-    await gallery.screenshot({ path: evidencePath("overview-dark-state-gallery-1180x900.png") });
-    screenshots.push("overview-dark-state-gallery-1180x900.png");
-  }
   await assertGuardClean(guard);
 });
 

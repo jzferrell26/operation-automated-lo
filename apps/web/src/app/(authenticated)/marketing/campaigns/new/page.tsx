@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import { headers } from "next/headers.js";
 import { redirect } from "next/navigation.js";
 
+import { PAGE_TITLES } from "../../../../../copy/page-titles.js";
 import { LaunchFlow } from "../../../../../features/campaigns/components/launch-flow.js";
 import { LaunchReview } from "../../../../../features/campaigns/components/launch-review.js";
 import { canRenderDashboardPreview } from "../../../../../server/dashboard-preview.js";
@@ -12,6 +14,9 @@ import {
 import { SIGN_IN_PATH } from "../../../../../server/runtime-authentication.js";
 
 export const dynamic = "force-dynamic";
+
+/** Writing review W-13: the tab says which page this is. */
+export const metadata: Metadata = { title: PAGE_TITLES.launchAnAd };
 
 type SearchParams = Promise<Readonly<Record<string, string | string[] | undefined>>>;
 

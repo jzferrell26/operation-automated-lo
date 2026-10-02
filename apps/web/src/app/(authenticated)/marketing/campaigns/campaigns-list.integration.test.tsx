@@ -133,11 +133,13 @@ describe("the Campaigns list (009E-AC-009)", () => {
     const items = within(cards).getAllByRole("listitem");
     expect(items).toHaveLength(2);
     expect(items[0]).toHaveTextContent("Sample: First home, start here");
+    // Writing review W-9: a card has no column header, so each fact carries its own name.
     expect(items[0]).toHaveTextContent(
-      "First-time buyers. Oct 6 to Oct 20. Austin, TX and 1 more.",
+      "Topic: First-time buyers. Dates: Oct 6 to Oct 20. Where it shows: Austin, TX and 1 more.",
     );
     expect(items[0]).toHaveTextContent("Approved");
-    expect(items[0]).toHaveTextContent("Oct 1");
+    expect(items[0]).toHaveTextContent("Last change: Oct 1");
+    expect(items[1]).toHaveTextContent("Dates: Until Oct 22.");
     expect(
       within(items[0] as HTMLElement).getByRole("link", { name: "Sample: First home, start here" }),
     ).toHaveAttribute("href", "/marketing/campaigns/campaign_01First");
@@ -172,10 +174,36 @@ describe("the Campaigns list with no campaigns (009E-AC-011)", () => {
     expect(screen.queryByRole("table")).toBeNull();
     expect(screen.getByRole("navigation", { name: "Campaigns sections" })).toBeInTheDocument();
   });
+
+  /*
+   * Writing review W-10. A new real account has an empty library, so "Pick an ad from the library"
+   * invited a choice that does not exist. With no ad to choose, the list says what the library says.
+   */
+  it("says what the library says, not to pick an ad, when the library has no ad yet", () => {
+    const { container } = render(<CampaignList libraryEmpty now={NOW} rows={[]} />);
+
+    const empty = container.querySelector(".oalo-async-state[data-state='empty']") as HTMLElement;
+    expect(within(empty).getByRole("heading", { name: "No campaigns yet" })).toBeInTheDocument();
+    expect(
+      within(empty).getByText(
+        "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(empty).queryByText(/Pick an ad from the library/u)).toBeNull();
+    // The page still has exactly one primary action, inside the empty state.
+    expect(screen.getAllByRole("link", { name: "Launch an ad" })).toHaveLength(1);
+  });
+
+  it("does not change what a list with campaigns says, whatever the library holds", async () => {
+    render(<CampaignList libraryEmpty now={NOW} rows={await rows()} />);
+
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.queryByText(/No ads in the library yet/u)).toBeNull();
+  });
 });
 
 describe("a campaign saved before PRD-009 on the list (009E-AC-012)", () => {
-  it("shows its saved headline as its name and Earlier flow as its topic, with no property", async () => {
+  it("shows its saved headline as its name and Open house as its topic, with no property", async () => {
     const earlier = await rowOf(await earlierFlowCampaign({ decision: "approved" }), {
       principal: APPROVER,
     });
@@ -185,7 +213,8 @@ describe("a campaign saved before PRD-009 on the list (009E-AC-012)", () => {
     const row = within(table)
       .getByRole("link", { name: "Tour this home this weekend" })
       .closest("tr") as HTMLElement;
-    expect(within(row).getByText("Earlier flow")).toBeInTheDocument();
+    expect(within(row).getByText("Open house")).toBeInTheDocument();
+    expect(table.textContent ?? "").not.toContain("Earlier flow");
     // Its run dates were open house times, which are not shown; its area is the typed region it saved.
     expect(within(row).getByText("Not set")).toBeInTheDocument();
     expect(within(row).getByText("Dallas-Fort Worth")).toBeInTheDocument();

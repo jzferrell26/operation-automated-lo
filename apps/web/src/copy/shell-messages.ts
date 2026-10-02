@@ -20,8 +20,15 @@ export const SHELL_MENU_CLOSE = "Close the menu";
 
 export const SHELL_HELP_BUTTON = "Help";
 export const SHELL_HELP_TITLE = "Help";
+/**
+ * Amended 2026-10-02 by the writing review (MTK-008, W-12). It used to say "Contact support" and gave
+ * no way to: the product carries no support address, link or form anywhere, and the panel is not
+ * allowed a link or a second control. So it names the one person a loan officer can actually ask,
+ * their workspace owner, and keeps the useful half of the old line, which page they were on. When a
+ * real support channel exists, this is the one line to change.
+ */
 export const SHELL_HELP_BODY =
-  "Questions about Automated LO? Contact support and tell us which page you were on.";
+  "Questions about Automated LO? Ask your workspace owner, and tell them which page you were on.";
 export const SHELL_HELP_CLOSE = "Close help";
 
 export const SHELL_ACCOUNT_TITLE = "Your account";

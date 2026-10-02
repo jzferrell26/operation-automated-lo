@@ -8,7 +8,8 @@ import { FORGOT_PASSWORD } from "../../../features/auth/strings.js";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Reset your Automated LO password",
+  // Already carries the product's name, so the root layout's template must not add it again (W-13).
+  title: { absolute: "Reset your Automated LO password" },
   description: "Ask for a link to choose a new Automated LO password.",
 };
 

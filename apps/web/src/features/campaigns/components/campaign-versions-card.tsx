@@ -52,7 +52,14 @@ export function CampaignVersionsCard({
                     )}
                   </p>
                 )}
-                {version.versionNo === shownVersionNo ? null : (
+                {/*
+                  The version on screen says so, in words, where the other rows have their "Open"
+                  link. `aria-current` alone told only assistive technology which row was shown, so
+                  a sighted person could not tell which row they were on (writing review W-6).
+                */}
+                {version.versionNo === shownVersionNo ? (
+                  <span className={styles.viewingNow}>{VERSIONS.viewing}</span>
+                ) : (
                   <Link href={version.href}>
                     {VERSIONS.open}{" "}
                     <span className="oalo-visually-hidden">{versionLabel(version.versionNo)}</span>

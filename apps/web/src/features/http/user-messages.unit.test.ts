@@ -44,6 +44,26 @@ const NOT_SHOWN_TO_A_USER: readonly Readonly<{ code: string; because: string }>[
 
 const ERROR_CODE = /\b(?:error|code)\b\s*[:,]\s*"(?<code>[A-Z][A-Z0-9_]{4,})"/gu;
 
+/**
+ * A code held as a record value, the way the approve route keeps its four library refusals
+ * (`missing: "LIBRARY_AD_MISSING"` in `campaign-approval-handler.ts`), is not written as `error:` or
+ * `code:`, so `ERROR_CODE` cannot see it and the test passed with those four unmapped (writing
+ * review pass 1, guard gap 1). This second pattern reads a `key: "LIBRARY_AD_..."` pair.
+ */
+const RECORD_VALUE_CODE = /\b\w+\s*:\s*"(?<code>LIBRARY_AD_[A-Z0-9_]+)"/gu;
+
+/**
+ * The four refusals the approve route answers with 409 (`LIBRARY_AD_REFUSAL_CODES`). Named here as
+ * well as found by the scan, so removing any one entry from `user-messages.ts` fails a test even if
+ * the handler's shape changes again.
+ */
+const APPROVE_LIBRARY_AD_REFUSALS: readonly string[] = [
+  "LIBRARY_AD_MISSING",
+  "LIBRARY_AD_RETIRED",
+  "LIBRARY_AD_REPLACED",
+  "LIBRARY_AD_ART_CHANGED",
+];
+
 async function collectEmittedCodes(): Promise<readonly string[]> {
   const codes = new Set<string>();
 
@@ -57,10 +77,12 @@ async function collectEmittedCodes(): Promise<readonly string[]> {
         continue;
       }
       const source = await readFile(join(entry.parentPath, entry.name), "utf8");
-      for (const match of source.matchAll(ERROR_CODE)) {
-        const code = match.groups?.["code"];
-        if (code !== undefined) {
-          codes.add(code);
+      for (const pattern of [ERROR_CODE, RECORD_VALUE_CODE]) {
+        for (const match of source.matchAll(pattern)) {
+          const code = match.groups?.["code"];
+          if (code !== undefined) {
+            codes.add(code);
+          }
         }
       }
     }
@@ -77,6 +99,50 @@ describe("error codes become sentences", () => {
     );
 
     expect(unmapped).toEqual([]);
+  });
+
+  it("finds the four approve refusals that the route keeps as record values", async () => {
+    const found = await collectEmittedCodes();
+
+    for (const code of APPROVE_LIBRARY_AD_REFUSALS) {
+      expect(found, code).toContain(code);
+    }
+  });
+
+  it.each(APPROVE_LIBRARY_AD_REFUSALS)("maps %s to its own plain sentences", (code) => {
+    expect(isMappedErrorCode(code)).toBe(true);
+    expect(userMessageForCode(code)).not.toBe(UNKNOWN_ERROR_MESSAGE);
+    expect(userMessageSentence(code)).not.toContain("on our side");
+    expect(userMessageSentence(code)).toContain("can't be approved.");
+  });
+
+  it("tells the person who pressed Approve what to do, in the four refusals' own words", () => {
+    expect(userMessageSentence("LIBRARY_AD_MISSING")).toBe(
+      "This ad isn't in the library, so this version can't be approved. Choose another ad. Your budget, dates and area are kept.",
+    );
+    expect(userMessageSentence("LIBRARY_AD_RETIRED")).toBe(
+      "This ad was taken out of the library, so this version can't be approved. Choose another ad. Your budget, dates and area are kept.",
+    );
+    expect(userMessageSentence("LIBRARY_AD_REPLACED")).toBe(
+      "A newer version of this ad is in the library, so this version can't be approved. Use the new version of the ad, then approve that one.",
+    );
+    expect(userMessageSentence("LIBRARY_AD_ART_CHANGED")).toBe(
+      "The picture for this ad changed after this version was saved, so this version can't be approved. Make a new version from the ad, then approve that one.",
+    );
+  });
+
+  it("sends the approver to the campaign creator when the checks are not passing", () => {
+    expect(userMessageSentence("CAMPAIGN_APPROVAL_NOT_READY")).toBe(
+      "This campaign isn't ready to approve yet. Ask the campaign creator to fix what the checks found and save a new version, then approve that one.",
+    );
+  });
+
+  // Writing review W-18. The guided setup is gone, and so is the Marketing menu this sentence named.
+  it("sends a person to a place that exists when the guided setup is unavailable", () => {
+    expect(userMessageSentence("SETUP_PREFERENCE_UNAVAILABLE")).toBe(
+      "The guided setup isn't available in this workspace. You can still launch an ad from Campaigns.",
+    );
+    expect(userMessageSentence("SETUP_PREFERENCE_UNAVAILABLE")).not.toMatch(/Marketing menu/u);
   });
 
   it("states a reason for every code it does not map", () => {

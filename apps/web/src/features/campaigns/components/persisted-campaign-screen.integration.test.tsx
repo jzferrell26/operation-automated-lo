@@ -333,6 +333,17 @@ describe("the versions on the page (009E-AC-005)", () => {
     expect(within(versions).getAllByRole("link")).toHaveLength(1);
   });
 
+  // Writing review W-6: `aria-current` told only assistive technology which row was on screen.
+  it("says in words which version is on screen, where the other rows say Open", async () => {
+    await renderCampaign({ olderVersions: OLDER });
+
+    const rows = within(screen.getByRole("region", { name: "Versions" })).getAllByRole("listitem");
+    expect(rows[0]).toHaveAttribute("aria-current", "true");
+    expect(rows[0]).toHaveTextContent("Viewing now");
+    expect(rows[1]).not.toHaveTextContent("Viewing now");
+    expect(rows[1]).toHaveTextContent("Open");
+  });
+
   it("shows an older version read-only, with no approve, launch, or new-version control", async () => {
     const { container } = await renderCampaign({ olderVersions: OLDER }, OWNER, 1);
 
@@ -394,7 +405,7 @@ describe("the library notices on the page (009E-AC-006)", () => {
     });
 
     const notice = screen.getByText(
-      "This ad was taken out of the library on Sep 30, 2026. This campaign keeps the version you approved.",
+      "This ad was taken out of the library on Sep 30, 2026. This campaign keeps its approved version.",
     );
     expect(within(notice.closest("li") as HTMLElement).queryByRole("link")).toBeNull();
     expect(within(notice.closest("li") as HTMLElement).queryByRole("button")).toBeNull();
@@ -604,7 +615,7 @@ describe("a campaign saved before PRD-009 (009E-AC-012)", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Tour this home this weekend" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Made with the earlier open house flow.")).toBeInTheDocument();
+    expect(screen.getByText("Made with the earlier open house tool.")).toBeInTheDocument();
     const words = screen.getByRole("region", { name: "The saved words" });
     expect(words).toHaveTextContent(
       "Join us for the open house and explore the property in person.",

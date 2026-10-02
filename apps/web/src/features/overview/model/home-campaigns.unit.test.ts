@@ -68,7 +68,7 @@ describe("Running now (009B-AC-009)", () => {
       href: "/marketing/campaigns/live",
       startsAt: "2026-10-03T14:00:00.000Z",
       endsAt: "2026-10-17T14:00:00.000Z",
-      statusLabel: "Live",
+      statusLabel: "With Meta",
     });
   });
 

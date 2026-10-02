@@ -56,7 +56,7 @@ const FORBIDDEN: readonly Readonly<{ name: string; pattern: RegExp }>[] = [
 ];
 
 /** The one sentence a campaign made before PRD-009 says, which names the earlier flow and no time. */
-const ALLOWED_LINES = ["Made with the earlier open house flow."];
+const ALLOWED_LINES = ["Made with the earlier open house tool."];
 
 function withoutComments(source: string): string {
   return source

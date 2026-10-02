@@ -92,6 +92,27 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
     what: "This ad isn't in the library any more, or a newer version replaced it.",
     whatToDo: "Go back to Choose an ad and pick it again. Your words and budget are kept.",
   },
+  /**
+   * PRD-009c 009C-AC-008, and the writing review W-1. The approve route refuses a version whose
+   * library ad changed between loading the page and pressing Approve, and answers each reason with
+   * its own code. These reuse the campaign page's own notice wording (`campaign-page-messages.ts`).
+   */
+  LIBRARY_AD_MISSING: {
+    what: "This ad isn't in the library, so this version can't be approved.",
+    whatToDo: "Choose another ad. Your budget, dates and area are kept.",
+  },
+  LIBRARY_AD_RETIRED: {
+    what: "This ad was taken out of the library, so this version can't be approved.",
+    whatToDo: "Choose another ad. Your budget, dates and area are kept.",
+  },
+  LIBRARY_AD_REPLACED: {
+    what: "A newer version of this ad is in the library, so this version can't be approved.",
+    whatToDo: "Use the new version of the ad, then approve that one.",
+  },
+  LIBRARY_AD_ART_CHANGED: {
+    what: "The picture for this ad changed after this version was saved, so this version can't be approved.",
+    whatToDo: "Make a new version from the ad, then approve that one.",
+  },
   CAMPAIGN_PREFLIGHT_FAILED: {
     what: "We couldn't finish the checks on this campaign.",
     whatToDo: "Try again. If it keeps happening, contact support with the reference below.",
@@ -102,7 +123,8 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
   },
   CAMPAIGN_APPROVAL_NOT_READY: {
     what: "This campaign isn't ready to approve yet.",
-    whatToDo: "Fix what the checks found, save it again, then approve the new version.",
+    whatToDo:
+      "Ask the campaign creator to fix what the checks found and save a new version, then approve that one.",
   },
   CAMPAIGN_APPROVAL_FAILED: {
     what: "We couldn't record your approval.",
@@ -138,7 +160,7 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
   },
   SETUP_PREFERENCE_UNAVAILABLE: {
     what: "The guided setup isn't available in this workspace.",
-    whatToDo: "You can still create a campaign from the Marketing menu.",
+    whatToDo: "You can still launch an ad from Campaigns.",
   },
   INVALID_AUTH_REQUEST: {
     what: "Something in this request didn't look right to us.",

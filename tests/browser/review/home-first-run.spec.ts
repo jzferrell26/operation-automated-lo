@@ -249,15 +249,14 @@ test.describe.serial("Home for a brand-new account", () => {
   test("the checklist links go where D2 says (009B-AC-007)", async () => {
     const setup = page.getByRole("region", { name: "Get set up" });
 
-    await expect(setup.getByRole("link", { name: "Connect HighLevel" })).toHaveAttribute(
+    await expect(
+      setup.getByRole("link", { name: "See what's needed for HighLevel" }),
+    ).toHaveAttribute("href", "/settings/connections");
+    await expect(setup.getByRole("link", { name: "See what's needed for Meta" })).toHaveAttribute(
       "href",
       "/settings/connections",
     );
-    await expect(setup.getByRole("link", { name: "Connect Meta" })).toHaveAttribute(
-      "href",
-      "/settings/connections",
-    );
-    await expect(setup.getByRole("link", { name: "Add your brand" })).toHaveAttribute(
+    await expect(setup.getByRole("link", { name: "Add your brand details" })).toHaveAttribute(
       "href",
       "/brand",
     );

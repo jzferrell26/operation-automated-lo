@@ -34,9 +34,9 @@ recorded, owned, dated entry in section 5, never by agreement that it is fine.
    weight" (brief section 4).
 2. **Spacing rhythm.** Every gap, padding, and margin is a `--space-*` token.
    Vertical rhythm is consistent within a screen and across sibling screens.
-3. **Typography.** `var(--font-interface)` and `var(--font-data)`. The six steps
+3. **Typography.** `var(--font-interface)`, with tabular numerals for numbers and dates; `var(--font-data)` only inside "Details for support". The six steps
    and the weights come from the tokens. Data, identifiers, versions, hashes,
-   and timestamps use the data font. No ad-hoc size.
+   and timestamps use the interface font with tabular numerals. No ad-hoc size. _(Amended on 2026-10-01 by PRD-009 (OD-E, 009A-AC-007): was the data font, `var(--font-data)`.)_
 4. **Color and contrast.** Semantic tokens only. The color roles of brief
    section 9. WCAG AA measured, not eyeballed, in both themes. Status never by
    color alone.

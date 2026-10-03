@@ -17,14 +17,14 @@ const workspace = await readFile(
   "utf8",
 );
 
+/** The advisory ids listed under `auditConfig.ignoreGhsas`, in order. */
 function ignoredAdvisories(text: string): string[] {
-  const lines = text.split(/?
-/u);
-  const at = lines.findIndex((line) => /^s+ignoreGhsas:s*$/u.test(line));
+  const lines = text.split(/\r?\n/u);
+  const at = lines.findIndex((line) => /^\s+ignoreGhsas:\s*$/u.test(line));
   if (at < 0) return [];
   const ids: string[] = [];
   for (const line of lines.slice(at + 1)) {
-    const item = /^s+-s*(S+)s*$/u.exec(line);
+    const item = /^\s+-\s*(\S+)\s*$/u.exec(line);
     if (item === null) break;
     ids.push(item[1] ?? "");
   }

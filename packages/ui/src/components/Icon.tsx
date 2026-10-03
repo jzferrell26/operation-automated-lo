@@ -36,6 +36,7 @@ export type IconName =
   | "circle-dot"
   | "circle-x"
   | "clock"
+  | "copy"
   | "external-link"
   | "eye"
   | "eye-off"
@@ -46,7 +47,9 @@ export type IconName =
   | "monitor"
   | "moon"
   | "palette"
+  | "pencil"
   | "plug"
+  | "rocket"
   | "sun"
   | "tag"
   | "x";
@@ -362,6 +365,31 @@ function IconGeometry({ name }: Readonly<{ name: IconName }>) {
         <>
           <path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9Z" />
           <circle cx="7.5" cy="7.5" r="1.3" />
+        </>
+      );
+    /* Added 2026-10-03 for the PRD-009 scored review, pass 2 (R2 N-2, R1 P2-08): the glyphs the
+     * mockups draw on "Copy the link" (`launch-step-3-review-and-launch.html`), "Make a new version"
+     * (`campaign-detail.html`), and "Launch on Facebook" (both). */
+    case "copy":
+      return (
+        <>
+          <rect x="8" y="8" width="12" height="12" rx="2" />
+          <path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" />
+        </>
+      );
+    case "pencil":
+      return (
+        <>
+          <path d="M4 20h4L19 9l-4-4L4 16Z" />
+          <path d="m13.5 6.5 4 4" />
+        </>
+      );
+    case "rocket":
+      return (
+        <>
+          <path d="M5 15c-1.5 1.5-2 5-2 5s3.5-.5 5-2" />
+          <path d="M9 15l-3-3c1.5-4 5-8 13-9-1 8-5 11.5-9 13Z" />
+          <circle cx="14.5" cy="9.5" r="1.5" />
         </>
       );
     case "x":

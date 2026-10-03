@@ -163,8 +163,17 @@ describe("a state standing on the page is drawn on the card surface (R4-10)", ()
   });
 });
 
-describe("the glyphs added for the PRD-009 review (R1-04, R1-10, R3 F-02)", () => {
-  const added = ["tag", "chevron-left", "plug", "palette", "circle-check"] as const;
+describe("the glyphs added for the PRD-009 review (R1-04, R1-10, R3 F-02, R2 N-2, R1 P2-08)", () => {
+  const added = [
+    "tag",
+    "chevron-left",
+    "plug",
+    "palette",
+    "circle-check",
+    "copy",
+    "pencil",
+    "rocket",
+  ] as const;
 
   it("draws each one in the set's stroke language, decorative by default", () => {
     for (const name of added) {

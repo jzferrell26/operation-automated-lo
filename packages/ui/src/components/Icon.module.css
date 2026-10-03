@@ -93,10 +93,12 @@
   outline-offset: var(--focus-offset);
 }
 
+/* The same disabled look as `Button.module.css` (design section 2.3 and the mockups'
+ * `.btn[disabled]`), so a disabled icon button never reads as an enabled one. */
 .iconButton:disabled {
   color: var(--tx-body);
-  background: var(--sf-sunken);
-  border-color: var(--bd-input);
+  background: var(--st-neutral-bg);
+  border-color: var(--bd-hairline);
   box-shadow: none;
   cursor: not-allowed;
 }

@@ -20,6 +20,17 @@
   transition-timing-function: var(--ease-standard);
 }
 
+/* PRD-009 scored baseline review, R3 F-03 (High). `Icon` is `display: block`, so a glyph passed
+ * as a child of a plain inline span broke the line after itself: "Add Realtor partner" drew its
+ * plus above the words, 58px tall. The label is a row of its own, centred, at the button's gap, so
+ * every `<Button><Icon /> words</Button>` reads as one line, as the mockups draw "+ Launch an ad". */
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
 .sm {
   padding-inline: var(--space-3);
 }
@@ -39,10 +50,16 @@
   outline-offset: var(--focus-offset);
 }
 
+/* Design `00-direction.md` section 2.3, "A disabled primary turns grey, so the screen's single
+ * enabled primary is the one blue button", and the mockups' `.btn[disabled]`
+ * (`campaign-detail.html:213`): the neutral fill on a hairline edge. PRD-009 scored review R1-14
+ * and R2 F-5 measured the old rule, `--sf-sunken` on the `--bd-input` edge: `--sf-sunken` equals
+ * the canvas and `--bd-input` is the enabled secondary's edge since 009a, so a disabled primary
+ * read as an enabled outline button beside "Make a new version". */
 .button:disabled {
   color: var(--tx-body);
-  background: var(--sf-sunken);
-  border-color: var(--bd-input);
+  background: var(--st-neutral-bg);
+  border-color: var(--bd-hairline);
   box-shadow: none;
   cursor: not-allowed;
 }

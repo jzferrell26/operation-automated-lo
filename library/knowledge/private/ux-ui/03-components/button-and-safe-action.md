@@ -12,6 +12,10 @@ Feature code imports `Button` and `SafeAction` from `@oalo/ui`. It does not cons
 
 Controls have a visible label, at least a 44 by 44px target on mobile, and a 2px focus ring with 3px offset. Loading retains the label for assistive technology, prevents duplicate submission, and announces progress without changing the action's meaning. Disabled controls retain the reason in adjacent text, not only a tooltip.
 
+A glyph passed with the words (`<Button><Icon name="plus" decorative /> Add Realtor partner</Button>`) sits on the words' line: the label is an `inline-flex` row, `align-items: center`, `gap: var(--space-2)`. _(Added 2026-10-03 by the PRD-009 scored baseline review, R3 F-03: `Icon` is `display: block`, and inside a plain inline label it drew the plus on a line of its own, a 58px primary.)_
+
+Disabled, every variant: `--st-neutral-bg` fill, `--bd-hairline` edge, `--tx-body` label, no shadow, `cursor: not-allowed`. Design `00-direction.md` section 2.3: "A disabled primary turns grey, so the screen's single enabled primary is the one blue button"; the mockups' `.btn[disabled]` (`campaign-detail.html:213`). `IconButton` uses the same rule. _(Amended 2026-10-03 by the PRD-009 scored baseline review, R1-14 and R2 F-5: was `--sf-sunken` on `--bd-input`, which since 009a is the canvas colour on the enabled secondary's edge, so a disabled primary read as an enabled outline button.)_
+
 ## SafeAction contract
 
 `SafeAction` wraps a consequential `Button` with the operational precondition and confirmation pattern. It accepts a safe-action label, explanation, required role or permission, current state, and `onConfirm` action.

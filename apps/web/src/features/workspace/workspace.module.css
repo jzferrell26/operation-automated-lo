@@ -235,6 +235,11 @@
 .workspace .pageNote p {
   color: inherit;
 }
+/* The 16px glyph centres on the note's first line (`1lh` is that 14px line), where the row's
+ * `flex-start` would hang it from the line's top edge. */
+.pageNote > svg {
+  margin-block-start: calc((1lh - var(--space-4)) / 2);
+}
 /*
  * What a card says where it cannot offer an action (Brand's report preview while homeowner reports are
  * off): the reason, and the next safe step under it, `--space-2` apart. `link.md`: a destination that is

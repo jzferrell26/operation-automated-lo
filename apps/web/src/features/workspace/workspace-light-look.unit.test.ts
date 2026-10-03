@@ -159,15 +159,18 @@ describe("P3-01: the shared state view keeps its own title step (scored review p
     }
   });
 
-  it("is the heading that class sits on in the markup", async () => {
-    const { EmptyState } = await import("@oalo/ui");
-    const { createElement } = await import("react");
-    const { renderToStaticMarkup } = await import("react-dom/server");
-
-    const markup = renderToStaticMarkup(
-      createElement(EmptyState, { title: "Add your first", description: "Why." }),
+  it("is the heading that class sits on in the primitive, so the exclusion reaches the state view's title", async () => {
+    // The primitive's source, not an import of it: this file reads stylesheets and stays light.
+    const { readFile } = await import("node:fs/promises");
+    const primitive = await readFile(
+      join(
+        resolve(import.meta.dirname),
+        "../../../../../packages/ui/src/components/async-state.tsx",
+      ),
+      "utf8",
     );
-    expect(markup).toMatch(/<h2 class="oalo-async-state__title"/u);
+
+    expect(primitive).toMatch(/<h2 className="oalo-async-state__title"/u);
   });
 });
 
@@ -185,6 +188,12 @@ describe("P3-03: the page note is the information notice, not a sunken well (sco
 
   it("takes the notice's strong ink for its sentence, over the page's body-ink paragraphs", () => {
     expect(declarationsOf(".workspace .pageNote p")["color"]).toBe("inherit");
+  });
+
+  it("sets the glyph on the first line's middle, by the line and a step, not by a raw length", () => {
+    expect(declarationsOf(".pageNote > svg")["margin-block-start"]).toBe(
+      "calc((1lh - var(--space-4)) / 2)",
+    );
   });
 
   it("keeps no sunken note rule that could bring the well back", () => {

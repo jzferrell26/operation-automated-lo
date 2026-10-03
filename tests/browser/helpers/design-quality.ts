@@ -878,9 +878,10 @@ export async function captureNamedState(
     fullPage?: boolean;
     idleNetwork?: boolean;
     /**
-     * Regions whose content is a fact about this run rather than about the design: a decision's
-     * timestamp, for instance. Painted over so the picture still fails on a spacing token, a colour
-     * role, or a type step, and never fails because the clock moved.
+     * Regions whose content is a fact about this run rather than about the design. Painted over so
+     * the picture still fails on a spacing token, a colour role, or a type step, and never fails
+     * because the clock moved. Every date on the page is masked without being named here (see
+     * `expectThePictureMatches`); name anything else.
      */
     mask?: readonly Locator[];
     axe?: Readonly<{ exclude?: readonly string[]; disableRules?: readonly string[] }>;
@@ -895,15 +896,116 @@ export async function captureNamedState(
     await expectNoHorizontalOverflow(page);
     await expectTargetsAreLargeEnough(page);
     await expectTypographyOnBrief(page);
-    const fullPage = input.fullPage ?? true;
-    if (fullPage) await warmFullPageCapture(page);
-    await expect(page).toHaveScreenshot(
+    await expectThePictureMatches(
+      page,
       screenshotName(input.screen, frame.name, input.theme, input.state),
-      {
-        fullPage,
-        ...(fullPage ? { timeout: FULL_PAGE_SCREENSHOT_TIMEOUT_MS } : {}),
-        ...(input.mask === undefined ? {} : { mask: [...input.mask] }),
-      },
+      { fullPage: input.fullPage ?? true, mask: input.mask ?? [] },
     );
+  }
+}
+
+/** Every date the product draws: a `time` element, or the value of a date control. */
+export const DATE_SELECTOR = "time, input[type='date']";
+
+/** Painted over a date's own line boxes, in Playwright's default mask colour. */
+const FRAGMENT_MASK_ATTRIBUTE = "data-review-mask-fragments";
+/** Handed to Playwright's own mask, which paints the element's whole box. */
+const BOX_MASK_ATTRIBUTE = "data-review-mask-box";
+const MASK_COLOR = "#ff00ff";
+
+/**
+ * The stylesheet that paints a fragment mask. An inline element's background is drawn on each of
+ * its line boxes and nowhere else, so a date that wraps is covered on its two short pieces and the
+ * words before and after it on those lines stay in the picture.
+ */
+const FRAGMENT_MASK_STYLE = `
+[${FRAGMENT_MASK_ATTRIBUTE}],
+[${FRAGMENT_MASK_ATTRIBUTE}] * {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  text-decoration-color: transparent !important;
+}
+[${FRAGMENT_MASK_ATTRIBUTE}] {
+  background-color: ${MASK_COLOR} !important;
+  background-image: none !important;
+}`;
+
+/**
+ * Marks what a picture paints over: every date on the page, and whatever else the caller names.
+ *
+ * PRD-009 scored baseline review, R1-18 and R2's harness notes H-2 and H-3.
+ *
+ * - H-2: a date the run itself produced ("Saved on Oct 2, 2026", "Until Oct 16") was masked only
+ *   where a spec remembered to pass it, so a picture could fail on another day. Every date is now
+ *   masked by default, wherever a picture is taken through this helper; a date is a fact about the
+ *   clock or the catalogue, never about the design. The catalogue's fixed review dates are masked
+ *   with them on purpose: a mask that depended on which dates happen to be near today would differ
+ *   between the run that drew a baseline and the run that compares it.
+ * - R1-18 and H-3: Playwright paints a mask over the element's bounding box. A `time` that wraps
+ *   has a box spanning both lines and the full width between them, so the mask blacked out "Version
+ *   1. Reviewed" in five library cards, "From launch until" on step 3, and whole sentences on the
+ *   campaign page, and those words could regress without failing. An element that lays out inline
+ *   is now masked on its own line boxes only; anything else (a date control, a block) keeps
+ *   Playwright's box mask, because its box is the date.
+ *
+ * Read at the frame the picture is taken at, because a resize can move an element between the two.
+ */
+async function markTheMasks(page: Page, extra: readonly Locator[]): Promise<void> {
+  await clearTheMasks(page);
+  for (const locator of [page.locator(DATE_SELECTOR), ...extra]) {
+    await locator.evaluateAll(
+      (elements, [fragment, box]) => {
+        for (const element of elements) {
+          const inline = getComputedStyle(element).display === "inline";
+          element.setAttribute(inline ? fragment : box, "");
+        }
+      },
+      [FRAGMENT_MASK_ATTRIBUTE, BOX_MASK_ATTRIBUTE] as const,
+    );
+  }
+}
+
+async function clearTheMasks(page: Page): Promise<void> {
+  await page.evaluate(
+    ([fragment, box]) => {
+      for (const element of document.querySelectorAll(`[${fragment}], [${box}]`)) {
+        element.removeAttribute(fragment);
+        element.removeAttribute(box);
+      }
+    },
+    [FRAGMENT_MASK_ATTRIBUTE, BOX_MASK_ATTRIBUTE] as const,
+  );
+}
+
+/**
+ * Takes the picture a named state or a default state is compared against, with every date masked
+ * on its own line boxes (see `markTheMasks`). `captureNamedState` uses it at every frame; a spec
+ * that compares a picture directly calls it in place of `toHaveScreenshot`, so the same masks hold
+ * for every picture in the suite.
+ *
+ * The masks are put on after the machine checks have run and taken off after the comparison, so
+ * no check measures a masked page and no later step sees the marks.
+ */
+export async function expectThePictureMatches(
+  page: Page,
+  name: string,
+  options: Readonly<{ fullPage?: boolean; mask?: readonly Locator[] }> = {},
+): Promise<void> {
+  const fullPage = options.fullPage ?? true;
+  await markTheMasks(page, options.mask ?? []);
+  const style = await page.addStyleTag({ content: FRAGMENT_MASK_STYLE });
+  try {
+    if (fullPage) await warmFullPageCapture(page);
+    await expect(page).toHaveScreenshot(name, {
+      fullPage,
+      ...(fullPage ? { timeout: FULL_PAGE_SCREENSHOT_TIMEOUT_MS } : {}),
+      mask: [page.locator(`[${BOX_MASK_ATTRIBUTE}]`)],
+      maskColor: MASK_COLOR,
+    });
+  } finally {
+    await style.evaluate((element) => {
+      if (element instanceof Element) element.remove();
+    });
+    await clearTheMasks(page);
   }
 }

@@ -1546,3 +1546,633 @@ Write `.../scratchpad/review-parts/<your-id>-p2.md` with: (1) the pass 1 finding
 (2) the score table; (3) new or remaining findings; (4) a summary: pictures scored, how many at 3 on
 every axis, findings by severity. Final message under 250 words with the counts and each remaining
 finding in one line.
+
+# Pass 3 (2026-10-03)
+
+The same four sets, re-scored on the third redraw (screen-baselines run 37149916536, head `8178126b`) after round 2 (lanes G, H, I, J), the quality close-out lanes, and the writing delta fixes. Every pass 2 finding is RESOLVED in all four parts. 270 of 468 pictures score 3 on every axis (R1 16 of 104, R2 112 of 138, R3 6 of 80, R4 136 of 146). Remaining: 1 Medium (R2 P3-1, the demo campaign page's version chips at 768 and 390) and 22 Low, most visible in earlier passes and missed there. The orchestrator's stopping rule for this review: pass 3 is the last full scan; its findings are fixed in one round (lanes X and Y) and the affected pictures redrawn once more; pass 4 confirms each pass 3 finding is resolved, and anything new is recorded as a dated follow-up rather than reopening the review. New ruling (R1 P3-03): where a written spec line and the PRD-009 mockup disagree, the mockup wins and the spec line gets a dated note. Glyph `chevron-right` added (`d6eccf8f`). The pass 3 brief is reproduced at the end of this section.
+
+
+## Pass 3, part R1
+
+
+Reviewer `r1` (`ux-ui-guardian`), PRD-009 scored baseline review, pass 3 (009G-AC-006). Read-only review
+of the third redraw installed in `C:\Users\jzfer\Projects\oalo-prd-009` (screen-baselines run
+37149916536, head `8178126b`; the worktree head is `74892792`, which adds QA-11 to QA-13). Nothing in
+the repository was edited.
+
+**Set.** The same 104 pictures as passes 1 and 2, all under `tests/visual/screens/review/`: every name
+starting `ads-library--` (24) or `launch-an-ad--` (80). All 104 differ from their pass 2 pictures in
+`.../scratchpad/baselines2/review/` and are identical to `.../scratchpad/baselines3/review/`.
+
+**Standards read.** Both earlier briefs and the pass 3 brief; `06-review-rubric.md` in full (unchanged
+since pass 2); `03-components/campaign-and-artifact-workflow.md`, the new "The three Launch an ad
+screens" section (`d391401f`); `card-and-surface.md` (the padding table and the one-implementation
+rule); `badge-and-live-region.md` with its 2026-10-03 ruling; `button-and-safe-action.md` and
+`icon-and-icon-button.md` with the glyph lines (`dfb4399a`); `Button.module.css` (the 500 weight
+ruling); the four mockups and their previews; the fixes `26b0b211`, `7e34296a` (lane I), `16488b17`
+(lane J), `21705817` (the Card phone inset), and the writing delta `e61bfc2d`, `a0567ff6`. Standing
+rulings respected: chips 12px; buttons 500; Card `lg` 20px below 720px and 24px above; the glyph set;
+the exempt ad picture; the `Stepper` primitive in place of the mockups' boxed indicator.
+
+**Method.** Every picture opened (tall frames in crops), pass 2 and pass 3 side by side where a finding
+was in play. Light and Dark compared at every frame by an edge map: all 52 pairs are the same size, and
+every Dark-only edge sits inside the white ad on a dark card or on the stepper's chips, so Light and
+Dark score the same at every frame. Sizes from glyph capitals (16px is 12 rows, 14px 11, 12px 9),
+colours from sampled pixels, every date mask checked for a split. Source lines are at `74892792`
+(only `launch-review.tsx` moved after `8178126b`, by QA-12).
+
+**QA-11/12.** None of my 104 pictures shows a replaced, changed-picture or missing ad: step 3 has no
+picture of those states. The one refused-ad picture, `step-3-ad-retired`, keeps its chip words ("Ad
+retired" is `CAMPAIGN_AD_RETIRED_LABEL`, unchanged) and its "Choose another ad" (QA-12 hides it only
+from a viewer who cannot save a version; this picture is the account owner's,
+`tests/browser/review/empty-account.spec.ts:456-463`). I scored it as drawn and mark it "QA-11/12: no
+change expected" in case it is in the re-check set.
+
+### 1. Pass 2 findings, status
+
+| Finding | Status | Evidence in pass 3 |
+|---|---|---|
+| R1-13r approve card's dead foot | RESOLVED | `step-3-ready-for-approval--1440--light.png`: "Send back for changes" ends y 1277, the card's inner edge is y 1300 (24px); `-needs-changes--1440`: last line box to the edge 24px; `-ready-for-approval--390`: 2336 to 2355, the 20px phone inset. |
+| P2-01 topic pill | RESOLVED | `ads-library--all--1440--light.png`: pill capital 9 rows (y 767 to 775, 12px) on 238,242,247, the pill 26px tall (4 + 18 + 4); `.cardBody .topic` keeps only `align-self` and `white-space` (`ad-library-cards.module.css:113-116`). |
+| P2-02 launch crumbs | RESOLVED | `step-1-all--1440--light.png`: both crumbs 11-row capitals (y 114 to 124); "Campaigns" 73px wide (85 in pass 2); "Launch an ad" in the strong ink at the medium weight. Same on all 80 launch pictures. |
+| P2-03 facts on a phone | RESOLVED | Every `step-3-*--390`: each label over its value, 0 apart; 768 and up keep the 8rem label beside the value. |
+| P2-04 a date breaks | RESOLVED | No mask in the 52 Light pictures is split across lines (the two flags at 1180 in the library are two cards' own dates). `step-3-ad-retired--1180`: the date stays whole after "on"; at 1180 and 390 the Dates fact's date moves whole to the next line, as the spec says. |
+| P2-05 captions | RESOLVED | Step 2 "Updates as you type" and both lines under the step 3 ad: 9-row capitals in 95,113,134 (`--tx-faint`). |
+| P2-06 card insets | RESOLVED | (a) `step-2-first-campaign--1440`: the preview is the shared `Card`, edge x 852 to the feed frame x 877 (24px), title to frame 16px, `--shadow-card` drawn. (b) every `lg` card at 390 is 20px (text x 37 on edge x 16). |
+| P2-07 step 2 phone actions | RESOLVED | `step-2-first-campaign--390`: the save note starts at the start edge; "Add" spans the field's width. |
+| P2-08 decision sentences, copy glyph | RESOLVED | The approve line, the approved, sent-back, retired and cannot-approve sentences and "What to fix" are 14px; the approve line is `--tx-body`; "Copy the link" draws the copy glyph. The fix split the decision sentences' ink: P3-03. |
+| P2-09 shape switch | RESOLVED | "Tall (4:5)" 11-row capital at the medium weight; the chosen segment 234,244,255 Light and 22,35,63 Dark, semibold. |
+
+All 10 resolved.
+
+### 2. Scores
+
+Axes: 1 hierarchy, 2 spacing, 3 typography, 4 colour and contrast, 5 states, 6 motion,
+7 responsiveness, 8 Dark and Light, 9 empty and error, 10 consistency with the PRD-009 mockups.
+Light and Dark share every line.
+
+| Picture group (count) | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Sub-PRD | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `ads-library--all`, `--one-topic`, all frames (16) | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009c, 009d card | P3-06 |
+| `ads-library--real-catalog`, all frames (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009c | 3 on every axis; D-1's title and reason in the shared empty state |
+| `launch-an-ad--step-1-all`, `--step-1-filtered`, all frames (16) | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009d | P3-06 |
+| `launch-an-ad--step-1-real-catalog`, all frames (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009d | 3 on every axis |
+| `launch-an-ad--step-2-first-campaign`, all frames (8) | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009d | P3-05 |
+| `launch-an-ad--step-3-ready-for-approval`, `--approved`, all frames (16) | 3 | 2 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009d, 009e support card | P3-01, P3-04 |
+| `launch-an-ad--step-3-needs-changes`, `--sent-back`, all frames (16) | 3 | 2 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009d, 009e | P3-01, P3-02, P3-04 |
+| `launch-an-ad--step-3-ad-retired`, all frames (8) | 3 | 2 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009d, 009e | P3-01, P3-02, P3-04. QA-11/12: no change expected (see above) |
+| `launch-an-ad--step-3-cannot-approve`, all frames (8) | 3 | 2 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009d, 009e hand-off | P3-01, P3-03, P3-04 |
+
+Total 104 (16 + 8 + 16 + 8 + 8 + 16 + 16 + 8 + 8).
+
+What holds at 3 across the set: axis 1 (one primary per screen, none on the choosing screens; titles
+at their steps and weights, matching the mockups' `section-title` and `card-title`); axis 4 (semantic
+tokens only outside the ad picture, every chip pairs glyph and words, captions faint, notes body);
+axes 5 and 9 (the disabled primaries on the neutral fill with the reason beside them; the shared empty
+state); axis 6 (not observable in a still); axis 7 (no overflow, the phone rules for facts, actions,
+places and insets now hold); axis 8 (layouts identical across themes; the ad stays the same, ruled).
+
+### 3. Remaining findings
+
+Rubric section 3 form. All six were present in pass 2 except where marked; each is Low.
+
+**P3-01. "See what we checked" is the body step at the medium weight with the browser's triangle
+(009d; present since pass 1).** Step 3, every state, every frame, both themes (48 pictures).
+`apps/web/src/features/campaigns/components/launch.module.css:482-488` (`.checked summary`) sets
+colour, weight `--weight-medium` and a 44px line, but no size and no display, so the summary renders at
+`--text-body-size` (12-row capital, y 543 to 554 on `step-3-ready-for-approval--1440--light.png`) with
+the user agent's filled triangle marker (x 877 to 886), from `launch-review.tsx:253`. The mockup's
+`details.disclosure > summary` is `display: flex`, `--text-secondary-size`, `--weight-semibold`,
+`--st-info-fg`, with a chevron-right glyph before the words
+(`launch-step-3-review-and-launch.html:364`, `:554`). "Details for support" two cards below draws no
+marker, so the column's two disclosures differ. Fix: the mockup's rule, and a `chevron-right` glyph,
+which `Icon` lacks (`packages/ui/src/components/Icon.tsx:33-34` has `chevron-down` and
+`chevron-left`), so the glyph needs the `Icon` owner first. Axes 3 and 10. **Low.**
+
+**P3-02. Step 3's three link primaries are 16px semibold beside the 14px, 500 "Copy the link" (009d;
+the weight present in pass 2, the split made visible by lane J's compact hand-off).**
+`step-3-needs-changes` ("Fix it"), `-sent-back` ("Make a new version"), `-ad-retired` ("Choose another
+ad"), every frame, both themes (24 pictures). `launch.module.css:633-644` (`a.primaryLink`) sets
+`font-weight: var(--weight-semibold)` and no size, so the label takes the `Link` action variant's body
+step (`packages/ui/src/components/link.module.css:11`): 13-row labels at 600 on
+`step-3-sent-back--1440--light.png` (y 1123 to 1135), against "Copy the link", the `Button` `sm`, at 14px
+and 500 on `-cannot-approve`. Required: the ruling in force, every button at the shared 500
+(`Button.module.css:34-37`), and the mockup's size for these four card actions, `btn btn--primary
+btn--block btn--sm` at `--text-secondary-size` (`launch-step-3-review-and-launch.html:212`, `:570-574`).
+Fix: drop the weight from `a.primaryLink` and give it the compact size (`Link size="sm"` exists since
+`894219a5`). The campaign page's `a.primaryLink.primaryLink` (`campaign-page.module.css:111-125`) has
+the same semibold; it is R2's to score. Axes 3 and 10. **Low.**
+
+**P3-03. The decision cards' sentences use two inks, and the new spec line contradicts the mockup
+(009d and 009e; introduced by P2-08's fix).** `step-3-cannot-approve`, every frame, both themes (8
+pictures), against its siblings. "You can't approve campaigns in this workspace. Send this link to an
+approver." samples 82,101,121 (`--tx-body`, from `.hint`, `campaign-page.module.css:457-463`, rendered
+by `campaign-hand-off.tsx:41`); the approved, sent-back and retired sentences and the "What to fix"
+items sample 6,30,53 (`--tx-strong`, `.decisionCard p`, `launch.module.css:613-617`, which sets no
+colour). In pass 2 the cannot-approve sentence was the strong ink too. The mockup draws all four as
+`.small` in the body text's `--tx-strong` (`launch-step-3-review-and-launch.html:123-126`, `:570-574`),
+and only the approve line `.muted`. But `campaign-and-artifact-workflow.md:78` ("Captions") now says the
+sentences in the decision cards and "What to fix" are `--tx-body`. Fix: one rule, recorded first. The
+mockup and three of the four cards agree on `--tx-strong`, so correct line 78 to name the decision
+sentences and "What to fix" as `--tx-strong` (notes, hints, the save note and the approve line stay
+`--tx-body`) and set `.hint` to `--tx-strong`; if the owner rules `--tx-body` instead, the other 32
+step 3 pictures move, not these 8. Axis 10. **Low.**
+
+**P3-04. "Details for support" is a 16px summary in a card padded 12px top and bottom (009e's rule,
+drawn on step 3; present in pass 2, from R1-16's fix).** Step 3, every state, every frame, both themes
+(48 pictures); the same rule draws R2's campaign page pictures. `campaign-page.module.css:387-395`
+(`.support details`, `padding: var(--space-3) var(--space-6)`) and `:397-404` (`.support summary`, no
+size), used at `launch-review.tsx:342`: on `step-3-ready-for-approval--1440--light.png` the card is
+70px tall (y 1522 to 1600 with its shadow) and "Details for support" has a 12-row capital (16px). The
+mockup's `details.card.support` is `padding-block: var(--space-1)` on the card's inline inset, and its
+summary is the disclosure summary, `--text-secondary-size` at `--weight-semibold`
+(`launch-step-3-review-and-launch.html:364`, `:369`, `:565`): a 52px card with 14px words. Fix: the
+two rules in `campaign-page.module.css`, so step 3 and the campaign page move together. Axes 2, 3 and
+10. **Low.**
+
+**P3-05. Step 2's save note stands 24px under its buttons (009d; present since pass 1).**
+`step-2-first-campaign`, every frame, both themes (8 pictures). The note is a child of the form card's
+grid, `.form { gap: var(--space-6) }` (`launch.module.css:86-89`; `launch-flow.tsx:446`), so it sits
+one `--space-6` under the button row (1440: buttons end y 1758, the note's line box starts about y
+1782; 390: "Back" ends y 2258, the note's line box about y 2283), while "Save and check" and "Back"
+are `--space-3` apart (`.actions`, `launch.module.css:360-366`). The mockup keeps the note inside
+`.form-actions`, one `--space-3` from the buttons at every frame (`launch-step-2-set-up.html:296`,
+`:315`, `:433-434`, `:566`), which ties the hint to the button it describes. Fix: put the note in
+`.actions` with `flex-basis: 100%` (it keeps its end and start alignment rules), or give it
+`margin-block-start: calc(var(--space-3) - var(--space-6))` only if it must stay outside. Axes 2 and
+10. **Low.**
+
+**P3-06. The ad card is drawn by hand, without the card shadow, and its action sits 16px under the
+version line (009d's card, also the library tab's; present since pass 1).** `ads-library--all`,
+`--one-topic`, `launch-an-ad--step-1-all`, `--step-1-filtered`, every frame, both themes (32
+pictures). `apps/web/src/features/campaigns/components/ad-library-cards.module.css:89-97` (`.card`,
+the `<article>` at `ad-library-cards.tsx:106`) states its own border, radius and fill and no
+`--shadow-card`: under every ad card the canvas starts at the row after the border (y 989 to 990 on
+`ads-library--all--1440--light.png`), where the step 3 `Card` draws its 2px shadow (238,241,246 then
+243,246,250 under y 1301). `card-and-surface.md` ("Canonical exports": "A page does not draw a card by
+hand with a border, a radius and a shadow in its own module"), the new "Cards" line ("No card on these
+screens states its own edge, radius, or padding", `campaign-and-artifact-workflow.md:79`), and the
+mockups' `.ad-card` with `box-shadow: var(--shadow-card)` (`ads-library.html:462`,
+`launch-step-1-choose.html:462`). Separately, `.cardAction` (`:148-151`) puts "Use this ad" in the body
+at `--space-2` gap plus `--space-2` padding, 16px under the version line on the tallest card, where the
+mockup's `.ad-card__foot` follows the body's `--space-5` bottom padding (20px, `:463`, `:468`). Fix:
+`Card padding="none"` for the article, the body's own inset kept, and the action in a foot after the
+body's `--space-5`. Axes 2 and 10. **Low.**
+
+**Observations, not scored.** (1) Step 2's brand tile is the ad's brand colour (31,58,95) and so sits
+at about 1.3:1 on the Dark summary (34,38,47) when no brand is set; it is `aria-hidden`, empty, and the
+same colour as the ad, which is ruled to match in both themes. (2) `.facts dd { text-wrap: pretty }`
+(`launch.module.css:570`) breaks "Headline unchanged. Ad / text unchanged" inside "Ad text" at 1440; a
+measure or copy matter. (3) The shared approval controls keep "Who can do this" and its value side by
+side at 390 while the facts stack; PRD-008's definition list, on R2's pages too. (4) Step 2's form card
+is the `lg` inset (24px) with 24px between sections where the mockup's `.form-card` is `--space-8`;
+the "Cards" line and `card-and-surface.md` govern, so it is not a delta. (5) "Make a new version" on
+step 3 draws no pencil; the step 3 mockup draws none (only `campaign-detail.html:538` does).
+
+### 4. Summary
+
+I scored all 104 pictures (52 Light and Dark pairs, all redrawn since pass 2). **All 10 pass 2
+findings in my set are resolved** (R1-13r, P2-01 to P2-09). **16 pictures score 3 on every axis**: the
+eight `ads-library--real-catalog` and the eight `launch-an-ad--step-1-real-catalog`. The other 88 each
+carry at least one Low delta; no picture scores below 2 on any axis, and axes 1, 4, 5, 6, 7, 8 and 9 are
+at 3 on all 104. Remaining findings: **6, all Low** (0 High, 0 Medium): P3-01 to P3-06. P3-03 was
+introduced by a pass 2 fix (the hand-off sentence's ink, with a spec line that contradicts the
+mockup); P3-02's weight was in pass 2 and the size split came with lane J's compact hand-off; P3-01,
+P3-05 and P3-06 date from pass 1 and P3-04 from pass 2's R1-16 fix, all missed then. Attribution: P3-01,
+P3-02, P3-05 and P3-06 are 009d (P3-06 also draws the 009c library tab, P3-01 needs a `chevron-right`
+glyph from the `Icon` owner); P3-03 and P3-04 live in `campaign-page.module.css` and so reach R2's
+campaign page pictures. None of my pictures is QA-11/12 pending; `step-3-ad-retired` is noted in case
+it is re-drawn.
+
+## Pass 3, part R2
+
+
+Reviewer: r2 (`ux-ui-guardian`). Third redraw: screen-baselines run 37149916536, head `8178126b`, pictures installed uncommitted in `C:\Users\jzfer\Projects\oalo-prd-009` under `tests/visual/screens/chromium/` and `review/` (worktree head `74892792`, which adds QA-11 and QA-12 after the redraw). Pass 2 pictures read from `.../scratchpad/baselines2/` (same names).
+Set: every picture named `campaign-page--`, `campaign-detail--`, `campaigns--`, `gone--` or `shell--`: 138 pictures, every one opened. All 138 differ from pass 2 (byte compare).
+
+Read first: the pass 3, pass 2 and pass 1 briefs; `library/knowledge/private/ux-ui/06-review-rubric.md` (scale, axes, finding form, the section 5 entry "Amended 2026-10-03 by the PRD-009 scored review (R2 F-14)", section 6); my pass 2 part; the report's pass 2 summary; `git log 0d539dee..8178126b` (lane G `21705817`, `2dda8467`, `8b1928f7`, `14d01e64`, `4e86ce95`; lane H `d264cb94`, `0a40c87a`; lane J `ac5c4970`, `66775f01`, `16488b17`; glyph records `a2449ae9`, `dfb4399a`; QA-06 `d1a92183`, `93c1a16d`; writing delta `a0567ff6`, `8fb66c86`) and the post-redraw QA-11 and QA-12 (`8b961f67`, `3429c57e`, `63275272`); the mockups `campaign-detail.html`, `campaigns-list.html` with their previews; `03-components/card-and-surface.md`, `badge-and-live-region.md`, `button-and-safe-action.md`, `async-empty-error-permission-state.md`, `campaign-and-artifact-workflow.md`; 009E-AC-009 to AC-012.
+
+Method. Measurements are picture pixels from crops, ink-row scans and pixel samples (PIL, scratch files only under `review-parts/r2/p3/`). Every Light and Dark pair was compared by an edge map inside the frame: all 69 pairs are structurally identical; the only one-theme edges are chip and tile fills that are lighter in one theme, the demo's artwork well (themed by design) and, on the demo at 768 and 390, the stretched chips of P3-1, which show in both themes. Gate-proven facts (rubric section 6) are not re-scored. `review/campaign-detail--approved--*` and `--already-decided--*` differ only inside the account pill (at most 71 pixels), so they share every score. QA-11/12 pending: `review/campaign-page--newer-version--*` (header chip and versions list) and `review/campaigns--all-states--*` (one list chip) are scored as drawn, where they still say "Ready for approval". Nothing in the repository was edited.
+
+### 1. Pass 2 findings, status
+
+| ID | Pass 2 (axis, severity) | Status | Evidence in pass 3 |
+|---|---|---|---|
+| F-8 (remaining) | "Pre-approval" split at its hyphen in the 768 table (7, Low) | RESOLVED | `review/campaigns--all-states--768--light.png`: Topic reads "Pre-approval" on one line in rows 5 and 7, and the Ad names break as "Sample: Get / pre-approved / before you shop"; the same on `chromium/campaigns--populated--768--*`. `KeepWordsWhole` (`66775f01`). |
+| N-1 | Campaign page cards keep 24px insets on a phone (10, Low) | RESOLVED | `review/campaign-page--approved--390--light.png`: card edge x 16, "Results" ink from x 38 (a 20px inset, as `campaign-detail--390.png`); cards 20px apart (Results card foot y 1011, The ad card top y 1031). The same on every campaign page at 390. Primitive `lg` step (`21705817`) and the page gap (`16488b17`). |
+| N-2 | Buttons drop the mockups' glyphs (10, Low) | RESOLVED | Pencil on "Make a new version" and rocket on "Launch on Facebook" (`review/campaign-page--newer-version--1440--light.png`, header actions); copy glyph on "Copy the link" (`chromium/campaign-detail--permission-restricted--1440--light.png`); plus on "Launch an ad" in the list header, the empty state and the saved-before page (`review/campaigns--all-states--1440--light.png`, `chromium/campaigns--empty--1440--light.png`, `review/campaign-page--saved-before-prd-009--1440--light.png`). |
+| N-3 | The list's "Launch an ad" not full width at 390 (10, Low) | RESOLVED | `review/campaigns--all-states--390--light.png`: the button spans x 16 to 373, as the saved-before page's. |
+| N-4 | Campaigns empty state as a sunken well on the canvas (8, Low) | RESOLVED | `chromium/campaigns--empty--1440--light.png`: fill 255,255,255 on the 245,248,252 canvas; Dark 27,30,37 on 20,22,27; both themes the bordered card, as `review/campaigns--empty-account--*`. |
+| N-5 (a) | Demo: three section gaps (2, Low) | RESOLVED | `chromium/campaign-detail--default--1440--light.png`: block foot to section-title cap is 35px before all five titles (733 to 768, 1365 to 1400, 1616 to 1651, 2142 to 2177, 2818 to 2854), one `--space-8` gap. |
+| N-5 (b) | Demo: raw eyebrow tracking (3, Low) | RESOLVED | "Campaign" is the sentence-case semibold eyebrow (`reporting.module.css` `.eyebrow`), no tracking. |
+| N-5 (c) | Demo: glyphless hand-built pills (4, Low) | RESOLVED, with two new findings on the fix | "Approved" (success, check), "Replaced", "Connected" and "Selected" are `Badge`s with glyphs (`ac5c4970`, words `8fb66c86`). The Badge stretches across its row at 768 and 390 (P3-1) and "Selected" takes the neutral tone where the spec says info (P3-2). |
+| Noted | Newer-version notice carries no glyph | Unchanged, still noted | `review/campaign-page--newer-version--1440--light.png`, notice card. |
+| Noted | "Leads sent to HighLevel" wraps at 768 | Unchanged, on-mockup | `campaign-detail.html:377`, `:401-409`. |
+
+### 2. Scores
+
+Axes: 1 hierarchy, 2 spacing, 3 typography, 4 colour and contrast, 5 states, 6 motion, 7 responsiveness, 8 Dark and Light, 9 empty and error, 10 PRD-009 mockups. "ex" is the dated exemption. Light and Dark share each line (identical scores).
+
+| # | Picture group (count) | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Sub-PRD | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | review `campaign-page--{approved,sent-back,library-notice}--{1440,1180,768}` (18) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e, 009d preview, 009c notice | Pencil and rocket now drawn (N-2); otherwise as pass 2. |
+| 2 | review `campaign-page--newer-version--{1440,1180,768}` (6) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | same | QA-11/12 pending (header and versions chip "Ready for approval" becomes "Newer ad version"). |
+| 3 | review `campaign-page--ad-retired--{1440,1180,768}` and `campaign-detail--{ready,approved,already-decided}--{1440,1180,768}` (24) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e, 009d approve card | Approve card has no dead foot and its sentences are the secondary step (`16488b17`). |
+| 4 | chromium `campaign-detail--permission-restricted--{1440,1180,768}` (6) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e, 009d hand-off | Copy glyph on "Copy the link"; no dead foot. |
+| 5 | `--390` of rows 1, 3 (less ad-retired) and 4: review `campaign-page--{approved,sent-back,library-notice}`, `campaign-detail--{ready,approved,already-decided}`, chromium `permission-restricted` (14) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e, 009a primitive | 20px card inset and 20px gap (N-1); full-width header actions. |
+| 6 | review `campaign-page--newer-version--390` (2) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e | QA-11/12 pending. |
+| 7 | review `campaign-page--ad-retired--390` (2) | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 3 | 3 | 3 | 009e, 009d copy | P3-4: "library version" / "1". |
+| 8 | review `campaign-page--saved-before-prd-009--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009e D4 | Plus on "Launch an ad" (N-2). P3-5: "The saved words" at the card step. |
+| 9 | chromium `campaign-detail--default--{1440,1180}` (4) | 3 | 3 | 3 | 2 | 3 | 3 | 3 | 3 | 3 | ex | 009f D1 route, 009a shell | One section gap, light eyebrow, Badges (N-5). P3-2. |
+| 10 | chromium `campaign-detail--default--{768,390}` (4) | 3 | 3 | 3 | 2 | 3 | 3 | 1 | 3 | 3 | ex | same | P3-1 (stretched chips), P3-2; at 390 also P3-3. |
+| 11 | review `campaigns--all-states--{1440,1180}` (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e | Plus on "Launch an ad". QA-11/12 pending (one "Ready for approval" chip). |
+| 12 | chromium `campaigns--populated--{1440,1180}` (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e | |
+| 13 | review `campaigns--all-states--768` and chromium `campaigns--populated--768` (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009e | F-8 resolved. P3-6: no thumbnail in the 768 table. all-states QA-11/12 pending. |
+| 14 | review `campaigns--all-states--390` and chromium `campaigns--populated--390` (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009e | N-3 resolved. P3-7: chip and "Last change" on one line. all-states QA-11/12 pending. |
+| 15 | chromium `campaigns--empty--*` and review `campaigns--empty-account--*` (16) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e AC-011, 009g | White card in both themes (N-4), plus on the action. |
+| 16 | review `gone--default--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009f D1 | Only the bar moved (compact Help, Menu). |
+| 17 | review `shell--help-menu-open--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a bar and Help sheet; Home beneath 009b | Compact Help keeps the bar's line (cap y 27 to 40 at 1440, as "Settings"); Home beneath takes lane H's 12px chips and page gap. |
+| 18 | review `shell--menu-sheet-open--390--*` (2) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Compact Menu button, still 44px tall (y 11 to 53). |
+
+Total 138 (18 + 6 + 24 + 6 + 14 + 2 + 2 + 8 + 4 + 4 + 4 + 4 + 4 + 4 + 16 + 8 + 8 + 2).
+
+Changes from pass 2 attributed: 009a lane G (the `lg` card's 20px phone step, the shell's 20px phone gap, compact Menu and Help buttons), 009e lane J (glyphs on the four buttons, the approve card's foot and secondary-step sentences, the phone inset and gap on the campaign page, `KeepWordsWhole`, the list's phone action and plus, the empty state on a card), 009f D1 route lane J and writing delta D-8 (the demo's section gap, eyebrow and Badge words), 009b lane H (Home beneath the Help sheet).
+
+### 3. Remaining findings
+
+Severity: High (blocks the bar for a person), Medium (visible on a primary frame), Low (a reviewer sees it, a person would not). P3-1 and P3-2 arrive with pass 2's N-5c fix; P3-4 with N-1's narrower phone inset; P3-3, P3-5, P3-6 and P3-7 were present in pass 2 and missed there.
+
+#### P3-1. The demo's version history chips stretch across their rows at 768 and 390. Axis 7. Medium. Sub-PRD 009f D1 route (lane J's N-5c).
+- Pictures: `chromium/campaign-detail--default--{768,390}--{light,dark}.png` (4). State: default (synthetic project).
+- What I see: in "What changed, and when" each version's chip ("Replaced", "Replaced", "Approved") is a pill as wide as its row: at 768 from x 45 to 723 (y 2560 to 2722), at 390 from x 29 to 361 (y 2535 to 2697), its label at the start and the tone's fill running on to the row's end, so it reads as a bar. At 1440 the same chip is its own width ("Replaced", x 248 to 340, y 1462). Pass 2 drew plain words here, so the stretch arrives with the Badge.
+- Required: `03-components/badge-and-live-region.md`, "Shape and type" (a pill: `padding-inline: var(--space-2)` around the glyph and label); rubric axis 7, "Correct composition at 1440, 1180, 768, and 390".
+- Source: `apps/web/src/features/reporting/components/reporting.module.css:457-459` (`.history li { grid-template-columns: minmax(0, 1fr) }` in the `max-width: 768px` block at `:421`) puts the `Badge` (`artifact-workspace.tsx:150`) in a one-column grid; `.history li` (`:211-219`) sets `align-items: start` but no `justify-items`, so the item stretches inline.
+- Fix: `justify-items: start` on `.history li` (or `justify-self: start` on its Badge), as the asset cards' Badges keep their own width.
+
+#### P3-2. The demo's "Selected" chips take the neutral tone. Axis 4. Low. Sub-PRD 009f D1 route.
+- Pictures: `chromium/campaign-detail--default--*` (8), all frames, both themes.
+- What I see: "Selected" and "Optional, selected" on the five Meta asset cards are grey with the circle-dot glyph, the look of "Replaced" and "Not live yet".
+- Required: `badge-and-live-region.md`, "Tones and glyphs": `info` is "Informational, generated, processing, selected" (`--st-info-bg`, `--st-info-fg`, glyph `info`); `neutral` is "Draft, inactive, unavailable, completed without success". Current tone `neutral`; required `info`. Words are present, so no status is colour alone.
+- Source: `apps/web/src/features/reporting/components/campaign-launch-review.tsx:71` (`<Badge tone="neutral">`).
+- Fix: `tone="info"`.
+
+#### P3-3. The demo's launch summary list loses its hanging indent at 390. Axis 7. Low. Sub-PRD 009f D1 route.
+- Pictures: `chromium/campaign-detail--default--390--{light,dark}.png` (2).
+- What I see: "Custom and lookalike audiences unavailable" wraps and "unavailable" starts at x 33, under the bullet (x 35), while the item's text starts at x 55 (y 5070); the list's other lines fit, so only this frame shows it.
+- Required: rubric axis 7 (composition at 390) and axis 2 (every indent a `--space-*` token): the marker is drawn inside the text box, so the text's start edge is the browser's marker width, not a token.
+- Source: `apps/web/src/features/reporting/components/reporting.module.css:317-319` (`.launchSummaryGrid ul { list-style-position: inside }`) with `padding: 0` (`:309-315`).
+- Fix: `list-style-position: outside` with `padding-inline-start: var(--space-5)`, so a wrapped line returns to the text's edge.
+
+#### P3-4. On the retired page at 390 the library ad's number stands alone on a line. Axis 7. Low. Sub-PRD 009e (the fact's words are 009d's).
+- Pictures: `review/campaign-page--ad-retired--390--{light,dark}.png` (2).
+- What I see: the "Library ad" value breaks before its number: "Sample: Spring home search, library version" then "1" alone on the next line (y 1749 to 1789). With pass 2's 24px inset the line broke earlier and kept "version 1" together.
+- Required: rubric axis 7; the rule pass 2's F-8 fix applied to the list (a unit read across a line break is a composition fault in a cell): "version 1" is one unit.
+- Source: `apps/web/src/copy/launch-messages.ts:175-177` (`adFact` joins "library version" and the number with an ordinary space), drawn at `campaign-ad-card.tsx:78`; the same fact on step 3 at `launch-review.tsx:279` (r1's set).
+- Fix: a no-break space (U+00A0) between "version" and its number in `adFact`, or draw the value through `KeepWordsWhole` extended to "version N".
+
+#### P3-5. The saved-before page titles its main card at the card step. Axis 10. Low. Sub-PRD 009e D4.
+- Pictures: `review/campaign-page--saved-before-prd-009--*` (8), all frames, both themes.
+- What I see: "The saved words", the page's main-column card, has a 12-row capital (16px, cap y 349 to 360 on the 1440 Light picture), the same as the side cards "Approval" and "Versions"; on the library-ad pages the main-column titles "Results" and "The ad" are 15 rows (20px; `campaign-page--approved--1440--light.png`, y 373 to 387 and 621 to 635). The two sibling pages rank their main card differently, and on this one main and side titles weigh the same.
+- Required: the nearest canvas (rubric axis 10 for a screen without one), `campaign-detail.html:540` and `:544` (main-column cards' `h2.section-title`, `--text-section-size`) against `:553-554` (side cards' `.card-title`); rubric axis 1, titles at their steps. Current `--text-card-size`; required `--text-section-size`.
+- Source: `apps/web/src/features/campaigns/components/persisted-campaign-screen.tsx:224` (`<h2 className={styles.cardTitle}>`), `campaign-page.module.css:149-151` (`.cardTitle { font-size: var(--text-card-size) }`).
+- Fix: title the card as "The ad" card is titled (`styles.cardHead h2`, `campaign-page.module.css:140-147`).
+
+#### P3-6. The 768 table drops the Ad column's thumbnail. Axis 10. Low. Sub-PRD 009e.
+- Pictures: `review/campaigns--all-states--768--*`, `chromium/campaigns--populated--768--*` (4).
+- What I see: the Ad cell holds the name and the "Sample ad" chip with no tile; at 1440 and 1180 every row has its 48px tile and at 390 every card has it.
+- Required: 009E-AC-009, "At 720 px and wider 'Your campaigns' is a table with Ad (a decorative thumbnail and the name as the link)"; `campaigns-list.html:511-512` (`.thumb` 3rem, `.ad-cell` at least 15rem) with no rule hiding the tile in the 1099px block (`:401-410`). Current `display: none`; required the tile, or a dated amendment.
+- Source: `apps/web/src/features/campaigns/components/campaign-list.module.css:195-197` (`.table .thumb { display: none }`) in the `max-width: 63.99rem` block (`:179`), added by pass 1's F-8 fix when the chips broke.
+- Fix: now that the chips keep one line and hyphenated words stay whole, give the tile back (the Ad column's share in the same block takes the 60px); or, if 768 cannot afford it, a dated 009E-AC-009 amendment owned by 009e that the table drops the tile below 1024px.
+
+#### P3-7. On a phone card the status chip and "Last change" share one line. Axis 10. Low. Sub-PRD 009e.
+- Pictures: `review/campaigns--all-states--390--*`, `chromium/campaigns--populated--390--*` (4).
+- What I see: each card ends with the chip followed by "Last change: [date]" at the secondary step in body ink, and the chip's words stand 4px above the line's words (first card: chip baseline y 493, "Last change" baseline y 497, `review/campaigns--all-states--390--light.png`).
+- Required: `campaigns-list.html:544`, the list card: the chip in its own `<p>`, then `<p class="caption">Last change Oct 1</p>` at the caption step in `--tx-faint`, the card's children `--space-2` apart (`:396`); preview `campaigns-list--390.png`.
+- Source: `apps/web/src/features/campaigns/components/campaign-list.tsx:219-225` (`<StatusChip row={row} />{" "}<span className={styles.cardFacts}>`), `campaign-list.module.css:170-173` (`.cardFacts`, secondary step).
+- Fix: the chip in its own paragraph and the last change in the next one at `--text-caption-size` in `--tx-faint`.
+
+#### Noted, not scored
+- The newer-version notice still carries no glyph beside its glyph-bearing siblings (009c's `UseNewVersion`); offered to the 009c owner, as in pass 2.
+- Demo page: `.safetyNotice` (`--st-info-bg`) and `.connectionEvidence` (`--st-success-bg`) in `reporting.module.css` are overridden by `Card`'s own fill (sampled 255,255,255 Light, 27,30,37 Dark), so both declarations are dead; the white card with a glyph matches the campaign page's notices, so it is not scored, but the dead rules should go.
+- Demo page: rows that pair a caption with a larger element align their tops, not their baselines ("Version 3" caption baseline y 481 against the "Approved" chip's y 485 at 1440; "Budget" and "Timezone" labels 5px above their values). No spec names baseline alignment; offered to the 009f owner.
+- The Campaigns empty state (`AsyncState`, `surface="card"`) insets 20px at every frame (`primitives.css` `.oalo-async-state`, `--space-5`), while `card-and-surface.md` gives a page card 24px above 720px. Neither spec states the state's inset on the page; offered to `design-system-guardian` to record one.
+- Cross-reference for r3: Home's "No ads running" is a hand-built `.empty` (`overview/components/home-campaign-lists.tsx:51`), while the Campaigns list's empty uses `EmptyState`, so two empty looks sit on sibling screens (rubric axis 9, "AsyncState variants, not hand-built views").
+- Cross-reference for r1: step 3 draws the same `adFact` (P3-4) and should keep "version N" together too.
+
+### 4. Summary
+
+138 pictures scored, every one opened, Light and Dark compared at every frame (all 69 pairs structurally identical). Pass 2: all six findings RESOLVED (F-8 remainder, N-1 to N-4, N-5 a to c), each with the picture that shows it; the two notes unchanged. 112 pictures are at 3 on every axis: the campaign page and campaign detail pictures at every frame except ad-retired at 390 and saved-before (70), the list at 1440 and 1180 (8), every empty state (16), the gone page (8), Help open (8) and the Menu sheet (2). Seven findings remain: 0 High, 1 Medium, 6 Low. Medium: P3-1, the demo's history chips stretch across their rows at 768 and 390. Low: P3-2 demo "Selected" chips neutral where the spec says info; P3-3 demo bullet list loses its hanging indent at 390; P3-4 "library version" / "1" on the retired page at 390; P3-5 "The saved words" at the card step; P3-6 no thumbnail in the 768 table (009E-AC-009); P3-7 phone card chip and "Last change" on one line. By sub-PRD: 009f D1 route P3-1 to P3-3; 009e P3-4 to P3-7. QA-11/12 pending on `review/campaign-page--newer-version--*` and `review/campaigns--all-states--*` (16 pictures), scored as drawn.
+
+## Pass 3, part R3
+
+### Part R3, pass 3
+
+Reviewer: r3 (`ux-ui-guardian`). Scored review pass 3 (009G-AC-006), the third redraw: screen-baselines run 37149916536, pictures drawn on `8178126b`, installed uncommitted in `C:\Users\jzfer\Projects\oalo-prd-009` (worktree head now `74892792`, which adds QA-11 to QA-13; none of the QA-11/12 chips appears in this set, see the summary). Source lines below are read at `74892792`; no file in this set's sources changed after `8178126b` except through those QA commits, which touch none of them.
+
+Set: the same 80 pictures as passes 1 and 2: 24 in `chromium/` (`overview--default--*`, `settings-connections--default--*`, `brand--default--*`) and 56 in `review/` (`home--*`, `settings--*`, `settings-connections--empty-account--*`, `brand--empty-account--*`, `partners--empty--*`, `homeowners--empty-account--*`). Every one differs from its pass 2 copy in `.../scratchpad/baselines2/` (56 by height, 24 by pixels); every one was opened, each Light and Dark pair compared at every frame (all 40 pairs are the same size and structurally identical).
+
+Read against: `06-review-rubric.md` (whole, with the R2 F-14 amendment), design `00-direction.md` rev 2, the PRD-009 mockups and previews (`home-first-run` at all five previews, `campaigns-list`, `campaign-detail`, `launch-step-2-set-up`, `launch-step-3-review-and-launch` for shared rules), `03-components/` `badge-and-live-region.md`, `link.md`, `form-field-and-text-inputs.md`, `button-and-safe-action.md`, the pass 1 and pass 2 report (all four parts), `git log 0d539dee..74892792`, and the rulings in force (12px chips; buttons 500 everywhere; Card's large inset 20px below 720px and 24px above; the eight glyphs). Measurements are PIL row and column scans of the PNGs (a 16px Inter capital is 12 rows, 14px is 11, 12px is 9, 19px is 14 to 15); scratch scripts and crops in `.../review-parts/r3p3/`. Nothing in the repository was edited.
+
+Axes: 1 hierarchy, 2 spacing, 3 typography, 4 colour and contrast, 5 states, 6 motion, 7 responsiveness, 8 Dark and Light, 9 empty and error, 10 consistency with the PRD-009 mockups.
+
+#### 1. Pass 2 findings
+
+| ID | Pass 2 | Status | Evidence (pass 3 picture) |
+|---|---|---|---|
+| P2-01 | Low: Home's chips 14px, raw 2px padding | **RESOLVED** | `review/home--first-run--1440--light.png`: "Not connected yet" capital rows 396 to 404 (9 rows, 12px), pill 388 to 413 (26 rows); the Connections "Needed" chip on `review/settings-connections--empty-account--1440--light.png` measures the same (capital 363 to 371, pill 355 to 380). `overview.module.css` sets no chip size or padding now (`d264cb94`). |
+| P2-02 | Low: Connections header margins | **RESOLVED** | `review/settings-connections--empty-account--1440--light.png`: title glyphs 133 to 158, lead 175 to 189, notice edge 217; `review/settings--default--1440--light.png`: 133 to 158, 175 to 189, card edge 217. Identical rhythm; the synthetic page keeps it under the strip (163 to 188, 205 to 219, 247). `2e525c74`. |
+| P2-03 | Low: doubled gap in the Brand report preview | **RESOLVED** | `review/brand--empty-account--1440--light.png`: "Dana Reyes" 442 to 456, "Your contact details" 484 to 492, "Changes apply" 524: 28 and 32 rows, against 28, 30 and 29 on the synthetic page with its NMLS line (`chromium/brand--default--1440--light.png`, 472, 514, 552, 592). `3a642a1c`. |
+| P2-04 | Low: disabled Select keeps the enabled edge | **RESOLVED** | `chromium/brand--default--1440--light.png`: "Brand color" edge `#d6e2ee` at rows 1229 and 1272 on a `#f5f8fc` fill, 44px tall, exactly as the disabled "Title on your ads" input (1107 and 1150); Dark `#343946` on `#22262f` for both. `21705817`, `14d01e64`. |
+| P2-05 | Low: workspace notes at a raw 12px | **RESOLVED** | Notes now 14px: "Your Realtor partner list..." capital 332 to 342 (`review/partners--empty--1440--light.png`), "Your role has read-only access..." 818 to 828 (`chromium/brand--default--1440--light.png`), both 11 rows like the 14px field labels. `workspace.module.css` has no `px` font size (scan). `3a642a1c`. P3-03 and P3-04 below are about the note's surface and role, not its size. |
+| P2-06 | Medium: partners primary 14px above its field | **RESOLVED** | `review/partners--empty--1440--light.png` and `--1180--`: button rows 246 to 289, search box 246 to 289; `--768--`: both 299 to 342. `3a642a1c`. |
+| P2-07 | Low: hand-built empty states on Partners and Homeowner reports | **RESOLVED** | `review/partners--empty--*` and `review/homeowners--empty-account--*`: both are the product's `EmptyState` on the card surface ("Empty" chip, title, description; the homeowners actions in the two action slots), left-aligned like the Campaigns empty state. `3a642a1c`, `c897fcd9`. The fix exposed P3-01 (the page sheets restyle the primitive's title). |
+
+Cross-part items in this set: R4-11 (same as P2-01) **RESOLVED**; R4-13 **RESOLVED** here: "Welcome, Dana." capital 102 to the card edge 142 is 40 rows at 1440 (the mockup preview 39; pass 2 36), and 26 rows at 390 (94 to 130, the 20px phone gap); R4-12's compact actions are on Home's checklist as `Link size="sm"`, 14px at 500 (`894219a5`). Pass 2's N-1 (button weight) is closed by the ruling: every button in the set is 500.
+
+#### 2. Scores
+
+| Picture group (L/D = the Light and Dark pair) | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Sub-PRD | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `review/home--first-run--{1440,1180}` L/D (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009b | 12px chips, 500 buttons, mockup page gap. P3-09 (empty list link). |
+| `review/home--first-run--768` L/D (2) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009b | Stacked in D1's order, actions at the right. P3-09. |
+| `review/home--first-run--390` L/D (2) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009b | 20px card inset (`0a40c87a`), 20px page gap. P3-09. |
+| `review/home--real-catalog--{1440,1180,768,390}` L/D (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009b, 009c | The empty-library sentence and its intro, as amended. P3-09. |
+| `chromium/overview--default--{1440,1180,768,390}` L/D (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009b, 009a | Sample-data strip; "Running now" half width (009b D3). P3-09. |
+| `review/settings--default--{1440,1180,768}` L/D (6) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a, 009f | On brief; only the bar's Help moved (`8b1928f7`). N-5. |
+| `review/settings--default--390` L/D (2) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009a, 009f | P3-08 ("Refresh page" not full width). |
+| `review/settings-connections--empty-account--{1440,1180}` L/D (4) | 3 | 2 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009f D4, 009a | P2-02 fixed. P3-06 (fact lists), P3-07 (cards misalign across a row). |
+| `review/settings-connections--empty-account--768` L/D (2) | 3 | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009f D4, 009a | P3-06. |
+| `review/settings-connections--empty-account--390` L/D (2) | 3 | 3 | 2 | 3 | 3 | 3 | 2 | 3 | 3 | 2 | 009f D4, 009a | P3-06, P3-07 (three-line headings beside the chip). |
+| `chromium/settings-connections--default--{1440,1180,768,390}` L/D (8) | 3 | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009f D4, 009a | P3-06. N-3. |
+| `review/brand--empty-account--{1440,1180,768}` L/D (6) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 3 | 009d D3, 009a | P2-03 fixed. P3-05 (report action while reports are off). |
+| `review/brand--empty-account--390` L/D (2) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 2 | 009d D3, 009a | P3-05, P3-08 (save rows not full width). |
+| `chromium/brand--default--{1440,1180,768}` L/D (6) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 2 | 009d D3, 009a, 009f | P2-04 fixed. P3-04 (boxed reason), P3-05. |
+| `chromium/brand--default--390` L/D (2) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 2 | 009d D3, 009a, 009f | P3-04, P3-05, P3-08. |
+| `review/partners--empty--{1440,1180,768}` L/D (6) | 3 | 3 | 2 | 3 | 3 | 3 | 3 | 2 | 3 | 2 | 009a, 009f | P2-05 to P2-07 fixed. P3-01 (empty title step), P3-03 (note on the canvas). |
+| `review/partners--empty--390` L/D (2) | 3 | 3 | 2 | 3 | 3 | 3 | 3 | 2 | 3 | 2 | 009a, 009f | P3-01, P3-03, P3-08 (Add not full width). |
+| `review/homeowners--empty-account--{1440,1180,768,390}` L/D (8) | 3 | 2 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a (PRD-007 surface) | P2-07 fixed. P3-01, P3-02 (header off the page rhythm, raw tracking). |
+
+Total 80 (4 + 2 + 2 + 8 + 8 + 6 + 2 + 4 + 2 + 2 + 8 + 6 + 2 + 6 + 2 + 6 + 2 + 8). Axes 1, 4 and 6 hold at 3 throughout (one primary at most per screen, titles at their steps, no status by colour alone, every chip with its glyph, nothing moves). No finding is Dark-only except the panel half of P3-03.
+
+#### 3. Remaining findings (pass 3)
+
+None is carried from pass 2. All nine are new; P3-01 was exposed by the P2-07 fix, P3-07 was worsened by the writing delta D-2 (`9068d5e9`), and the other seven were in the pass 1 and pass 2 pictures and missed by this reviewer. Rubric section 3 form: screen, frame, theme, state, file and line, current value, the rule it must be, axis; then severity, sub-PRD and fix.
+
+**P3-01. The empty state's title renders at the section step (19px) on Realtor partners and Homeowner reports; the primitive's title is the card step (16px).** Axis 3. **Low.** Sub-PRD 009a (the workspace sheet), PRD-007 surface re-themed by 009a (homeowners).
+- Pictures: `review/partners--empty--*` (8), `review/homeowners--empty-account--*` (8), every frame, both themes, empty state.
+- Current value: "Add your first Realtor partner" capital rows 447 to 461 and "Connect the report workspace" 265 to 279 (15 rows, 19px), against "No campaigns yet" 373 to 384 (12 rows, 16px) on `chromium/campaigns--empty--1440--light.png`, the same `EmptyState`. Cause: the page sheets' heading rules outrank the primitive's class. `apps/web/src/features/workspace/workspace.module.css:35-39` (`.workspace h2 { font-size: var(--text-section-size) }`, specificity 0,1,1) and `apps/web/src/features/homeowners/homeowners.module.css:21-25` (the same, plus a raw `letter-spacing: -0.02em` and `line-height: 1.35`) beat `.oalo-async-state__title` (`packages/ui/src/components/primitives.css:150-160`, 0,1,0). Call sites `preference-editors.tsx:296-300`, `homeowners/workspace.tsx:856-870`.
+- Required: `primitives.css:150-160`, the empty title at `--text-card-size` and semibold; `03-components/async-empty-error-permission-state.md`, one state view for every screen, so one title step; rubric axis 3.
+- Fix: scope each sheet's section-title rule to the page's own headings (`.header h1`, `.sectionHead h2`, or `.workspace h2:not(.oalo-async-state__title)`), and drop the raw tracking and leading from the homeowners rule (`--leading-tight`, no tracking, as `workspace.module.css:35-39`). A component test that an `EmptyState` inside each page sheet keeps the card step would hold it.
+
+**P3-02. Homeowner reports' header sits off every sibling's rhythm, with a raw title tracking.** Axes 2 and 3. **Low.** PRD-007 surface re-themed by 009a.
+- Pictures: `review/homeowners--empty-account--*` (8), every frame, both themes.
+- Current value: on `--1440--light` the title capital starts 44 rows under the bar's hairline (108; the Campaigns title starts 40 under it, R1 pass 2) and the card edge is 38 rows under the lead's last glyph (164 to 202) where Settings, Partners and Brand have 28 (189 to 217); the same 38 at 390 (156 to 194). Causes: the page uses the dashboard preview's `PageHeader` (`apps/web/src/features/dashboard-preview/product-components.tsx:33-53`), whose `.header` adds `padding-block: var(--space-1) var(--space-2)` (`apps/web/src/features/dashboard-preview/workspace.module.css:34-41`) on top of the page's `--space-6` gap; the title takes `letter-spacing: -0.035em` (`homeowners.module.css:18`), not `--tracking-page` (-0.02em); the page sets `line-height: 1.6` (`homeowners.module.css:7`), not `--leading-normal`.
+- Required: the mockups' page head, title and lead `--space-2` apart and `--space-6` to the next block (`design/mockups/home-first-run.html:179`, `:193`), which Settings, Partners, Brand and Connections now follow; `--tracking-page` on every page title (R2 F-12, fixed in `workspace.module.css:29-34` but not here); rubric axes 2 and 3 (tokens only).
+- Fix: render the header with the workspace header (`workspace.module.css:47-62`, or a header without the preview's padding) and replace the three raw values with `--tracking-page`, `--leading-normal` and `--leading-tight`. Gate note: `workspace-type-steps.unit.test.ts` scans only `workspace.module.css`; see N-7 for the rest of `homeowners.module.css`.
+
+**P3-03. Realtor partners' page note is a sunken well on the canvas: an outline in Light, a panel lighter than the cards in Dark.** Axes 8 and 10. **Low.** Sub-PRD 009a, 009f.
+- Pictures: `review/partners--empty--*` (8), every frame.
+- Current value: on `--1440--light` the note's fill is the canvas (sampled `#f5f8fc` inside and out) inside a `#d6e2ee` hairline (rows 310 to 364); on `--1440--dark` it is `#22262f` on a `#14161b` canvas, lighter than the `#1b1e25` empty-state card under it. `apps/web/src/features/workspace/workspace.module.css:203-209` (`.note`: `--sf-sunken`, hairline, `--radius-button`, `--space-4`, body ink, no glyph), call site `preference-editors.tsx:242-245`. The rule's own comment says it draws the mockups' `.notice`.
+- Required: the mockups' `.notice`, the information tint with its glyph, `--radius-control`, `--space-3` by `--space-4`, strong ink (`design/mockups/campaigns-list.html:508-509`), which Connections draws with `Surface variant="info"` (`permission-screen.tsx:59`); the same delta R2 N-4 found on the Campaigns empty state (axis 8: no element that composes differently by theme).
+- Fix: `Surface variant="info"` with the `info` glyph for the partners note (keep `.note` only where a sunken well sits inside a card, and see P3-04 for the Brand reason).
+
+**P3-04. Brand, read-only: the disabled saves' reason is a boxed note, not the reason line.** Axis 10 (and 5). **Low** (local demo state). Sub-PRD 009d D3, 009a.
+- Pictures: `chromium/brand--default--*` (8), every frame, both themes, read-only state.
+- Current value: "Your role has read-only access to these details." is a sunken, bordered box 20px under each button row (`--1440--light` rows 796 to 850 under the row at 732 to 775, and again under "Save ad settings"), the `.note` above (`preference-editors.tsx:95-98`); the disabled save carries no `aria-describedby` to it (`:81`).
+- Required: the reason line, plain `--text-secondary-size` in `--tx-body` directly under the action and tied to it (`design/mockups/launch-step-3-review-and-launch.html:217`, `:563-564`), as the product's campaign page draws it (`apps/web/src/features/campaigns/components/campaign-header-actions.tsx:43-52`, `campaign-page.module.css:105-108`); `button-and-safe-action.md:15`, the reason in adjacent text.
+- Fix: render the reason as a `.reason` paragraph under `.actions` with an id, and point the disabled save's `aria-describedby` at it.
+
+**P3-05. Brand offers "Create a homeowner report" while homeowner reports are not turned on.** Axis 9 (and 5). **Low.** Sub-PRD 009d D3, 009a.
+- Pictures: `review/brand--empty-account--*` (8) and `chromium/brand--default--*` (8), every frame, both themes.
+- Current value: the "Your details" lead says "All of it goes on new homeowner reports once those are turned on." (`--1440--light` rows 286 to 310), and the Report preview card beside it ends in an active action "Create a homeowner report" (rows 586 to 629) that opens a page saying "Connect the report workspace" (`review/homeowners--empty-account--1440--light.png`). The lead branches on `data.reportsEnabled` (`preference-editors.tsx:142-144`); the link does not (`:185-187`).
+- Required: rubric axis 9, honest not-connected states; axis 5, an unavailable action is not offered as available (`link.md`, "There is no disabled link. A destination that is not available is not a link; render the reason and the next safe action instead").
+- Fix: when `!data.reportsEnabled`, replace the link with one reason line ("Homeowner reports aren't turned on in this workspace yet.") and the next step the Homeowner reports page already names ("Workspace connections"); keep the link when reports are on.
+
+**P3-06. Connections' fact lists set a 12px faint label beside a 16px value, on their own column and gap.** Axes 3 and 10. **Low.** Sub-PRD 009f D4, 009a.
+- Pictures: `review/settings-connections--empty-account--*` (8) and `chromium/settings-connections--default--*` (8), every frame, both themes.
+- Current value: `--1440--light` (review): "Why it's needed" capital 458 to 466 (9 rows, 12px) beside "Know which workspace..." 460 to 471 (12 rows, 16px), baselines 5px apart; labels in `--tx-faint`, a `minmax(7rem, 0.35fr)` label column, rows `--space-2` apart, and the list stacks label over value at 768. `apps/web/src/features/onboarding/components/permission-screen.module.css:135-156` (`.permissionDetails`), `:158-171` (the 768px rule).
+- Required: the mockups' `.facts`, label and value both `--text-secondary-size`, label `--tx-body`, value `--tx-strong` at `--weight-medium`, an `8rem` label column, `--space-3` between rows, stacked only below 720px (`design/mockups/campaign-detail.html:360-363`, `:439`), which the campaign page and step 3 follow (`campaign-page.module.css:252-273`, `launch.module.css:535-570`). One label and value pattern across sibling screens (rubric axes 3 and 10).
+- Fix: give `.permissionDetails` the `.facts` rules (or share one facts class), and move its stack rule to `max-width: 719.98px`.
+
+**P3-07. Connections: a long group heading and its chip share one unwrapping row, so cards misalign across a row and headings break into three lines on a phone.** Axes 2 and 7. **Low.** Sub-PRD 009f D4; worsened by D-2's longer chip ("Not confirmed yet", `9068d5e9`).
+- Pictures: `review/settings-connections--empty-account--{1440,1180,390}--{light,dark}` (6). The synthetic page's short headings do not wrap.
+- Current value: at 1440 the second row's cards start at 683 (left, under a two-line heading) and 661 (right); at 1180 both rows step, 393 against 415 and 683 against 661. At 390 "Access this app confirms after you connect" and "Access this app tells you about when something is blocked" each take three lines beside a 140px chip (pass 2: two). `permission-screen.module.css:117-122` (`.permissionHeading`: flex, `align-items: center`, no wrap), `:130-133` (chip `flex: none`), `:111-115` (each section its own grid, `align-content: start`).
+- Required: the mockups' `.card-head`, title and chip with `flex-wrap: wrap` and `gap: var(--space-4)` (`design/mockups/campaign-detail.html:200`), so the chip takes the next line before the title takes a third; rubric axis 2, one rhythm across a row of sibling cards.
+- Fix: `flex-wrap: wrap` on `.permissionHeading`, and align the two columns' cards by row (each `section` a subgrid of the group grid's rows above 768px, so a two-line heading moves the card beside it too).
+
+**P3-08. Workspace actions keep their own width on a phone, where the mockups and the fixed launch and Campaigns screens span it.** Axis 10. **Low.** Sub-PRD 009a, 009d D3, 009f.
+- Pictures: `review/settings--default--390--*` (2), `review/partners--empty--390--*` (2), `review/brand--empty-account--390--*` (2), `chromium/brand--default--390--*` (2).
+- Current value: "Refresh page" spans x 16 to 151 of the 16 to 374 column; "Add Realtor partner" x 16 to 222 under its full-width field; "Save your details" x 37 to 200 and "Load latest saved details" its own width inside a card whose side-card buttons span 37 to 352 on the same page; the ad-settings row likewise. `workspace.module.css:47-56` (`.header`), `:296-302` and `:335-340` (`.toolbar`: the 760px rule sets `align-items: stretch`, which in a flex row stretches height, not width), `:85-90` (`.actions`, used by `SaveAndReload` at `preference-editors.tsx:80`).
+- Required: below 720px the mockups' page-head actions, field-and-button row and form actions span the column (`design/mockups/campaigns-list.html:436`, `:438`; `launch-step-2-set-up.html:514-515`; `campaigns-list.html:433-435`), as step 2's Add (R1 P2-07, `7e34296a`) and the Campaigns list's "Launch an ad" (R2 N-3, `66775f01`) now do.
+- Fix: in the 760px block, `inline-size: 100%` for the header's action and the toolbar's button, and a form-actions class for `SaveAndReload`'s row whose buttons take `inline-size: 100%` stacked (leave Settings' card links at their width, as the mockups' card actions are).
+
+**P3-09. Home's empty "Running now" link is 16px under a 14px sentence; the mockups' empty link is the secondary step.** Axis 10 (and 3). **Low.** Sub-PRD 009b.
+- Pictures: every Home picture (24): `review/home--first-run--*`, `review/home--real-catalog--*`, `chromium/overview--default--*`, both themes, every frame.
+- Current value: on `review/home--first-run--1440--light.png` "Launch an ad" capital rows 909 to 920 (12 rows, 16px at 500), under "Ads you launch will show here..." 827 to 837 (11 rows, 14px). `apps/web/src/features/overview/components/home-campaign-lists.tsx:55-58` (`<Link variant="inline">`, `--text-body-size` by `link.md`), inside `.empty` (`overview.module.css:415-433`).
+- Required: the mockups' `.empty a`, `--text-secondary-size` at `--weight-semibold` with the 44px target, the same step as `.empty__sub` (`design/mockups/home-first-run.html:249-250`; preview `home-first-run--1440.png`, link capital 10 rows like its sentence). The link weight follows `link.md` (500), which is not in question; the step is.
+- Fix: put the link in a secondary-step context and draw it as `variant="sentence"` (it takes the 14px size and keeps the 44px target, `link.md`), or give `Link` an inline `size="sm"` the spec records, as `action` has; not a local size in `overview.module.css`.
+
+##### Noted, not scored below 3
+- N-2 (kept). Home's "No ads running" and "Nothing to approve" are hand-built `.empty` blocks (`home-campaign-lists.tsx:51-59`), drawn as the mockup draws them inside titled cards; scored 3 as the mockup's composition. P3-09 is about their link only.
+- N-3 (kept). `chromium/settings-connections--default--*`: the notice repeats "Local demo with sample data." under the shell's strip. Synthetic only.
+- N-4 (kept). The Report preview has no frame where "On every ad" frames its band.
+- N-5 (new, judgement). Settings' "Refresh page" is centred on the eyebrow, title and lead (`workspace.module.css:47-56`, `align-items: center`), where the mockups' `.page-head` (`campaign-detail.html:192`) and the product's campaign page start the action at the top. At 1440 it lines up with the title and reads as intended, so not scored; if the owner wants one head-action rule, `.header { align-items: flex-start }`.
+- N-6 (new, not visible in a still). Settings' cards are hand-built (`workspace.module.css:107-130`, `.toolCard`, not `Card`) and carry a hover state (primary edge, sunken fill) on a `section` that is not interactive since its links moved inside it. Hand to the owner of the workspace sheet.
+- N-7 (new, outside this set). `homeowners.module.css` keeps raw sizes off the six steps (10px `:61`, 13px `:186`, `:222`, `:255`, `:311`, 15px `:136`, 20px `:147`, 24px `:83`, 26px `:303`) on homeowner surfaces that have no baseline, and the dashboard preview's sheet used by its header carries a 10px eyebrow at weight 650 (`dashboard-preview/workspace.module.css:49-55`). No picture in this set draws them; the `workspace-type-steps` scan would hold them if it read these two sheets.
+- N-8 (record). Home's checklist action stands under its text at 1440, 1180 and 390 where the mockup draws "Connect" at the right; it is the F-01 fix for the longer "See what's needed" label (`overview.module.css:330-353`), resolved in pass 2 and kept.
+- N-9 (synthetic copy). `chromium/settings-connections--default--*` leaves "it." and "ago." alone on a line in three values; `text-wrap: pretty`, as `launch.module.css` uses on facts, would hold them. The group "Missing" also carries a "Missing" chip (D-2 kept the demo's stock words). Both for the writing lane.
+
+#### 4. Summary
+
+80 pictures scored (24 synthetic, 56 review), every one opened, every Light and Dark pair compared at every frame. All seven pass 2 findings are **RESOLVED** (P2-01 to P2-07, each with a cited picture), and the cross-part R4-11 and R4-13 are resolved in this set. **6 pictures are at 3 on every axis**: Settings at 1440, 1180 and 768 in both themes. Nine pass 3 findings, all Low, none a gate failure, none Dark-only except P3-03's panel: **0 High, 0 Medium, 9 Low**: P3-01 empty-state titles at 19px on Partners and Homeowner reports (exposed by the P2-07 fix), P3-02 Homeowner reports' header off the page rhythm with a raw tracking, P3-03 the partners note a sunken well on the canvas, P3-04 the Brand read-only reason boxed instead of a reason line, P3-05 "Create a homeowner report" offered while reports are off, P3-06 Connections' 12px and 16px fact lists, P3-07 Connections' cards misaligned across a row and three-line headings at 390, P3-08 workspace actions not full width on a phone, P3-09 Home's 16px empty link under a 14px sentence. Eight were present in passes 1 and 2 and missed by this reviewer; one was exposed by a pass 2 fix. QA-11/12: no picture in this set shows a library-ad status chip (Home's lists are empty in every state drawn), so none is marked pending. Gate extensions that would hold these: an `EmptyState` title-step test inside each page sheet (P3-01), and the type-step scan widened to `homeowners.module.css` and the dashboard preview's sheet (P3-02, N-7).
+
+## Pass 3, part R4
+
+
+Reviewer `r4` (`ux-ui-guardian`). Set: every picture under `tests/visual/screens/chromium/` and
+`tests/visual/screens/review/` starting `verify-email--`, `sign-in--`, `reset-password--`,
+`sign-up--`, `forgot-password--`, `change-password--`, `choose-workspace--`, `email-preview--`,
+`design-surfaces--`: 146 pictures from the third redraw (screen-baselines run 37149916536, head
+`8178126b`), installed uncommitted in `C:\Users\jzfer\Projects\oalo-prd-009` (144 `M`, 2 `??`: the
+two `design-surfaces--home-under-notice--*` pictures).
+
+Method: every picture compared with its pass 2 version in `scratchpad/baselines2/` (pixel diff per
+picture), then every state opened again at every frame in Light and Dark (contact grids per frame and
+theme, full views of every changed picture), because this is the last full pass. 110 pictures are
+pixel-identical to pass 2 and two more differ only by sub-threshold anti-aliasing
+(`sign-in--refused--1440--dark`, `sign-up--address-already-has-an-account--1440--light`); 34 changed: `change-password--*` (16, the bar
+only), `design-surfaces--default--*` (8), `reset-password--saved-notice--*` (8, height changed) and the
+two `design-surfaces--home-under-notice--*` (height changed). Measurements are row and column scans and
+sampled colours read with PIL; sources read at `8178126b` with `git show` (none of the files cited below
+changed between `8178126b` and the current head `74892792`); fixes read in `git log 0d539dee..8178126b`.
+Scratch work under `review-parts/r4/p3/`. Nothing in the repository was edited.
+
+Read against the rubric (`06-review-rubric.md`), design `00-direction.md` rev. 2, the PRD-009 mockups and
+previews (`home-first-run` at 1440, 768 and 390; nearest sibling for the account screens), and the specs
+`badge-and-live-region.md` (12px chip ruling), `button-and-safe-action.md`, `link.md` (the new `size`
+section), `card-and-surface.md`, and the pass 3 rulings in force (12px chips; buttons keep weight 500
+everywhere; Card's large inset 20px below 720px and 24px above). No picture in this set is touched by
+QA-11 or QA-12.
+
+Not re-litigated (unchanged from pass 2): the section 6 gates, the 28px Home title, Home's half-width
+"Running now" for a person who cannot approve (009B D3), the stacked lists at 768 (009B-AC-003), the
+company field's "(optional)", the restricted Settings item, the email bodies inside the frames, the
+account notices' `--tx-body` words, the change-password form at the account measure at the column's
+start (rubric section 5 table, 2026-10-01 row), and Home's hand-built empty-state composition, which R3
+scored as the mockup's (R3 pass 2, N-2). R4-14 below is about three details inside that composition, not
+the composition.
+
+### 1. Pass 2 findings
+
+| ID | Sev. | Status | Evidence in the pass 3 pictures |
+|---|---|---|---|
+| R4-11 Home's checklist chips 14px against the 12px ruling | Low | RESOLVED | `review/reset-password--saved-notice--1440--light.png`: "Not connected yet" pill rows 460 to 485 (26px: 18px line plus `--space-1` above and below), its "N" 9 rows tall (468 to 476), the 12px caption's capital; pass 2 measured 11 (the 14px label's). Same at every frame, both themes, and on `chromium/design-surfaces--home-under-notice--{1440,390}--light`. `.card .stateChip` now sets only `white-space: nowrap` (`overview.module.css:401-403`). `d264cb94`. |
+| R4-12 Two small secondary-button looks on one page | Low | RESOLVED | `chromium/design-surfaces--home-under-notice--1440--light.png`: "Resend the link.", "See what's needed" and "Add" all have an 11-row capital (rows 188 to 198, 597 to 607, 977 to 987) and the same stroke at 500, zoomed side by side (`r4/p3/z-btns.png`); the 390 picture the same (the "R" of "Resend" rows 204 to 214). `Button .sm` is the secondary step at the shared weight (`Button.module.css:38-41`, `21705817`) and the checklist actions are `Link variant="action" size="sm"` (`link.module.css:55-58`, `home-setup-card.tsx:132`, `894219a5`); the weight question went to the 2026-10-03 ruling (500 everywhere), so nothing is left for `design-system-guardian`. The gallery's own notice (`chromium/design-surfaces--default--*`) moved with it. |
+| R4-13 Home's page gaps follow neither half of `.page` | Low | RESOLVED | 1440, 1180, 768: notice box to "Welcome" capital 29 canvas rows (24px gap plus half-leading) and "Welcome" capital to the grid's edge 40 rows (`reset-password--saved-notice--1440--light.png` rows 144, 174, 214; `design-surfaces--home-under-notice--1440--light.png` 226, 256, 296), the mockup preview's 39. 390: 25 and 36 rows (20px both: `reset-password--saved-notice--390--light.png` 136, 162, 198; `design-surfaces--home-under-notice--390--light.png` 242, 268, 304). `.home` gap `--space-6`, `--space-5` under 720px (`overview.module.css:35-39`, `:465-468`), the saved notice is a child of the page (`overview-screen.tsx`, `notice` prop), and the shell's phone `row-gap` is `--space-5` (`app-shell.module.css:414-421`). `d264cb94`, `2dda8467`. |
+
+All three are resolved. The ten pass 1 findings (R4-01 to R4-10) stay resolved in the pass 3 pictures:
+the pictures that proved them are identical to pass 2 or moved only as described below, and the bar scan
+for focus-ring colours (`#005fcc`, `#2f6fed`, `#8bb0ff`) finds no pixel on any of the 24 in-shell
+pictures (R4-02).
+
+Changes from pass 2, all on brief: the bar's Menu and Help buttons at the compact step, 14px, as the
+mockups' `.mobile-menu summary` and `.help-link` (`8b1928f7`, 009a; every in-shell picture); "Resend the
+link." at 14px (`21705817`); Home's chips at 12px, its buttons and topic chips at 500, the page gaps, the
+start card's 20px phone inset (`d264cb94`, `0a40c87a`, 009b).
+
+### 2. Scores
+
+Axes: 1 hierarchy, 2 spacing, 3 typography, 4 colour, 5 states, 6 motion, 7 responsiveness,
+8 Dark and Light, 9 empty and error, 10 consistency with the PRD-009 mockups. "4 x 2" means 1440,
+1180, 768 and 390 in Light and Dark.
+
+| Picture group (count) | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Sub-PRD | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `review/sign-in--default--*` 4 x 2 (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Identical to pass 2. |
+| `review/sign-in--refused--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Identical (1440 Dark: anti-aliasing only). |
+| `review/sign-in--signed-out--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Identical. |
+| `review/sign-up--default--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a, 009f | Identical. |
+| `review/sign-up--address-already-has-an-account--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a, 009f | Identical (1440 Light: anti-aliasing only). |
+| `review/forgot-password--default--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Identical. |
+| `review/forgot-password--confirmation--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Identical. |
+| `review/reset-password--default--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Identical. |
+| `review/reset-password--link-expired--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Identical. |
+| `review/verify-email--default--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Identical. |
+| `review/verify-email--confirmed--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Identical. |
+| `review/verify-email--link-expired--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Identical. |
+| `review/choose-workspace--default--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Identical. |
+| `review/change-password--default--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Bar only: Help (and Menu at 390) at the compact 14px step. |
+| `review/change-password--saved--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | As default. |
+| `review/reset-password--saved-notice--{1440,1180,768}--*` (6) | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009a, 009b | R4-11 and R4-13 fixed; 12px chips, 500 buttons. R4-14 ("Running now" empty state). |
+| `review/reset-password--saved-notice--390--*` (2) | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009a, 009b | Notice 20px above the greeting; start card 20px inset. R4-14. |
+| `chromium/email-preview--default--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Identical. |
+| `chromium/design-surfaces--default--*--light` (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | "Resend the link." 14px; compact bar controls. |
+| `chromium/design-surfaces--default--*--dark` (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | As Light. |
+| `chromium/design-surfaces--home-under-notice--1440--light` (1) | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009g, 009a, 009b | R4-11, R4-12, R4-13 fixed. R4-14 (both empty states). |
+| `chromium/design-surfaces--home-under-notice--390--light` (1) | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009g, 009a, 009b | As 1440. R4-14. |
+
+Total: 146 (136 at 3 on every axis; 10 below, the same Home pictures, now held by R4-14 alone).
+
+### 3. Remaining findings
+
+One, new in this pass. It was already in the pass 1 and pass 2 pictures: I scored the empty states as
+the mockup's composition and did not measure inside them. Every other axis on these ten pictures is now
+at 3, so this is the only thing left on them.
+
+#### R4-14. Home's empty states miss three details of the mockup's `.empty` (axes 2 and 10) - Low
+
+- **Screen, frame, theme, state:** Home under a notice, every frame, both themes:
+  `review/reset-password--saved-notice--*` (8; "Running now" only, the Review user has no approval card)
+  and `chromium/design-surfaces--home-under-notice--{1440,390}--light` (2; "Running now" and "Needs your
+  approval"). The same component draws R3's `overview--*` and `home--*` pictures.
+- **File and line:** `apps/web/src/features/overview/components/home-campaign-lists.tsx:51-59` (the empty
+  block: `<Icon ... size="lg" tone="neutral" />` at `:52`, `<Link ... variant="inline">` at `:56`);
+  `apps/web/src/features/overview/components/overview.module.css:415-421` (`.empty`: `gap:
+  var(--space-2)`, no rule for the glyph).
+- **Current value, measured on `review/reset-password--saved-notice--1440--light.png` against the preview
+  `home-first-run--1440.png`:**
+  1. Axis 10, link size. "Launch an ad" is 16px at 500: its "L" is 12 rows (981 to 992), the 16px body
+     capital, under a 14px sentence. The mockup draws it at the secondary step, 14px (`.empty a`,
+     `home-first-run.html:250`: `font-size: var(--text-secondary-size)`), so the link is smaller than the
+     empty title, not equal to it.
+  2. Axis 10, glyph tone. The megaphone and the check are `--st-neutral-fg` (`#526579` Light, `#b0b7c4`
+     Dark, sampled at 305 to 323, 833 to 851, and on the Dark picture); the mockup's `.empty svg` is
+     `--tx-faint` (`:247`; `#5f7186` and `#a6adbb` sampled on the Light and Dark previews). The checklist
+     glyphs on the same Home are already `--tx-faint` (`.itemIcon`, `overview.module.css:371-376`;
+     `#5f7186` sampled on the plug at 882 to 895, 389 to 408), so one page draws its decorative glyphs in
+     two greys.
+  3. Axis 2, glyph spacing. The mockup gives the glyph `margin-block-end: var(--space-1)` (`:247`); the
+     product has no counterpart. With the glyph at the same place and size (card edge to glyph 87 rows
+     against the preview's 86; both glyphs 20 rows), the empty title stands 4px higher: glyph to title
+     15 empty rows against 20, card edge to the title's capital 122 rows against 126
+     (`chromium/design-surfaces--home-under-notice--1440--light.png`, approval card 827, 914 to 933, 949;
+     preview 740, 826 to 845, 866).
+- **Required:** the mockup's `.empty` (`home-first-run.html:246-250`), which the composition follows
+  everywhere else (padding `--space-5 --space-2 --space-2`, gap `--space-2`, 36ch body, semibold title);
+  rubric axes 2 and 10. The link's weight is not part of the finding: the mockup's `.empty a` is 600, but
+  the shared Link weight is 500 (`link.md:41`) and the 2026-10-03 ruling keeps controls at 500.
+- **Fix:** (a) glyph: `tone="current"` in a wrapper or class that sets `color: var(--tx-faint)` and
+  `margin-block-end: var(--space-1)`, as `.itemIcon` already does for the checklist (or add the margin to
+  `.empty > :first-child`); (b) link: `link.md`'s "Size" section says `size` changes the `action` variant
+  only (`link.md:45-47`), so extend it first: `inline` with `size="sm"` is the secondary step at the shared
+  500, a standalone link under smaller text, with the 44px target kept; then `link.module.css` gets
+  `.inline[data-size="sm"] { font-size: var(--text-secondary-size); }` and Home passes `size="sm"` at
+  `home-campaign-lists.tsx:56`. Pin all three in `home-polish.unit.test.ts`. Neither change moves a
+  picture outside Home.
+- **Sub-PRD:** 009b.
+
+### 4. Summary
+
+146 pictures scored, every one compared with its pass 2 picture and opened again at every frame in Light
+and Dark. 136 are at 3 on every axis: all 104 public account pictures, the 16 change-password pictures,
+the 8 email-preview pictures and the 8 design-surfaces default pictures. All three pass 2 findings are
+RESOLVED, each with the picture that shows it: R4-11 (Home's chips are the 12px Badge), R4-12 (one
+small-button rendering, 14px at 500, through `Button size="sm"` and the new `Link size="sm"`) and R4-13
+(Home's page gap 24px, 20px under 720px, for the greeting and both notices); the ten pass 1 findings stay
+resolved. The 10 pictures below 3 are the two states that draw Home (saved-password notice, unverified-email
+notice), held by one new Low finding, R4-14: Home's empty states draw their link at 16px where the
+mockup's `.empty a` is 14px, their glyph in `--st-neutral-fg` where `.empty svg` and Home's own checklist
+glyphs are `--tx-faint`, and no `--space-1` under the glyph (axes 2 and 10). Findings by severity:
+0 High, 0 Medium, 1 Low. R4-14 reaches R3's `overview--*` and `home--*` pictures too; one Home fix
+closes both sets. No picture in this set is QA-11/12 pending.
+
+## Appendix: the pass 3 brief
+
+### Scored baseline review, PRD-009 (009G-AC-006): pass 3 brief
+
+Pass 3 re-scores every picture of the third redraw (screen-baselines run 37149916536, head
+`8178126b`), after the round 2 fix lanes (G, H, I, J), the quality close-out's code and records lanes,
+the writing delta fixes, and the final pre-redraw lane fixed what pass 2 found. Read the pass 1 brief
+first; every rule in it still applies: `.../scratchpad/review-parts/BRIEF.md`.
+
+#### What is where
+- The new pictures (pass 3): installed, uncommitted, in the run worktree
+  `C:\Users\jzfer\Projects\oalo-prd-009` under `tests/visual/screens/chromium/` and `review/`.
+- The pass 2 pictures, for comparison: `.../scratchpad/baselines2/chromium/` and `.../scratchpad/baselines2/review/`
+  (same file names). Pass 1's are in `.../scratchpad/baselines/`.
+- The review report with passes 1 and 2:
+  `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-03-scored-baseline-review.md`
+  (your own part is the pass 2 section for your reviewer id), and your pass 2 file
+  `.../scratchpad/review-parts/<your-id>-p2.md`.
+- Rulings in force: chips 12px everywhere (the component spec); buttons keep the shared weight 500
+  everywhere; R2 F-14's demo campaign route is exempt from axis 10 only; Card's large inset is 20px
+  below 720px and 24px above; the glyphs `copy`, `pencil`, `rocket`, `tag`, `chevron-left`, `plug`,
+  `palette`, `circle-check` exist and are used where the mockups draw them.
+- One known change after this redraw: the quality close-out's QA-11 and QA-12 (head `74892792`)
+  change the status chip and the next step for a library ad that is replaced, changed-picture, or
+  missing (new labels "Newer ad version", "Ad picture changed", "Ad not in the library"), on step 3,
+  the campaign page, and the Campaigns list. Those few pictures are redrawn once more and re-checked
+  separately; in pass 3, score them as drawn and mark them "QA-11/12 pending" in the note column.
+
+#### Do
+1. For every pass 2 finding in your set: RESOLVED (cite the picture), PARTLY, or OPEN.
+2. Score every picture in your set on axes 1 to 10.
+3. Any picture below 3 on any axis is a finding in the rubric's form, with its likely source file and
+   selector. Be exhaustive this time: this is meant to be the last full pass, so anything you can see
+   below 3 must be listed now.
+
+#### Output
+Write `.../scratchpad/review-parts/<your-id>-p3.md` with: (1) the pass 2 findings table with status;
+(2) the score table; (3) remaining findings; (4) a summary: pictures scored, how many at 3 on every
+axis, findings by severity. Final message under 250 words with the counts and each remaining finding
+in one line.

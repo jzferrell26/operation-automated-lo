@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -55,5 +56,40 @@ describe("F-09: no hand-built pill is left", () => {
   it("styles no span as a pill, because the group's state is the shared Badge", () => {
     expect(source).not.toMatch(/\.permissionHeading\s+span/u);
     expect(source).not.toMatch(/text-transform:\s*capitalize/u);
+  });
+});
+
+describe("P2-02: the header runs at Settings' rhythm (scored review pass 2)", () => {
+  /**
+   * The lead kept the browser's 1em paragraph margin and the page gap was `--space-8`, so the notice
+   * stood 52px under the lead where Settings has 28 (and 44px against about 24 at 390). The
+   * mockups' `.page` gap is `--space-6` and `.page-head__text` is `--space-2` apart.
+   */
+  it("spaces the header, the notice and the groups --space-6 apart at every width", () => {
+    expect(declarationsOf(".onboarding")["gap"]).toBe("var(--space-6)");
+    // No narrower step re-sets it: one gap, so 768 and 390 cannot drift from 1440.
+    expect(source.match(/\.onboarding\s*\{/gu)).toHaveLength(1);
+  });
+
+  it("puts the eyebrow, the title and the lead --space-2 apart in one text block", () => {
+    const text = declarationsOf(".pageHeaderText");
+
+    expect(text["display"]).toBe("grid");
+    expect(text["gap"]).toBe("var(--space-2)");
+  });
+
+  it("takes the browser's margin off the lead, so a gap token is the only space", () => {
+    expect(declarationsOf(".pageHeader p")["margin"]).toBe("0");
+  });
+
+  it("draws the header's text in that block", async () => {
+    const screen = await readFile(
+      join(resolve(import.meta.dirname), "permission-screen.tsx"),
+      "utf8",
+    );
+
+    expect(screen).toMatch(
+      /<header className=\{styles\.pageHeader\}>\s*<div className=\{styles\.pageHeaderText\}>/u,
+    );
   });
 });

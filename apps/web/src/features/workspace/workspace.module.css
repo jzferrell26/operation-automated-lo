@@ -4,7 +4,7 @@
   gap: var(--space-6);
   color: var(--tx-strong);
   min-inline-size: 0;
-  line-height: 1.6;
+  line-height: var(--leading-normal);
   font-size: var(--text-body-size);
 }
 .fields {
@@ -19,18 +19,27 @@
 .workspace p {
   margin: 0;
 }
+/*
+ * The scored review's F-11 (and R2 F-12 for the gone page, which reads this sheet too): the title
+ * steps come from the tokens. The page title takes the brief's tracking and bold; `-0.035em` was
+ * not a token. Section and card titles are semibold with no tracking, as the mockups set them
+ * (`design/mockups/home-first-run.html`, `.section-title` and `.card-title`); they took the
+ * browser's bold and a raw `-0.02em`.
+ */
 .workspace h1 {
   font-size: var(--text-page-size);
-  line-height: 1.25;
-  letter-spacing: -0.035em;
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-page);
 }
 .workspace h2 {
   font-size: var(--text-section-size);
-  line-height: 1.4;
-  letter-spacing: -0.02em;
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
 }
 .workspace h3 {
   font-size: var(--text-card-size);
+  font-weight: var(--weight-semibold);
 }
 .workspace p {
   color: var(--tx-body);
@@ -51,13 +60,17 @@
   gap: var(--space-2);
   min-inline-size: 0;
 }
-/* PRD-009g (009G-AC-001): the caption step, the smallest of the brief's six; 10px was off-step. */
+/*
+ * The one eyebrow of the light look (the scored review's F-11): the mockup's `.eyebrow`, sentence
+ * case at the secondary step, semibold, no tracking, in body ink
+ * (`design/mockups/home-first-run.html:183`). It was uppercase, tracked 0.12em, at weight 650
+ * (which is no token) in the faint ink. The eyebrows on Connections and on the Brand profile carry
+ * the same rule, and `eyebrow-treatment.unit.test.ts` holds the three together.
+ */
 .eyebrow {
-  font-size: var(--text-caption-size);
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--tx-faint);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+  color: var(--tx-body);
 }
 .actions {
   display: flex;
@@ -114,7 +127,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   font-size: 12px;
   color: var(--st-info-fg);
 }
@@ -130,46 +143,28 @@
   color: var(--product-tile-fg);
 }
 .avatar {
-  font-weight: 650;
+  font-weight: var(--weight-semibold);
 }
-.feature,
+/*
+ * The previews on the Brand page are cards of the light look, not panels (the scored review's F-04;
+ * direction section 2.3: "Navy is text and the small mark only ... No navy panels"). The `Card`
+ * they are drawn on already supplies the white fill, the hairline edge and the radius, so this rule
+ * is only the layout of what is inside. Nothing here reads a `--product-feature*` or
+ * `--product-on-nav` token.
+ */
 .brandPreview {
   display: grid;
   gap: var(--space-5);
-  background: var(--product-feature);
-  color: var(--product-on-nav);
-  border-radius: var(--product-large-radius);
-  padding: var(--space-8);
-}
-.feature h2 {
-  font-size: 28px;
-  max-inline-size: 600px;
-}
-.feature p,
-.brandPreview p,
-.brandPreview .eyebrow,
-.feature .eyebrow {
-  color: var(--product-nav-muted);
-}
-.brandPreview {
   overflow-wrap: anywhere;
 }
-.workspace .brandPreview[data-variant="card"] {
-  background: var(--product-feature);
-  color: var(--product-on-nav);
-}
-.brandPreview > span,
+.brandPreview > span:not(.eyebrow),
 .brandPreview > small {
-  font-size: 12px;
+  color: var(--tx-body);
+  font-size: var(--text-caption-size);
 }
 .rule {
   height: 1px;
-  background: var(--product-nav-border);
-}
-.feature a,
-.brandPreview a {
-  background: var(--sf-card);
-  color: var(--tx-strong);
+  background: var(--bd-hairline);
 }
 .metrics {
   display: grid;
@@ -183,7 +178,7 @@
 }
 .metrics strong {
   font-size: var(--text-page-size);
-  letter-spacing: -0.04em;
+  letter-spacing: var(--tracking-page);
 }
 .metrics span,
 .metrics small {
@@ -285,21 +280,24 @@
 .wrap {
   overflow-wrap: anywhere;
 }
-@media (max-width: 1180px) {
+/*
+ * The scored review's F-07. These two collapsed at 1180px, a breakpoint of the 17rem rail the top
+ * bar replaced: the 1180 frame has the same 1116px content column as 1440, so Settings dropped to
+ * two columns with its third card alone, and each Brand editor and its preview stacked into one
+ * 1116px column. They now change where Home changes, at 1100px (`overview.module.css`). Below it
+ * the cards take one column, because three no longer fit and two would leave a Settings card
+ * orphaned at 768; the Brand editor and its preview stack.
+ */
+@media (max-width: 1099.98px) {
   .cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
   .columns {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (max-width: 760px) {
-  .cards {
-    grid-template-columns: 1fr;
-  }
-  .toolCard,
-  .feature,
-  .brandPreview {
+  .toolCard {
     padding: var(--space-5);
   }
   .record {

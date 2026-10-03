@@ -5,6 +5,11 @@ import { DashboardPreviewScreen } from "../../../features/dashboard-preview/dash
 import { DEFAULT_AD_BRAND } from "../../../features/workspace/ad-brand.js";
 import type { WorkspacePageData } from "../../../features/workspace/model.js";
 import { OALO_REVIEW_SURFACE_AUTHORIZED } from "../../../server/authenticated-workspace-data.js";
+import {
+  leakedReviewStrings,
+  reviewSurfaceText,
+  userLanguageForbiddenStrings,
+} from "../review-surface-sweep.js";
 import BrandProfilePage from "./page.js";
 
 /**
@@ -106,22 +111,72 @@ describe("the brand page in review mode", () => {
       }
     },
   );
+
+  /*
+   * What the retired `BrandProfileScreen` suite swept for review mode, held on the page review mode
+   * really draws: the user-language contract, with no allowance at all, over everything it renders.
+   */
+  it("holds everything the page renders to the user-language contract, with no allowance", async () => {
+    stubEnvironment("production", OALO_REVIEW_SURFACE_AUTHORIZED, "enabled");
+
+    const { container } = render(await BrandProfilePage());
+
+    expect(
+      leakedReviewStrings(reviewSurfaceText(container), userLanguageForbiddenStrings()),
+    ).toEqual([]);
+  });
+
+  it("is not the pre-PRD-009 Brand Engine page", async () => {
+    stubEnvironment("production", OALO_REVIEW_SURFACE_AUTHORIZED, "enabled");
+
+    render(await BrandProfilePage());
+
+    for (const old of OLD_BRAND_ENGINE_PAGE) {
+      expect(document.body.textContent).not.toContain(old);
+    }
+  });
 });
+
+/**
+ * The scored baseline review of 2026-10-03 (PRD-009 009G-AC-006), part R3, F-13. The local demo's
+ * Brand page was the pre-PRD-009 "Brand and compliance details" page, which no PRD-009 screen
+ * resembled. It is the Brand page now, from the demo's own sample identity, read only because the
+ * demo writes nothing. `synthetic-brand-page.integration.test.tsx` holds the data; this holds the
+ * route's choice.
+ */
+const OLD_BRAND_ENGINE_PAGE = [
+  "Brand and compliance details",
+  "Your current details",
+  "What every ad needs",
+  "Suggested from your approved samples",
+  "We never suggest these",
+  "Suggestions only. You decide what's saved.",
+];
 
 describe("the brand page in synthetic mode", () => {
   it.each([
     ["set", "enabled"],
     ["unset", undefined],
   ])(
-    "keeps the demo brand profile for local development with the reports flag %s",
+    "shows the Brand page for local development with the reports flag %s, read only",
     async (_state, reports) => {
       stubEnvironment("local", undefined, reports);
 
       render(await BrandProfilePage());
 
       expect(mocked.workspacePageData).not.toHaveBeenCalled();
-      expect(document.body.textContent).toContain("Alex Morgan");
-      expect(screen.queryByRole("button", { name: "Save your details" })).toBeNull();
+      expect(screen.getByRole("heading", { level: 1, name: "Brand" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Your details" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Your brand on ads" })).toBeInTheDocument();
+      expect(screen.getByLabelText("Loan officer name")).toHaveValue("Alex Morgan");
+      expect(screen.getByLabelText("Company name")).toHaveValue("Prairie Home Lending");
+      expect(screen.getByLabelText("Your NMLS number")).toHaveValue("0000000");
+      // The demo writes nothing, so nothing here saves.
+      expect(screen.getByRole("button", { name: "Save your details" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Save ad settings" })).toBeDisabled();
+      for (const old of OLD_BRAND_ENGINE_PAGE) {
+        expect(document.body.textContent).not.toContain(old);
+      }
     },
   );
 

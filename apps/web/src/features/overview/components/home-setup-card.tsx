@@ -30,17 +30,13 @@ import styles from "./overview.module.css";
 
 /**
  * The mockup draws a plug for both connections and a palette for the brand. `IconName` is a closed
- * set (`packages/ui/src/components/Icon.tsx`) with neither glyph, so each item takes the nearest one
- * the product already uses for the page it opens: Settings' navigation draws Connections as `globe`
- * and Brand kit as `sparkles` (`dashboard-preview/workspace-settings.tsx`). The first draft used
- * `bolt`, which is the old preview rail's logo mark and means "the product", not "connect", and
- * `building`, which Settings uses for the company profile. Adding `plug` and `palette` to the set
- * would match the mockup exactly and would change only this map.
+ * set (`packages/ui/src/components/Icon.tsx`) and carries both glyphs, so each item takes exactly
+ * the one the mockup draws (scored review, routed from lane A's icons).
  */
 const ITEM_ICONS: Readonly<Record<HomeChecklistItem["id"], IconName>> = {
-  highlevel: "globe",
-  meta: "globe",
-  brand: "sparkles",
+  highlevel: "plug",
+  meta: "plug",
+  brand: "palette",
 };
 
 const STATE_TONES: Readonly<Record<HomeChecklistState, BadgeTone>> = {

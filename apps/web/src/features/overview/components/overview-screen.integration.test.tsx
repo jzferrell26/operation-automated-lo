@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { AdsLibraryTopic } from "@oalo/contracts";
-import { Icon, type IconName, type IconSize } from "@oalo/ui";
+import { Icon, type IconName, type IconSize, type IconTone } from "@oalo/ui";
 
 import { buildHomeChecklist, type SavedBrandRecord } from "../model/home-checklist.js";
 import type { HomeCampaignRow, HomeList } from "../model/home-campaigns.js";
@@ -650,24 +650,35 @@ describe("the two lists row (Wave 3 polish, 009B D3)", () => {
 
 describe("the checklist glyphs and chips (Wave 3 polish)", () => {
   /** What `Icon` draws for a name at a size, to compare an item's glyph against, class names included. */
-  function iconMarkup(name: IconName, size: IconSize): string {
-    const { container, unmount } = render(<Icon decorative name={name} size={size} />);
+  function iconMarkup(name: IconName, size: IconSize, tone?: IconTone): string {
+    const { container, unmount } = render(
+      <Icon decorative name={name} size={size} {...(tone === undefined ? {} : { tone })} />,
+    );
     const markup = container.innerHTML;
     unmount();
     return markup;
   }
 
-  it("draws both connections as the Connections glyph and the brand as the Brand kit glyph, at 24px", () => {
+  it("draws both connections as a plug and the brand as a palette, at 24px, as the mockup does", () => {
     renderHome();
     const drawn = [...card("Get set up").querySelectorAll("li[data-item] > span svg")].map(
       (svg) => svg.outerHTML,
     );
 
     expect(drawn).toEqual([
-      iconMarkup("globe", "lg"),
-      iconMarkup("globe", "lg"),
-      iconMarkup("sparkles", "lg"),
+      iconMarkup("plug", "lg"),
+      iconMarkup("plug", "lg"),
+      iconMarkup("palette", "lg"),
     ]);
+  });
+
+  it("draws a megaphone over the empty Running now and a circled check over Nothing to approve", () => {
+    renderHome();
+    const drawnIn = (title: string): string | undefined =>
+      card(title).querySelector("svg")?.outerHTML;
+
+    expect(drawnIn("Running now")).toBe(iconMarkup("megaphone", "lg", "neutral"));
+    expect(drawnIn("Needs your approval")).toBe(iconMarkup("circle-check", "lg", "neutral"));
   });
 
   it("sets every state chip at Home's chip size, in the checklist and in both lists", () => {

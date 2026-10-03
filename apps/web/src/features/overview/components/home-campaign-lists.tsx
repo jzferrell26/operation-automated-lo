@@ -122,7 +122,7 @@ export function HomeNeedsApproval({ list }: Readonly<{ list: HomeList }>) {
       emptyBody={HOME_APPROVAL.emptyBody}
       emptyTitle={HOME_APPROVAL.emptyTitle}
       heading={HOME_APPROVAL.heading}
-      icon="check"
+      icon="circle-check"
       list={list}
       titleId="home-approval-title"
     />

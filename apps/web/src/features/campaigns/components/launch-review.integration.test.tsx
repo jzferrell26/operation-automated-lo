@@ -1,3 +1,4 @@
+import { Icon } from "@oalo/ui";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -193,6 +194,19 @@ describe("what you approve (009D-AC-014)", () => {
   });
 });
 
+describe("the facts card on a phone (P2-03)", () => {
+  it("draws each fact as a group of its label and its value, so a phone can stack the one over the other", () => {
+    render(<LaunchReview review={reviewFixture()} />);
+    const facts = document.querySelector("dl") as HTMLElement;
+    expect(facts.children).toHaveLength(6);
+    for (const group of facts.children) {
+      expect(group.tagName).toBe("DIV");
+      expect(group.className).toMatch(/fact/u);
+      expect([...group.children].map((child) => child.tagName)).toEqual(["DT", "DD"]);
+    }
+  });
+});
+
 describe("Approve this version (009D-AC-015)", () => {
   it("says the approval covers this version, with these words, and confirms before it approves", async () => {
     const fetch = vi.fn(
@@ -246,6 +260,15 @@ describe("Launch on Facebook (009D-AC-016)", () => {
       within(sentence).getByRole("link", { name: "See what's needed for Meta" }),
     ).toHaveAttribute("href", "/settings/connections");
     expect(launch.closest("[data-launch-card]")?.querySelector("[data-approval-card]")).toBeNull();
+  });
+
+  it("draws the rocket both mockups draw on it, not the megaphone", () => {
+    render(<LaunchReview review={reviewFixture()} />);
+    const launch = screen.getByRole("button", { name: "Launch on Facebook" });
+    const { container: expected, unmount } = render(<Icon decorative name="rocket" size="sm" />);
+    const rocket = expected.innerHTML;
+    unmount();
+    expect(launch.querySelector("svg")?.outerHTML).toBe(rocket);
   });
 
   it("makes no request on click, Enter, or Space even with every input true", async () => {

@@ -44,6 +44,12 @@ export const SAMPLE_AD_LABEL = "Sample ad";
 /** 009C-AC-012: the library with no active ad, said once, with what happens next. */
 export const EMPTY_LIBRARY =
   "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then.";
+/**
+ * The title of the empty-library state (scored review R1-06). `AsyncState` names what is absent in
+ * its title and says why in its description, which is `EMPTY_LIBRARY` itself, word for word, so the
+ * sentence the criterion fixes is not split or reworded.
+ */
+export const EMPTY_LIBRARY_TITLE = "Nothing to choose from yet";
 export function adCardVersionLine(version: number, reviewedOn: string): string {
   return `Version ${String(version)}. Reviewed ${reviewedOn}.`;
 }

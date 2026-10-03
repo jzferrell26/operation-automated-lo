@@ -17,7 +17,7 @@ describe("a date on the Campaigns list (review R2, H-3)", () => {
   it("is never broken inside itself, so a table cell that wraps leaves each day whole", async () => {
     const css = await readCssRules(`${COMPONENTS}/campaign-list.module.css`);
 
-    expect(css.declarationsOf(".page time")["white-space"]).toBe("nowrap");
+    expect(css.declarationsOf(".tableWrap time")["white-space"]).toBe("nowrap");
   });
 });
 

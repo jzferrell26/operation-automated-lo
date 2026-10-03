@@ -13,12 +13,6 @@
   color: var(--tx-strong);
 }
 
-/* A day is never broken inside itself, so a date that wraps leaves "Oct" and "20" together, and a
-   mask painted over it covers the one day and not the sentence round it (review pass 1, H-3). */
-.page time {
-  white-space: nowrap;
-}
-
 .title {
   color: var(--tx-strong);
   font-size: var(--text-page-size);
@@ -34,6 +28,12 @@
 
 .tableWrap {
   overflow: hidden;
+}
+
+/* A day in the table is never broken inside itself, so a cell that wraps leaves "Oct" and "20"
+   together (review pass 1, H-3). */
+.tableWrap time {
+  white-space: nowrap;
 }
 
 .table {

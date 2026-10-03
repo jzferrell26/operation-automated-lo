@@ -74,12 +74,27 @@ async function measureAt(page: Page, frame: Frame) {
         parent.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
     };
   });
-  const [chipFont, questionFont, glyphSize] = await Promise.all([
+  const [chipFont, questionFont, glyphSize, buttons, welcomeToCards] = await Promise.all([
     firstChip.evaluate((element) => getComputedStyle(element).fontSize),
     question.evaluate((element) => getComputedStyle(element).fontSize),
     firstGlyph.evaluate((element) => {
       const { width, height } = element.getBoundingClientRect();
       return { width, height };
+    }),
+    // Every button of Home: the primary, a topic chip and a checklist action.
+    page
+      .locator("[data-home='start'] a[data-variant='action'], [data-home='setup'] li > a")
+      .evaluateAll((links) =>
+        links.map((link) => ({
+          weight: getComputedStyle(link).fontWeight,
+          name: link.textContent?.trim() ?? "",
+        })),
+      ),
+    // Edge to edge, from the greeting to the first card: the page gap.
+    page.getByText(/^Welcome/u).evaluate((greeting) => {
+      const card = document.querySelector("[data-home='start']");
+      if (card === null) throw new Error("Home has no start card");
+      return card.getBoundingClientRect().top - greeting.getBoundingClientRect().bottom;
     }),
   ]);
 
@@ -91,6 +106,8 @@ async function measureAt(page: Page, frame: Frame) {
     rowWidth: rowBox.width,
     chipFont,
     questionFont,
+    buttons,
+    welcomeToCards,
     // Edge to edge, so it holds whatever line height the question's own box ends up with.
     questionToTopics: topicsBox.y - (questionBox.y + questionBox.height),
     glyphSize,
@@ -134,10 +151,22 @@ for (const theme of ["light", "dark"] as const) {
       expect(measured.questionFont, `topic question text at ${at}`).toBe("14px");
       expect(measured.questionToTopics, `question to topic buttons at ${at}`).toBeCloseTo(20, 0);
 
-      // The state chip reads at the secondary step, and the item glyph is the 24px step.
-      expect(measured.chipFont, `state chip text at ${at}`).toBe("14px");
+      // The state chip is the shared 12px chip (the 2026-10-03 ruling over the mockups' 14px), and
+      // the item glyph is the 24px step.
+      expect(measured.chipFont, `state chip text at ${at}`).toBe("12px");
       expect(measured.glyphSize.width, `item glyph width at ${at}`).toBe(24);
       expect(measured.glyphSize.height, `item glyph height at ${at}`).toBe(24);
+
+      // Home's buttons keep the shared weight 500 (R4-12), and the page gap is the mockups' `.page`
+      // rule: 24px under the greeting, 20px at 390 (R4-13).
+      expect(measured.buttons.length, `Home's buttons at ${at}`).toBeGreaterThan(2);
+      for (const button of measured.buttons) {
+        expect(button.weight, `${button.name} weight at ${at}`).toBe("500");
+      }
+      expect(measured.welcomeToCards, `greeting to the cards at ${at}`).toBeCloseTo(
+        frame.width < 720 ? 20 : 24,
+        0,
+      );
     }
   });
 }

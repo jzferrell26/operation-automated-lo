@@ -1,4 +1,3 @@
-import { Stack } from "@oalo/ui";
 import type { Metadata } from "next";
 import { headers } from "next/headers.js";
 import { redirect } from "next/navigation.js";
@@ -27,8 +26,9 @@ export const metadata: Metadata = { title: PAGE_TITLES.home };
  * the confirmation is read. The flag is read here rather than in `(authenticated)/layout.tsx`
  * because a layout is never given the query: in the App Router `searchParams` belongs to the page,
  * which is also the only thing that re-renders when the query changes. The notice therefore sits at
- * the top of the page's own content, above the greeting. The `Stack` is what puts space between the
- * notice and the page; with no notice it holds one child and changes nothing.
+ * the top of the page's own content, above the greeting. It is handed to `OverviewScreen` as a child
+ * of the page, so the page's own gap (`--space-6`, `--space-5` under 720px, the mockups' `.page`)
+ * spaces it; with no notice it renders nothing and changes nothing.
  *
  * The finished checklist collapses to one line, and `?review=setup` opens it again. That is the
  * only query this page reads besides the reset flag, and any other value is ignored.
@@ -54,13 +54,11 @@ export default async function OverviewPage({
       ? shell?.session?.user.displayName
       : workspace.ui.session.user.displayName;
   return (
-    <Stack gap="6">
-      <PasswordResetNotice parameters={parameters} />
-      <OverviewScreen
-        firstName={firstNameFrom(displayName)}
-        home={read.home}
-        reviewSetup={parameters["review"] === "setup"}
-      />
-    </Stack>
+    <OverviewScreen
+      firstName={firstNameFrom(displayName)}
+      home={read.home}
+      notice={<PasswordResetNotice parameters={parameters} />}
+      reviewSetup={parameters["review"] === "setup"}
+    />
   );
 }

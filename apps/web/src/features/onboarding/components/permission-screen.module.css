@@ -5,9 +5,15 @@
  * redirects to Home), so only the classes this screen uses are carried over, under the names it
  * already reads.
  */
+/*
+ * The page rhythm of the mockups' `.page` (`design/mockups/home-first-run.html:179`) and of Settings
+ * (`workspace.module.css`): `--space-6` between the header, the notice and the groups at every width.
+ * It was `--space-8` above 768px, which sat the notice 52px under the lead where Settings has 28
+ * (the scored review pass 2, P2-02). The groups keep their own `--space-8` apart, below.
+ */
 .onboarding {
   display: grid;
-  gap: var(--space-8);
+  gap: var(--space-6);
   color: var(--tx-strong);
 }
 
@@ -18,6 +24,13 @@
   gap: var(--space-4);
 }
 
+/* The mockups' `.page-head__text`: the eyebrow, the title and the lead are `--space-2` apart. */
+.pageHeaderText {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
 .pageHeader h1 {
   margin: 0;
   line-height: var(--leading-tight);
@@ -26,9 +39,18 @@
   letter-spacing: var(--tracking-page);
 }
 
+/*
+ * The lead keeps no paragraph margin: the header's text block and the page grid space it. It kept the
+ * browser's 1em margins (16px above and below), which is what drew the header looser than Settings'
+ * (the scored review pass 2, P2-02; the D-009 ruling that a gap is a `--space-*` token in its module).
+ */
 :is(.pageHeader, .safetyNotice) p {
   color: var(--tx-body);
   line-height: var(--leading-normal);
+}
+
+.pageHeader p {
+  margin: 0;
 }
 
 /*
@@ -38,7 +60,6 @@
  * and the two other eyebrows to the same declarations.
  */
 .eyebrow {
-  margin-block: 0 var(--space-1);
   color: var(--tx-body);
   font-size: var(--text-secondary-size);
   font-weight: var(--weight-semibold);
@@ -135,10 +156,6 @@
 }
 
 @media (max-width: 768px) {
-  .onboarding {
-    gap: var(--space-6);
-  }
-
   .pageHeader {
     flex-direction: column;
   }

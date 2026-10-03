@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { WorkspaceScreen } from "./workspace-screen.js";
-import { workspaceData } from "./workspace.test-support.js";
+import { TEST_BRAND, workspaceData } from "./workspace.test-support.js";
 
 /**
  * PRD-008c 008C-AC-007, finding W1 of the 2026-10-01 writing review.
@@ -135,5 +135,52 @@ describe("F-04: the previews are Cards", () => {
     expect(
       container.querySelectorAll("article[data-variant='card']").length,
     ).toBeGreaterThanOrEqual(4);
+  });
+});
+
+/**
+ * The scored baseline review pass 2, P2-03. With neither NMLS number saved, the Report preview drew
+ * an empty `<small>`, which is still a grid item, so the card's gap showed twice above "Changes
+ * apply to new reports" (52px against 28px between every other line of the preview).
+ */
+describe("P2-03: the Report preview draws no empty line", () => {
+  function reportPreview(): HTMLElement {
+    const card = screen.getByText("Report preview").closest("article");
+    expect(card, "the Report preview card").not.toBeNull();
+    return card as HTMLElement;
+  }
+
+  it("draws no NMLS line while neither number is saved", () => {
+    render(
+      <WorkspaceScreen
+        data={workspaceData("profile", {
+          defaultBrand: { ...TEST_BRAND, nmls: "", companyNmls: "" },
+        })}
+      />,
+    );
+
+    expect(reportPreview().querySelector("small")).toBeNull();
+    // No text element of the card's grid is empty, so none takes a gap with nothing in it.
+    for (const child of reportPreview().querySelectorAll("span, small, strong, h2, p")) {
+      expect(child.textContent?.trim(), `<${child.tagName.toLowerCase()}> is empty`).not.toBe("");
+    }
+  });
+
+  it("draws the line, with both numbers, once they are saved", () => {
+    render(<WorkspaceScreen data={workspaceData("profile")} />);
+
+    expect(reportPreview().querySelector("small")?.textContent).toBe(
+      `NMLS ${TEST_BRAND.nmls} · Company NMLS ${TEST_BRAND.companyNmls}`,
+    );
+  });
+
+  it("draws the line for one number alone", () => {
+    render(
+      <WorkspaceScreen
+        data={workspaceData("profile", { defaultBrand: { ...TEST_BRAND, companyNmls: "" } })}
+      />,
+    );
+
+    expect(reportPreview().querySelector("small")?.textContent).toBe(`NMLS ${TEST_BRAND.nmls}`);
   });
 });

@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   Dialog,
+  EmptyState,
   Icon,
   Link,
   LiveRegion,
@@ -120,11 +121,17 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
     });
     if (saved?.brand) setBrand(saved.brand.value);
   }
+  const nmlsLine = [
+    brand.nmls ? `NMLS ${brand.nmls}` : "",
+    brand.companyNmls ? `Company NMLS ${brand.companyNmls}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <div className={styles.columns}>
       <Card className={styles.panel} padding="lg">
         <form className={styles.stack} onSubmit={(event) => void submit(event)}>
-          <div>
+          <div className={styles.cardHead}>
             {/* Writing review pass 2 (MTK-008, W-4): "Your details", because this card holds the name,
                 company, email, phone and tagline as well as the NMLS numbers, and only the reports use
                 the last three. "Report identity" and "report branding" were two more names for it. */}
@@ -168,14 +175,9 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
         <span>
           {[brand.email, brand.phone].filter(Boolean).join(" · ") || "Your contact details"}
         </span>
-        <small>
-          {[
-            brand.nmls ? `NMLS ${brand.nmls}` : "",
-            brand.companyNmls ? `Company NMLS ${brand.companyNmls}` : "",
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        </small>
+        {/* The scored review pass 2, P2-03: no numbers, no line. An empty `<small>` is still a grid item,
+            and it took a second `--space-5` gap above the note. */}
+        {nmlsLine === "" ? null : <small>{nmlsLine}</small>}
         <p>
           Changes apply to new reports. Saved reports retain the identity and source details they
           were created with.
@@ -282,17 +284,18 @@ export function PartnersEditor({ data }: { data: WorkspacePageData }) {
           ))}
         </div>
       ) : (
-        <Card className={styles.empty} padding="lg">
-          <Icon name="users" decorative size="lg" />
-          <h2>
-            {partners.length ? "No partners match this search" : "Add your first Realtor partner"}
-          </h2>
-          <p>
-            {partners.length
+        // The scored review pass 2, P2-07: the product's one empty state, not a hand-built card.
+        <EmptyState
+          description={
+            partners.length
               ? "Try a different name or company."
-              : "Keep your Realtor partners' details in one place. Nothing is imported from HighLevel, and partners never appear in your ads."}
-          </p>
-        </Card>
+              : "Keep your Realtor partners' details in one place. Nothing is imported from HighLevel, and partners never appear in your ads."
+          }
+          surface="card"
+          title={
+            partners.length ? "No partners match this search" : "Add your first Realtor partner"
+          }
+        />
       )}
       <div className={styles.actions}>
         <Button variant="outline" disabled={state.busy} onClick={() => void state.reload()}>
@@ -427,7 +430,7 @@ export function AdBrandEditor({ data }: { data: WorkspacePageData }) {
     <div className={styles.columns}>
       <Card className={styles.panel} padding="lg">
         <form className={styles.stack} onSubmit={(event) => void submit(event)}>
-          <div>
+          <div className={styles.cardHead}>
             <h2>Your brand on ads</h2>
             <p>
               Your name and NMLS number go on every ad automatically, with the title, color and

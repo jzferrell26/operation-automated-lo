@@ -2176,3 +2176,423 @@ Write `.../scratchpad/review-parts/<your-id>-p3.md` with: (1) the pass 2 finding
 (2) the score table; (3) remaining findings; (4) a summary: pictures scored, how many at 3 on every
 axis, findings by severity. Final message under 250 words with the counts and each remaining finding
 in one line.
+
+# Pass 4, confirmation (2026-10-03)
+
+Under the stopping rule, the four reviewers confirmed the pass 3 findings on the fourth redraw (screen-baselines run 37157590605, head `963630c9`) and scored the 304 pictures that changed; the other 164 were byte-identical to pass 3. Every pass 3 finding is RESOLVED in all four sets, with 0 regressions from round 3. The QA-11/12 chips read "Newer ad version" and agree with the page. Details missed in every earlier pass were classified FOLLOW-UP: a 1px grey ring on three primary links (R1 F4-01, 24 pictures), the Approval card's first sentence in body ink (R2 F4-1, 80 pictures), an expired reset link with no way to request a new one (R4 F4-01), single words left alone on a line (R3 N-10, N-11), and a relative time split across lines (R3 N-9). Rather than ship known deltas on the demo screens, the orchestrator fixed all of them in one micro-round (`efe066ab`..`75ba3d51`), added a picture of Home with campaigns (`home--with-campaigns`, which the re-signed sign-off found only asserted), and redrew once more (screen-baselines run 37163215460); the pictures that changed are confirmed in a final check recorded below this section.
+
+
+## Pass 4, part R1
+
+
+Reviewer `r1` (`ux-ui-guardian`), PRD-009 scored baseline review, pass 4, the confirmation pass
+(009G-AC-006). Read-only review of the final pictures installed in `C:\Users\jzfer\Projects\oalo-prd-009`
+(screen-baselines run 37157590605, head `963630c9`; the worktree head `c00bb340` adds only the ledger).
+Nothing in the repository was edited.
+
+**Set.** The same 104 pictures as passes 1 to 3, all under `tests/visual/screens/review/`: every name
+starting `ads-library--` (24) or `launch-an-ad--` (80). 88 are in `changed-p4.txt`; a byte compare with
+`.../scratchpad/baselines3/review/` agrees: those 88 differ and the other 16 (`ads-library--real-catalog`
+and `launch-an-ad--step-1-real-catalog`, all frames, both themes) are byte-identical to pass 3.
+
+**Standards read.** The pass 1 and pass 4 briefs, `FIX-RULES-3.md`, my `r1-p3.md`; the round 3 commits
+that reach my set (`d6eccf8f`, `92fac881`, `f0620da9`, `fe305f02`, `c812b68d`, `26acb3b7`, `f690379f`,
+`836d342a`); `campaign-and-artifact-workflow.md` as amended by `26acb3b7` (the "Captions", "Save note",
+"Disclosures", "Link actions" and "The ad card" lines); `link.module.css`, `Button.module.css`, the
+`Card` primitive (`packages/ui/src/components/structural.tsx:39-52`, still an `<article>`); the step 2 and
+step 3 mockups and their previews. Rulings respected: chips 12px; buttons 500; Card `lg` 20px below
+720px and 24px above; where a spec line and a mockup disagree, the mockup wins.
+
+**Method.** For each of the 88 changed pictures, every row was hashed and the pass 3 and pass 4 rows
+aligned (a sequence diff over row hashes), so a band that only moved counts as unchanged and every band
+that did change is listed with its x extent. Each changed band was then opened, measured (capitals by
+rows: 14px is 11 rows, 12px is 9; colours by the darkest or lightest pixel of the glyphs) and traced to
+a round 3 commit. Light and Dark: every pair is the same size, and the changed bands sit at the same
+rows in both themes, so Light and Dark score the same at every frame. Outside the expected bands the
+only differences are anti-aliasing no reader sees: the top bar's account chip on six pictures and one
+shadow row on `step-3-ready-for-approval--768` (at most 2 levels in one channel), and 7 pixels of the
+"Back" chevron on `step-2-first-campaign--390`, which moved with its button (at most 5 levels).
+
+**QA-11/12.** None of my 104 pictures shows the chips "Newer ad version", "Ad picture changed" or "Ad
+not in the library": step 3 has no picture of those states. `step-3-ad-retired` keeps "Ad retired" and,
+for the account owner, "Choose another ad", as in pass 3. No QA-11/12 picture is scored here.
+
+### 1. Pass 3 findings, status
+
+| Finding | Status | Evidence in pass 4 |
+|---|---|---|
+| P3-01 "See what we checked" | RESOLVED | `step-3-ready-for-approval--1440--light.png`: the `chevron-right` glyph (ink x 882 to 887, rows 544 to 553, a 16px box), then the words from x 901 (the `--space-2` gap); "S" is 11 rows (y 544 to 554, 14px), semibold, in 0,95,204 (`--st-info-fg`); no browser triangle. It reads as the mockup's `details.disclosure > summary` (`launch-step-3-review-and-launch.html:364`, `:554`; preview `launch-step-3-review-and-launch--1440.png`). The only change in that band at every frame of all 48 step 3 pictures; "Details for support" draws no glyph, as the mockup's `:565` does not. |
+| P3-02 step 3 link primaries | RESOLVED (size and weight) | `step-3-sent-back--1440--light.png`: "Make a new version" capital 11 rows (y 1125 to 1135, 14px), and at 4x the same stroke as "Copy the link" on `-cannot-approve--1440` (500); the action is 44px tall (y 1108 to 1151) and spans the card. "Fix it" (`-needs-changes`) and "Choose another ad" (`-ad-retired`) moved the same way at every frame. One older delta on the same three links is listed below as follow-up F4-01. |
+| P3-03 decision sentences' ink | RESOLVED | `step-3-cannot-approve--1440`: the sentence's ink is 6,30,53 in Light and 232,234,239 in Dark (`--tx-strong`), the same as the approved, sent-back and retired sentences; the approve line stays 82,101,121 (`--tx-body`). The "Captions" line of `campaign-and-artifact-workflow.md` is amended with a dated note (`26acb3b7`), so spec, mockup and pictures agree. |
+| P3-04 "Details for support" | RESOLVED | `step-3-ready-for-approval--1440--light.png`: the card is 54px edge to edge (borders at y 1522 and 1575: `--space-1`, the 44px summary, `--space-1`), the words 11-row capitals (14px) semibold in `--st-info-fg`. `-ready-for-approval--390`: 54px (y 2590 to 2643), words at x 37 on the edge at x 16, the 20px phone inset. Every step 3 picture lost 24px at that card and nothing else moved. |
+| P3-05 step 2 save note | RESOLVED | `step-2-first-campaign--1440--light.png`: the buttons end at y 1757 and the note's ink starts at y 1775 (y 1787 in pass 3), one `--space-3` from the row to its line box; 768 the same (buttons end 1810, ink 1828). `--390`: the note sits above "Save and check" and 12px from it, "Back" 12px under it, as the mockup's `.form-actions` and `.form-actions__note` draw it (`launch-step-2-set-up.html:296`, `:315`, `:433-434`; preview `launch-step-2-set-up--390.png`). Nothing else on step 2 changed. |
+| P3-06 ad card | RESOLVED | `ads-library--all--1440--light.png`: under every card the 2px card shadow (238,241,246 then 243,246,250 at y 994 to 995 under the border at y 993), as on step 3's cards; "Use this ad" starts at y 929 (925 in pass 3), so 20px under the version line, with 20px at its sides (x 173 on the edge at x 152) and below (to y 992). The art and the body are unchanged (at most 1 level of difference over them). The same on step 1 and at every frame; the actions still line up across a row. |
+
+All 6 resolved.
+
+### 2. Scores, changed pictures (88)
+
+Axes: 1 hierarchy, 2 spacing, 3 typography, 4 colour and contrast, 5 states, 6 motion,
+7 responsiveness, 8 Dark and Light, 9 empty and error, 10 consistency with the PRD-009 mockups.
+Light and Dark share every line.
+
+| Picture group (count) | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Sub-PRD | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `ads-library--all`, `--one-topic`, all frames (16) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009c, 009d card | P3-06 resolved; the shared `Card` |
+| `launch-an-ad--step-1-all`, `--step-1-filtered`, all frames (16) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009d | P3-06 resolved |
+| `launch-an-ad--step-2-first-campaign`, all frames (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009d | P3-05 resolved |
+| `launch-an-ad--step-3-ready-for-approval`, `--approved`, all frames (16) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009d, 009e support card | P3-01, P3-04 resolved |
+| `launch-an-ad--step-3-cannot-approve`, all frames (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009d, 009e hand-off | P3-01, P3-03, P3-04 resolved |
+| `launch-an-ad--step-3-needs-changes`, `--sent-back`, all frames (16) | 3 | 3 | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 2 | 009d, 009e | P3-01, P3-02, P3-04 resolved; F4-01 (follow-up) |
+| `launch-an-ad--step-3-ad-retired`, all frames (8) | 3 | 3 | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 2 | 009d, 009e | P3-01, P3-02, P3-04 resolved; F4-01 (follow-up); not a QA-11/12 chip |
+
+Total 88 (16 + 16 + 8 + 16 + 8 + 16 + 8).
+
+**Not changed since pass 3 (16).** `ads-library--real-catalog` and `launch-an-ad--step-1-real-catalog`,
+all frames, both themes, keep their pass 3 scores: 3 on every axis. None of them scored below 3 in
+pass 3, so no pass 3 finding rests on them.
+
+**Changed bands, traced.** Every band that changed in the 88 pictures comes from a round 3 commit:
+the disclosure row (y 543 to 554 at 1440 and 1180) from `d6eccf8f` and `92fac881`; the three link
+labels and the cannot-approve sentence from `92fac881`; the support card from `f0620da9`; the step 2
+note from `fe305f02`; every ad card from `c812b68d`; and, at 390 on step 3, the "Library ad" value
+now breaking before "library version 2" and never inside it, from `836d342a` (R2 P3-4), which is the
+spec's new "Version words" line and reads better than pass 3's "library / version 2".
+
+### 3. Regressions and follow-ups
+
+**REGRESSION: none.** No band changed by round 3 scores below 3, and nothing outside those bands
+changed.
+
+**FOLLOW-UP (dated 2026-10-03; present in the pass 3 pictures, not a pass 3 finding; does not reopen
+the review).**
+
+**F4-01. Step 3's three link primaries draw a grey `--bd-input` ring around the blue fill (009d).**
+`launch-an-ad--step-3-needs-changes` ("Fix it"), `-sent-back` ("Make a new version") and `-ad-retired`
+("Choose another ad"), every frame, both themes, the account owner's state (24 pictures). The outer
+pixel row and column of each action is 113,131,153 in Light (`--bd-input` `#718399`) and 107,115,133
+in Dark (`#6b7385`) around the 0,95,204 (Dark 53,102,214) fill: `step-3-sent-back--1440--light.png`
+at x 877 and y 1108, `-needs-changes--768--dark.png` at x 57, `-sent-back--390--light.png` at x 37.
+Source: `a.primaryLink` (`apps/web/src/features/campaigns/components/launch.module.css:659-668`, used at
+`launch-review.tsx:457`, `:495`, `:531`) turns the `action` link into a primary by fill and colour but
+does not restate its edge, so the link primitive's `.action { border: 1px solid var(--bd-input) }`
+(`packages/ui/src/components/link.module.css:46`) stays. Required: the mockup's `.btn--primary {
+border-color: var(--ac-primary) }` and `:hover { border-color: var(--ac-primary-hover) }`
+(`launch-step-3-review-and-launch.html:205-206`); "Copy the link" beside them (`Button` primary,
+transparent edge, `Button.module.css:10`) and "Approve this version" draw no ring, and the spec's "Link
+actions" line calls these links its twin (`campaign-and-artifact-workflow.md:87`). The pass 3 pictures
+show the same ring (the same pixels at the same places in `baselines3`); round 3 changed only their
+size and weight. Fix: add `border-color: var(--ac-primary)` to `a.primaryLink` and
+`border-color: var(--ac-primary-hover)` to `a.primaryLink:hover`. The campaign page's
+`a.primaryLink.primaryLink` is not affected: its "Launch an ad" link is the `inline` variant, which has
+no edge. Axes 4 (the input boundary's colour role on a primary action) and 10. **Low.**
+
+**Observations carried from pass 3, not scored and unchanged.** `.facts dd { text-wrap: pretty }` still
+breaks "Headline unchanged. Ad / text unchanged" inside "Ad text" at 1440 (a measure or copy matter);
+the shared approval controls keep "Who can do this" beside its value at 390 (PRD-008's definition
+list, also on R2's pages).
+
+### 4. Summary
+
+My set is 104 pictures: 88 changed since pass 3 and scored here, 16 byte-identical and keeping their
+pass 3 scores (all 3). **All 6 pass 3 findings in my set are resolved** (P3-01 to P3-06), each shown in
+the pictures at every frame and in both themes. **80 pictures now score 3 on every axis**: the 16
+unchanged and 64 of the 88 changed. **Regressions: 0.** **Follow-ups: 1, Low** (F4-01, the grey
+`--bd-input` ring on step 3's three link primaries, 24 pictures at 2 on axes 4 and 10, present since
+before pass 3 and missed then). No picture in my set is a QA-11/12 picture.
+
+## Pass 4, part R2
+
+
+Reviewer: r2 (`ux-ui-guardian`). Final pictures: screen-baselines run 37157590605, head `963630c9`, installed uncommitted in `C:\Users\jzfer\Projects\oalo-prd-009\tests\visual\screens\`. Pass 3 pictures: `.../scratchpad/baselines3/`. Set: every picture named `campaign-page--`, `campaign-detail--`, `campaigns--`, `gone--` or `shell--`, 138 in all.
+
+Read first: `BRIEF-PASS4.md`, `BRIEF.md`, my `r2-p3.md`; `06-review-rubric.md` sections 1 to 3; the round 3 commits that touch my set: `9a79fcc0` (demo page, R2 P3-1 to P3-3), `836d342a` (R2 P3-4), `2a33614b` (R2 P3-5), `ee1bc608` (R2 P3-6, P3-7), `92fac881` (R1 P3-02, P3-03: primary link weight, `.hint` ink), `f0620da9` (R1 P3-04: "Details for support"), `26acb3b7` (spec records), `f690379f` (Home beneath the Help sheet), and the post-pass-3 QA-11 and QA-12 (`8b961f67`, `3429c57e`); the mockups `campaign-detail.html`, `campaigns-list.html`, `launch-step-3-review-and-launch.html`.
+
+Method. Byte and pixel compare of every picture against `baselines3` (128 changed, listed in `changed-p4.txt`; 10 byte-identical); every changed region located by row bands, cropped and opened; measurements are picture pixels from crops, ink-row scans and pixel samples (PIL, scratch files under `review-parts/r2/p4/`). Light and Dark of all 64 changed pairs compared by edge map: every pair is structurally identical; the only one-theme edges are card shadow lines, chip fills, the ad preview's own white card (a picture of the ad), the list tiles' edge, the Help sheet's shadow and the demo's artwork well, as in pass 3. The 76-pixel change in the account pill on several pictures is rendering noise (largest channel-sum delta 4). Nothing in the repository was edited.
+
+### 1. Pass 3 findings, status
+
+| ID | Pass 3 (axis, severity) | Status | Evidence in the final pictures |
+|---|---|---|---|
+| P3-1 | Demo history chips stretch across their rows at 768 and 390 (7, Medium) | RESOLVED | `chromium/campaign-detail--default--768--light.png`: "Replaced", "Replaced", "Approved" are pills of their own width, x 45 to 137, 45 to 137, 45 to 141 (y 2560, 2696, 2832, each 26 tall); at 390 x 29 to 121, 29 to 121, 29 to 125 (y 2535, 2671, 2831). Same in Dark. `justify-items: start` on `.history li` (`9a79fcc0`). |
+| P3-2 | Demo "Selected" chips in the neutral tone (4, Low) | RESOLVED | `chromium/campaign-detail--default--1440--light.png`, the five Meta asset cards (y 1835 to 2084): "Selected" and "Optional, selected" fill 234,244,255 (`--st-info-bg` #eaf4ff), ink 0,95,204 (`--st-info-fg`), info glyph; Dark 22,35,63 and 139,176,255 (`#16233f`, `#8bb0ff`). Every frame. |
+| P3-3 | Demo launch summary list loses its hanging indent at 390 (7, Low) | RESOLVED | `chromium/campaign-detail--default--390--light.png`: "Custom and lookalike audiences" bullet x 36 to 40, text from x 54 (y 5040); the wrapped "unavailable" starts at x 54 (y 5064 to 5075). At 1440 the markers sit outside the text, as on the other lists. `padding-inline-start: var(--space-5)`, `list-style-position: outside`. |
+| P3-4 | "library version" / "1" on the retired page at 390 (7, Low) | RESOLVED | `review/campaign-page--ad-retired--390--light.png`: the Library ad value reads "Sample: Spring home search," (y 1753 to 1766) then "library version 1" (y 1774 to 1787), the unit whole. The same no-break join keeps "library version 2" whole on `review/campaign-detail--approved--390--*` (y 1774 to 1808) and every other page. `libraryVersion()` (`836d342a`). |
+| P3-5 | "The saved words" at the card step (10, Low) | RESOLVED | `review/campaign-page--saved-before-prd-009--1440--light.png`: capital 15 rows (y 348 to 362), the section step, as "Results" (y 373 to 387 on `campaign-page--approved--1440--light.png`); title to first fact 28 rows, as Results' title to its sentence (29). Side titles stay at the card step. Every frame, both themes. |
+| P3-6 | No thumbnail in the 768 table (10, Low) | RESOLVED | `review/campaigns--all-states--768--light.png` and `chromium/campaigns--populated--768--*`: every row has its tile beside the name (row 2 tile x 45 to 92, y 626 to 685, 48px wide); "pre-approved" stays whole. Recorded in `campaign-and-artifact-workflow.md`, "The campaign page and the Campaigns list". |
+| P3-7 | Phone card chip and "Last change" on one line (10, Low) | RESOLVED | `review/campaigns--all-states--390--light.png`, first card: chip ink y 483 to 496 on its own line, then "Last change:" ink y 513 to 527 at the caption step in 95,113,134 (`--tx-faint` #5f7186; Dark 166,173,187, #a6adbb). Every card, both pictures, both themes. |
+
+### 2. Scores for the changed pictures
+
+Axes: 1 hierarchy, 2 spacing, 3 typography, 4 colour and contrast, 5 states, 6 motion, 7 responsiveness, 8 Dark and Light, 9 empty and error, 10 PRD-009 mockups. "ex" is the dated demo-route exemption. Light and Dark share each line (identical scores).
+
+| # | Picture group (count) | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Sub-PRD | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | review `campaign-page--{approved,sent-back,library-notice}--{1440,1180,768}` (18) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009e; 009d/009e shared support card | "Details for support" is the mockup's quiet card (14px semibold summary, `--space-1` block padding; `campaign-detail.html:369`), R1 P3-04. F4-1. |
+| 2 | review `campaign-page--newer-version--{1440,1180,768}` (6) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009e QA-11 | Header and versions chips read "Newer ad version" (neutral). F4-1. |
+| 3 | review `campaign-page--ad-retired--{1440,1180,768}`, `campaign-detail--{ready,approved,already-decided}--{1440,1180,768}` (24) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009e, 009d approve card | Support card only. F4-1. |
+| 4 | chromium `campaign-detail--permission-restricted--{1440,1180,768}` (6) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009e, 009d hand-off | Hand-off sentence now `--tx-strong` (6,30,53; Dark 232,234,239), R1 P3-03, as the spec line now says. F4-1. |
+| 5 | `--390` of rows 1, 3 (less ad-retired) and 4 (14) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009e | 24px shorter (support card). F4-1. |
+| 6 | review `campaign-page--newer-version--390` (2) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009e QA-11 | Chips as row 2. F4-1. |
+| 7 | review `campaign-page--ad-retired--390` (2) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009e, 009d copy | P3-4 resolved (axis 7 back to 3). F4-1. |
+| 8 | review `campaign-page--saved-before-prd-009--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 009e D4 | P3-5 resolved; "Launch an ad" at weight 500 (R1 P3-02). F4-1 ("Nobody has approved this version yet."). |
+| 9 | chromium `campaign-detail--default--{1440,1180}` (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | ex | 009f D1 route | P3-2 resolved. |
+| 10 | chromium `campaign-detail--default--{768,390}` (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | ex | 009f D1 route | P3-1, P3-2, P3-3 resolved. |
+| 11 | review `campaigns--all-states--{1440,1180}` (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e QA-11 | Row 2 "Newer ad version"; "Launch an ad" at 500. |
+| 12 | chromium `campaigns--populated--{1440,1180}` (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e | "Launch an ad" at 500 only. |
+| 13 | review `campaigns--all-states--768`, chromium `campaigns--populated--768` (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e | P3-6 resolved. Taller table (see noted). all-states QA-11. |
+| 14 | review `campaigns--all-states--390`, chromium `campaigns--populated--390` (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e | P3-7 resolved. all-states QA-11. |
+| 15 | chromium `campaigns--empty--*`, review `campaigns--empty-account--*` (16) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e AC-011 | "Launch an ad" at 500 only (1,157 pixels). |
+| 16 | review `shell--help-menu-open--*` (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a bar and sheet; Home beneath 009b | Bar and Help sheet unchanged; Home beneath takes lane Y's "No ads running" (glyph ink, 14px link, `f690379f`), 4px taller; Home itself is scored in r3's set. |
+
+Total changed: 128 (18 + 6 + 24 + 6 + 14 + 2 + 2 + 8 + 4 + 4 + 4 + 4 + 4 + 4 + 16 + 8).
+
+Not changed (byte-identical to pass 3, keep their pass 3 scores, all 3 on every axis): review `gone--default--*` (8) and `shell--menu-sheet-open--390--*` (2). None of my pass 3 pictures below 3 is unchanged, so no pass 3 finding rests on a byte-identical picture.
+
+#### QA-11/12 pictures in my set
+- review `campaign-page--newer-version--*` (8). Header chip "Newer ad version" (1440 Light: x 152 to 293, y 293 to 318, 26 tall like every chip; fill 238,242,247 `--st-neutral-bg`, ink 82,101,121 `--st-neutral-fg`, circle-dot glyph) and the versions chip (y 1028 to 1053), at every frame, both themes; pass 3 drew "Ready for approval" (info). They agree with the page's sentences: the notice "A newer version of this ad is in the library." with "Use the new version", the Approval card "Nobody has approved this version yet.", and no Approve card offered. The tone matches step 3's neutral chip for the same standing (`launch-review.tsx:472`, and `:490` for the other refused cards).
+- review `campaigns--all-states--*` (8). Row 2 ("Sample: First home, start here", the library version 1 campaign) reads "Newer ad version" at every frame (1440 x 970 to 1120, y 474 to 499; 768 and 390 cards too); row 4 (library version 2) keeps "Ready for approval", which agrees with `campaign-detail--ready`'s Approve card. The other chips are as pass 3.
+- Also from the same constants: "Ad retired" on `campaign-page--ad-retired--*` and list row 1, beside "This ad was taken out of the library on [date], so this version can't be approved."
+- "Ad picture changed" and "Ad not in the library" appear in no picture of my set. QA-12's `askWhenCannot` shows only to a viewer who cannot save a version; the drawn viewer can, so the newer-version notice card is unchanged (no pixel difference in it).
+
+### 3. REGRESSION and FOLLOW-UP
+
+#### REGRESSION
+None. Every round 3 change in my set moves a picture toward its spec or mockup: the support card (`campaign-detail.html:369-370`), the primary link weight (the 500 ruling), the `.hint` ink (`campaign-and-artifact-workflow.md:78` as amended), and the five R2 fixes above.
+
+#### FOLLOW-UP
+
+**F4-1 (follow-up dated 2026-10-03). The campaign page's Approval card draws its first sentence in the body ink. Axis 10. Low. Sub-PRD 009e (009E-AC-004 card).**
+- Pictures: every campaign page and campaign detail picture with the Approval card, all frames, both themes (80): review `campaign-page--{approved,sent-back,library-notice,newer-version,ad-retired,saved-before-prd-009}--*` (48), review `campaign-detail--{ready,approved,already-decided}--*` (24), chromium `campaign-detail--permission-restricted--*` (8). Not the demo route.
+- What I see: "Approved by **Dana Reyes**, workspace owner, on [date]." (and "Sent back for changes by ...", and the undecided "Nobody has approved this version yet.") samples 82,101,121 Light and 176,183,196 Dark (`--tx-body`, name included), the same ink as the second sentence "The approval covers this version and these words only..." (`review/campaign-page--approved--1440--light.png`, card x 905 to 1287, sentences y 656 to 750; sent-back and saved-before sample the same).
+- Required: `campaign-detail.html:553`: the first sentence is `<p class="small">` in the body text's `--tx-strong` (`:123-126`; `.small` sets only the size, `:187`), and only the second is `.small muted` (`--tx-body`, `:186`). The undecided sentence takes the first sentence's place and is `.small` (`--tx-strong`) on `launch-step-3-review-and-launch.html:561`. Current `--tx-body`; required `--tx-strong` for the first sentence.
+- Why it now shows: step 3 draws the same "Approved by ..." sentence in `--tx-strong` (R1 P3-03, `campaign-and-artifact-workflow.md:78`), and on `campaign-detail--permission-restricted` the hand-off sentence, now `--tx-strong` (`.hint`, `campaign-page.module.css:472-477`), sits two cards below an Approval card sentence in `--tx-body`.
+- Why FOLLOW-UP, not REGRESSION: the Approval card is unchanged by round 3; its first sentence samples 82,101,121 in the pass 3 pictures too (`baselines3/review/campaign-page--sent-back--1440--light.png`, `--approved--`, `--saved-before-prd-009--`, same coordinates). It was missed in passes 1 to 3.
+- Source: `apps/web/src/features/campaigns/components/campaign-page.module.css:168-172` (`.small { color: var(--tx-body) }`), applied to the first sentence at `campaign-approval-section.tsx:52` (undecided) and `:74` (decided).
+- Fix: give the first sentence `--tx-strong` (a `.decisionLine` class at the secondary step, or `.small` without a colour plus a `.muted` on the second sentence at `:80`), keep the second sentence in `--tx-body`, and add the rule to `campaign-and-artifact-workflow.md`, "The campaign page and the Campaigns list". Owner: 009e.
+
+### Noted, not scored
+- The 768 table is taller with the tile back: header fill 72 to 93 rows, "Where it shows" stacks one word per line, "Austin, TX" wraps at its comma, ad names run to four lines, `review/campaigns--all-states--768--*` 1240 to 1405 tall. No unit is split (hyphenated words whole), nothing overflows, and the trade-off is recorded (`campaign-and-artifact-workflow.md`, "Campaigns list"), so it scores 3; offered to the 009e owner as polish.
+- Pass 3's notes stand unchanged: the newer-version notice has no glyph (009c), the demo's dead `.safetyNotice` and `.connectionEvidence` fills, top-aligned caption rows on the demo, and the empty state's 20px inset above 720px (offered to `design-system-guardian`).
+
+### 4. Summary
+
+138 pictures in my set: 128 changed since pass 3 and scored (every one opened at its changed regions, Light and Dark compared), 10 byte-identical (gone, Menu sheet) keeping pass 3's 3s. Pass 3 findings: all seven RESOLVED (P3-1 to P3-7), each with the picture that shows it. QA-11/12: the 16 newer-version and all-states pictures read "Newer ad version" where pass 3 read "Ready for approval", and agree with each page's sentences; "Ad picture changed" and "Ad not in the library" are in no picture of my set. Regressions: 0. Follow-ups: 1 (F4-1, Low, axis 10, the Approval card's first sentence in `--tx-body` where `campaign-detail.html:553` draws `--tx-strong`; present since pass 1), which holds 80 pictures at 2 on axis 10. At 3 on every axis now: 58 (48 changed: the demo route 8, the list at every frame 16, the empty states 16, Help open 8; plus the 10 unchanged).
+
+## Pass 4, part R3
+
+### Part R3, pass 4 (confirmation)
+
+Reviewer: r3 (`ux-ui-guardian`). Scored review pass 4 (009G-AC-006), the confirmation pass on the final pictures: screen-baselines run 37157590605, head `963630c9`, installed uncommitted in `C:\Users\jzfer\Projects\oalo-prd-009\tests\visual\screens\` (worktree head `c00bb340`, a ledger-only commit on top). Read against `BRIEF-PASS4.md`, the pass 1 brief, `FIX-RULES-3.md`, my pass 3 part `r3-p3.md`, R4-14 in `r4-p3.md`, and the round 3 commits in my set: `f690379f` (Home empty states, `Link` `size="sm"` on `inline`), `51a42d72` and `d8ba39ef` (workspace pages, Homeowner reports header), `9a79fcc0` (Connections). Measurements are PIL row and column scans against the pass 3 copies in `.../scratchpad/baselines3/` (a 16px Inter capital is 12 rows, 14px is 11, 12px is 9); scripts and crops in `.../review-parts/r3p4/`. Nothing in the repository was edited.
+
+Set: the same 80 pictures. 74 are in `changed-p4.txt` and were opened and scored; the other 6 (`review/settings--default--{1440,1180,768}--{light,dark}`) are byte-identical to pass 3 (checked) and keep their pass 3 scores, all 3. Every changed picture was diffed against its pass 3 copy to find the band that moved: each band is exactly the area its fix names (Home: the empty states only; Brand: the report card and the save rows; Partners: the note, the empty state, the page actions; Homeowner reports: the header and the card; Connections: the facts and the group rows; Settings 390: "Refresh page" only). Outside those bands the only differences are 2-level antialiasing noise on the account pill (rows 10 to 54, max channel delta 2), not a visible change. All 37 Light and Dark pairs that changed are the same size and structurally identical.
+
+Axes: 1 hierarchy, 2 spacing, 3 typography, 4 colour and contrast, 5 states, 6 motion, 7 responsiveness, 8 Dark and Light, 9 empty and error, 10 consistency with the PRD-009 mockups.
+
+#### 1. Pass 3 findings
+
+| ID | Pass 3 | Status | Evidence (final picture) |
+|---|---|---|---|
+| P3-01 | Low: empty-state title at 19px on Partners and Homeowner reports | **RESOLVED** | `review/partners--empty--1440--light.png`: "Add your first Realtor partner" capital rows 448 to 459 (12 rows, 16px; pass 3 15 rows); `review/homeowners--empty-account--1440--light.png`: "Connect the report workspace" capital 251 to 262 (12 rows); the same at 390 (`partners--empty--390--light` 570 to 581). Both sheets now exclude the primitive's title: `workspace.module.css:43` and `homeowners.module.css:35`, `.workspace h2:not(:global(.oalo-async-state__title))`. |
+| P3-02 | Low: Homeowner reports header off the rhythm, raw tracking | **RESOLVED** | `review/homeowners--empty-account--1440--light.png`: title capital 104 (40 rows under the bar's hairline at 64, as Campaigns), lead 146 to 160, card edge 188: 28 rows lead to card, as Settings (189 to 217) and Partners; 390: lead 138 to 152, card 180 (28); 768: title 157, lead 199 to 213, card 241 (28). The preview header's `padding-block` is gone (`dashboard-preview/workspace.module.css:41-47`); the title takes `--tracking-page` and `--leading-tight`, the page `--leading-normal` (`homeowners.module.css:7`, `:26`). |
+| P3-03 | Low: Partners note a sunken well on the canvas | **RESOLVED** | `review/partners--empty--1440--light.png`: the note is the info tint `#eaf4ff` (rows 310 to 364) with the `info` glyph and strong ink (`#061e35`); `--dark`: `#16233f` with `#e8eaef` ink. Both fills sample identical to the Connections notice (`review/settings-connections--empty-account--1440--{light,dark}.png` at 1200, 225). The glyph sits on the first line at 768 and 390 (`d8ba39ef`). `preference-editors.tsx:272` (`Surface variant="info"`), `workspace.module.css:229-246`. |
+| P3-04 | Low: Brand read-only reason boxed | **RESOLVED** | `chromium/brand--default--1440--light.png`: "Your role has read-only access to these details." is a plain 14px line in body ink (`#526579`), glyph rows 789 to 802, `--space-2` under the button row (732 to 775), no box; the same under "Save ad settings" and at every frame, both themes. The disabled save points at it (`preference-editors.tsx:80`, `:90`, `:107`; `workspace.module.css:106-112`). |
+| P3-05 | Low: "Create a homeowner report" offered while reports are off | **RESOLVED** | `review/brand--empty-account--1440--light.png` and `chromium/brand--default--1440--light.png`: the Report preview card ends in the reason "Homeowner reports aren't turned on in this workspace yet." (14px, capital 591 to 601, body ink) and the next step "Workspace connections" (615 to 658), the same next step the Homeowner reports page names. `preference-editors.tsx:201-213`. |
+| P3-06 | Low: Connections facts 12px label beside 16px value | **RESOLVED** | `review/settings-connections--empty-account--1440--light.png`: "Why it's needed" and "Know which workspace..." both capital rows 459 to 469 (11 rows, 14px, one baseline); label `#526579` (body), value `#061e35` (strong, medium); label column 177 to value 317 (8rem plus `--space-3`); rows 33 apart. Stacks only at 390 (gap 0, as the mockup), not at 768 (`review/...--768--light.png`). `permission-screen.module.css:159-205`. |
+| P3-07 | Low: Connections cards misaligned across a row, three-line headings at 390 | **RESOLVED** | `review/settings-connections--empty-account--1440--light.png`: both rows' cards start together (393 and 393, 697 and 697); `--1180--`: 433 and 433, 737 and 737; the long heading's chip takes the next line instead of squeezing it. `--390--`: "Access this app confirms after you connect" and "Access this app tells you about when something is blocked" each two lines, chip under them. `permission-screen.module.css:120-143` (subgrid sections, wrapping head). |
+| P3-08 | Low: workspace actions not full width on a phone | **RESOLVED** | `review/settings--default--390--light.png`: "Refresh page" outline x 24 to 365 (the 16 to 374 column, corner radius aside); `review/partners--empty--390--light.png`: "Add Realtor partner" full width under its field, "Load latest saved details" and "Launch an ad" stacked full width; `review/brand--empty-account--390--light.png` and `chromium/brand--default--390--light.png`: both save rows stacked and spanning the card. Settings' card links keep their width, as asked. `workspace.module.css:394-402`. |
+| P3-09 | Low: Home's empty link 16px under a 14px sentence | **RESOLVED** | `review/home--first-run--1440--light.png`: "Launch an ad" capital 913 to 923 (11 rows, 14px; pass 3 12 rows), the same step as the sentence above (831 to 841); `review/home--first-run--390--light.png` 1768 to 1778; `chromium/overview--default--390--light.png` 1798 to 1808. `home-campaign-lists.tsx:59` (`size="sm"`), `link.module.css:89`, `link.md` amended. |
+
+**R4-14** (the same Home empty states, R4's finding): **RESOLVED** in my set too. Link: as P3-09. Glyph ink: megaphone and check now `#5f7186` Light and `#a6adbb` Dark (pass 3 `#526579` and `#b0b7c4`), the mockup's `--tx-faint` and the same ink as the checklist's plug on the same page (`review/home--first-run--1440--{light,dark}.png`, glyph boxes 300 to 330 by 758 to 782 and 650 to 680). Glyph spacing: glyph 761 to 779, title capital 799: 19 empty rows (pass 3 15; the mockup preview 20, R4's measure); 390 the same (1616 to 1634, 1654). `home-campaign-lists.tsx:55`, `overview.module.css:430-433`.
+
+Nine of nine pass 3 findings RESOLVED; none OPEN or PARTLY.
+
+#### 2. Scores (the 74 changed pictures)
+
+| Picture group (L/D = the Light and Dark pair) | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Sub-PRD | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `review/home--first-run--{1440,1180,768,390}` L/D (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009b | P3-09 and R4-14 fixed; +4px per empty card (the glyph's `--space-1`). |
+| `review/home--real-catalog--{1440,1180,768,390}` L/D (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009b, 009c | As first-run. |
+| `chromium/overview--default--{1440,1180,768,390}` L/D (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009b, 009a | As first-run; "Running now" only. |
+| `review/settings--default--390` L/D (2) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a, 009f | P3-08 fixed: "Refresh page" spans the column. |
+| `review/settings-connections--empty-account--{1440,1180,768,390}` L/D (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009f D4, 009a | P3-06, P3-07 fixed. |
+| `chromium/settings-connections--default--{1440,1180,768,390}` L/D (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009f D4, 009a | P3-06 fixed; N-3 kept (synthetic). |
+| `review/brand--empty-account--{1440,1180,768,390}` L/D (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009d D3, 009a | P3-05, P3-08 fixed. N-10. |
+| `chromium/brand--default--{1440,1180,768,390}` L/D (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009d D3, 009a, 009f | P3-04, P3-05, P3-08 fixed. N-10. |
+| `review/partners--empty--{1440,1180,768,390}` L/D (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a, 009f | P3-01, P3-03, P3-08 fixed. |
+| `review/homeowners--empty-account--{1440,1180,768,390}` L/D (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a (PRD-007 surface) | P3-01, P3-02 fixed. |
+
+Total 74 (8 + 8 + 8 + 2 + 8 + 8 + 8 + 8 + 8 + 8). Unchanged and kept from pass 3: `review/settings--default--{1440,1180,768}` L/D (6), all 3. No picture in my set scored below 3 in pass 3 without being in the changed list, so there is no unchanged below-3 picture to account for.
+
+QA-11/12: none of my pictures shows a library-ad status chip ("Newer ad version", "Ad picture changed", "Ad not in the library"); Home's two lists are empty in every state drawn. None scored.
+
+#### 3. REGRESSION and FOLLOW-UP
+
+- **REGRESSION: none.** Every change from pass 3 is inside the band its fix names, and each band scores 3.
+- **FOLLOW-UP: none below 3.** Nothing below 3 is visible in the final pictures of this set.
+
+Noted, not scored below 3 (the rubric has no rag or orphan rule, and pass 3 handled the same class as N-9; recorded so the owner can decide):
+- **N-10 (new copy, round 3).** The Brand report card's new reason line leaves "yet." alone on its second line at 1180 (`review/brand--empty-account--1180--{light,dark}.png`, `chromium/brand--default--1180--{light,dark}.png`); the paragraph above it already left "with." alone in pass 3. `text-wrap: pretty` on `.reason` (`workspace.module.css:110`), as `permission-screen.module.css:189` now does on facts, would hold it. If the owner reads a one-word last line as axis 3 below 3, this one is a round 3 REGRESSION by the brief's definition (the line is new); I score it 3.
+- **N-11 (pre-existing).** Home's "Running now" empty sentence leaves "yet." alone at 390 (`review/home--first-run--390--*`, `review/home--real-catalog--390--*`, `chromium/overview--default--390--*`), unchanged from pass 3; the same `text-wrap: pretty` on `.emptyBody` (`overview.module.css`).
+- **N-9 (kept, synthetic copy).** `chromium/settings-connections--default--1440--*` now breaks "verified 8 / minutes ago." (the `pretty` wrap moved the orphan to the number); a no-break space in the synthetic copy, for the writing lane.
+- **N-12 (judgement, consequence of the P3-07 fix).** In a Connections row where one heading wraps and the other does not, the single-line head stands about 40px above its card (`review/settings-connections--empty-account--1180--*`, "Access this app needs"; `--1440--*`, "Optional access"). That is the cost of aligning the row's cards, which was the requirement; scored 3.
+- N-3, N-4, N-5, N-6, N-7 and N-8 from pass 3 are unchanged.
+
+#### 4. Summary
+
+80 pictures in the set: 74 changed and scored, 6 byte-identical and kept from pass 3. **All 80 are at 3 on every axis** (pass 3: 6). All nine pass 3 findings (P3-01 to P3-09) are RESOLVED, each cited to a final picture, and R4-14 is resolved in this set as well. **0 regressions, 0 follow-ups.** Four notes, none scored below 3: one-word last lines in Brand's new reason line at 1180 (N-10, the only item touched by round 3) and in Home's empty sentence at 390 (N-11), a split "8 / minutes" in synthetic copy (N-9), and the head-to-card space a row-aligned Connections layout leaves under a single-line heading (N-12). No QA-11/12 picture is in this set.
+
+## Pass 4, part R4
+
+
+Reviewer `r4` (`ux-ui-guardian`). Set: every picture under `tests/visual/screens/chromium/` and
+`tests/visual/screens/review/` starting `verify-email--`, `sign-in--`, `reset-password--`, `sign-up--`,
+`forgot-password--`, `change-password--`, `choose-workspace--`, `email-preview--` or
+`design-surfaces--`: 146 pictures from the final redraw (screen-baselines run 37157590605, head
+`963630c9`), installed uncommitted in `C:\Users\jzfer\Projects\oalo-prd-009`. Read only; nothing in the
+repository was edited. Scratch work under `review-parts/r4/p4/`.
+
+Method. Every picture in the set was diffed against its pass 3 picture in `scratchpad/baselines3/`
+(`r4/p4/diff.py`). 132 are byte-identical to pass 3. The 14 that differ are exactly the 14 names of my set
+in `changed-p4.txt`:
+
+- 10 Home pictures changed height: `review/reset-password--saved-notice--*` (8, 4 rows taller) and
+  `chromium/design-surfaces--home-under-notice--{1440,390}--light` (4 and 8 rows taller). A block analysis
+  (`r4/p4/explain.py`, every 8 by 8 block of the pass 4 picture matched against pass 3 at a vertical shift
+  of 0, 4 or 8 rows, tolerance 2 levels) leaves only two regions unexplained on each picture: the
+  empty-state glyph (recoloured) and the "Launch an ad" link (resized). Nothing else on these pages moved
+  except by the 4px the glyph margin adds.
+- 4 pictures differ by at most 1 level in one channel, on 6 to 24 pixels of field boundaries:
+  `review/sign-in--refused--1440--{light,dark}` (rows 392 to 488, the two inputs),
+  `review/reset-password--link-expired--1440--dark` (rows 534 to 572, the confirm input) and
+  `review/change-password--saved--1440--dark` (6 pixels at rows 269 to 270). This is rendering noise, the
+  same kind pass 3 recorded on `sign-in--refused--1440--dark` and
+  `sign-up--address-already-has-an-account--1440--light`; no element is drawn differently.
+
+Shared Link and Button, checked for regressions on the sign-in and password pictures. Between the pass 3
+head `8178126b` and `963630c9`, `packages/ui` changed only `Icon.tsx` (the new `chevron-right`, `d6eccf8f`),
+`Link.tsx` (doc comment), `link.module.css` and its test (`f690379f`); no `Button` file changed, and nothing
+under `features/auth`, `features/shell`, `app/(public)`, `theme` or `globals.css` changed. The one new rule,
+`.inline[data-size="sm"] { font-size: var(--text-secondary-size); }` (`link.module.css:89-91`), applies only
+to a link given `size="sm"`; the only `inline` link with `size="sm"` in `apps/web/src` is Home's empty-state
+link (`home-campaign-lists.tsx:59`). Every account-screen link stays `md`: "Forgot your password?", "New
+here? Create your account.", "Sign in" and "Reset your password" are pixel-identical to pass 3 (or within
+the 1-level noise above). No regression.
+
+### 1. Pass 3 findings
+
+| ID | Sev. | Status | Evidence in the pass 4 pictures |
+|---|---|---|---|
+| R4-14 Home's empty states miss three details of the mockup's `.empty` (axes 2 and 10) | Low | RESOLVED | All three details, at every frame and both themes. (1) Link size: on `chromium/design-surfaces--home-under-notice--1440--light.png` "Launch an ad" is 11 rows to the ascender and 8 to the x-height (rows 1067 to 1077, x-height 1070 to 1077), the same as the 14px sentence above it ("Ads" 985 to 995, x-height 988 to 995); pass 3 was 12 and 9 (1063 to 1074). Same on every `review/reset-password--saved-notice--*` picture (1440 and 1180 rows 985 to 995, 768 rows 1560 to 1570, 390 rows 1836 to 1846) and on the 390 design-surfaces picture (1942 to 1952). Weight 500 and the 4-row underline offset unchanged, as ruled. (2) Glyph ink: the megaphone and the check sample `#5f7186` in Light (both cards on `design-surfaces--home-under-notice--{1440,390}--light`, every saved-notice Light frame) and `#a6adbb` in Dark (every saved-notice Dark frame), which are `--tx-faint` and the colours sampled on the mockup previews' `.empty svg` (`home-first-run--1440.png` and `--1440--dark.png`, rows 829 to 844); pass 3 was `#526579` / `#b0b7c4`. Home's decorative glyphs are now one grey with the checklist's `.itemIcon`. (3) Glyph spacing: card edge to the empty title's capital is 126 rows at 1440 (approval card 827 to 953; Running now 745 to 871 on `review/reset-password--saved-notice--1440--light.png`), the preview's 126 (740 to 866); pass 3 was 122. At 390 it is 122 (`reset-password--saved-notice--390--light.png` 1600 to 1722), 4 less for the 20px phone inset. Sources: `home-campaign-lists.tsx:55` (`<Icon className={styles.emptyGlyph} ... />`, no neutral tone) and `:59` (`<Link ... size="sm" variant="inline">`), `overview.module.css:430-433` (`.empty .emptyGlyph { color: var(--tx-faint); margin-block-end: var(--space-1); }`), `link.module.css:89-91`, `link.md` "Size" extended with a dated note before the rule was used; pinned in `home-polish.unit.test.ts:317` and `primitive-look.test.ts`. `f690379f`. |
+
+The ten pass 1 findings and three pass 2 findings stay resolved: the pictures that proved them are
+byte-identical to pass 3 or moved only as described above. No unchanged picture in my set scored below 3
+in pass 3 (the 10 below 3 were the Home pictures, and all 10 changed), so no unchanged picture carries an
+open pass 3 finding. R4-14's component also draws R3's `overview--*` and `home--*` pictures; R3 confirms
+those.
+
+### 2. Scores for the changed pictures
+
+Axes: 1 hierarchy, 2 spacing, 3 typography, 4 colour, 5 states, 6 motion, 7 responsiveness, 8 Dark and
+Light, 9 empty and error, 10 consistency with the PRD-009 mockups. The 132 byte-identical pictures keep
+their pass 3 scores (all 3 on every axis).
+
+| Picture (count) | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Sub-PRD | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `review/reset-password--saved-notice--{1440,1180,768}--{light,dark}` (6) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009b | R4-14 resolved: 14px link, `--tx-faint` glyph, `--space-1` under it. Nothing else moved. |
+| `review/reset-password--saved-notice--390--{light,dark}` (2) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009b | As above at the phone inset. |
+| `chromium/design-surfaces--home-under-notice--1440--light` (1) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009g, 009b | Both empty states fixed; title 126 rows from the card edge, as the preview. |
+| `chromium/design-surfaces--home-under-notice--390--light` (1) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009g, 009b | Both empty states fixed (8 rows taller, 4 per card). |
+| `review/sign-in--refused--1440--{light,dark}` (2) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Rendering noise only (max 1 level on the input boundaries). Links unchanged at `md`. |
+| `review/change-password--saved--1440--dark` (1) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a | Rendering noise only (6 pixels, 1 level). |
+| `review/reset-password--link-expired--1440--dark` (1) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 3 | 009a (PRD-006a D5) | Rendering noise only; axis 9 is FOLLOW-UP F4-01, present in every pass, not a round 3 change. |
+
+QA-11/12 pictures ("Newer ad version", "Ad picture changed", "Ad not in the library"): none in my set.
+
+### 3. REGRESSION and FOLLOW-UP
+
+#### REGRESSION
+
+None. The only round 3 change that reaches my set is `f690379f` (Home's empty states), and it moved exactly
+the three details R4-14 named. The shared Link change is scoped to `size="sm"` on a plain link and no
+account screen uses it; no Button file changed.
+
+#### FOLLOW-UP (dated 2026-10-03; present in the pass 3 picture, not a pass 3 finding; does not reopen the review)
+
+##### F4-01. The expired reset link names its next step but the screen offers no way to take it (axis 9) - Low
+
+- **Screen, frame, theme, state:** Choose a new password, refused because the token is expired or spent,
+  every frame and both themes: `review/reset-password--link-expired--*` (8). Only the 1440 Dark picture is
+  in `changed-p4.txt` (rendering noise); the other 7 are byte-identical to pass 3 and keep their recorded 3
+  under the stopping rule, but they show the same thing. It is in the pass 1, 2 and 3 pictures; I scored it
+  3 in every pass and missed it.
+- **What I see:** the critical notice reads "This reset link has expired or was already used. Request a new
+  one." Under it the form is unchanged, and its only control, "Save new password", resubmits the same spent
+  token. There is no link to the request page (`/forgot-password`) or to sign in anywhere on the card, so
+  the person can follow the instruction only by typing an address.
+- **Required:** rubric axis 9, "The error says what happened and what to do next" (`06-review-rubric.md:55-56`),
+  as every sibling refusal in this set carries its next step as a control: `sign-up--address-already-has-an-account`
+  puts "Sign in" and "Reset your password" links inside its notice (`sign-up-form.tsx:55-63`,
+  `AuthNotice` with `styles.noticeActions`), `sign-in--refused` has "Forgot your password?", and
+  `verify-email--link-expired` has "Sign in".
+- **File and line:** `apps/web/src/features/auth/components/reset-password-form.tsx:56`
+  (`<AuthProblem>{problem}</AuthProblem>` is the whole output for `AUTH_RESET_LINK_EXPIRED`,
+  `apps/web/src/features/http/user-messages.ts:200-203`); the no-token branch
+  `apps/web/src/app/(public)/reset-password/page.tsx:36-37` renders the same words as a bare `<p>` with no
+  link (not pictured). Last changed in PRD-006 (`58d77fd0`), not by PRD-009.
+- **Fix:** when the refusal is the expired-link one, render the next step as the shared `Link` to
+  `/forgot-password`, as sign-up does, with the existing string "Reset your password"
+  (`FORGOT_PASSWORD.title`, `apps/web/src/copy/auth-messages.ts:60`, the label sign-up already uses) so no copy changes; do the same in the no-token branch. Pin it in
+  `auth-forms.integration.test.tsx`. The redraw moves only the 8 `reset-password--link-expired--*` pictures.
+- **Sub-PRD:** 009a (the account screens' look); the behaviour is PRD-006a D5.
+
+### 4. Summary
+
+146 pictures in my set: 132 byte-identical to pass 3 (keeping their pass 3 scores, all 3), and 14 changed,
+each scored again: 10 Home pictures where the change is exactly R4-14's fix, and 4 sign-in and password
+pictures that differ only by 1-level rendering noise on input boundaries. The pass 3 finding R4-14 is
+RESOLVED at every frame and theme: "Launch an ad" is the 14px secondary step (11 and 8 rows, as the
+sentence above it), the empty-state glyphs are `--tx-faint` (`#5f7186` / `#a6adbb`, as the mockup), and the
+title stands 126 rows from the card edge at 1440, as the preview. The shared Link change is scoped to
+`size="sm"` on a plain link and no Button file changed, so no account screen moved: 0 regressions. One
+follow-up, F4-01 (Low, axis 9): the expired reset-link refusal has no link to request a new one, present in
+every pass. At 3 on every axis now: 145 of 146 by the stopping rule's bookkeeping (132 unchanged plus 13 of
+the 14 changed); applied to all 8 `reset-password--link-expired--*` pictures, F4-01 would make it 138. No
+QA-11/12 picture is in my set.
+
+## Appendix: the pass 4 brief
+
+### Scored baseline review, PRD-009 (009G-AC-006): pass 4 brief (confirmation)
+
+Pass 4 is the confirmation pass on the FINAL pictures: screen-baselines run 37157590605, head
+`963630c9`, after round 3 (lanes X and Y) fixed every pass 3 finding. Read the pass 1 brief for the
+rubric rules: `.../scratchpad/review-parts/BRIEF.md`.
+
+#### The stopping rule (the orchestrator's, recorded in the review report)
+Pass 3 was the last full scan. Pass 4 does three things only:
+1. Confirm every pass 3 finding in your set is RESOLVED, citing the picture that shows it, or report it
+   OPEN or PARTLY.
+2. Score every picture in your set that changed since pass 3 (the list is
+   `.../scratchpad/review-parts/changed-p4.txt`, "chromium/<name>" or "review/<name>"). Pictures not in
+   that list are byte-identical to pass 3 and keep their pass 3 scores; for any of those that scored
+   below 3 in pass 3, say whether its pass 3 finding is in fact resolved (some findings were about a
+   state another picture shows) or still visible.
+3. Classify anything below 3 you see as either
+   - REGRESSION: caused by a round 3 change (compare with the pass 3 picture in
+     `.../scratchpad/baselines3/`), which must be fixed before ship, or
+   - FOLLOW-UP: present in the pass 3 picture too and not a pass 3 finding (missed earlier), which is
+     recorded as a dated follow-up and does not reopen the review.
+   Also list the QA-11/12 pictures (status chips "Newer ad version", "Ad picture changed", "Ad not in
+   the library") you score, if any are in your set.
+
+#### What is where
+- Final pictures: installed, uncommitted, in `C:\Users\jzfer\Projects\oalo-prd-009\tests\visual\screens\`.
+- Pass 3 pictures: `.../scratchpad/baselines3/`; pass 3 findings: `.../scratchpad/review-parts/<your-id>-p3.md`.
+- Rulings: chips 12px; buttons weight 500; the demo route exempt from axis 10 only; Card inset 20px
+  below 720px; where a spec line and a mockup disagree, the mockup wins.
+- Read only: never edit the repository.
+
+#### Output
+Write `.../scratchpad/review-parts/<your-id>-p4.md`: (1) pass 3 findings with status; (2) the score
+table for changed pictures; (3) REGRESSION and FOLLOW-UP lists; (4) a summary: pictures in your set,
+how many at 3 on every axis now, regressions, follow-ups. Final message under 200 words.

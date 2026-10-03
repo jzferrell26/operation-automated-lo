@@ -75,11 +75,9 @@ export async function chooseThemeFromTheHeader(page: Page, theme: ReviewTheme): 
   // PRD-009a (009A-AC-009): the theme choice lives in the top bar's account control, so it is
   // opened first and closed after, leaving the page as it was.
   const account = page.getByRole("dialog", { name: "Your account" });
+  const trigger = page.getByRole("banner").getByRole("button", { name: /^Your account: / });
   if (!(await account.isVisible())) {
-    await page
-      .getByRole("banner")
-      .getByRole("button", { name: /^Your account: / })
-      .click();
+    await trigger.click();
   }
   await account.getByRole("radio", { name: theme === "light" ? "Light" : "Dark" }).click();
   await expectThemeResolved(page, theme);
@@ -88,4 +86,17 @@ export async function chooseThemeFromTheHeader(page: Page, theme: ReviewTheme): 
   await page.waitForTimeout(400);
   await page.keyboard.press("Escape");
   await expect(account).toBeHidden();
+  /*
+   * PRD-009 scored baseline review R4-02 (and R2's harness note H-1). Escape is a keyboard close,
+   * so focus returns to the trigger and `:focus-visible` matches: 24 review pictures carried the
+   * focus ring on the account control while naming a default or saved state.
+   *
+   * The return is the sheet's contract (`overlay.tsx`, focus back to the opener), so it is asserted
+   * here first: a sheet that lost focus fails this line rather than hiding behind what follows.
+   * Only then is focus put down, so the picture shows the state it names. A ring that belongs to a
+   * state is photographed by the spec that reaches that state, after this helper has returned.
+   */
+  await expect(trigger).toBeFocused();
+  await trigger.blur();
+  await expect(trigger).not.toBeFocused();
 }

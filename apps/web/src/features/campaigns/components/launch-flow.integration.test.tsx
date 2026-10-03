@@ -6,11 +6,15 @@ import {
   AREA_HINT,
   BAND_PLACEHOLDER,
   BRAND_CARD_LINE,
+  CHOOSE_LEAD,
   DAILY_BUDGET_FIX,
   EMPTY_LIBRARY,
+  EMPTY_LIBRARY_TITLE,
   PLACE_REFUSED,
+  TOPIC_LABELS,
   TOTAL_BUDGET_FIX,
   WORDS_HINT,
+  setUpLead,
 } from "../../../copy/launch-messages.js";
 import { SUPPORT_DETAILS_LABELS, SUPPORT_DETAILS_SUMMARY } from "../../../copy/user-language.js";
 import { SUPPORT_REFERENCE_HEADER } from "../../http/internal-api.js";
@@ -78,6 +82,41 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+/** True when `first` comes before `second` in the document. */
+function before(first: Element, second: Element): boolean {
+  return Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
+}
+
+// Scored review R1-05. The launch mockups draw the step indicator under the title on step 1, with the
+// lead under the indicator, and after the title-and-lead pair on steps 2 and 3.
+describe("the header's order (R1-05)", () => {
+  it("step 1 puts the indicator directly under the title and the lead under the indicator", () => {
+    renderFlow({ step: 1 });
+    const title = screen.getByRole("heading", { level: 1 });
+    const steps = screen.getByRole("navigation", { name: "Launch an ad steps" });
+    const lead = screen.getByText(CHOOSE_LEAD);
+    expect(before(title, steps)).toBe(true);
+    expect(before(steps, lead)).toBe(true);
+  });
+
+  it("step 2 keeps its lead under the title and puts the indicator after the pair", () => {
+    renderFlow({ step: 2, ad: "sample-first-home" });
+    const title = screen.getByRole("heading", { level: 1 });
+    const steps = screen.getByRole("navigation", { name: "Launch an ad steps" });
+    const card = TEST_CARDS.find((item) => item.id === "sample-first-home");
+    expect(card).toBeDefined();
+    const lead = screen.getByText(
+      setUpLead(
+        card?.name ?? "",
+        TOPIC_LABELS[card?.topic ?? "first-time-buyers"],
+        card?.version ?? 0,
+      ),
+    );
+    expect(before(title, lead)).toBe(true);
+    expect(before(lead, steps)).toBe(true);
+  });
 });
 
 describe("the three steps (009D-AC-001)", () => {
@@ -295,6 +334,25 @@ describe("step 1, Choose an ad (009D-AC-002)", () => {
     expect(screen.queryByRole("button", { name: /^Use this ad/u })).toBeNull();
   });
 
+  // Scored review R1-06. The empty library is the shared empty state, and step 1 does not keep a lead
+  // that describes ads there are none of.
+  it("draws the empty library as an AsyncState empty, with its sentence whole and no lead", () => {
+    const { container } = renderFlow({ step: 1 }, { cards: [] });
+    const state = container.querySelector("[data-empty-library]") as HTMLElement;
+    expect(state).not.toBeNull();
+    expect(state).toHaveAttribute("data-state", "empty");
+    expect(within(state).getByRole("heading", { name: EMPTY_LIBRARY_TITLE })).toBeInTheDocument();
+    expect(within(state).getByText(EMPTY_LIBRARY)).toBeInTheDocument();
+    expect(screen.queryByText(CHOOSE_LEAD)).toBeNull();
+    expect(screen.getByRole("navigation", { name: "Launch an ad steps" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Cancel" })).toBeInTheDocument();
+  });
+
+  it("keeps the lead when there are ads to choose from", () => {
+    renderFlow({ step: 1 });
+    expect(screen.getByText(CHOOSE_LEAD)).toBeInTheDocument();
+  });
+
   it("labels every sample ad", () => {
     renderFlow({ step: 1 });
     expect(screen.getAllByText("Sample ad")).toHaveLength(4);
@@ -350,6 +408,47 @@ describe("step 2, Set it up", () => {
       const header = document.querySelector("[data-ad-feed-preview]")?.firstElementChild;
       expect(header).toHaveTextContent("Alex Morgan, Prairie Home Lending");
       expect(header).not.toHaveTextContent(BAND_PLACEHOLDER);
+    });
+  });
+
+  // Scored review R1-07, R1-08, R1-10 and R1-11.
+  describe("the look of step 2's pieces", () => {
+    it("draws Change in Brand and Add in Brand as text links, not as bordered buttons (R1-08)", () => {
+      const { unmount } = renderFlow(STEP_TWO);
+      expect(screen.getByRole("link", { name: "Change in Brand" })).toHaveAttribute(
+        "data-variant",
+        "inline",
+      );
+      unmount();
+      renderFlow(STEP_TWO, {
+        advertiser: { ...TEST_BAND, name: "", title: "", company: "", nmls: "", companyNmls: "" },
+      });
+      expect(screen.getByRole("link", { name: "Add in Brand" })).toHaveAttribute(
+        "data-variant",
+        "inline",
+      );
+    });
+
+    it("keeps 'Use the library words' a button, with the link look on top of the ghost one (R1-07)", () => {
+      renderFlow(STEP_TWO);
+      const reset = screen.getByRole("button", { name: "Use the library words" });
+      expect(reset).toHaveAttribute("data-variant", "ghost");
+      expect(reset.className).toMatch(/resetLink/u);
+    });
+
+    it("titles the preview at the card step, and draws it inside the capped feed frame (R1-10, R1-11)", () => {
+      renderFlow(STEP_TWO);
+      const title = screen.getByRole("heading", { level: 2, name: "Your ad so far" });
+      expect(title.className).toMatch(/previewTitle/u);
+      const preview = document.querySelector("[data-ad-feed-preview]") as HTMLElement;
+      expect(preview.parentElement?.className).toMatch(/feedFrame/u);
+      expect(preview.closest("aside")).not.toBe(preview.parentElement);
+    });
+
+    it("puts a chevron before Back (R1-10)", () => {
+      renderFlow(STEP_TWO);
+      const back = screen.getByRole("button", { name: "Back" });
+      expect(back.querySelector("svg")).not.toBeNull();
     });
   });
 

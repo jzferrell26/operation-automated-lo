@@ -61,6 +61,16 @@
   min-inline-size: 0;
 }
 /*
+ * A form card's title and its lead (Brand's "Your details" and "Your brand on ads"): `--space-2`
+ * apart, the same step as the page header's title and lead above. The two sat in a plain block
+ * with no gap, so the lead touched the title. A self-found delta of the pass 2 walk.
+ */
+.cardHead {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+/*
  * The one eyebrow of the light look (the scored review's F-11): the mockup's `.eyebrow`, sentence
  * case at the secondary step, semibold, no tracking, in body ink
  * (`design/mockups/home-first-run.html:183`). It was uppercase, tracked 0.12em, at weight 650
@@ -128,7 +138,7 @@
   align-items: center;
   gap: var(--space-2);
   font-weight: var(--weight-semibold);
-  font-size: 12px;
+  font-size: var(--text-caption-size);
   color: var(--st-info-fg);
 }
 .iconTile,
@@ -183,14 +193,19 @@
 .metrics span,
 .metrics small {
   color: var(--tx-faint);
-  font-size: 12px;
+  font-size: var(--text-caption-size);
 }
+/*
+ * A page note ("Your Realtor partner list is saved...", "Your role has read-only access..."): the
+ * secondary step, as the mockups' `.notice` draws it (`design/mockups/campaigns-list.html:508`). It was
+ * a raw 12px, which is a step's value but not its token (scored review pass 2, P2-05).
+ */
 .note {
   padding: var(--space-4);
   border: 1px solid var(--bd-hairline);
   border-radius: var(--radius-button);
   background: var(--sf-sunken);
-  font-size: 12px;
+  font-size: var(--text-secondary-size);
 }
 .records {
   display: grid;
@@ -213,7 +228,7 @@
 }
 .record small {
   color: var(--tx-faint);
-  font-size: 12px;
+  font-size: var(--text-caption-size);
 }
 .record > svg {
   flex: none;
@@ -224,16 +239,6 @@
 }
 .record:hover strong {
   color: var(--st-info-fg);
-}
-.empty {
-  display: grid;
-  justify-items: center;
-  text-align: center;
-  gap: var(--space-3);
-  padding: var(--space-8);
-}
-.empty p {
-  max-inline-size: 600px;
 }
 .connection {
   display: grid;
@@ -273,6 +278,15 @@
   text-align: end;
   overflow-wrap: anywhere;
 }
+/*
+ * The field-and-button row (scored review pass 2, P2-06): the button stands on the field's lower
+ * edge, as the mockups' `.add-area` and `.start-form` do with `align-items: end`
+ * (`design/mockups/launch-step-2-set-up.html:504` and `:261`). Centred, it sat 14px above the
+ * search box, centred on the label and the box together. Below 760px the row stacks and stretches.
+ */
+.toolbar {
+  align-items: end;
+}
 .toolbar > div:first-child {
   flex: 1;
   min-inline-size: 230px;
@@ -307,7 +321,7 @@
     flex-basis: 100%;
   }
   .details > div {
-    font-size: 12px;
+    font-size: var(--text-caption-size);
   }
   .toolbar {
     align-items: stretch;

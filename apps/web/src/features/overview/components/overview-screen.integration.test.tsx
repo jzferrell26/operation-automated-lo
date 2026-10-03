@@ -92,6 +92,30 @@ describe("the composition (009B-AC-001)", () => {
     expect([...positions].sort((left, right) => left - right)).toEqual(positions);
   });
 
+  it("draws a notice above the greeting, as a child of the page, so the page's own gap spaces it (scored review pass 2, R4-13)", () => {
+    const { container } = render(
+      <OverviewScreen
+        firstName="Alex"
+        home={homeData()}
+        notice={<p data-testid="notice">Your password is saved.</p>}
+      />,
+    );
+    const page = container.firstElementChild;
+    const notice = screen.getByTestId("notice");
+
+    // The notice and the greeting are siblings in the one grid whose gap is the page gap, the
+    // notice first; a wrapper outside the page would need its own copy of that gap.
+    expect(notice.parentElement).toBe(page);
+    expect(page?.firstElementChild).toBe(notice);
+    expect(notice.nextElementSibling?.textContent).toBe("Welcome, Alex.");
+  });
+
+  it("draws nothing above the greeting when there is no notice", () => {
+    const { container } = renderHome();
+
+    expect(container.firstElementChild?.firstElementChild?.textContent).toBe("Welcome, Alex.");
+  });
+
   it("draws nothing a CRM would: no metric, numbers, quick actions, coming-later row, or gallery", () => {
     const { container } = renderHome();
 
@@ -681,7 +705,7 @@ describe("the checklist glyphs and chips (Wave 3 polish)", () => {
     expect(drawnIn("Needs your approval")).toBe(iconMarkup("circle-check", "lg", "neutral"));
   });
 
-  it("sets every state chip at Home's chip size, in the checklist and in both lists", () => {
+  it("marks every state chip so it stays one line, in the checklist and in both lists", () => {
     const { container } = renderHome(
       homeData({
         running: { rows: [row({ sample: true })], total: 1 },

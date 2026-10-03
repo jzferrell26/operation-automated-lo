@@ -57,15 +57,39 @@ const empty: HomeWorkspace = {
   properties: [],
 };
 
+/**
+ * The code `apps/web/src/server/homeowners/runtime.ts` answers with when homeowner reports are not
+ * turned on for the workspace. The server module reads the database and the environment, so it is
+ * not imported into the browser; `home-reports-not-enabled.integration.test.tsx` holds the two
+ * together.
+ */
+const REPORTS_NOT_CONFIGURED = "REPORTS_NOT_CONFIGURED";
+
+/** A refusal from the reports API: the sentence for the person, and the route's own code. */
+class ReportsApiError extends Error {
+  constructor(
+    message: string,
+    readonly code: string | undefined,
+  ) {
+    super(message);
+    this.name = "ReportsApiError";
+  }
+}
+
 async function api(path: string, body?: unknown): Promise<unknown> {
   const response = await (body === undefined
     ? getInternalJson(path)
     : postInternalJson(path, body));
   const result: unknown = await response.json();
   if (!response.ok) {
-    const parsed = z.object({ message: z.string() }).safeParse(result);
-    throw new Error(
+    // `error` is read apart from `message`, so a body that names no code, or a code that is not a
+    // string, still gives the person its sentence exactly as before.
+    const parsed = z
+      .object({ message: z.string(), error: z.unknown().optional() })
+      .safeParse(result);
+    throw new ReportsApiError(
       parsed.success ? parsed.data.message : "The report request could not be completed.",
+      parsed.success && typeof parsed.data.error === "string" ? parsed.data.error : undefined,
     );
   }
   return result;
@@ -87,9 +111,18 @@ export function useHomeWorkspace() {
       setRemote(data);
       setError(null);
     } catch (failure) {
-      setError(
-        failure instanceof Error ? failure.message : "The report workspace could not be opened.",
-      );
+      if (failure instanceof ReportsApiError && failure.code === REPORTS_NOT_CONFIGURED) {
+        // The scored review's F-14. A workspace that has not turned reports on is in a state, not
+        // a failure, and the page already says so honestly: "Connect the report workspace", with
+        // what to do next. Raising it as an alert put a red banner above the page title and told
+        // a person who had done nothing wrong that something had gone wrong.
+        setRemote(empty);
+        setError(null);
+      } else {
+        setError(
+          failure instanceof Error ? failure.message : "The report workspace could not be opened.",
+        );
+      }
     } finally {
       setReady(true);
     }

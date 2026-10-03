@@ -871,6 +871,19 @@ describe("a campaign saved before PRD-009 (009E-AC-012)", () => {
     expect(words).toHaveTextContent("Equal Housing Opportunity.");
   });
 
+  it("titles the saved words at the section step, as the library-ad page's main cards are (pass 3, R2 P3-5)", async () => {
+    await renderEarlier();
+
+    // "The ad" and "Results" are `.cardHead h2` (`--text-section-size`); the side cards "Approval" and
+    // "Versions" are `.cardTitle` (`--text-card-size`). The main column's card is not a side card.
+    const title = screen.getByRole("heading", { level: 2, name: "The saved words" });
+    expect(title.className).not.toMatch(/cardTitle/u);
+    expect(title.parentElement?.className).toMatch(/cardHead/u);
+    for (const side of ["Approval", "Versions"]) {
+      expect(screen.getByRole("heading", { level: 2, name: side }).className).toMatch(/cardTitle/u);
+    }
+  });
+
   it("offers Launch an ad and no Make a new version, approve control, or launch button", async () => {
     await renderEarlier();
 

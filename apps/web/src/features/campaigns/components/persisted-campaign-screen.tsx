@@ -221,9 +221,11 @@ function EarlierFlowScreen({ page }: Readonly<{ page: EarlierFlowCampaignPage }>
           role="region"
         >
           <div className={styles.body}>
-            <h2 className={styles.cardTitle} id="campaign-words-title">
-              {EARLIER_FLOW.wordsTitle}
-            </h2>
+            {/* P3-5. The main column's card is titled at the section step, as "The ad" and "Results" are
+                (`styles.cardHead h2`), so main and side cards do not weigh the same. */}
+            <div className={styles.cardHead}>
+              <h2 id="campaign-words-title">{EARLIER_FLOW.wordsTitle}</h2>
+            </div>
             <dl className={styles.facts}>
               <div>
                 <dt>{EARLIER_FLOW.headline}</dt>

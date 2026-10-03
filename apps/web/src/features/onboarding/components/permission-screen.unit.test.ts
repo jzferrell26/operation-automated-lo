@@ -33,16 +33,21 @@ describe("F-08: the groups' rhythm", () => {
 });
 
 describe("F-10: the notice", () => {
-  it("is the informational surface with the control radius and --space-4 inside", () => {
+  it("sets only its row, because the Surface primitive's info variant owns the tint, radius, padding, and ink", () => {
     const notice = declarationsOf(".safetyNotice");
 
-    expect(notice["background"]).toBe("var(--st-info-bg)");
-    expect(notice["border-radius"]).toBe("var(--radius-control)");
-    expect(notice["padding"]).toBe("var(--space-4)");
+    expect(notice["display"]).toBe("flex");
+    expect(notice["align-items"]).toBe("flex-start");
+    expect(notice["gap"]).toBe("var(--space-3)");
+    for (const property of ["background", "color", "border-radius", "padding"]) {
+      expect(notice[property], `${property} comes from the Surface variant`).toBeUndefined();
+    }
   });
 
-  it("keeps its title in the informational tone", () => {
+  it("keeps its title in the informational tone, the one colour the module still sets", () => {
     expect(declarationsOf(".safetyNotice strong")["color"]).toBe("var(--st-info-fg)");
+    // The tint is the Surface variant's; the module never paints it again.
+    expect(source).not.toMatch(/--st-info-bg/u);
   });
 });
 

@@ -374,14 +374,17 @@ describe("F-09: each group's state is the shared Badge", () => {
 });
 
 describe("F-10 and F-08: the notice and the capability cards", () => {
-  it("draws the notice on its own element, not on a Card whose rule would outrank it", () => {
+  it("draws the notice as the Surface primitive's info variant, not as a Card with a module fill", () => {
     renderConnections("production", OALO_REVIEW_SURFACE_AUTHORIZED);
 
-    const notice = screen.getByText("Nothing is connected from this page").closest("div[class]");
+    const notice = screen
+      .getByText("Nothing is connected from this page")
+      .closest("[data-variant]");
 
     expect(notice).not.toBeNull();
-    expect(notice?.closest("[data-variant]")).toBeNull();
-    expect(notice?.getAttribute("data-variant")).toBeNull();
+    expect(notice?.getAttribute("data-variant")).toBe("info");
+    expect(notice?.getAttribute("data-padding")).toBe("md");
+    expect(notice?.classList.contains("oalo-surface")).toBe(true);
   });
 
   it("pads each capability card at the page's card step, not the 8px small step", () => {

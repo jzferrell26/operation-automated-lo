@@ -1,4 +1,4 @@
-import { Badge, Card, Icon, Stack } from "@oalo/ui";
+import { Badge, Card, Icon, Stack, Surface } from "@oalo/ui";
 
 import { ACCESS_GROUP_STATE_LABELS } from "../../../copy/user-language.js";
 import type { DeepReadonly, Onboarding } from "../../ui-foundation/model/synthetic-ui.js";
@@ -53,11 +53,10 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
         </div>
       </header>
 
-      {/* The scored review's F-10: a plain element, not a `Card`. The card's own rule
-          (`.oalo-surface[data-variant="card"]`, specificity 0,2,0) always beat `.safetyNotice`
-          (0,1,0), whatever order the sheets loaded in, so the notice drew white where its module
-          asks for the informational surface. */}
-      <div className={styles.safetyNotice}>
+      {/* The scored review's F-10: the informational notice is the `Surface` primitive's `info`
+          variant, which owns the tint, the radius, the padding, and the strong ink, so no module
+          class has to win a cascade against a card's fill. The module keeps only the layout. */}
+      <Surface className={styles.safetyNotice} padding="md" variant="info">
         <Icon decorative name="lock" size="sm" tone="info" />
         <div>
           <strong>Nothing is connected from this page</strong>
@@ -68,7 +67,7 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
             </p>
           )}
         </div>
-      </div>
+      </Surface>
 
       <div className={styles.permissionGroups}>
         {onboarding.permissionGroups.map((group) => (

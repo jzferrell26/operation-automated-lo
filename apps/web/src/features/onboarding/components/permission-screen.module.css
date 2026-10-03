@@ -45,21 +45,21 @@
 }
 
 /*
- * The informational notice (the scored review's F-10), drawn as the mockup's `.notice`: the
- * informational surface, the control radius, `--space-4` inside. It is a plain element and not a
- * `Card`, because the card's own rule outranked this one whatever order the sheets loaded in.
+ * The informational notice (the scored review's F-10), drawn as the mockup's `.notice`. The tint, the
+ * control radius, `--space-4` inside, and the strong ink are the `Surface` primitive's `info`
+ * variant (`data-variant="info"`), so this module sets only the row: the lock beside its words.
  */
 .safetyNotice {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-4);
-  border-radius: var(--radius-control);
-  background: var(--st-info-bg);
-  color: var(--st-info-fg);
 }
 
-/* The notice title keeps its informational tone, whatever order the sheets load in. */
+/*
+ * The title keeps its informational tone (brief section 9, "blue means informational"). The browser
+ * run measures every notice title against `--st-info-fg` in both themes
+ * (`tests/browser/design-quality.spec.ts`), so this is the one colour the module still sets.
+ */
 .safetyNotice strong {
   color: var(--st-info-fg);
 }

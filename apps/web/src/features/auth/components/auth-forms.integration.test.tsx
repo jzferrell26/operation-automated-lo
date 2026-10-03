@@ -209,6 +209,35 @@ describe("what a person is told when something is wrong", () => {
     expect(region).toHaveTextContent(CHANGE_PASSWORD.successNotice);
   });
 
+  /**
+   * PRD-009 scored baseline review R4-08. Brief section 9: every status pairs colour with text
+   * and a glyph. The regions carried colour and words only. The glyph is decorative, so what is
+   * announced is still the sentence alone.
+   */
+  it("pairs a refusal and a confirmation with their tone's glyph, hidden from the announcement", () => {
+    render(<AuthProblem>{SIGN_IN.genericError}</AuthProblem>);
+    render(<AuthNotice>{CHANGE_PASSWORD.successNotice}</AuthNotice>);
+
+    for (const region of [screen.getByRole("alert"), screen.getByRole("status")]) {
+      const glyph = region.querySelector("svg");
+      expect(glyph).not.toBeNull();
+      expect(glyph?.closest("[aria-hidden='true']") ?? glyph).toHaveAttribute("aria-hidden", "true");
+    }
+    expect(screen.getByRole("alert")).toHaveTextContent(SIGN_IN.genericError);
+    expect(screen.getByRole("status")).toHaveTextContent(CHANGE_PASSWORD.successNotice);
+  });
+
+  /**
+   * R4-05 and R4-06. "You're signed out." bypassed `AuthNotice` as a bare paragraph: it kept the
+   * browser's margins and drew in a colour no other account notice used. It is a confirmation, so
+   * it is the confirmation region.
+   */
+  it("says the signed-out confirmation through the one confirmation region", () => {
+    render(<SignInForm signUpEnabled={false} signedOut />);
+
+    expect(screen.getByRole("status")).toHaveTextContent(SIGN_IN.signedOutNotice);
+  });
+
   it("puts the refusal before the first field in every form that can refuse", () => {
     render(<SignInForm signUpEnabled={false} signedOut />);
 

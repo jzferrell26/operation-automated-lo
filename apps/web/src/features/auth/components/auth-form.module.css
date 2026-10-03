@@ -11,11 +11,21 @@
   padding-inline: var(--space-4);
   color: var(--tx-strong);
 }
+/* PRD-009 scored baseline review R4-04. The nearest sibling of the account card is the PRD-009
+ * card, `padding: var(--space-6)` and `var(--space-5)` under 720px (`home-first-run.html:196` and
+ * `:426`). The panel kept the card primitive's default 16px while its type grew from 13px to the
+ * 16px body and the 28px title, so it read cramped beside every other card. */
 .panel {
   display: grid;
   inline-size: 100%;
   max-inline-size: 26rem;
   gap: var(--space-5);
+  padding: var(--space-6);
+}
+@media (max-width: 719.98px) {
+  .panel {
+    padding: var(--space-5);
+  }
 }
 /* The change-password page inside the shell takes the whole content column, so the panel above
  * starts at the column's inline start, as every sibling page's title does (PRD-008d, second
@@ -73,24 +83,40 @@
   outline-offset: var(--focus-offset);
 }
 /* Brief section 9: a refusal and a confirmation are the critical and the information roles, and
- * each carries its own glyph through the live region's own content, never colour alone. */
-.problem {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border-radius: var(--radius-control);
-  background: var(--st-critical-bg);
-  color: var(--st-critical-fg);
-  line-height: var(--leading-normal);
-}
+ * each carries its own glyph, never colour alone ("Every status pairs color with text and a glyph
+ * or icon", `00-design-brief.md`). `AuthProblem` and `AuthNotice` draw the glyph in the first
+ * column, on the first line of the words (PRD-009 scored review R4-08: the regions carried colour
+ * and words and no glyph, while this comment already claimed one).
+ *
+ * The notice's words are `--tx-body`, the visible live region's colour (`badge-and-live-region.md`);
+ * the glyph carries the information blue. The `color` this rule used to state never applied,
+ * because `.oalo-live-region` won it, and the signed-out notice, which bypassed `AuthNotice`, drew
+ * blue while every other notice drew slate (R4-06). */
+.problem,
 .notice {
   display: grid;
-  gap: var(--space-2);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--space-2);
   padding: var(--space-3);
   border-radius: var(--radius-control);
-  background: var(--st-info-bg);
-  color: var(--st-info-fg);
   line-height: var(--leading-normal);
+}
+.problem {
+  background: var(--st-critical-bg);
+  color: var(--st-critical-fg);
+}
+.notice {
+  background: var(--st-info-bg);
+}
+/* The 16px glyph centred on the first 24px line of the words. */
+.feedbackGlyph {
+  margin-block-start: var(--space-1);
+}
+.feedbackBody {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
 }
 .noticeBody {
   display: block;
@@ -129,9 +155,9 @@
   padding-inline: var(--space-2);
   color: var(--tx-strong);
   font-size: var(--text-card-size);
-  /* The card step's weight. `--weight-semibold` is not a token here (PRD-008d, second redraw,
-   * R-17). */
-  font-weight: var(--weight-bold);
+  /* The card step's weight, design section 2.3 ("card title 16px semibold"). `--weight-semibold`
+   * has been a token since 009A-AC-002 (PRD-009 scored review R4-09). */
+  font-weight: var(--weight-semibold);
   line-height: var(--leading-tight);
 }
 

@@ -240,45 +240,57 @@ export function LaunchReview({
               </Link>
             </div>
             <dl className={styles.facts}>
-              <dt>{FACT_LABELS.ad}</dt>
-              <dd>{adFact(review.ad.name, review.ad.version)}</dd>
-              <dt>{FACT_LABELS.words}</dt>
-              <dd>
-                {defaults === undefined || defaults.headline !== review.words.headline
-                  ? HEADLINE_CHANGED
-                  : HEADLINE_UNCHANGED}
-                {". "}
-                {defaults === undefined || defaults.primaryText !== review.words.primaryText
-                  ? AD_TEXT_CHANGED
-                  : AD_TEXT_UNCHANGED}
-              </dd>
-              <dt>{FACT_LABELS.budget}</dt>
-              <dd>
-                {budgetFact(
-                  dollars(review.budget.dailyDollars),
-                  dollars(review.budget.totalDollars),
-                )}
-              </dd>
-              <dt>{FACT_LABELS.runs}</dt>
-              <dd>
-                <TextWithDays
-                  days={[
-                    { dateTime: review.endsOn.slice(0, 10), text: readableDay(review.endsOn) },
-                  ]}
-                  text={runsFact(readableDay(review.endsOn))}
-                />
-              </dd>
-              <dt>{FACT_LABELS.shows}</dt>
-              <dd>
-                <ul className={styles.factList}>
-                  {placeLabels(review.places).map((label) => (
-                    <li key={label}>{label}</li>
-                  ))}
-                  <li>{FACEBOOK_FEED}</li>
-                </ul>
-              </dd>
-              <dt>{FACT_LABELS.leads}</dt>
-              <dd>{LEADS_NOT_CONNECTED}</dd>
+              <div className={styles.fact}>
+                <dt>{FACT_LABELS.ad}</dt>
+                <dd>{adFact(review.ad.name, review.ad.version)}</dd>
+              </div>
+              <div className={styles.fact}>
+                <dt>{FACT_LABELS.words}</dt>
+                <dd>
+                  {defaults === undefined || defaults.headline !== review.words.headline
+                    ? HEADLINE_CHANGED
+                    : HEADLINE_UNCHANGED}
+                  {". "}
+                  {defaults === undefined || defaults.primaryText !== review.words.primaryText
+                    ? AD_TEXT_CHANGED
+                    : AD_TEXT_UNCHANGED}
+                </dd>
+              </div>
+              <div className={styles.fact}>
+                <dt>{FACT_LABELS.budget}</dt>
+                <dd>
+                  {budgetFact(
+                    dollars(review.budget.dailyDollars),
+                    dollars(review.budget.totalDollars),
+                  )}
+                </dd>
+              </div>
+              <div className={styles.fact}>
+                <dt>{FACT_LABELS.runs}</dt>
+                <dd>
+                  <TextWithDays
+                    days={[
+                      { dateTime: review.endsOn.slice(0, 10), text: readableDay(review.endsOn) },
+                    ]}
+                    text={runsFact(readableDay(review.endsOn))}
+                  />
+                </dd>
+              </div>
+              <div className={styles.fact}>
+                <dt>{FACT_LABELS.shows}</dt>
+                <dd>
+                  <ul className={styles.factList}>
+                    {placeLabels(review.places).map((label) => (
+                      <li key={label}>{label}</li>
+                    ))}
+                    <li>{FACEBOOK_FEED}</li>
+                  </ul>
+                </dd>
+              </div>
+              <div className={styles.fact}>
+                <dt>{FACT_LABELS.leads}</dt>
+                <dd>{LEADS_NOT_CONNECTED}</dd>
+              </div>
             </dl>
           </Card>
           <LaunchDecision changeHref={changeHref} from={from} review={review} state={state} />

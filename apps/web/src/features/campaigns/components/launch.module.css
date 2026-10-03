@@ -37,13 +37,29 @@
   line-height: var(--leading-tight);
 }
 
+/* P2-02. "Campaigns" is the link primitive's `sentence` variant, so it takes the crumb's own 14px, and
+   the row keeps the 44px target's height as the mockups' `.crumbs a` does. The current crumb is
+   marked (`aria-current="page"`) and drawn in the strong ink at the medium weight, as the mockups'
+   `.crumbs [aria-current="page"]` is. */
 .crumbs {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+  min-block-size: var(--target-min-size);
   color: var(--tx-body);
   font-size: var(--text-secondary-size);
+}
+
+.crumbs [aria-current="page"] {
+  color: var(--tx-strong);
+  font-weight: var(--weight-medium);
+}
+
+/* A day is one unit and never breaks inside itself (P2-04, as R1-03 set it for the ad card): a date
+   that wraps moves whole to the next line, so a mask or a reader never meets "Oct" and "20" apart. */
+.page time {
+  white-space: nowrap;
 }
 
 .lead {
@@ -105,12 +121,21 @@
 }
 
 .note,
-.caption,
 .hint,
 .saveNote {
   margin: 0;
   color: var(--tx-body);
   font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+/* P2-05. A caption is the caption step in the faint ink, as the mockups' `.caption` is: "Updates as
+   you type" on step 2, and the two lines under the ad on step 3. */
+.caption,
+.previewNote {
+  margin: 0;
+  color: var(--tx-faint);
+  font-size: var(--text-caption-size);
   line-height: var(--leading-normal);
 }
 
@@ -120,6 +145,14 @@
 
 .saveNote {
   text-align: end;
+}
+
+/* P2-07. On a phone the note under the stacked buttons starts at the start edge, as the mockup's
+   `.form-actions__note` does, so it does not read ragged on the left. */
+@media (max-width: 47.99rem) {
+  .saveNote {
+    text-align: start;
+  }
 }
 
 /* A refused save, said once at the top of the form; the field's own message says what to change. */
@@ -132,9 +165,11 @@
   line-height: var(--leading-normal);
 }
 
+/* The refused-save message takes focus, so it wears the brief's ring like every focus stop, not a ring
+   of its own (it was a raw 2px at a 2px offset in the critical ink). */
 .problem:focus-visible {
-  outline: 2px solid var(--st-critical-fg);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 
 .brandSummary {
@@ -308,14 +343,11 @@ button.resetLink:hover:not(:disabled) {
 }
 
 /* On a phone the field takes the whole line and Add goes under it, so the placeholder is not cut
-   short. */
+   short. Add keeps the grid's default stretch, so it is as wide as the field (P2-07), as the mockup's
+   one-column `.add-area` draws it. */
 @media (max-width: 47.99rem) {
   .placeAdd {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .placeAdd > button {
-    justify-self: start;
   }
 }
 
@@ -341,21 +373,24 @@ button.resetLink:hover:not(:disabled) {
   }
 }
 
-.preview {
+/* P2-06. "Your ad so far" is the shared `Card` at its large inset, like the form beside it and every
+   card on step 3, not a hand-built box with its own edge, radius and padding. The card's children are
+   one `--space-4` apart, as the mockup's `.card > * + *` sets them. The aside around it is what
+   rides along beside the form, and it is also the page's complementary landmark. */
+.previewRail {
   position: sticky;
   inset-block-start: var(--topbar-offset, calc(var(--topbar-height) + var(--space-4)));
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-5);
-  border: 1px solid var(--bd-hairline);
-  border-radius: var(--radius-card);
-  background: var(--sf-card);
 }
 
 @media (max-width: 63.99rem) {
-  .preview {
+  .previewRail {
     position: static;
   }
+}
+
+.preview {
+  display: grid;
+  gap: var(--space-4);
 }
 
 /* R1-10. "Your ad so far" is a card title, at the card step like "What you approve" on step 3, so it
@@ -376,12 +411,16 @@ button.resetLink:hover:not(:disabled) {
   margin-inline: auto;
 }
 
+/* P2-09. The shape switch is the mockup's `.format-switch`: its words at the secondary step in the
+   medium weight, and the chosen shape drawn in the information tint and the semibold weight, so the
+   choice shows in more than the radio's dot. The edge clips the tint to its rounded corners. */
 .shapeSwitch {
   display: inline-flex;
+  overflow: hidden;
   margin: 0;
   padding: 0;
   border: 1px solid var(--bd-input);
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-button);
 }
 
 .shapeOption {
@@ -392,10 +431,17 @@ button.resetLink:hover:not(:disabled) {
   padding: 0 var(--space-4);
   color: var(--tx-strong);
   cursor: pointer;
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-medium);
 }
 
 .shapeOption + .shapeOption {
   border-inline-start: 1px solid var(--bd-input);
+}
+
+.shapeOption:has(input:checked) {
+  background: var(--st-info-bg);
+  font-weight: var(--weight-semibold);
 }
 
 /* 009G-AC-010. The two shape radios and the "See what we checked" summary take the brief's ring, 2px
@@ -482,11 +528,27 @@ button.resetLink:hover:not(:disabled) {
   font-size: var(--text-secondary-size);
 }
 
+/* P2-03. Each fact is a label and its value in a group of their own (the mockup's `.facts div`): the
+   label beside the value from the tablet frame up, and the label over the value, with no gap between
+   them, below 48rem, so a long value ("Sample: Get pre-approved before you shop, library version 1")
+   has the card's whole width and a date has room to stay whole. */
 .facts {
   display: grid;
-  gap: var(--space-2) var(--space-4);
-  grid-template-columns: minmax(6rem, auto) minmax(0, 1fr);
+  gap: var(--space-3);
   margin: 0;
+}
+
+.fact {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 8rem minmax(0, 1fr);
+}
+
+@media (max-width: 47.99rem) {
+  .fact {
+    gap: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* The facts are at the secondary step, as the launch-step-3 mockup sets them. */
@@ -504,6 +566,8 @@ button.resetLink:hover:not(:disabled) {
   margin: 0;
   font-weight: var(--weight-medium);
   color: var(--tx-strong);
+  /* "Sample: First home, start here, library version 2" no longer leaves "2" alone on a phone. */
+  text-wrap: pretty;
 }
 
 /* The approve card is the shared `CampaignApprovalControls`, which this page and the campaign page
@@ -519,9 +583,13 @@ button.resetLink:hover:not(:disabled) {
 }
 
 .decision [data-approval-card] {
+  position: relative;
   display: grid;
   gap: var(--space-4);
   justify-items: start;
+  /* A sentence never leaves its last word alone on a line: "This version needs changes before anyone
+     can approve it." used to end with "it." by itself at 1440. */
+  text-wrap: pretty;
 }
 
 .decision [data-approval-card] > * {
@@ -579,7 +647,3 @@ a.primaryLink:hover {
   background: var(--ac-primary-hover);
   color: var(--tx-on-action);
 }
-  position: relative;
-  /* A sentence never leaves its last word alone on a line: "This version needs changes before anyone
-     can approve it." used to end with "it." by itself at 1440. */
-  text-wrap: pretty;

@@ -105,6 +105,71 @@ describe("step 3's cards (R1-12, R1-13, R1-15)", () => {
   });
 });
 
+describe("the launch header's crumbs (P2-02)", () => {
+  it("keeps the 44px row, and marks the current crumb in the strong ink at the medium weight", () => {
+    const crumbs = launch.declarationsOf(".crumbs");
+    expect(crumbs["font-size"]).toBe("var(--text-secondary-size)");
+    expect(crumbs["min-block-size"]).toBe("var(--target-min-size)");
+    const current = launch.declarationsOf('.crumbs [aria-current="page"]');
+    expect(current["color"]).toBe("var(--tx-strong)");
+    expect(current["font-weight"]).toBe("var(--weight-medium)");
+  });
+});
+
+describe("dates, captions, and the phone (P2-03 to P2-07)", () => {
+  it("never breaks a date across two lines (P2-04)", () => {
+    expect(launch.declarationsOf(".page time")["white-space"]).toBe("nowrap");
+  });
+
+  it("stacks each fact's label over its value on a phone (P2-03)", () => {
+    expect(launch.declarationsOf(".fact")["grid-template-columns"]).toBe("8rem minmax(0, 1fr)");
+    expect(launch.source).toMatch(
+      /@media \(max-width: 47\.99rem\) \{\s*\.fact \{\s*gap: 0;\s*grid-template-columns: minmax\(0, 1fr\);/u,
+    );
+  });
+
+  it("sets 'Updates as you type' and the two lines under the ad as captions in the faint ink (P2-05)", () => {
+    const captions = launch.declarationsOf(".caption,\n.previewNote");
+    expect(captions["font-size"]).toBe("var(--text-caption-size)");
+    expect(captions["color"]).toBe("var(--tx-faint)");
+    const notes = launch.declarationsOf(".note,\n.hint,\n.saveNote");
+    expect(notes["font-size"]).toBe("var(--text-secondary-size)");
+  });
+
+  it("start-aligns the save note and stretches Add to the field on a phone (P2-07)", () => {
+    expect(launch.source).toMatch(
+      /@media \(max-width: 47\.99rem\) \{\s*\.saveNote \{\s*text-align: start;/u,
+    );
+    expect(launch.declarationsOf(".saveNote")["text-align"]).toBe("end");
+    // Add keeps the grid's own stretch: no rule sets its alignment.
+    expect(launch.source).not.toMatch(/\.placeAdd > button/u);
+  });
+
+  it("leaves 'Your ad so far' to the shared Card, with no edge, radius or padding of its own (P2-06)", () => {
+    const preview = launch.declarationsOf(".preview");
+    expect(preview["gap"]).toBe("var(--space-4)");
+    for (const own of ["padding", "border", "border-radius", "background"]) {
+      expect(preview[own], `${own} on .preview`).toBeUndefined();
+    }
+    expect(launch.declarationsOf(".previewRail")["position"]).toBe("sticky");
+  });
+});
+
+describe("the shape switch (P2-09)", () => {
+  it("sets its words at the secondary step in the medium weight", () => {
+    const option = launch.declarationsOf(".shapeOption");
+    expect(option["font-size"]).toBe("var(--text-secondary-size)");
+    expect(option["font-weight"]).toBe("var(--weight-medium)");
+  });
+
+  it("shows the chosen shape in the information tint and the semibold weight", () => {
+    const chosen = launch.declarationsOf(".shapeOption:has(input:checked)");
+    expect(chosen["background"]).toBe("var(--st-info-bg)");
+    expect(chosen["font-weight"]).toBe("var(--weight-semibold)");
+    expect(launch.declarationsOf(".shapeSwitch")["overflow"]).toBe("hidden");
+  });
+});
+
 describe("the ad card and the topic chips (R1-03, R1-04)", () => {
   it("sets the version line as a caption in the faint ink, and never breaks its date", () => {
     const version = cards.declarationsOf(".cardVersion");
@@ -143,6 +208,7 @@ describe("the ad card and the topic chips (R1-03, R1-04)", () => {
     expect(topic["color"]).toBeUndefined();
     expect(topic["white-space"]).toBe("nowrap");
     expect(topic["align-self"]).toBe("flex-start");
+    expect(cards.source).not.toMatch(/0\.125rem/u);
   });
 
   it("has no hand-built empty paragraph; the empty library is an AsyncState", () => {
@@ -179,4 +245,3 @@ describe("the ad's company line (F-7)", () => {
     expect(company["text-transform"]).toBe("uppercase");
   });
 });
-    expect(cards.source).not.toMatch(/0\.125rem/u);

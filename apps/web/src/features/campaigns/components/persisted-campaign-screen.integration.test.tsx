@@ -3,17 +3,22 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  AD_SCENARIOS,
   APPROVER,
+  CHIP_FOR_REFUSAL,
   CREATOR,
   OWNER,
   daysOutsideTimeElements,
   earlierFlowCampaign,
   libraryCampaign,
   pageOf,
+  ruleAnswerFor,
   sampleLibrary,
+  scenarioLibrary,
   wholeSentence,
   type LibraryCampaignOptions,
 } from "../../../server/campaign-page.test-support.js";
+import { USE_NEW_VERSION_ASK } from "../../../copy/ads-library-messages.js";
 import { glyphBeforeWords, glyphMarkup } from "../../../testing/glyph-markup.js";
 import { PersistedCampaignScreen } from "./persisted-campaign-screen.js";
 
@@ -102,6 +107,63 @@ describe("the campaign page header (009E-AC-001)", () => {
       expect(chips[0]).toHaveTextContent(chip);
     },
   );
+
+  /**
+   * QA-11. The page's chip said "Ready for approval" for a version whose ad was replaced, whose
+   * picture changed, or that the library no longer holds, beside a notice that said it could not be
+   * approved. Each scenario asks the approval rule (`libraryAdRefusalFor`) and expects the chip step 3
+   * draws for that answer, in the header and in the versions card, for everybody who reads the page.
+   */
+  it.each(AD_SCENARIOS.map((scenario) => [scenario.name, scenario] as const))(
+    "draws the chip the approval rule gives for %s, and says Ready for approval only where it allows one",
+    async (_name, scenario) => {
+      const library = await scenarioLibrary(scenario);
+      const campaign = await libraryCampaign(scenario.campaign);
+      const refusal = ruleAnswerFor(campaign, library);
+      const expected = refusal === undefined ? "Ready for approval" : CHIP_FOR_REFUSAL[refusal];
+      for (const principal of [OWNER, APPROVER, CREATOR]) {
+        const { container, unmount } = render(
+          <PersistedCampaignScreen page={await pageOf(campaign, { principal, library })} />,
+        );
+
+        const chips = container.querySelectorAll("[data-campaign-standing]");
+        expect(chips, principal.role).toHaveLength(1);
+        expect(chips[0]?.textContent, principal.role).toBe(expected);
+        // The newest version's row in the versions card is the same standing, in the same words.
+        const row = container.querySelector("[data-versions] li[data-version-no='1']");
+        expect(row?.querySelector("[data-tone]")?.textContent, principal.role).toBe(expected);
+        if (refusal === undefined) {
+          expect(screen.getAllByText("Ready for approval").length).toBeGreaterThan(0);
+        } else {
+          expect(screen.queryByText("Ready for approval"), principal.role).toBeNull();
+          expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
+        }
+        unmount();
+      }
+    },
+  );
+
+  it("lets a recorded decision win over each reason the library gives", async () => {
+    for (const scenario of AD_SCENARIOS) {
+      for (const [decision, chip] of [
+        ["approved", "Approved"],
+        ["rejected", "Sent back for changes"],
+      ] as const) {
+        const library = await scenarioLibrary(scenario);
+        const page = await pageOf(await libraryCampaign({ ...scenario.campaign, decision }), {
+          principal: OWNER,
+          library,
+        });
+        const { container, unmount } = render(<PersistedCampaignScreen page={page} />);
+
+        expect(
+          container.querySelector("[data-campaign-standing]"),
+          `${scenario.name} / ${decision}`,
+        ).toHaveTextContent(chip);
+        unmount();
+      }
+    }
+  });
 
   it("offers Make a new version as the secondary action and a disabled Launch on Facebook as the primary", async () => {
     const { container } = await renderCampaign();
@@ -511,6 +573,44 @@ describe("the library notices on the page (009E-AC-006)", () => {
       .getByText("A newer version of this ad is in the library.")
       .closest("li") as HTMLElement;
     expect(within(item).queryByRole("button")).toBeNull();
+  });
+
+  /**
+   * QA-12. An approver who cannot save a version, arriving from the hand-off link, saw the Approval
+   * card, no Approve, and "A newer version of this ad is in the library." with nothing to press, no
+   * reason, and nobody named. Step 3 names who can (writing review delta check, D-3), in
+   * `USE_NEW_VERSION_ASK`, and the page now says that same sentence in the same place. Step 3's own
+   * test is in `launch-review.integration.test.tsx`.
+   */
+  it("tells somebody who can't save a version who can, in the sentence step 3 uses, and nobody else", async () => {
+    const sentence = "Ask the campaign creator or your workspace owner to use the new version.";
+    expect(USE_NEW_VERSION_ASK).toBe(sentence);
+    const noticeOf = () =>
+      screen
+        .getByText("A newer version of this ad is in the library.")
+        .closest("li") as HTMLElement;
+
+    const approver = await renderCampaign({ adVersion: 1 }, APPROVER);
+    expect(within(noticeOf()).getByText(sentence)).toBeInTheDocument();
+    expect(within(noticeOf()).queryByRole("button")).toBeNull();
+    expect(within(noticeOf()).queryByRole("link")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
+    approver.unmount();
+
+    // Somebody who can save a version has the action, and is not told to ask anybody else.
+    const owner = await renderCampaign({ adVersion: 1 }, OWNER);
+    expect(
+      within(noticeOf()).getByRole("button", { name: "Use the new version" }),
+    ).toBeInTheDocument();
+    expect(within(noticeOf()).queryByText(sentence)).toBeNull();
+    owner.unmount();
+
+    // A version somebody decided on has nothing left to move, so nobody is asked to move it.
+    for (const decision of ["approved", "rejected"] as const) {
+      const decided = await renderCampaign({ adVersion: 1, decision }, APPROVER);
+      expect(within(noticeOf()).queryByText(sentence), decision).toBeNull();
+      decided.unmount();
+    }
   });
 
   it("says the ad is not in the library when the catalog does not hold it", async () => {

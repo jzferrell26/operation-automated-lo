@@ -1,5 +1,6 @@
 import { Icon, Link, Surface } from "@oalo/ui";
 
+import { USE_NEW_VERSION_ASK } from "../../../copy/ads-library-messages.js";
 import { NOTICES, retiredKept } from "../../../copy/campaign-page-messages.js";
 import {
   AD_ART_CHANGED_NOTICE,
@@ -25,6 +26,9 @@ import { TextWithDays, type DayInText } from "./text-with-days.js";
  * command would refuse (QA-06), so two more notices say why, in step 3's own sentences: the ad's
  * pictures changed after this version was saved (with "Make a new version"), and a newer version of
  * the ad exists that the page cannot offer to move to (with "Choose another ad").
+ *
+ * Amended 2026-10-03 (quality close-out, QA-12). The newer-version notice names who can use the new
+ * version to somebody who cannot save one, in `USE_NEW_VERSION_ASK`, as step 3 does.
  *
  * A notice on an approved version only says what changed: the approval covers the version that was
  * approved, so nothing here asks the person to redo it.
@@ -95,7 +99,13 @@ export function CampaignLibraryNotices({
           return (
             <li data-notice={notice.kind} key={notice.kind}>
               <Surface className={styles.notice} padding="lg">
-                <UseNewVersion canUse={notice.canUse} offer={notice.offer} />
+                {/* QA-12. Somebody who cannot save a version is told who can, in step 3's own
+                    sentence, so an approver who followed the hand-off link has a next step. */}
+                <UseNewVersion
+                  askWhenCannot={USE_NEW_VERSION_ASK}
+                  canUse={notice.canUse}
+                  offer={notice.offer}
+                />
               </Surface>
             </li>
           );

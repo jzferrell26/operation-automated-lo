@@ -1,17 +1,20 @@
-import type { LibraryAdCatalogStanding } from "@oalo/application";
 import { describe, expect, it } from "vitest";
 
 import type { SavedAdBrand } from "./ad-brand-read.js";
 import { sortCampaignListRows } from "./campaign-page-data.js";
 import {
+  AD_SCENARIOS,
   APPROVER,
   CREATOR,
   OWNER,
   earlierFlowCampaign,
   libraryCampaign,
+  libraryWith,
   pageOf,
   rowOf,
+  ruleAnswerFor,
   sampleLibrary,
+  scenarioLibrary,
 } from "./campaign-page.test-support.js";
 import type { LibraryAdCampaignPage } from "../features/campaigns/campaign-page-model.js";
 
@@ -271,19 +274,9 @@ describe("the library notices (009E-AC-006)", () => {
    * The writing review delta check, D-4. The page offers no Approve where the approval command would
    * refuse (QA-06), and it said nothing about two of the four reasons, so an approver arriving from
    * the hand-off link saw an Approval card with no way to approve and no reason. Step 3 says both,
-   * in sentences the approval refusal also says, and the page now does too.
+   * in sentences the approval refusal also says, and the page now does too. (`libraryWith`, the
+   * library with one fact about the ad changed, is shared with the QA-11 scenarios.)
    */
-  async function libraryWith(change: Partial<LibraryAdCatalogStanding>) {
-    const sample = await sampleLibrary();
-    return {
-      find: sample.find.bind(sample),
-      standingOf: (ad: Readonly<{ id: string; version: number }>) => {
-        const standing = sample.standingOf(ad);
-        return standing === undefined ? undefined : { ...standing, ...change };
-      },
-    };
-  }
-
   it("says why there is no Approve when the ad's art changed, with a new version for somebody who can save one (D-4)", async () => {
     const library = await libraryWith({ tallSha256: "0".repeat(64) });
     const campaign = await libraryCampaign();
@@ -570,6 +563,66 @@ describe("the Campaigns list's rows (009E-AC-009, 009E-AC-010)", () => {
     },
   );
 
+  /**
+   * QA-11. A version nobody has decided on stands where the approval rule (`libraryAdRefusalFor`)
+   * says its ad stands, on the list, on the campaign page, and in the page's versions list, so no
+   * screen calls a refused version "ready for approval" (009d D8).
+   */
+  it.each([
+    ["an ad nothing is wrong with", "awaiting_approval"],
+    ["an ad the library retired", "ad_retired"],
+    ["an ad with a newer version to move to", "ad_newer_version"],
+    ["an ad a newer version replaced, with none to offer", "ad_newer_version"],
+    ["an ad whose picture changed", "ad_art_changed"],
+    ["an ad the library no longer holds", "ad_missing"],
+  ] as const)("stands for %s as %s, on the list and on the page", async (name, standing) => {
+    const scenario = AD_SCENARIOS.find((candidate) => candidate.name === name);
+    if (scenario === undefined) throw new Error(`No scenario called ${name}.`);
+    const library = await scenarioLibrary(scenario);
+    const campaign = await libraryCampaign(scenario.campaign);
+
+    const row = await rowOf(campaign, { library });
+    const page = await pageOf(campaign, { library });
+
+    expect(row.standing).toBe(standing);
+    expect(page.standing).toBe(standing);
+    expect(page.versions.map((version) => version.standing)).toEqual([standing]);
+  });
+
+  // The component tests of the list and the page run these same scenarios against the rule's answer
+  // (`AD_SCENARIOS` in the test support), so this is where they are checked to hold every answer.
+  it("covers every answer the approval rule can give, so the scenarios cannot go stale", async () => {
+    const answers = new Set<string>();
+    for (const scenario of AD_SCENARIOS) {
+      const answer = ruleAnswerFor(
+        await libraryCampaign(scenario.campaign),
+        await scenarioLibrary(scenario),
+      );
+      answers.add(answer ?? "approvable");
+    }
+    expect([...answers].toSorted()).toEqual([
+      "approvable",
+      "art_changed",
+      "missing",
+      "replaced",
+      "retired",
+    ]);
+  });
+
+  it("lets a decision on the version win over what the library says about its ad", async () => {
+    for (const scenario of AD_SCENARIOS) {
+      const library = await scenarioLibrary(scenario);
+      for (const [decision, standing] of [
+        ["approved", "approved"],
+        ["rejected", "awaiting_approval"],
+      ] as const) {
+        const campaign = await libraryCampaign({ ...scenario.campaign, decision });
+        expect((await rowOf(campaign, { library })).standing, scenario.name).toBe(standing);
+        expect((await pageOf(campaign, { library })).standing, scenario.name).toBe(standing);
+      }
+    }
+  });
+
   it("gives every viewer the same standing, so the list never differs by role", async () => {
     const campaign = await libraryCampaign();
     const standings = await Promise.all(
@@ -590,7 +643,8 @@ describe("the Campaigns list's rows (009E-AC-009, 009E-AC-010)", () => {
       earlierFlow: false,
       thumbnail: undefined,
       sample: false,
-      standing: "awaiting_approval",
+      // QA-11. A version whose ad is not in the library cannot be approved, so it is not "ready".
+      standing: "ad_missing",
     });
   });
 
@@ -671,5 +725,19 @@ describe("a campaign saved before PRD-009 (009E-AC-012, D4)", () => {
       standing: "awaiting_approval",
     });
     expect(JSON.stringify(row)).not.toContain("123 Main Street");
+  });
+
+  // QA-11. The library's standings ("Ad retired", "Newer ad version", "Ad picture changed", "Ad not in
+  // the library") are about a library ad, and a campaign saved before PRD-009 has none, so whatever the
+  // library holds, its chip is its decision or its stored state.
+  it("never takes one of the library's standings, whatever the library holds", async () => {
+    const campaign = await earlierFlowCampaign();
+
+    for (const library of [NO_LIBRARY, await sampleLibrary()]) {
+      const page = await pageOf(campaign, { principal: OWNER, library });
+      expect((await rowOf(campaign, { library })).standing).toBe("awaiting_approval");
+      expect(page.standing).toBe("awaiting_approval");
+      expect(page.versions.map((version) => version.standing)).toEqual(["awaiting_approval"]);
+    }
   });
 });

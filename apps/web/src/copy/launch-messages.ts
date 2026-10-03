@@ -1,6 +1,13 @@
 import type { PreflightRuleCode } from "@oalo/application";
 import type { AdsLibraryTopic } from "@oalo/contracts";
 
+import {
+  CAMPAIGN_AD_ART_CHANGED_LABEL,
+  CAMPAIGN_AD_MISSING_LABEL,
+  CAMPAIGN_AD_NEWER_VERSION_LABEL,
+  CAMPAIGN_AD_RETIRED_LABEL,
+} from "./user-language.js";
+
 /**
  * PRD-009d. Every sentence "Launch an ad" puts on a screen, in one file the user-language guard and
  * the writing review read (`library/knowledge/private/standards/user-language-contract.md`).
@@ -223,7 +230,9 @@ export function approvedLine(approver: string, decidedOn: string): string {
   return `Approved by ${approver} on ${decidedOn}. The approval covers this version only.`;
 }
 export const MAKE_A_NEW_VERSION = "Make a new version";
-export const AD_RETIRED_CHIP = "Ad retired";
+// QA-11. Step 3's four chips for a refused ad are the words the list and the campaign page draw for the
+// same standing, so `campaignStateLabel` stays the one source of status words (009E-AC-010).
+export const AD_RETIRED_CHIP = CAMPAIGN_AD_RETIRED_LABEL;
 export function adRetiredNotice(retiredOn: string): string {
   // Amended 2026-10-02 (MTK-008, W-29): "version", the word every sibling sentence uses.
   return `This ad was taken out of the library on ${retiredOn}, so this version can't be approved. Your budget, dates and area are kept.`;
@@ -245,13 +254,13 @@ export const CHOOSE_ANOTHER_AD = "Choose another ad";
  * record says "taken out of the library", the words `LIBRARY_AD_RETIRED` says, so "retired" goes
  * with "taken out" and "isn't in the library" stays with the missing chip.
  */
-export const AD_REPLACED_CHIP = "Newer ad version";
+export const AD_REPLACED_CHIP = CAMPAIGN_AD_NEWER_VERSION_LABEL;
 export const AD_REPLACED_NOTICE =
   "A newer version of this ad is in the library, so this version can't be approved. Your budget, dates and area are kept.";
-export const AD_ART_CHANGED_CHIP = "Ad picture changed";
+export const AD_ART_CHANGED_CHIP = CAMPAIGN_AD_ART_CHANGED_LABEL;
 export const AD_ART_CHANGED_NOTICE =
   "The picture for this ad changed after this version was saved, so this version can't be approved.";
-export const AD_MISSING_CHIP = "Ad not in the library";
+export const AD_MISSING_CHIP = CAMPAIGN_AD_MISSING_LABEL;
 /** A retired ad whose retirement day the library did not record (D-5). */
 export const AD_RETIRED_UNDATED_NOTICE =
   "This ad was taken out of the library, so this version can't be approved.";

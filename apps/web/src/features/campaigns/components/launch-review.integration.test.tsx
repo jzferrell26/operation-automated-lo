@@ -569,6 +569,59 @@ describe("step 3 never offers Approve where the command refuses (QA-06, 009C-AC-
     expect(within(card).queryByRole("link")).toBeNull();
   });
 
+  /**
+   * QA-12. A viewer who cannot save a version is handled the same on step 3 and on the campaign page:
+   * the card says why the version can't be approved and offers nothing the viewer could not press. The
+   * replaced card with an offer names who can (above); the other four cards draw their link only for a
+   * viewer who can save a version, as the campaign page's notices do, where they used to draw it for
+   * everybody. The campaign page's own test is in `persisted-campaign-screen.integration.test.tsx`.
+   */
+  it.each([
+    [
+      "retired",
+      { adRefusal: "retired", retiredOn: null },
+      "This ad was taken out of the library, so this version can't be approved.",
+      "Choose another ad",
+    ],
+    [
+      "replaced, with no newer version to offer",
+      { adRefusal: "replaced" },
+      AD_REPLACED_NOTICE,
+      "Choose another ad",
+    ],
+    [
+      "art changed",
+      { adRefusal: "art_changed" },
+      "The picture for this ad changed after this version was saved, so this version can't be approved.",
+      "Make a new version",
+    ],
+    [
+      "missing",
+      { adRefusal: "missing" },
+      "This ad isn't in the library, so this version can't be approved.",
+      "Choose another ad",
+    ],
+  ] as const)(
+    "%s ad: a viewer who can't save a version gets the reason and nothing to press, and one who can gets the link",
+    (_reason, refused, sentence, action) => {
+      const unable = render(
+        <LaunchReview
+          review={reviewFixture({ ...refused, canMakeNewVersion: false, canApprove: false })}
+        />,
+      );
+      const card = unable.container.querySelector("[data-decision-card]") as HTMLElement;
+      expect(within(card).getByText(sentence)).toBeInTheDocument();
+      expect(within(card).queryByRole("link")).toBeNull();
+      expect(within(card).queryByRole("button")).toBeNull();
+      unable.unmount();
+
+      const able = render(<LaunchReview review={reviewFixture({ ...refused })} />);
+      const ableCard = able.container.querySelector("[data-decision-card]") as HTMLElement;
+      expect(within(ableCard).getByText(sentence)).toBeInTheDocument();
+      expect(within(ableCard).getByRole("link", { name: action })).toBeInTheDocument();
+    },
+  );
+
   it("replaced ad: the card and the card with no offer say the same sentence", () => {
     const withOffer = render(
       <LaunchReview review={reviewFixture({ adRefusal: "replaced", newerVersion: OFFER })} />,

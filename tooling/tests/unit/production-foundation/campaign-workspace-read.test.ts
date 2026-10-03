@@ -446,33 +446,67 @@ describe("the decider's own name on the approval projection", () => {
 /**
  * PRD-009e 009E-AC-010. Where a campaign stands is the recorded decision first (a send-back keeps
  * the stored state), then the library's verdict on its ad, then the stored state itself.
+ *
+ * QA-11. The library's verdict is the approval command's own, `libraryAdRefusalFor`, with all four of
+ * its reasons: the standing used to know only "retired", so a replaced, art-changed, or missing ad's
+ * version kept the standing "awaiting approval" and was called "Ready for approval" beside a page that
+ * said it could not be approved.
  */
 describe("a campaign's standing", () => {
-  it("is ad retired only for a version nobody has decided on", () => {
-    for (const state of ["draft", "generated", "preflight_failed", "awaiting_approval"] as const) {
-      expect(deriveCampaignStanding({ state, decision: undefined, adRetired: true }), state).toBe(
-        "ad_retired",
-      );
-      expect(deriveCampaignStanding({ state, decision: undefined, adRetired: false }), state).toBe(
-        state,
-      );
+  const UNAPPROVED = ["draft", "generated", "preflight_failed", "awaiting_approval"] as const;
+  const STANDING_OF_REFUSAL = {
+    retired: "ad_retired",
+    replaced: "ad_newer_version",
+    art_changed: "ad_art_changed",
+    missing: "ad_missing",
+  } as const;
+  const REASONS = ["retired", "replaced", "art_changed", "missing"] as const;
+
+  it("is the library's standing for a version nobody has decided on whose ad the approval rule refuses", () => {
+    for (const reason of REASONS) {
+      for (const state of UNAPPROVED) {
+        expect(
+          deriveCampaignStanding({ state, decision: undefined, adRefusal: reason }),
+          `${state} / ${reason}`,
+        ).toBe(STANDING_OF_REFUSAL[reason]);
+      }
     }
   });
 
-  it("lets a recorded decision win over retirement", () => {
-    expect(
-      deriveCampaignStanding({ state: "awaiting_approval", decision: "rejected", adRetired: true }),
-    ).toBe("awaiting_approval");
-    expect(
-      deriveCampaignStanding({ state: "approved", decision: "approved", adRetired: true }),
-    ).toBe("approved");
+  it("is the stored state when the approval rule has no objection", () => {
+    for (const state of UNAPPROVED) {
+      expect(
+        deriveCampaignStanding({ state, decision: undefined, adRefusal: undefined }),
+        state,
+      ).toBe(state);
+    }
+  });
+
+  it("lets a recorded decision win over every reason the library gives", () => {
+    for (const reason of REASONS) {
+      expect(
+        deriveCampaignStanding({
+          state: "awaiting_approval",
+          decision: "rejected",
+          adRefusal: reason,
+        }),
+        reason,
+      ).toBe("awaiting_approval");
+      expect(
+        deriveCampaignStanding({ state: "approved", decision: "approved", adRefusal: reason }),
+        reason,
+      ).toBe("approved");
+    }
   });
 
   it("keeps a state a version nobody could still approve is not in", () => {
-    for (const state of ["publishing", "live", "paused", "completed", "archived"] as const) {
-      expect(deriveCampaignStanding({ state, decision: undefined, adRetired: true }), state).toBe(
-        state,
-      );
+    for (const reason of REASONS) {
+      for (const state of ["publishing", "live", "paused", "completed", "archived"] as const) {
+        expect(
+          deriveCampaignStanding({ state, decision: undefined, adRefusal: reason }),
+          `${state} / ${reason}`,
+        ).toBe(state);
+      }
     }
   });
 
@@ -520,7 +554,7 @@ describe("a campaign's versions", () => {
         versionRecord(2, { preflight: passed }),
       ],
       approver,
-      { state: "awaiting_approval", adRetired: false },
+      { state: "awaiting_approval", adRefusal: undefined },
     );
 
     expect(summaries.map((entry) => entry.versionNo)).toEqual([3, 2, 1]);
@@ -548,14 +582,24 @@ describe("a campaign's versions", () => {
     ]);
   });
 
-  it("applies the library's retirement to the newest version only", () => {
-    const summaries = projectCampaignVersions(
-      [versionRecord(2, { preflight: passed }), versionRecord(1, { preflight: failed })],
-      approver,
-      { state: "awaiting_approval", adRetired: true },
-    );
+  it("applies the library's verdict on the ad to the newest version only", () => {
+    for (const [reason, standing] of [
+      ["retired", "ad_retired"],
+      ["replaced", "ad_newer_version"],
+      ["art_changed", "ad_art_changed"],
+      ["missing", "ad_missing"],
+    ] as const) {
+      const summaries = projectCampaignVersions(
+        [versionRecord(2, { preflight: passed }), versionRecord(1, { preflight: failed })],
+        approver,
+        { state: "awaiting_approval", adRefusal: reason },
+      );
 
-    expect(summaries.map((entry) => entry.standing)).toEqual(["ad_retired", "preflight_failed"]);
+      expect(
+        summaries.map((entry) => entry.standing),
+        reason,
+      ).toEqual([standing, "preflight_failed"]);
+    }
   });
 
   it("carries the name a decision recorded, and only that", () => {
@@ -570,7 +614,7 @@ describe("a campaign's versions", () => {
         }),
       ],
       approver,
-      { state: "approved", adRetired: false },
+      { state: "approved", adRefusal: undefined },
     );
 
     expect(summary?.decision).toEqual({
@@ -587,12 +631,14 @@ describe("a campaign's versions", () => {
       projectCampaignVersions(
         [versionRecord(1, { preflight: passed })],
         principal({ locationRef: "location_otherTenant001" }),
-        { state: "awaiting_approval", adRetired: false },
+        { state: "awaiting_approval", adRefusal: undefined },
       ),
     ).toThrow(CampaignResourceNotAccessibleError);
   });
 
   it("answers an empty list for a campaign with no versions", () => {
-    expect(projectCampaignVersions([], approver, { state: "draft", adRetired: false })).toEqual([]);
+    expect(projectCampaignVersions([], approver, { state: "draft", adRefusal: undefined })).toEqual(
+      [],
+    );
   });
 });

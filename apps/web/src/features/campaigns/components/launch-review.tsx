@@ -360,12 +360,22 @@ export function LaunchReview({
  * to go but another ad; an ad whose pictures changed is fixed by saving a new version, which records
  * the pictures the library holds now. An undated retirement (the library did not say when) says the
  * campaign page's sentence for an ad that is no longer there.
+ *
+ * QA-12. Both fixes save a campaign version, so the action is offered only to a viewer who can save
+ * one, as the campaign page's notices offer theirs; to anybody else the card says why, and nothing
+ * that would only be refused.
  */
 function refusedCard(
   state: LaunchAdRefusalState,
-  review: Pick<LaunchReviewData, "retiredOn">,
+  review: Pick<LaunchReviewData, "retiredOn" | "canMakeNewVersion">,
   hrefs: Readonly<{ chooseAnotherAd: string; makeANewVersion: string }>,
-): Readonly<{ chip: string; sentence: ReactNode; href: string; action: string }> {
+): Readonly<{
+  chip: string;
+  sentence: ReactNode;
+  action: Readonly<{ href: string; label: string }> | undefined;
+}> {
+  const actionFor = (href: string, label: string) =>
+    review.canMakeNewVersion ? Object.freeze({ href, label }) : undefined;
   switch (state) {
     case "retired":
       return {
@@ -379,29 +389,25 @@ function refusedCard(
               text={adRetiredNotice(shortDay(review.retiredOn))}
             />
           ),
-        href: hrefs.chooseAnotherAd,
-        action: CHOOSE_ANOTHER_AD,
+        action: actionFor(hrefs.chooseAnotherAd, CHOOSE_ANOTHER_AD),
       };
     case "replaced":
       return {
         chip: AD_REPLACED_CHIP,
         sentence: AD_REPLACED_NOTICE,
-        href: hrefs.chooseAnotherAd,
-        action: CHOOSE_ANOTHER_AD,
+        action: actionFor(hrefs.chooseAnotherAd, CHOOSE_ANOTHER_AD),
       };
     case "art-changed":
       return {
         chip: AD_ART_CHANGED_CHIP,
         sentence: AD_ART_CHANGED_NOTICE,
-        href: hrefs.makeANewVersion,
-        action: MAKE_A_NEW_VERSION,
+        action: actionFor(hrefs.makeANewVersion, MAKE_A_NEW_VERSION),
       };
     case "missing":
       return {
         chip: AD_MISSING_CHIP,
         sentence: NOTICES.missingUndecided,
-        href: hrefs.chooseAnotherAd,
-        action: CHOOSE_ANOTHER_AD,
+        action: actionFor(hrefs.chooseAnotherAd, CHOOSE_ANOTHER_AD),
       };
   }
 }
@@ -482,9 +488,11 @@ function LaunchDecision({
           {card.chip}
         </Badge>
         <p>{card.sentence}</p>
-        <Link className={styles.primaryLink} href={card.href} variant="action">
-          {card.action}
-        </Link>
+        {card.action === undefined ? null : (
+          <Link className={styles.primaryLink} href={card.action.href} variant="action">
+            {card.action.label}
+          </Link>
+        )}
       </Card>
     );
   }

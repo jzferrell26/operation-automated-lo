@@ -21,7 +21,7 @@ export function AuthPanel({
     <main className={styles.page}>
       {/* The panel states its own padding (PRD-009 scored review R4-04), so the card's own
           padding step is off rather than fighting the module rule. */}
-      <Card className={styles.panel} padding="none">
+      <Card className={`${styles.panel} ${styles.card}`} padding="none">
         <header className={styles.header}>
           <h1>{title}</h1>
           {lead === undefined ? null : <p>{lead}</p>}

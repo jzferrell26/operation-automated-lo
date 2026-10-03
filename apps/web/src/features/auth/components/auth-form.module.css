@@ -11,19 +11,26 @@
   padding-inline: var(--space-4);
   color: var(--tx-strong);
 }
-/* PRD-009 scored baseline review R4-04. The nearest sibling of the account card is the PRD-009
- * card, `padding: var(--space-6)` and `var(--space-5)` under 720px (`home-first-run.html:196` and
- * `:426`). The panel kept the card primitive's default 16px while its type grew from 13px to the
- * 16px body and the 28px title, so it read cramped beside every other card. */
+/* The account panel: a 26rem measure with its pieces a step apart. The sign-in family draws it as a
+ * card (`.card` below); the change-password page inside the shell draws it as a bare column, so the
+ * panel states no padding of its own and the form keeps the full 26rem (PRD-008d R-20). */
 .panel {
   display: grid;
   inline-size: 100%;
   max-inline-size: 26rem;
   gap: var(--space-5);
+}
+/* PRD-009 scored baseline review R4-04. The nearest sibling of the account card is the PRD-009
+ * card, `padding: var(--space-6)` and `var(--space-5)` under 720px (`home-first-run.html:196` and
+ * `:426`). The panel kept the card primitive's default 16px while its type grew from 13px to the
+ * 16px body and the 28px title, so it read cramped beside every other card. Only the card has the
+ * padding: the same rule on the in-shell panel pushed that page's title and form 24px in from the
+ * column's start, and the form came out 368px against its 26rem measure. */
+.card {
   padding: var(--space-6);
 }
 @media (max-width: 719.98px) {
-  .panel {
+  .card {
     padding: var(--space-5);
   }
 }

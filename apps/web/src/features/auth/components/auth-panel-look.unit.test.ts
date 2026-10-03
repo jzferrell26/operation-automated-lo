@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -14,13 +15,34 @@ const css = await readCssRules(
 
 describe("the account card's padding (R4-04)", () => {
   it("is the PRD-009 card's 24px at 720px and wider", () => {
-    expect(css.declarationsOf(".panel")["padding"]).toBe("var(--space-6)");
+    expect(css.declarationsOf(".card")["padding"]).toBe("var(--space-6)");
   });
 
   it("is the PRD-009 card's 20px under 720px", () => {
     expect(css.source).toMatch(
-      /@media \(max-width: 719\.98px\) \{\s*\.panel \{\s*padding: var\(--space-5\);\s*\}\s*\}/u,
+      /@media \(max-width: 719\.98px\) \{\s*\.card \{\s*padding: var\(--space-5\);\s*\}\s*\}/u,
     );
+  });
+
+  it("leaves the bare panel unpadded, so the in-shell account form keeps its 26rem measure", () => {
+    const panel = css.declarationsOf(".panel");
+    expect(panel["max-inline-size"]).toBe("26rem");
+    expect(panel).not.toHaveProperty("padding");
+  });
+
+  it("is put on by the sign-in family's card and by nothing else", async () => {
+    const card = await readFile(
+      resolve("apps/web/src/features/auth/components/auth-panel.tsx"),
+      "utf8",
+    );
+    const account = await readFile(
+      resolve("apps/web/src/app/(authenticated)/settings/account/page.tsx"),
+      "utf8",
+    );
+
+    expect(card).toContain("`${styles.panel} ${styles.card}`");
+    expect(account).toContain("styles.panel");
+    expect(account).not.toContain("styles.card");
   });
 });
 

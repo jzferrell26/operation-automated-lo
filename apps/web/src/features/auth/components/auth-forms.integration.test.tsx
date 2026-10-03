@@ -221,7 +221,10 @@ describe("what a person is told when something is wrong", () => {
     for (const region of [screen.getByRole("alert"), screen.getByRole("status")]) {
       const glyph = region.querySelector("svg");
       expect(glyph).not.toBeNull();
-      expect(glyph?.closest("[aria-hidden='true']") ?? glyph).toHaveAttribute("aria-hidden", "true");
+      expect(glyph?.closest("[aria-hidden='true']") ?? glyph).toHaveAttribute(
+        "aria-hidden",
+        "true",
+      );
     }
     expect(screen.getByRole("alert")).toHaveTextContent(SIGN_IN.genericError);
     expect(screen.getByRole("status")).toHaveTextContent(CHANGE_PASSWORD.successNotice);

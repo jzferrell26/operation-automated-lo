@@ -8,7 +8,9 @@ import { readCssRules } from "../../../testing/css-rules.js";
  * The account card, held to the PRD-009 scored baseline review (009G-AC-006, pass 1, part R4).
  * jsdom has no layout, so these read the stylesheet; the browser suite photographs the result.
  */
-const css = await readCssRules(resolve("apps/web/src/features/auth/components/auth-form.module.css"));
+const css = await readCssRules(
+  resolve("apps/web/src/features/auth/components/auth-form.module.css"),
+);
 
 describe("the account card's padding (R4-04)", () => {
   it("is the PRD-009 card's 24px at 720px and wider", () => {

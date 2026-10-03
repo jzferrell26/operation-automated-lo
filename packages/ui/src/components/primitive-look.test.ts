@@ -59,7 +59,9 @@ describe("a glyph and its words read as one line in a Button (R3 F-03)", () => {
       ),
     );
 
-    expect(markup).toMatch(/<span class="[^"]+"><svg[^>]*>[\s\S]*<\/svg>Add Realtor partner<\/span>/u);
+    expect(markup).toMatch(
+      /<span class="[^"]+"><svg[^>]*>[\s\S]*<\/svg>Add Realtor partner<\/span>/u,
+    );
   });
 });
 

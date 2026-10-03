@@ -38,7 +38,7 @@ A brand-new self-serve account lands on a calm Home that asks one question, "Wha
 
 The design's composition (`design/00-direction.md` section 4.1): a greeting; the start card, whose heading "Launch an ad" is the page's `h1`, with the lead sentence (as 009d D3 corrects it), the question "What do you want to promote?", one small secondary button per topic that has an active ad, the one primary button "Choose an ad", and the three step labels; the "Get set up" card; "Running now"; "Needs your approval"; and the footer "HighLevel stays your CRM. Your contacts, pipelines and follow-up live there." At 768 and 390 the order is start card, checklist, running, approval.
 
-A topic button opens step 1 filtered to that topic; "Choose an ad" opens step 1 with every ad. With an empty library the card shows 009C-AC-012's sentence in place of the topic buttons, and "Choose an ad" still opens step 1, which says the same.
+A topic button opens step 1 filtered to that topic; "Choose an ad" opens step 1 with every ad. With an empty library the card shows 009C-AC-012's sentence in place of the topic buttons, and "Choose an ad" still opens step 1, which says the same. _(Amended 2026-10-03 by the PRD-009 writing review delta check (MTK-008, D-1): the card still shows the whole sentence. Step 1 says the same words as its empty state's title, "No ads in the library yet", and description, "New ads are added after they're reviewed, so there's nothing to set up until then.", because that state also carries a chip of its own. See the note on 009C-AC-012.)_
 
 ### D2. Checklist states come from saved records only
 

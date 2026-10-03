@@ -37,26 +37,30 @@
   background: var(--sf-card);
   color: var(--tx-strong);
   font: inherit;
+  font-size: var(--text-secondary-size);
   font-weight: var(--weight-medium);
   text-decoration: none;
   white-space: nowrap;
 }
 
+/* R1-04. The chosen chip keeps its ink and is marked by the tint, the edge, and a heavier weight, as
+   the ads-library mockup draws it; it does not turn blue. */
 .chip[aria-current="true"],
 .chip[aria-pressed="true"] {
   border-color: var(--ac-primary);
   background: var(--st-info-bg);
-  color: var(--st-info-fg);
+  color: var(--tx-strong);
+  font-weight: var(--weight-semibold);
 }
 
 .chipCount {
-  color: var(--tx-faint);
-  font-size: var(--text-secondary-size);
+  color: var(--tx-body);
+  font-weight: var(--weight-regular);
 }
 
 .grid {
   display: grid;
-  gap: var(--space-5);
+  gap: var(--space-6);
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0;
   padding: 0;
@@ -77,6 +81,7 @@
 
 @media (max-width: 47.99rem) {
   .grid {
+    gap: var(--space-4);
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -97,7 +102,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5);
 }
 
 .topic {
@@ -118,13 +123,27 @@
   line-height: var(--leading-tight);
 }
 
-.cardWords,
-.cardVersion {
+.cardWords {
   margin: 0;
   color: var(--tx-body);
   font-size: var(--text-secondary-size);
   line-height: var(--leading-normal);
   overflow-wrap: anywhere;
+}
+
+/* R1-03. The version line is a caption: the mockup's `.ad-card__meta` is the caption step in the
+   faint ink, and at the secondary step "Version 1. Reviewed Sep 28, 2026." did not fit the card at
+   1440 and broke its date across two lines. The date itself never breaks. */
+.cardVersion {
+  margin: 0;
+  color: var(--tx-faint);
+  font-size: var(--text-caption-size);
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.cardVersion time {
+  white-space: nowrap;
 }
 
 .cardAction {
@@ -134,14 +153,4 @@
 
 .cardAction > * {
   inline-size: 100%;
-}
-
-.empty {
-  max-inline-size: 42rem;
-  margin: 0;
-  padding: var(--space-6);
-  border: 1px solid var(--bd-hairline);
-  border-radius: var(--radius-card);
-  background: var(--sf-card);
-  color: var(--tx-body);
 }

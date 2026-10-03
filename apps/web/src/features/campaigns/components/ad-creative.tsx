@@ -7,13 +7,17 @@ import styles from "./ad-creative.module.css";
 import { BrandBand } from "./brand-band.js";
 
 /**
- * PRD-009d D3. The paper and ink of an ad: white with navy text in both themes (D-24), so the
- * band's contrast never depends on the theme. The navy is the light theme's strongest text colour.
- * They are set here rather than in the stylesheet because a feature stylesheet carries no colour
- * literal; the brand colour is set the same way, from its preset id, only when the band renders.
+ * PRD-009d D3. The paper, ink, and rule of an ad: white with navy text and pale lines in both
+ * themes (D-24), so the band's contrast never depends on the theme. The navy is the light theme's
+ * strongest text colour, and the rule is the light theme's hairline (`--bd-hairline`, `#d6e2ee`):
+ * the lines drawn inside the white feed frame are part of the picture, so they must not follow the
+ * dashboard into Dark (scored review R1-17, F-6). They are set here rather than in the stylesheet
+ * because a feature stylesheet carries no colour literal; the brand colour is set the same way, from
+ * its preset id, only when the band renders.
  */
 export const AD_PAPER = "#FFFFFF";
 export const AD_INK = "#061E35";
+export const AD_RULE = "#D6E2EE";
 
 export type AdShape = "tall" | "square";
 
@@ -21,6 +25,7 @@ export function adColorVariables(colorPresetId: string): CSSProperties {
   return {
     "--ad-band-paper": AD_PAPER,
     "--ad-band-ink": AD_INK,
+    "--ad-band-rule": AD_RULE,
     "--ad-brand": adBrandColorValue(colorPresetId),
     "--ad-tile-letters": AD_BRAND_TILE_LETTER_COLOR,
   } as CSSProperties;

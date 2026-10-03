@@ -11,9 +11,23 @@
   min-inline-size: 0;
 }
 
+/* R1-05. The header's pieces are one page gap apart (`--space-6`, `--space-5` on a phone), as the
+   launch mockups draw them, with the title and its subtitle closer together in `.headText`. */
 .header {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-6);
+}
+
+.headText {
+  display: grid;
+  gap: var(--space-2);
+}
+
+@media (max-width: 47.99rem) {
+  .page,
+  .header {
+    gap: var(--space-5);
+  }
 }
 
 .header h1 {
@@ -202,6 +216,37 @@
   white-space: nowrap;
 }
 
+/* The chevron before "Back" is the icon set's down chevron turned a quarter, so it points left. */
+.backGlyph {
+  transform: rotate(90deg);
+}
+
+/* R1-08. "Add in Brand", "Change in Brand", and "Change" are text links, as in the mockups: the
+   secondary step in semibold, with the link primitive's own colour and 44px target. The element is
+   named so the rule outranks the primitive's body-step size. */
+a.textLink {
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+}
+
+/* R1-07. "Use the library words" undoes edited words and leads nowhere, so it stays a button, drawn
+   as the mockup's `.reset-link`: the link colour at the secondary step in semibold, with no edge or
+   fill at rest and none on hover. */
+button.resetLink {
+  padding-inline: 0;
+  color: var(--st-info-fg);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+}
+
+button.resetLink:hover:not(:disabled) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--tx-strong);
+}
+
 .locked {
   display: flex;
   flex-wrap: wrap;
@@ -213,6 +258,7 @@
   border-radius: var(--radius-control);
   background: var(--sf-sunken);
   color: var(--tx-strong);
+  font-size: var(--text-secondary-size);
 }
 
 .pair {
@@ -317,6 +363,13 @@
   }
 }
 
+/* R1-10. "Your ad so far" is a card title, at the card step like "What you approve" on step 3, so it
+   does not compete with the form's section titles. */
+.preview .previewTitle {
+  font-size: var(--text-card-size);
+  line-height: var(--leading-tight);
+}
+
 .adCard {
   display: grid;
   gap: var(--space-4);
@@ -363,9 +416,24 @@
   gap: var(--space-4);
 }
 
-.approveCard {
+/* R1-13. Every child of a step 3 card is one `--space-4` from the next, as the mockup's
+   `.card > * + *` sets it; a `Card` is a block, so without this the paragraphs' own margins were the
+   only space between a card's pieces. */
+.approveCard,
+.launchCard,
+.decisionCard {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
+}
+
+.decisionCard > *,
+.approveCard > * {
+  margin: 0;
+}
+
+/* A status chip sits at its own width inside its card (R1-12), never stretched to the column. */
+.decisionChip {
+  justify-self: start;
 }
 
 /* The summary reads as a link, so it takes the link colour. --ac-primary is a fill and never text in
@@ -443,19 +511,33 @@
   color: var(--tx-strong);
 }
 
+/* The approve card is the shared `CampaignApprovalControls`, which this page and the campaign page
+   both draw. Its pieces take the same rhythm here, left-aligned so the buttons are not stretched, and
+   the empty status line (it is a live region, so it stays in the page) takes back the gap it would
+   otherwise leave as dead space at the card's foot. */
 .decision {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
-.launchCard {
+.decision [data-approval-card] {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  justify-items: start;
+}
+
+.decision [data-approval-card] > * {
+  margin: 0;
+}
+
+.decision [data-approval-card] > [role="status"]:empty {
+  margin-block-start: calc(var(--space-4) * -1);
 }
 
 /* "Fix it", "Make a new version", and "Choose another ad" lead somewhere, so they are links, drawn
-   as the one primary action of their card. */
-.primaryLink {
+   as the one primary action of their card. The element is named so the rule outranks the link
+   primitive's own button look whatever order the two stylesheets load in. */
+a.primaryLink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -468,7 +550,7 @@
   text-decoration: none;
 }
 
-.primaryLink:hover {
+a.primaryLink:hover {
   background: var(--ac-primary-hover);
   color: var(--tx-on-action);
 }

@@ -65,6 +65,7 @@ import { CampaignHandOff } from "./campaign-hand-off.js";
 import { LaunchHeader } from "./launch-flow.js";
 import { LaunchOnFacebook } from "./launch-on-facebook.js";
 import { TextWithDays } from "./text-with-days.js";
+import campaignPage from "./campaign-page.module.css";
 import styles from "./launch.module.css";
 
 /**
@@ -204,7 +205,7 @@ export function LaunchReview({
           <p className={styles.caption}>{SHAPES_NOTE}</p>
         </Card>
         <div className={styles.reviewSide}>
-          <Card className={styles.approveCard} padding="md">
+          <Card className={styles.approveCard} padding="lg">
             <div className={styles.sectionHeading}>
               <h2 className={styles.cardTitle}>{WHAT_YOU_APPROVE}</h2>
               <Badge tone={review.checks.blocking ? "critical" : "success"}>
@@ -234,7 +235,7 @@ export function LaunchReview({
             </details>
             <div className={styles.sectionHeading}>
               <h3 className={styles.factsTitle}>{FACTS_TITLE}</h3>
-              <Link href={changeHref} variant="action">
+              <Link className={styles.textLink} href={changeHref}>
                 {CHANGE}
               </Link>
             </div>
@@ -290,13 +291,17 @@ export function LaunchReview({
               launchingTurnedOn: false,
             }}
           />
-          <SupportDetails
-            rows={[
-              [SUPPORT_DETAILS_LABELS.versionId, review.campaignVersionRef],
-              [SUPPORT_DETAILS_LABELS.contentFingerprint, review.manifestHash],
-              [SUPPORT_DETAILS_LABELS.checkFingerprint, review.preflightResultHash],
-            ]}
-          />
+          {/* R1-16. "Details for support" is a quiet card in the column, as the mockup draws it, and the
+              campaign page draws it with the same rules. */}
+          <div className={campaignPage.support}>
+            <SupportDetails
+              rows={[
+                [SUPPORT_DETAILS_LABELS.versionId, review.campaignVersionRef],
+                [SUPPORT_DETAILS_LABELS.contentFingerprint, review.manifestHash],
+                [SUPPORT_DETAILS_LABELS.checkFingerprint, review.preflightResultHash],
+              ]}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -317,8 +322,10 @@ function LaunchDecision({
 }>) {
   if (state === "approved" && review.decision !== undefined) {
     return (
-      <Card data-decision-card="approved" padding="md">
-        <Badge tone="success">{APPROVED_CHIP}</Badge>
+      <Card className={styles.decisionCard} data-decision-card="approved" padding="lg">
+        <Badge className={styles.decisionChip} tone="success">
+          {APPROVED_CHIP}
+        </Badge>
         <p>
           <TextWithDays
             days={[
@@ -335,8 +342,10 @@ function LaunchDecision({
   }
   if (state === "sent-back") {
     return (
-      <Card data-decision-card="sent-back" padding="md">
-        <Badge tone="warning">{CAMPAIGN_SENT_BACK_LABEL}</Badge>
+      <Card className={styles.decisionCard} data-decision-card="sent-back" padding="lg">
+        <Badge className={styles.decisionChip} tone="warning">
+          {CAMPAIGN_SENT_BACK_LABEL}
+        </Badge>
         <p>{CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION}</p>
         <Link className={styles.primaryLink} href={changeHref} variant="action">
           {MAKE_A_NEW_VERSION}
@@ -346,8 +355,10 @@ function LaunchDecision({
   }
   if (state === "retired" && review.retiredOn !== null) {
     return (
-      <Card data-decision-card="retired" padding="md">
-        <Badge tone="neutral">{AD_RETIRED_CHIP}</Badge>
+      <Card className={styles.decisionCard} data-decision-card="retired" padding="lg">
+        <Badge className={styles.decisionChip} tone="neutral">
+          {AD_RETIRED_CHIP}
+        </Badge>
         <p>
           <TextWithDays
             days={[{ dateTime: review.retiredOn.slice(0, 10), text: shortDay(review.retiredOn) }]}
@@ -368,8 +379,10 @@ function LaunchDecision({
     // D8, "Ready for approval, viewer can't approve": the reason and the hand-off, and nothing this
     // viewer could press that would not work.
     return (
-      <Card data-decision-card="cannot-approve" padding="md">
-        <Badge tone="info">{CHECK_RESULT_READY}</Badge>
+      <Card className={styles.decisionCard} data-decision-card="cannot-approve" padding="lg">
+        <Badge className={styles.decisionChip} tone="info">
+          {CHECK_RESULT_READY}
+        </Badge>
         <CampaignHandOff campaignHref={review.detailHref} />
       </Card>
     );
@@ -379,8 +392,10 @@ function LaunchDecision({
   return (
     <div className={styles.decision} data-decision-card={state}>
       {state === "needs-changes" && firstBlocking !== undefined && target !== undefined ? (
-        <Card padding="md">
-          <Badge tone="critical">{CHECK_RESULT_NEEDS_CHANGES}</Badge>
+        <Card className={styles.decisionCard} padding="lg">
+          <Badge className={styles.decisionChip} tone="critical">
+            {CHECK_RESULT_NEEDS_CHANGES}
+          </Badge>
           <ul className={styles.fixes}>
             {review.checks.findings.map((finding) => (
               <li key={`${finding.ruleCode}:${finding.affected}`}>
@@ -400,8 +415,6 @@ function LaunchDecision({
             {FIX_IT}
           </Link>
         </Card>
-      ) : state === "ready" ? (
-        <Badge tone="info">{CHECK_RESULT_READY}</Badge>
       ) : null}
       <CampaignApprovalControls
         alreadyDecided={review.decision?.decision}

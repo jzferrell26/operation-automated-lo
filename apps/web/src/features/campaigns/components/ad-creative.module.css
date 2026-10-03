@@ -4,10 +4,10 @@
  * 1350, and the bottom 22 percent of the square ad, 238 of 1080).
  *
  * The band is white with navy text in both themes, so its contrast never depends on the theme or on
- * the person's colour. Those two values and the brand colour arrive as custom properties set by the
- * component (`ad-creative.tsx`), because a feature stylesheet holds no colour literal of its own.
- * Every size inside the band is a share of the ad's own width, so a card, the step 2 preview, and
- * step 3 draw the same proportions at any frame.
+ * the person's colour. Those two values, the pale rule drawn inside the feed frame, and the brand
+ * colour arrive as custom properties set by the component (`ad-creative.tsx`), because a feature
+ * stylesheet holds no colour literal of its own. Every size inside the band is a share of the ad's
+ * own width, so a card, the step 2 preview, and step 3 draw the same proportions at any frame.
  */
 
 .creative {
@@ -169,7 +169,7 @@
 /* The generic feed frame of step 2's preview and step 3: no Meta logo and no Meta branding. */
 .feed {
   overflow: hidden;
-  border: 1px solid var(--bd-hairline);
+  border: 1px solid var(--ad-band-rule, var(--bd-hairline));
   border-radius: var(--radius-lg, 12px);
   background: var(--ad-band-paper, var(--sf-card));
   color: var(--ad-band-ink, var(--tx-strong));
@@ -222,14 +222,20 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   padding: 12px 16px;
-  border-block-start: 1px solid var(--bd-hairline);
+  border-block-start: 1px solid var(--ad-band-rule, var(--bd-hairline));
 }
 
+/*
+ * F-7. The company line is 12px capitals. With a fractional tracking (0.04em, 0.48px) on a rasterizer
+ * that snaps each glyph to a whole pixel, the letters land 0 or 1px apart by chance, and the picture
+ * showed "NORT HGAT E LENDING". The line carries no tracking, so every advance is the font's own, and
+ * it asks for unrounded glyph positions.
+ */
 .feedCompany {
   overflow: hidden;
   font-size: 12px;
-  letter-spacing: 0.04em;
   text-overflow: ellipsis;
+  text-rendering: geometricPrecision;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -245,7 +251,7 @@
 /* What the ad's button will say once it runs. It is a picture of a button, not a control. */
 .feedButton {
   padding: 8px 14px;
-  border: 1px solid var(--bd-hairline);
+  border: 1px solid var(--ad-band-rule, var(--bd-hairline));
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;

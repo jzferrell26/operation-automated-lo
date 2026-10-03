@@ -1,9 +1,11 @@
 import { ADS_LIBRARY_TOPICS, type AdsLibraryTopic } from "@oalo/contracts";
+import { EmptyState } from "@oalo/ui";
 import type { ReactNode } from "react";
 
 import {
   ALL_TOPICS,
   EMPTY_LIBRARY,
+  EMPTY_LIBRARY_TITLE,
   TOPIC_CHIPS_LABEL,
   TOPIC_LABELS,
   adCardVersionLine,
@@ -142,10 +144,10 @@ export type AdCardGridProps = Readonly<{
  */
 export function AdCardGrid({ cards, topic, advertiser, actionFor, titleLevel }: AdCardGridProps) {
   if (cards.length === 0) {
+    // R1-06: the shared empty state, not a hand-built paragraph (rubric axis 9). The description is
+    // 009C-AC-012's sentence, whole.
     return (
-      <p className={styles.empty} data-empty-library="">
-        {EMPTY_LIBRARY}
-      </p>
+      <EmptyState data-empty-library="" description={EMPTY_LIBRARY} title={EMPTY_LIBRARY_TITLE} />
     );
   }
   const shown = orderedCards(cards).filter((card) => topic === undefined || card.topic === topic);

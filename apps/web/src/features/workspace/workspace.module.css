@@ -207,6 +207,15 @@
   background: var(--sf-sunken);
   font-size: var(--text-secondary-size);
 }
+/*
+ * The line a search that found nothing says in the partner list (writing review delta check, D-7).
+ * Plain text at the secondary step: the list is not empty, so it is not the empty state.
+ */
+.noMatch {
+  margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+}
 .records {
   display: grid;
 }

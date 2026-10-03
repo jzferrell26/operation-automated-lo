@@ -283,18 +283,20 @@ export function PartnersEditor({ data }: { data: WorkspacePageData }) {
             </Card>
           ))}
         </div>
+      ) : partners.length ? (
+        // The writing review delta check, D-7: the list is not empty, the search found nothing, and
+        // the empty state's "Empty" chip would say otherwise. One plain line says what happened, and
+        // is a status so a screen reader hears it as the person types.
+        <p className={styles.noMatch} role="status">
+          No partners match this search. Try a different name or company.
+        </p>
       ) : (
-        // The scored review pass 2, P2-07: the product's one empty state, not a hand-built card.
+        // The scored review pass 2, P2-07: the product's one empty state, not a hand-built card. It
+        // is for a person with no partners at all, where its "Empty" chip is true.
         <EmptyState
-          description={
-            partners.length
-              ? "Try a different name or company."
-              : "Keep your Realtor partners' details in one place. Nothing is imported from HighLevel, and partners never appear in your ads."
-          }
+          description="Keep your Realtor partners' details in one place. Nothing is imported from HighLevel, and partners never appear in your ads."
           surface="card"
-          title={
-            partners.length ? "No partners match this search" : "Add your first Realtor partner"
-          }
+          title="Add your first Realtor partner"
         />
       )}
       <div className={styles.actions}>

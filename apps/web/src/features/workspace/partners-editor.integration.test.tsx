@@ -54,7 +54,9 @@ describe("the Realtor partners card (writing review W-11)", () => {
     expect(state).toHaveAttribute("role", "status");
   });
 
-  it("draws the no-match state in the same view", () => {
+  // The writing review delta check, D-7. The list has partners in it, so the empty state's "Empty"
+  // chip would say something untrue. A search that found nothing is one plain line, and a status.
+  it("says a search that found nothing in one plain line, not in the empty state", () => {
     stubDialogLayout();
     render(
       <PartnersEditor
@@ -84,10 +86,22 @@ describe("the Realtor partners card (writing review W-11)", () => {
     fireEvent.change(screen.getByLabelText("Search your Realtor partners"), {
       target: { value: "nobody by that name" },
     });
-    const heading = screen.getByRole("heading", { name: "No partners match this search" });
+    const line = screen.getByText(
+      "No partners match this search. Try a different name or company.",
+    );
 
-    expect(heading.closest("section")).toHaveAttribute("data-state", "empty");
-    expect(screen.getByText("Try a different name or company.")).toBeInTheDocument();
+    expect(line).toHaveAttribute("role", "status");
+    expect(line.closest("[data-state]")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "No partners match this search" })).toBeNull();
+    expect(screen.queryByText("Empty")).toBeNull();
+    expect(screen.queryByText("Add your first Realtor partner")).toBeNull();
+  });
+
+  it("keeps the empty state, with its chip, for a person with no partners at all", () => {
+    renderEmpty();
+
+    expect(screen.getByRole("heading", { name: "Add your first Realtor partner" })).toBeVisible();
+    expect(screen.queryByText(/No partners match this search/u)).toBeNull();
   });
 
   it("says the list is saved and sends no invitation, and mentions no permission step", () => {

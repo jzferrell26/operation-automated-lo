@@ -625,12 +625,15 @@ test("the 768 tablet frame uses the two-row top bar and single-column content", 
     expect((await boxOf(menu)).y).toBeGreaterThan((await boxOf(wordmark)).y);
 
     // Section 14: no horizontal overflow, and a constrained width puts the
-    // page into a single column.
+    // page into a single column. A picture of the ad (`data-ad-preview`, the Brand page's band
+    // preview among them) is the ad as Facebook shows it, laid out in its own proportions and not
+    // part of the page's columns: the same ruling the type-step check holds (`design-quality.ts`).
     await expectNoHorizontalScroll(page, "768");
     const multiColumn = await page
       .locator("main :where(section, form, article, div)")
       .evaluateAll((elements) =>
         elements
+          .filter((element) => element.closest("[data-ad-preview]") === null)
           .filter((element) => {
             const columns = getComputedStyle(element).gridTemplateColumns;
             return columns.split(" ").filter((track) => track.endsWith("px")).length > 2;

@@ -42,12 +42,12 @@ unconnected inline error is not possible by construction.
 | Part | Rule |
 | --- | --- |
 | Field | `display: grid`, `gap: var(--space-2)`. |
-| Label | `--text-body-size`, `--weight-medium`, `--tx-strong`. Always visible. A placeholder is never the label. |
+| Label | `--text-secondary-size`, `--weight-semibold`, `--tx-strong`. Always visible. A placeholder is never the label. _(Amended on 2026-10-03 by the PRD-009 scored baseline review, R1-09: was `--text-body-size` at `--weight-medium`. Design `00-direction.md` section 2.4 sources `--text-secondary-size` from Listing Studio's field labels, and every PRD-009 mockup draws `.field label` at `--text-secondary-size` and `--weight-semibold` (`launch-step-2-set-up.html:221`), so a label no longer reads at the size of the value under it.)_ |
 | Requirement marker | The word `Required` or `Optional` at `--text-caption-size` in `--tx-faint`, at the inline end of the label row. `requirement="required"` also sets `required` on the control, so the marker and the behaviour cannot disagree. |
 | Description | `--text-secondary-size`, `--tx-body`, above the control so it is read before the field is filled. |
 | Control | `min-block-size: var(--target-min-size)`, `padding-block: var(--space-2)`, `padding-inline: var(--space-3)`, `border: 1px solid var(--bd-input)`, `border-radius: var(--radius-control)`, `background: var(--sf-card)`, `--text-body-size` at `--weight-medium`. |
 | Control, `size="lg"` | `padding-block: var(--space-3)`, `padding-inline: var(--space-4)`, `--text-card-size`, `border-radius: var(--radius-button)`. |
-| Control, `tone="data"` | `font-family: var(--font-data)` for an identifier, a version, a hash, or a timestamp, per brief section 10. |
+| Control, `tone="data"` | `font-family: var(--font-interface)` with `font-variant-numeric: tabular-nums` for an identifier, a version, a hash, or a timestamp, per brief section 10. _(Amended on 2026-10-01 by PRD-009 (OD-E, 009A-AC-007): was `var(--font-data)`; numbers and dates now use Inter with tabular figures, and the monospace face survives only inside "Details for support".)_ |
 | Multi-line control | `min-block-size: calc(var(--space-8) * 3)`, `padding-block: var(--space-3)`, `resize: vertical`. |
 | Error | `--text-secondary-size` in `--st-critical-fg`, below the control, with the `alert-triangle` glyph, so the error is not carried by color alone. |
 
@@ -130,5 +130,6 @@ pressed state, and absence of a `title`.
 
 `Create.dc.html` (the property and event step), `Onboarding.dc.html`,
 `Brand.dc.html`. The canvases draw the field at a 12px label and a 10px radius;
-the brief's type scale and radius scale win, so the label is `--text-body-size`
-and the control is `--radius-control`.
+the brief's type scale and radius scale win, so the label is `--text-secondary-size`
+(the PRD-009 mockups, which supersede these canvases for the look) and the control is
+`--radius-control`.

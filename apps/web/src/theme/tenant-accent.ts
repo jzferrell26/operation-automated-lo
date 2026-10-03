@@ -15,8 +15,8 @@ export const TEAL_TENANT_ACCENT_KEY = "oalo-teal";
 const semanticTenantAccentCatalog = Object.freeze({
   [DEFAULT_TENANT_ACCENT_KEY]: Object.freeze({
     light: Object.freeze({
-      action: "#2f6fed",
-      actionHover: "#1f4bb8",
+      action: "#005fcc",
+      actionHover: "#004ea8",
       onAction: "#ffffff",
     }),
     dark: Object.freeze({

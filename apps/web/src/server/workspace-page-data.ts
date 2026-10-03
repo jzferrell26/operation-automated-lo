@@ -6,12 +6,12 @@ import {
   type WorkspaceView,
   type WorkspacePageData,
 } from "../features/workspace/model.js";
-import { blankHomeBrand, homeAddressText } from "../features/homeowners/model.js";
+import { blankHomeBrand } from "../features/homeowners/model.js";
+import { DEFAULT_AD_BRAND } from "../features/workspace/ad-brand.js";
 import {
   campaignDatabasePool,
   workspaceCorrelationReferenceFor,
 } from "./campaign-persistence-runtime.js";
-import { listWorkspaceCampaigns } from "./campaign-workspace-reads.js";
 import { readSetupPreferences } from "./setup-preferences.js";
 import { resolveRuntimeShellSession, SIGN_IN_PATH } from "./runtime-authentication.js";
 import {
@@ -35,17 +35,14 @@ export async function loadWorkspacePageData(
   const shell = await resolveRuntimeShellSession(request, environment);
   if (!shell.authenticated || !shell.session) throw new UnauthenticatedPrincipalError();
   const pool = campaignDatabasePool(environment);
-  const needsPreferences = ["settings", "profile", "partners", "messaging"].includes(view);
-  const needsCampaigns = ["marketing", "property-sites", "creative", "ads"].includes(view);
+  const needsPreferences = ["settings", "profile", "partners"].includes(view);
   // A homeowner setting that cannot be read means the valuation and HighLevel connections are
   // unavailable, which these pages already say. It must not stop every destination from opening, so
   // whether reports are switched on is read on its own, as the public report routes read it.
   const parsedConfig = HomeEnvironmentSchema.safeParse(environment);
   const config = parsedConfig.success ? parsedConfig.data : null;
   const reportsEnabled = homeReportsEnabled(environment);
-  const needsReports =
-    reportsEnabled &&
-    ["marketing", "property-sites", "creative", "automations", "routing", "billing"].includes(view);
+  const needsReports = reportsEnabled && ["routing", "billing"].includes(view);
   const reportRepository = new PostgresHomeownerRepository(
     pool,
     createPrincipalBoundTenantContextAuthority(
@@ -53,11 +50,9 @@ export async function loadWorkspacePageData(
       workspaceCorrelationReferenceFor(principal),
     ),
   );
-  const [preferences, setup, campaigns, properties, connections, usage] = await Promise.all([
+  const [preferences, setup, connections, usage] = await Promise.all([
     needsPreferences ? readWorkspacePreferences(principal, pool) : emptyWorkspacePreferences(),
     needsPreferences ? readSetupPreferences(principal, environment) : undefined,
-    needsCampaigns ? listWorkspaceCampaigns(principal, environment) : [],
-    needsReports ? reportRepository.summaries() : [],
     reportsEnabled && config
       ? homeConnectionsFor(principal.locationId, reportRepository, config)
       : null,
@@ -80,22 +75,7 @@ export async function loadWorkspacePageData(
     canEdit: canEditWorkspacePreferences(principal),
     preferences,
     defaultBrand,
-    campaigns: campaigns.map((campaign) => ({
-      id: campaign.campaignRef,
-      headline: campaign.headline,
-      address: campaign.propertyAddress,
-      state: campaign.state,
-      href: campaign.detailHref,
-      updatedAt: campaign.updatedAt,
-    })),
-    properties: properties.map((property) => ({
-      id: property.id,
-      address: homeAddressText(property.address),
-      reportCount: property.reportCount,
-      updatedAt: property.updatedAt,
-      monthly: property.monthly,
-      paused: property.paused,
-    })),
+    defaultAdBrand: preferences.adBrand?.value ?? DEFAULT_AD_BRAND,
     reportsEnabled,
     valuationConfigured: connections?.valuation !== null && connections?.valuation !== undefined,
     contactConfigured: connections?.contacts !== null && connections?.contacts !== undefined,

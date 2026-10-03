@@ -1,0 +1,222 @@
+/*
+ * PRD-009f D4. What the Connections page keeps of the onboarding page's styles.
+ *
+ * `onboarding.module.css` served the setup page and this page. The setup page is gone (its address
+ * redirects to Home), so only the classes this screen uses are carried over, under the names it
+ * already reads.
+ */
+/*
+ * The page rhythm of the mockups' `.page` (`design/mockups/home-first-run.html:179`) and of Settings
+ * (`workspace.module.css`): `--space-6` between the header, the notice and the groups at every width.
+ * It was `--space-8` above 768px, which sat the notice 52px under the lead where Settings has 28
+ * (the scored review pass 2, P2-02). The groups keep their own `--space-8` apart, below.
+ */
+.onboarding {
+  display: grid;
+  gap: var(--space-6);
+  color: var(--tx-strong);
+}
+
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/* The mockups' `.page-head__text`: the eyebrow, the title and the lead are `--space-2` apart. */
+.pageHeaderText {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.pageHeader h1 {
+  margin: 0;
+  line-height: var(--leading-tight);
+  font-size: var(--text-page-size);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-page);
+}
+
+/*
+ * The lead keeps no paragraph margin: the header's text block and the page grid space it. It kept the
+ * browser's 1em margins (16px above and below), which is what drew the header looser than Settings'
+ * (the scored review pass 2, P2-02; the D-009 ruling that a gap is a `--space-*` token in its module).
+ */
+:is(.pageHeader, .safetyNotice) p {
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+}
+
+.pageHeader p {
+  margin: 0;
+}
+
+/*
+ * The one eyebrow of the light look (the scored review's F-11): the mockup's `.eyebrow`, sentence
+ * case at the secondary step, semibold, no tracking, in body ink. It was uppercase and tracked
+ * 0.04em at the caption step. `features/workspace/eyebrow-treatment.unit.test.ts` holds this rule
+ * and the two other eyebrows to the same declarations.
+ */
+.eyebrow {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+}
+
+/*
+ * The informational notice (the scored review's F-10), drawn as the mockup's `.notice`. The tint, the
+ * control radius, `--space-4` inside, and the strong ink are the `Surface` primitive's `info`
+ * variant (`data-variant="info"`), so this module sets only the row: the lock beside its words.
+ */
+.safetyNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+/*
+ * The title keeps its informational tone (brief section 9, "blue means informational"). The browser
+ * run measures every notice title against `--st-info-fg` in both themes
+ * (`tests/browser/design-quality.spec.ts`), so this is the one colour the module still sets.
+ */
+.safetyNotice strong {
+  color: var(--st-info-fg);
+}
+
+.safetyNotice p {
+  margin-block: var(--space-1) 0;
+}
+
+/*
+ * The scored review's F-08. A group's description kept the browser's 1em margin inside a grid that
+ * already had a gap, so it sat 28px under its heading and 28px above its cards, while the next
+ * group's heading sat 16px under the last card and read as that card's caption. The margin is off
+ * (the D-009 ruling: a gap is a `--space-*` token in its module), and the groups are `--space-8`
+ * apart, twice what any gap inside one is, so a heading belongs to the cards under it.
+ */
+.permissionGroups p {
+  margin: 0;
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+}
+
+.permissionGroups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-8) var(--space-6);
+}
+
+/*
+ * Scored review pass 3, R3 P3-07. Each group is two rows of the groups' grid, its head (the heading,
+ * its chip and its description) and its cards, taken as a subgrid so the two groups of one row share
+ * the rows: a head that runs to two lines moves the cards beside it too, and the next row starts
+ * where the taller column ends. Each section was its own grid, so a two-line heading in one column
+ * left the cards 22px apart, and at 1180 both rows stepped. The section's own gap stays `--space-3`,
+ * closer than the `--space-8` between the groups (F-08), and a subgrid takes the gap it declares.
+ * In the one-column layout each section is simply its own pair of rows.
+ */
+.permissionGroups section {
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  gap: var(--space-3);
+}
+
+.permissionGroupHead {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+/*
+ * The mockups' `.card-head` (`design/mockups/campaign-detail.html:200`): the title and its chip are one
+ * wrapping row, `--space-4` apart. The chip takes the next line before the title takes a third (it
+ * was one unwrapping row, so at 390 "Access this app confirms after you connect" broke into three
+ * lines beside a 140px chip).
+ */
+.permissionHeading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.permissionHeading h2,
+.permissionGroups h3 {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+}
+
+/* The group's chip is the shared `Badge` (F-09); it keeps its own width beside a long heading. */
+.permissionHeading > [data-permission-category] {
+  flex: none;
+}
+
+/*
+ * A card's facts: the mockups' `.facts` (`design/mockups/campaign-detail.html:360-363`), as the
+ * campaign page and step 3 draw theirs (`campaign-page.module.css`, `launch.module.css`). The label and
+ * the value are both the secondary step, the label in body ink and the value in strong ink at the
+ * medium weight, on an `8rem` label column and `--space-3` between rows. They were a 12px faint label
+ * beside a 16px value, on a 7rem column and `--space-2` rows, so the two sat on baselines 5px apart
+ * (scored review pass 3, R3 P3-06). The pair stacks only below 720px, as the mockups'.
+ */
+.permissionDetails {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+}
+
+.permissionDetails div {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: var(--space-3);
+  font-size: var(--text-secondary-size);
+}
+
+.permissionDetails dt {
+  color: var(--tx-body);
+}
+
+.permissionDetails dd {
+  margin: 0;
+  color: var(--tx-strong);
+  font-weight: var(--weight-medium);
+  /* A date or a unit does not stand alone on a line ("it.", "ago."), as step 3's facts. */
+  text-wrap: pretty;
+}
+
+/* "8 minutes ago" is one phrase, so the number never ends a line while its unit starts the next
+   (pass 4, R3 N-9). */
+.relativeTime {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .pageHeader {
+    flex-direction: column;
+  }
+
+  .permissionGroups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 719.98px) {
+  .permissionDetails div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
+
+/* Brief section 12: this page declares no motion, and cannot gain any. */
+@media (prefers-reduced-motion: reduce) {
+  .onboarding,
+  .onboarding * {
+    animation: none;
+    transition-duration: 0ms;
+  }
+}

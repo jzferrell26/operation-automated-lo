@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VERIFY_EMAIL } from "../../copy/auth-messages.js";
 import type { EmailVerificationView } from "../../features/shell/model/navigation.js";
 import type { RuntimeShellSession } from "../../server/runtime-authentication.js";
-import { useReviewModeEnvironment } from "./review-mode-test-support.js";
+import {
+  runtimeAuthenticationModuleStub,
+  themeModuleStub,
+  useReviewModeEnvironment,
+} from "./review-mode-test-support.js";
 
 /**
  * PRD-006b D10's unverified-notice row and PRD-006a 006A-AC-021.
@@ -28,26 +32,14 @@ let shell: RuntimeShellSession;
 
 vi.mock("next/headers.js", () => ({ headers: () => Promise.resolve(new Headers()) }));
 vi.mock("next/navigation.js", () => ({ usePathname: () => "/overview" }));
-vi.mock("../../theme/index.js", () => ({
-  ThemeControl: () => <div aria-label="Theme control">Theme control</div>,
-}));
 /**
- * The guided setup is the layout's other dependency and has nothing to do with the notice. Saying
- * there are no preferences yet is the honest answer for a brand-new account and keeps this suite
- * failing for one reason only.
+ * The runtime-authentication stub keeps the real module apart from the session, so the notice's form
+ * still posts to the real path constants. It lives in the support module with the reason.
  */
-vi.mock("../../server/setup-preferences.js", () => ({
-  readSetupPreferencesForRequest: () => Promise.resolve(undefined),
-}));
-/**
- * Everything except the session resolution is the real module, including the path constants the
- * notice's form posts to, so a rename on either side fails here rather than shipping a control
- * that posts nowhere.
- */
-vi.mock("../../server/runtime-authentication.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../server/runtime-authentication.js")>();
-  return { ...actual, resolveRuntimeShellSession: () => Promise.resolve(shell) };
-});
+vi.mock("../../theme/index.js", () => themeModuleStub("Theme control"));
+vi.mock("../../server/runtime-authentication.js", (importOriginal) =>
+  runtimeAuthenticationModuleStub(importOriginal, () => shell),
+);
 
 const { default: AuthenticatedLayout } = await import("./layout.js");
 const { RESEND_VERIFICATION_PATH } = await import("../../server/runtime-authentication.js");

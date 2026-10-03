@@ -9,8 +9,7 @@ export default defineConfig({
   testIgnore: "review/**",
   testMatch: [
     "dashboard-preview.spec.ts",
-    "product-onboarding.spec.ts",
-    "workspace-pages.spec.ts",
+    "removed-addresses.spec.ts",
     "homeowner-reports.spec.ts",
     "homeowner-avm.spec.ts",
   ],

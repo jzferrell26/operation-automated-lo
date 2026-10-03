@@ -13,7 +13,7 @@ Use the AutomatedLO community to validate the product and generate the requested
 | Included period | 90 days |
 | Continuation | $197 per month after 90 days |
 | Onboarding | Self-service setup wizard, recording, checklist, and optional office-hours thread |
-| Included product | GHL connection, AI-assisted brand/compliance profile, one Open House Boost blueprint, co-branded page/PDF collateral, loan-officer or lender-branded ad creative and campaign text, Meta launch flow, GHL routing, reporting |
+| Included product | GHL connection, AI-assisted brand/compliance profile, one Open House Boost blueprint, co-branded page/PDF collateral, loan-officer or lender-branded ad creative and campaign text, Meta launch flow, GHL routing, reporting _(Amended on 2026-10-03 by PRD-009 (S-105; OD-H): the first product is "Launch an ad" over a curated library of ads, with a results page for each campaign. Read "one Open House Boost blueprint, co-branded page/PDF collateral" as that library: collateral (the co-branded page, the PDF, the QR code) is not in this product's scope (S-01). The Meta launch flow is built and disabled in PRD-009, and reporting is spend, leads sent to HighLevel, and cost per lead on each campaign's page (S-04). Whether the offer's wording changes is an owner decision.)_ |
 | Not included | Individual funnel builds, custom automation, ad management service, custom compliance drafting, database cleanup, voice agent, database reactivation |
 
 Twenty buyers at $500 produce $10,000. That is about 5.8 percent of a 343-member community.
@@ -47,7 +47,7 @@ Avoid leading with AI agents, 21 tools, or Marketplace architecture. Those are i
 
 ### Days 1 to 3: proof and waitlist
 
-- Select one Open House Boost example.
+- Select one Open House Boost example. _(Amended on 2026-10-03 by PRD-009 (S-105; OD-H): the demonstration is one library ad chosen, set up, and approved in "Launch an ad". No page, PDF, or QR code is produced (S-01), and the real library is empty until the owner supplies approved ads (operator checklist, step 11).)_
 - Produce the page, PDF, QR code, creative, and GHL lead path.
 - Record a three to five minute end-to-end demo.
 - Publish a short founding-cohort application with the exact scope.
@@ -123,7 +123,7 @@ Track the funnel as events:
 
 ## Expansion path
 
-Only after Open House Boost meets activation and continuation gates:
+Only after Open House Boost meets activation and continuation gates: _(Amended on 2026-10-03 by PRD-009 (S-105; OD-H): read "Open House Boost" as the library-ad flow, "Launch an ad" (S-72). The later items on this list are unchanged, and PRD-009 schedules none of them.)_
 
 1. Add New Listing Spotlight.
 2. Add a Realtor partner campaign history and approval portal.

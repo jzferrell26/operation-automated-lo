@@ -7,10 +7,11 @@ import { useEffect, useRef, useState } from "react";
 import {
   APPROVER_OR_OWNER,
   CAMPAIGN_CREATOR_PARTY,
+  CAMPAIGN_NOT_AN_AD_YET,
+  NEEDS_CHANGES_NEXT_ACTION,
   WORKSPACE_OWNER_PARTY,
 } from "../../../copy/user-language.js";
-import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
-import { useGuidedSetup } from "../../guided-setup/guided-setup-context.js";
+import { APPROVE_LINE, APPROVE_TITLE } from "../../../copy/launch-messages.js";
 import { CampaignHandOff } from "./campaign-hand-off.js";
 import { userMessageSentence } from "../../http/user-messages.js";
 import {
@@ -20,6 +21,10 @@ import {
   type InternalRefusal,
 } from "../../http/internal-api.js";
 import { SupportReference } from "../../shell/components/support-details.js";
+import styles from "./campaign-page.module.css";
+
+/** The design system's visually-hidden box (`packages/ui` `primitives.css`): on the page, out of the flow. */
+const VISUALLY_HIDDEN = "oalo-visually-hidden";
 
 export type CampaignApprovalControlsProps = Readonly<{
   /** Where this campaign lives, so a user who cannot approve can hand the address to someone who can. */
@@ -53,6 +58,11 @@ function recorded(sentence: string): ApprovalStatus {
   return Object.freeze({ sentence, refusal: undefined });
 }
 
+/**
+ * Both cards take `--space-6` (`lg`), the one inset every card has on the campaign page (scored review
+ * R2 F-2) and on step 3 of "Launch an ad", whose side cards are drawn the same (R1-16), as the
+ * mockups' `.card` is.
+ */
 export function CampaignApprovalControls({
   campaignHref,
   campaignRef,
@@ -77,7 +87,6 @@ export function CampaignApprovalControls({
    */
   const [decided, setDecided] = useState(false);
   const router = useRouter();
-  const guidedSetup = useGuidedSetup();
   const outcomeRef = useRef<HTMLParagraphElement | null>(null);
 
   /*
@@ -127,9 +136,6 @@ export function CampaignApprovalControls({
       };
       setStatus(recorded(decisionStatus(body.decision, body.duplicate === true)));
       setDecided(true);
-      // 008B-AC-010. The guided walkthrough, when there is one, hears what was recorded now, so its
-      // step agrees with this card without waiting for the refreshed page to carry the decision.
-      guidedSetup?.reportCampaignDecided({ campaignRef, decision: body.decision });
       /*
        * The server-rendered regions around this card (where the campaign stands, the check result,
        * what to do next, who signed off) were written before the decision existed. Refreshing
@@ -149,15 +155,14 @@ export function CampaignApprovalControls({
   }
 
   if (decided) {
-    // PRD-008b D2. A recorded decision is not offered again. The card keeps its walkthrough anchor
-    // so the guided step that points at it still finds it, and says only what was recorded.
+    // PRD-008b D2. A recorded decision is not offered again. The card says only what was recorded.
     // PRD-008d's baseline review of 2026-10-01: it also keeps its title, so the card a person has
     // just decided on is the same card, by name, as the one a later visit shows, and not the only
     // untitled card on the page.
     return (
-      <Card data-tour={GUIDED_SETUP_ANCHORS.campaignApproveControl} padding="md">
-        <strong>Approve this campaign</strong>
-        <p ref={outcomeRef} role="status" tabIndex={-1}>
+      <Card data-approval-card="" padding="lg">
+        <strong>{APPROVE_TITLE}</strong>
+        <p className={styles.small} ref={outcomeRef} role="status" tabIndex={-1}>
           {status?.sentence}
         </p>
       </Card>
@@ -165,9 +170,10 @@ export function CampaignApprovalControls({
   }
 
   return (
-    <Card data-tour={GUIDED_SETUP_ANCHORS.campaignApproveControl} padding="md">
-      <strong>Approve this campaign</strong>
-      <p>Approving applies to this exact version. Nothing is published or sent.</p>
+    <Card data-approval-card="" padding="lg">
+      <strong>{APPROVE_TITLE}</strong>
+      {/* The mockup's `.small .muted`: a card's sentence is the secondary step (scored review P2-08). */}
+      <p className={styles.small}>{APPROVE_LINE}</p>
       <SafeAction
         confirmLabel="Yes, approve"
         decision={decision}
@@ -209,7 +215,25 @@ export function CampaignApprovalControls({
       {canApprove || alreadyDecided !== undefined || blocking ? null : (
         <CampaignHandOff campaignHref={campaignHref} />
       )}
-      <p role="status">{status?.sentence ?? "Nobody has approved this version yet."}</p>
+      {/*
+        The live region stays on the page so an outcome is announced, but it says nothing until there
+        is one. "Nobody has approved this version yet." is the Approval card's own sentence, directly
+        above, so it is not said twice (writing review W-7).
+
+        While it is empty it is the shared visually-hidden box, which is out of the card's flow: the
+        card spaces its children with a grid gap, and an empty child still takes a row (and the gap
+        before it), which left 16px of dead space at the card's foot. A negative margin cannot give
+        that back, because a grid track never shrinks below zero (scored review R1-13r). Taken out of
+        the flow it has no row, so no stylesheet has to remember to cancel it, and it is still on the
+        page, so the sentence that lands in it is announced.
+      */}
+      <p
+        className={status?.sentence ? styles.small : VISUALLY_HIDDEN}
+        data-approval-status=""
+        role="status"
+      >
+        {status?.sentence}
+      </p>
       <SupportReference refusal={status?.refusal} />
     </Card>
   );
@@ -222,9 +246,12 @@ function decisionStatus(decision: "approved" | "rejected", duplicate: boolean): 
       ? "Already sent back for changes."
       : "Sent back for changes. The campaign creator can fix it and save a new version.";
   }
-  return duplicate
-    ? "Already approved."
-    : "Approved. This campaign won't run as an ad until HighLevel and Meta are connected.";
+  /*
+   * The second sentence is the contract's own (`user-language.ts`), so the page, the saved notice and
+   * this outcome cannot say different things about whether the ad runs. It used to promise that
+   * connecting both accounts was enough, which launching being off in PRD-009 makes untrue (W-2).
+   */
+  return duplicate ? "Already approved." : `Approved. ${CAMPAIGN_NOT_AN_AD_YET}`;
 }
 
 /** A version nobody can approve yet: it is waiting for the person who wrote it. */
@@ -235,7 +262,7 @@ function needsChanges(): SafeActionDecision {
     requiredRole: APPROVER_OR_OWNER,
     prerequisite: "A version where the checks find nothing to fix",
     responsibleParty: CAMPAIGN_CREATOR_PARTY,
-    nextAction: "Fix what the checks found, then save it again.",
+    nextAction: NEEDS_CHANGES_NEXT_ACTION,
   };
 }
 
@@ -288,13 +315,14 @@ function resolveDecision(input: {
   return {
     state: "ready",
     explanation:
-      "Read the wording, the budget, where the ad runs, the dates, and the disclosures before you approve.",
+      "Read the wording, the budget, where the ad shows, the dates, and the disclosures before you approve.",
     requiredRole: APPROVER_OR_OWNER,
     confirmation: {
       title: "Approve this version",
-      effect: "Records your name against this exact version. Nothing is published or sent.",
+      effect:
+        "Saves your name as the approver of this exact version. Nothing is published or sent.",
       scope: "This version of the campaign, as it reads right now",
-      result: "The campaign is approved. Changing it later needs a new approval.",
+      result: "This version is approved. Changing the campaign later needs a new approval.",
     },
   };
 }

@@ -850,21 +850,24 @@ export function HomeownerWorkspace({
             title="Homeowner reports"
             description="Your property-value and equity workspace."
           />
-          <Card className={styles.empty} padding="md">
-            <Icon name="home" decorative size="lg" />
-            <h2>Connect the report workspace</h2>
-            <p>
-              Property valuations need an enabled account, saved-report storage and a valuation
-              connection. HighLevel is optional for homeowner follow-up. Your workspace owner can
-              finish these connections.
-            </p>
-            <Button variant="outline" onClick={() => void data.reload()}>
-              Check connection again
-            </Button>
-            <ActionLink href="/settings/connections" secondary>
-              Workspace connections
-            </ActionLink>
-          </Card>
+          {/* The scored review pass 2, P2-07: the product's one empty state (`AsyncState`, here as
+              `EmptyState` on the page's card surface), with its two actions in the two action slots,
+              rather than a hand-built card with its own inset and rhythm. */}
+          <EmptyState
+            description="Property valuations need an enabled account, saved-report storage and a valuation connection. HighLevel is optional for homeowner follow-up. Your workspace owner can finish these connections."
+            primaryAction={
+              <Button variant="outline" onClick={() => void data.reload()}>
+                Check connection again
+              </Button>
+            }
+            secondaryAction={
+              <ActionLink href="/settings/connections" secondary>
+                Workspace connections
+              </ActionLink>
+            }
+            surface="card"
+            title="Connect the report workspace"
+          />
         </>
       ) : view === "new" ? (
         <HomeReportBuilder data={data} initialBrand={cleanBrand} />

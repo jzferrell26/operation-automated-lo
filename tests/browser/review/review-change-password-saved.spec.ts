@@ -7,11 +7,7 @@ import {
   seededCredentials,
   signInExisting,
 } from "./helpers/guided-setup-journey.js";
-import {
-  chooseThemeFromTheHeader,
-  putTheWalkthroughAside,
-  REVIEW_THEMES,
-} from "./helpers/review-session.js";
+import { chooseThemeFromTheHeader, REVIEW_THEMES } from "./helpers/review-session.js";
 
 /**
  * PRD-006d D3's saved change-password state, in the last file the review run executes.
@@ -51,12 +47,9 @@ test("the change-password screen's saved state meets the bar", async ({ browser 
   const guard = await guardLocalOrigin(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await signInExisting(page, creatorEmail, password);
-  // The spec before this one leaves the creator's walkthrough open on step 5, and an open
-  // walkthrough routes the page to its own step rather than to the account screen.
-  await putTheWalkthroughAside(page);
   await page.goto("/settings/account");
-  // Asserted rather than assumed: if the walkthrough took the page somewhere else, this says so in
-  // a second instead of spending the timeout filling fields that are not on screen.
+  // Asserted rather than assumed: if the page is somewhere else, this says so in a second instead
+  // of spending the timeout filling fields that are not on screen.
   await expect(page.getByRole("heading", { name: "Change your password" })).toBeVisible();
 
   try {

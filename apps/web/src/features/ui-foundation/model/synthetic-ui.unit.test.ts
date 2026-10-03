@@ -36,27 +36,36 @@ describe("synthetic UI fixture boundary", () => {
     expect(() => parseSyntheticUiFixture(unknownRootField)).toThrow();
   });
 
-  it("preserves the exact nine-item and six-item Marketing navigation inventories", () => {
+  /**
+   * Superseded on 2026-10-01 by PRD-009 (009A-AC-014, OD-A, OD-C, D-2): the nine-item navigation
+   * and the six Marketing Suite sub-items are gone. The fixture carries the one menu of 009a D2.
+   */
+  it("carries exactly the six-item menu, with no Marketing Suite sub-items", () => {
     const { navigation } = loadSyntheticUiFixture();
 
     expect(navigation.items.map((item) => item.label)).toEqual([
-      "Overview",
-      "Marketing Suite",
-      "Brand Engine",
-      "Partners",
-      "Leads and Pipeline",
-      "Automations",
-      "Reports",
-      "Marketplace",
+      "Home",
+      "Campaigns",
+      "Brand",
+      "Realtor partners",
+      "Homeowner reports",
       "Settings",
     ]);
-    expect(navigation.marketingItems.map((item) => item.label)).toEqual([
-      "Campaigns",
-      "Property Sites",
-      "PDFs and Creative",
-      "Ads Manager",
-      "Email and SMS",
-      "Blueprint Templates",
-    ]);
+    expect(Object.keys(navigation)).toEqual(["items"]);
+  });
+
+  it("rejects a menu that is not the six, and any Marketing Suite list", () => {
+    const fixture = loadSyntheticUiFixture();
+    const nine = {
+      ...fixture,
+      navigation: { items: [...fixture.navigation.items, ...fixture.navigation.items.slice(0, 3)] },
+    };
+    const withMarketing = {
+      ...fixture,
+      navigation: { ...fixture.navigation, marketingItems: [] },
+    };
+
+    expect(() => parseSyntheticUiFixture(nine)).toThrow();
+    expect(() => parseSyntheticUiFixture(withMarketing)).toThrow();
   });
 });

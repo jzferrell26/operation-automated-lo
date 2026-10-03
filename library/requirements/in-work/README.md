@@ -23,12 +23,16 @@ Current in-work PRDs:
   - 005a runtime authentication composition, 005b review session issuance and store, 005c correlation and retry idempotency, 005d handoff reconciliation, 005e deployed qualification
 - PRD-006 First-Party Sign-In and Guided Experience (product owner requirements of 2026-09-19)
   - moved from `backlog/` to `in-work/` on 2026-09-19 when the gauntlet raid took it on; ledger rows follow the PRD-005 section in [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md)
-  - 006a email and password sign-in with sign-up, forgot-password, and reset; 006b user language; 006c guided setup under five minutes; 006d design quality bar (10 of 10)
+  - 006a email and password sign-in with sign-up, forgot-password, and reset; 006b user language; 006c guided setup under five minutes; 006d design quality bar (10 of 10) _(Amended on 2026-10-01 by PRD-009 (S-19 to S-35; D-15): the guided setup of 006c is retired.)_
   - supersedes PRD-005b design decision D4 (persona plus operator secret); reuses the PRD-005b session store
 - PRD-007 Homeowner reports (the authorized homeowner-intelligence slice of PRD-002e)
   - implementation merged in PRs #69, #71, and #72; live valuation and HighLevel delivery wait on operator configuration (finish-line operator checklist steps 6a and 6b)
   - its evidence lives in `reports/` rather than `qa/`
+- [PRD-009 Marketing Toolkit](./prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md) (the product owner's direction and OD-H of 2026-10-01)
+  - moved from `backlog/` to `in-work/` on 2026-10-01 when the Gauntlet run started on branch `claude/prd-009-marketing-toolkit`; the orchestrator writes its `MKR-` ledger section in [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md)
+  - 009a light look and top menu, 009b Home for a new account, 009c Ads library, 009d Launch an ad, 009e campaign page and list, 009f removals and records, 009g verification
+  - in draft pull request #75, not merged; its human-only items are steps 10 to 13 of the [finish-line operator checklist](../../knowledge/private/operations/finish-line-operator-checklist.md)
 
 Moved out of `in-work/`:
 
-- PRD-008 Finish-Line Hardening moved to [`completed/`](../completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) on 2026-10-01, at the end of the Gauntlet run on branch `claude/gauntlet-prd-008`. It is complete in pull request #74, and the merge waits for the owner.
+- PRD-008 Finish-Line Hardening moved to [`completed/`](../completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) on 2026-10-01, at the end of the Gauntlet run on branch `claude/gauntlet-prd-008`. It is complete and merged as pull request #74 on 2026-10-01 (`e89058e`).

@@ -38,7 +38,7 @@ export function chooseWorkspaceOptionLabel(workspaceName: string, roleLabel: str
 
 export const SIGN_UP = Object.freeze({
   title: "Create your account",
-  lead: "Takes about a minute. Then we'll set up your first Open House Boost together.",
+  lead: "Takes about a minute. Then you can set up your first ad.",
   nameLabel: "Your name",
   emailLabel: "Email",
   passwordLabel: "Password",
@@ -71,6 +71,8 @@ export const RESET_PASSWORD = Object.freeze({
   confirmPasswordLabel: "Confirm new password",
   submitLabel: "Save new password",
   expiredError: "This reset link has expired or was already used. Request a new one.",
+  /** The control that does what `expiredError` says: it goes to the page that sends a new link. */
+  requestNewLinkLabel: "Request a new link",
   mismatchError: "Those passwords don't match.",
   successNotice: "Your password is saved. You're signed in.",
 });

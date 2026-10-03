@@ -1,6 +1,7 @@
 import { generateKeyPairSync } from "node:crypto";
 
 import { afterEach, describe, expect, it } from "vitest";
+import { freezeAuthenticatedPrincipal } from "@oalo/application";
 import { issueEmbeddedSessionToken } from "@oalo/auth";
 
 import {
@@ -11,12 +12,20 @@ import {
 } from "./authenticated-principal.js";
 import { handleCampaignApproval } from "./campaign-approval-handler.js";
 import {
+  LIBRARY_AD_SAVE_INPUT,
   LOCAL_SYNTHETIC_ENV,
-  OPEN_HOUSE_DRAFT_INPUT,
+  SAMPLE_LIBRARY_ENV,
   createTemporaryCampaignStore,
   persistedDraftFromPreflightBody,
 } from "./campaign-command-test-support.js";
 import { handleCampaignPreflight } from "./campaign-preflight-handler.js";
+import {
+  SAMPLES_ON_ENVIRONMENT,
+  libraryAdApprovalPayload,
+  sampleEntry,
+  saveLibraryAdDraft,
+} from "./library-ad-test-support.js";
+import { loadLocalCampaign } from "./local-campaign-store.js";
 
 const store = createTemporaryCampaignStore("oalo-approval-");
 const csrfSecret = Buffer.alloc(32, 9);
@@ -28,6 +37,14 @@ const INSTALLATION_REF = "installation_approval001";
 afterEach(async () => {
   await store.restore();
 });
+
+/**
+ * PRD-009d. A draft is a library-ad version now, so the run that saves and approves one loads the
+ * sample ads it is built from.
+ */
+function storeWithSamples() {
+  return { ...store.env(), ...SAMPLE_LIBRARY_ENV };
+}
 
 function mutationGate() {
   return {
@@ -144,18 +161,36 @@ function approveRequest(body: unknown, headers: HeadersInit = {}): Request {
 async function persistDraft(
   ports: CampaignCommandPorts = createDefaultCampaignCommandPorts(),
   headers: HeadersInit = {},
+  body: Readonly<Record<string, unknown>> = LIBRARY_AD_SAVE_INPUT,
 ) {
   const response = await handleCampaignPreflight(
     new Request("https://app.operation-automated-lo.test/api/campaigns/preflight", {
       method: "POST",
       headers: { "content-type": "application/json", ...headers },
-      body: JSON.stringify(OPEN_HOUSE_DRAFT_INPUT),
+      body: JSON.stringify(body),
     }),
-    store.env(),
+    storeWithSamples(),
     ports,
   );
   expect(response.status).toBe(200);
-  return persistedDraftFromPreflightBody(await response.json());
+  const saved: unknown = await response.json();
+  return {
+    ...persistedDraftFromPreflightBody(saved),
+    state: (saved as { state: string }).state,
+    versionNo: (saved as { versionNo: number }).versionNo,
+  };
+}
+
+/** The approval a browser sends for one saved version, with the row version it last read. */
+function approvalFor(draft: Awaited<ReturnType<typeof persistDraft>>, expectedRowVersion: number) {
+  return {
+    campaignRef: draft.campaignRef,
+    decision: "approved" as const,
+    expectedCampaignVersionRef: draft.campaignVersionRef,
+    expectedManifestHash: draft.manifestHash,
+    expectedPreflightResultHash: draft.resultHash,
+    expectedRowVersion,
+  };
 }
 
 describe("campaign approval handler", () => {
@@ -169,13 +204,13 @@ describe("campaign approval handler", () => {
         actorKind: "human",
         actorRole: "approver",
       }),
-      store.env(),
+      storeWithSamples(),
       createDefaultCampaignCommandPorts(),
     );
     expect(forbidden.status).toBe(400);
     const creator = await handleCampaignApproval(
       approveRequest({ campaignRef: draft.campaignRef, decision: "approved" }),
-      store.env(),
+      storeWithSamples(),
       createDefaultCampaignCommandPorts(),
     );
     expect(creator.status).toBe(403);
@@ -196,7 +231,7 @@ describe("campaign approval handler", () => {
     };
     const first = await handleCampaignApproval(
       approveRequest(approvalPayload, session.approverHeaders),
-      store.env(),
+      storeWithSamples(),
       session.ports,
     );
     expect(first.status).toBe(200);
@@ -209,7 +244,7 @@ describe("campaign approval handler", () => {
     // requires this to resolve as the idempotent duplicate, not a 409 conflict.
     const retry = await handleCampaignApproval(
       approveRequest(approvalPayload, session.approverHeaders),
-      store.env(),
+      storeWithSamples(),
       session.ports,
     );
     expect(retry.status).toBe(200);
@@ -227,7 +262,7 @@ describe("campaign approval handler", () => {
         { campaignRef: draft.campaignRef, decision: "approved", expectedRowVersion: 1 },
         { ...session.approverHeaders, "x-correlation-id": "3fa85f64-5717-4562-b3fc-2c963f66afa6" },
       ),
-      store.env(),
+      storeWithSamples(),
       session.ports,
     );
     expect(withUuidHeader.status).toBe(200);
@@ -243,7 +278,7 @@ describe("campaign approval handler", () => {
         { campaignRef: draft.campaignRef, decision: "approved" },
         session.approverHeaders,
       ),
-      store.env(),
+      storeWithSamples(),
       session.ports,
     );
     expect(withoutHeader.headers.get("x-correlation-id")).toBeNull();
@@ -261,7 +296,7 @@ describe("campaign approval handler", () => {
         { campaignRef: draft.campaignRef, decision: "approved", expectedRowVersion: 99 },
         session.approverHeaders,
       ),
-      store.env(),
+      storeWithSamples(),
       session.ports,
     );
     expect(response.status).toBe(409);
@@ -285,5 +320,177 @@ describe("campaign approval handler", () => {
     expect(response.headers.get("x-oalo-correlation-ref")).toMatch(
       /^correlation_approve_[0-9a-f]+$/u,
     );
+  });
+});
+
+/**
+ * PRD-009c D4, 009C-AC-008. The handler composes the command's required catalog port from the ads
+ * library loader under the same environment, so the route refuses a library-ad version whose ad is
+ * retired, replaced, missing, or whose art changed, with its own code and nothing written.
+ */
+describe("campaign approval handler, library-ad versions", () => {
+  const CREATOR = freezeAuthenticatedPrincipal({
+    actorRef: CREATOR_REF,
+    actorId: "00000000-0000-4000-8000-000000000822",
+    locationRef: LOCATION_REF,
+    locationId: "00000000-0000-4000-8000-000000000821",
+    installationRef: INSTALLATION_REF,
+    role: "campaign_creator",
+    roleVersion: 1,
+    sessionId: "session_approvalcreator001",
+    authenticationMode: "embedded",
+  });
+
+  function withSamples(environment: Readonly<Record<string, string>>) {
+    return Object.freeze({ ...environment, ...SAMPLES_ON_ENVIRONMENT });
+  }
+
+  async function approveLibraryAd(
+    adId: string,
+    version: number,
+    options: Readonly<{ samples: boolean; tallSha256?: string }>,
+  ) {
+    await store.enter();
+    const session = sessionFixture();
+    const environment = options.samples ? withSamples(store.env()) : store.env();
+    const entry = await sampleEntry(adId, version);
+    const draft = await saveLibraryAdDraft({
+      principal: CREATOR,
+      environment,
+      entry:
+        options.tallSha256 === undefined
+          ? entry
+          : {
+              ...entry,
+              images: {
+                ...entry.images,
+                tall: { ...entry.images.tall, sha256: options.tallSha256 },
+              },
+            },
+    });
+    expect(draft.preflight.blocking).toBe(false);
+    const response = await handleCampaignApproval(
+      approveRequest(libraryAdApprovalPayload(draft), session.approverHeaders),
+      environment,
+      session.ports,
+    );
+    const stored = await loadLocalCampaign(draft.version.campaignRef, environment);
+    return { response, stored };
+  }
+
+  it("approves a version of an active ad at its highest version, with samples on", async () => {
+    const { response, stored } = await approveLibraryAd("sample-first-home", 2, { samples: true });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      state: "approved",
+      decision: "approved",
+    });
+    expect(stored?.approval?.snapshot).toMatchObject({
+      blueprintId: "library-ad",
+      libraryAdId: "sample-first-home",
+      libraryAdVersion: 2,
+    });
+  });
+
+  it.each([
+    ["a retired ad", "sample-spring-search", 1, true, undefined, "LIBRARY_AD_RETIRED"],
+    ["a replaced version", "sample-first-home", 1, true, undefined, "LIBRARY_AD_REPLACED"],
+    ["changed art", "sample-first-home", 2, true, "9".repeat(64), "LIBRARY_AD_ART_CHANGED"],
+    [
+      "an ad the catalog does not hold, with samples off",
+      "sample-first-home",
+      2,
+      false,
+      undefined,
+      "LIBRARY_AD_MISSING",
+    ],
+  ] as const)(
+    "refuses %s with 409 and writes nothing",
+    async (_label, adId, version, samples, tallSha256, code) => {
+      const { response, stored } = await approveLibraryAd(adId, version, {
+        samples,
+        ...(tallSha256 === undefined ? {} : { tallSha256 }),
+      });
+      expect(response.status).toBe(409);
+      await expect(response.json()).resolves.toEqual({ error: code });
+      expect(response.headers.get("x-oalo-correlation-ref")).toMatch(
+        /^correlation_approve_[0-9a-f]+$/u,
+      );
+      expect(stored?.state).toBe("awaiting_approval");
+      expect(stored?.approval).toBeUndefined();
+      expect(stored?.rowVersion).toBe(1);
+    },
+  );
+});
+
+/**
+ * PRD-009d 009D-AC-020. The Postgres suite proves this against the database; this proves the same
+ * path offline, through the same two route handlers, against the filesystem store.
+ */
+describe("approving after a new version (009D-AC-020)", () => {
+  it("drops the earlier approval when version 2 is saved, refuses the old approval, and approves version 2", async () => {
+    await store.enter();
+    const session = sessionFixture();
+    const first = await persistDraft(session.ports, session.creatorHeaders);
+    expect(first.state).toBe("awaiting_approval");
+    const approvedFirst = await handleCampaignApproval(
+      approveRequest(approvalFor(first, 1), session.approverHeaders),
+      storeWithSamples(),
+      session.ports,
+    );
+    expect(approvedFirst.status).toBe(200);
+
+    const second = await persistDraft(session.ports, session.creatorHeaders, {
+      ...LIBRARY_AD_SAVE_INPUT,
+      campaignRef: first.campaignRef,
+      headline: "Ready for your first home? Start here.",
+    });
+    expect(second.campaignRef).toBe(first.campaignRef);
+    expect(second.versionNo).toBe(2);
+    expect(second.state).toBe("awaiting_approval");
+    const afterSave = await loadLocalCampaign(first.campaignRef, storeWithSamples());
+    expect(afterSave?.approval).toBeUndefined();
+    expect(afterSave?.version.campaignVersionRef).toBe(second.campaignVersionRef);
+    const rowVersion = afterSave?.rowVersion ?? 0;
+
+    // The approval of version 1 does not carry over, and replaying it does not approve version 2.
+    const replayed = await handleCampaignApproval(
+      approveRequest(approvalFor(first, rowVersion), session.approverHeaders),
+      storeWithSamples(),
+      session.ports,
+    );
+    expect(replayed.status).toBe(409);
+    await expect(replayed.json()).resolves.toEqual({ error: "CAMPAIGN_APPROVAL_CONFLICT" });
+
+    const approvedSecond = await handleCampaignApproval(
+      approveRequest(approvalFor(second, rowVersion), session.approverHeaders),
+      storeWithSamples(),
+      session.ports,
+    );
+    expect(approvedSecond.status).toBe(200);
+    await expect(approvedSecond.json()).resolves.toMatchObject({
+      decision: "approved",
+      duplicate: false,
+      state: "approved",
+    });
+    const afterApproval = await loadLocalCampaign(first.campaignRef, storeWithSamples());
+    expect(afterApproval?.approval?.campaignVersionRef).toBe(second.campaignVersionRef);
+  });
+
+  it("refuses with 409 a version whose checks sent it back, which is what a blank NMLS number causes", async () => {
+    await store.enter();
+    const session = sessionFixture();
+    const sentBack = await persistDraft(session.ports, session.creatorHeaders, {
+      ...LIBRARY_AD_SAVE_INPUT,
+      headline: "Ask about low rates",
+    });
+    expect(sentBack.state).toBe("preflight_failed");
+    const refused = await handleCampaignApproval(
+      approveRequest(approvalFor(sentBack, 1), session.approverHeaders),
+      storeWithSamples(),
+      session.ports,
+    );
+    expect(refused.status).toBe(409);
+    await expect(refused.json()).resolves.toEqual({ error: "CAMPAIGN_APPROVAL_NOT_READY" });
   });
 });

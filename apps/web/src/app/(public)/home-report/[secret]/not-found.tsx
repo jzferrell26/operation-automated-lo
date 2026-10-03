@@ -17,7 +17,8 @@ import { SHARED_REPORT_UNAVAILABLE_TITLE } from "../../../../copy/shared-report-
  * report page's robots and referrer tags so the document says the same in its own markup.
  */
 export const metadata: Metadata = {
-  title: SHARED_REPORT_UNAVAILABLE_TITLE,
+  // A homeowner's page: the root layout's template would add the product's name to it (W-13).
+  title: { absolute: SHARED_REPORT_UNAVAILABLE_TITLE },
   robots: { index: false, follow: false, nocache: true },
   referrer: "no-referrer",
 };

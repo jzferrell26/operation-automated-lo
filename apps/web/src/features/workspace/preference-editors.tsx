@@ -1,28 +1,33 @@
 "use client";
-import { useState, type FormEvent } from "react";
-import { HomeBrandSchema } from "@oalo/contracts";
+import { useId, useState, type FormEvent } from "react";
 import {
   Button,
   Card,
   Dialog,
+  EmptyState,
   Icon,
   Link,
   LiveRegion,
   Select,
+  Surface,
   TextArea,
   TextField,
 } from "@oalo/ui";
+import { adColorVariables } from "../campaigns/components/ad-creative.js";
+import { BrandBand } from "../campaigns/components/brand-band.js";
 import { HomeBrandFields } from "../homeowners/builder.js";
 import {
-  messageKeys,
-  messageLabels,
-  starterMessage,
-  MessageKeySchema,
-  MessageSchema,
+  AD_BRAND_COLOR_PRESETS,
+  AD_BRAND_LIMITS,
+  AdBrandSchema,
+  type AdBrand,
+} from "./ad-brand.js";
+import {
+  BrandSaveSchema,
   PartnerSchema,
-  type MessageKey,
   type WorkspacePageData,
   type WorkspacePartner,
+  type WorkspacePreferences,
 } from "./model.js";
 import { useWorkspacePreferences } from "./use-workspace-preferences.js";
 import styles from "./workspace.module.css";
@@ -39,6 +44,75 @@ function Feedback({ error, message }: { error: string; message: string }) {
   );
 }
 
+/**
+ * The feedback, the save button, and the reload that both Brand cards end with.
+ *
+ * Both cards sit on one page, so the save and the reload each say which card they belong to
+ * ("Save your details" and "Load latest saved details", "Save ad settings" and "Load latest saved ad
+ * settings"): two buttons with one accessible name cannot be told apart by a screen reader, and a
+ * test that asks for one by name finds two.
+ *
+ * The scored review's F-05: one obvious primary button per screen (direction section 2.3, rubric
+ * axis 1). The page holds two forms, so exactly one of them is the page's primary and the other
+ * saves as a secondary button. "Your details" is the primary: it holds the name and NMLS number
+ * that Home's "Add your brand" asks for and every ad carries, while the ad settings start from
+ * working defaults.
+ */
+function SaveAndReload({
+  canEdit,
+  emphasis,
+  onLoaded,
+  reloadLabel,
+  saveLabel,
+  state,
+  validation,
+}: {
+  canEdit: boolean;
+  emphasis: "primary" | "secondary";
+  onLoaded: (next: WorkspacePreferences) => void;
+  reloadLabel: string;
+  saveLabel: string;
+  state: ReturnType<typeof useWorkspacePreferences>;
+  validation: string;
+}) {
+  // The reason a save is off is the plain line under the buttons, and the disabled save points at it
+  // (scored review pass 3, R3 P3-04). Two cards share this page, so each row has its own id.
+  const reasonId = useId();
+  return (
+    <>
+      <Feedback error={validation || state.error} message={state.message} />
+      <div className={styles.formActions}>
+        <div className={`${styles.actions} ${styles.pageActions}`}>
+          <Button
+            type="submit"
+            variant={emphasis}
+            disabled={!canEdit || state.busy}
+            aria-describedby={canEdit ? undefined : reasonId}
+          >
+            {state.busy ? "Saving…" : saveLabel}
+          </Button>
+          <Button
+            variant="outline"
+            disabled={state.busy}
+            onClick={() => {
+              void state.reload().then((next) => {
+                if (next) onLoaded(next);
+              });
+            }}
+          >
+            {reloadLabel}
+          </Button>
+        </div>
+        {!canEdit ? (
+          <p className={styles.reason} id={reasonId}>
+            Your role has read-only access to these details.
+          </p>
+        ) : null}
+      </div>
+    </>
+  );
+}
+
 export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
   const state = useWorkspacePreferences(data.preferences);
   const [brand, setBrand] = useState(data.defaultBrand);
@@ -46,9 +120,11 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setValidation("");
-    const parsed = HomeBrandSchema.safeParse(brand);
+    const parsed = BrandSaveSchema.safeParse(brand);
     if (!parsed.success) {
-      setValidation("Check the name, company, email and license numbers before saving.");
+      setValidation(
+        "Check the name, company, email and NMLS numbers before saving. Each NMLS number has 4 to 12 digits.",
+      );
       return;
     }
     const saved = await state.save({
@@ -58,18 +134,27 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
     });
     if (saved?.brand) setBrand(saved.brand.value);
   }
+  const nmlsLine = [
+    brand.nmls ? `NMLS ${brand.nmls}` : "",
+    brand.companyNmls ? `Company NMLS ${brand.companyNmls}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <div className={styles.columns}>
       <Card className={styles.panel} padding="lg">
         <form className={styles.stack} onSubmit={(event) => void submit(event)}>
-          <div>
-            <h2>Your report identity</h2>
-            {/* The branding is saved either way. Whether anything uses it yet depends on whether
+          <div className={styles.cardHead}>
+            {/* Writing review pass 2 (MTK-008, W-4): "Your details", because this card holds the name,
+                company, email, phone and tagline as well as the NMLS numbers, and only the reports use
+                the last three. "Report identity" and "report branding" were two more names for it. */}
+            <h2>Your details</h2>
+            {/* The details are saved either way. Whether the reports use them yet depends on whether
                 homeowner reports are on for the workspace, and the sentence says which. */}
             <p>
               {data.reportsEnabled
-                ? "Saved for your account in this workspace and used when you create a new homeowner report."
-                : "Saved for your account in this workspace. It will be used on a new homeowner report once homeowner reports are turned on."}
+                ? "Saved for your account in this workspace. Your name, company and NMLS numbers go on every ad, and all of it is used when you create a new homeowner report."
+                : "Saved for your account in this workspace. Your name, company and NMLS numbers go on every ad. All of it goes on new homeowner reports once those are turned on."}
             </p>
           </div>
           <fieldset className={styles.fields} disabled={state.busy || !data.canEdit}>
@@ -82,26 +167,15 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
               }}
             />
           </fieldset>
-          <Feedback error={validation || state.error} message={state.message} />
-          <div className={styles.actions}>
-            <Button type="submit" disabled={!data.canEdit || state.busy}>
-              {state.busy ? "Saving…" : "Save report branding"}
-            </Button>
-            <Button
-              variant="outline"
-              disabled={state.busy}
-              onClick={() => {
-                void state.reload().then((next) => {
-                  if (next) setBrand(next.brand?.value ?? data.defaultBrand);
-                });
-              }}
-            >
-              Load latest saved details
-            </Button>
-          </div>
-          {!data.canEdit ? (
-            <p className={styles.note}>Your role has read-only access to these details.</p>
-          ) : null}
+          <SaveAndReload
+            canEdit={data.canEdit}
+            emphasis="primary"
+            onLoaded={(next) => setBrand(next.brand?.value ?? data.defaultBrand)}
+            reloadLabel="Load latest saved details"
+            saveLabel="Save your details"
+            state={state}
+            validation={validation}
+          />
         </form>
       </Card>
       <Card className={styles.brandPreview} padding="lg">
@@ -114,21 +188,30 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
         <span>
           {[brand.email, brand.phone].filter(Boolean).join(" · ") || "Your contact details"}
         </span>
-        <small>
-          {[
-            brand.nmls ? `NMLS ${brand.nmls}` : "",
-            brand.companyNmls ? `Company NMLS ${brand.companyNmls}` : "",
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        </small>
+        {/* The scored review pass 2, P2-03: no numbers, no line. An empty `<small>` is still a grid item,
+            and it took a second `--space-5` gap above the note. */}
+        {nmlsLine === "" ? null : <small>{nmlsLine}</small>}
         <p>
           Changes apply to new reports. Saved reports retain the identity and source details they
           were created with.
         </p>
-        <Link href="/homeowners/new" variant="action">
-          Create a homeowner report
-        </Link>
+        {/* The scored review pass 3, R3 P3-05. The lead above already says reports are off until they
+            are turned on, so the card does not offer to create one: it gives the reason and the next
+            safe step, which the Homeowner reports page names the same way. */}
+        {data.reportsEnabled ? (
+          <Link href="/homeowners/new" variant="action">
+            Create a homeowner report
+          </Link>
+        ) : (
+          <div className={styles.unavailable}>
+            <p className={styles.reason}>
+              Homeowner reports aren&apos;t turned on in this workspace yet.
+            </p>
+            <Link href="/settings/connections" variant="action">
+              Workspace connections
+            </Link>
+          </div>
+        )}
       </Card>
     </div>
   );
@@ -174,6 +257,7 @@ export function PartnersEditor({ data }: { data: WorkspacePageData }) {
           placeholder="Name or company"
         />
         <Button
+          className={styles.toolbarAction}
           disabled={!data.canEdit || partners.length >= 25 || state.busy}
           onClick={() => {
             setValidation("");
@@ -183,10 +267,15 @@ export function PartnersEditor({ data }: { data: WorkspacePageData }) {
           <Icon name="plus" decorative size="sm" /> Add Realtor partner
         </Button>
       </div>
-      <p className={styles.note}>
-        Your personal partner list is saved to this account and workspace. Adding a partner sends no
-        invitation and does not confirm permission to use their materials.
-      </p>
+      {/* The mockups' `.notice`, as Connections draws it: the `Surface` primitive's `info` variant
+          with the information glyph (scored review pass 3, R3 P3-03). */}
+      <Surface className={styles.pageNote} padding="md" variant="info">
+        <Icon decorative name="info" size="sm" tone="info" />
+        <p>
+          Your Realtor partner list is saved to this account and workspace. Adding a partner sends
+          no invitation.
+        </p>
+      </Surface>
       <Feedback error={state.error} message={state.message} />
       {filtered.length ? (
         <div className={styles.cards}>
@@ -227,25 +316,28 @@ export function PartnersEditor({ data }: { data: WorkspacePageData }) {
             </Card>
           ))}
         </div>
+      ) : partners.length ? (
+        // The writing review delta check, D-7: the list is not empty, the search found nothing, and
+        // the empty state's "Empty" chip would say otherwise. One plain line says what happened, and
+        // is a status so a screen reader hears it as the person types.
+        <p className={styles.noMatch} role="status">
+          No partners match this search. Try a different name or company.
+        </p>
       ) : (
-        <Card className={styles.empty} padding="lg">
-          <Icon name="users" decorative size="lg" />
-          <h2>
-            {partners.length ? "No partners match this search" : "Add your first Realtor partner"}
-          </h2>
-          <p>
-            {partners.length
-              ? "Try a different name or company."
-              : "Keep your partner's details ready for the next campaign. Nothing is imported from HighLevel."}
-          </p>
-        </Card>
+        // The scored review pass 2, P2-07: the product's one empty state, not a hand-built card. It
+        // is for a person with no partners at all, where its "Empty" chip is true.
+        <EmptyState
+          description="Keep your Realtor partners' details in one place. Nothing is imported from HighLevel, and partners never appear in your ads."
+          surface="card"
+          title="Add your first Realtor partner"
+        />
       )}
-      <div className={styles.actions}>
+      <div className={`${styles.actions} ${styles.pageActions}`}>
         <Button variant="outline" disabled={state.busy} onClick={() => void state.reload()}>
           Load latest saved details
         </Button>
         <Link href="/marketing/campaigns/new" variant="action">
-          Create a campaign
+          Launch an ad
         </Link>
       </div>
       <Dialog
@@ -336,171 +428,133 @@ export function PartnersEditor({ data }: { data: WorkspacePageData }) {
   );
 }
 
-export function MessageDraftEditor({ data }: { data: WorkspacePageData }) {
+/**
+ * PRD-009d D3 and 009D-AC-003. The four Brand fields a library ad's band needs beyond the report
+ * identity: a title, the brand colour, the disclosure line, and the lead form wording. They are
+ * saved beside the report brand under their own key, and the save of a campaign version reads them
+ * here, on the server, never from the request (009D-AC-024).
+ */
+export function AdBrandEditor({ data }: { data: WorkspacePageData }) {
   const state = useWorkspacePreferences(data.preferences);
-  const [key, setKey] = useState<MessageKey>(messageKeys[0]);
-  const [draft, setDraft] = useState(
-    state.preferences.messages[key]?.value ?? starterMessage(key, data.identity.name),
-  );
+  const [adBrand, setAdBrand] = useState<AdBrand>(data.defaultAdBrand);
   const [validation, setValidation] = useState("");
-  const [copyStatus, setCopyStatus] = useState("");
-  const [dirty, setDirty] = useState(false);
-  const [pendingKey, setPendingKey] = useState<typeof key | null>(null);
-  function select(next: typeof key) {
+  const brand = state.preferences.brand?.value ?? data.defaultBrand;
+  function edit(change: Partial<AdBrand>) {
+    setAdBrand({ ...adBrand, ...change });
     state.clearFeedback();
-    setKey(next);
-    setDraft(state.preferences.messages[next]?.value ?? starterMessage(next, data.identity.name));
-    setDirty(false);
     setValidation("");
-    setCopyStatus("");
   }
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const parsed = MessageSchema.safeParse(draft);
+    setValidation("");
+    const parsed = AdBrandSchema.safeParse(adBrand);
     if (!parsed.success) {
-      setValidation("Add message text before saving.");
+      setValidation(
+        "Check the title, the disclosure line and the lead form wording before saving. The disclosure line and the lead form wording can't be empty.",
+      );
       return;
     }
-    setValidation("");
     const saved = await state.save({
-      key,
-      expectedRevision: state.preferences.messages[key]?.revision ?? null,
+      key: "ad_brand",
+      expectedRevision: state.preferences.adBrand?.revision ?? null,
       value: parsed.data,
     });
-    if (saved) {
-      setDraft(saved.messages[key]?.value ?? parsed.data);
-      setCopyStatus("");
-      setDirty(false);
-    }
-  }
-  async function copyDraft() {
-    setCopyStatus("");
-    try {
-      await navigator.clipboard.writeText(
-        `${key.endsWith("_email") && draft.subject ? `Subject: ${draft.subject}\n\n` : ""}${draft.body}`,
-      );
-      setCopyStatus("Draft copied. No message was sent.");
-    } catch {
-      setCopyStatus("Clipboard access is unavailable. Select the message text to copy it.");
-    }
-  }
-  function edited() {
-    state.clearFeedback();
-    setValidation("");
-    setCopyStatus("");
-    setDirty(true);
+    if (saved?.adBrand) setAdBrand(saved.adBrand.value);
   }
   return (
     <div className={styles.columns}>
-      <Card padding="lg" className={styles.panel}>
+      <Card className={styles.panel} padding="lg">
         <form className={styles.stack} onSubmit={(event) => void submit(event)}>
-          <Select
-            label="Message draft"
-            disabled={state.busy}
-            value={key}
-            options={messageKeys.map((value) => ({ value, label: messageLabels[value] }))}
-            onValueChange={(value) => {
-              const next = MessageKeySchema.parse(value);
-              if (next === key) return;
-              if (dirty) setPendingKey(next);
-              else select(next);
-            }}
-          />
-          <p className={styles.note}>
-            Starter wording is a draft. Replace the bracketed fields and review contact permission
-            before using it in HighLevel.
-          </p>
-          {key.endsWith("_email") ? (
-            <TextField
-              label="Email subject"
-              disabled={state.busy || !data.canEdit}
-              value={draft.subject}
-              maxLength={160}
-              onChange={(event) => {
-                setDraft({ ...draft, subject: event.target.value });
-                edited();
-              }}
-            />
-          ) : null}
-          <TextArea
-            label="Message text"
-            disabled={state.busy || !data.canEdit}
-            value={draft.body}
-            maxLength={2500}
-            rows={10}
-            requirement="required"
-            onChange={(event) => {
-              setDraft({ ...draft, body: event.target.value });
-              edited();
-            }}
-          />
-          <small>{draft.body.length.toLocaleString()} / 2,500 characters</small>
-          <Feedback error={validation || state.error} message={copyStatus || state.message} />
-          <div className={styles.actions}>
-            <Button type="submit" disabled={!data.canEdit || state.busy}>
-              {state.busy ? "Saving…" : "Save message draft"}
-            </Button>
-            <Button
-              variant="outline"
-              disabled={!draft.body.trim()}
-              onClick={() => void copyDraft()}
-            >
-              Copy draft
-            </Button>
-            <Button
-              variant="ghost"
-              disabled={state.busy}
-              onClick={() => {
-                void state.reload().then((next) => {
-                  if (next) {
-                    setDraft(next.messages[key]?.value ?? starterMessage(key, data.identity.name));
-                    setDirty(false);
-                    setValidation("");
-                    setCopyStatus("");
-                  }
-                });
-              }}
-            >
-              Load latest saved details
-            </Button>
+          <div className={styles.cardHead}>
+            <h2>Your brand on ads</h2>
+            <p>
+              Your name and NMLS number go on every ad automatically, with the title, color and
+              disclosure line you choose here. The checks read all of them before an ad can be
+              approved.
+            </p>
           </div>
+          {/* The scored review's F-06: the stack's `--space-5` between fields, as the partner dialog's
+              fieldset has it. The fields sat 6 to 10px apart with no gap at all. */}
+          <fieldset
+            className={`${styles.fields} ${styles.stack}`}
+            disabled={state.busy || !data.canEdit}
+          >
+            <TextField
+              description="For example, Loan officer. Leave it empty to show only your name."
+              label="Title on your ads"
+              maxLength={AD_BRAND_LIMITS.title}
+              onChange={(event) => edit({ title: event.target.value })}
+              value={adBrand.title}
+            />
+            <Select
+              description="It fills the small tile with your initials and the thin line above your name."
+              label="Brand color"
+              onValueChange={(value) => {
+                const preset = AD_BRAND_COLOR_PRESETS.find((item) => item.id === value);
+                if (preset) edit({ colorPresetId: preset.id });
+              }}
+              options={AD_BRAND_COLOR_PRESETS.map((preset) => ({
+                value: preset.id,
+                label: preset.label,
+              }))}
+              value={adBrand.colorPresetId}
+            />
+            <TextField
+              description="Your lender-approved line, printed along the bottom of every ad."
+              label="Disclosure line"
+              maxLength={AD_BRAND_LIMITS.disclosureLine}
+              onChange={(event) => edit({ disclosureLine: event.target.value })}
+              requirement="required"
+              value={adBrand.disclosureLine}
+            />
+            <TextArea
+              description="What a person agrees to when they send you their details from an ad."
+              label="Lead form wording"
+              maxLength={AD_BRAND_LIMITS.leadFormWording}
+              onChange={(event) => edit({ leadFormWording: event.target.value })}
+              requirement="required"
+              rows={3}
+              value={adBrand.leadFormWording}
+            />
+          </fieldset>
+          <SaveAndReload
+            canEdit={data.canEdit}
+            emphasis="secondary"
+            onLoaded={(next) => setAdBrand(next.adBrand?.value ?? data.defaultAdBrand)}
+            reloadLabel="Load latest saved ad settings"
+            saveLabel="Save ad settings"
+            state={state}
+            validation={validation}
+          />
         </form>
       </Card>
-      <Card padding="lg" className={styles.panel}>
-        <Icon name="file-text" decorative size="lg" />
-        <h2>Prepared here. Reviewed in HighLevel.</h2>
+      <Card className={styles.brandPreview} padding="lg">
+        <span className={styles.eyebrow}>On every ad</span>
+        <div
+          className={styles.adBandPreview}
+          data-ad-preview=""
+          style={adColorVariables(adBrand.colorPresetId)}
+        >
+          <BrandBand
+            advertiser={{
+              name: brand.name,
+              title: adBrand.title,
+              company: brand.company,
+              nmls: brand.nmls,
+              companyNmls: brand.companyNmls,
+              colorPresetId: adBrand.colorPresetId,
+              disclosureLine: adBrand.disclosureLine,
+            }}
+          />
+        </div>
         <p>
-          Your email and SMS drafts are stored separately, so editing one channel keeps the other
-          intact.
+          Your name, company and NMLS numbers come from Your details above. A change applies to new
+          ad versions; an approved version keeps the brand it was approved with.
         </p>
-        <p>
-          Saving and copying do not send messages, add contacts, or start workflows. Use the
-          approved messaging workflow in your HighLevel account.
-        </p>
-        <Link href="/settings/connections" variant="action">
-          Review workspace connections
+        <Link href="/marketing/campaigns/new" variant="action">
+          Launch an ad
         </Link>
       </Card>
-      <Dialog
-        title="Discard unsaved draft changes?"
-        open={pendingKey !== null}
-        onClose={() => setPendingKey(null)}
-      >
-        <p>Your current edits have not been saved. Switching drafts will discard them.</p>
-        <div className={styles.actions}>
-          <Button variant="outline" onClick={() => setPendingKey(null)}>
-            Keep editing
-          </Button>
-          <Button
-            onClick={() => {
-              if (pendingKey) select(pendingKey);
-              setPendingKey(null);
-            }}
-          >
-            Discard edits and switch
-          </Button>
-        </div>
-      </Dialog>
     </div>
   );
 }

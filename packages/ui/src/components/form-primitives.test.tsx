@@ -218,8 +218,8 @@ describe("Link", () => {
     expect(external).toContain("opens in a new tab");
   });
 
-  it("renders the inline and action variants and keeps an internal link same-tab", () => {
-    for (const variant of ["inline", "action"] as const) {
+  it("renders the inline, action, and sentence variants and keeps an internal link same-tab", () => {
+    for (const variant of ["inline", "action", "sentence"] as const) {
       const markup = renderToStaticMarkup(
         createElement(Link, { children: "Finish setup", href: "/onboarding", variant }),
       );

@@ -10,4 +10,4 @@ The report has a branded header, prominent estimated value/range, equity breakdo
 
 The first-use path is an explicit sample property with fictional data; sample valuations cannot be relabeled as live. Live reports show configuration failures instead of substituting a sample. Sharing is available only for server-persisted reports; the sample can be viewed and printed on its current device.
 
-Use the existing navy, cobalt, text/surface/status tokens and UI wrappers. Desktop report content uses a clear primary column with a subordinate assumptions panel; mobile stacks it. Shared report pages expose no workspace navigation or unrelated records.
+Use the existing navy, cobalt, text/surface/status tokens and UI wrappers. Desktop report content uses a clear primary column with a subordinate assumptions panel; mobile stacks it. Shared report pages expose no workspace navigation or unrelated records. _(Amended on 2026-10-01 by PRD-009 (S-67; OD-E): the token names stand and their values change to the light look; the report reads `tokens.css` only, not `product-tokens.css`'s old values.)_

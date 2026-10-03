@@ -100,6 +100,15 @@ describe("the global stylesheet's element defaults", () => {
     expect(rootSized, "a size on :root or html would shrink every rem step").toEqual([]);
   });
 
+  /**
+   * PRD-009. All seven approved canvases set `line-height: var(--leading-normal)` on `body` next to
+   * the body step, and `--leading-normal` is 1.5. Without it, text no module sizes inherits the
+   * browser's `normal`, about 1.2 in Inter, and draws shorter than the canvas.
+   */
+  it("puts the base leading on body, as the approved canvases do (PRD-009)", () => {
+    expect(declarationsFor("body").get("line-height")).toBe("var(--leading-normal)");
+  });
+
   it("gives every heading level its type step (rubric D-009)", () => {
     expect(declarationsFor("h1").get("font-size")).toBe("var(--text-page-size)");
     expect(declarationsFor("h2").get("font-size")).toBe("var(--text-section-size)");
@@ -108,11 +117,58 @@ describe("the global stylesheet's element defaults", () => {
     }
   });
 
+  /**
+   * PRD-009 scored baseline review, R1-02, R4-09, and R2 F-12. Design section 2.3 sets the page
+   * title bold and the section and card titles semibold, and brief section 10 tracks the page title
+   * at `--tracking-page`. Headings no module weighed drew at the browser's `bold`, and page titles
+   * no module tracked drew untracked; the floor is on the element, from the tokens.
+   */
+  it("gives the page title its weight and tracking, and every lower title the semibold weight", () => {
+    expect(declarationsFor("h1").get("font-weight")).toBe("var(--weight-bold)");
+    expect(declarationsFor("h1").get("letter-spacing")).toBe("var(--tracking-page)");
+    for (const level of ["h2", "h3", "h4", "h5", "h6"]) {
+      expect(declarationsFor(level).get("font-weight"), level).toBe("var(--weight-semibold)");
+    }
+  });
+
+  /**
+   * PRD-009. The canvases' page and section titles take `--leading-tight`, so an `h1` or `h2` keeps
+   * it instead of inheriting the body's 1.5. `h3` to `h6` inherit the body's leading, as a bare `h3`
+   * does in the canvases; a title they set tight is a module class.
+   */
+  it("keeps the page and section titles on the tight leading, not the body's (PRD-009)", () => {
+    expect(declarationsFor("h1").get("line-height")).toBe("var(--leading-tight)");
+    expect(declarationsFor("h2").get("line-height")).toBe("var(--leading-tight)");
+    for (const level of ["h3", "h4", "h5", "h6"]) {
+      expect(declarationsFor(level).has("line-height"), level).toBe(false);
+    }
+  });
+
   it("gives small the caption step instead of the browser's relative size", () => {
     expect(declarationsFor("small").get("font-size")).toBe("var(--text-caption-size)");
   });
 
-  it("draws every timestamp in the data font (design brief section 10)", () => {
-    expect(declarationsFor("time").get("font-family")).toBe("var(--font-data)");
+  /**
+   * Superseded on 2026-10-01 by PRD-009 (OD-E, design `00-direction.md` section 2.2): brief section
+   * 10's "timestamps use the data font" gives way to Inter with tabular figures, and monospace
+   * survives only inside "Details for support". The rule the test used to pin was
+   * `time { font-family: var(--font-data) }`.
+   */
+  it("draws every timestamp in the interface face with tabular figures (PRD-009a)", () => {
+    expect(declarationsFor("time").get("font-family")).toBe("var(--font-interface)");
+    expect(declarationsFor("time").get("font-variant-numeric")).toBe("tabular-nums");
+  });
+
+  /**
+   * 009G-AC-010. The bar is one row at 1440 and 1180, two at 768, and carries a sample-data line in
+   * the local demo, so the reservation is the bar's measured height (`--topbar-reserved`, published
+   * by the shell) with the token as the server-rendered fallback, plus the gap. The browser suite
+   * measures the result at every frame (`tests/browser/helpers/sticky-bar.ts`).
+   */
+  it("reserves the top bar's measured height as scroll padding, so a focused control is never under it", () => {
+    expect(declarationsFor(":root").get("--topbar-offset")).toBe(
+      "calc(var(--topbar-reserved, var(--topbar-height)) + var(--space-4))",
+    );
+    expect(declarationsFor("html").get("scroll-padding-block-start")).toBe("var(--topbar-offset)");
   });
 });

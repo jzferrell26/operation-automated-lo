@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 import {
+  deriveCampaignNextActions,
   executeProviderOperation,
   getFoundationSnapshot,
   type ProviderOperationPort,
@@ -15,6 +16,7 @@ import {
   parseRuntimeEnvironment,
 } from "@oalo/config";
 import {
+  CampaignStateSchema,
   ProviderOperationSchema,
   type AuthoritySnapshot,
   type ProviderOperation,
@@ -22,6 +24,7 @@ import {
 import {
   GHL_LEAD_ADAPTER_ALLOWLIST,
   LEADCONNECTOR_V2_ROUTE_ALLOWLIST,
+  META_ADAPTER_MODE,
   createLeadConnectorV2HttpTransport,
 } from "@oalo/ghl";
 import { PhaseZeroSecurityCoverageRegisterSchema } from "@oalo/test-support";
@@ -123,6 +126,34 @@ const STRIPE_OUTBOUND_MARKER =
   /\bapi\.stripe\.com|\bcheckout\.stripe\.com|from\s+["']stripe["']|require\(\s*["']stripe["']\s*\)|\bnew\s+Stripe\s*\(|\bsk_(?:live|test)_/u;
 
 const LEAD_PROVIDER_PORT_MARKER = /\bGhlLeadProviderPort\b/u;
+
+/**
+ * PRD-009d `009D-AC-017`. Any of these in production code would be a direct call to Meta (the
+ * Graph API host or a versioned Graph path), Meta's browser SDK, or the Meta pixel. Launching
+ * belongs behind G3, so the scan expects none.
+ */
+const META_OUTBOUND_MARKER =
+  /graph\.facebook\.com|facebook\.com\/v|connect\.facebook\.net|\bfbq\(/u;
+
+/** A production source that would set the publication flag to anything but the literal false. */
+const PUBLICATION_AUTHORIZED_MARKER =
+  /providerPublicationAuthorized\s*:\s*(?!\s|false\b|z\.literal\(false\))/u;
+
+/** A production source that would move a campaign into a state only a launch could reach. */
+const LAUNCH_STATE_WRITE_MARKER = /toState\s*[:=]\s*["'](?:publishing|live)["']/u;
+
+/**
+ * PRD-009d 009D-AC-016 and 017. A request to a launch or publish path from any production source:
+ * the address itself, or a request call whose first argument names one.
+ */
+const LAUNCH_REQUEST_MARKER =
+  /["'`]\/api\/[^"'`]*(?:launch|publish)[^"'`]*["'`]|\b(?:fetch|postInternalJson|getInternalJson)\(\s*[^,)]*(?:launch|publish)/iu;
+
+/** Reading a request body as a form: the shape a file upload or a pasted link import would take. */
+const FORM_BODY_READ_MARKER = /multipart\/form-data|\.formData\(\)/u;
+
+/** Every outbound request a web route can reach goes through one of these names. */
+const OUTBOUND_REQUEST_MARKER = /\bfetch\(|\bfetcher\(|globalThis\[\s*["']fetch["']\s*\]/u;
 
 function providerOperationFixture(operation: ProviderOperationName): ProviderOperation {
   return ProviderOperationSchema.parse({
@@ -260,9 +291,11 @@ async function collectProductionSources(directory: string): Promise<readonly str
   return collected;
 }
 
-async function productionSourcesMatching(marker: RegExp): Promise<readonly string[]> {
+async function productionSourcesMatching(
+  marker: RegExp,
+  roots: readonly string[] = [resolve("apps"), resolve("packages")],
+): Promise<readonly string[]> {
   const workspaceRoot = resolve(".");
-  const roots = [resolve("apps"), resolve("packages")];
   const matches: string[] = [];
   for (const root of roots) {
     for (const file of await collectProductionSources(root)) {
@@ -469,5 +502,130 @@ describe("provider side effects stay disabled by default", () => {
 
     expect(leadWritePaths.length).toBeGreaterThan(0);
     expect(leadWritePaths.filter((path) => wiredRoutes.has(path))).toEqual([]);
+  }, 30_000);
+
+  // The same filesystem-walk budget as the scan above, for the same reason.
+  it("has no Meta Graph call, Meta browser SDK, or Meta pixel in production sources, and detects one if it appears (009D-AC-017)", async () => {
+    expect(await productionSourcesMatching(META_OUTBOUND_MARKER)).toEqual([]);
+    for (const sample of [
+      "await fetch('https://graph.facebook.com/v23.0/act_1/ads')",
+      "const url = `https://www.facebook.com/v23.0/dialog/oauth`;",
+      '<script src="https://connect.facebook.net/en_US/fbevents.js"></script>',
+      "fbq('track', 'Lead');",
+    ]) {
+      expect(META_OUTBOUND_MARKER.test(sample), sample).toBe(true);
+    }
+    expect(META_OUTBOUND_MARKER.test("Connect Meta in Settings, Connections.")).toBe(false);
+  }, 30_000);
+
+  it("has no production source that requests a launch or publish path, and detects one if it appears (009D-AC-016, 017)", async () => {
+    expect(await productionSourcesMatching(LAUNCH_REQUEST_MARKER)).toEqual([]);
+    for (const sample of [
+      'onClick={() => fetch("/api/campaigns/launch")}',
+      "await postInternalJson(`/api/campaigns/${ref}/publish`, {})",
+      "const LAUNCH = '/api/meta/launch';",
+      "fetch(launchPath)",
+    ]) {
+      expect(LAUNCH_REQUEST_MARKER.test(sample), sample).toBe(true);
+    }
+    expect(LAUNCH_REQUEST_MARKER.test('postInternalJson("/api/campaigns/preflight", body)')).toBe(
+      false,
+    );
+  }, 30_000);
+
+  it("keeps the campaign API to approve and preflight, the Meta adapter on its fixture plan, and publication unauthorized in every state (009D-AC-017)", async () => {
+    const campaignRoutes = (
+      await readdir(resolve("apps/web/src/app/api/campaigns"), { withFileTypes: true })
+    )
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+    expect(campaignRoutes).toEqual(["approve", "preflight"]);
+
+    expect(META_ADAPTER_MODE).toBe("fixture-plan");
+    expect(await productionSourcesMatching(PUBLICATION_AUTHORIZED_MARKER)).toEqual([]);
+    expect(PUBLICATION_AUTHORIZED_MARKER.test("providerPublicationAuthorized: true")).toBe(true);
+    expect(PUBLICATION_AUTHORIZED_MARKER.test("providerPublicationAuthorized: false,")).toBe(false);
+
+    const offered: string[] = [];
+    for (const state of CampaignStateSchema.options) {
+      for (const canApprove of [false, true]) {
+        for (const decision of [undefined, "approved", "rejected"] as const) {
+          for (const action of deriveCampaignNextActions(state, canApprove, decision)) {
+            if (action.id === "provider_publish" && action.available) {
+              offered.push(`${state}:${String(canApprove)}:${String(decision)}`);
+            }
+          }
+        }
+      }
+    }
+    expect(offered, "provider_publish must never be available").toEqual([]);
+  }, 30_000);
+
+  it("never moves a campaign into a launch state, and no campaign screen says it is live, launched, or running (009D-AC-017)", async () => {
+    expect(await productionSourcesMatching(LAUNCH_STATE_WRITE_MARKER)).toEqual([]);
+    expect(LAUNCH_STATE_WRITE_MARKER.test('toState: "live"')).toBe(true);
+
+    const screenRoots = [
+      resolve("apps/web/src/features/campaigns"),
+      resolve("apps/web/src/app/(authenticated)/marketing"),
+    ];
+    const screens = (
+      await Promise.all(screenRoots.map((root) => collectProductionSources(root)))
+    ).flat();
+    screens.push(resolve("apps/web/src/copy/launch-messages.ts"));
+    expect(screens.length).toBeGreaterThan(10);
+
+    const claims: string[] = [];
+    for (const file of screens) {
+      const visible = (await readFile(file, "utf8"))
+        .replace(/\/\*[\s\S]*?\*\//gu, "")
+        .replace(/^\s*\/\/.*$/gmu, "")
+        .replaceAll("aria-live", "");
+      const match = /\b(?:live|launched|running)\b/iu.exec(visible);
+      if (match) claims.push(`${relative(resolve("."), file).replaceAll("\\", "/")}: ${match[0]}`);
+    }
+    expect(claims).toEqual([]);
+  }, 30_000);
+
+  it("reads no route body as a form upload and aims every outbound request at a fixed host (009D-AC-017)", async () => {
+    const webRoots = [resolve("apps/web/src/app"), resolve("apps/web/src/server")];
+
+    // The one form reader is sign-out's CSRF promotion: a plain form post cannot set a header, so
+    // the token travels as a field. It keeps string fields only, so a file part becomes "".
+    expect(await productionSourcesMatching(FORM_BODY_READ_MARKER, webRoots)).toEqual([
+      "apps/web/src/server/password-authentication-handler.ts",
+    ]);
+    const signOut = await readFile(
+      "apps/web/src/server/password-authentication-handler.ts",
+      "utf8",
+    );
+    expect(signOut.match(/\.formData\(\)/gu)).toHaveLength(1);
+    expect(signOut).toContain('fields[key] = typeof value === "string" ? value : "";');
+
+    // Each outbound request site, and the fixed host it is aimed at. A new site fails here until
+    // somebody reads it and adds it, so a URL taken from a request body cannot slip in unread.
+    const fixedHosts: Readonly<Record<string, RegExp>> = {
+      "apps/web/src/server/email/resend-email-adapter.ts":
+        /RESEND_SEND_ENDPOINT = "https:\/\/api\.resend\.com\/emails"/u,
+      "apps/web/src/server/homeowners/highlevel.ts":
+        /\(path: string\) => `https:\/\/services\.leadconnectorhq\.com\$\{path\}`/u,
+      "apps/web/src/server/homeowners/rentcast.ts": /new URL\("https:\/\/api\.rentcast\.io\//u,
+    };
+    expect(await productionSourcesMatching(OUTBOUND_REQUEST_MARKER, webRoots)).toEqual(
+      Object.keys(fixedHosts).sort(),
+    );
+    for (const [file, host] of Object.entries(fixedHosts)) {
+      expect(await readFile(file, "utf8"), file).toMatch(host);
+    }
+
+    // The client's own requests stay on this origin, by path.
+    const internal = await readFile("apps/web/src/features/http/internal-api.ts", "utf8");
+    expect(internal).toContain("Internal API requests must use an application-relative path");
+
+    const fileInputs = await productionSourcesMatching(/type=["']file["']|type:\s*["']file["']/u, [
+      resolve("apps/web/src/features/campaigns"),
+    ]);
+    expect(fileInputs).toEqual([]);
   }, 30_000);
 });

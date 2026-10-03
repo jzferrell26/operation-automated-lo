@@ -5,6 +5,7 @@ import type { CampaignPersistenceKind } from "@oalo/application";
 import {
   ACCESS_GROUP_DESCRIPTION,
   ACCESS_GROUP_LABELS,
+  ACCESS_GROUP_NOT_CONNECTED_STATE_LABELS,
   ACCESS_NO_EFFECT_YET,
   ACCESS_NOTHING_CHECKED,
   BRAND_FIELD_SOURCE,
@@ -90,6 +91,7 @@ const REVIEW_ONBOARDING_RESPONSIBLE_PARTY = NOT_CONNECTED_SETUP_OWNER;
  */
 const REVIEW_PERMISSION_GROUP_LABELS: Readonly<Record<PermissionGroup["category"], string>> =
   ACCESS_GROUP_LABELS;
+const REVIEW_PERMISSION_GROUP_STATE_LABELS = ACCESS_GROUP_NOT_CONNECTED_STATE_LABELS;
 const REVIEW_PERMISSION_GROUP_DESCRIPTION = ACCESS_GROUP_DESCRIPTION;
 const REVIEW_PERMISSION_EVIDENCE = ACCESS_NOTHING_CHECKED;
 const REVIEW_PERMISSION_IMPACT = ACCESS_NO_EFFECT_YET;
@@ -355,6 +357,7 @@ function toReviewPermissionGroup(group: DeepReadonly<PermissionGroup>) {
   return {
     category: group.category,
     label: REVIEW_PERMISSION_GROUP_LABELS[group.category],
+    stateLabel: REVIEW_PERMISSION_GROUP_STATE_LABELS[group.category],
     description: REVIEW_PERMISSION_GROUP_DESCRIPTION,
     capabilities: group.capabilities.map(toReviewPermissionCapability),
   };
@@ -461,7 +464,6 @@ function toReviewNavigationItem(item: DeepReadonly<NavigationItem>): DeepReadonl
 function toReviewNavigation(navigation: DeepReadonly<Navigation>): DeepReadonly<Navigation> {
   return {
     items: navigation.items.map(toReviewNavigationItem),
-    marketingItems: navigation.marketingItems.map(toReviewNavigationItem),
   };
 }
 
@@ -490,9 +492,10 @@ export function loadAuthenticatedWorkspace(input: unknown = process.env) {
     },
     brand: toReviewBrand(brand),
     /**
-     * No review route renders the reporting fixture: `/reports` and the synthetic campaign detail
-     * route both branch to `ReviewNotConnectedScreen` in review mode. The disclosure is still
-     * replaced so a future review consumer cannot pick up the synthetic one by accident.
+     * No review route renders the reporting fixture: the synthetic campaign detail route branches
+     * to `ReviewNotConnectedScreen` in review mode, and the Reports page that did too was removed
+     * by PRD-009f. The disclosure is still replaced so a future review consumer cannot pick up
+     * the synthetic one by accident.
      */
     reporting: { ...reporting, safety: toReviewSafety(reporting.safety) },
   });

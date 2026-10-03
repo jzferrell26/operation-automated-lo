@@ -1,5 +1,7 @@
 # Marketing Suite Campaign Performance
 
+> **Superseded on 2026-10-01 by PRD-009** (S-64; OD-D): this whole file. Results live on each campaign's own page (PRD-009e). The specification below is kept as history.
+
 ## Purpose
 
 Show campaign-specific advertising and conversion performance inside the Marketing Suite. This screen is not the product root.

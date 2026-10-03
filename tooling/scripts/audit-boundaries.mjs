@@ -61,6 +61,26 @@ async function readJson(filePath, schema) {
   return schema.parse(input);
 }
 
+/**
+ * Specifiers a framework resolves itself, each mapped to the framework that must be declared for it.
+ * Next.js handles `server-only` and `client-only` internally and does not use the npm packages'
+ * contents, so installing them is optional ("Preventing environment poisoning",
+ * https://nextjs.org/docs/app/getting-started/server-and-client-components, read 2026-10-02 at Next
+ * 16.3). PRD-009 adds no package (MTK-010), so a package that declares `next` may import the two
+ * specifiers without a manifest entry, and no other package may.
+ */
+const FRAMEWORK_RESOLVED_SPECIFIERS = new Map([
+  ["server-only", "next"],
+  ["client-only", "next"],
+]);
+
+/** True when an import of `importedPackage` needs a manifest entry it does not have. */
+export function isUndeclaredImport(importedPackage, declaredDependencies) {
+  if (declaredDependencies.has(importedPackage)) return false;
+  const framework = FRAMEWORK_RESOLVED_SPECIFIERS.get(importedPackage);
+  return framework === undefined || !declaredDependencies.has(framework);
+}
+
 function isAllowed(fromPackage, toPackage) {
   if (!toPackage.startsWith("@oalo/")) {
     return fromPackage.allowExternalDependencies;
@@ -160,7 +180,7 @@ async function auditWorkspace(config) {
       for (const specifier of importSpecifiers(sourceText, filePath)) {
         if (!specifier.startsWith(".") && !specifier.startsWith("node:")) {
           const importedPackage = packageNameFromSpecifier(specifier);
-          if (!declaredDependencies.has(importedPackage)) {
+          if (isUndeclaredImport(importedPackage, declaredDependencies)) {
             violations.push(
               `${relative(workspaceRoot, filePath)} imports undeclared dependency ${importedPackage}`,
             );
@@ -224,4 +244,7 @@ async function main() {
   console.log(`Boundary audit passed for ${config.packages.length} workspace packages.`);
 }
 
-await main();
+// Run only as a script, so the unit test can import `isUndeclaredImport` without auditing.
+if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main();
+}

@@ -1,7 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import { extname, join, relative, resolve } from "node:path";
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -209,6 +209,38 @@ describe("what a person is told when something is wrong", () => {
     expect(region).toHaveTextContent(CHANGE_PASSWORD.successNotice);
   });
 
+  /**
+   * PRD-009 scored baseline review R4-08. Brief section 9: every status pairs colour with text
+   * and a glyph. The regions carried colour and words only. The glyph is decorative, so what is
+   * announced is still the sentence alone.
+   */
+  it("pairs a refusal and a confirmation with their tone's glyph, hidden from the announcement", () => {
+    render(<AuthProblem>{SIGN_IN.genericError}</AuthProblem>);
+    render(<AuthNotice>{CHANGE_PASSWORD.successNotice}</AuthNotice>);
+
+    for (const region of [screen.getByRole("alert"), screen.getByRole("status")]) {
+      const glyph = region.querySelector("svg");
+      expect(glyph).not.toBeNull();
+      expect(glyph?.closest("[aria-hidden='true']") ?? glyph).toHaveAttribute(
+        "aria-hidden",
+        "true",
+      );
+    }
+    expect(screen.getByRole("alert")).toHaveTextContent(SIGN_IN.genericError);
+    expect(screen.getByRole("status")).toHaveTextContent(CHANGE_PASSWORD.successNotice);
+  });
+
+  /**
+   * R4-05 and R4-06. "You're signed out." bypassed `AuthNotice` as a bare paragraph: it kept the
+   * browser's margins and drew in a colour no other account notice used. It is a confirmation, so
+   * it is the confirmation region.
+   */
+  it("says the signed-out confirmation through the one confirmation region", () => {
+    render(<SignInForm signUpEnabled={false} signedOut />);
+
+    expect(screen.getByRole("status")).toHaveTextContent(SIGN_IN.signedOutNotice);
+  });
+
   it("puts the refusal before the first field in every form that can refuse", () => {
     render(<SignInForm signUpEnabled={false} signedOut />);
 
@@ -303,6 +335,52 @@ describe("a refused sign-in", () => {
       const source = await readFile(join(root, form), "utf8");
       expect(source, form).toContain("<AuthProblem>{problem}</AuthProblem>");
     }
+  });
+});
+
+/**
+ * Pass 4, R4 F4-01 (rubric axis 9, "The error says what happened and what to do next"). The expired
+ * reset link's refusal says "Request a new one." and the screen offered no way to do it: its one
+ * control resubmits the spent token. Every sibling refusal carries its next step as a control (the
+ * sign-up notice has "Sign in" and "Reset your password", the verify screen has "Sign in"), so this
+ * one carries a link to the page that sends a new link.
+ */
+describe("a refused reset link", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  async function saveANewPassword(): Promise<void> {
+    const user = userEvent.setup();
+    await user.type(fieldFor("password", RESET_PASSWORD.newPasswordLabel), "harbour lantern gate");
+    await user.type(
+      fieldFor("confirmPassword", RESET_PASSWORD.confirmPasswordLabel),
+      "harbour lantern gate",
+    );
+    await user.click(screen.getByRole("button", { name: RESET_PASSWORD.submitLabel }));
+  }
+
+  it("says the link has expired and offers the link to ask for a new one, inside the same alert", async () => {
+    stubRefusedFetch("AUTH_RESET_LINK_EXPIRED", "correlation_reset_1");
+    render(<ResetPasswordForm token="a-spent-token" />);
+
+    await saveANewPassword();
+
+    const region = await screen.findByRole("alert");
+    expect(region).toHaveTextContent(RESET_PASSWORD.expiredError);
+    const link = within(region).getByRole("link", { name: RESET_PASSWORD.requestNewLinkLabel });
+    expect(link).toHaveAttribute("href", "/forgot-password");
+  });
+
+  it("offers no such link for a refusal that is not about the link", async () => {
+    stubRefusedFetch("AUTH_PASSWORDS_DO_NOT_MATCH", "correlation_reset_2");
+    render(<ResetPasswordForm token="a-token" />);
+
+    await saveANewPassword();
+
+    const region = await screen.findByRole("alert");
+    expect(region).toHaveTextContent(RESET_PASSWORD.mismatchError);
+    expect(screen.queryByRole("link", { name: RESET_PASSWORD.requestNewLinkLabel })).toBeNull();
   });
 });
 

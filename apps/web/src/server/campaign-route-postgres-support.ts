@@ -15,13 +15,18 @@ import {
   seedReviewActor,
   seedReviewLocation,
   seedReviewLocationWithoutInstallation,
+  setReviewInstallationStatus,
 } from "../../../../packages/db/test/route-seeding-bridge.js";
+import { ADS_LIBRARY_SAMPLES_FLAG } from "../features/ads-library/server/catalog-loader.js";
 import { resolveAuthenticatedReadPrincipal } from "./authenticated-principal.js";
+import { SAVED_TEST_BRAND } from "./campaign-command-test-support.js";
+import { campaignDatabasePool } from "./campaign-persistence-runtime.js";
 import { loadWorkspaceCampaign } from "./campaign-workspace-reads.js";
 import {
   resetRuntimeAuthenticationForTests,
   resolveRuntimeCampaignCommandPorts,
 } from "./runtime-authentication.js";
+import { saveWorkspacePreference } from "./workspace-preferences.js";
 
 /**
  * Shared support for the route-level real-Postgres proofs in
@@ -102,6 +107,9 @@ export function routeEnvironment(
     OALO_APP_URL: REVIEW_ORIGIN,
     OALO_ALLOWED_ORIGINS: REVIEW_ORIGIN,
     OALO_CSRF_SERVER_SECRET: randomBytes(32).toString("base64url"),
+    // PRD-009d. A campaign is a version of an ad from the library, and the route suites build theirs
+    // from the labelled sample ads, which only a local run with the flag loads (PRD-009c D3).
+    [ADS_LIBRARY_SAMPLES_FLAG]: "enabled",
     ...overrides,
   });
 }
@@ -302,6 +310,19 @@ export async function seedLocationWithoutInstallation(
   return seedReviewLocationWithoutInstallation(pool, displayName);
 }
 
+/**
+ * PRD-009b 009B-AC-004. Puts a seeded location's installation into one of the six statuses the
+ * table allows. `app_runtime` can only select from the table, so the write is an owner statement
+ * and lives in the sanctioned harness; this is the one hop to it.
+ */
+export async function setInstallationStatus(
+  pool: PostgresDatabasePool,
+  location: SeededLocation,
+  status: "pending" | "active" | "missing_scope" | "reconnect_required" | "revoked" | "uninstalled",
+): Promise<void> {
+  await setReviewInstallationStatus(pool, location.locationId, status);
+}
+
 export interface BrowserRequestOverrides {
   readonly origin?: string;
   readonly host?: string;
@@ -424,16 +445,35 @@ export async function openApprovalSuite(
     bindingRole: "approver",
     sessionRole: "campaign_approver",
   });
+  const creatorSession = await issueSession(pool, location, creator);
+  await saveTestBrandFor(creatorSession, environment);
   return Object.freeze({
     pool,
     location,
     creator,
     approver,
-    creatorSession: await issueSession(pool, location, creator),
+    creatorSession,
     approverSession: await issueSession(pool, location, approver),
     csrfServerSecret,
     restoreEnvironment,
   });
+}
+
+/**
+ * PRD-009d D3. A library-ad version carries the person's own saved Brand, read on the server, so a
+ * suite that wants a version whose checks pass saves a Brand with a name and an NMLS number first,
+ * through the same preference save the Brand page uses.
+ */
+export async function saveTestBrandFor(
+  session: IssuedSession,
+  environment: RoutePostgresEnvironment,
+  brand: typeof SAVED_TEST_BRAND = SAVED_TEST_BRAND,
+): Promise<void> {
+  await saveWorkspacePreference(
+    await principalForSession(session, environment),
+    { key: "brand", expectedRevision: null, value: { ...brand } },
+    campaignDatabasePool(environment),
+  );
 }
 
 export async function closeApprovalSuite(fixture: ApprovalSuiteFixture): Promise<void> {

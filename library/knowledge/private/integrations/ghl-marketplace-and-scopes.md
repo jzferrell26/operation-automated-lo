@@ -212,7 +212,7 @@ The client must:
 2. Configure sub-account target, both installers, bulk install, callback URLs, signed user context, webhooks, and required scopes.
 3. Prove direct location install and agency bulk install.
 4. Prove token refresh, uninstall, reinstall, scope upgrade, and app version upgrade.
-5. Prove the complete Open House Boost path with test Meta assets and no real spend.
+5. Prove the complete Open House Boost path with test Meta assets and no real spend. _(Amended on 2026-10-03 by PRD-009 (S-106; OD-H): read "the complete Open House Boost path" as the library-ad path, "Launch an ad". "Launch on Facebook" is disabled in PRD-009 and Meta publishing stays behind research gate G3, so a proof with test Meta assets waits on the future Meta publish PRD.)_
 6. Run the founding cohort in Jonathan's agency or a very small agency set.
 7. Complete privacy policy, terms, support, data deletion, security review, and Marketplace listing evidence.
 8. Submit a public app or request HighLevel's private-app security review before crossing five agencies.

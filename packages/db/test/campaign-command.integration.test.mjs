@@ -28,6 +28,16 @@ import {
 
 const databaseUrl = requiredTestDatabaseUrl();
 
+/**
+ * PRD-009c D4. `executeHumanCampaignApproval` requires a library-ad catalog port. These versions are
+ * open house versions, which never consult the catalog, so this port fails the test if it is asked.
+ */
+const OPEN_HOUSE_ONLY_CATALOG = Object.freeze({
+  async standingOf() {
+    throw new Error("An open house version must not consult the ads library catalog.");
+  },
+});
+
 describe("campaign command PostgreSQL integration", { concurrency: false }, () => {
   it("GGL-008 creates an Open House Boost through commands and reloads it from a fresh pool", async () => {
     const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
@@ -112,6 +122,8 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
         expectedPreflightResultHash: persisted.preflight.resultHash,
         expectedRowVersion: 2,
         ipAuditHash: "a".repeat(64),
+        // PRD-009e D2. The decider's own session name, recorded in the decision's evidence.
+        approverDisplayName: "Casey Rivera",
       };
 
       const denied = await executeHumanCampaignApproval(
@@ -121,6 +133,7 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
           pool,
           createPrincipalBoundTenantContextAuthority(creator, `${tenant.correlationId}_denied`),
         ),
+        OPEN_HOUSE_ONLY_CATALOG,
       );
       assert.deepEqual(denied, { kind: "denied" });
 
@@ -131,6 +144,7 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
           pool,
           createPrincipalBoundTenantContextAuthority(approver, `${tenant.correlationId}_approved`),
         ),
+        OPEN_HOUSE_ONLY_CATALOG,
       );
       assert.equal(committed.kind, "committed");
       if (committed.kind === "committed") {
@@ -151,6 +165,17 @@ describe("campaign command PostgreSQL integration", { concurrency: false }, () =
       assert.equal(reloaded.approval?.decision, "approved");
       assert.equal(reloaded.approval?.actorRef, approver.actorRef);
       assert.equal(reloaded.approval?.campaignVersionRef, persisted.version.campaignVersionRef);
+      assert.equal(reloaded.approval?.snapshot.approverDisplayName, "Casey Rivera");
+
+      // PRD-009e 009E-AC-005. The versions read returns the version with its own check and decision.
+      const versions = await createPostgresCampaignReadRepository(
+        pool,
+        createPrincipalBoundTenantContextAuthority(approver, `${tenant.correlationId}_versions`),
+      ).listVersionsOf(campaignRef);
+      assert.equal(versions.length, 1);
+      assert.equal(versions[0].version.campaignVersionRef, persisted.version.campaignVersionRef);
+      assert.equal(versions[0].preflight?.resultHash, persisted.preflight.resultHash);
+      assert.equal(versions[0].approval?.snapshot.approverDisplayName, "Casey Rivera");
     } finally {
       await cleanupTenants(pool, [tenant], [creator, approver]);
       await pool.close();

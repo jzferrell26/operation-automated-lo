@@ -3,25 +3,47 @@ import { previewPaths } from "../dashboard-preview/model.js";
 import {
   workspaceRoutes,
   WorkspacePreferenceCommandSchema,
-  starterMessage,
   messageKeys,
   PartnerSchema,
 } from "./model.js";
 describe("authenticated workspace contracts", () => {
-  it("covers every existing dashboard destination and adds a report identity editor", () => {
+  it("covers every dashboard destination that survives, and none that PRD-009f D1 removed", () => {
     for (const path of Object.keys(previewPaths))
       expect(Object.hasOwn(workspaceRoutes, path), path).toBe(true);
-    expect(workspaceRoutes["/settings/profile"]).toBe("profile");
-    expect(Object.hasOwn(workspaceRoutes, "/unknown")).toBe(false);
+    expect(Object.keys(workspaceRoutes).sort()).toEqual([
+      "/partners",
+      "/settings",
+      "/settings/billing",
+      "/settings/routing",
+    ]);
+    for (const removed of [
+      "/marketing",
+      "/marketing/property-sites",
+      "/marketing/creative",
+      "/marketing/ads",
+      "/marketing/messaging",
+      "/marketing/blueprints",
+      "/leads",
+      "/leads/pipeline",
+      "/automations",
+      "/marketplace",
+      "/settings/profile",
+      "/settings/team",
+      "/unknown",
+    ]) {
+      expect(Object.hasOwn(workspaceRoutes, removed), removed).toBe(false);
+      expect(Object.hasOwn(previewPaths, removed), removed).toBe(false);
+    }
   });
-  it("starts each channel with explicit placeholder wording, not invented property facts", () => {
+  it("still reads a saved message draft, though nothing in the product edits one any more", () => {
     for (const key of messageKeys) {
-      const value = starterMessage(key, "Test Officer");
-      expect(value.body).toContain("[property address]");
-      expect(value.body).toContain("Test Officer");
-      expect(value.subject.length > 0).toBe(key.endsWith("_email"));
       expect(
-        WorkspacePreferenceCommandSchema.safeParse({ key, expectedRevision: null, value }).success,
+        WorkspacePreferenceCommandSchema.safeParse({
+          key,
+          expectedRevision: null,
+          value: { subject: "", body: "A saved draft." },
+        }).success,
+        key,
       ).toBe(true);
     }
   });
@@ -50,5 +72,33 @@ describe("authenticated workspace contracts", () => {
         value: { subject: "", body: "Test" },
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("the Brand NMLS numbers (verifier, 2026-10-02)", () => {
+  const brand = {
+    name: "Casey Rivera",
+    company: "Evergreen Example Lending",
+    email: "",
+    phone: "",
+    nmls: "123456",
+    companyNmls: "",
+    tagline: "",
+  };
+  const command = (value: typeof brand) =>
+    WorkspacePreferenceCommandSchema.safeParse({ key: "brand", expectedRevision: null, value });
+
+  it("saves an NMLS number of 4 to 12 digits, or none", () => {
+    for (const nmls of ["", "1234", "123456789012"]) {
+      expect(command({ ...brand, nmls }).success, nmls).toBe(true);
+      expect(command({ ...brand, companyNmls: nmls }).success, nmls).toBe(true);
+    }
+  });
+
+  it("refuses one of 1 to 3 digits for the person or the company", () => {
+    for (const nmls of ["1", "12", "123"]) {
+      expect(command({ ...brand, nmls }).success, nmls).toBe(false);
+      expect(command({ ...brand, companyNmls: nmls }).success, nmls).toBe(false);
+    }
   });
 });

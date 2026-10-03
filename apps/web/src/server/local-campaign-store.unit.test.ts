@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createLocalSyntheticPrincipal } from "./authenticated-principal.js";
-import { compileOpenHouseDraft } from "./open-house-draft.js";
+import { compileOpenHouseDraft } from "./open-house-draft.test-support.js";
 
 const originalCwd = process.cwd();
 const temporaryDirectories: string[] = [];

@@ -1,0 +1,287 @@
+/*
+ * PRD-009e (009E-AC-009), design mockup campaigns-list.html. "Your campaigns" is a table at 720px and
+ * wider, with the ad's thumbnail and its name as the link, and cards with the same facts below it.
+ * Both are in the page and the stylesheet shows one, as the mockup does.
+ */
+
+.page {
+  display: grid;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: var(--content-max);
+  gap: var(--space-6);
+  color: var(--tx-strong);
+}
+
+.title {
+  color: var(--tx-strong);
+  font-size: var(--text-page-size);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+}
+
+.lead {
+  max-inline-size: 60ch;
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+}
+
+.tableWrap {
+  overflow: hidden;
+}
+
+/* A day in the table is never broken inside itself, so a cell that wraps leaves "Oct" and "20"
+   together (review pass 1, H-3). */
+.tableWrap time {
+  white-space: nowrap;
+}
+
+/* The same in a phone card, where "Dates: Oct 6 to Oct 20." is a run of words that wraps, and a day is
+   still one unit (scored review pass 2, self-found: it broke "Oct" from "20"). */
+.cards time {
+  white-space: nowrap;
+}
+
+.table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-secondary-size);
+}
+
+.table th {
+  padding: var(--space-3) var(--space-5);
+  border-block-end: 1px solid var(--bd-hairline);
+  background: var(--sf-sunken);
+  color: var(--tx-body);
+  font-weight: var(--weight-medium);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-4) var(--space-5);
+  border-block-end: 1px solid var(--bd-hairline);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-block-end: 0;
+}
+
+.adCell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.adName {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+/* A cell that keeps one line while the table has room; at the tablet frame it may wrap. */
+.nowrap {
+  white-space: nowrap;
+}
+
+/* A word with a hyphen in it is one unit, so "Pre-approval" is never read across a line break
+   (`KeepWordsWhole`; scored review pass 2, R2 F-8). */
+.whole {
+  white-space: nowrap;
+}
+
+/* The status chip is a single-line pill at every width (`badge-and-live-region.md`, "Shape and
+   type"), so its cell is never released: the table finds the room for it (review pass 1, F-8). */
+.chipCell {
+  white-space: nowrap;
+}
+
+.thumb {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 3rem;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-control);
+  background: var(--sf-sunken);
+}
+
+/* No art to show: the glyph is quiet and says nothing a picture would (review pass 1, F-10). */
+.thumb[data-thumb="none"] {
+  color: var(--tx-faint);
+}
+
+.thumb img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+a.rowLink.rowLink {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min-size);
+  color: var(--tx-strong);
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+a.rowLink.rowLink:hover {
+  color: var(--tx-strong);
+  text-decoration: underline;
+}
+
+.muted {
+  color: var(--tx-body);
+}
+
+.cards {
+  display: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A phone card, after the mockup's list card: --space-5 all round, the thumbnail beside the name. */
+.card {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5);
+}
+
+.card p {
+  margin: 0;
+}
+
+.cardHead {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.cardFacts {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+}
+
+/* P3-7. "Last change: Oct 1" is the card's caption, the caption step in the faint ink, as the mockup's
+   `.caption` under the chip is, on a line of its own. */
+.cardCaption {
+  color: var(--tx-faint);
+  font-size: var(--text-caption-size);
+}
+
+/* Between 720px and the tablet frame the table keeps all six columns, so the cells tighten and the
+   browser shares the width out: the status chip keeps its one line, and the other cells wrap only
+   when they must. The Ad column keeps its thumbnail (009E-AC-009: "Ad (a decorative thumbnail and the
+   name as the link)"; scored review pass 3, R2 P3-6): pass 1 hid it to make the chips fit (F-8), and
+   now that the chips keep one line and hyphenated words stay whole it comes back. The tile takes 60px
+   (its width and the gap), so the Ad column's share below is larger by about that much, and the
+   name's track may not shrink under its longest unbreakable word (`min-content`): with a zero
+   minimum the column gave the tile and the name no more than the hint's share, and "pre-approved"
+   ran into the Topic column. */
+@media (max-width: 63.99rem) {
+  .table th,
+  .table td {
+    padding: var(--space-3) var(--space-2);
+  }
+
+  .adCell {
+    grid-template-columns: auto minmax(min-content, 1fr);
+  }
+
+  .table th:first-child,
+  .table td:first-child {
+    padding-inline-start: var(--space-3);
+  }
+
+  .table th:last-child,
+  .table td:last-child {
+    padding-inline-end: var(--space-3);
+  }
+
+  .table th {
+    white-space: normal;
+  }
+
+  .table .nowrap {
+    white-space: normal;
+  }
+
+  /* Hints, not rules: the status chip's width still comes first, and the rest share what is left. The
+     Ad column's share is 32%, which is the 27% it had without the tile and the tile's 60px. */
+  .table th:nth-child(1) {
+    inline-size: 32%;
+  }
+
+  .table th:nth-child(2) {
+    inline-size: 14%;
+  }
+
+  .table th:nth-child(3) {
+    inline-size: 13%;
+  }
+
+  .table th:nth-child(4) {
+    inline-size: 12%;
+  }
+
+  .table th:nth-child(5) {
+    inline-size: 20%;
+  }
+
+  .table th:nth-child(6) {
+    inline-size: 9%;
+  }
+}
+
+/* From 720px to 767px the six columns, the widest status chip, and a tile beside the name need about
+   750px, so the tile sits above the name in the Ad cell instead of beside it: still in every row, and
+   the table still fits its card. */
+@media (min-width: 45rem) and (max-width: 47.99rem) {
+  .adCell {
+    grid-template-columns: minmax(min-content, 1fr);
+    justify-items: start;
+  }
+}
+
+.adName > span {
+  white-space: nowrap;
+}
+
+@media (max-width: 719.98px) {
+  /* The mockup's phone `.page` (`campaigns-list.html`): blocks --space-5 apart, as Home's are
+     (scored review pass 2, R2 N-1). */
+  .page {
+    gap: var(--space-5);
+  }
+
+  .tableWrap {
+    display: none;
+  }
+
+  .cards {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .head {
+    gap: var(--space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .page * {
+    animation: none;
+    transition-duration: 0ms;
+  }
+}

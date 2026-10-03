@@ -3,6 +3,9 @@ export * from "./homeowner-reports.js";
 
 export * from "./tenant-installation.js";
 
+export * from "./ads-library.js";
+export * from "./ad-places.js";
+
 export const contractVersion = "2026-07-20" as const;
 
 export const FixtureValidationRequestSchema = z
@@ -89,6 +92,10 @@ export {
   CampaignStateSchema,
   CampaignVersionInputSchema,
   CampaignVersionSchema,
+  LibraryAdApprovalSnapshotSchema,
+  LibraryAdCampaignManifestSchema,
+  OpenHouseApprovalSnapshotSchema,
+  OpenHouseCampaignManifestSchema,
   CollateralProjectionInputSchema,
   CollateralProjectionSchema,
   GenerationRecordSchema,
@@ -100,6 +107,8 @@ export {
   PreflightFindingSchema,
   PreflightResultSchema,
   PreflightRulesSchema,
+  LibraryAdRuleContextSchema,
+  type LibraryAdRuleContext,
   type ApprovalDecision,
   type ApprovalLinkClaims,
   type ApprovalSnapshot,
@@ -109,6 +118,10 @@ export {
   type CampaignState,
   type CampaignVersion,
   type CampaignVersionInput,
+  type LibraryAdApprovalSnapshot,
+  type LibraryAdCampaignManifest,
+  type OpenHouseApprovalSnapshot,
+  type OpenHouseCampaignManifest,
   type CollateralProjection,
   type CollateralProjectionInput,
   type GenerationRecord,

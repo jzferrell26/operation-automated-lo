@@ -15,12 +15,13 @@ import {
   type CampaignApprovalEvidence,
   type CampaignApprovalRepository,
   type HumanCampaignApprovalInput,
+  type LibraryAdCatalogPort,
 } from "@oalo/application";
 import {
-  CampaignManifestSchema,
+  OpenHouseCampaignManifestSchema,
   type ApprovalDecision,
   type CampaignInputVersions,
-  type CampaignManifest,
+  type OpenHouseCampaignManifest,
   type PreflightRules,
 } from "@oalo/contracts";
 
@@ -36,7 +37,7 @@ const inputVersions: CampaignInputVersions = {
   rulesetVersionRef: "ruleset_01Policy",
 };
 
-const manifest: CampaignManifest = CampaignManifestSchema.parse({
+const manifest: OpenHouseCampaignManifest = OpenHouseCampaignManifestSchema.parse({
   schemaVersion: 1,
   blueprintId: "open-house-boost",
   property: {
@@ -127,6 +128,24 @@ const approver: AuthenticatedPrincipal = freezeAuthenticatedPrincipal({
 
 function principal(overrides: Partial<AuthenticatedPrincipal> = {}): AuthenticatedPrincipal {
   return freezeAuthenticatedPrincipal({ ...approver, ...overrides });
+}
+
+/**
+ * PRD-009c D4. The command requires a catalog port. Every version in this file is an open house
+ * version, which never consults the catalog, so the port here throws if it is ever asked.
+ */
+const OPEN_HOUSE_ONLY: LibraryAdCatalogPort = {
+  async standingOf() {
+    throw new Error("An open house version must not consult the ads library catalog.");
+  },
+};
+
+function approve(
+  input: HumanCampaignApprovalInput,
+  actor: Readonly<AuthenticatedPrincipal>,
+  repository: CampaignApprovalRepository,
+) {
+  return executeHumanCampaignApproval(input, actor, repository, OPEN_HOUSE_ONLY);
 }
 
 class MemoryApprovalRepository implements CampaignApprovalRepository {
@@ -234,18 +253,18 @@ function existingApprovalFor(
     ipAuditHash: sha("a"),
     decision: "approved" as const,
     snapshot: {
-      pageVersionRef: evidence.version.manifest.artifacts.pageVersionRef,
-      pdfVersionRef: evidence.version.manifest.artifacts.pdfVersionRef,
-      creativeVersionRef: evidence.version.manifest.artifacts.creativeVersionRef,
-      copyVersionRef: evidence.version.manifest.artifacts.copyVersionRef,
-      emailPackageVersionRef: evidence.version.manifest.artifacts.emailPackageVersionRef,
-      smsPackageVersionRef: evidence.version.manifest.artifacts.smsPackageVersionRef,
-      disclosureVersionRef: evidence.version.manifest.artifacts.disclosureVersionRef,
+      pageVersionRef: manifest.artifacts.pageVersionRef,
+      pdfVersionRef: manifest.artifacts.pdfVersionRef,
+      creativeVersionRef: manifest.artifacts.creativeVersionRef,
+      copyVersionRef: manifest.artifacts.copyVersionRef,
+      emailPackageVersionRef: manifest.artifacts.emailPackageVersionRef,
+      smsPackageVersionRef: manifest.artifacts.smsPackageVersionRef,
+      disclosureVersionRef: manifest.artifacts.disclosureVersionRef,
       targetingHash: sha("t"),
       budgetHash: sha("b"),
       datesHash: sha("d"),
-      formVersionRef: evidence.version.manifest.artifacts.formVersionRef,
-      destinationVersionRef: evidence.version.manifest.artifacts.destinationVersionRef,
+      formVersionRef: manifest.artifacts.formVersionRef,
+      destinationVersionRef: manifest.artifacts.destinationVersionRef,
     },
   } satisfies ApprovalDecision;
 }
@@ -257,6 +276,7 @@ function command(overrides: Partial<HumanCampaignApprovalInput> = {}): HumanCamp
     decidedAt: now,
     ipAuditHash: sha("a"),
     correlationRef: "correlation_approve_001",
+    approverDisplayName: undefined,
     ...overrides,
   };
 }
@@ -265,7 +285,7 @@ describe("human campaign approval command", () => {
   it("records an approved decision from a verified approver and transitions the aggregate", async () => {
     const repository = new MemoryApprovalRepository();
     repository.evidence = await passingEvidence();
-    const result = await executeHumanCampaignApproval(
+    const result = await approve(
       command({
         expectedCampaignVersionRef: repository.evidence.version.campaignVersionRef,
         expectedManifestHash: repository.evidence.version.manifestHash,
@@ -287,11 +307,37 @@ describe("human campaign approval command", () => {
     expect(repository.denials).toHaveLength(0);
   });
 
+  /**
+   * PRD-009e D2, 009E-AC-004. The command records the decider's own session name in the decision's
+   * evidence when the caller has one, and nothing when it has none. The name is not part of the
+   * command's identity, so an identical retry hashes the same whether or not the name was read.
+   */
+  it("records the decider's own session name in the decision, and no key without one", async () => {
+    const named = new MemoryApprovalRepository();
+    named.evidence = await passingEvidence();
+    const withName = await approve(
+      command({ approverDisplayName: "Casey Rivera" }),
+      approver,
+      named,
+    );
+    const anonymous = new MemoryApprovalRepository();
+    anonymous.evidence = await passingEvidence();
+    const without = await approve(command(), approver, anonymous);
+
+    expect(withName.kind).toBe("committed");
+    expect(without.kind).toBe("committed");
+    if (withName.kind !== "committed" || without.kind !== "committed") return;
+    expect(withName.decision.snapshot.approverDisplayName).toBe("Casey Rivera");
+    expect(without.decision.snapshot).not.toHaveProperty("approverDisplayName");
+    expect(named.commits[0]?.inputHash).toBe(anonymous.commits[0]?.inputHash);
+    expect(named.commits[0]?.commandKey).toBe(anonymous.commits[0]?.commandKey);
+  });
+
   it("lets a location admin approve and keeps a rejection in awaiting_approval", async () => {
     const admin = principal({ role: "location_admin", actorRef: "principal_adminUser001" });
     const approvedRepo = new MemoryApprovalRepository();
     approvedRepo.evidence = await passingEvidence();
-    const approved = await executeHumanCampaignApproval(command(), admin, approvedRepo);
+    const approved = await approve(command(), admin, approvedRepo);
     expect(approved.kind).toBe("committed");
     if (approved.kind === "committed") {
       expect(approved.decision.actorRole).toBe("location_admin");
@@ -299,11 +345,7 @@ describe("human campaign approval command", () => {
 
     const rejectedRepo = new MemoryApprovalRepository();
     rejectedRepo.evidence = await passingEvidence();
-    const rejected = await executeHumanCampaignApproval(
-      command({ decision: "rejected" }),
-      approver,
-      rejectedRepo,
-    );
+    const rejected = await approve(command({ decision: "rejected" }), approver, rejectedRepo);
     expect(rejected.kind).toBe("committed");
     if (rejected.kind === "committed") {
       expect(rejected.decision.decision).toBe("rejected");
@@ -317,7 +359,7 @@ describe("human campaign approval command", () => {
     const existing = existingApprovalFor(evidence, approver.actorRef);
     const repository = new MemoryApprovalRepository();
     repository.evidence = { ...evidence, state: "approved", existingApproval: existing };
-    const result = await executeHumanCampaignApproval(
+    const result = await approve(
       command({
         expectedCampaignVersionRef: evidence.version.campaignVersionRef,
         expectedManifestHash: evidence.version.manifestHash,
@@ -341,7 +383,7 @@ describe("human campaign approval command", () => {
     const repository = new MemoryApprovalRepository();
     repository.evidence = await passingEvidence();
     repository.commitResult = { duplicate: true, rowVersion: 2 };
-    const result = await executeHumanCampaignApproval(command(), approver, repository);
+    const result = await approve(command(), approver, repository);
     expect(result.kind).toBe("committed");
     if (result.kind === "committed") {
       expect(result.duplicate).toBe(true);
@@ -351,17 +393,13 @@ describe("human campaign approval command", () => {
 
   it("hides missing and cross-tenant campaigns behind the same not-accessible error", async () => {
     const missing = new MemoryApprovalRepository();
-    await expect(executeHumanCampaignApproval(command(), approver, missing)).rejects.toBeInstanceOf(
+    await expect(approve(command(), approver, missing)).rejects.toBeInstanceOf(
       CampaignResourceNotAccessibleError,
     );
     const cross = new MemoryApprovalRepository();
     cross.evidence = await passingEvidence();
     await expect(
-      executeHumanCampaignApproval(
-        command(),
-        principal({ locationRef: "location_otherTenant001" }),
-        cross,
-      ),
+      approve(command(), principal({ locationRef: "location_otherTenant001" }), cross),
     ).rejects.toBeInstanceOf(CampaignResourceNotAccessibleError);
   });
 
@@ -370,31 +408,23 @@ describe("human campaign approval command", () => {
     const stale = new MemoryApprovalRepository();
     stale.evidence = evidence;
     await expect(
-      executeHumanCampaignApproval(
-        command({ expectedCampaignVersionRef: "version_02Stale" }),
-        approver,
-        stale,
-      ),
+      approve(command({ expectedCampaignVersionRef: "version_02Stale" }), approver, stale),
     ).rejects.toBeInstanceOf(CampaignApprovalStaleError);
     await expect(
-      executeHumanCampaignApproval(command({ expectedManifestHash: sha("f") }), approver, stale),
+      approve(command({ expectedManifestHash: sha("f") }), approver, stale),
     ).rejects.toBeInstanceOf(CampaignApprovalStaleError);
     await expect(
-      executeHumanCampaignApproval(
-        command({ expectedPreflightResultHash: sha("f") }),
-        approver,
-        stale,
-      ),
+      approve(command({ expectedPreflightResultHash: sha("f") }), approver, stale),
     ).rejects.toBeInstanceOf(CampaignApprovalStaleError);
     await expect(
-      executeHumanCampaignApproval(command({ expectedRowVersion: 99 }), approver, stale),
+      approve(command({ expectedRowVersion: 99 }), approver, stale),
     ).rejects.toBeInstanceOf(CampaignApprovalStaleError);
 
     const approved = new MemoryApprovalRepository();
     approved.evidence = { ...evidence, state: "approved" };
-    await expect(
-      executeHumanCampaignApproval(command(), approver, approved),
-    ).rejects.toBeInstanceOf(CampaignApprovalStaleError);
+    await expect(approve(command(), approver, approved)).rejects.toBeInstanceOf(
+      CampaignApprovalStaleError,
+    );
   });
 
   it("rejects blocking, missing, or draft evidence instead of recording an approval", async () => {
@@ -404,13 +434,13 @@ describe("human campaign approval command", () => {
       ...evidence,
       preflight: { ...evidence.preflight, blocking: true },
     };
-    await expect(
-      executeHumanCampaignApproval(command(), approver, blocking),
-    ).rejects.toBeInstanceOf(CampaignApprovalNotReadyError);
+    await expect(approve(command(), approver, blocking)).rejects.toBeInstanceOf(
+      CampaignApprovalNotReadyError,
+    );
 
     const draft = new MemoryApprovalRepository();
     draft.evidence = { ...evidence, state: "draft" };
-    await expect(executeHumanCampaignApproval(command(), approver, draft)).rejects.toBeInstanceOf(
+    await expect(approve(command(), approver, draft)).rejects.toBeInstanceOf(
       CampaignApprovalNotReadyError,
     );
 
@@ -419,9 +449,7 @@ describe("human campaign approval command", () => {
       ...evidence,
       version: { ...evidence.version, manifestHash: sha("f") },
     };
-    await expect(executeHumanCampaignApproval(command(), approver, tampered)).rejects.toThrow(
-      "manifest hash",
-    );
+    await expect(approve(command(), approver, tampered)).rejects.toThrow("manifest hash");
   });
 
   it("writes denied audit for unauthorized humans and never commits an approval row", async () => {
@@ -434,7 +462,7 @@ describe("human campaign approval command", () => {
     ] as const) {
       const repository = new MemoryApprovalRepository();
       repository.evidence = evidence;
-      const result = await executeHumanCampaignApproval(
+      const result = await approve(
         command(),
         principal({ role, actorRef: `principal_${role}001` }),
         repository,
@@ -460,7 +488,7 @@ describe("human campaign approval command", () => {
       existingApproval: existingApprovalFor(evidence, revoked.actorRef),
     };
 
-    const result = await executeHumanCampaignApproval(
+    const result = await approve(
       command({
         expectedCampaignVersionRef: evidence.version.campaignVersionRef,
         expectedManifestHash: evidence.version.manifestHash,
@@ -485,7 +513,7 @@ describe("human campaign approval command", () => {
     ]) {
       const repository = new MemoryApprovalRepository();
       repository.evidence = evidenceState;
-      const result = await executeHumanCampaignApproval(
+      const result = await approve(
         command({ expectedCampaignVersionRef: "version_02Stale" }),
         principal({ role: "viewer", actorRef: "principal_viewer001" }),
         repository,
@@ -502,7 +530,7 @@ describe("human campaign approval command", () => {
       CampaignPrincipalInvalidError,
     );
     await expect(
-      executeHumanCampaignApproval(command(), { ...approver, actorRef: "short" }, repository),
+      approve(command(), { ...approver, actorRef: "short" }, repository),
     ).rejects.toBeInstanceOf(CampaignPrincipalInvalidError);
     expect(repository.denials).toHaveLength(0);
   });

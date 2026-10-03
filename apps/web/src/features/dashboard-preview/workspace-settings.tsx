@@ -15,7 +15,6 @@ import {
 import { leadStages, type PreviewView } from "./model.js";
 import { useRequiredDashboardPreview } from "./preview-provider.js";
 import {
-  ActionLink,
   Badge,
   PageHeader,
   personName,
@@ -33,7 +32,6 @@ const settingsNavigation: readonly { label: string; href: string; view: string; 
     { label: "Brand kit", href: "/brand", view: "brand", icon: "sparkles" },
     { label: "Connections", href: "/settings/connections", view: "connections", icon: "globe" },
     { label: "Lead routing", href: "/settings/routing", view: "routing", icon: "layers" },
-    { label: "Team & access", href: "/settings/team", view: "team", icon: "users" },
     { label: "Account", href: "/settings/account", view: "account", icon: "shield" },
     { label: "Plan & billing", href: "/settings/billing", view: "billing", icon: "credit-card" },
   ];
@@ -258,14 +256,6 @@ function ConnectionSettings() {
         "Review the approved campaign before launch",
       ],
     },
-    {
-      name: "Stripe",
-      initials: "S",
-      description: "Manage your subscription and payment details.",
-      icon: "credit-card",
-      purpose: "A clear view of your plan and payments.",
-      items: ["Choose your plan", "Add a payment method", "Review your subscription details"],
-    },
   ];
   const app = apps.find((item) => item.name === selected);
   return (
@@ -394,57 +384,6 @@ function RoutingSettings() {
           </div>
         </form>
       </Card>
-      <ActionLink href="/leads/pipeline" secondary>
-        Open your pipeline <Icon name="arrow-right" decorative size="sm" />
-      </ActionLink>
-    </div>
-  );
-}
-
-function TeamSettings() {
-  const { state } = useRequiredDashboardPreview();
-  return (
-    <div className={styles.stack}>
-      <Card className={styles.panel} padding="none">
-        <SectionTitle
-          title="Good work happens together."
-          detail="Clear access for the people who help your business grow."
-        />
-        <div className={styles.teamRow}>
-          <ProfileAvatar name={personName(state.profile.name)} />
-          <span>
-            <strong>{personName(state.profile.name)}</strong>
-            <small>{state.profile.email}</small>
-          </span>
-          <Badge tone="info">Owner · Demo</Badge>
-        </div>
-        <div className={styles.panelInset}>
-          <Button disabled>
-            <Icon name="plus" decorative size="sm" /> Invite teammate
-          </Button>
-          <QuietNote>Invitations become available with a live account.</QuietNote>
-        </div>
-      </Card>
-      <Card className={styles.panel} padding="none">
-        <SectionTitle title="A role for each responsibility" />
-        <div className={styles.settingsRows}>
-          {[
-            ["Owner", "Manage the company, team, and workspace."],
-            ["Creator", "Build campaigns and prepare them for review."],
-            ["Approver", "Review campaign details before publication."],
-          ].map(([name, detail]) => (
-            <div key={name}>
-              <span className={styles.iconTile}>
-                <Icon name="shield" decorative />
-              </span>
-              <span>
-                <strong>{name}</strong>
-                <small>{detail}</small>
-              </span>
-            </div>
-          ))}
-        </div>
-      </Card>
     </div>
   );
 }
@@ -555,9 +494,6 @@ export function SettingsWorkspace({ view }: { view: PreviewView }) {
     case "routing":
       content = <RoutingSettings />;
       break;
-    case "team":
-      content = <TeamSettings />;
-      break;
     case "billing":
       content = <BillingSettings />;
       break;
@@ -587,14 +523,6 @@ export function SettingsWorkspace({ view }: { view: PreviewView }) {
               {view === item.view ? <Icon name="chevron-down" decorative size="sm" /> : null}
             </Link>
           ))}
-          <div className={styles.settingsHelp}>
-            <Icon name="help" decorative />
-            <strong>Find your way around.</strong>
-            <p>A quick walkthrough of your workspace.</p>
-            <Link href="/onboarding">
-              Getting started <Icon name="arrow-right" decorative size="sm" />
-            </Link>
-          </div>
         </nav>
         <div className={styles.stack}>
           {content}

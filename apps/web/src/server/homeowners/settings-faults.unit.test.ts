@@ -64,7 +64,6 @@ vi.mock("../workspace-preferences.js", async (importOriginal) => ({
   workspacePrincipal: async () => PRINCIPAL,
   readWorkspacePreferences: async () => ({ brand: null, partners: null, messages: {} }),
 }));
-vi.mock("../campaign-workspace-reads.js", () => ({ listWorkspaceCampaigns: async () => [] }));
 vi.mock("../setup-preferences.js", () => ({ readSetupPreferences: async () => undefined }));
 
 const WELL_FORMED = {
@@ -91,7 +90,7 @@ beforeEach(() => {
 
 describe("a workspace page, while a homeowner setting is mistyped", () => {
   it("still opens, and says the valuation and HighLevel connections are not there", async () => {
-    const intact = await loadWorkspacePageData(request(), "automations", WELL_FORMED);
+    const intact = await loadWorkspacePageData(request(), "billing", WELL_FORMED);
     expect(intact).toMatchObject({
       reportsEnabled: true,
       valuationConfigured: true,
@@ -99,12 +98,12 @@ describe("a workspace page, while a homeowner setting is mistyped", () => {
       lookupsUsed: 3,
     });
     for (const [, change] of MISTYPED) {
-      const page = await loadWorkspacePageData(request(), "automations", {
+      const page = await loadWorkspacePageData(request(), "billing", {
         ...WELL_FORMED,
         ...change,
       });
       expect(page).toMatchObject({
-        view: "automations",
+        view: "billing",
         reportsEnabled: true,
         valuationConfigured: false,
         contactConfigured: false,
@@ -115,7 +114,7 @@ describe("a workspace page, while a homeowner setting is mistyped", () => {
   });
 
   it("does not say reports are on when they are switched off, whatever else is mistyped", async () => {
-    const page = await loadWorkspacePageData(request(), "automations", {
+    const page = await loadWorkspacePageData(request(), "billing", {
       OALO_HOMEOWNER_REPORTS: "off",
       OALO_HOMEOWNER_ALLOWED_LOCATION_IDS: "not-an-id",
     });

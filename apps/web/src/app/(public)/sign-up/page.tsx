@@ -8,7 +8,8 @@ import { SIGN_UP } from "../../../features/auth/strings.js";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Create your Automated LO account",
+  // Already carries the product's name, so the root layout's template must not add it again (W-13).
+  title: { absolute: "Create your Automated LO account" },
   description: "Create an Automated LO account with your name, email, and a password.",
 };
 

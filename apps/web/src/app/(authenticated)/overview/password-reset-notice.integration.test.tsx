@@ -35,12 +35,29 @@ vi.mock("../../../theme/index.js", () => ({
   ThemeControl: () => <div aria-label="Theme control">Theme control</div>,
 }));
 /**
- * The workspace read is the page's other dependency and has nothing to do with the notice. It is
- * answered here rather than stood up, so this suite fails for one reason only.
+ * Home's read is the page's other dependency and has nothing to do with the notice. It is answered
+ * here rather than stood up, so this suite fails for one reason only: a signed-in owner of a
+ * brand-new account, with nothing saved and nothing waiting.
  */
-vi.mock("../../../server/campaign-workspace-reads.js", () => ({
-  readWorkspaceCampaignsForRequest: () =>
-    Promise.resolve(Object.freeze({ authenticated: true, campaigns: [] })),
+vi.mock("../../../server/home-reads.js", () => ({
+  readHomeForRequest: () =>
+    Promise.resolve({
+      authenticated: true,
+      home: {
+        checklist: {
+          items: [
+            { id: "highlevel", state: "not_connected" },
+            { id: "meta", state: "not_connected" },
+            { id: "brand", state: "not_started" },
+          ],
+          doneCount: 0,
+          total: 3,
+        },
+        topics: [],
+        running: { rows: [], total: 0 },
+        approval: { rows: [], total: 0 },
+      },
+    }),
 }));
 
 const D10_SUCCESS_NOTICE = "Your password is saved. You're signed in.";

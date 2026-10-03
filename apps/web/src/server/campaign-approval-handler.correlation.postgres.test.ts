@@ -6,7 +6,7 @@ import { POST as approvePost } from "../app/api/campaigns/approve/route.js";
 import { POST as preflightPost } from "../app/api/campaigns/preflight/route.js";
 import {
   CORRELATION_HEADER_MATRIX,
-  OPEN_HOUSE_DRAFT_INPUT,
+  LIBRARY_AD_SAVE_INPUT,
 } from "./campaign-command-test-support.js";
 import {
   AUDIT_TABLE,
@@ -69,7 +69,7 @@ async function createDraft(): Promise<PersistedDraft> {
     session: creatorSession,
     csrfServerSecret,
     environment,
-    body: OPEN_HOUSE_DRAFT_INPUT,
+    body: LIBRARY_AD_SAVE_INPUT,
   });
 }
 

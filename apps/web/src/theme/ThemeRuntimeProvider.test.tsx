@@ -61,8 +61,10 @@ describe("ThemeRuntimeProvider", () => {
     vi.unstubAllGlobals();
   });
 
-  it("follows live OS changes for System while preserving local application state", async () => {
-    const media = installMatchMedia(true);
+  async function mount(): Promise<{
+    runtime: () => ThemeRuntime | undefined;
+    setDraft: () => Dispatch<SetStateAction<string>> | undefined;
+  }> {
     let runtime: ThemeRuntime | undefined;
     let setDraft: Dispatch<SetStateAction<string>> | undefined;
 
@@ -85,21 +87,51 @@ describe("ThemeRuntimeProvider", () => {
       );
     });
 
-    expect(runtime?.preference).toBe("system");
+    return { runtime: () => runtime, setDraft: () => setDraft };
+  }
+
+  /** PRD-009a D4 and design D-5: nothing stored means Light, on a device set to dark too. */
+  it("opens a first visit in Light even when the device prefers dark (009A-AC-008)", async () => {
+    installMatchMedia(true);
+    const { runtime } = await mount();
+
+    expect(runtime()?.preference).toBe("light");
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
+  });
+
+  it("stores System, follows live OS changes for it, and preserves local application state", async () => {
+    const media = installMatchMedia(true);
+    const { runtime, setDraft } = await mount();
+
+    act(() => runtime()?.setPreference("system"));
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("system");
     expect(document.documentElement.dataset.theme).toBe("dark");
 
-    act(() => setDraft?.("preserved draft"));
+    act(() => setDraft()?.("preserved draft"));
     act(() => media.emit(false));
     expect(document.documentElement.dataset.theme).toBe("light");
-    expect(container.textContent).toBe("preserved draft");
+    expect(container?.textContent).toBe("preserved draft");
 
-    act(() => runtime?.setPreference("dark"));
+    act(() => runtime()?.setPreference("dark"));
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("dark");
     act(() => media.emit(false));
     expect(document.documentElement.dataset.theme).toBe("dark");
 
-    act(() => runtime?.setPreference("system"));
-    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
+    act(() => runtime()?.setPreference("system"));
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("system");
+    act(() => media.emit(true));
+    expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+
+  it("keeps a stored System choice across a reload and keeps following the device", async () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, "system");
+    const media = installMatchMedia(false);
+    const { runtime } = await mount();
+
+    expect(runtime()?.preference).toBe("system");
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("system");
+    expect(document.documentElement.dataset.theme).toBe("light");
     act(() => media.emit(true));
     expect(document.documentElement.dataset.theme).toBe("dark");
   });

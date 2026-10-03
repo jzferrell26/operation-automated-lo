@@ -4,8 +4,10 @@ import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { findVocabularyHits } from "../../copy/forbidden-vocabulary.js";
+import { SUPPORT_DETAILS_SUMMARY } from "../../copy/user-language.js";
 import {
   isMappedErrorCode,
+  showsSupportReference,
   UNKNOWN_ERROR_MESSAGE,
   USER_MESSAGES_BY_CODE,
   userMessageForCode,
@@ -44,6 +46,26 @@ const NOT_SHOWN_TO_A_USER: readonly Readonly<{ code: string; because: string }>[
 
 const ERROR_CODE = /\b(?:error|code)\b\s*[:,]\s*"(?<code>[A-Z][A-Z0-9_]{4,})"/gu;
 
+/**
+ * A code held as a record value, the way the approve route keeps its four library refusals
+ * (`missing: "LIBRARY_AD_MISSING"` in `campaign-approval-handler.ts`), is not written as `error:` or
+ * `code:`, so `ERROR_CODE` cannot see it and the test passed with those four unmapped (writing
+ * review pass 1, guard gap 1). This second pattern reads a `key: "LIBRARY_AD_..."` pair.
+ */
+const RECORD_VALUE_CODE = /\b\w+\s*:\s*"(?<code>LIBRARY_AD_[A-Z0-9_]+)"/gu;
+
+/**
+ * The four refusals the approve route answers with 409 (`LIBRARY_AD_REFUSAL_CODES`). Named here as
+ * well as found by the scan, so removing any one entry from `user-messages.ts` fails a test even if
+ * the handler's shape changes again.
+ */
+const APPROVE_LIBRARY_AD_REFUSALS: readonly string[] = [
+  "LIBRARY_AD_MISSING",
+  "LIBRARY_AD_RETIRED",
+  "LIBRARY_AD_REPLACED",
+  "LIBRARY_AD_ART_CHANGED",
+];
+
 async function collectEmittedCodes(): Promise<readonly string[]> {
   const codes = new Set<string>();
 
@@ -57,10 +79,12 @@ async function collectEmittedCodes(): Promise<readonly string[]> {
         continue;
       }
       const source = await readFile(join(entry.parentPath, entry.name), "utf8");
-      for (const match of source.matchAll(ERROR_CODE)) {
-        const code = match.groups?.["code"];
-        if (code !== undefined) {
-          codes.add(code);
+      for (const pattern of [ERROR_CODE, RECORD_VALUE_CODE]) {
+        for (const match of source.matchAll(pattern)) {
+          const code = match.groups?.["code"];
+          if (code !== undefined) {
+            codes.add(code);
+          }
         }
       }
     }
@@ -77,6 +101,139 @@ describe("error codes become sentences", () => {
     );
 
     expect(unmapped).toEqual([]);
+  });
+
+  it("finds the four approve refusals that the route keeps as record values", async () => {
+    const found = await collectEmittedCodes();
+
+    for (const code of APPROVE_LIBRARY_AD_REFUSALS) {
+      expect(found, code).toContain(code);
+    }
+  });
+
+  it.each(APPROVE_LIBRARY_AD_REFUSALS)("maps %s to its own plain sentences", (code) => {
+    expect(isMappedErrorCode(code)).toBe(true);
+    expect(userMessageForCode(code)).not.toBe(UNKNOWN_ERROR_MESSAGE);
+    expect(userMessageSentence(code)).not.toContain("on our side");
+    expect(userMessageSentence(code)).toContain("can't be approved.");
+  });
+
+  it("tells the person who pressed Approve what to do, in the four refusals' own words", () => {
+    expect(userMessageSentence("LIBRARY_AD_MISSING")).toBe(
+      "This ad isn't in the library, so this version can't be approved. Choose another ad. Your budget, dates and area are kept.",
+    );
+    expect(userMessageSentence("LIBRARY_AD_RETIRED")).toBe(
+      "This ad was taken out of the library, so this version can't be approved. Choose another ad. Your budget, dates and area are kept.",
+    );
+    expect(userMessageSentence("LIBRARY_AD_REPLACED")).toBe(
+      "A newer version of this ad is in the library, so this version can't be approved. Open this campaign from Campaigns, use the new version of the ad, then approve that one.",
+    );
+    expect(userMessageSentence("LIBRARY_AD_ART_CHANGED")).toBe(
+      "The picture for this ad changed after this version was saved, so this version can't be approved. Open this campaign from Campaigns, make a new version, then approve that one.",
+    );
+  });
+
+  // Writing review pass 2, W-30. "Pick it again" cannot work for an ad that was taken out, "kept" is
+  // untrue for a new campaign (its drafts are held per ad), and the campaign page has no "Choose an
+  // ad" to go back to. "Choose another ad" is true on both.
+  it("tells a person whose ad has left the library to choose another, and to check what they set", () => {
+    expect(userMessageSentence("LIBRARY_AD_NOT_AVAILABLE")).toBe(
+      "This ad isn't in the library anymore, or a newer version replaced it. Choose another ad. Check the words, budget and area before you save.",
+    );
+  });
+
+  it("sends the approver to the campaign creator when the checks are not passing", () => {
+    expect(userMessageSentence("CAMPAIGN_APPROVAL_NOT_READY")).toBe(
+      "This campaign isn't ready to approve yet. Ask the campaign creator to fix what the checks found and save a new version, then approve that one.",
+    );
+  });
+
+  // Writing review W-18. The guided setup is gone, and so is the Marketing menu this sentence named.
+  it("sends a person to a place that exists when the guided setup is unavailable", () => {
+    expect(userMessageSentence("SETUP_PREFERENCE_UNAVAILABLE")).toBe(
+      "The guided setup isn't available in this workspace. You can still launch an ad from Campaigns.",
+    );
+    expect(userMessageSentence("SETUP_PREFERENCE_UNAVAILABLE")).not.toMatch(/Marketing menu/u);
+  });
+
+  /**
+   * Writing review pass 2, W-27. "Contact support with the reference below" was said, and nothing
+   * was below: a mapped code showed no support reference, and the step that said it never drew one.
+   * The rule is written down once, in `showsSupportReference`: a reference shows for a code with no
+   * sentence of its own, and for a code whose own sentence points at it.
+   *
+   * Closing check, N-4. "The support reference below" still pointed at a region that is closed by
+   * default and shows only the words "Details for support", so a person looking below it saw no
+   * reference. The sentence now names the region they will see, and says the reference is in it.
+   */
+  describe("the support reference a sentence points at (writing review W-27)", () => {
+    it("says what to give support, and where it is, for a failed save", () => {
+      expect(userMessageSentence("CAMPAIGN_PREFLIGHT_FAILED")).toBe(
+        "We couldn't finish the checks on this campaign. Try again. If it keeps happening, contact support and give them the reference in Details for support, below.",
+      );
+    });
+
+    it('shows a reference for every code whose sentence points at "Details for support"', () => {
+      const pointing = Object.entries(USER_MESSAGES_BY_CODE).filter(([, message]) =>
+        `${message.what} ${message.whatToDo}`.includes(SUPPORT_DETAILS_SUMMARY),
+      );
+      expect(pointing.map(([code]) => code)).toContain("CAMPAIGN_PREFLIGHT_FAILED");
+      for (const [code] of pointing) {
+        expect(showsSupportReference(code), code).toBe(true);
+      }
+    });
+
+    it("never mentions a reference without naming the closed region it is in", () => {
+      expect(SUPPORT_DETAILS_SUMMARY).toBe("Details for support");
+      for (const [code, message] of Object.entries(USER_MESSAGES_BY_CODE)) {
+        const sentence = `${message.what} ${message.whatToDo}`;
+        if (/reference/u.test(sentence)) {
+          expect(sentence, code).toContain(SUPPORT_DETAILS_SUMMARY);
+        }
+      }
+    });
+
+    it("also shows one for a code with no sentence of its own, and for a request that never answered", () => {
+      expect(showsSupportReference("A_CODE_FROM_THE_FUTURE")).toBe(true);
+      expect(showsSupportReference(undefined)).toBe(true);
+    });
+
+    it("shows none for a code whose sentence needs none", () => {
+      expect(showsSupportReference("LIBRARY_AD_NOT_AVAILABLE")).toBe(false);
+      expect(showsSupportReference("CAMPAIGN_APPROVAL_CONFLICT")).toBe(false);
+      expect(showsSupportReference("UNAUTHENTICATED")).toBe(false);
+    });
+
+    it("never points at a reference from the generic sentence, which the reference always accompanies", () => {
+      expect(userMessageSentence(undefined)).not.toContain(SUPPORT_DETAILS_SUMMARY);
+    });
+  });
+
+  /**
+   * Closing check, N-3. The Brand page has two cards, and each reload button names its own card
+   * ("Load latest saved details", "Load latest saved ad settings"). A sentence that told a person to
+   * "load the latest saved details" named a label the second card does not have, so the sentences
+   * for a conflict and for an unconfirmed save say "version of this card", which is true on both
+   * Brand cards and on Realtor partners.
+   */
+  describe("the sentences after a clash of saves name no button label (closing check N-3)", () => {
+    it("says what to do for a conflict without naming a button", () => {
+      expect(userMessageSentence("WORKSPACE_WRITE_CONFLICT")).toBe(
+        "Another tab saved newer settings. Keep a copy of your edits, then load the latest saved version of this card before trying again.",
+      );
+    });
+
+    it("says what to do when the saved settings could not be confirmed, without naming a button", () => {
+      expect(userMessageSentence("WORKSPACE_PREFERENCES_UNAVAILABLE")).toBe(
+        "Your saved workspace settings could not be confirmed. Load the latest saved version of this card before making another change.",
+      );
+    });
+
+    it("never tells a person to load or reload the saved details, which is one card's button", () => {
+      for (const [code, message] of Object.entries(USER_MESSAGES_BY_CODE)) {
+        expect(`${message.what} ${message.whatToDo}`, code).not.toMatch(/saved details/iu);
+      }
+    });
   });
 
   it("states a reason for every code it does not map", () => {

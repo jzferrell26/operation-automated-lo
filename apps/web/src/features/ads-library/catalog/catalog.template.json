@@ -1,0 +1,38 @@
+{
+  "id": "first-home-start-here",
+  "version": 1,
+  "status": "active",
+  "sample": false,
+  "topic": "first-time-buyers",
+  "name": "First home, start here",
+  "images": {
+    "tall": {
+      "art": "first-home-start-here/v1/tall.png",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "square": {
+      "art": "first-home-start-here/v1/square.png",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "alt": "Your first home starts here, with a house and a key"
+  },
+  "defaults": {
+    "headline": "Buying your first home? Start with a plan.",
+    "primaryText": "I help first-time buyers understand every step, from pre-approval to closing day. Send me a message and let's talk about where you are today."
+  },
+  "editable": { "headline": { "maxLength": 60 }, "primaryText": { "maxLength": 300 } },
+  "callToAction": "LEARN_MORE",
+  "specialAdCategory": "HOUSING",
+  "compliance": {
+    "notes": "No rates, payments or loan terms.",
+    "requiredOnAd": ["nmls", "equal-housing"],
+    "blockedInWords": [
+      "rate-claims",
+      "payment-claims",
+      "term-claims",
+      "guarantees",
+      "realtor-or-brokerage-names"
+    ]
+  },
+  "approval": { "approvedBy": "jzferrell26", "approvedOn": "2026-10-01" }
+}

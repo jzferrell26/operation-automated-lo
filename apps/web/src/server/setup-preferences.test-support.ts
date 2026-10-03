@@ -1,29 +1,21 @@
 import type { AuthenticatedPrincipal } from "@oalo/application";
-import { expect, vi, type Mock } from "vitest";
+import { expect, vi } from "vitest";
 
 /**
- * What the two setup-preferences read tests have in common (PRD-008b 008B-AC-009 to 008B-AC-011,
- * writing review R6): the campaign list read as a failing driver leaves it, the server log that
- * records the failure, and the sentence that log line must never contain.
+ * What the setup-preferences read and write tests have in common: the saved profile read as a
+ * failing driver leaves it, the server log that records the failure, and the sentence that log line
+ * must never contain.
  *
- * This module imports nothing at run time but `vitest`. The `vi.mock` factories in the two test
- * files load it with a dynamic `import()`, because those factories run while the module under test
- * is still being imported, and a static import of anything heavier here could reach a module that
- * is itself being mocked.
+ * This module imports nothing at run time but `vitest`. A `vi.mock` factory in a test file can load
+ * it with a dynamic `import()`, because those factories run while the module under test is still
+ * being imported, and a static import of anything heavier here could reach a module that is itself
+ * being mocked.
  */
 
-/** A stand-in for `./campaign-workspace-reads.js`, so a test says what the list read answers. */
-export function campaignWorkspaceReadsDouble(): {
-  listWorkspaceCampaigns: Mock;
-  loadWorkspaceCampaign: Mock;
-} {
-  return { listWorkspaceCampaigns: vi.fn(), loadWorkspaceCampaign: vi.fn() };
-}
-
 /**
- * A tenant transaction for a person who has stored nothing: every read finds no rows, so the
- * walkthrough is at its start and the read goes on to the campaign list. The preferences table is
- * not what these cases are about.
+ * A tenant transaction for a person who has stored nothing: every read finds no rows, so there is no
+ * saved profile and the Brand form starts empty. The preferences table is not what these cases are
+ * about.
  */
 export async function transactionWithNothingStored(
   _pool: unknown,

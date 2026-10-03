@@ -1,30 +1,18 @@
 import { expect, test, type Page } from "@playwright/test";
 import { AxeBuilder } from "@axe-core/playwright";
 
+/** PRD-009f D1. The pages that survive; the rest redirect or are gone (`removed-addresses.spec.ts`). */
 const routes = [
   "/overview",
-  "/marketing",
   "/marketing/campaigns",
   "/marketing/campaigns/new",
-  "/marketing/property-sites",
-  "/marketing/creative",
-  "/marketing/ads",
-  "/marketing/messaging",
-  "/marketing/blueprints",
   "/partners",
-  "/leads",
-  "/leads/pipeline",
   "/brand",
-  "/reports",
-  "/onboarding",
   "/settings",
   "/settings/connections",
   "/settings/routing",
   "/settings/account",
-  "/settings/team",
   "/settings/billing",
-  "/automations",
-  "/marketplace",
 ];
 test.beforeEach(async ({ baseURL }, info) => {
   test.skip(
@@ -39,19 +27,24 @@ async function open(page: Page, path: string) {
   expect(response?.status(), path).toBe(200);
   await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
 }
-async function createCampaign(page: Page, headline: string) {
-  await open(page, "/marketing/campaigns/new");
-  await page.getByRole("button", { name: "Use example property" }).click();
-  await page.getByLabel("Headline", { exact: true }).fill(headline);
-  const response = page.waitForResponse(
-    (response) =>
-      response.url().endsWith("/api/preview/campaigns/check") &&
-      response.request().method() === "POST",
-  );
-  await page.getByRole("button", { name: "Save & review campaign" }).click();
-  expect((await response).status()).toBe(200);
-  await page.getByRole("link", { name: "Open campaign", exact: true }).click();
-  await expect(page.getByRole("heading", { name: headline, exact: true })).toBeVisible();
+/**
+ * PRD-009d D1 and 009c D3. "Launch an ad" in the preview: the preview has no session and its
+ * library is the real one, which is empty, so step 1 says so, as the empty state's title and its
+ * description (009C-AC-012's two sentences, the writing review delta check D-1), and nothing on the
+ * page can be saved or checked. The preview's own check route is gone.
+ */
+const EMPTY_LIBRARY_TITLE = "No ads in the library yet";
+const EMPTY_LIBRARY_REASON =
+  "New ads are added after they're reviewed, so there's nothing to set up until then.";
+
+async function expectTheEmptyLibrary(page: Page, path: string) {
+  await open(page, path);
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1, name: "Choose an ad" })).toBeVisible();
+  await expect(main.getByRole("heading", { name: EMPTY_LIBRARY_TITLE, exact: true })).toBeVisible();
+  await expect(main.getByText(EMPTY_LIBRARY_REASON, { exact: true })).toBeVisible();
+  await expect(main.getByRole("button", { name: /^Use this ad/u })).toHaveCount(0);
+  await expect(main.getByRole("button", { name: "Save and check" })).toHaveCount(0);
 }
 
 async function chooseOption(page: Page, label: string, option: string) {
@@ -87,36 +80,32 @@ test("all dashboard routes, assets, and entry links work", async ({ page, reques
   expect(errors).toEqual([]);
 });
 
-test("campaign checks, test approval, reload, and browser isolation", async ({ page, browser }) => {
-  await createCampaign(page, "Dashboard QA open house");
-  await expect(page.getByRole("button", { name: "Publish campaign", exact: true })).toBeDisabled();
-  await page.getByRole("button", { name: "Approve campaign", exact: true }).click();
-  await page.getByRole("button", { name: "Confirm approval", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Approval recorded" })).toBeDisabled();
-  const campaignURL = page.url();
-  await page.reload();
-  await expect(page.getByRole("button", { name: "Approval recorded" })).toBeVisible();
-  await open(page, "/marketing/campaigns");
-  await page.getByLabel("Search campaigns").fill("Dashboard QA");
-  await expect(page.getByRole("cell", { name: /^Dashboard QA open house/u })).toBeVisible();
-  const other = await browser.newContext();
-  try {
-    const isolated = await other.newPage();
-    await isolated.goto(campaignURL);
-    await expect(
-      isolated.getByRole("heading", { name: "We couldn't find this campaign." }),
-    ).toBeVisible();
-  } finally {
-    await other.close();
+test("Launch an ad in the preview shows the empty library, whatever the address asks for, and sends nothing", async ({
+  page,
+}) => {
+  const requests: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.startsWith("/api/")) requests.push(request.url());
+  });
+  for (const path of [
+    "/marketing/campaigns/new",
+    "/marketing/campaigns/new?step=2&ad=sample-first-home",
+    "/marketing/campaigns/new?step=3&campaign=campaign_0123456789abcdef",
+  ]) {
+    await expectTheEmptyLibrary(page, path);
   }
-  await createCampaign(page, "Guaranteed approval");
-  await expect(page.getByRole("button", { name: "Approve campaign", exact: true })).toBeDisabled();
-  await expect(
-    page.getByRole("heading", { name: "A few details need your attention." }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Launch on Facebook" })).toHaveCount(0);
+  expect(requests).toEqual([]);
+  // The preview's own check route is gone, not merely unused: the address answers with the
+  // not-found page, which Next may stream with a 200 once headers flush, rather than a handler's JSON.
+  const removed = await page.request.get("/api/preview/campaigns/check");
+  expect(removed.headers()["content-type"] ?? "").toContain("text/html");
+  expect(await removed.text()).toContain("404");
+  await open(page, "/brand");
+  await expect(page.getByLabel("Company name")).toHaveValue("Prairie Home Lending");
 });
 
-test("partners, pipeline, brand, routing, and reset persist accurately", async ({ page }) => {
+test("partners, brand, routing, and reset persist accurately", async ({ page }) => {
   await open(page, "/partners");
   await page.getByRole("button", { name: "Add partner" }).click();
   await page.getByLabel("Partner name").fill("Preview QA Partner");
@@ -125,14 +114,6 @@ test("partners, pipeline, brand, routing, and reset persist accurately", async (
   await page.getByRole("button", { name: "Save partner" }).click();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Preview QA Partner" })).toBeVisible();
-  await open(page, "/leads/pipeline");
-  await chooseOption(page, "Stage for Morgan Ellis", "Application");
-  await page.reload();
-  await expect(
-    page.getByRole("combobox", { name: "Stage for Morgan Ellis", exact: true }),
-  ).toHaveText("Application");
-  await open(page, "/reports");
-  await expect(page.getByRole("img", { name: /Pipeline:.*2 application/u })).toBeVisible();
   await open(page, "/brand");
   await page.getByLabel("Company name").fill("Preview QA Lending");
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -162,28 +143,17 @@ test("storage failure never displays a saved result", async ({ page }) => {
       throw new DOMException("Storage disabled", "QuotaExceededError");
     };
   });
-  await open(page, "/marketing/campaigns/new");
-  await page.getByRole("button", { name: "Use example property" }).click();
-  await page.getByRole("button", { name: "Save & review campaign" }).click();
-  await expect(
-    page.getByText(
-      "This draft was not saved. Check browser storage or reset the preview in Settings, then try again.",
-      { exact: true },
-    ),
-  ).toBeVisible();
+  // PRD-009d: "Launch an ad" keeps nothing in browser storage, so a storage failure changes nothing
+  // there, and the page claims no saved result.
+  await expectTheEmptyLibrary(page, "/marketing/campaigns/new");
+  await expect(page.getByRole("main")).not.toContainText(/saved/iu);
   await expect(page.getByRole("link", { name: "Open campaign", exact: true })).toHaveCount(0);
 });
 
 test("desktop, embedded, tablet, mobile, themes, and accessibility", async ({ page }, info) => {
   for (const width of [1440, 1180, 768, 390]) {
     await page.setViewportSize({ width, height: 1000 });
-    for (const route of [
-      "/overview",
-      "/settings",
-      "/leads/pipeline",
-      "/marketing/campaigns/new",
-      "/reports",
-    ]) {
+    for (const route of ["/overview", "/settings", "/marketing/campaigns/new"]) {
       await open(page, route);
       const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
       if (documentWidth > width) {
@@ -248,7 +218,7 @@ test("desktop, embedded, tablet, mobile, themes, and accessibility", async ({ pa
   expect(dark.violations).toEqual([]);
 });
 
-test("workspace search, partner editing, campaign views, and report downloads work", async ({
+test("workspace search, partner editing, campaign views, and connections work", async ({
   page,
 }) => {
   await open(page, "/overview");
@@ -259,7 +229,7 @@ test("workspace search, partner editing, campaign views, and report downloads wo
   await page.getByLabel("Search pages and campaigns").fill("partners");
   await page
     .getByRole("dialog")
-    .getByRole("link", { name: /Partners/u })
+    .getByRole("link", { name: /Realtor partners/u })
     .click();
   await expect(page).toHaveURL(/\/partners$/u);
   await page.getByRole("button", { name: "Edit Jordan Avery", exact: true }).click();
@@ -277,17 +247,9 @@ test("workspace search, partner editing, campaign views, and report downloads wo
   await expect(page.getByLabel("Company name")).toHaveValue("Instant Brand Preview");
   await open(page, "/marketing/campaigns");
   await page.getByRole("button", { name: "Cards", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Cedar Street Open House Boost" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cedar Street open house" })).toBeVisible();
   await page.getByRole("button", { name: "List", exact: true }).click();
   await expect(page.getByRole("table")).toBeVisible();
-  await open(page, "/reports");
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download report" }).click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("automatedlo-demo-pipeline.csv");
-  expect(await download.failure()).toBeNull();
-  await page.getByRole("button", { name: "Campaigns", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Campaign performance" })).toBeVisible();
   await open(page, "/settings/connections");
   await page.getByRole("button", { name: "View setup" }).first().click();
   await expect(page.getByRole("dialog", { name: "HighLevel connection" })).toBeVisible();
@@ -312,7 +274,6 @@ test("redesigned screens and interactive states remain accessible in both themes
       "/overview",
       "/settings",
       "/partners",
-      "/reports",
       "/marketing/campaigns/new",
       "/settings/connections",
     ]) {

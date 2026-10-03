@@ -51,6 +51,18 @@ when a specific status needs a sharper cue; it does not change the tone.
 so it always inherits the badge's foreground and can never drift from it. The
 glyph wrapper is `aria-hidden`; the label carries the meaning.
 
+_(Ruled 2026-10-03 by the PRD-009 scored baseline review: the PRD-009 mockups
+draw `.badge` at `--text-secondary-size`, 14px (`campaign-detail.html:237`). This
+specification's `--text-caption-size`, 12px, wins; the mockups' 14px chip is
+superseded, and a reviewer does not score the 12px chip against them.)_
+
+A status pill on any screen is `Badge`. A pill drawn by hand in a module (a
+`span` with a pill radius and a status fill) is a finding even when its words are
+right, because it carries no glyph and its tone can drift from the taxonomy.
+_(Recorded 2026-10-03 by the PRD-009 scored baseline review, R3 F-09: the
+Connections and Brand pages drew "Needed", "Confirmed", "Missing", "Optional",
+and "Not added yet" by hand.)_
+
 `uncertain` is not a generic error. It means an external write produced no
 conclusive evidence, and the surrounding attention item still owes the reader the
 last safe state, the correlation identifier, and the next safe action.

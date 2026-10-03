@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers.js";
 import type { CSSProperties, ReactNode } from "react";
 
+import { DEFAULT_PAGE_TITLE, PAGE_TITLE_TEMPLATE, SITE_DESCRIPTION } from "../copy/page-titles.js";
 import { CSP_NONCE_HEADER } from "../security/content-security-policy.js";
 import {
   DEFAULT_TENANT_ACCENT_KEY,
@@ -13,9 +14,13 @@ import {
 
 import "./globals.css";
 
+/**
+ * Writing review W-13. A page names itself and the product follows ("Campaigns | Automated LO").
+ * The default is the product's own name, which is the wordmark and not "Operation Automated LO".
+ */
 export const metadata: Metadata = {
-  title: "Operation Automated LO",
-  description: "Automated LO: Open House Boost campaigns with a named approval on the record.",
+  title: { default: DEFAULT_PAGE_TITLE, template: PAGE_TITLE_TEMPLATE },
+  description: SITE_DESCRIPTION,
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

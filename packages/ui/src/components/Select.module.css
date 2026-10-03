@@ -10,13 +10,20 @@
   inline-size: 100%;
   min-inline-size: 0;
   min-block-size: var(--target-min-size);
-  padding: var(--space-3);
+  /* Pass 2, SELF-FOUND. The field spec's control box (`form-field-and-text-inputs.md`, Control):
+   * `padding-block: var(--space-2)`, `padding-inline: var(--space-3)`, which is the 44px target. The
+   * trigger took `--space-3` on all four sides and drew 50px tall beside a 44px text field on the
+   * brand and homeowner forms. */
+  padding-block: var(--space-2);
+  padding-inline: var(--space-3);
   border: 1px solid var(--bd-input);
   border-radius: var(--radius-control);
   color: var(--tx-strong);
   background: var(--sf-card);
   font-family: var(--font-interface);
   font-size: var(--text-body-size);
+  /* The field spec's control weight, so a chosen value reads like a typed one on the same form. */
+  font-weight: var(--weight-medium);
   line-height: var(--leading-normal);
   text-align: start;
   cursor: pointer;
@@ -49,10 +56,15 @@
   outline: var(--focus-width) solid var(--focus-color);
   outline-offset: var(--focus-offset);
 }
+/* PRD-009 scored review pass 2, R3 P2-04. A disabled Select is drawn as a disabled field is
+ * (`field.module.css`, `.control:disabled`; `form-field-and-text-inputs.md`, Disabled): the sunken
+ * fill, `--tx-body` text and the `--bd-hairline` boundary. It kept the enabled `--bd-input` edge
+ * and read as the one editable field on a read-only page. */
 .trigger:disabled {
   cursor: not-allowed;
-  color: var(--tx-faint);
+  color: var(--tx-body);
   background: var(--sf-sunken);
+  border-color: var(--bd-hairline);
 }
 .trigger[data-empty="true"] {
   color: var(--tx-faint);

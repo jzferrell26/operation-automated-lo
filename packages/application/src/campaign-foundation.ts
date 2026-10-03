@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 import {
   ApprovalDecisionSchema,
   ApprovalLinkClaimsSchema,
@@ -19,6 +17,7 @@ import {
   ProjectionApprovalDecisionSchema,
   type ApprovalDecision,
   type ApprovalLinkClaims,
+  type ApprovalSnapshot,
   type CampaignEvent,
   type CampaignState,
   type CampaignVersion,
@@ -36,22 +35,16 @@ import {
 } from "@oalo/domain";
 import { z } from "zod";
 
-function stableJson(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
-  return `{${Object.entries(value)
-    .sort(([left], [right]) => left.localeCompare(right, "en"))
-    .map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`)
-    .join(",")}}`;
-}
+import { canonicalCampaignHash } from "./canonical-hash.js";
+import {
+  libraryAdCopyRef,
+  libraryAdCreativeRef,
+  libraryAdDisclosureRef,
+} from "./library-ad-references.js";
 
-function hash(value: unknown): string {
-  return createHash("sha256").update(stableJson(value)).digest("hex");
-}
+export { canonicalCampaignHash } from "./canonical-hash.js";
 
-export function canonicalCampaignHash(value: unknown): string {
-  return hash(value);
-}
+const hash = canonicalCampaignHash;
 
 function deepFreeze<T>(value: T): Readonly<T> {
   if (value !== null && typeof value === "object") {
@@ -316,6 +309,72 @@ export interface ApprovalAuthorityPort {
   ): Promise<void>;
 }
 
+/**
+ * What an approval names, read from the version's own manifest (PRD-009c D5, 009C-AC-015).
+ *
+ * An open house version's snapshot is exactly what it always was. A library-ad version has no
+ * `artifacts` or `property` block, so its snapshot is built from the variant instead: the ad and
+ * its version, both art digests, and references derived from content, never per-draft ones.
+ */
+function approvalSnapshotFor(
+  manifest: CampaignVersion["manifest"],
+  approverDisplayName: string | undefined,
+): ApprovalSnapshot {
+  // PRD-009e D2. The decider's own session display name, when the server's session read yielded
+  // one. Both snapshot variants may carry it; neither carries a key for it when there is none.
+  const approver = approverDisplayName === undefined ? {} : { approverDisplayName };
+  const budgetHash = hash({
+    dailyBudgetMinor: manifest.meta.dailyBudgetMinor,
+    totalBudgetMinor: manifest.meta.totalBudgetMinor,
+  });
+  if (manifest.blueprintId === "library-ad") {
+    const [tall, square] = manifest.images;
+    return ApprovalSnapshotSchema.parse({
+      blueprintId: "library-ad",
+      libraryAdId: manifest.libraryAd.id,
+      libraryAdVersion: manifest.libraryAd.version,
+      tallSha256: tall.contentSha256,
+      squareSha256: square.contentSha256,
+      creativeVersionRef: libraryAdCreativeRef(
+        manifest.libraryAd.id,
+        manifest.libraryAd.version,
+        tall.contentSha256,
+        square.contentSha256,
+      ),
+      copyVersionRef: libraryAdCopyRef(manifest.content.headline, manifest.content.body),
+      disclosureVersionRef: libraryAdDisclosureRef(manifest.content.disclosureText),
+      targetingHash: hash({
+        targeting: manifest.meta.targeting,
+        placements: manifest.meta.placements,
+      }),
+      budgetHash,
+      datesHash: hash({
+        startsAt: manifest.schedule.startsAt,
+        endsAt: manifest.schedule.endsAt,
+      }),
+      ...approver,
+    });
+  }
+  return ApprovalSnapshotSchema.parse({
+    pageVersionRef: manifest.artifacts.pageVersionRef,
+    pdfVersionRef: manifest.artifacts.pdfVersionRef,
+    creativeVersionRef: manifest.artifacts.creativeVersionRef,
+    copyVersionRef: manifest.artifacts.copyVersionRef,
+    emailPackageVersionRef: manifest.artifacts.emailPackageVersionRef,
+    smsPackageVersionRef: manifest.artifacts.smsPackageVersionRef,
+    disclosureVersionRef: manifest.artifacts.disclosureVersionRef,
+    targetingHash: hash(manifest.meta.targeting),
+    budgetHash,
+    datesHash: hash({
+      openHouseStartsAt: manifest.property.openHouseStartsAt,
+      openHouseEndsAt: manifest.property.openHouseEndsAt,
+    }),
+    formVersionRef: manifest.artifacts.formVersionRef,
+    destinationVersionRef: manifest.artifacts.destinationVersionRef,
+    ...approver,
+  });
+}
+
 export async function createApprovalDecision(
   input: Readonly<{
     approvalRef: string;
@@ -327,6 +386,12 @@ export async function createApprovalDecision(
     decidedAt: Date;
     ipAuditHash: string;
     decision: ApprovalDecision["decision"];
+    /**
+     * PRD-009e D2. The decider's own session display name, read by the server from their session
+     * and never from a request. `undefined` says there is none to record. The key is required, so a
+     * caller has to state which it is.
+     */
+    approverDisplayName: string | undefined;
   }>,
   authority: ApprovalAuthorityPort,
 ): Promise<Readonly<ApprovalDecision>> {
@@ -351,26 +416,7 @@ export async function createApprovalDecision(
     actorRef: input.actorRef,
     actorRole: input.actorRole,
   });
-  const snapshot = ApprovalSnapshotSchema.parse({
-    pageVersionRef: version.manifest.artifacts.pageVersionRef,
-    pdfVersionRef: version.manifest.artifacts.pdfVersionRef,
-    creativeVersionRef: version.manifest.artifacts.creativeVersionRef,
-    copyVersionRef: version.manifest.artifacts.copyVersionRef,
-    emailPackageVersionRef: version.manifest.artifacts.emailPackageVersionRef,
-    smsPackageVersionRef: version.manifest.artifacts.smsPackageVersionRef,
-    disclosureVersionRef: version.manifest.artifacts.disclosureVersionRef,
-    targetingHash: hash(version.manifest.meta.targeting),
-    budgetHash: hash({
-      dailyBudgetMinor: version.manifest.meta.dailyBudgetMinor,
-      totalBudgetMinor: version.manifest.meta.totalBudgetMinor,
-    }),
-    datesHash: hash({
-      openHouseStartsAt: version.manifest.property.openHouseStartsAt,
-      openHouseEndsAt: version.manifest.property.openHouseEndsAt,
-    }),
-    formVersionRef: version.manifest.artifacts.formVersionRef,
-    destinationVersionRef: version.manifest.artifacts.destinationVersionRef,
-  });
+  const snapshot = approvalSnapshotFor(version.manifest, input.approverDisplayName);
   return deepFreeze(
     ApprovalDecisionSchema.parse({
       schemaVersion: 1,

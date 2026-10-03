@@ -16,9 +16,9 @@ import {
   userLanguageForbiddenStrings,
 } from "../review-surface-sweep.js";
 import SharedReportPage from "../../(public)/home-report/[secret]/page.js";
-import HomeownersPage from "./page.js";
-import NewHomeownerReportPage from "./new/page.js";
-import HomeownerReportPage from "./[propertyId]/page.js";
+import HomeownersPage, { metadata as homeownersMetadata } from "./page.js";
+import NewHomeownerReportPage, { metadata as newReportMetadata } from "./new/page.js";
+import HomeownerReportPage, { metadata as reportMetadata } from "./[propertyId]/page.js";
 
 /**
  * PRD-008c 008C-AC-006: the rendered sweep over the homeowner report screens.
@@ -354,5 +354,19 @@ describe("the shared homeowner report page", () => {
     await screen.findByText(/no longer available/u);
 
     expectCleanSurface();
+  });
+});
+
+/**
+ * Writing review delta check, D-6. Homeowner reports is one of the menu's six items, and its three
+ * pages used to read "Automated LO" in the tab, beside the pages that name themselves. The list is the
+ * menu item's words, the create page is its heading, and one report is "Homeowner report", because
+ * its heading is the property's address.
+ */
+describe("the homeowner pages' tabs", () => {
+  it("name each page, and the root layout's template adds the product after it", () => {
+    expect(homeownersMetadata.title).toBe("Homeowner reports");
+    expect(newReportMetadata.title).toBe("Create a homeowner report");
+    expect(reportMetadata.title).toBe("Homeowner report");
   });
 });

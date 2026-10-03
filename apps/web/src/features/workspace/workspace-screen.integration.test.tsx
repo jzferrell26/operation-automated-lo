@@ -2,14 +2,15 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { WorkspaceScreen } from "./workspace-screen.js";
-import type { WorkspacePageData, WorkspaceView } from "./model.js";
+import { TEST_BRAND, workspaceData } from "./workspace.test-support.js";
 
 /**
  * PRD-008c 008C-AC-007, finding W1 of the 2026-10-01 writing review.
  *
- * The valuation card on the "Follow-up routing" and "Automations" pages used to promise that "you
- * confirm each one before it runs". That is true of a lookup the loan officer starts: the new
- * report form asks for the confirmation, and so does "Request a fresh valuation?". It is not true
+ * The valuation card on the routing page, and on the Automations page that PRD-009f removed, used
+ * to promise that "you confirm each one before it runs". That is true of a lookup the loan officer
+ * starts: the new report form asks for the confirmation, and so does "Request a fresh
+ * valuation?". It is not true
  * of a monthly update. Once someone saves "Monthly valuation refresh" for a property, the
  * scheduled refresh (`apps/web/src/server/homeowners/scheduler.ts`) makes a fresh valuation lookup
  * against the same monthly allowance with nobody there to confirm it, and the schedule dialog says
@@ -21,49 +22,13 @@ vi.mock("next/navigation.js", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
 }));
 
-const BRAND = {
-  name: "Casey Rivera",
-  company: "Evergreen Example Lending",
-  email: "casey@example.test",
-  phone: "555-0100",
-  nmls: "123456",
-  companyNmls: "234567",
-  tagline: "",
-};
-
-function workspaceData(
-  view: WorkspaceView,
-  overrides: Partial<WorkspacePageData> = {},
-): WorkspacePageData {
-  return {
-    view,
-    identity: {
-      name: "Casey Rivera",
-      company: "Evergreen Example Lending",
-      role: "Workspace owner",
-    },
-    canEdit: true,
-    preferences: { brand: null, partners: null, messages: {} },
-    defaultBrand: BRAND,
-    campaigns: [],
-    properties: [],
-    reportsEnabled: true,
-    valuationConfigured: true,
-    contactConfigured: false,
-    deliveryEnabled: false,
-    lookupsUsed: 0,
-    lookupLimit: 50,
-    ...overrides,
-  };
-}
-
 const CONNECTED_SENTENCE =
   "Your valuation connection is set up for this workspace. Each new lookup counts against your monthly allowance. You confirm the ones you start, and monthly updates, if you turn them on, run without asking each time.";
 
 const NOT_CONNECTED_SENTENCE =
   "A valuation connection and an approved workspace allowance are needed before requesting live values.";
 
-describe.each(["routing", "automations"] as const)("the valuation card on the %s page", (view) => {
+describe.each(["routing"] as const)("the valuation card on the %s page", (view) => {
   it("says what is true about confirming a lookup once the connection is set up", () => {
     render(<WorkspaceScreen data={workspaceData(view)} />);
 
@@ -82,5 +47,140 @@ describe.each(["routing", "automations"] as const)("the valuation card on the %s
 
     expect(screen.getByText(NOT_CONNECTED_SENTENCE)).toBeInTheDocument();
     expect(screen.queryByText(CONNECTED_SENTENCE)).toBeNull();
+  });
+});
+
+/**
+ * The scored baseline review of 2026-10-03 (PRD-009 009G-AC-006), part R3, on the Brand page.
+ *
+ * - F-05: "One obvious primary button per screen" (direction section 2.3, rubric axis 1). Both
+ *   saves, "Save your details" and "Save ad settings", were filled action-blue buttons on one page.
+ * - F-06: the ad settings' fields had no gap between them (the label of each sat 6 to 10px under the
+ *   input above), where "Your details" keeps its own and the partner dialog's fieldset has the
+ *   stack's `--space-5`.
+ * - F-04: the two previews are not navy panels. The stylesheet half is
+ *   `workspace-light-look.unit.test.ts`; here the markup is held to the card the primitive draws.
+ */
+
+function primaryButtons(): readonly string[] {
+  return screen
+    .getAllByRole("button")
+    .filter((button) => button.getAttribute("data-variant") === "primary")
+    .map((button) => button.textContent ?? "");
+}
+
+describe("F-05: the Brand page has one primary button", () => {
+  it('makes "Save your details" the page\'s one primary and "Save ad settings" a secondary', () => {
+    render(<WorkspaceScreen data={workspaceData("profile")} />);
+
+    expect(primaryButtons()).toEqual(["Save your details"]);
+    expect(screen.getByRole("button", { name: "Save ad settings" })).toHaveAttribute(
+      "data-variant",
+      "secondary",
+    );
+  });
+
+  it("keeps both saves, with their own names, whoever may edit", () => {
+    render(<WorkspaceScreen data={workspaceData("profile", { canEdit: false })} />);
+
+    expect(screen.getByRole("button", { name: "Save your details" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save ad settings" })).toBeDisabled();
+    // A disabled page still has no second blue button.
+    expect(primaryButtons()).toEqual(["Save your details"]);
+  });
+
+  it("leaves the reloads as outlines, so they never compete with a save", () => {
+    render(<WorkspaceScreen data={workspaceData("profile")} />);
+
+    for (const name of ["Load latest saved details", "Load latest saved ad settings"]) {
+      expect(screen.getByRole("button", { name })).toHaveAttribute("data-variant", "outline");
+    }
+  });
+});
+
+describe("F-06: the ad settings' fields are a stack", () => {
+  it("puts the stack's gap on the ad settings' fieldset, as the partner dialog's has it", () => {
+    render(<WorkspaceScreen data={workspaceData("profile")} />);
+
+    const fieldset = screen.getByLabelText(/Title on your ads/u).closest("fieldset");
+    const detailsFieldset = screen.getByLabelText("Company name").closest("fieldset");
+
+    expect(fieldset).not.toBeNull();
+    // Both read `styles.fields`; only the ad settings' fieldset also reads `styles.stack`.
+    expect(fieldset?.className.split(/\s+/u).length).toBeGreaterThanOrEqual(2);
+    expect(detailsFieldset?.className.split(/\s+/u).length).toBe(1);
+  });
+
+  it("keeps all four ad fields inside that one fieldset", () => {
+    render(<WorkspaceScreen data={workspaceData("profile")} />);
+
+    const fieldset = screen.getByLabelText(/Title on your ads/u).closest("fieldset");
+
+    for (const label of [/Title on your ads/u, /Disclosure line/u, /Lead form wording/u]) {
+      expect(fieldset?.contains(screen.getByLabelText(label))).toBe(true);
+    }
+    expect(fieldset?.textContent).toContain("Brand color");
+  });
+});
+
+describe("F-04: the previews are Cards", () => {
+  it("draws both previews on the Card primitive, which brings the white fill and the hairline", () => {
+    const { container } = render(<WorkspaceScreen data={workspaceData("profile")} />);
+
+    for (const eyebrow of ["Report preview", "On every ad"]) {
+      const card = screen.getByText(eyebrow).closest("article");
+      expect(card, `${eyebrow} card`).not.toBeNull();
+      expect(card?.getAttribute("data-variant")).toBe("card");
+    }
+    expect(
+      container.querySelectorAll("article[data-variant='card']").length,
+    ).toBeGreaterThanOrEqual(4);
+  });
+});
+
+/**
+ * The scored baseline review pass 2, P2-03. With neither NMLS number saved, the Report preview drew
+ * an empty `<small>`, which is still a grid item, so the card's gap showed twice above "Changes
+ * apply to new reports" (52px against 28px between every other line of the preview).
+ */
+describe("P2-03: the Report preview draws no empty line", () => {
+  function reportPreview(): HTMLElement {
+    const card = screen.getByText("Report preview").closest("article");
+    expect(card, "the Report preview card").not.toBeNull();
+    return card as HTMLElement;
+  }
+
+  it("draws no NMLS line while neither number is saved", () => {
+    render(
+      <WorkspaceScreen
+        data={workspaceData("profile", {
+          defaultBrand: { ...TEST_BRAND, nmls: "", companyNmls: "" },
+        })}
+      />,
+    );
+
+    expect(reportPreview().querySelector("small")).toBeNull();
+    // No text element of the card's grid is empty, so none takes a gap with nothing in it.
+    for (const child of reportPreview().querySelectorAll("span, small, strong, h2, p")) {
+      expect(child.textContent?.trim(), `<${child.tagName.toLowerCase()}> is empty`).not.toBe("");
+    }
+  });
+
+  it("draws the line, with both numbers, once they are saved", () => {
+    render(<WorkspaceScreen data={workspaceData("profile")} />);
+
+    expect(reportPreview().querySelector("small")?.textContent).toBe(
+      `NMLS ${TEST_BRAND.nmls} · Company NMLS ${TEST_BRAND.companyNmls}`,
+    );
+  });
+
+  it("draws the line for one number alone", () => {
+    render(
+      <WorkspaceScreen
+        data={workspaceData("profile", { defaultBrand: { ...TEST_BRAND, companyNmls: "" } })}
+      />,
+    );
+
+    expect(reportPreview().querySelector("small")?.textContent).toBe(`NMLS ${TEST_BRAND.nmls}`);
   });
 });

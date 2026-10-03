@@ -155,7 +155,7 @@ const rawSyntheticBrandProfile: unknown = {
       },
       {
         id: "synthetic-required-field-disclosure",
-        label: "Open House Boost disclosure",
+        label: "Ad disclosure",
         state: "confirmed",
         evidence: "Synthetic lender policy version 4",
       },

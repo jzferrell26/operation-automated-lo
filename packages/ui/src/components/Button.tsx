@@ -56,7 +56,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       data-variant={variant}
     >
       {loading ? <span className={styles.spinner} aria-hidden="true" /> : null}
-      <span>{children}</span>
+      {/* PRD-009 scored review R3 F-03. The label is a row, so a glyph passed with the words sits
+          beside them on the first line rather than on a line of its own. */}
+      <span className={styles.label}>{children}</span>
       {loading ? <span className={styles.visuallyHidden}>{loadingLabel}</span> : null}
     </button>
   );

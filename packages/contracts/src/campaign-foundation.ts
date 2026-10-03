@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+import {
+  AdsLibraryAdIdSchema,
+  AdsLibraryCallToActionSchema,
+  AdsLibraryVersionSchema,
+} from "./ads-library.js";
+
 export const OpaqueReferenceSchema = z
   .string()
   .min(8)
@@ -231,7 +237,7 @@ export const CampaignInputVersionsSchema = z
   .strict();
 export type CampaignInputVersions = z.infer<typeof CampaignInputVersionsSchema>;
 
-export const CampaignManifestSchema = z
+export const OpenHouseCampaignManifestSchema = z
   .object({
     schemaVersion: z.literal(1),
     blueprintId: z.literal("open-house-boost"),
@@ -318,6 +324,112 @@ export const CampaignManifestSchema = z
       .strict(),
   })
   .strict();
+export type OpenHouseCampaignManifest = z.infer<typeof OpenHouseCampaignManifestSchema>;
+
+/**
+ * PRD-009c D5. The art of one library ad as a campaign version records it. The reference is
+ * `libimg_` and 40 hexadecimal characters derived from the ad, its version, the shape, and the file
+ * digest, and `contentSha256` is the catalog's digest of the bytes, so the manifest hash, and with it
+ * an approval, covers the exact pixels.
+ */
+function libraryAdImageSchema<Shape extends "tall" | "square">(shape: Shape) {
+  return z
+    .object({
+      shape: z.literal(shape),
+      assetRef: OpaqueReferenceSchema.regex(/^libimg_[a-f0-9]{40}$/u),
+      approvalStatus: z.literal("approved"),
+      width: z.number().int().positive(),
+      height: z.number().int().positive(),
+      altText: z.string().trim().min(10).max(200),
+      contentSha256: Sha256Schema,
+    })
+    .strict();
+}
+
+/**
+ * PRD-009c D5. The second blueprint: one ad from the curated library, with the loan officer's edited
+ * words, their frozen brand, the run dates, the places, and the budgets.
+ *
+ * It has no `partner`, no `property`, and no key that can hold a Realtor or brokerage identity, so
+ * compliance control 9 holds by structure (009C-AC-006 walks every key). The fixed parts are fixed
+ * here rather than in a check: Housing, the Facebook feed, and empty ZIP, audience, and
+ * protected-dimension lists. `headline` and `body` are capped at the request limits (120 and 600)
+ * rather than the ad's editable limits, so an over-long version is stored and then refused by the
+ * domain's word-length check with a plain fix (009d D5).
+ */
+export const LibraryAdCampaignManifestSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    blueprintId: z.literal("library-ad"),
+    libraryAd: z
+      .object({
+        id: AdsLibraryAdIdSchema,
+        version: AdsLibraryVersionSchema,
+      })
+      .strict(),
+    content: z
+      .object({
+        headline: z.string().trim().min(1).max(120),
+        body: z.string().trim().min(1).max(600),
+        callToAction: AdsLibraryCallToActionSchema,
+        disclosureText: z.string().trim().max(120),
+        consentText: z.string().trim().max(300),
+        claims: z.array(z.string()).max(0),
+        mergeTokens: z.array(z.string()).max(0),
+        financingTerms: z.array(z.string()).max(0),
+      })
+      .strict(),
+    images: z.tuple([libraryAdImageSchema("tall"), libraryAdImageSchema("square")]),
+    advertiser: z
+      .object({
+        name: z.string().trim().max(120),
+        title: z.string().trim().max(60),
+        company: z.string().trim().max(160),
+        nmls: z.string().regex(/^\d{0,12}$/u),
+        companyNmls: z.string().regex(/^\d{0,12}$/u),
+        colorPresetId: z.string().regex(/^[a-z][a-z0-9-]{1,31}$/u),
+      })
+      .strict(),
+    schedule: z
+      .object({
+        startsAt: z.iso.datetime({ offset: true }).nullable(),
+        endsAt: z.iso.datetime({ offset: true }),
+      })
+      .strict(),
+    meta: z
+      .object({
+        enabled: z.boolean(),
+        specialAdCategory: z.literal("HOUSING"),
+        platform: z.literal("meta"),
+        placements: z.tuple([z.literal("facebook_feed")]),
+        targeting: z
+          .object({
+            country: z.literal("US"),
+            regions: z.array(z.string().regex(/^[A-Z]{2}$/u)).max(5),
+            cities: z.array(z.string().regex(/^[A-Za-z][A-Za-z .'-]{1,59}, [A-Z]{2}$/u)).max(10),
+            zipCodes: z.array(z.string()).max(0),
+            customAudienceRefs: z.array(OpaqueReferenceSchema).max(0),
+            protectedDimensions: z.array(z.string()).max(0),
+          })
+          .strict(),
+        dailyBudgetMinor: z.number().int().nonnegative(),
+        totalBudgetMinor: z.number().int().nonnegative(),
+      })
+      .strict(),
+    routing: OpenHouseCampaignManifestSchema.shape.routing,
+  })
+  .strict();
+export type LibraryAdCampaignManifest = z.infer<typeof LibraryAdCampaignManifestSchema>;
+
+/**
+ * PRD-009c D5. The manifest is a union on `blueprintId`. `open-house-boost` is unchanged, so every
+ * stored version parses to the same value and keeps its hash; the database stores any JSON object
+ * (`20260915180000_campaign_activation.sql`, `jsonb_typeof(manifest) = 'object'`), so no migration.
+ */
+export const CampaignManifestSchema = z.discriminatedUnion("blueprintId", [
+  OpenHouseCampaignManifestSchema,
+  LibraryAdCampaignManifestSchema,
+]);
 export type CampaignManifest = z.infer<typeof CampaignManifestSchema>;
 
 export const CampaignVersionSchema = z
@@ -344,7 +456,7 @@ export const CampaignVersionInputSchema = CampaignVersionSchema.omit({
 });
 export type CampaignVersionInput = z.infer<typeof CampaignVersionInputSchema>;
 
-export const PreflightRulesSchema = z
+const SharedPreflightRulesSchema = z
   .object({
     schemaVersion: z.literal(1),
     rulesetVersionRef: OpaqueReferenceSchema,
@@ -373,6 +485,29 @@ export const PreflightRulesSchema = z
       .max(50),
   })
   .strict();
+
+/**
+ * PRD-009d D5. What the library-ad ruleset needs to know about one check beyond the shared values:
+ * the ad's own word limits (`WORDS_TOO_LONG`), the person's saved Realtor partners' names and
+ * companies (`WORDS_CO_BRAND`), and whether the ad was retired before the check ran
+ * (`LIBRARY_AD_RETIRED`). It is present exactly when the rules are the library-ad ruleset's, which
+ * is why the rules are a union rather than one object with an optional block: an open house check
+ * cannot carry it, and the domain refuses to check a library ad without it.
+ */
+export const LibraryAdRuleContextSchema = z
+  .object({
+    headlineMaxLength: z.number().int().min(1).max(60),
+    primaryTextMaxLength: z.number().int().min(1).max(300),
+    partnerNames: z.array(z.string().trim().min(1).max(160)).max(50),
+    retiredOn: z.iso.date().nullable(),
+  })
+  .strict();
+export type LibraryAdRuleContext = z.infer<typeof LibraryAdRuleContextSchema>;
+
+export const PreflightRulesSchema = z.union([
+  SharedPreflightRulesSchema,
+  SharedPreflightRulesSchema.extend({ libraryAd: LibraryAdRuleContextSchema }).strict(),
+]);
 export type PreflightRules = z.infer<typeof PreflightRulesSchema>;
 
 export const PreflightFindingSchema = z
@@ -402,7 +537,13 @@ export const PreflightResultSchema = z
   .strict();
 export type PreflightResult = z.infer<typeof PreflightResultSchema>;
 
-export const ApprovalSnapshotSchema = z
+/**
+ * PRD-009e D2 (009E-AC-004) records the decider's own session display name here. Both snapshot
+ * variants accept it; it is never read from a request.
+ */
+const ApproverDisplayNameSchema = z.string().trim().min(1).max(200);
+
+export const OpenHouseApprovalSnapshotSchema = z
   .object({
     pageVersionRef: OpaqueReferenceSchema,
     pdfVersionRef: OpaqueReferenceSchema,
@@ -416,8 +557,39 @@ export const ApprovalSnapshotSchema = z
     datesHash: Sha256Schema,
     formVersionRef: OpaqueReferenceSchema,
     destinationVersionRef: OpaqueReferenceSchema,
+    approverDisplayName: ApproverDisplayNameSchema.optional(),
   })
   .strict();
+export type OpenHouseApprovalSnapshot = z.infer<typeof OpenHouseApprovalSnapshotSchema>;
+
+/**
+ * PRD-009c D5, 009C-AC-015. What an approval of a library-ad version names: the ad and its
+ * version, both art digests, and references derived from the art, the words, and the disclosure
+ * line, plus the targeting, budget, and run-date hashes. No field is a reference minted per draft,
+ * so two drafts with the same content name the same thing.
+ */
+export const LibraryAdApprovalSnapshotSchema = z
+  .object({
+    blueprintId: z.literal("library-ad"),
+    libraryAdId: AdsLibraryAdIdSchema,
+    libraryAdVersion: AdsLibraryVersionSchema,
+    tallSha256: Sha256Schema,
+    squareSha256: Sha256Schema,
+    creativeVersionRef: z.string().regex(/^libcreative_[a-f0-9]{40}$/u),
+    copyVersionRef: z.string().regex(/^libcopy_[a-f0-9]{40}$/u),
+    disclosureVersionRef: z.string().regex(/^libdisclosure_[a-f0-9]{40}$/u),
+    targetingHash: Sha256Schema,
+    budgetHash: Sha256Schema,
+    datesHash: Sha256Schema,
+    approverDisplayName: ApproverDisplayNameSchema.optional(),
+  })
+  .strict();
+export type LibraryAdApprovalSnapshot = z.infer<typeof LibraryAdApprovalSnapshotSchema>;
+
+export const ApprovalSnapshotSchema = z.union([
+  OpenHouseApprovalSnapshotSchema,
+  LibraryAdApprovalSnapshotSchema,
+]);
 export type ApprovalSnapshot = z.infer<typeof ApprovalSnapshotSchema>;
 
 export const ApprovalDecisionSchema = z

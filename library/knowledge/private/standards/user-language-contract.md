@@ -1,6 +1,6 @@
 # User Language Contract
 
-> Category: Standard | Version: 1.1 | Date: October 2026 | Status: Approved
+> Category: Standard | Version: 1.2 | Date: October 2026 | Status: Approved
 > Source: [PRD-006b](../../../requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/prd-006b-first-party-sign-in-and-guided-experience-user-language.md) D1 through D4 and D8, extended by [PRD-008c](../../../requirements/completed/prd-008-finish-line-hardening/prd-008c-finish-line-hardening-user-language-completion.md) (`adapter`, `origin`, the administrator-instruction phrase rule, and the user-facing error classes) and recorded here under PRD-008e `008E-AC-015`
 
 Every word a user reads in Operation Automated LO is written for a mortgage loan officer who has never seen this codebase. This document is the rule. It governs product copy, page titles, the site description, accessible names, placeholders, help text, error messages, and the account emails. It does not govern code identifiers, database column names, log lines, test names, or anything else a user never sees.
@@ -10,13 +10,13 @@ Every word a user reads in Operation Automated LO is written for a mortgage loan
 - [Documentation framework](documentation-framework.md)
 - [UX/UI source of truth](../ux-ui/README.md)
 - [What Automated LO does today](../../public/overview/what-is-automated-lo.md)
-- [Open House Boost FAQ](../../public/faqs/open-house-boost-faq.md)
+- [Launch an ad FAQ](../../public/faqs/open-house-boost-faq.md) _(Amended on 2026-10-01 by PRD-009 (S-98; OD-H, D-16): the link text was "Open House Boost FAQ" and now follows the FAQ's new title (S-79); the file name is kept so inbound links resolve.)_
 
 ---
 
 ## 1. Who is reading
 
-A loan officer who runs open houses with Realtor partners. They know mortgages, compliance, open houses, and their CRM. They do not know what a session is, what a hash is, what a projection is, or what the product calls things internally. They opened the product to get one open house campaign made and approved.
+A loan officer who runs open houses with Realtor partners. They know mortgages, compliance, open houses, and their CRM. They do not know what a session is, what a hash is, what a projection is, or what the product calls things internally. They opened the product to get one open house campaign made and approved. _(Amended on 2026-10-01 by PRD-009 (S-99; OD-H): the reader is a loan officer who launches ready-made ads from the library; the writing review of PRD-009 (MTK-008) reads strings against this amended section.)_
 
 ## 2. Voice and tone
 
@@ -24,7 +24,7 @@ A loan officer who runs open houses with Realtor partners. They know mortgages, 
 2. **Plain words over precise-sounding words.** "Saved", not "persisted". "Checks", not "preflight". "Your workspace", not "location". "Approver", not "campaign_approver".
 3. **Specific over abstract.** Name what the product did, will do, or cannot do yet. "Meta isn't connected yet, so this campaign won't run as an ad", not "Provider publication remains disabled."
 4. **Warm, not chatty.** No exclamation marks in status copy. One idea per sentence.
-5. **Sentence case** for headings, buttons, and labels. Product names keep their casing: Open House Boost, HighLevel, Meta, Stripe, Automated LO.
+5. **Sentence case** for headings, buttons, and labels. Product names keep their casing: Open House Boost, HighLevel, Meta, Stripe, Automated LO. _(Amended on 2026-10-01 by PRD-009 (S-76; D-16): Open House Boost is retired from product copy; the flow's names (Ads library, Launch an ad, Choose an ad, Set it up, Review and launch) are ordinary sentence-case words.)_
 6. **The user's formats** for numbers, dates, and money.
 7. **Honesty is a tone rule, not an exception to one.** A not-connected state, a locked action, or an error says what is true and what the user can do next, in the same voice as everything else.
 8. **No em dash and no en dash** in any string, comment, or document line. Use a comma, a colon, parentheses, a period, or a semicolon.
@@ -70,7 +70,7 @@ Most terms are banned outright and matched case-insensitively on a word boundary
 | preflight, deterministic gate | the checks, campaign check |
 | preflight passed / blocked | Ready for approval / Needs changes |
 | finding, rule code | what to fix (with the plain explanation first) |
-| provider publication remains disabled | This campaign won't run as an ad yet. HighLevel and Meta aren't connected. |
+| provider publication remains disabled | This campaign won't run as an ad yet. HighLevel and Meta aren't connected. _(Amended on 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-28): now "This campaign won't run as an ad yet. Launching isn't turned on, and HighLevel and Meta aren't connected.", because launching stays off even with both accounts connected.)_ |
 | adapter | connection ("Your valuation connection is set up for this workspace.") |
 | origin | web address |
 | not connected (kept), no live observation | not connected yet, not live yet |
@@ -94,18 +94,20 @@ The product's not-connected states are a compliance commitment, not a style choi
 
 | Surface | String |
 |---|---|
-| Banner headline | Not connected yet |
-| Banner body | HighLevel, Meta, and Stripe aren't connected to this workspace yet, so nothing here is live and nothing can be published. |
-| Banner accessible name | Not connected yet: HighLevel, Meta, and Stripe |
+| Banner headline | Not connected yet _(Superseded on 2026-10-01 by PRD-009 (S-77; D-11): no shell-wide banner shows this headline any more (009A-AC-013).)_ |
+| Banner body | HighLevel, Meta, and Stripe aren't connected to this workspace yet, so nothing here is live and nothing can be published. _(Superseded on 2026-10-01 by PRD-009 (S-77; D-11): the banner is retired. The disclosure sentence now appears only as a page's own statement, and names only HighLevel and Meta: "HighLevel and Meta aren't connected to this workspace yet, so nothing here is live and nothing can be published.")_ |
+| Banner accessible name | Not connected yet: HighLevel, Meta, and Stripe _(Superseded on 2026-10-01 by PRD-009 (S-77; D-11): deleted with the banner.)_ |
 | A section's detail | Not connected yet. |
-| A section's source | HighLevel, Meta, and Stripe aren't connected. |
-| A metric's source | Not live yet. Connect Meta and HighLevel to see spend and leads here. |
+| A section's source | HighLevel, Meta, and Stripe aren't connected. _(Amended on 2026-10-01 by PRD-009 (S-77; D-8): now "HighLevel and Meta aren't connected.")_ |
+| A metric's source | Not live yet. Connect Meta and HighLevel to see spend and leads here. _(Amended on 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-28): now "Not live yet. Spend and leads can't show here until Meta and HighLevel are connected.", because connecting is a necessary condition and not a promise, and no PRD-009 screen can connect an account.)_ |
 | A metric's freshness | Not live yet |
-| What to do next | Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do. |
+| What to do next | Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do. _(Amended on 2026-10-01 by PRD-009 (S-77; D-8): now "Connect HighLevel and Meta when you're ready. Nothing here changes until you do.")_ _(Amended on 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-28): now "Connecting HighLevel and Meta isn't available in the app yet. Nothing here changes in the meantime.", because the Connections page has no connect control and PRD-009 makes none work, and section 2 rule 3 asks the product to name what it cannot do yet.)_ |
 | A locked navigation item | Available once your accounts are connected. |
 | A setup step with nothing to check | Nothing to check yet. This step waits for a connected account. |
 | Who does that step | You, once you connect |
 | A metric that is not a live reading | Not live data |
+
+> **Amended on 2026-10-01 by PRD-009** (S-77; D-8, D-11, 009F-AC-008): the three banner rows are retired with the shell-wide banner (009A-AC-013), and the section-source and next-step rows now name only HighLevel and Meta, because a sentence about the ads names the two accounts the ads need. No connection sentence names Stripe (a search of the product source on 2026-10-02 finds none); billing sits under Settings, Account, as "Plan and usage". The constants in `apps/web/src/copy/user-language.ts` carry the amended strings, and the three rules below still stand.
 
 Three rules follow from those strings:
 
@@ -140,3 +142,8 @@ No `SCREAMING_SNAKE` code ever reaches a status line. Every code a route can ret
 | `technical-writing-craft-guardian` | The reader lens. A string can pass both guards and still be written for the wrong person. A blocking finding stops the merge. |
 
 The guards are a floor, not the contract. When a guard and this document disagree, this document wins and the guard is fixed.
+
+## Changelog
+
+- **v1.2, 2026-10-02.** The PRD-009 writing review pass 2 (MTK-008, W-28) reworded section 4's row for provider publication and section 5's rows for a metric's source and the next step, so no connection sentence asks the reader to connect while no screen can. No rule was added or removed.
+- **v1.1, 2026-10-01.** PRD-009 amended sections 1, 2, 5 and the related links in place (S-76, S-77, S-98, S-99), each with a dated note.

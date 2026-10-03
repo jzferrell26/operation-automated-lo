@@ -68,14 +68,14 @@ The full platform design must add or maintain specifications for:
 
 - Realtor Partners
 - Connections and Permissions
-- Leads and Pipeline
+- Leads and Pipeline _(Superseded on 2026-10-01 by PRD-009 (S-65; OD-D): removed from the product, with the other three items to the end of this list.)_
 - Automations
 - Reports
 - Support and Exceptions
 - Team and Roles
 - AI Usage and Billing
 - Theme and Account Settings
-- Marketplace module status
+- Marketplace module status _(Superseded on 2026-10-01 by PRD-009 (S-65; OD-D): removed.)_
 
 These surfaces must use the same application shell, status taxonomy, semantic tokens, responsive behavior, and safe-action rules.
 

@@ -15,7 +15,6 @@ import {
   signInExisting,
 } from "./helpers/guided-setup-journey.js";
 import { readableSurfaceOf } from "./helpers/readable-surface.js";
-import { putTheWalkthroughAside } from "./helpers/review-session.js";
 
 /**
  * PRD-008c 008C-AC-006, the half that reads a running review deployment.
@@ -57,7 +56,6 @@ test.describe.serial("the homeowner report screens on the review deployment", ()
     page = await context.newPage();
     guard = await guardLocalOrigin(page);
     await signInExisting(page, creatorEmail, password);
-    await putTheWalkthroughAside(page);
   });
 
   test.afterAll(async () => {

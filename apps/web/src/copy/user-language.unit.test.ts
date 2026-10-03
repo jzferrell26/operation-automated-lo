@@ -3,11 +3,30 @@ import { describe, expect, it } from "vitest";
 
 import { findVocabularyHits } from "./forbidden-vocabulary.js";
 import {
+  AD_ART_CHANGED_CHIP,
+  AD_MISSING_CHIP,
+  AD_REPLACED_CHIP,
+  AD_RETIRED_CHIP,
+} from "./launch-messages.js";
+import * as userLanguage from "./user-language.js";
+import {
+  CAMPAIGN_AD_ART_CHANGED_LABEL,
+  CAMPAIGN_AD_MISSING_LABEL,
+  CAMPAIGN_AD_NEWER_VERSION_LABEL,
+  CAMPAIGN_AD_RETIRED_LABEL,
   CAMPAIGN_NEXT_ACTION_LABELS,
+  CAMPAIGN_NOT_AN_AD_YET,
   CAMPAIGN_SENT_BACK_LABEL,
   CAMPAIGN_STATE_LABELS,
+  CAMPAIGN_VERSION_REPLACED_LABEL,
   CHECK_RESULT_PASSED,
+  NEEDS_CHANGES_NEXT_ACTION,
+  NOT_CONNECTED_DISCLOSURE,
+  NOT_CONNECTED_NEXT_STEP,
+  NOT_CONNECTED_SOURCE,
+  NOT_LIVE_METRIC_SOURCE,
   ROLE_LABELS,
+  SIGNED_IN_SOURCE,
   campaignStateLabel,
 } from "./user-language.js";
 
@@ -81,6 +100,91 @@ describe("where a campaign stands once somebody has decided on it", () => {
   });
 });
 
+/**
+ * PRD-009e 009E-AC-010. Nothing in PRD-009 can publish an ad, so no screen can truthfully say a
+ * campaign is "Live" or "Going live", and the three words the list adds say what is true of a version
+ * the library or a person has acted on.
+ */
+describe("the campaign standings the list and the campaign page read (009E-AC-010)", () => {
+  it("has no state phrase that says a campaign is live or going live", () => {
+    for (const [state, phrase] of Object.entries(CAMPAIGN_STATE_LABELS)) {
+      expect(phrase, state).not.toMatch(/\b(?:live|going live|launched|running)\b/iu);
+    }
+    expect(Object.values(CAMPAIGN_STATE_LABELS)).not.toContain("Live");
+    expect(Object.values(CAMPAIGN_STATE_LABELS)).not.toContain("Going live");
+  });
+
+  it("says Ad retired, Sent back for changes, and Needs changes in the product's own words", () => {
+    expect(CAMPAIGN_AD_RETIRED_LABEL).toBe("Ad retired");
+    expect(campaignStateLabel("ad_retired", undefined)).toBe("Ad retired");
+    expect(campaignStateLabel("awaiting_approval", "rejected")).toBe("Sent back for changes");
+    expect(campaignStateLabel("preflight_failed", undefined)).toBe("Needs changes");
+  });
+
+  it("says a version nobody decided on that a newer one replaced was replaced", () => {
+    expect(campaignStateLabel("replaced", undefined)).toBe(CAMPAIGN_VERSION_REPLACED_LABEL);
+    expect(CAMPAIGN_VERSION_REPLACED_LABEL).toBe("Replaced by a newer version");
+  });
+
+  /**
+   * QA-11. The approval rule refuses a library ad for four reasons, and each has a standing with the
+   * words step 3's chip uses for it (writing review delta check, D-5), so the list, the campaign page,
+   * and step 3 call one thing by one name.
+   */
+  it("says the other three reasons the library can refuse an ad in the words step 3 settled on", () => {
+    expect(campaignStateLabel("ad_newer_version", undefined)).toBe("Newer ad version");
+    expect(campaignStateLabel("ad_art_changed", undefined)).toBe("Ad picture changed");
+    expect(campaignStateLabel("ad_missing", undefined)).toBe("Ad not in the library");
+    expect(CAMPAIGN_AD_NEWER_VERSION_LABEL).toBe("Newer ad version");
+    expect(CAMPAIGN_AD_ART_CHANGED_LABEL).toBe("Ad picture changed");
+    expect(CAMPAIGN_AD_MISSING_LABEL).toBe("Ad not in the library");
+  });
+
+  it("is the one source of the chips step 3 draws for a refused ad (009E-AC-010)", () => {
+    expect(AD_RETIRED_CHIP).toBe(campaignStateLabel("ad_retired", undefined));
+    expect(AD_REPLACED_CHIP).toBe(campaignStateLabel("ad_newer_version", undefined));
+    expect(AD_ART_CHANGED_CHIP).toBe(campaignStateLabel("ad_art_changed", undefined));
+    expect(AD_MISSING_CHIP).toBe(campaignStateLabel("ad_missing", undefined));
+  });
+
+  it("reads a standing the same with or without a decision, except a send-back", () => {
+    for (const standing of [
+      "ad_retired",
+      "ad_newer_version",
+      "ad_art_changed",
+      "ad_missing",
+      "replaced",
+    ] as const) {
+      for (const decision of [undefined, "approved", "rejected"] as const) {
+        expect(campaignStateLabel(standing, decision), `${standing}/${String(decision)}`).toBe(
+          campaignStateLabel(standing, undefined),
+        );
+      }
+    }
+  });
+
+  it("carries no forbidden word and no stored token", () => {
+    for (const phrase of [
+      CAMPAIGN_AD_RETIRED_LABEL,
+      CAMPAIGN_AD_NEWER_VERSION_LABEL,
+      CAMPAIGN_AD_ART_CHANGED_LABEL,
+      CAMPAIGN_AD_MISSING_LABEL,
+      CAMPAIGN_VERSION_REPLACED_LABEL,
+    ]) {
+      expect(findVocabularyHits(phrase), phrase).toEqual([]);
+      expect(phrase).not.toContain("_");
+    }
+  });
+
+  it("gives no two standings the same words, so a chip says one thing", () => {
+    const words = (
+      ["ad_retired", "ad_newer_version", "ad_art_changed", "ad_missing", "replaced"] as const
+    ).map((standing) => campaignStateLabel(standing, undefined));
+    expect(new Set(words).size).toBe(words.length);
+    for (const phrase of Object.values(CAMPAIGN_STATE_LABELS)) expect(words).not.toContain(phrase);
+  });
+});
+
 describe("the campaign next-step phrases", () => {
   it("gives every step the application layer can name a sentence with no forbidden word", () => {
     const keys = Object.keys(CAMPAIGN_NEXT_ACTION_LABELS);
@@ -89,6 +193,96 @@ describe("the campaign next-step phrases", () => {
       expect(findVocabularyHits(phrase), `${id} reads "${phrase}"`).toEqual([]);
       expect(phrase.trim().length).toBeGreaterThan(0);
     }
+  });
+});
+
+/**
+ * PRD-009f 009F-AC-008, and decision D-8.
+ *
+ * Ads need two accounts, HighLevel for the leads and Meta for the ads, so a sentence about them
+ * names those two and no other. Billing lives under Settings, Account, "Plan and usage", where the
+ * page says what it says; a connection sentence that names a payment provider tells a loan officer
+ * something the ads do not need. The check reads every string the module exports, nested ones
+ * included, so a new constant is held to it the moment it is added.
+ */
+function everyString(
+  value: unknown,
+  path: string,
+): readonly Readonly<{ path: string; text: string }>[] {
+  if (typeof value === "string") return [{ path, text: value }];
+  if (typeof value !== "object" || value === null) return [];
+  return Object.entries(value).flatMap(([key, inner]) => everyString(inner, `${path}.${key}`));
+}
+
+describe("the connection sentences", () => {
+  it("name HighLevel and Meta and never a payment provider", () => {
+    for (const { path, text } of everyString({ ...userLanguage }, "user-language")) {
+      expect(text, path).not.toMatch(/stripe/iu);
+    }
+    for (const sentence of [
+      NOT_CONNECTED_DISCLOSURE,
+      NOT_CONNECTED_SOURCE,
+      NOT_CONNECTED_NEXT_STEP,
+    ]) {
+      expect(sentence).toMatch(/HighLevel and Meta/u);
+    }
+  });
+
+  /**
+   * Writing review pass 2, W-28. No screen can connect HighLevel or Meta in PRD-009 (its non-goal),
+   * and launching is off even with both connected. So no connection sentence asks the reader to
+   * connect, and none says connecting is all an ad needs. They say what is true: it is not
+   * available in the app yet, and what the ad needs.
+   */
+  it("never asks the reader to connect an account, because no screen can do that yet", () => {
+    for (const sentence of [
+      NOT_CONNECTED_NEXT_STEP,
+      NOT_LIVE_METRIC_SOURCE,
+      CAMPAIGN_NOT_AN_AD_YET,
+    ]) {
+      expect(sentence).not.toMatch(/\bconnect\b/iu);
+      expect(sentence).not.toMatch(/when you.re ready/iu);
+    }
+    expect(NOT_CONNECTED_NEXT_STEP).toBe(
+      "Connecting HighLevel and Meta isn't available in the app yet. Nothing here changes in the meantime.",
+    );
+    expect(NOT_LIVE_METRIC_SOURCE).toBe(
+      "Not live yet. Spend and leads can't show here until Meta and HighLevel are connected.",
+    );
+  });
+
+  it("says launching is off as well as the accounts, when it says a campaign won't run", () => {
+    expect(CAMPAIGN_NOT_AN_AD_YET).toBe(
+      "This campaign won't run as an ad yet. Launching isn't turned on, and HighLevel and Meta aren't connected.",
+    );
+    expect(CAMPAIGN_NEXT_ACTION_LABELS.provider_publish).toBe(CAMPAIGN_NOT_AN_AD_YET);
+  });
+
+  it("has no constant left that nothing reads", () => {
+    expect(Object.keys(userLanguage)).not.toContain("CAMPAIGN_SAVED_NOTICE");
+  });
+
+  it("says only who is signed in on the account line", () => {
+    expect(SIGNED_IN_SOURCE).toBe("Signed in with your email.");
+  });
+
+  it("no longer carries a name for the shell-wide banner that is gone", () => {
+    expect(Object.keys(userLanguage)).not.toContain("NOT_CONNECTED_BANNER_LABEL");
+  });
+});
+
+/**
+ * PRD-008 follow-up Quality L-2, closed by 009F-AC-008. "Fix what the checks found, then save it
+ * again." was said to every reader of a version whose checks need changes, including an approver who
+ * cannot make a new version. The sentence now says who can.
+ */
+describe("what to do about a version whose checks found something", () => {
+  it("names the person who can make the new version, for every reader", () => {
+    expect(NEEDS_CHANGES_NEXT_ACTION).toBe(
+      "The campaign creator fixes what the checks found and saves it again.",
+    );
+    expect(CAMPAIGN_NEXT_ACTION_LABELS.remediate_preflight).toBe(NEEDS_CHANGES_NEXT_ACTION);
+    expect(findVocabularyHits(NEEDS_CHANGES_NEXT_ACTION)).toEqual([]);
   });
 });
 

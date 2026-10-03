@@ -29,7 +29,7 @@ const stubSynthetic = {
  * PRD-004 RGL-002 requires and what these assertions exist to hold.
  */
 const REVIEW_NEXT_STEP_TEXT =
-  "Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do.";
+  "Connecting HighLevel and Meta isn't available in the app yet. Nothing here changes in the meantime.";
 const REVIEW_NOT_LIVE_TEXT = "Not live yet";
 
 const reviewProduction = {
@@ -101,7 +101,7 @@ describe("authenticated workspace data boundary", () => {
     expect(workspace.brand.safety.disclosure).toBe(REVIEW_SURFACE_DISCLOSURE);
     expect(workspace.reporting.safety.disclosure).toBe(REVIEW_SURFACE_DISCLOSURE);
     expect(REVIEW_SURFACE_DISCLOSURE).toBe(
-      "HighLevel, Meta, and Stripe aren't connected to this workspace yet, so nothing here is live and nothing can be published.",
+      "HighLevel and Meta aren't connected to this workspace yet, so nothing here is live and nothing can be published.",
     );
   });
 
@@ -113,7 +113,7 @@ describe("authenticated workspace data boundary", () => {
       const metric = byLabel.get(label);
       expect(metric?.state).toBe("not_connected");
       expect(metric?.source).toBe(
-        "Not live yet. Connect Meta and HighLevel to see spend and leads here.",
+        "Not live yet. Spend and leads can't show here until Meta and HighLevel are connected.",
       );
       expect(metric && "value" in metric).toBe(false);
     }
@@ -163,13 +163,21 @@ describe("authenticated workspace data boundary", () => {
       "missing",
       "optional",
     ]);
+    // The writing review delta check, D-2: the chip beside each heading says what the group is for,
+    // never "Confirmed" or "Missing", because every card under it says "Nothing checked yet.".
+    expect(onboarding.permissionGroups.map((group) => group.stateLabel)).toEqual([
+      "Needed",
+      "Not confirmed yet",
+      "When blocked",
+      "Optional",
+    ]);
     for (const group of onboarding.permissionGroups) {
       expect(group.description).toBe(
         "You haven't connected HighLevel yet, so there's nothing to confirm here.",
       );
       for (const capability of group.capabilities) {
         expect(capability.evidence).toBe("Nothing checked yet.");
-        expect(capability.impact).toBe("No effect until you connect.");
+        expect(capability.impact).toBe("No effect yet.");
         expect(capability.nextAction).toBe(REVIEW_NEXT_STEP_TEXT);
       }
     }
@@ -222,6 +230,13 @@ describe("authenticated workspace data boundary", () => {
       "Granted",
       "Missing",
       "Optional",
+    ]);
+    // The demo's groups hold sample grants, so they keep the stock chip words (D-2).
+    expect(onboarding.permissionGroups.map((group) => group.stateLabel)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined,
     ]);
     expect(localWorkspace.brand.canonicalProfile.version).toBe("brand-v3");
     expect(

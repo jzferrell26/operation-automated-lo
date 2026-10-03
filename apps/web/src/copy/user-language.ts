@@ -1,4 +1,4 @@
-import type { CampaignNextActionId } from "@oalo/application";
+import type { CampaignNextActionId, CampaignStanding } from "@oalo/application";
 import type { ApplicationRole, CampaignState } from "@oalo/contracts";
 
 /**
@@ -12,34 +12,47 @@ import type { ApplicationRole, CampaignState } from "@oalo/contracts";
  * The not-connected strings are shared constants rather than literals in screens on purpose: they
  * are a compliance commitment (PRD-004 RGL-002), and a commitment that lives in nine components
  * drifts. Their meaning is fixed; only their wording moved when PRD-006b landed.
+ *
+ * PRD-009f D-8 and 009F-AC-008: a sentence about the ads names the two accounts the ads need,
+ * HighLevel and Meta, and no other. Billing belongs to Settings, under Account, where "Plan and
+ * usage" says what it says; no connection sentence names a payment provider. The shell-wide banner
+ * these strings once fed is gone (PRD-009a), so its accessible name went with it.
  */
 
-/** One headline for the not-connected banner, used by the shell and by the not-connected screen. */
+/** One headline for a not-connected region, used by the shell and by the not-connected screen. */
 export const NOT_CONNECTED_HEADLINE = "Not connected yet";
 
-/** The banner body. Names all three accounts and both things that cannot happen without them. */
+/** The not-connected disclosure. Names both accounts and both things that cannot happen without them. */
 export const NOT_CONNECTED_DISCLOSURE =
-  "HighLevel, Meta, and Stripe aren't connected to this workspace yet, so nothing here is live and nothing can be published.";
-
-/** The banner's accessible name. A screen reader hears the same fact the banner shows. */
-export const NOT_CONNECTED_BANNER_LABEL = "Not connected yet: HighLevel, Meta, and Stripe";
+  "HighLevel and Meta aren't connected to this workspace yet, so nothing here is live and nothing can be published.";
 
 /** One region's state, where the region names itself and the detail states the truth. */
 export const NOT_CONNECTED_DETAIL = "Not connected yet.";
 
 /** Where a region's value would have come from. */
-export const NOT_CONNECTED_SOURCE = "HighLevel, Meta, and Stripe aren't connected.";
+export const NOT_CONNECTED_SOURCE = "HighLevel and Meta aren't connected.";
 
-/** A metric's source line: what is missing, and what connecting it would show. */
+/**
+ * A metric's source line: why there is no figure, and what the figure needs. Amended 2026-10-02 by
+ * the PRD-009 writing review pass 2 (MTK-008, W-28): connecting is a necessary condition, not a
+ * promise, and no screen in PRD-009 can connect either account, so the line no longer asks the
+ * reader to.
+ */
 export const NOT_LIVE_METRIC_SOURCE =
-  "Not live yet. Connect Meta and HighLevel to see spend and leads here.";
+  "Not live yet. Spend and leads can't show here until Meta and HighLevel are connected.";
 
 /** A metric's freshness line when there is no reading to be fresh or stale about. */
 export const NOT_LIVE_YET = "Not live yet";
 
-/** What the user can do. The second sentence is the promise that nothing changes meanwhile. */
+/**
+ * What is true about connecting, and that nothing changes meanwhile. Amended 2026-10-02 by the
+ * PRD-009 writing review pass 2 (MTK-008, W-28): the Connections page, which every "See what's
+ * needed" link opens, has no connect control, and PRD-009's non-goal is making the connections
+ * work, so a "connect when you're ready" sentence there named an action nobody could take
+ * (contract section 2 rule 3: name what the product cannot do yet).
+ */
 export const NOT_CONNECTED_NEXT_STEP =
-  "Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do.";
+  "Connecting HighLevel and Meta isn't available in the app yet. Nothing here changes in the meantime.";
 
 /** A navigation item the user cannot open until an account is connected. */
 export const NOT_CONNECTED_NAVIGATION_DETAIL = "Available once your accounts are connected.";
@@ -50,6 +63,17 @@ export const NOT_CONNECTED_SETUP_REASON =
 
 /** Who finishes that setup step. */
 export const NOT_CONNECTED_SETUP_OWNER = "You, once you connect";
+
+/**
+ * PRD-009f D1. The page for `/leads`, `/leads/pipeline`, and `/automations`, which no longer exist.
+ * It says where the work went, because the one reader it has followed an old link or typed an old
+ * address.
+ */
+export const GONE_PAGE = Object.freeze({
+  title: "This page is gone.",
+  lead: "Your leads, pipelines and follow-up live in HighLevel.",
+  homeLabel: "Go to Home",
+});
 
 /** The four access groups, named for what the group means to the user. */
 export const ACCESS_GROUP_LABELS = Object.freeze({
@@ -67,10 +91,32 @@ export const ACCESS_GROUP_STATE_LABELS = Object.freeze({
   optional: "Optional",
 });
 
+/**
+ * Writing review delta check, D-2 (2026-10-03). The same four chips for a workspace where nothing is
+ * connected. "Confirmed" and "Missing" claim a result of a check, and on that page every card under
+ * them says "Nothing checked yet.", so a chip said more than the card beneath it. These say what the
+ * group is for, never what was found: the access the app needs, the access it will confirm once
+ * something can be connected, the access it will tell you about if something is blocked, and the
+ * optional access. The demo workspace, whose groups hold sample grants, keeps the words above.
+ */
+export const ACCESS_GROUP_NOT_CONNECTED_STATE_LABELS = Object.freeze({
+  required: "Needed",
+  granted: "Not confirmed yet",
+  missing: "When blocked",
+  optional: "Optional",
+});
+
 export const ACCESS_GROUP_DESCRIPTION =
   "You haven't connected HighLevel yet, so there's nothing to confirm here.";
 export const ACCESS_NOTHING_CHECKED = "Nothing checked yet.";
-export const ACCESS_NO_EFFECT_YET = "No effect until you connect.";
+/**
+ * Writing review closing check, N-2. "What it affects", said while nothing can be connected. It used
+ * to read "No effect until you connect.", one line above "Connecting HighLevel and Meta isn't
+ * available in the app yet", so the first read as a promise that connecting would have an effect.
+ * PRD-009g D2 (009G-AC-009): it is said on every capability card, so it carries no connection
+ * sentence; the page's notice already says "Nothing is connected from this page", once.
+ */
+export const ACCESS_NO_EFFECT_YET = "No effect yet.";
 
 export const BRAND_PROFILE_SOURCE = "You haven't saved your brand details yet.";
 export const BRAND_FIELD_VALUE = "Not saved yet";
@@ -138,9 +184,8 @@ export const APPROVER_OR_OWNER = "An approver or the workspace owner";
 export const CAMPAIGN_CREATOR_PARTY = "The campaign creator";
 export const WORKSPACE_OWNER_PARTY = "Your workspace owner";
 
-/** The signed-in shell's account line. Two facts, neither borrowed from the other. */
-export const SIGNED_IN_SOURCE =
-  "Signed in with your email. HighLevel, Meta, and Stripe aren't connected yet.";
+/** The signed-in shell's account line. It says who is signed in and nothing about connections. */
+export const SIGNED_IN_SOURCE = "Signed in with your email.";
 
 /** The shell above the workspace name. */
 export const WORKSPACE_EYEBROW = "Your workspace";
@@ -217,9 +262,7 @@ export const CAMPAIGN_FIELD_NEEDS_A_LOOK = "This one needs another look.";
 
 /** What a campaign can and cannot do once it is saved and approved. */
 export const CAMPAIGN_NOT_AN_AD_YET =
-  "This campaign won't run as an ad yet. HighLevel and Meta aren't connected.";
-export const CAMPAIGN_SAVED_NOTICE =
-  "Saved to your workspace. This campaign won't run as an ad yet: HighLevel and Meta aren't connected.";
+  "This campaign won't run as an ad yet. Launching isn't turned on, and HighLevel and Meta aren't connected.";
 
 /**
  * Where a campaign stands, in the words a loan officer uses for it (contract sections 3 and 4).
@@ -241,12 +284,39 @@ export const CAMPAIGN_STATE_LABELS: Readonly<Record<CampaignState, string>> = Ob
   preflight_failed: CHECK_RESULT_NEEDS_CHANGES,
   awaiting_approval: CHECK_RESULT_READY,
   approved: "Approved",
-  publishing: "Going live",
-  live: "Live",
+  // PRD-009e 009E-AC-010. Nothing in PRD-009 can publish an ad, so no screen can truthfully say a
+  // campaign is "Live" or "Going live", and neither word is left here to be shown by accident. The
+  // two states stay in the map because the schema still has them (the Meta publish PRD will use
+  // them), and they read as what is known: the ad is being sent to Meta, or Meta has it.
+  publishing: "Sending to Meta",
+  live: "With Meta",
   paused: "Paused",
   completed: "Finished",
   archived: "Archived",
 });
+
+/**
+ * PRD-009e 009E-AC-010. The standings a campaign can be in that the stored state cannot say.
+ *
+ * Four of them are the library's verdict on the ad, one for each reason the approval rule refuses a
+ * version nobody has approved (`libraryAdRefusalFor`, 009c D4), so a version that cannot be approved
+ * is never called "Ready for approval" (QA-11). "Ad retired": the library took the ad out of the
+ * library. "Newer ad version": a newer version of the ad replaced the one this version was made from.
+ * "Ad picture changed": the ad's pictures changed after the version was saved. "Ad not in the
+ * library": the library no longer holds the ad. Step 3 draws the same four chips from these words
+ * (`launch-messages.ts`), which settled them in the writing review delta check (D-5).
+ *
+ * "Replaced": a newer version of the campaign exists and nobody ever decided on this one, so it is
+ * neither waiting for an approver nor approved.
+ *
+ * None is a stored state, so they are standings, and the label function below reads them with the
+ * state.
+ */
+export const CAMPAIGN_AD_RETIRED_LABEL = "Ad retired";
+export const CAMPAIGN_AD_NEWER_VERSION_LABEL = "Newer ad version";
+export const CAMPAIGN_AD_ART_CHANGED_LABEL = "Ad picture changed";
+export const CAMPAIGN_AD_MISSING_LABEL = "Ad not in the library";
+export const CAMPAIGN_VERSION_REPLACED_LABEL = "Replaced by a newer version";
 
 /**
  * Where a campaign stands, given what has been decided on it.
@@ -258,13 +328,35 @@ export const CAMPAIGN_STATE_LABELS: Readonly<Record<CampaignState, string>> = Ob
  * with the decision it has, and gets the state's phrase unless that decision is a send-back.
  */
 export function campaignStateLabel(
-  state: CampaignState,
+  state: CampaignStanding,
   decision: "approved" | "rejected" | undefined,
 ): string {
-  return state === "awaiting_approval" && decision === "rejected"
-    ? CAMPAIGN_SENT_BACK_LABEL
-    : CAMPAIGN_STATE_LABELS[state];
+  switch (state) {
+    case "ad_retired":
+      return CAMPAIGN_AD_RETIRED_LABEL;
+    case "ad_newer_version":
+      return CAMPAIGN_AD_NEWER_VERSION_LABEL;
+    case "ad_art_changed":
+      return CAMPAIGN_AD_ART_CHANGED_LABEL;
+    case "ad_missing":
+      return CAMPAIGN_AD_MISSING_LABEL;
+    case "replaced":
+      return CAMPAIGN_VERSION_REPLACED_LABEL;
+    case "awaiting_approval":
+      return decision === "rejected" ? CAMPAIGN_SENT_BACK_LABEL : CAMPAIGN_STATE_LABELS[state];
+    default:
+      return CAMPAIGN_STATE_LABELS[state];
+  }
 }
+
+/**
+ * What to do about a version whose checks found something, said the same way to everyone who reads
+ * it. PRD-008 follow-up Quality L-2: "Fix what the checks found, then save it again." was addressed
+ * to every reader, including an approver who cannot edit, so it asked people to do what they
+ * cannot. This one names the person who can, and is true for the creator reading it too.
+ */
+export const NEEDS_CHANGES_NEXT_ACTION =
+  "The campaign creator fixes what the checks found and saves it again.";
 
 /**
  * What to do next about one campaign, keyed by the step the application layer named.
@@ -284,6 +376,6 @@ export const CAMPAIGN_NEXT_ACTION_LABELS: Readonly<Record<CampaignNextActionId, 
     approve_version: "Approve this version.",
     already_decided: "Someone has already decided on this version.",
     wait_for_approver: "Waiting for an approver to look at this version.",
-    remediate_preflight: "Fix what the checks found, then save it again.",
+    remediate_preflight: NEEDS_CHANGES_NEXT_ACTION,
     provider_publish: CAMPAIGN_NOT_AN_AD_YET,
   });

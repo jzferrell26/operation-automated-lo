@@ -90,8 +90,10 @@ jobs:
     # The review suite is 11 to 12 minutes on a quiet runner and up to 23 when the Docker host is
     # contended, and PRD-006d's named-state review added five guided-setup steps and four
     # campaign-detail and sign-up states to it; 75 leaves room for the slow case instead of
-    # cancelling a run that was going to pass.
-    timeout-minutes: 75
+    # cancelling a run that was going to pass. PRD-009g (009G-AC-001, 002) adds about 200 frames and
+    # a second review pass without the sample ads (the full local run took 24 minutes on 16 cores),
+    # so the limit is 100.
+    timeout-minutes: 100
     permissions:
       contents: read
     env:

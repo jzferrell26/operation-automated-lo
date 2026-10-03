@@ -1,0 +1,329 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  AD_BRAND_COLOR_PRESETS,
+  AD_BRAND_LIMITS,
+  DEFAULT_AD_BRAND,
+  adBrandColorValue,
+  type AdBrand,
+} from "./ad-brand.js";
+import { stubDialogLayout } from "../homeowners/home-workspace.test-support.js";
+import { AdBrandEditor, ReportBrandEditor } from "./preference-editors.js";
+import { TEST_BRAND, workspaceData } from "./workspace.test-support.js";
+
+/**
+ * PRD-009d D3, 009D-AC-003 and 009D-AC-024. The Brand page's "Your brand on ads" card: the four
+ * fields it saves beside the report brand, the band preview that follows them, and the limits it
+ * holds before anything is sent. The report brand's name, company, and NMLS numbers are not
+ * fields here; they come from the report brand, which this card does not change.
+ */
+
+const REVISION = "3b1f6f5e-6c0e-4a39-9f0e-6d7f3c1a9b22";
+
+const network = vi.fn<(input: string, init?: RequestInit) => Promise<Response>>();
+
+function savedAs(value: AdBrand): Response {
+  return new Response(
+    JSON.stringify({
+      preferences: {
+        brand: null,
+        adBrand: { revision: REVISION, value },
+        partners: null,
+        messages: {},
+      },
+    }),
+    { status: 200, headers: { "content-type": "application/json" } },
+  );
+}
+
+function sentCommands(): unknown[] {
+  return network.mock.calls.map(([, init]) => JSON.parse(String(init?.body)));
+}
+
+beforeEach(() => {
+  network.mockReset();
+  vi.stubGlobal("fetch", network);
+  stubDialogLayout();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+describe("the ad brand card on the Brand page (009D-AC-003)", () => {
+  it("shows the four ad fields, and a band that carries the report brand's name and NMLS", () => {
+    render(<AdBrandEditor data={workspaceData("profile")} />);
+
+    expect(screen.getByRole("textbox", { name: /Title on your ads/u })).toHaveValue("");
+    expect(screen.getByRole("combobox", { name: /Brand color/u })).toHaveTextContent("Navy");
+    expect(screen.getByRole("textbox", { name: /Disclosure line/u })).toHaveValue(
+      DEFAULT_AD_BRAND.disclosureLine,
+    );
+    expect(screen.getByRole("textbox", { name: /Lead form wording/u })).toHaveValue(
+      DEFAULT_AD_BRAND.leadFormWording,
+    );
+    expect(screen.queryByRole("textbox", { name: /^Name|NMLS|Company/u })).toBeNull();
+
+    const band = document.querySelector("[data-brand-band]");
+    expect(band?.textContent).toContain(TEST_BRAND.name);
+    expect(band?.textContent).toContain(TEST_BRAND.nmls);
+    expect(band?.textContent).toContain(DEFAULT_AD_BRAND.disclosureLine);
+  });
+
+  it("saves the four fields as the ad_brand preference, and the band follows them before saving", async () => {
+    const chosen = {
+      title: "Loan officer",
+      colorPresetId: "forest",
+      disclosureLine: "NMLS 123456. Equal Housing Opportunity.",
+      leadFormWording: "By sending this, you agree that Casey Rivera may contact you about a loan.",
+    } satisfies AdBrand;
+    network.mockResolvedValueOnce(savedAs(chosen));
+    render(<AdBrandEditor data={workspaceData("profile")} />);
+
+    fireEvent.change(screen.getByRole("textbox", { name: /Title on your ads/u }), {
+      target: { value: chosen.title },
+    });
+    fireEvent.click(screen.getByRole("combobox", { name: /Brand color/u }));
+    fireEvent.click(screen.getByRole("option", { name: "Forest green" }));
+    fireEvent.change(screen.getByRole("textbox", { name: /Disclosure line/u }), {
+      target: { value: chosen.disclosureLine },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: /Lead form wording/u }), {
+      target: { value: chosen.leadFormWording },
+    });
+
+    const preview = document.querySelector<HTMLElement>("[data-brand-band]")?.parentElement;
+    expect(preview?.textContent).toContain("Loan officer");
+    expect(preview?.style.getPropertyValue("--ad-brand")).toBe(adBrandColorValue("forest"));
+    expect(network).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save ad settings" }));
+
+    expect(await screen.findByText("Your changes are saved.")).toBeInTheDocument();
+    expect(network).toHaveBeenCalledTimes(1);
+    expect(network.mock.calls[0]?.[0]).toBe("/api/workspace/preferences");
+    expect(sentCommands()).toEqual([{ key: "ad_brand", expectedRevision: null, value: chosen }]);
+  });
+
+  it("offers exactly the six color presets", () => {
+    render(<AdBrandEditor data={workspaceData("profile")} />);
+    fireEvent.click(screen.getByRole("combobox", { name: /Brand color/u }));
+    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(
+      AD_BRAND_COLOR_PRESETS.map((preset) => preset.label),
+    );
+  });
+});
+
+describe("the ad brand limits hold before anything is sent (009D-AC-024)", () => {
+  it.each([
+    ["Title on your ads", "x".repeat(AD_BRAND_LIMITS.title + 1)],
+    ["Disclosure line", "x".repeat(AD_BRAND_LIMITS.disclosureLine + 1)],
+    ["Lead form wording", "x".repeat(AD_BRAND_LIMITS.leadFormWording + 1)],
+    ["Disclosure line", "   "],
+    ["Lead form wording", "   "],
+  ])("refuses %s set to %j characters", async (label, value) => {
+    render(<AdBrandEditor data={workspaceData("profile")} />);
+    fireEvent.change(screen.getByRole("textbox", { name: new RegExp(label, "u") }), {
+      target: { value },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save ad settings" }));
+
+    await waitFor(() =>
+      expect(document.body.textContent).toContain(
+        "Check the title, the disclosure line and the lead form wording before saving.",
+      ),
+    );
+    expect(network).not.toHaveBeenCalled();
+  });
+
+  it("leaves the browser's own required check on the disclosure line and the lead form wording", () => {
+    render(<AdBrandEditor data={workspaceData("profile")} />);
+    for (const label of [/Disclosure line/u, /Lead form wording/u]) {
+      const field = screen.getByRole("textbox", { name: label });
+      fireEvent.change(field, { target: { value: "" } });
+      expect(field).toBeRequired();
+      expect(field).toBeInvalid();
+    }
+    fireEvent.click(screen.getByRole("button", { name: "Save ad settings" }));
+    expect(network).not.toHaveBeenCalled();
+  });
+
+  it("is read-only for a role that cannot edit Brand", () => {
+    render(<AdBrandEditor data={workspaceData("profile", { canEdit: false })} />);
+    expect(screen.getByRole("textbox", { name: /Title on your ads/u })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save ad settings" })).toBeDisabled();
+  });
+});
+
+describe("the report brand's NMLS numbers (verifier, 2026-10-02)", () => {
+  it.each([
+    ["Your NMLS number", "123"],
+    ["Company NMLS number", "12"],
+  ])(
+    "refuses %s %j before anything is sent, and says how many digits it takes",
+    async (label, value) => {
+      render(<ReportBrandEditor data={workspaceData("profile")} />);
+      fireEvent.change(screen.getByLabelText(new RegExp(label, "u")), { target: { value } });
+      fireEvent.click(screen.getByRole("button", { name: "Save your details" }));
+      await waitFor(() => expect(document.body.textContent).toContain("4 to 12 digits"));
+      // Writing review pass 2, W-4: the sentence says "NMLS numbers", the words the labels use.
+      expect(document.body.textContent).toContain(
+        "Check the name, company, email and NMLS numbers before saving. Each NMLS number has 4 to 12 digits.",
+      );
+      expect(document.body.textContent).not.toMatch(/license numbers/iu);
+      expect(network).not.toHaveBeenCalled();
+    },
+  );
+});
+
+/**
+ * Writing review pass 2, W-4. Home sends a person to Brand. The page used to call its first card "Your
+ * report identity" (saved with "Save report branding") and its second "Your brand on ads" (saved with
+ * "Save ad brand"), while its fix sentences say "Brand" and "NMLS number" and its fields said "Loan
+ * officer NMLS". One idea now has one name: the first card holds "Your details".
+ */
+describe("the Brand page names its parts consistently (writing review W-4)", () => {
+  it("calls the first card Your details and saves it with Save your details", () => {
+    render(<ReportBrandEditor data={workspaceData("profile")} />);
+    expect(screen.getByRole("heading", { name: "Your details" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save your details" })).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/report identity|report branding/iu);
+  });
+
+  it("labels the two NMLS fields the way the checks say them", () => {
+    render(<ReportBrandEditor data={workspaceData("profile")} />);
+    expect(screen.getByLabelText(/^Your NMLS number/u)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Company NMLS number/u)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Loan officer NMLS/u)).toBeNull();
+  });
+
+  it("calls the second card's button Save ad settings, and says where its name and NMLS come from", () => {
+    render(<AdBrandEditor data={workspaceData("profile")} />);
+    expect(screen.getByRole("heading", { name: "Your brand on ads" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save ad settings" })).toBeInTheDocument();
+    expect(document.body.textContent).toContain(
+      "Your name, company and NMLS numbers come from Your details above.",
+    );
+    expect(document.body.textContent).not.toMatch(/report identity|Save ad brand/iu);
+  });
+
+  // W-14: the product is American in every other string (NMLS, Realtor, dollars).
+  it("spells color the American way", () => {
+    render(<AdBrandEditor data={workspaceData("profile")} />);
+    expect(screen.getByRole("combobox", { name: /Brand color/u })).toBeInTheDocument();
+    expect(document.body.textContent).toContain("the title, color and disclosure line");
+    expect(document.body.textContent).not.toMatch(/colour/iu);
+  });
+});
+
+/**
+ * Two controls with one accessible name on one page are a defect: a screen reader's list of buttons
+ * cannot tell them apart, and a test that asks for one by name finds two. The Brand page has two
+ * cards, each ending in a save and a reload, so each button says which card it belongs to.
+ */
+describe("the Brand page gives every button its own name (writing review pass 2)", () => {
+  function brandPage() {
+    return render(
+      <>
+        <ReportBrandEditor data={workspaceData("profile")} />
+        <AdBrandEditor data={workspaceData("profile")} />
+      </>,
+    );
+  }
+
+  it("has no two buttons with the same accessible name", () => {
+    brandPage();
+    const names = screen.getAllByRole("button").map((button) => button.textContent?.trim());
+    expect(names.length).toBeGreaterThan(3);
+    expect(new Set(names).size, `${names.join(" | ")}`).toBe(names.length);
+  });
+
+  it("names the reload under each card by what it reloads", () => {
+    brandPage();
+    expect(screen.getByRole("button", { name: "Load latest saved details" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Load latest saved ad settings" }),
+    ).toBeInTheDocument();
+  });
+
+  it("reloads only its own card", async () => {
+    const fresh = {
+      title: "Mortgage loan officer",
+      colorPresetId: "forest",
+      disclosureLine: "NMLS 123456. Equal Housing Opportunity.",
+      leadFormWording: "By sending this, you agree that Casey Rivera may contact you.",
+    } satisfies AdBrand;
+    network.mockResolvedValueOnce(savedAs(fresh));
+    brandPage();
+    fireEvent.change(screen.getByLabelText(/^Brand tagline/u), { target: { value: "Unsaved." } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Load latest saved ad settings" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("textbox", { name: /Title on your ads/u })).toHaveValue(
+        "Mortgage loan officer",
+      ),
+    );
+    expect(screen.getByLabelText(/^Brand tagline/u)).toHaveValue("Unsaved.");
+  });
+});
+
+/**
+ * Closing check, N-3. Each Brand card's reload button names its own card, so the sentences around a
+ * reload cannot name a button label: "The latest saved details are loaded" appeared under a button
+ * that said "Load latest saved ad settings". They say "version" instead, which is true on both.
+ */
+describe("what a card says around its reload, in words that fit both Brand cards (closing check N-3)", () => {
+  function brandPage() {
+    return render(
+      <>
+        <ReportBrandEditor data={workspaceData("profile")} />
+        <AdBrandEditor data={workspaceData("profile")} />
+      </>,
+    );
+  }
+
+  it("says the latest saved version is loaded, without naming a button", async () => {
+    network.mockResolvedValueOnce(savedAs(DEFAULT_AD_BRAND));
+    brandPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Load latest saved ad settings" }));
+
+    expect(await screen.findByText("The latest saved version is loaded.")).toBeInTheDocument();
+    expect(screen.queryByText("The latest saved details are loaded.")).toBeNull();
+  });
+
+  it("says the saved version could not be read when the answer is not one it understands", async () => {
+    network.mockResolvedValueOnce(
+      new Response(JSON.stringify({ preferences: "not saved settings" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    brandPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Load latest saved ad settings" }));
+
+    expect(
+      await screen.findByText("The saved version could not be read. Your edits are still here."),
+    ).toBeInTheDocument();
+  });
+
+  it("says the saved version could not be confirmed when a refusal carries no sentence", async () => {
+    network.mockResolvedValueOnce(
+      new Response(JSON.stringify({}), {
+        status: 503,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    brandPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Load latest saved ad settings" }));
+
+    expect(
+      await screen.findByText("The saved version could not be confirmed."),
+    ).toBeInTheDocument();
+  });
+});

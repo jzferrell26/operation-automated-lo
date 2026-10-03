@@ -44,5 +44,14 @@ export const PAGE_TITLES = Object.freeze({
   partners: "Realtor partners",
   routing: "Where new leads go",
   billing: "Plan and usage",
+  /**
+   * Writing review delta check, D-6. Homeowner reports is one of the menu's six items (PRD-009a D2),
+   * and its three pages still read "Automated LO" in the tab. The list is the menu item's own words,
+   * the create page is its heading, and one report is "Homeowner report", because its heading is the
+   * property's address, which a tab should not carry.
+   */
+  homeownerReports: "Homeowner reports",
+  newHomeownerReport: "Create a homeowner report",
+  homeownerReport: "Homeowner report",
   gone: "Page gone",
 });

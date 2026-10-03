@@ -40,6 +40,9 @@ describe("the words in a browser tab", () => {
       partners: "Realtor partners",
       routing: "Where new leads go",
       billing: "Plan and usage",
+      homeownerReports: "Homeowner reports",
+      newHomeownerReport: "Create a homeowner report",
+      homeownerReport: "Homeowner report",
       gone: "Page gone",
     });
   });

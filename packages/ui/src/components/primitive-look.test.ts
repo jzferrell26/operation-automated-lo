@@ -160,3 +160,23 @@ describe("a state standing on the page is drawn on the card surface (R4-10)", ()
     expect(onThePage).not.toMatch(/\ssurface=/u);
   });
 });
+
+describe("the glyphs added for the PRD-009 review (R1-04, R1-10, R3 F-02)", () => {
+  const added = ["tag", "chevron-left", "plug", "palette", "circle-check"] as const;
+
+  it("draws each one in the set's stroke language, decorative by default", () => {
+    for (const name of added) {
+      const markup = renderToStaticMarkup(createElement(Icon, { name }));
+      expect(markup, name).toMatch(/<(?:path|circle)\b/u);
+      expect(markup, name).toContain('stroke-width="1.5"');
+      expect(markup, name).toContain('aria-hidden="true"');
+    }
+  });
+
+  it("gives each one geometry of its own", () => {
+    const drawn = added.map((name) =>
+      renderToStaticMarkup(createElement(Icon, { name })).replace(/^<svg[^>]*>/u, ""),
+    );
+    expect(new Set(drawn).size).toBe(added.length);
+  });
+});

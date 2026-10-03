@@ -100,6 +100,37 @@ const REFUSED: readonly string[] = [
   "Boomer, TX",
   "Boys Town, TX",
   "Six Mile, TX",
+  // The PRD-009 security review, SEC-009-05: race, color, national origin, and religion words in a
+  // city name, with another word or a different state, are refused (fair housing).
+  "Black Austin, TX",
+  "Indian Houston, TX",
+  "Mexican Austin, TX",
+  "Arab Dearborn, MI",
+  "Hindu Edison, NJ",
+  "White Houston, TX",
+  "Chinese Houston, TX",
+  "Korean Dallas, TX",
+  "African Atlanta, GA",
+  "Sikh Fresno, CA",
+  "Buddhist Austin, TX",
+  "Native Tulsa, OK",
+  "Church Austin, TX",
+  "Mosque Dearborn, MI",
+  "Synagogue Brooklyn, NY",
+  "black austin, tx",
+  "BLACK AUSTIN, TX",
+  "Blacks of Austin, TX",
+  "Caucasian Plano, TX",
+  "Mormon Provo, UT",
+  // A real place's name in a state that does not hold it is not that place.
+  "White Plains, TX",
+  "Indian Wells, TX",
+  "Black Mountain, TX",
+  "Mexican Hat, TX",
+  "Arab, TX",
+  "Falls Church, TX",
+  "Indian Trail, SC",
+  "Church Hill, NY",
 ];
 
 const ACCEPTED: readonly Readonly<[typed: string, stored: string]>[] = [
@@ -177,6 +208,32 @@ const ACCEPTED: readonly Readonly<[typed: string, stored: string]>[] = [
   ["Three Mile Bay, NY", "Three Mile Bay, NY"],
   ["Eleven Mile Corner, AZ", "Eleven Mile Corner, AZ"],
   ["Four Mile Prairie, TX", "Four Mile Prairie, TX"],
+  // SEC-009-05: real places whose names hold a race, national origin, or religion word, each an
+  // exact pair from the Census Bureau's incorporated places and census designated places.
+  ["Indian Wells, CA", "Indian Wells, CA"],
+  ["Indian Trail, NC", "Indian Trail, NC"],
+  ["Indian Hill, OH", "Indian Hill, OH"],
+  ["Indian Rocks Beach, FL", "Indian Rocks Beach, FL"],
+  ["Black Mountain, NC", "Black Mountain, NC"],
+  ["Black Hawk, CO", "Black Hawk, CO"],
+  ["Black, AL", "Black, AL"],
+  ["Mexican Hat, UT", "Mexican Hat, UT"],
+  ["Chinese Camp, CA", "Chinese Camp, CA"],
+  ["Mormon Lake, AZ", "Mormon Lake, AZ"],
+  ["Arab, AL", "Arab, AL"],
+  ["Falls Church, VA", "Falls Church, VA"],
+  ["Church Hill, TN", "Church Hill, TN"],
+  ["Church Point, LA", "Church Point, LA"],
+  ["White Bear Lake, MN", "White Bear Lake, MN"],
+  ["White Settlement, TX", "White Settlement, TX"],
+  ["White, GA", "White, GA"],
+  ["white plains, ny", "white plains, NY"],
+  // Words that merely contain a refused word are not refused: only whole words are.
+  ["Whitefish, MT", "Whitefish, MT"],
+  ["Indianapolis, IN", "Indianapolis, IN"],
+  ["Blackfoot, ID", "Blackfoot, ID"],
+  ["Churchville, NY", "Churchville, NY"],
+  ["Whitehall, MI", "Whitehall, MI"],
 ];
 
 /**
@@ -314,6 +371,34 @@ describe("the place rules (009D-AC-008)", () => {
       expect.arrayContaining(["zip", "within", "radius", "seniors", "moms", "single"]),
     );
     expect(AD_PLACE_DISTANCE_UNITS).toEqual(expect.arrayContaining(["mi", "mile", "miles", "km"]));
+  });
+
+  it("refuses the race, national origin, and religion words in a city's name (SEC-009-05)", () => {
+    expect(AD_PLACE_AUDIENCE_WORDS).toEqual(
+      expect.arrayContaining([
+        "black",
+        "white",
+        "african",
+        "arab",
+        "indian",
+        "native",
+        "mexican",
+        "chinese",
+        "korean",
+        "hindu",
+        "sikh",
+        "buddhist",
+        "church",
+        "mosque",
+        "synagogue",
+      ]),
+    );
+    expect(LIBRARY_AD_PLACE_AUDIENCE_WORDS).toEqual(expect.arrayContaining(["black", "white"]));
+  });
+
+  it("lists each named exception once", () => {
+    const lower = AD_PLACE_NAMED_EXCEPTIONS.map((place) => place.toLowerCase());
+    expect(new Set(lower).size).toBe(lower.length);
   });
 
   it("keeps every audience word off the state codes, and the units out of the audience list", () => {

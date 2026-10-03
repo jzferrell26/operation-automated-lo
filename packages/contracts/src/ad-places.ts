@@ -6,7 +6,8 @@ import { z } from "zod";
  * A place is a state (one of the 50 states or the District of Columbia, typed by full name or by its
  * two-letter code, stored as the code) or a city ("Austin, TX"). No value may hold a digit, and no
  * city NAME may hold a whole word from `AD_PLACE_AUDIENCE_WORDS` (postal and radius words, and the
- * age, gender, family, and status words the targeting rule refuses) or end in a unit of distance
+ * age, gender, family, status, race, national origin, and religion words the targeting rule
+ * refuses) or end in a unit of distance
  * (`AD_PLACE_DISTANCE_UNITS`), so "Page, AZ" and "Mendota Heights, MN" pass and "78701",
  * "10 miles around Austin", "ten miles around Austin", "women 25-40", "Seniors, TX", and "Austin mi,
  * TX" do not. The words are matched against the city name only, never against the state code, so "MI"
@@ -86,9 +87,13 @@ export type AdPlace = Readonly<{ kind: "state" | "city"; value: string }>;
 /**
  * Whole words that aim at people, a ZIP code, or a radius rather than at a place. The domain holds the
  * same list (`LIBRARY_AD_PLACE_AUDIENCE_WORDS`), and a unit test keeps the two equal. Real town names
- * that hold a common word (Old Saybrook, Young Harris, Man, White Plains) are not refused, so "old",
- * "young", "man", and colour words are not on it. No word here is a two-letter state code, and the
- * words are never matched against the state code at all.
+ * that hold a common word (Old Saybrook, Young Harris, Man) are not refused, so "old", "young", and
+ * "man" are not on it. The race, color, national origin, and religion words at the end are on it
+ * although real towns hold them too (White Plains, Indian Wells, Black Mountain, Mexican Hat, Arab,
+ * Falls Church): a city name is refused when it holds one, unless the exact "Name, ST" pair is a real
+ * place in `AD_PLACE_NAMED_EXCEPTIONS` (PRD-009 security review, SEC-009-05: "Black Austin, TX" and
+ * "Indian Houston, TX" are not places). No word here is a two-letter state code, and the words are
+ * never matched against the state code at all.
  */
 export const AD_PLACE_AUDIENCE_WORDS: readonly string[] = Object.freeze([
   // Postal codes and radii: places are cities and states, never a radius or a ZIP code.
@@ -195,6 +200,47 @@ export const AD_PLACE_AUDIENCE_WORDS: readonly string[] = Object.freeze([
   "jewish",
   "catholic",
   "catholics",
+  // Race, color, national origin, and religion: words for a people or a place of worship. A real
+  // place whose name holds one passes only as an exact pair in `AD_PLACE_NAMED_EXCEPTIONS`.
+  "black",
+  "blacks",
+  "white",
+  "whites",
+  "african",
+  "africans",
+  "caucasian",
+  "caucasians",
+  "arab",
+  "arabs",
+  "indian",
+  "indians",
+  "native",
+  "natives",
+  "mexican",
+  "mexicans",
+  "chinese",
+  "korean",
+  "koreans",
+  "japanese",
+  "vietnamese",
+  "filipino",
+  "filipinos",
+  "hindu",
+  "hindus",
+  "sikh",
+  "sikhs",
+  "buddhist",
+  "buddhists",
+  "mormon",
+  "mormons",
+  "jew",
+  "jews",
+  "church",
+  "churches",
+  "mosque",
+  "mosques",
+  "synagogue",
+  "synagogues",
 ]);
 
 /**
@@ -266,14 +312,30 @@ export const AD_PLACE_NUMBER_WORDS: readonly string[] = Object.freeze([
  * looser: a person who serves Gay, GA is not refused, and "Gay, TX" still is. The domain holds the
  * same list (`LIBRARY_AD_PLACE_NAMED_EXCEPTIONS`).
  *
- * Source: every pair below is a place in the USGS Geographic Names Information System (GNIS), the
- * federal gazetteer of place names, read on 2026-10-02 through The National Map Gazetteer service
+ * Source of the first 33 pairs (down to "Zip City, AL"): every pair is a place in the USGS Geographic
+ * Names Information System (GNIS), the federal gazetteer of place names, read on 2026-10-02 through
+ * The National Map Gazetteer service
  * (`https://carto.nationalmap.gov/arcgis/rest/services/geonames/MapServer`, layers 1 to 3: incorporated
  * places, Census unincorporated places, and populated places), by exact name and state code. The
  * state is the one the gazetteer gives, so a pair the gazetteer does not hold ("Miles, VA" is not
  * there) is not listed. Pass Christian MS and Fort Gay WV are also incorporated municipalities, and
- * Mount Gay-Shamrock WV is a Census designated place. A name that holds a refused word and is not
- * listed (Christian Hill, PA) is refused; a person who serves it can add its state instead.
+ * Mount Gay-Shamrock WV is a Census designated place.
+ *
+ * Source of the pairs after it (PRD-009 security review, SEC-009-05, read on 2026-10-03): every
+ * incorporated place and every census designated place in the 50 states and the District of Columbia
+ * whose name holds one of the race, color, national origin, and religion words at the end of
+ * `AD_PLACE_AUDIENCE_WORDS` as a whole word. They come from the U.S. Census Bureau's TIGERweb
+ * service
+ * (`https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer`,
+ * layer 4 "Incorporated Places" and layer 5 "Census Designated Places", the January 1, 2026
+ * vintage), with each state's FIPS code read as its postal code from the same service's State layer.
+ * Each pair was also found by exact name and state code in the GNIS layers named above. A place that
+ * is neither (an unincorporated hamlet, a reservation tract, a civil subdivision such as a chapter or
+ * a hundred) is not listed.
+ *
+ * A name that holds a refused word and is not listed (Christian Hill, PA) is refused; a person who
+ * serves it can add its state instead. A pair is added only after it is found in the Census Bureau
+ * or GNIS service named above.
  */
 export const AD_PLACE_NAMED_EXCEPTIONS: readonly string[] = Object.freeze([
   "Gay, GA",
@@ -309,6 +371,168 @@ export const AD_PLACE_NAMED_EXCEPTIONS: readonly string[] = Object.freeze([
   "Veteran, NY",
   "Veteran, WY",
   "Zip City, AL",
+  // The race, national origin, and religion words (the Census Bureau; see the source above).
+  "Arab, AL",
+  "Benns Church, VA",
+  "Black Butte Ranch, OR",
+  "Black Canyon City, AZ",
+  "Black Creek, NC",
+  "Black Creek, WI",
+  "Black Diamond, FL",
+  "Black Diamond, WA",
+  "Black Eagle, MT",
+  "Black Earth, WI",
+  "Black Forest, CO",
+  "Black Hammock, FL",
+  "Black Hat, NM",
+  "Black Hawk, CO",
+  "Black Jack, MO",
+  "Black Lick, PA",
+  "Black Mountain, NC",
+  "Black Oak, AR",
+  "Black Point-Green Point, CA",
+  "Black River Falls, WI",
+  "Black River, NY",
+  "Black Rock, AR",
+  "Black Rock, NM",
+  "Black Sands, HI",
+  "Black Springs, AR",
+  "Black, AL",
+  "Chinese Camp, CA",
+  "Church Creek, MD",
+  "Church Hill, MD",
+  "Church Hill, PA",
+  "Church Hill, TN",
+  "Church Point, LA",
+  "Church Rock, NM",
+  "Falls Church, VA",
+  "Fort White, FL",
+  "Glen White, WV",
+  "Indian Bay, AR",
+  "Indian Beach, NC",
+  "Indian Creek, FL",
+  "Indian Creek, IL",
+  "Indian Falls, CA",
+  "Indian Field, CT",
+  "Indian Harbour Beach, FL",
+  "Indian Head Park, IL",
+  "Indian Head, MD",
+  "Indian Hill, OH",
+  "Indian Hills, CO",
+  "Indian Hills, KY",
+  "Indian Hills, NM",
+  "Indian Hills, NV",
+  "Indian Hills, TX",
+  "Indian Lake Estates, FL",
+  "Indian Lake, MO",
+  "Indian Lake, PA",
+  "Indian Lake, TX",
+  "Indian Mountain Lake, PA",
+  "Indian Point, MO",
+  "Indian River Estates, FL",
+  "Indian River Shores, FL",
+  "Indian River, MI",
+  "Indian Rocks Beach, FL",
+  "Indian Rocks, PA",
+  "Indian Shores, FL",
+  "Indian Springs Village, AL",
+  "Indian Springs, GA",
+  "Indian Springs, MD",
+  "Indian Springs, MT",
+  "Indian Springs, NV",
+  "Indian Springs, TX",
+  "Indian Trail, NC",
+  "Indian Village, IN",
+  "Indian Wells, AZ",
+  "Indian Wells, CA",
+  "Lebanon Church, VA",
+  "Manderson-White Horse Creek, SD",
+  "Mexican Colony, CA",
+  "Mexican Hat, UT",
+  "Mormon Lake, AZ",
+  "New Church, VA",
+  "Nisqually Indian Community, WA",
+  "Spring Church, PA",
+  "West Falls Church, VA",
+  "White Bear Lake, MN",
+  "White Bird, ID",
+  "White Bluff, TN",
+  "White Branch, MO",
+  "White Castle, LA",
+  "White Center, WA",
+  "White City, FL",
+  "White City, IL",
+  "White City, KS",
+  "White City, OR",
+  "White City, UT",
+  "White Clay, NE",
+  "White Cliffs, NM",
+  "White Cloud, KS",
+  "White Cloud, MI",
+  "White Deer, TX",
+  "White Eagle, OK",
+  "White Earth, MN",
+  "White Earth, ND",
+  "White Hall, AL",
+  "White Hall, AR",
+  "White Hall, IL",
+  "White Hall, WV",
+  "White Haven, MT",
+  "White Haven, PA",
+  "White Heath, IL",
+  "White Hills, AZ",
+  "White Horse, NJ",
+  "White Horse, SD",
+  "White House Station, NJ",
+  "White House, TN",
+  "White Island Shores, MA",
+  "White Knoll, SC",
+  "White Lake, NC",
+  "White Lake, NY",
+  "White Lake, SD",
+  "White Lake, WI",
+  "White Marsh, MD",
+  "White Meadow Lake, NJ",
+  "White Mesa, UT",
+  "White Mills, PA",
+  "White Mountain Lake, AZ",
+  "White Mountain, AK",
+  "White Oak, MD",
+  "White Oak, MO",
+  "White Oak, MS",
+  "White Oak, NC",
+  "White Oak, OH",
+  "White Oak, OK",
+  "White Oak, PA",
+  "White Oak, TX",
+  "White Pigeon, MI",
+  "White Pine, MI",
+  "White Pine, TN",
+  "White Plains, AL",
+  "White Plains, GA",
+  "White Plains, KY",
+  "White Plains, NC",
+  "White Plains, NY",
+  "White River Junction, VT",
+  "White River, SD",
+  "White Rock Colony, SD",
+  "White Rock, NM",
+  "White Rock, SD",
+  "White Salmon, WA",
+  "White Sands, NM",
+  "White Settlement, TX",
+  "White Shield, ND",
+  "White Signal, NM",
+  "White Springs, FL",
+  "White Stone, VA",
+  "White Sulphur Springs, MT",
+  "White Sulphur Springs, WV",
+  "White Swan, WA",
+  "White Water, OK",
+  "White, GA",
+  "White, SD",
+  "Whites City, NM",
+  "Whites Landing, OH",
 ]);
 
 const PEOPLE_WORDS = new RegExp(

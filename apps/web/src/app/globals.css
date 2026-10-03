@@ -130,6 +130,29 @@ h2 {
   line-height: var(--leading-tight);
 }
 
+/* Design `00-direction.md` section 2.3: "page title 28px bold, section title 19px semibold, card
+ * title 16px semibold", and brief section 10's page title at "negative 0.02em tracking", which is
+ * `--tracking-page`. The canvases' `.page-title` carries both the weight and the tracking, and their
+ * `.section-title` and `.card-title` carry `--weight-semibold`.
+ *
+ * The PRD-009 scored baseline review found headings no module weighs drawn at the browser's `bold`
+ * (R1-02 and R4-09: "Your brand on the ad", every sample card title, the email preview's and the
+ * route boundaries' card titles) and page titles with no tracking (R2 F-12: the campaign page and
+ * the Campaigns list). Same floor rule as the sizes above: an element selector loses to any module
+ * class, so a module that states its own weight or tracking keeps it. */
+h1 {
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-page);
+}
+
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: var(--weight-semibold);
+}
+
 /* The browser draws `small` one keyword smaller than its parent, which lands between the steps at
  * any parent size (13.33px under the 16px body step). A `small` is a source, a freshness line, or
  * a side note, so its floor is the caption step, as on the overview and in the canvases. */

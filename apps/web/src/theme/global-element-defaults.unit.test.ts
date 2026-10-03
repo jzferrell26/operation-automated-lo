@@ -118,6 +118,20 @@ describe("the global stylesheet's element defaults", () => {
   });
 
   /**
+   * PRD-009 scored baseline review, R1-02, R4-09, and R2 F-12. Design section 2.3 sets the page
+   * title bold and the section and card titles semibold, and brief section 10 tracks the page title
+   * at `--tracking-page`. Headings no module weighed drew at the browser's `bold`, and page titles
+   * no module tracked drew untracked; the floor is on the element, from the tokens.
+   */
+  it("gives the page title its weight and tracking, and every lower title the semibold weight", () => {
+    expect(declarationsFor("h1").get("font-weight")).toBe("var(--weight-bold)");
+    expect(declarationsFor("h1").get("letter-spacing")).toBe("var(--tracking-page)");
+    for (const level of ["h2", "h3", "h4", "h5", "h6"]) {
+      expect(declarationsFor(level).get("font-weight"), level).toBe("var(--weight-semibold)");
+    }
+  });
+
+  /**
    * PRD-009. The canvases' page and section titles take `--leading-tight`, so an `h1` or `h2` keeps
    * it instead of inheriting the body's 1.5. `h3` to `h6` inherit the body's leading, as a bare `h3`
    * does in the canvases; a title they set tight is a module class.

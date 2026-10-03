@@ -117,12 +117,16 @@
   justify-content: space-between;
 }
 
+/* Card-step titles. Design `00-direction.md` section 2.3, "card title 16px semibold", and the
+ * mockups' `.card-title` at `--weight-semibold`. They were `--weight-bold` from before 009a defined
+ * the semibold token; the PRD-009 scored review (R4-09) saw "We couldn't load your workspace" and
+ * "Loading your workspace" visibly heavier than Home's card titles. */
 .oalo-metric__label,
 .oalo-checklist-item__heading h3,
 .oalo-checklist__heading h2,
 .oalo-async-state__title {
   font-size: var(--text-card-size);
-  font-weight: var(--weight-bold);
+  font-weight: var(--weight-semibold);
   line-height: var(--leading-tight);
   margin: 0;
 }

@@ -7,6 +7,7 @@ import {
   projectCampaignWorkspace,
   type AuthenticatedPrincipal,
   type CampaignPersistenceKind,
+  type LibraryAdRefusalReason,
   type CampaignWorkspaceProjection,
   type CampaignWorkspaceReadRecord,
   type CampaignWorkspaceVersionRecord,
@@ -147,6 +148,8 @@ function noticesFor(
     /** The ads library's offer to use a newer version, when the ad has one (009C-AC-009). */
     offer: NewerVersionOffer | undefined;
     undecided: boolean;
+    /** The approval command's own answer for this version (`libraryAdRefusalFor`), QA-06. */
+    refusal: LibraryAdRefusalReason | undefined;
     canEdit: boolean;
     campaignRef: string;
     brandChanged: boolean;
@@ -169,6 +172,19 @@ function noticesFor(
       blocksApproval: input.undecided,
       chooseAnotherAdHref: input.undecided ? chooseAnotherAdHref : undefined,
     });
+  }
+  // The page offers no Approve where the approval command would refuse (QA-06), so it says why, in
+  // step 3's own sentences (writing review delta check, D-4). Retired and missing are said above; a
+  // replaced ad with a newer version to move to is said by the ads library's notice just below.
+  if (input.undecided && input.refusal === "art_changed") {
+    notices.push({
+      kind: "art-changed",
+      makeNewVersionHref: input.canEdit
+        ? launchHref({ step: 2, campaign: input.campaignRef, from: "campaigns" })
+        : undefined,
+    });
+  } else if (input.undecided && input.refusal === "replaced" && input.offer === undefined) {
+    notices.push({ kind: "replaced", chooseAnotherAdHref });
   }
   // The ads library decides whether a newer version is offered and what taking it saves; its action
   // is for a version nobody has decided on, and for a person who can save a version.
@@ -250,25 +266,25 @@ export function buildCampaignPage(input: CampaignPageInput): CampaignPageData | 
     decided: shown.decision !== undefined,
     library,
   });
+  // 009c D4 and QA-06. A version nobody approved whose ad is retired, missing, replaced, or whose
+  // art changed cannot be approved, so the page does not offer a control that would only be
+  // refused; a notice says why and what to do (D-4). The answer is the approval command's own rule.
+  const libraryRefusal = libraryAdRefusalFor(
+    recordedLibraryAdOf(shownManifest),
+    library.standingOf(shownManifest.libraryAd),
+  );
+  const approvalBlockedByLibrary = undecided && libraryRefusal !== undefined;
   const notices = isLatest
     ? noticesFor({
         library: shownStanding,
         offer,
         undecided,
+        refusal: libraryRefusal,
         canEdit,
         campaignRef: projection.campaignRef,
         brandChanged,
       })
     : Object.freeze([]);
-  // 009c D4 and QA-06. A version nobody approved whose ad is retired, missing, replaced, or whose
-  // art changed cannot be approved, so the page does not offer a control that would only be
-  // refused; the notice says what to do. The answer is the approval command's own rule.
-  const approvalBlockedByLibrary =
-    undecided &&
-    libraryAdRefusalFor(
-      recordedLibraryAdOf(shownManifest),
-      library.standingOf(shownManifest.libraryAd),
-    ) !== undefined;
   const page: LibraryAdCampaignPage = {
     ...common,
     kind: "library-ad",

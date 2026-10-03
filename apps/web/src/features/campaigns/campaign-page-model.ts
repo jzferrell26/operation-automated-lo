@@ -52,6 +52,19 @@ export type CampaignNotice =
       chooseAnotherAdHref: string | undefined;
     }>
   | Readonly<{ kind: "missing"; blocksApproval: boolean; chooseAnotherAdHref: string | undefined }>
+  /**
+   * The ad's pictures changed in the library after this version was saved, so the approval command
+   * refuses it (QA-06) and the page offers no Approve. It says why (writing review delta check,
+   * D-4), and, for a viewer who can save a version, links to the new version that records the
+   * pictures the library holds now.
+   */
+  | Readonly<{ kind: "art-changed"; makeNewVersionHref: string | undefined }>
+  /**
+   * The ad has a newer version the page cannot offer to move to (the ads library offers one only for
+   * a newest version that is active), so the command refuses this version and the page offers no
+   * Approve. The sentence is step 3's, and the way out is the same: another ad (D-4).
+   */
+  | Readonly<{ kind: "replaced"; chooseAnotherAdHref: string | undefined }>
   | Readonly<{
       kind: "newer-version";
       /** The ads library's offer (009C-AC-009): its notice, and its action for an undecided version. */

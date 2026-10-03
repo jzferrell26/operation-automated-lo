@@ -1,3 +1,4 @@
+import type { LibraryAdCatalogStanding } from "@oalo/application";
 import { describe, expect, it } from "vitest";
 
 import type { SavedAdBrand } from "./ad-brand-read.js";
@@ -264,6 +265,111 @@ describe("the library notices (009E-AC-006)", () => {
     if (page.kind !== "library-ad") throw new Error("Expected a library-ad page.");
     expect(page.approvalControls).toBeUndefined();
     expect((await libraryPageOf()).approvalControls).toBeDefined();
+  });
+
+  /**
+   * The writing review delta check, D-4. The page offers no Approve where the approval command would
+   * refuse (QA-06), and it said nothing about two of the four reasons, so an approver arriving from
+   * the hand-off link saw an Approval card with no way to approve and no reason. Step 3 says both,
+   * in sentences the approval refusal also says, and the page now does too.
+   */
+  async function libraryWith(change: Partial<LibraryAdCatalogStanding>) {
+    const sample = await sampleLibrary();
+    return {
+      find: sample.find.bind(sample),
+      standingOf: (ad: Readonly<{ id: string; version: number }>) => {
+        const standing = sample.standingOf(ad);
+        return standing === undefined ? undefined : { ...standing, ...change };
+      },
+    };
+  }
+
+  it("says why there is no Approve when the ad's art changed, with a new version for somebody who can save one (D-4)", async () => {
+    const library = await libraryWith({ tallSha256: "0".repeat(64) });
+    const campaign = await libraryCampaign();
+
+    const forOwner = (await pageOf(campaign, {
+      principal: OWNER,
+      library,
+    })) as LibraryAdCampaignPage;
+    expect(forOwner.approvalControls).toBeUndefined();
+    expect(forOwner.notices).toEqual([
+      {
+        kind: "art-changed",
+        makeNewVersionHref:
+          "/marketing/campaigns/new?step=2&campaign=campaign_01LibraryPage&from=campaigns",
+      },
+    ]);
+
+    // An approver who followed the hand-off link gets the reason, and no link they could not use.
+    const forApprover = (await pageOf(campaign, {
+      principal: APPROVER,
+      library,
+    })) as LibraryAdCampaignPage;
+    expect(forApprover.approvalControls).toBeUndefined();
+    expect(forApprover.notices).toEqual([{ kind: "art-changed", makeNewVersionHref: undefined }]);
+  });
+
+  it("says nothing about changed art for a version somebody has approved, which keeps its approval", async () => {
+    const library = await libraryWith({ tallSha256: "0".repeat(64) });
+    const page = (await pageOf(await libraryCampaign({ decision: "approved" }), {
+      principal: OWNER,
+      library,
+    })) as LibraryAdCampaignPage;
+
+    expect(page.notices).toEqual([]);
+    expect(page.approvalControls).toBeUndefined();
+  });
+
+  it("says why there is no Approve when the ad was replaced and no newer version can be offered (D-4)", async () => {
+    // The ad's version was replaced, and the library holds no active newer version to move to.
+    const library = await libraryWith({ status: "replaced", highestStatus: "replaced" });
+    const campaign = await libraryCampaign();
+
+    const forOwner = (await pageOf(campaign, {
+      principal: OWNER,
+      library,
+    })) as LibraryAdCampaignPage;
+    expect(forOwner.approvalControls).toBeUndefined();
+    expect(forOwner.notices).toEqual([
+      {
+        kind: "replaced",
+        chooseAnotherAdHref:
+          "/marketing/campaigns/new?step=1&campaign=campaign_01LibraryPage&from=campaigns",
+      },
+    ]);
+    const forApprover = (await pageOf(campaign, {
+      principal: APPROVER,
+      library,
+    })) as LibraryAdCampaignPage;
+    expect(forApprover.notices).toEqual([{ kind: "replaced", chooseAnotherAdHref: undefined }]);
+  });
+
+  it("keeps the ads library's own notice, and adds no second one, when a newer version can be offered (D-4)", async () => {
+    const page = await libraryPageOf({ adVersion: 1 });
+
+    expect(page.approvalControls).toBeUndefined();
+    expect(page.notices.map((notice) => notice.kind)).toEqual(["newer-version"]);
+  });
+
+  it("says nothing extra when the ad is approvable, and for an older version", async () => {
+    expect((await libraryPageOf()).notices).toEqual([]);
+    const library = await libraryWith({ tallSha256: "0".repeat(64) });
+    const older = (await pageOf(
+      await libraryCampaign({
+        olderVersions: [
+          {
+            decision: "rejected",
+            decidedAt: "2026-09-30T10:00:00.000Z",
+            createdAt: "2026-09-29T10:00:00.000Z",
+          },
+        ],
+        createdAt: "2026-10-01T10:00:00.000Z",
+        createdBy: OWNER.actorRef,
+      }),
+      { principal: OWNER, library, versionNo: 1 },
+    )) as LibraryAdCampaignPage;
+    expect(older.notices).toEqual([]);
   });
 
   it("offers choosing another ad on a sent-back version whose ad is retired", async () => {

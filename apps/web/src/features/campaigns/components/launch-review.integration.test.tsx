@@ -3,7 +3,12 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { LAUNCH_SENTENCES, launchRetiredSentence } from "../../../copy/launch-messages.js";
+import { USE_NEW_VERSION_ASK, USE_NEW_VERSION_WHO } from "../../../copy/ads-library-messages.js";
+import {
+  AD_REPLACED_NOTICE,
+  LAUNCH_SENTENCES,
+  launchRetiredSentence,
+} from "../../../copy/launch-messages.js";
 import {
   CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION,
   CHECK_RESULT_NEEDS_CHANGES,
@@ -519,19 +524,28 @@ describe("step 3 never offers Approve where the command refuses (QA-06, 009C-AC-
     },
   );
 
-  it("replaced ad: the newer-version notice and Use the new version, in place of Approve", () => {
+  // The writing review delta check, D-3. The person came to approve and finds no Approve, so the line
+  // says why, in the sentence the approval refusal and the other three cards say.
+  it("replaced ad: says the version can't be approved, with Use the new version in place of Approve", () => {
     const { container } = render(
       <LaunchReview review={reviewFixture({ adRefusal: "replaced", newerVersion: OFFER })} />,
     );
     const card = container.querySelector("[data-decision-card='replaced']") as HTMLElement;
     expect(within(card).getByText("Newer ad version")).toBeInTheDocument();
     expect(
-      within(card).getByText("A newer version of this ad is in the library."),
+      within(card).getByText(
+        "A newer version of this ad is in the library, so this version can't be approved. Your budget, dates and area are kept.",
+      ),
     ).toBeInTheDocument();
+    expect(AD_REPLACED_NOTICE).toBe(
+      "A newer version of this ad is in the library, so this version can't be approved. Your budget, dates and area are kept.",
+    );
     expect(within(card).getByRole("button", { name: "Use the new version" })).toBeEnabled();
+    // Somebody who can use the new version is not told to ask anybody else.
+    expect(within(card).queryByText(USE_NEW_VERSION_ASK)).toBeNull();
   });
 
-  it("replaced ad, a viewer who can't save a version: the notice, and nothing to press", () => {
+  it("replaced ad, a viewer who can't save a version: the reason, who to ask, and nothing to press", () => {
     const { container } = render(
       <LaunchReview
         review={reviewFixture({
@@ -543,10 +557,29 @@ describe("step 3 never offers Approve where the command refuses (QA-06, 009C-AC-
       />,
     );
     const card = container.querySelector("[data-decision-card='replaced']") as HTMLElement;
+    expect(within(card).getByText(AD_REPLACED_NOTICE)).toBeInTheDocument();
     expect(
-      within(card).getByText("A newer version of this ad is in the library."),
+      within(card).getByText(
+        "Ask the campaign creator or your workspace owner to use the new version.",
+      ),
     ).toBeInTheDocument();
+    // The people it names are the ones the action's own confirm step names (one list, said twice).
+    expect(USE_NEW_VERSION_ASK.toLowerCase()).toContain(USE_NEW_VERSION_WHO.toLowerCase());
     expect(within(card).queryByRole("button")).toBeNull();
+    expect(within(card).queryByRole("link")).toBeNull();
+  });
+
+  it("replaced ad: the card and the card with no offer say the same sentence", () => {
+    const withOffer = render(
+      <LaunchReview review={reviewFixture({ adRefusal: "replaced", newerVersion: OFFER })} />,
+    );
+    const offered = withOffer.container.querySelector(
+      "[data-decision-card='replaced']",
+    ) as HTMLElement;
+    expect(within(offered).getAllByText(AD_REPLACED_NOTICE)).toHaveLength(1);
+    withOffer.unmount();
+    render(<LaunchReview review={reviewFixture({ adRefusal: "replaced" })} />);
+    expect(screen.getAllByText(AD_REPLACED_NOTICE)).toHaveLength(1);
   });
 
   it("replaced ad whose newer version can't be offered: says so, and offers another ad", () => {
@@ -564,7 +597,7 @@ describe("step 3 never offers Approve where the command refuses (QA-06, 009C-AC-
 
   it("pictures changed: says so, and offers a new version that records the pictures now held", () => {
     render(<LaunchReview review={reviewFixture({ adRefusal: "art_changed" })} />);
-    expect(screen.getByText("Ad pictures changed")).toBeInTheDocument();
+    expect(screen.getByText("Ad picture changed")).toBeInTheDocument();
     expect(
       screen.getByText(
         "The picture for this ad changed after this version was saved, so this version can't be approved.",
@@ -585,12 +618,17 @@ describe("step 3 never offers Approve where the command refuses (QA-06, 009C-AC-
     expect(screen.getByRole("link", { name: "Choose another ad" })).toBeInTheDocument();
   });
 
+  // The writing review delta check, D-5: "retired" goes with "taken out of the library" (the words the
+  // approval refusal says), and "isn't in the library" stays with the missing chip.
   it("retired with no day on record: still no Approve, and the sentence without a day", () => {
     render(<LaunchReview review={reviewFixture({ adRefusal: "retired", retiredOn: null })} />);
     expect(screen.getByText("Ad retired")).toBeInTheDocument();
     expect(
-      screen.getByText("This ad isn't in the library, so this version can't be approved."),
+      screen.getByText("This ad was taken out of the library, so this version can't be approved."),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText("This ad isn't in the library, so this version can't be approved."),
+    ).toBeNull();
     expect(screen.getByRole("link", { name: "Choose another ad" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
   });

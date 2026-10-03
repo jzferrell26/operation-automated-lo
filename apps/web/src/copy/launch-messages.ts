@@ -235,16 +235,26 @@ export const CHOOSE_ANOTHER_AD = "Choose another ad";
  * than retirement. The sentences are the command's own (`apps/web/src/features/http/user-messages.ts`
  * says them for the refusal that follows a press of Approve), so a screen and a refusal agree. A
  * replaced ad with a newer version to move to draws the ads library's own newer-version notice
- * instead (`UseNewVersion`), and an ad that is not in the library reuses the campaign page's
- * sentence (`NOTICES.missingUndecided`).
+ * (`UseNewVersion`) with `AD_REPLACED_NOTICE` as its line, so the card says the reason a person who
+ * came to approve needs (writing review delta check, D-3), and an ad that is not in the library
+ * reuses the campaign page's sentence (`NOTICES.missingUndecided`). The campaign page says the same
+ * sentences where it offers no Approve (D-4).
+ *
+ * Amended 2026-10-03 (writing review delta check, D-5): the chip says "Ad picture changed", the
+ * singular the sentence beside it and the approval refusal use. And a retired ad with no day on
+ * record says "taken out of the library", the words `LIBRARY_AD_RETIRED` says, so "retired" goes
+ * with "taken out" and "isn't in the library" stays with the missing chip.
  */
 export const AD_REPLACED_CHIP = "Newer ad version";
 export const AD_REPLACED_NOTICE =
   "A newer version of this ad is in the library, so this version can't be approved. Your budget, dates and area are kept.";
-export const AD_ART_CHANGED_CHIP = "Ad pictures changed";
+export const AD_ART_CHANGED_CHIP = "Ad picture changed";
 export const AD_ART_CHANGED_NOTICE =
   "The picture for this ad changed after this version was saved, so this version can't be approved.";
 export const AD_MISSING_CHIP = "Ad not in the library";
+/** A retired ad whose retirement day the library did not record (D-5). */
+export const AD_RETIRED_UNDATED_NOTICE =
+  "This ad was taken out of the library, so this version can't be approved.";
 
 /**
  * D8's hand-off card, for a person who cannot approve. It moved here from the guided setup's copy,

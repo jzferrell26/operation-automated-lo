@@ -13,6 +13,7 @@ import {
   AD_REPLACED_CHIP,
   AD_REPLACED_NOTICE,
   AD_RETIRED_CHIP,
+  AD_RETIRED_UNDATED_NOTICE,
   AD_TEXT_CHANGED,
   AD_TEXT_UNCHANGED,
   APPROVED_CHIP,
@@ -46,6 +47,7 @@ import {
   checksCount,
   runsFact,
 } from "../../../copy/launch-messages.js";
+import { USE_NEW_VERSION_ASK } from "../../../copy/ads-library-messages.js";
 import { NOTICES } from "../../../copy/campaign-page-messages.js";
 import {
   CAMPAIGN_SENT_BACK_LABEL,
@@ -370,7 +372,7 @@ function refusedCard(
         chip: AD_RETIRED_CHIP,
         sentence:
           review.retiredOn === null ? (
-            NOTICES.missingUndecided
+            AD_RETIRED_UNDATED_NOTICE
           ) : (
             <TextWithDays
               days={[{ dateTime: review.retiredOn.slice(0, 10), text: shortDay(review.retiredOn) }]}
@@ -453,13 +455,20 @@ function LaunchDecision({
   if (refused !== undefined && state === refused) {
     if (refused === "replaced" && review.newerVersion !== undefined) {
       // 009c D4: a replaced version gets the newer-version notice instead of an approval, with the
-      // ads library's own "Use the new version" for somebody who can save a version.
+      // ads library's own "Use the new version" for somebody who can save a version. The person came
+      // here to approve, so the line says why they can't (the sentence the approval refusal and the
+      // other three cards say), and somebody who can't save a version is told who can (D-3).
       return (
         <Card className={styles.decisionCard} data-decision-card={refused} padding="lg">
           <Badge className={styles.decisionChip} tone="neutral">
             {AD_REPLACED_CHIP}
           </Badge>
-          <UseNewVersion canUse={review.canMakeNewVersion} offer={review.newerVersion} />
+          <UseNewVersion
+            askWhenCannot={USE_NEW_VERSION_ASK}
+            canUse={review.canMakeNewVersion}
+            lead={AD_REPLACED_NOTICE}
+            offer={review.newerVersion}
+          />
         </Card>
       );
     }

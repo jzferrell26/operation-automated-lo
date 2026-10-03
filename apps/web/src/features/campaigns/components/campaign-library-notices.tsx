@@ -1,7 +1,13 @@
 import { Icon, Link, Surface } from "@oalo/ui";
 
 import { NOTICES, retiredKept } from "../../../copy/campaign-page-messages.js";
-import { adRetiredNotice } from "../../../copy/launch-messages.js";
+import {
+  AD_ART_CHANGED_NOTICE,
+  AD_REPLACED_NOTICE,
+  AD_RETIRED_UNDATED_NOTICE,
+  MAKE_A_NEW_VERSION,
+  adRetiredNotice,
+} from "../../../copy/launch-messages.js";
 import { UseNewVersion } from "../../ads-library/components/use-new-version.js";
 import type { CampaignNotice } from "../campaign-page-model.js";
 import { shortDay } from "../launch-model.js";
@@ -14,6 +20,11 @@ import { TextWithDays, type DayInText } from "./text-with-days.js";
  * nobody has approved), a newer version of the ad exists (the ads library's own notice, with its
  * "Use the new version" for a version nobody has decided on, 009C-AC-009), and Brand changed after
  * this version was saved.
+ *
+ * Amended 2026-10-03 (writing review delta check, D-4). The page offers no Approve where the approval
+ * command would refuse (QA-06), so two more notices say why, in step 3's own sentences: the ad's
+ * pictures changed after this version was saved (with "Make a new version"), and a newer version of
+ * the ad exists that the page cannot offer to move to (with "Choose another ad").
  *
  * A notice on an approved version only says what changed: the approval covers the version that was
  * approved, so nothing here asks the person to redo it.
@@ -30,11 +41,20 @@ function noticeSentence(notice: CampaignNotice): string {
   switch (notice.kind) {
     case "retired": {
       const on = notice.retiredOn === null ? undefined : shortDay(notice.retiredOn);
-      if (on === undefined) return NOTICES.missingUndecided;
+      // Step 3 says the same sentence for the same state (writing review delta check, D-5), so a
+      // retired ad is "taken out of the library" on both and "isn't in the library" stays the
+      // missing ad's.
+      if (on === undefined) {
+        return notice.blocksApproval ? AD_RETIRED_UNDATED_NOTICE : NOTICES.missingUndecided;
+      }
       return notice.blocksApproval ? adRetiredNotice(on) : retiredKept(on);
     }
     case "missing":
       return notice.blocksApproval ? NOTICES.missingUndecided : NOTICES.missingApproved;
+    case "art-changed":
+      return AD_ART_CHANGED_NOTICE;
+    case "replaced":
+      return AD_REPLACED_NOTICE;
     case "newer-version":
       // Drawn by the ads library's `UseNewVersion`, which says its own sentence.
       return "";
@@ -45,12 +65,19 @@ function noticeSentence(notice: CampaignNotice): string {
 
 function noticeAction(notice: CampaignNotice) {
   if (
-    (notice.kind === "retired" || notice.kind === "missing") &&
+    (notice.kind === "retired" || notice.kind === "missing" || notice.kind === "replaced") &&
     notice.chooseAnotherAdHref !== undefined
   ) {
     return (
       <Link href={notice.chooseAnotherAdHref} variant="action">
         {NOTICES.chooseAnotherAd}
+      </Link>
+    );
+  }
+  if (notice.kind === "art-changed" && notice.makeNewVersionHref !== undefined) {
+    return (
+      <Link href={notice.makeNewVersionHref} variant="action">
+        {MAKE_A_NEW_VERSION}
       </Link>
     );
   }

@@ -49,6 +49,13 @@ export const USE_NEW_VERSION_CONFIRM = "Yes, use the new version";
 export const USE_NEW_VERSION_EXPLANATION =
   "Your headline and ad text will be replaced with the words from the newer version of this ad.";
 export const USE_NEW_VERSION_WHO = "The campaign creator or your workspace owner";
+/**
+ * Added 2026-10-03 (writing review delta check, D-3). Step 3 says it to somebody who can't save a
+ * version, in the place where Approve would have been: the version can't be approved, and these are
+ * the people who can move it to the newer ad version.
+ */
+export const USE_NEW_VERSION_ASK =
+  "Ask the campaign creator or your workspace owner to use the new version.";
 export const USE_NEW_VERSION_CONFIRMATION = Object.freeze({
   title: "Use the new version of this ad?",
   effect:

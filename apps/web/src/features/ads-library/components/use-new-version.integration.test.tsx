@@ -69,6 +69,55 @@ describe("when it is offered", () => {
   });
 });
 
+// The writing review delta check, D-3. Step 3 mounts the component in place of Approve and has more
+// to say; the campaign page passes neither prop, so the notice 009C-AC-009 fixes is not changed.
+describe("a screen that says more than the notice (step 3)", () => {
+  const LEAD = "A newer version of this ad is in the library, so this version can't be approved.";
+  const ASK = "Ask the campaign creator or your workspace owner to use the new version.";
+
+  it("says the screen's own lead in place of the notice", () => {
+    render(<UseNewVersion canUse lead={LEAD} offer={OFFER} />);
+
+    expect(screen.getByText(LEAD)).toBeInTheDocument();
+    expect(screen.queryByText(NEWER_VERSION_NOTICE)).toBeNull();
+    expect(screen.getByRole("button", { name: "Use the new version" })).toBeEnabled();
+  });
+
+  it("says who to ask to somebody who can't save a version, for a version nobody has decided on", () => {
+    render(<UseNewVersion askWhenCannot={ASK} canUse={false} lead={LEAD} offer={OFFER} />);
+
+    expect(screen.getByText(LEAD)).toBeInTheDocument();
+    expect(screen.getByText(ASK)).toBeInTheDocument();
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("does not tell somebody who can use the new version to ask anybody", () => {
+    render(<UseNewVersion askWhenCannot={ASK} canUse lead={LEAD} offer={OFFER} />);
+
+    expect(screen.queryByText(ASK)).toBeNull();
+  });
+
+  it("does not ask anybody to move a version somebody has already decided on", () => {
+    render(
+      <UseNewVersion
+        askWhenCannot={ASK}
+        canUse={false}
+        lead={LEAD}
+        offer={{ ...OFFER, undecided: false }}
+      />,
+    );
+
+    expect(screen.queryByText(ASK)).toBeNull();
+  });
+
+  it("says nothing more than the notice when the screen asks for nothing more (the campaign page)", () => {
+    const { container } = render(<UseNewVersion canUse={false} offer={OFFER} />);
+
+    expect(container.querySelectorAll("p")).toHaveLength(1);
+    expect(container.querySelector("[data-newer-version-ask]")).toBeNull();
+  });
+});
+
 describe("asking first", () => {
   it("says what it replaces and what it keeps, and sends nothing until the person says yes", async () => {
     const fetch = stubSave();

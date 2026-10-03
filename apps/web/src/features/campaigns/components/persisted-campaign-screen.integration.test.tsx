@@ -1,3 +1,4 @@
+import type { LibraryAdCatalogStanding } from "@oalo/application";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -9,6 +10,7 @@ import {
   earlierFlowCampaign,
   libraryCampaign,
   pageOf,
+  sampleLibrary,
   wholeSentence,
   type LibraryCampaignOptions,
 } from "../../../server/campaign-page.test-support.js";
@@ -431,6 +433,38 @@ describe("the library notices on the page (009E-AC-006)", () => {
     expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
   });
 
+  // The writing review delta check, D-5. A retired ad whose retirement day the library did not record
+  // says "taken out of the library" here as on step 3, and "isn't in the library" stays the missing
+  // ad's sentence.
+  it("says a retirement with no day on record the way step 3 does", async () => {
+    const sample = await sampleLibrary();
+    const campaign = await libraryCampaign({ adId: "sample-spring-search", adVersion: 1 });
+    const page = await pageOf(campaign, {
+      principal: OWNER,
+      library: {
+        find: (id: string, version: number) => {
+          const found = sample.find(id, version);
+          if (found === undefined) return undefined;
+          const entry = { ...found.entry } as { retired?: unknown };
+          delete entry.retired;
+          return { ...found, entry: entry as typeof found.entry };
+        },
+        standingOf: sample.standingOf.bind(sample),
+      },
+    });
+    render(<PersistedCampaignScreen page={page} />);
+
+    const notice = screen.getByText(
+      "This ad was taken out of the library, so this version can't be approved.",
+    );
+    expect(
+      within(notice.closest("li") as HTMLElement).getByRole("link", { name: "Choose another ad" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("This ad isn't in the library, so this version can't be approved."),
+    ).toBeNull();
+  });
+
   it("only says an approved campaign keeps the version it approved when its ad is retired", async () => {
     await renderCampaign({
       adId: "sample-spring-search",
@@ -490,6 +524,84 @@ describe("the library notices on the page (009E-AC-006)", () => {
     expect(
       screen.getByText("This ad isn't in the library, so this version can't be approved."),
     ).toBeInTheDocument();
+  });
+
+  /**
+   * The writing review delta check, D-4. Where the page offers no Approve because the approval
+   * command would refuse (QA-06), it says why, in the sentences step 3 and the approval refusal say.
+   * An approver who followed the hand-off link used to see an Approval card with nothing to press and
+   * no reason.
+   */
+  async function renderWithStanding(
+    change: Partial<LibraryAdCatalogStanding>,
+    principal: Principal = OWNER,
+    options: LibraryCampaignOptions = {},
+  ) {
+    const sample = await sampleLibrary();
+    const page = await pageOf(await libraryCampaign(options), {
+      principal,
+      library: {
+        find: sample.find.bind(sample),
+        standingOf: (ad: Readonly<{ id: string; version: number }>) => {
+          const standing = sample.standingOf(ad);
+          return standing === undefined ? undefined : { ...standing, ...change };
+        },
+      },
+    });
+    return render(<PersistedCampaignScreen page={page} />);
+  }
+  const ART_CHANGED = { tallSha256: "0".repeat(64) } as const;
+
+  it("says the picture changed, and offers a new version, where Approve is gone for a changed picture", async () => {
+    await renderWithStanding(ART_CHANGED);
+
+    const item = screen
+      .getByText(
+        "The picture for this ad changed after this version was saved, so this version can't be approved.",
+      )
+      .closest("li") as HTMLElement;
+    expect(item).toHaveAttribute("data-notice", "art-changed");
+    expect(within(item).getAllByRole("link")).toHaveLength(1);
+    expect(within(item).getByRole("link", { name: "Make a new version" })).toHaveAttribute(
+      "href",
+      "/marketing/campaigns/new?step=2&campaign=campaign_01LibraryPage&from=campaigns",
+    );
+    expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
+  });
+
+  it("gives an approver the reason, and no link they could not use, for a changed picture", async () => {
+    await renderWithStanding(ART_CHANGED, APPROVER);
+
+    const item = screen
+      .getByText(
+        "The picture for this ad changed after this version was saved, so this version can't be approved.",
+      )
+      .closest("li") as HTMLElement;
+    expect(within(item).queryByRole("link")).toBeNull();
+    expect(within(item).queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
+  });
+
+  it("says nothing about a changed picture on a version somebody approved", async () => {
+    const { container } = await renderWithStanding(ART_CHANGED, OWNER, { decision: "approved" });
+
+    expect(container.querySelector("[data-notice='art-changed']")).toBeNull();
+  });
+
+  it("says a newer version is in the library, and offers another ad, when it cannot offer the new one", async () => {
+    await renderWithStanding({ status: "replaced", highestStatus: "replaced" });
+
+    const item = screen
+      .getByText(
+        "A newer version of this ad is in the library, so this version can't be approved. Your budget, dates and area are kept.",
+      )
+      .closest("li") as HTMLElement;
+    expect(item).toHaveAttribute("data-notice", "replaced");
+    expect(within(item).getByRole("link", { name: "Choose another ad" })).toHaveAttribute(
+      "href",
+      "/marketing/campaigns/new?step=1&campaign=campaign_01LibraryPage&from=campaigns",
+    );
+    expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
   });
 });
 

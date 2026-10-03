@@ -41,15 +41,33 @@ import styles from "./use-new-version.module.css";
  *
  * The offer is built on the server (`newerVersionOffer`) from the catalog and the saved version; it
  * carries display and carry-over values only.
+ *
+ * Step 3 of "Launch an ad" mounts it too, in place of Approve (writing review delta check, D-3). It
+ * passes its own `lead`, which says why the version can't be approved, and `askWhenCannot`, which
+ * tells somebody who can't save a version who can. The campaign page passes neither, so the notice
+ * 009C-AC-009 fixes is unchanged there.
  */
 
 export type UseNewVersionProps = Readonly<{
   offer: NewerVersionOffer;
   /** Whether the viewer may save a campaign version: a workspace owner or a campaign creator. */
   canUse: boolean;
+  /** The line the notice says. It is `NEWER_VERSION_NOTICE` unless the screen has more to say. */
+  lead?: string | undefined;
+  /**
+   * What to say under the lead to somebody who can't save a version, for a screen where the person
+   * came to approve and would otherwise be left with no one to ask. Said only for a version nobody
+   * has decided on, since a decided version has nothing left to move.
+   */
+  askWhenCannot?: string | undefined;
 }>;
 
-export function UseNewVersion({ offer, canUse }: UseNewVersionProps) {
+export function UseNewVersion({
+  offer,
+  canUse,
+  lead = NEWER_VERSION_NOTICE,
+  askWhenCannot,
+}: UseNewVersionProps) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   // The sentence, and the whole refusal behind it, so the support reference a sentence points at
@@ -101,7 +119,12 @@ export function UseNewVersion({ offer, canUse }: UseNewVersionProps) {
 
   return (
     <div className={styles.notice} data-newer-version="">
-      <p className={styles.line}>{NEWER_VERSION_NOTICE}</p>
+      <p className={styles.line}>{lead}</p>
+      {askWhenCannot !== undefined && offer.undecided && !canUse ? (
+        <p className={styles.line} data-newer-version-ask="">
+          {askWhenCannot}
+        </p>
+      ) : null}
       {offered ? (
         <SafeAction
           confirmLabel={USE_NEW_VERSION_CONFIRM}

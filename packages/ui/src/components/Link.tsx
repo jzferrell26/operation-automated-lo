@@ -8,7 +8,12 @@ import "./primitives.css";
 
 import styles from "./link.module.css";
 
-export type LinkVariant = "inline" | "action";
+/**
+ * `sentence` is a link inside a running sentence or a row of smaller text: it takes that text's
+ * size and keeps the 44px target without stretching the line (`03-components/link.md`, "A link
+ * inside a sentence").
+ */
+export type LinkVariant = "inline" | "action" | "sentence";
 
 export type LinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "rel" | "target"> &
   Readonly<{

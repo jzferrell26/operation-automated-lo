@@ -54,7 +54,8 @@ describe("the page column starts where the wordmark does (Wave 1 verifier, 1440 
 
   it("gives both the same inline padding, so the wordmark and the page share an edge", () => {
     expect(rule(".bar")["padding-inline"]).toBe("var(--space-8)");
-    expect(rule(".content")["padding"]).toMatch(/^var\(--space-6\) var\(--space-8\)$/u);
+    // PRD-009 scored review R1-01: the mockups' `.page` is `--space-8` on every side.
+    expect(rule(".content")["padding"]).toBe("var(--space-8)");
     expect(rule(".bar")["margin-inline"]).toBe("auto");
     expect(rule(".content")["margin-inline"]).toBe("auto");
   });
@@ -64,7 +65,16 @@ describe("the page column starts where the wordmark does (Wave 1 verifier, 1440 
     const narrowContent = rule(".content", "@media (max-width: 719.98px)");
 
     expect(narrowBar["padding-inline"]).toBe("var(--space-4)");
-    expect(narrowContent["padding"]).toBe("var(--space-4)");
+    // R1-01: the mockups' phone page, `--space-6` above and `--space-4` at the sides.
+    expect(narrowContent["padding"]).toBe("var(--space-6) var(--space-4)");
+  });
+
+  /**
+   * PRD-009 scored review R4-03. The unverified-email notice and the page are siblings in the
+   * shell's main region; they stand a page gap apart, as the mockups' `.page` grid does.
+   */
+  it("stacks the main region's page-level blocks a page gap apart", () => {
+    expect(rule(".content")["row-gap"]).toBe("var(--space-6)");
   });
 
   it("no longer reserves room for a floating walkthrough panel", () => {

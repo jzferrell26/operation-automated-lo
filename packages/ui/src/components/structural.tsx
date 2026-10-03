@@ -3,7 +3,11 @@ import { forwardRef, type HTMLAttributes } from "react";
 import { joinClassNames } from "./internal.js";
 import "./primitives.css";
 
-export type SurfaceVariant = "card" | "sunken" | "raised" | "plain";
+/**
+ * `info` is the informational notice surface (the mockups' `.notice`): a status surface is a
+ * variant of the primitive, never a module class fighting the card's fill (PRD-009 review R3 F-10).
+ */
+export type SurfaceVariant = "card" | "sunken" | "raised" | "plain" | "info";
 export type SurfacePadding = "none" | "sm" | "md" | "lg";
 
 export interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {

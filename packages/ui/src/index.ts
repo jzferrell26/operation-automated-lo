@@ -39,6 +39,7 @@ export {
 export type {
   AsyncStateKind,
   AsyncStateProps,
+  AsyncStateSurface,
   DegradedStateProps,
   EmptyStateProps,
   ErrorStateProps,

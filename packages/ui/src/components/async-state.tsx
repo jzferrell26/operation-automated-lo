@@ -20,7 +20,15 @@ const asyncStatePresentation: Readonly<
   degraded: { icon: "clock", label: "Having trouble", tone: "warning" },
 });
 
+/**
+ * Where the state stands. `sunken` (the default) is a well inside a card. `card` is a state that
+ * stands on the page itself, such as a route's error or loading boundary, which design section 2.3
+ * draws as the white bordered card (PRD-009 scored review R4-10).
+ */
+export type AsyncStateSurface = "sunken" | "card";
+
 type AsyncStateBaseProps = Omit<HTMLAttributes<HTMLElement>, "children" | "title"> & {
+  surface?: AsyncStateSurface | undefined;
   title: ReactNode;
   description: ReactNode;
   primaryAction?: ReactElement;
@@ -45,7 +53,16 @@ type PermissionRestrictedAsyncStateProps = AsyncStateBaseProps & {
 export type AsyncStateProps = StandardAsyncStateProps | PermissionRestrictedAsyncStateProps;
 
 export function AsyncState(props: AsyncStateProps) {
-  const { className, description, details, kind, primaryAction, secondaryAction, title } = props;
+  const {
+    className,
+    description,
+    details,
+    kind,
+    primaryAction,
+    secondaryAction,
+    surface = "sunken",
+    title,
+  } = props;
   const sectionProps = { ...props } as Partial<AsyncStateProps> & Record<string, unknown>;
   for (const componentProp of [
     "className",
@@ -57,6 +74,7 @@ export function AsyncState(props: AsyncStateProps) {
     "requiredRole",
     "responsibleParty",
     "secondaryAction",
+    "surface",
     "title",
   ]) {
     delete sectionProps[componentProp];
@@ -90,6 +108,7 @@ export function AsyncState(props: AsyncStateProps) {
       aria-live={isUrgent ? "assertive" : "polite"}
       className={joinClassNames("oalo-async-state", className)}
       data-state={kind}
+      data-surface={surface}
       role={isUrgent ? "alert" : "status"}
     >
       <span className="oalo-state-label">

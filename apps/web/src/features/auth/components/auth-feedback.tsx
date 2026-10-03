@@ -1,4 +1,4 @@
-import { LiveRegion } from "@oalo/ui";
+import { Icon, LiveRegion } from "@oalo/ui";
 import type { ReactNode } from "react";
 
 import type { InternalRefusal } from "../../http/internal-api.js";
@@ -19,11 +19,46 @@ import styles from "./auth-form.module.css";
  */
 
 export function AuthProblem({ children }: Readonly<{ children: ReactNode }>): ReactNode {
-  return <LiveRegion className={styles.problem} message={children} urgency="alert" visible />;
+  return (
+    <LiveRegion
+      className={styles.problem}
+      message={
+        <>
+          <Icon className={styles.feedbackGlyph} decorative name="circle-x" size="sm" />
+          {children}
+        </>
+      }
+      urgency="alert"
+      visible
+    />
+  );
 }
 
+/**
+ * Brief section 9: each region pairs its colour and words with its tone's glyph, the one `Badge`
+ * draws for that tone (`circle-x` for a refusal, `info` for a confirmation). The glyph is
+ * decorative, so the sentence alone is what a screen reader hears (PRD-009 scored review R4-08).
+ * The refusal's glyph takes the region's critical colour; the notice's takes the information blue
+ * beside words in the body colour.
+ *
+ * The words stay direct children of the region, beside the glyph rather than inside a wrapper, so
+ * a region found by its sentence is the region itself; the stylesheet puts every child after the
+ * glyph in the second column.
+ */
 export function AuthNotice({ children }: Readonly<{ children: ReactNode }>): ReactNode {
-  return <LiveRegion className={styles.notice} message={children} urgency="status" visible />;
+  return (
+    <LiveRegion
+      className={styles.notice}
+      message={
+        <>
+          <Icon className={styles.feedbackGlyph} decorative name="info" size="sm" tone="info" />
+          {children}
+        </>
+      }
+      urgency="status"
+      visible
+    />
+  );
 }
 
 /**

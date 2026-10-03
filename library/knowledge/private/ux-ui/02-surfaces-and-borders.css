@@ -17,6 +17,9 @@
  *   .ui-panel           -> `.oalo-surface[data-variant="raised"]`, `.panel` in
  *                          `overlay.module.css`
  *   .ui-sunken          -> `.oalo-surface[data-variant="sunken"]`
+ *   .ui-notice          -> `.oalo-surface[data-variant="info"]` (Added on 2026-10-03 by the
+ *                          PRD-009 scored baseline review, R3 F-10: the informational notice,
+ *                          the mockups' `.notice`, as a variant of the primitive.)
  *   .ui-nav             -> `.desktopSidebar` in `app-shell.module.css` (Amended on 2026-10-01 by PRD-009 (S-103; D-2): `.ui-nav` maps to the top bar, `.topbar` in `app-shell.module.css`.)
  *   .ui-focusable       -> the `:focus-visible` rule each component declares
  *                          with `--focus-width`, `--focus-color`,
@@ -68,6 +71,13 @@
   background: var(--sf-sunken);
   border: 1px solid var(--bd-hairline);
   border-radius: var(--radius-control);
+}
+
+.ui-notice {
+  background: var(--st-info-bg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  color: var(--tx-strong);
 }
 
 .ui-nav {

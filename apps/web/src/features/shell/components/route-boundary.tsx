@@ -25,9 +25,12 @@ export function RouteError({ error, reset, routeName }: RouteErrorProps) {
     );
   }, [error.digest, routeName]);
 
+  /* A route boundary stands on the page's canvas, not inside a card, so it is drawn on the card
+   * surface in both themes (PRD-009 scored review R4-10; design section 2.3). */
   return (
     <ErrorState
       description="We couldn't load this page. Nothing was changed."
+      surface="card"
       details={
         <SupportDetails
           rows={[[SUPPORT_DETAILS_LABELS.supportReference, error.digest ?? PAGE_ERROR_REFERENCE]]}
@@ -44,5 +47,11 @@ export function RouteError({ error, reset, routeName }: RouteErrorProps) {
 }
 
 export function RouteLoading({ routeName }: Readonly<{ routeName: string }>) {
-  return <LoadingState description="This takes a moment." title={`Loading ${routeName}`} />;
+  return (
+    <LoadingState
+      description="This takes a moment."
+      surface="card"
+      title={`Loading ${routeName}`}
+    />
+  );
 }

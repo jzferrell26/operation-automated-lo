@@ -16,10 +16,14 @@
   justify-content: space-between;
 }
 
+/* `03-components/form-field-and-text-inputs.md`, "Anatomy and tokens", as amended by the PRD-009
+ * scored review (R1-09): the secondary step at semibold, as every PRD-009 mockup draws
+ * `.field label` (`launch-step-2-set-up.html:221`), so the label never reads at the size of the
+ * value under it. */
 .label {
   color: var(--tx-strong);
-  font-size: var(--text-body-size);
-  font-weight: var(--weight-medium);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
   line-height: var(--leading-normal);
 }
 

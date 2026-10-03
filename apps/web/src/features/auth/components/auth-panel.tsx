@@ -19,7 +19,9 @@ export function AuthPanel({
 }: Readonly<{ title: string; lead?: string; children: ReactNode }>): ReactNode {
   return (
     <main className={styles.page}>
-      <Card className={styles.panel}>
+      {/* The panel states its own padding (PRD-009 scored review R4-04), so the card's own
+          padding step is off rather than fighting the module rule. */}
+      <Card className={styles.panel} padding="none">
         <header className={styles.header}>
           <h1>{title}</h1>
           {lead === undefined ? null : <p>{lead}</p>}

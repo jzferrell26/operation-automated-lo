@@ -475,6 +475,30 @@ covers all of them.
 **Closes when** the fix and the redraw land, the three gates pass, and the
 review of the redrawn 1440 and 1180 pictures scores 3 on axes 2, 7, and 10.
 
+### Amended 2026-10-03 by the PRD-009 scored review (R2 F-14)
+
+Ruled by the orchestrator of the PRD-009 Gauntlet run on the scored baseline
+review's finding R2 F-14
+(`library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-03-scored-baseline-review.md`,
+part R2).
+
+**The screen.** The synthetic demo campaign,
+`/marketing/campaigns/synthetic-open-house-001`
+(`apps/web/src/app/(authenticated)/marketing/campaigns/synthetic-open-house-001/`),
+drawn by the reporting feature's `CampaignDetailScreen` in synthetic mode and by
+`ExampleCampaign` in dashboard-preview mode. Its pictures are the eight
+`chromium/campaign-detail--default--*`.
+
+**The ruling.** The screen stays unchanged under 009f D1: PRD-009 keeps it as the
+open house demo, and no PRD-009 screen links to it. It is therefore **exempt from
+axis 10** (consistency with the PRD-009 mockups): a reviewer does not score it
+against `campaign-detail.html`, and its open house fields, Instagram placement,
+and version identifiers are not deltas. **Axes 1 to 9 still apply** to it at every
+frame in both themes, as they do to every screen in section 4.
+
+**Ends when** a PRD retires the route or links a PRD-009 screen to it; either one
+puts it back under axis 10.
+
 ## 6. What the automated gates already prove, so a reviewer does not re-check it
 
 A reviewer scores what a machine cannot. These run on every change:

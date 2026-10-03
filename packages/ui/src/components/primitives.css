@@ -26,6 +26,21 @@
   background: transparent;
 }
 
+/* An informational notice: "Nothing is connected from this page", "Suggestions only". The mockups'
+ * `.notice` (`ads-library.html:508`): the information tint on the control radius, no edge, the text
+ * in the strong ink, and the glyph in `--st-info-fg` (the page passes `Icon tone="info"`).
+ *
+ * PRD-009 scored review R3 F-10. Pages drew this as a `Card` plus a module class carrying
+ * `--st-info-bg`, and `.oalo-surface[data-variant="card"]` (two classes' worth of specificity)
+ * always painted the white card over it, whatever order the bundle loaded the two sheets in. A
+ * status surface is a variant of the primitive, so the cascade has nothing to decide. */
+.oalo-surface[data-variant="info"] {
+  background: var(--st-info-bg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  color: var(--tx-strong);
+}
+
 .oalo-surface[data-padding="sm"] {
   padding: var(--space-2);
 }
@@ -117,12 +132,16 @@
   justify-content: space-between;
 }
 
+/* Card-step titles. Design `00-direction.md` section 2.3, "card title 16px semibold", and the
+ * mockups' `.card-title` at `--weight-semibold`. They were `--weight-bold` from before 009a defined
+ * the semibold token; the PRD-009 scored review (R4-09) saw "We couldn't load your workspace" and
+ * "Loading your workspace" visibly heavier than Home's card titles. */
 .oalo-metric__label,
 .oalo-checklist-item__heading h3,
 .oalo-checklist__heading h2,
 .oalo-async-state__title {
   font-size: var(--text-card-size);
-  font-weight: var(--weight-bold);
+  font-weight: var(--weight-semibold);
   line-height: var(--leading-tight);
   margin: 0;
 }
@@ -319,6 +338,16 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-5);
+}
+
+/* A state that stands on the page rather than inside a card: a route's error or loading boundary.
+ * Sunken is a well inside a card (brief section 8), and in Light `--sf-sunken` equals `--sf-canvas`
+ * (design section 2.4), so a sunken state on the canvas is an outline with no fill while Dark
+ * draws it as a panel. PRD-009 scored review R4-10. On the canvas a surface is the white bordered
+ * card (design section 2.3), so `surface="card"` draws it there in both themes. */
+.oalo-async-state[data-surface="card"] {
+  background: var(--sf-card);
+  box-shadow: var(--shadow-card);
 }
 
 .oalo-state-actions {

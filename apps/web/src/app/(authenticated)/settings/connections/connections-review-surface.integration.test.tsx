@@ -51,12 +51,10 @@ const connectionsAllowances: readonly ReviewSurfaceAllowance[] = [
     value: "Optional",
     because: "Substring of the not-connected group label 'Optional access'.",
   },
-  {
-    path: "onboarding.permissionGroups[*].label",
-    value: "Missing",
-    because:
-      "The screen's own state chip for the missing group renders this word (PRD-006b D5 rule R4); the fixture's group label never reaches this route.",
-  },
+  // There was an allowance here for "Missing", because the screen's own state chip for the missing
+  // group rendered that word (PRD-006b D5 rule R4). The writing review delta check's D-2 gave the
+  // chip other words on this route ("When blocked"), so the word is no longer one this route
+  // renders, and the fixture's group label "Missing" must not reach it. The allowance is gone.
   {
     path: "onboarding.getConnected[*].state",
     value: "blocked",
@@ -350,26 +348,70 @@ describe("F-12: the Connections page says what is not connected once", () => {
 });
 
 describe("F-09: each group's state is the shared Badge", () => {
+  // The writing review delta check's D-2: where nothing is connected the chips say what each group
+  // is for ("Not confirmed yet", "When blocked"); the demo's sample grants keep "Confirmed" and
+  // "Missing", which are results of a check.
   it.each([
-    ["production", OALO_REVIEW_SURFACE_AUTHORIZED],
-    ["local", undefined],
-  ] as const)("pairs every state word with a glyph in %s", (environment, reviewSurface) => {
+    [
+      "production",
+      OALO_REVIEW_SURFACE_AUTHORIZED,
+      ["Needed", "Not confirmed yet", "When blocked", "Optional"],
+    ],
+    ["local", undefined, ["Needed", "Confirmed", "Missing", "Optional"]],
+  ] as const)("pairs every state word with a glyph in %s", (environment, reviewSurface, words) => {
     const { container } = renderConnections(environment, reviewSurface);
 
     const chips = container.querySelectorAll("[data-permission-category]");
 
-    expect([...chips].map((chip) => chip.textContent)).toEqual([
-      "Needed",
-      "Confirmed",
-      "Missing",
-      "Optional",
-    ]);
+    expect([...chips].map((chip) => chip.textContent)).toEqual(words);
     for (const chip of chips) {
       expect(chip.classList.contains("oalo-state-label"), "drawn by Badge").toBe(true);
       expect(chip.querySelector("svg"), `${chip.textContent ?? ""} carries a glyph`).not.toBeNull();
       // A kind of access, not a state of this workspace, so no tone claims a check that was not made.
       expect(chip.getAttribute("data-tone")).toBe("neutral");
     }
+  });
+});
+
+/**
+ * The writing review delta check, D-2. When the group descriptions were left out as repeats (F-12),
+ * the chips stood alone on the page and read "Confirmed" and "Missing" over cards that say "Nothing
+ * checked yet.": the only words on the page that claimed a state of the workspace, and both false.
+ * A chip never claims more than the card under it says.
+ */
+describe("D-2: no chip claims a result the cards beneath it do not have", () => {
+  it("says what each group is for where nothing is connected, and never 'Confirmed' or 'Missing'", () => {
+    const { container } = renderConnections("production", OALO_REVIEW_SURFACE_AUTHORIZED);
+    const chips = [...container.querySelectorAll("[data-permission-category]")].map(
+      (chip) => chip.textContent,
+    );
+
+    expect(chips).not.toContain("Confirmed");
+    expect(chips).not.toContain("Missing");
+    // Every card on the page says nothing was checked, so no word beside a heading may say one was.
+    const checked = [...container.querySelectorAll("dt")]
+      .filter((term) => term.textContent === "What we checked")
+      .map((term) => term.nextElementSibling?.textContent);
+    expect(checked.length).toBeGreaterThanOrEqual(4);
+    expect(new Set(checked)).toEqual(new Set(["Nothing checked yet."]));
+  });
+
+  it("carries the words in the workspace's own data, so the screen invents none", () => {
+    const hosted = renderConnections("production", OALO_REVIEW_SURFACE_AUTHORIZED).workspace.ui
+      .onboarding.permissionGroups;
+    expect(hosted.map((group) => group.stateLabel)).toEqual([
+      "Needed",
+      "Not confirmed yet",
+      "When blocked",
+      "Optional",
+    ]);
+    const demo = renderConnections("local", undefined).workspace.ui.onboarding.permissionGroups;
+    expect(demo.map((group) => group.stateLabel)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ]);
   });
 });
 

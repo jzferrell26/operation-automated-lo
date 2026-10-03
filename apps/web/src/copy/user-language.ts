@@ -91,6 +91,21 @@ export const ACCESS_GROUP_STATE_LABELS = Object.freeze({
   optional: "Optional",
 });
 
+/**
+ * Writing review delta check, D-2 (2026-10-03). The same four chips for a workspace where nothing is
+ * connected. "Confirmed" and "Missing" claim a result of a check, and on that page every card under
+ * them says "Nothing checked yet.", so a chip said more than the card beneath it. These say what the
+ * group is for, never what was found: the access the app needs, the access it will confirm once
+ * something can be connected, the access it will tell you about if something is blocked, and the
+ * optional access. The demo workspace, whose groups hold sample grants, keeps the words above.
+ */
+export const ACCESS_GROUP_NOT_CONNECTED_STATE_LABELS = Object.freeze({
+  required: "Needed",
+  granted: "Not confirmed yet",
+  missing: "When blocked",
+  optional: "Optional",
+});
+
 export const ACCESS_GROUP_DESCRIPTION =
   "You haven't connected HighLevel yet, so there's nothing to confirm here.";
 export const ACCESS_NOTHING_CHECKED = "Nothing checked yet.";

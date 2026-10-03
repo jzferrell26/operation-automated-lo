@@ -278,6 +278,12 @@ const exactPermissionGroup = (category: "required" | "granted" | "missing" | "op
     .object({
       category: z.literal(category),
       label: z.string().min(1),
+      /**
+       * The words of the chip beside the group's heading, when the workspace is not connected and
+       * the stock words ("Confirmed", "Missing") would claim a check that was never made. Left out
+       * in the demo, which keeps the stock words (writing review delta check, D-2).
+       */
+      stateLabel: z.string().min(1).optional(),
       description: z.string().min(1),
       capabilities: z.array(permissionCapabilitySchema).min(1),
     })

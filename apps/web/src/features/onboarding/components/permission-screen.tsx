@@ -76,9 +76,12 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
               <h2 id={`permission-${group.category}`}>{group.label}</h2>
               {/* The scored review's F-09: the shared `Badge`, which pairs the words with a glyph.
                   Neutral on purpose: each names a kind of access, not a state of this workspace,
-                  so a success or critical tone would claim a check that was never made. */}
+                  so a success or critical tone would claim a check that was never made. The
+                  writing review delta check's D-2 holds the words to the same rule: a workspace
+                  with nothing connected carries its own (`stateLabel`), so no chip says
+                  "Confirmed" or "Missing" over a card that says "Nothing checked yet." */}
               <Badge data-permission-category={group.category} tone="neutral">
-                {ACCESS_GROUP_STATE_LABELS[group.category]}
+                {group.stateLabel ?? ACCESS_GROUP_STATE_LABELS[group.category]}
               </Badge>
             </div>
             {sharedDescription === undefined ? <p>{group.description}</p> : null}

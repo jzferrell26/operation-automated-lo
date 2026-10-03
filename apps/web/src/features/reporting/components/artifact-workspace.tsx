@@ -6,7 +6,7 @@ import { useState } from "react";
 import type { DeepReadonly } from "../../ui-foundation/model/synthetic-ui.js";
 import type { SyntheticCampaign } from "../model/synthetic-reporting.js";
 import styles from "./reporting.module.css";
-import { toneForStatus } from "./status-tone.js";
+import { labelForStatus, toneForStatus } from "./status-tone.js";
 
 type ArtifactWorkspaceProps = Readonly<{
   campaign: DeepReadonly<SyntheticCampaign>;
@@ -55,7 +55,7 @@ export function ArtifactWorkspace({ campaign }: ArtifactWorkspaceProps) {
               data-artifact-status={selectedArtifact.status}
               tone={toneForStatus(selectedArtifact.status)}
             >
-              {selectedArtifact.status}
+              {labelForStatus(selectedArtifact.status)}
             </Badge>
           </div>
           <h2>{selectedArtifact.previewTitle}</h2>
@@ -147,7 +147,7 @@ export function ArtifactWorkspace({ campaign }: ArtifactWorkspaceProps) {
           {campaign.history.map((entry) => (
             <li key={entry.version}>
               <strong>Version {entry.version}</strong>
-              <Badge tone={toneForStatus(entry.status)}>{entry.status}</Badge>
+              <Badge tone={toneForStatus(entry.status)}>{labelForStatus(entry.status)}</Badge>
               <p>{entry.summary}</p>
             </li>
           ))}

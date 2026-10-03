@@ -12,3 +12,22 @@ import type { BadgeTone } from "@oalo/ui";
 export function toneForStatus(status: string): BadgeTone {
   return status === "approved" || status === "connected" ? "success" : "neutral";
 }
+
+/**
+ * The words a status chip says (writing review delta check, D-8). The data's own words are lowercase
+ * ("approved", "superseded", "connected"), which no sentence-case chip on a real page is, and
+ * "superseded" is not a plain word. The data keeps its words (`data-artifact-status` stays raw);
+ * the chip says these. A word the data adds later is said in sentence case until it is given words.
+ */
+const STATUS_WORDS: Readonly<Record<string, string>> = Object.freeze({
+  approved: "Approved",
+  superseded: "Replaced",
+  connected: "Connected",
+});
+
+export function labelForStatus(status: string): string {
+  const known = Object.hasOwn(STATUS_WORDS, status) ? STATUS_WORDS[status] : undefined;
+  if (known !== undefined) return known;
+  const spaced = status.replaceAll("_", " ").trim();
+  return `${spaced.charAt(0).toUpperCase()}${spaced.slice(1)}`;
+}

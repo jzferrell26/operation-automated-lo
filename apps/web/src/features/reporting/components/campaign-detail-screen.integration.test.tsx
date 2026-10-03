@@ -82,7 +82,9 @@ describe("synthetic campaign detail screen", () => {
     // screen no longer prints any of them; the name of the workspace is what a user needs.
     expect(screen.queryByText(/synthetic-location-prairie-home/u)).not.toBeInTheDocument();
     expect(screen.queryAllByText(/^synthetic-provider-/u)).toHaveLength(0);
-    expect(screen.getByText("connected")).toBeInTheDocument();
+    // The writing review delta check, D-8: the chip says "Connected", not the data's own word.
+    expect(screen.getByText("Connected")).toBeInTheDocument();
+    expect(screen.queryByText("connected")).not.toBeInTheDocument();
 
     const approvalTable = screen.getByRole("table", {
       name: "What was approved in version 3",
@@ -163,6 +165,39 @@ describe("the demo campaign page's status words (review pass 2, R2 N-5c)", () =>
     expect(approvedTone).toBe("success");
     expect(superseded).toHaveAttribute("data-tone", "neutral");
     expect(superseded.querySelector("svg")?.innerHTML).not.toBe(approvedGlyph);
+  });
+
+  // The writing review delta check, D-8. The chips said the data's own lowercase words ("approved",
+  // "superseded", "connected") beside sentence-case chips such as "Optional, selected" and every chip
+  // on the real pages, and "superseded" is not a plain word. The data keeps its words.
+  it("says each status in sentence case and plain words, and keeps the data's own word in the markup", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<CampaignDetailScreen reporting={loadSyntheticReporting()} />);
+
+    const approved = container.querySelector("[data-artifact-status='approved']") as HTMLElement;
+    expect(approved).toHaveTextContent("Approved");
+    await user.click(screen.getByRole("button", { name: "Version 2" }));
+    const superseded = container.querySelector(
+      "[data-artifact-status='superseded']",
+    ) as HTMLElement;
+    expect(superseded).toHaveTextContent("Replaced");
+    expect(superseded).not.toHaveTextContent("superseded");
+    expect(container.querySelector("[data-connection-state='connected']")).toHaveTextContent(
+      "Connected",
+    );
+  });
+
+  it("says no status chip in the data's lowercase words, in the history, the connection or the approval", () => {
+    const { container } = render(<CampaignDetailScreen reporting={loadSyntheticReporting()} />);
+
+    const chips = [...container.querySelectorAll(".oalo-state-label")].map(
+      (chip) => chip.textContent ?? "",
+    );
+    expect(chips.length).toBeGreaterThan(6);
+    for (const chip of chips) {
+      expect(chip, chip).not.toMatch(/^(?:approved|superseded|connected)$/u);
+      expect(chip, chip).toMatch(/^[A-Z]/u);
+    }
   });
 
   it("draws every row of the history's status as a Badge too", () => {

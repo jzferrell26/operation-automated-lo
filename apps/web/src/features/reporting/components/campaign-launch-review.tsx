@@ -6,7 +6,7 @@ import { useState } from "react";
 import type { DeepReadonly } from "../../ui-foundation/model/synthetic-ui.js";
 import type { SyntheticCampaign } from "../model/synthetic-reporting.js";
 import styles from "./reporting.module.css";
-import { toneForStatus } from "./status-tone.js";
+import { labelForStatus, toneForStatus } from "./status-tone.js";
 
 type CampaignLaunchReviewProps = Readonly<{
   campaign: DeepReadonly<SyntheticCampaign>;
@@ -53,7 +53,7 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
             data-connection-state={campaign.metaConnection.state}
             tone={toneForStatus(campaign.metaConnection.state)}
           >
-            {campaign.metaConnection.state}
+            {labelForStatus(campaign.metaConnection.state)}
           </Badge>
         </div>
         <Card className={styles.connectionEvidence} padding="md">
@@ -86,7 +86,7 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
             </p>
           </div>
           <Badge tone={toneForStatus(campaign.approvalSnapshot.status)}>
-            {campaign.approvalSnapshot.status}
+            {labelForStatus(campaign.approvalSnapshot.status)}
           </Badge>
         </div>
         <div

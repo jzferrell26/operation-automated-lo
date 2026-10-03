@@ -338,6 +338,7 @@ describe("the glyphs added for the PRD-009 review (R1-04, R1-10, R3 F-02, R2 N-2
     "copy",
     "pencil",
     "rocket",
+    "chevron-right",
   ] as const;
 
   it("draws each one in the set's stroke language, decorative by default", () => {

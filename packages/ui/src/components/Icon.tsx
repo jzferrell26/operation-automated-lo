@@ -32,6 +32,7 @@ export type IconName =
   | "check"
   | "chevron-down"
   | "chevron-left"
+  | "chevron-right"
   | "circle-check"
   | "circle-dot"
   | "circle-x"
@@ -230,6 +231,10 @@ function IconGeometry({ name }: Readonly<{ name: IconName }>) {
      * to approve" (R3 F-02, `home-first-run.html:561`). */
     case "chevron-left":
       return <path d="m15 6-6 6 6 6" />;
+    /* Added 2026-10-03 for the PRD-009 scored review, pass 3 (R1 P3-01): the disclosure chevron of
+     * "See what we checked" (`launch-step-3-review-and-launch.html`). */
+    case "chevron-right":
+      return <path d="m9 6 6 6-6 6" />;
     case "circle-check":
       return (
         <>

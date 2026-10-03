@@ -335,7 +335,15 @@
   align-items: start;
   justify-items: stretch;
   margin-inline: auto;
-  padding: var(--space-6) var(--space-8);
+  /* PRD-009 scored baseline review R1-01: the mockups' `.page` is `padding: var(--space-8)` on
+   * every side (`launch-step-1-choose.html:179`, the same in every mockup), so a page title starts
+   * 32px under the bar's hairline, not 24px. */
+  padding: var(--space-8);
+  /* R4-03: the page-level blocks the shell stacks in its main region (the unverified-email notice,
+   * then the page) stand a page gap apart, the mockups' `.page { gap: var(--space-6) }`. Without
+   * it the notice sat flush on "Welcome, Alex.", 0px from the greeting. A page that renders one
+   * block, which is every page, is not moved by it. */
+  row-gap: var(--space-6);
 }
 
 /* 768 (and up to the 1100px it needs for one row): the six links on a second row of their own. */
@@ -403,8 +411,10 @@
     padding-inline: var(--space-4);
   }
 
+  /* R1-01: the mockups' phone page is `padding: var(--space-6) var(--space-4)` (`:420`), so the
+   * title starts 24px under the bar and the inline edge stays the bar's 16px. */
   .content {
-    padding: var(--space-4);
+    padding: var(--space-6) var(--space-4);
   }
 }
 

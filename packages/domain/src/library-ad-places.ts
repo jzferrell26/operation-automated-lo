@@ -88,7 +88,7 @@ export const LIBRARY_AD_PLACE_AUDIENCE_WORDS: readonly string[] = Object.freeze(
     // Family.
     "single singles married divorced widowed widow widows widower widowers parent parents family families couple couples newlyweds pregnant",
     // Status, and the protected classes Meta's Housing category forbids aiming at.
-    "income wealthy affluent poor unemployed disabled disability veteran veterans military immigrant immigrants renters homeowners hispanic latino latinos latina latinas asian asians christian christians muslim muslims jewish catholic catholics",
+    "income wealthy affluent poor unemployed disabled disability veteran veterans military immigrant immigrants renters homeowners hispanic hispanics latino latinos latina latinas asian asians christian christians muslim muslims jewish catholic catholics",
     // Race, color, national origin, and religion: words for a people or a place of worship.
     "black blacks white whites african africans caucasian caucasians arab arabs indian indians native natives mexican mexicans chinese korean koreans japanese vietnamese filipino filipinos hindu hindus sikh sikhs buddhist buddhists mormon mormons jew jews church churches mosque mosques synagogue synagogues",
   ]

@@ -316,13 +316,41 @@
   list-style: none;
 }
 
+/*
+ * A row is glyph, text, action (the mockup's `.checklist li`). The amended action, "See what's
+ * needed" (MTK-008 W-3), is about 171px wide where the mockup drew "Connect" at 86px, so beside the
+ * text it left the sentence 167px at 1440 and 90px at 390 (the scored review's F-01 and R4-01). The
+ * card is the container, not the window: a card two columns wide at 1440 and 1180 is as narrow as
+ * the one on a phone, so the width of the card decides, not a media query. Below 32rem of card the
+ * action takes its own row under the text, which keeps the whole text column for the sentence and
+ * the chip.
+ */
+.setup {
+  container-name: setup;
+  container-type: inline-size;
+}
+
 .checklist > li {
   display: grid;
   align-items: start;
   gap: var(--space-3);
   grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "icon text action";
   padding-block: var(--space-4);
   border-block-start: 1px solid var(--bd-hairline);
+}
+
+@container setup (max-inline-size: 32rem) {
+  .checklist > li {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "icon text"
+      ". action";
+  }
+
+  .itemAction {
+    justify-self: start;
+  }
 }
 
 .checklist > li:first-child {
@@ -332,8 +360,14 @@
 
 .itemIcon {
   display: inline-grid;
+  grid-area: icon;
   margin-block-start: 0.0625rem;
   color: var(--tx-faint);
+}
+
+.itemText {
+  grid-area: text;
+  min-inline-size: 0;
 }
 
 .itemTitle {
@@ -356,9 +390,12 @@
   padding-block: 0.125rem;
   padding-inline: var(--space-2) var(--space-3);
   font-size: var(--text-secondary-size);
+  /* The mockup's `.badge { white-space: nowrap }`: a state is one line, never a two-line pill. */
+  white-space: nowrap;
 }
 
 .itemAction {
+  grid-area: action;
   font-size: var(--text-secondary-size);
   font-weight: var(--weight-semibold);
 }

@@ -118,7 +118,7 @@ function ChecklistRow({ item }: Readonly<{ item: HomeChecklistItem }>) {
       <span aria-hidden="true" className={styles.itemIcon}>
         <Icon decorative name={ITEM_ICONS[item.id]} size="lg" />
       </span>
-      <div>
+      <div className={styles.itemText}>
         <h3 className={styles.itemTitle}>{copy.title}</h3>
         <p className={styles.secondary}>{copy.sentence}</p>
         <Badge

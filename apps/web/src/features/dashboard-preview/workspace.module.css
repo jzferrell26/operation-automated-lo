@@ -1683,9 +1683,13 @@
     gap: var(--space-4);
     align-items: start;
   }
-  .header p {
-    font-size: 12px;
-  }
+  /*
+   * The scored review's F-15: there was a `.header p { font-size: 12px }` here. The Homeowner
+   * reports page draws its lead through this shared header, so at 390 the lead ("Your property-value
+   * and equity workspace.") read at 12px, smaller than the 16px body of the card under it, where at
+   * 768 and wider it is 16px. The lead keeps its role's step at every frame: the base `.header p`
+   * above is `--text-body-size`, and nothing narrows it.
+   */
   .stats {
     gap: var(--space-3);
   }

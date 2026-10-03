@@ -164,6 +164,61 @@ describe("the state chip reads at the secondary step (verifier: larger text in t
   });
 });
 
+/** One declaration's value with its line breaks and runs of spaces folded to single spaces. */
+function flat(value: string | undefined): string {
+  return (value ?? "").replaceAll(/\s+/gu, " ").trim();
+}
+
+describe("the checklist action never squeezes the text (scored review F-01 and R4-01, High)", () => {
+  /**
+   * "See what's needed" is about 171px, so beside the text it left the sentence 167px wide at 1440,
+   * 140px at 1180 and 90px at 390: "Not connected yet" broke into a two-line pill (three at 390) and
+   * ran past its edge. The card is two columns wide at 1440 and 1180, as narrow as the one on a
+   * phone, so the card's own width decides where the action moves, not the window's.
+   */
+  const NARROW = "@container setup (max-inline-size: 32rem)";
+
+  it("keeps a state chip on one line, as the mockup's badge does", () => {
+    expect(rule(".card .stateChip")["white-space"]).toBe("nowrap");
+  });
+
+  it("draws a row as glyph, text and action in three tracks while the card has room", () => {
+    const row = rule(".checklist > li");
+
+    expect(row["grid-template-columns"]).toBe("auto minmax(0, 1fr) auto");
+    expect(flat(row["grid-template-areas"])).toBe('"icon text action"');
+    expect(rule(".itemIcon")["grid-area"]).toBe("icon");
+    expect(rule(".itemText")["grid-area"]).toBe("text");
+    expect(rule(".itemAction")["grid-area"]).toBe("action");
+  });
+
+  it("moves the action under the text once the card is narrower than 32rem", () => {
+    const row = rule(".checklist > li", NARROW);
+
+    expect(row["grid-template-columns"]).toBe("auto minmax(0, 1fr)");
+    expect(flat(row["grid-template-areas"])).toBe('"icon text" ". action"');
+    expect(rule(".itemAction", NARROW)["justify-self"]).toBe("start");
+  });
+
+  it("measures the card, not the window, so the two-column card at 1440 and 1180 stacks too", () => {
+    const card = rule(".setup");
+
+    expect(card["container-type"]).toBe("inline-size");
+    expect(card["container-name"]).toBe("setup");
+    // A window query could not tell the 413px card at 1440 from the 656px card at 768.
+    const byWindow = blocks.filter(
+      (block) =>
+        block.media?.startsWith("@media") === true &&
+        /\.(?:checklist|itemAction|itemText)\b/u.test(block.selector),
+    );
+    expect(byWindow).toEqual([]);
+  });
+
+  it("puts the text in a track of its own, so a long sentence cannot widen the row", () => {
+    expect(rule(".itemText")["min-inline-size"]).toBe("0");
+  });
+});
+
 describe("the topic question is the secondary step, 20px above its chips (coordinator, mockup)", () => {
   it("is 14px semibold, a step the brief allows, where it was the 16px body step", () => {
     const question = rule(".question");

@@ -49,9 +49,16 @@ function Feedback({ error, message }: { error: string; message: string }) {
  * ("Save your details" and "Load latest saved details", "Save ad settings" and "Load latest saved ad
  * settings"): two buttons with one accessible name cannot be told apart by a screen reader, and a
  * test that asks for one by name finds two.
+ *
+ * The scored review's F-05: one obvious primary button per screen (direction section 2.3, rubric
+ * axis 1). The page holds two forms, so exactly one of them is the page's primary and the other
+ * saves as a secondary button. "Your details" is the primary: it holds the name and NMLS number
+ * that Home's "Add your brand" asks for and every ad carries, while the ad settings start from
+ * working defaults.
  */
 function SaveAndReload({
   canEdit,
+  emphasis,
   onLoaded,
   reloadLabel,
   saveLabel,
@@ -59,6 +66,7 @@ function SaveAndReload({
   validation,
 }: {
   canEdit: boolean;
+  emphasis: "primary" | "secondary";
   onLoaded: (next: WorkspacePreferences) => void;
   reloadLabel: string;
   saveLabel: string;
@@ -69,7 +77,7 @@ function SaveAndReload({
     <>
       <Feedback error={validation || state.error} message={state.message} />
       <div className={styles.actions}>
-        <Button type="submit" disabled={!canEdit || state.busy}>
+        <Button type="submit" variant={emphasis} disabled={!canEdit || state.busy}>
           {state.busy ? "Saving…" : saveLabel}
         </Button>
         <Button
@@ -141,6 +149,7 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
           </fieldset>
           <SaveAndReload
             canEdit={data.canEdit}
+            emphasis="primary"
             onLoaded={(next) => setBrand(next.brand?.value ?? data.defaultBrand)}
             reloadLabel="Load latest saved details"
             saveLabel="Save your details"
@@ -426,7 +435,12 @@ export function AdBrandEditor({ data }: { data: WorkspacePageData }) {
               approved.
             </p>
           </div>
-          <fieldset className={styles.fields} disabled={state.busy || !data.canEdit}>
+          {/* The scored review's F-06: the stack's `--space-5` between fields, as the partner dialog's
+              fieldset has it. The fields sat 6 to 10px apart with no gap at all. */}
+          <fieldset
+            className={`${styles.fields} ${styles.stack}`}
+            disabled={state.busy || !data.canEdit}
+          >
             <TextField
               description="For example, Loan officer. Leave it empty to show only your name."
               label="Title on your ads"
@@ -467,6 +481,7 @@ export function AdBrandEditor({ data }: { data: WorkspacePageData }) {
           </fieldset>
           <SaveAndReload
             canEdit={data.canEdit}
+            emphasis="secondary"
             onLoaded={(next) => setAdBrand(next.adBrand?.value ?? data.defaultAdBrand)}
             reloadLabel="Load latest saved ad settings"
             saveLabel="Save ad settings"

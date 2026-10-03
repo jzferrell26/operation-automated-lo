@@ -22,6 +22,7 @@
   margin: 0;
   line-height: var(--leading-tight);
   font-size: var(--text-page-size);
+  font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-page);
 }
 
@@ -30,25 +31,35 @@
   line-height: var(--leading-normal);
 }
 
+/*
+ * The one eyebrow of the light look (the scored review's F-11): the mockup's `.eyebrow`, sentence
+ * case at the secondary step, semibold, no tracking, in body ink. It was uppercase and tracked
+ * 0.04em at the caption step. `features/workspace/eyebrow-treatment.unit.test.ts` holds this rule
+ * and the two other eyebrows to the same declarations.
+ */
 .eyebrow {
   margin-block: 0 var(--space-1);
-  color: var(--tx-faint);
-  font-size: var(--text-caption-size);
-  font-weight: var(--weight-medium);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
 }
 
+/*
+ * The informational notice (the scored review's F-10), drawn as the mockup's `.notice`: the
+ * informational surface, the control radius, `--space-4` inside. It is a plain element and not a
+ * `Card`, because the card's own rule outranked this one whatever order the sheets loaded in.
+ */
 .safetyNotice {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-control);
   background: var(--st-info-bg);
   color: var(--st-info-fg);
 }
 
-/* The notice title keeps its informational tone even when the shared Card
- * stylesheet is loaded after this route's module during navigation. */
+/* The notice title keeps its informational tone, whatever order the sheets load in. */
 .safetyNotice strong {
   color: var(--st-info-fg);
 }
@@ -57,7 +68,15 @@
   margin-block: var(--space-1) 0;
 }
 
+/*
+ * The scored review's F-08. A group's description kept the browser's 1em margin inside a grid that
+ * already had a gap, so it sat 28px under its heading and 28px above its cards, while the next
+ * group's heading sat 16px under the last card and read as that card's caption. The margin is off
+ * (the D-009 ruling: a gap is a `--space-*` token in its module), and the groups are `--space-8`
+ * apart, twice what any gap inside one is, so a heading belongs to the cards under it.
+ */
 .permissionGroups p {
+  margin: 0;
   color: var(--tx-body);
   line-height: var(--leading-normal);
 }
@@ -65,7 +84,7 @@
 .permissionGroups {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-8) var(--space-6);
 }
 
 .permissionGroups section {
@@ -84,15 +103,12 @@
 .permissionHeading h2,
 .permissionGroups h3 {
   margin: 0;
+  font-weight: var(--weight-semibold);
 }
 
-.permissionHeading span {
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--st-neutral-bg);
-  color: var(--st-neutral-fg);
-  font-size: var(--text-caption-size);
-  text-transform: capitalize;
+/* The group's chip is the shared `Badge` (F-09); it keeps its own width beside a long heading. */
+.permissionHeading > [data-permission-category] {
+  flex: none;
 }
 
 .permissionDetails {

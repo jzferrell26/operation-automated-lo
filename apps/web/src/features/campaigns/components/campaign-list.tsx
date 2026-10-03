@@ -216,12 +216,15 @@ export function CampaignList({
                     />{" "}
                     <KeepWordsWhole text={cardFact(CAMPAIGN_CARD_LABELS.where, whereWords(row))} />
                   </p>
+                  {/* P3-7. The chip and the last change are two lines, as the mockup's list card draws
+                      them: a chip beside running words puts its baseline off theirs. The last change
+                      is a caption, the quiet line at the foot of the card. */}
                   <p>
-                    <StatusChip row={row} />{" "}
-                    <span className={styles.cardFacts}>
-                      {CAMPAIGN_CARD_LABELS.lastChange}:{" "}
-                      <time dateTime={row.updatedAt}>{monthDay(row.updatedAt, year)}</time>
-                    </span>
+                    <StatusChip row={row} />
+                  </p>
+                  <p className={styles.cardCaption}>
+                    {CAMPAIGN_CARD_LABELS.lastChange}:{" "}
+                    <time dateTime={row.updatedAt}>{monthDay(row.updatedAt, year)}</time>
                   </p>
                 </Surface>
               </li>

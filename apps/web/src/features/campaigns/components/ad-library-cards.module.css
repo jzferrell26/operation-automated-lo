@@ -86,18 +86,20 @@
   }
 }
 
+/* P3-06. The card is the shared `Card` at `padding="none"`: its fill, edge, radius and shadow are the
+   primitive's, so no ad card states its own (`card-and-surface.md`, "Canonical exports"). What the
+   page says is only how the three rows (the art, the body, the foot) sit in it: the body takes the
+   room left over, so every card's "Use this ad" sits on the same line across a row (the launch-step-1
+   mockup). `overflow: hidden` clips the art to the card's rounded corners and never the card's own
+   shadow. */
 .card {
   display: grid;
   overflow: hidden;
   block-size: 100%;
-  border: 1px solid var(--bd-hairline);
-  border-radius: var(--radius-card);
-  background: var(--sf-card);
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
 }
 
-/* A flex column, so the action can take the space left over and every card's "Use this ad" sits
-   on the same line across a row (the launch-step-1 mockup). */
+/* The words: a flex column, as the mockup's `.ad-card__body` is. */
 .cardBody {
   display: flex;
   flex-direction: column;
@@ -145,11 +147,13 @@
   white-space: nowrap;
 }
 
-.cardAction {
-  margin-block-start: auto;
-  padding-block-start: var(--space-2);
+/* P3-06. The action's foot follows the body's own bottom inset (`--space-5`), then takes `--space-5`
+   at its sides and below, as the mockup's `.ad-card__foot` does, so "Use this ad" sits 20px under the
+   version line on the tallest card and not 16px. */
+.cardFoot {
+  padding: 0 var(--space-5) var(--space-5);
 }
 
-.cardAction > * {
+.cardFoot > * {
   inline-size: 100%;
 }

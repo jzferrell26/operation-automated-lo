@@ -66,6 +66,17 @@ export function adCardVersionLine(version: number, reviewedOn: string): string {
   return `Version ${String(version)}. Reviewed ${reviewedOn}.`;
 }
 
+/**
+ * "library version 2": the ad's version in the library, with a no-break space (U+00A0) between its
+ * three words, so a line that has to wrap never leaves the number alone on a line, or "library" on
+ * one and "version 2" on the next (scored review pass 3, R2 P3-4). To a reader and a screen reader it
+ * is the same three words, and a test or a search that collapses whitespace reads it with plain
+ * spaces.
+ */
+export function libraryVersion(version: number): string {
+  return ["library", "version", String(version)].join("\u00a0");
+}
+
 /** Step 2, Set it up. */
 /**
  * Amended 2026-10-02 by the PRD-009 writing review pass 2 (MTK-008, W-34): "library version", because
@@ -73,7 +84,7 @@ export function adCardVersionLine(version: number, reviewedOn: string): string {
  * campaign's own version. Step 3 and the campaign page already say "library version" (`adFact`).
  */
 export function setUpLead(name: string, topic: string, version: number): string {
-  return `${name}. ${topic}, library version ${String(version)}.`;
+  return `${name}. ${topic}, ${libraryVersion(version)}.`;
 }
 export const BRAND_CARD_TITLE = "Your brand on the ad";
 export const BRAND_CARD_LINE =
@@ -173,7 +184,7 @@ export const FACT_LABELS = Object.freeze({
   leads: "New leads go to",
 });
 export function adFact(name: string, version: number): string {
-  return `${name}, library version ${String(version)}`;
+  return `${name}, ${libraryVersion(version)}`;
 }
 export const HEADLINE_CHANGED = "Headline changed";
 export const HEADLINE_UNCHANGED = "Headline unchanged";

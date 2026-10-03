@@ -250,7 +250,10 @@ export function LaunchReview({
               {checksCount(review.checks.passed, review.checks.run)}
             </p>
             <details className={styles.checked}>
-              <summary>{SEE_WHAT_WE_CHECKED}</summary>
+              <summary>
+                <Icon decorative name="chevron-right" size="sm" />
+                {SEE_WHAT_WE_CHECKED}
+              </summary>
               <ul className={styles.ruleList}>
                 {failedFirst(review.checks.rules).map((rule) => (
                   <li data-rule-passed={rule.passed} key={rule.code}>
@@ -451,7 +454,7 @@ function LaunchDecision({
           {CAMPAIGN_SENT_BACK_LABEL}
         </Badge>
         <p>{CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION}</p>
-        <Link className={styles.primaryLink} href={changeHref} variant="action">
+        <Link className={styles.primaryLink} href={changeHref} size="sm" variant="action">
           {MAKE_A_NEW_VERSION}
         </Link>
       </Card>
@@ -489,7 +492,7 @@ function LaunchDecision({
         </Badge>
         <p>{card.sentence}</p>
         {card.action === undefined ? null : (
-          <Link className={styles.primaryLink} href={card.action.href} variant="action">
+          <Link className={styles.primaryLink} href={card.action.href} size="sm" variant="action">
             {card.action.label}
           </Link>
         )}
@@ -531,6 +534,7 @@ function LaunchDecision({
                 ? launchHref({ step: 1, campaign: review.campaignRef, from })
                 : launchHref({ step: 2, campaign: review.campaignRef, from }, target.at)
             }
+            size="sm"
             variant="action"
           >
             {FIX_IT}

@@ -103,6 +103,37 @@ describe("step 3's cards (R1-12, R1-13, R1-15)", () => {
       "var(--ac-primary-hover)",
     );
   });
+
+  it("leaves the primary links' size, padding and weight to the compact action link (P3-02)", () => {
+    const link = launch.declarationsOf("a.primaryLink");
+    // The mockups draw them as `btn--sm`, the twin of "Copy the link": the secondary step at the
+    // shared medium weight (every button keeps 500). `Link size="sm"` carries the size and the
+    // inline padding, so the rule restates none of them; a semibold here was the 600 the review
+    // measured beside the 500 "Copy the link", and a 16px label was the body step.
+    expect(link["font-weight"]).toBeUndefined();
+    expect(link["font-size"]).toBeUndefined();
+    expect(link["padding"]).toBeUndefined();
+    expect(link["min-block-size"]).toBe("var(--target-min-size)");
+    expect(launch.source).not.toMatch(
+      /a\.primaryLink[^}]*font-weight:\s*var\(--weight-semibold\)/u,
+    );
+  });
+
+  it("draws 'See what we checked' as the mockup's disclosure summary (P3-01)", () => {
+    const summary = launch.declarationsOf(".checked summary");
+    // A flex row (the glyph, then the words), which also takes the browser's triangle away.
+    expect(summary["display"]).toBe("flex");
+    expect(summary["align-items"]).toBe("center");
+    expect(summary["gap"]).toBe("var(--space-2)");
+    expect(summary["font-size"]).toBe("var(--text-secondary-size)");
+    expect(summary["font-weight"]).toBe("var(--weight-semibold)");
+    expect(summary["min-block-size"]).toBe("var(--target-min-size)");
+    expect(summary["color"]).toBe("var(--st-info-fg)");
+    expect(summary["list-style"]).toBe("none");
+    expect(launch.declarationsOf(".checked summary::-webkit-details-marker")["display"]).toBe(
+      "none",
+    );
+  });
 });
 
 describe("the launch header's crumbs (P2-02)", () => {
@@ -143,6 +174,21 @@ describe("dates, captions, and the phone (P2-03 to P2-07)", () => {
     expect(launch.declarationsOf(".saveNote")["text-align"]).toBe("end");
     // Add keeps the grid's own stretch: no rule sets its alignment.
     expect(launch.source).not.toMatch(/\.placeAdd > button/u);
+  });
+
+  it("keeps the save note one --space-3 from its buttons, on a line of its own in the actions row (P3-05)", () => {
+    // The note is a child of `.actions` (`launch-flow.integration.test.tsx`), so the row's own gap
+    // is the distance to the buttons; as a child of the form's `--space-6` grid it stood 24px off.
+    expect(launch.declarationsOf(".actions")["gap"]).toBe("var(--space-3)");
+    expect(launch.declarationsOf(".actions")["flex-wrap"]).toBe("wrap");
+    expect(launch.declarationsOf(".saveNote")["flex-basis"]).toBe("100%");
+    // On a phone the row is a column that does not wrap, and the note takes its own height.
+    expect(launch.source).toMatch(
+      /@media \(max-width: 47\.99rem\) \{\s*\.actions \{\s*flex-direction: column-reverse;\s*flex-wrap: nowrap;/u,
+    );
+    expect(launch.source).toMatch(
+      /@media \(max-width: 47\.99rem\) \{\s*\.saveNote \{[^}]*flex-basis: auto;/u,
+    );
   });
 
   it("leaves 'Your ad so far' to the shared Card, with no edge, radius or padding of its own (P2-06)", () => {
@@ -189,6 +235,25 @@ describe("the ad card and the topic chips (R1-03, R1-04)", () => {
     expect(cards.declarationsOf(".cardBody")["padding"]).toBe(
       "var(--space-4) var(--space-5) var(--space-5)",
     );
+  });
+
+  it("leaves the card's fill, edge, radius and shadow to the shared Card (P3-06)", () => {
+    const card = cards.declarationsOf(".card");
+    for (const own of ["border", "border-radius", "background", "box-shadow", "padding"]) {
+      expect(card[own], `${own} on .card`).toBeUndefined();
+    }
+    // Three rows: the art, the body that takes the room left over, and the action's foot.
+    expect(card["grid-template-rows"]).toBe("auto 1fr auto");
+    expect(card["overflow"]).toBe("hidden");
+  });
+
+  it("puts the action in a foot that follows the body's own bottom inset (P3-06)", () => {
+    // The mockup's `.ad-card__foot` is `padding: 0 --space-5 --space-5` after the body's
+    // `--space-5` bottom, so "Use this ad" is 20px under the version line; the hand-built
+    // `.cardAction` put it 16px under (`--space-2` gap and `--space-2` padding in the body).
+    expect(cards.declarationsOf(".cardFoot")["padding"]).toBe("0 var(--space-5) var(--space-5)");
+    expect(cards.declarationsOf(".cardFoot > *")["inline-size"]).toBe("100%");
+    expect(cards.source).not.toMatch(/\.cardAction/u);
   });
 
   it("sets the chip's words at the secondary step, and keeps the chosen chip's ink", () => {

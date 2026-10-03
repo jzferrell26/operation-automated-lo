@@ -536,6 +536,42 @@ test.describe.serial("a brand-new account, from its first page to its first appr
       });
     });
 
+    /**
+     * 009G-AC-007, the picture the re-signed sign-off found missing: Home once the account has
+     * campaigns. Only a spec asserted it, and Home's two lists were drawn empty (the first-run
+     * picture above) or on the sample catalog (`real-catalog`), never filled from a real account's
+     * own campaigns. It is photographed here, in this account, after the four campaigns are saved
+     * and the stored ones seeded, and before the Brand changes (the notice test, last in the file),
+     * so no Brand-changed state leaks into it.
+     *
+     * "Needs your approval" holds the campaign saved ready for approval. "Running now" stays in its
+     * honest empty state: launching is off in this build, so no campaign is ever live (the model's
+     * own comment, `home-campaigns.ts`, `buildRunningList`), and the picture says so. Every date on
+     * the page is a `time` element and is masked by `captureNamedState`. No account is signed up
+     * for it: it is this file's one account.
+     */
+    test(`Home with campaigns meets the bar at every frame in ${theme} (009G-AC-007)`, async () => {
+      test.setTimeout(300_000);
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto("/overview");
+      await chooseThemeFromTheHeader(page, theme);
+      await page.goto("/overview");
+      const approval = page.getByRole("region", { name: "Needs your approval" });
+      await expect(approval).toBeVisible();
+      await expect(
+        approval.getByRole("link").first(),
+        "a campaign waits for this approver",
+      ).toBeVisible();
+      await expect(page.getByRole("region", { name: "Running now" })).toBeVisible();
+      await expectThemeResolved(page, theme);
+      await settleImages(page);
+      await captureNamedState(page, {
+        screen: "home",
+        state: "with-campaigns",
+        theme,
+      });
+    });
+
     test(`the gone page meets the bar at every frame in ${theme} (009G-AC-002)`, async () => {
       test.setTimeout(300_000);
       await page.setViewportSize({ width: 1440, height: 900 });

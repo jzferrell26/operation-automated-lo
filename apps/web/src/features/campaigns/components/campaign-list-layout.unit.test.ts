@@ -19,6 +19,31 @@ describe("a date on the Campaigns list (review R2, H-3)", () => {
 
     expect(css.declarationsOf(".tableWrap time")["white-space"]).toBe("nowrap");
   });
+
+  it("is never broken inside itself in a phone card either, where the dates are a run of words", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-list.module.css`);
+
+    expect(css.declarationsOf(".cards time")["white-space"]).toBe("nowrap");
+  });
+});
+
+describe("a hyphenated word in the Campaigns table (review pass 2, R2 F-8)", () => {
+  it("is one unbreakable unit, so 'Pre-approval' is never read across a line break", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-list.module.css`);
+
+    expect(css.declarationsOf(".whole")["white-space"]).toBe("nowrap");
+  });
+});
+
+describe("the Campaigns page on a phone (review pass 2, R2 N-1)", () => {
+  it("keeps the page's blocks --space-5 apart below 720px, as the mockup's phone .page does", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-list.module.css`);
+
+    expect(css.declarationsOf(".page").gap).toBe("var(--space-6)");
+    expect(declarationsIn(mediaBody(css.source, "(max-width: 719.98px)"), ".page").gap).toBe(
+      "var(--space-5)",
+    );
+  });
 });
 
 describe("the Campaigns table and cards (review R2, F-8, F-11)", () => {

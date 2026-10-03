@@ -29,6 +29,8 @@ const PAGE_SOURCES = [
   `${COMPONENTS}/campaign-approval-section.tsx`,
   `${COMPONENTS}/campaign-header-actions.tsx`,
   `${COMPONENTS}/campaign-library-notices.tsx`,
+  `${COMPONENTS}/keep-words-whole.tsx`,
+  `${COMPONENTS}/launch-an-ad-link.tsx`,
   `${COMPONENTS}/campaign-results-card.tsx`,
   `${COMPONENTS}/campaign-versions-card.tsx`,
   `${COMPONENTS}/campaigns-tabs.tsx`,

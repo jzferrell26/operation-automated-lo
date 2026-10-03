@@ -31,6 +31,7 @@ import { CampaignHeaderActions } from "./campaign-header-actions.js";
 import { CampaignLibraryNotices } from "./campaign-library-notices.js";
 import { CampaignResultsCard } from "./campaign-results-card.js";
 import { CampaignVersionsCard } from "./campaign-versions-card.js";
+import { LaunchAnAdHeaderAction } from "./launch-an-ad-link.js";
 import { TextWithDays, type DayInText } from "./text-with-days.js";
 import styles from "./campaign-page.module.css";
 
@@ -208,13 +209,9 @@ function EarlierFlowScreen({ page }: Readonly<{ page: EarlierFlowCampaignPage }>
           <p className={styles.lead}>{EARLIER_FLOW_LINE}</p>
           <StandingChip page={page} />
         </div>
-        <div className={styles.headActions}>
-          <div className={styles.actions}>
-            <Link className={styles.primaryLink} href={launchHref({ step: 1, from: "campaigns" })}>
-              {LAUNCH_AN_AD_INSTEAD}
-            </Link>
-          </div>
-        </div>
+        <LaunchAnAdHeaderAction href={launchHref({ step: 1, from: "campaigns" })}>
+          {LAUNCH_AN_AD_INSTEAD}
+        </LaunchAnAdHeaderAction>
       </header>
       <div className={styles.detailGrid}>
         <Surface

@@ -4,7 +4,7 @@
   min-inline-size: 0;
   color: var(--tx-strong);
   font-size: var(--text-body-size);
-  line-height: 1.6;
+  line-height: var(--leading-normal);
 }
 .workspace h1,
 .workspace h2,
@@ -13,15 +13,28 @@
 .workspace p {
   margin: 0;
 }
+/*
+ * The page title and the section title take the brief's steps from the tokens, as Settings and the
+ * other workspace pages do (`workspace.module.css`; scored review pass 3, R3 P3-02). The title kept a
+ * raw `-0.035em` tracking (the brief's is `--tracking-page`), the page `1.6` leading (the body's is
+ * `--leading-normal`) and the title `1.25` (`--leading-tight`, the same value, now by name); a section
+ * title has no tracking and `--leading-tight`, as the mockups' `.section-title` sets it.
+ */
 .workspace h1 {
   font-size: var(--text-page-size);
-  letter-spacing: -0.035em;
-  line-height: 1.25;
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-page);
+  line-height: var(--leading-tight);
 }
-.workspace h2 {
+/*
+ * A section title is the section step, except the shared state view's own title (`EmptyState`'s `h2`),
+ * which the primitive sets at the card step (`primitives.css`, `.oalo-async-state__title`). This rule
+ * outranks that single class, so "Connect the report workspace" drew at 19px beside the same state view
+ * on Campaigns at 16px (scored review pass 3, R3 P3-01).
+ */
+.workspace h2:not(:global(.oalo-async-state__title)) {
   font-size: var(--text-section-size);
-  letter-spacing: -0.02em;
-  line-height: 1.35;
+  line-height: var(--leading-tight);
 }
 .workspace p {
   color: var(--tx-body);

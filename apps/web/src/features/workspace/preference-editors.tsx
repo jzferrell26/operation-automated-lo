@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import {
   Button,
   Card,
@@ -9,6 +9,7 @@ import {
   Link,
   LiveRegion,
   Select,
+  Surface,
   TextArea,
   TextField,
 } from "@oalo/ui";
@@ -74,28 +75,40 @@ function SaveAndReload({
   state: ReturnType<typeof useWorkspacePreferences>;
   validation: string;
 }) {
+  // The reason a save is off is the plain line under the buttons, and the disabled save points at it
+  // (scored review pass 3, R3 P3-04). Two cards share this page, so each row has its own id.
+  const reasonId = useId();
   return (
     <>
       <Feedback error={validation || state.error} message={state.message} />
-      <div className={styles.actions}>
-        <Button type="submit" variant={emphasis} disabled={!canEdit || state.busy}>
-          {state.busy ? "Saving…" : saveLabel}
-        </Button>
-        <Button
-          variant="outline"
-          disabled={state.busy}
-          onClick={() => {
-            void state.reload().then((next) => {
-              if (next) onLoaded(next);
-            });
-          }}
-        >
-          {reloadLabel}
-        </Button>
+      <div className={styles.formActions}>
+        <div className={`${styles.actions} ${styles.pageActions}`}>
+          <Button
+            type="submit"
+            variant={emphasis}
+            disabled={!canEdit || state.busy}
+            aria-describedby={canEdit ? undefined : reasonId}
+          >
+            {state.busy ? "Saving…" : saveLabel}
+          </Button>
+          <Button
+            variant="outline"
+            disabled={state.busy}
+            onClick={() => {
+              void state.reload().then((next) => {
+                if (next) onLoaded(next);
+              });
+            }}
+          >
+            {reloadLabel}
+          </Button>
+        </div>
+        {!canEdit ? (
+          <p className={styles.reason} id={reasonId}>
+            Your role has read-only access to these details.
+          </p>
+        ) : null}
       </div>
-      {!canEdit ? (
-        <p className={styles.note}>Your role has read-only access to these details.</p>
-      ) : null}
     </>
   );
 }
@@ -182,9 +195,23 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
           Changes apply to new reports. Saved reports retain the identity and source details they
           were created with.
         </p>
-        <Link href="/homeowners/new" variant="action">
-          Create a homeowner report
-        </Link>
+        {/* The scored review pass 3, R3 P3-05. The lead above already says reports are off until they
+            are turned on, so the card does not offer to create one: it gives the reason and the next
+            safe step, which the Homeowner reports page names the same way. */}
+        {data.reportsEnabled ? (
+          <Link href="/homeowners/new" variant="action">
+            Create a homeowner report
+          </Link>
+        ) : (
+          <div className={styles.unavailable}>
+            <p className={styles.reason}>
+              Homeowner reports aren&apos;t turned on in this workspace yet.
+            </p>
+            <Link href="/settings/connections" variant="action">
+              Workspace connections
+            </Link>
+          </div>
+        )}
       </Card>
     </div>
   );
@@ -230,6 +257,7 @@ export function PartnersEditor({ data }: { data: WorkspacePageData }) {
           placeholder="Name or company"
         />
         <Button
+          className={styles.toolbarAction}
           disabled={!data.canEdit || partners.length >= 25 || state.busy}
           onClick={() => {
             setValidation("");
@@ -239,10 +267,15 @@ export function PartnersEditor({ data }: { data: WorkspacePageData }) {
           <Icon name="plus" decorative size="sm" /> Add Realtor partner
         </Button>
       </div>
-      <p className={styles.note}>
-        Your Realtor partner list is saved to this account and workspace. Adding a partner sends no
-        invitation.
-      </p>
+      {/* The mockups' `.notice`, as Connections draws it: the `Surface` primitive's `info` variant
+          with the information glyph (scored review pass 3, R3 P3-03). */}
+      <Surface className={styles.pageNote} padding="md" variant="info">
+        <Icon decorative name="info" size="sm" tone="info" />
+        <p>
+          Your Realtor partner list is saved to this account and workspace. Adding a partner sends
+          no invitation.
+        </p>
+      </Surface>
       <Feedback error={state.error} message={state.message} />
       {filtered.length ? (
         <div className={styles.cards}>
@@ -299,7 +332,7 @@ export function PartnersEditor({ data }: { data: WorkspacePageData }) {
           title="Add your first Realtor partner"
         />
       )}
-      <div className={styles.actions}>
+      <div className={`${styles.actions} ${styles.pageActions}`}>
         <Button variant="outline" disabled={state.busy} onClick={() => void state.reload()}>
           Load latest saved details
         </Button>

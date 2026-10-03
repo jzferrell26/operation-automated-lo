@@ -31,13 +31,19 @@
   color: var(--tx-body);
   line-height: 1.65;
 }
+/*
+ * The page header is the page's own block, spaced by the page grid's `--space-6` and nothing more, as
+ * the mockups' `.page-head` is (`design/mockups/home-first-run.html:179` and `:193`) and as Settings,
+ * Realtor partners, Brand and Connections now are. It kept `padding-block: var(--space-1) var(--space-2)`
+ * on top of the gap, which put the Homeowner reports title 4px lower and its first card 8px further
+ * from the lead than every sibling (scored review pass 3, R3 P3-02).
+ */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--space-5);
-  padding-block: var(--space-1) var(--space-2);
 }
 .header > div:first-child {
   display: grid;

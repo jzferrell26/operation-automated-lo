@@ -102,12 +102,6 @@
   gap: var(--space-3);
 }
 
-.buttonLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 .reason {
   color: var(--tx-body);
   font-size: var(--text-secondary-size);
@@ -118,6 +112,7 @@ a.primaryLink.primaryLink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-2);
   min-block-size: var(--target-min-size);
   padding-inline: var(--space-5);
   border-radius: var(--radius-button);
@@ -342,14 +337,11 @@ a.primaryLink.primaryLink:hover {
   list-style: none;
 }
 
+/* The card itself (its fill, edge, radius, shadow and inset, including the phone inset) is `Surface`'s;
+   this is only what the notice puts inside it. */
 .notice {
   display: grid;
   gap: var(--space-3);
-  padding: var(--space-6);
-  border: 1px solid var(--bd-hairline);
-  border-radius: var(--radius-card);
-  background: var(--sf-card);
-  box-shadow: var(--shadow-card);
 }
 
 .notice p {
@@ -439,9 +431,10 @@ a.primaryLink.primaryLink:hover {
 }
 
 /* The hand-off control for a user who cannot approve (PRD-006c D3 step 6). */
-/* The approve card's children are --space-4 apart, as the mockup's `.card > * + *` spaces them, and
-   the live region (which says nothing until there is an outcome) gives its gap back, so the card has
-   no dead space at its foot. Step 3 of "Launch an ad" draws the same card the same way (R1-13). */
+/* The approve card's children are --space-4 apart, as the mockup's `.card > * + *` spaces them. Its
+   live region says nothing until there is an outcome, and until then the component draws it out of the
+   flow (the visually-hidden box), so it takes no row and the card has no dead space at its foot
+   (R1-13r). Step 3 of "Launch an ad" draws the same card the same way. */
 .stack [data-approval-card] {
   display: grid;
   gap: var(--space-4);
@@ -450,10 +443,6 @@ a.primaryLink.primaryLink:hover {
 
 .stack [data-approval-card] > * {
   margin: 0;
-}
-
-.stack [data-approval-card] > [role="status"]:empty {
-  margin-block-start: calc(var(--space-4) * -1);
 }
 
 /* The sentence, then the card's one primary at the card's width, --space-4 apart, as the mockup's
@@ -465,8 +454,12 @@ a.primaryLink.primaryLink:hover {
   justify-self: stretch;
 }
 
+/* The sentence above "Copy the link" is the mockup's `.small`: the secondary step in body ink. */
 .hint {
   margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
 }
 
 /* "Link copied." keeps its glyph on its own line's row: `Icon` is a block, so left in running text it
@@ -529,6 +522,20 @@ a.primaryLink.primaryLink:hover {
   .support dl > div {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
+  }
+}
+
+/* The phone rules of the mockup's `.page` and `.card` (`campaign-detail.html`, below 720px): the page's
+   blocks sit --space-5 apart, and a card's inset is --space-5, as Home draws them (scored review pass 2,
+   R2 N-1). Every card here that is a `Surface` takes its inset from the primitive, so only the one that
+   is not (the support details, which is a `details` element) restates the value. */
+@media (max-width: 719.98px) {
+  .page {
+    gap: var(--space-5);
+  }
+
+  .support details {
+    padding-inline: var(--space-5);
   }
 }
 

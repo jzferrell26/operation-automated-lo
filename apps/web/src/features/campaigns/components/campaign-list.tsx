@@ -19,6 +19,8 @@ import { monthDay, standingTone, type CampaignListRow } from "../campaign-page-m
 import { LAUNCH_PATH } from "../launch-model.js";
 import { CampaignsTabs } from "./campaigns-tabs.js";
 import styles from "./campaign-list.module.css";
+import { KeepWordsWhole } from "./keep-words-whole.js";
+import { LaunchAnAdHeaderAction, LaunchAnAdLink } from "./launch-an-ad-link.js";
 import pageStyles from "./campaign-page.module.css";
 import { TextWithDays, type DayInText } from "./text-with-days.js";
 
@@ -95,14 +97,6 @@ function SampleLabel({ row }: Readonly<{ row: CampaignListRow }>) {
   return row.sample ? <Badge tone="neutral">{SAMPLE_AD_LABEL}</Badge> : null;
 }
 
-function LaunchLink() {
-  return (
-    <Link className={pageStyles.primaryLink} href={LAUNCH_PATH}>
-      {CAMPAIGNS_PAGE.action}
-    </Link>
-  );
-}
-
 export function CampaignList({
   rows,
   now = new Date(),
@@ -124,7 +118,11 @@ export function CampaignList({
           <h1 className={styles.title}>{CAMPAIGNS_PAGE.title}</h1>
           <p className={styles.lead}>{CAMPAIGNS_PAGE.lead}</p>
         </div>
-        {rows.length === 0 ? null : <LaunchLink />}
+        {rows.length === 0 ? null : (
+          <LaunchAnAdHeaderAction href={LAUNCH_PATH}>
+            {CAMPAIGNS_PAGE.action}
+          </LaunchAnAdHeaderAction>
+        )}
       </header>
       <CampaignsTabs current="campaigns" />
       {rows.length === 0 ? (
@@ -132,7 +130,10 @@ export function CampaignList({
           description={
             libraryEmpty ? CAMPAIGNS_PAGE.emptyDescriptionNoAds : CAMPAIGNS_PAGE.emptyDescription
           }
-          primaryAction={<LaunchLink />}
+          primaryAction={
+            <LaunchAnAdLink href={LAUNCH_PATH}>{CAMPAIGNS_PAGE.action}</LaunchAnAdLink>
+          }
+          surface="card"
           title={CAMPAIGNS_PAGE.emptyTitle}
         />
       ) : (
@@ -163,17 +164,21 @@ export function CampaignList({
                         <Thumbnail row={row} />
                         <span className={styles.adName}>
                           <Link className={styles.rowLink} href={row.href}>
-                            {row.name}
+                            <KeepWordsWhole text={row.name} />
                           </Link>
                           <SampleLabel row={row} />
                         </span>
                       </span>
                     </td>
-                    <td className={styles.nowrap}>{topicWords(row)}</td>
+                    <td className={styles.nowrap}>
+                      <KeepWordsWhole text={topicWords(row)} />
+                    </td>
                     <td className={styles.nowrap}>
                       <TextWithDays {...runsWords(row, year)} />
                     </td>
-                    <td>{whereWords(row)}</td>
+                    <td>
+                      <KeepWordsWhole text={whereWords(row)} />
+                    </td>
                     <td className={styles.chipCell}>
                       <StatusChip row={row} />
                     </td>
@@ -197,19 +202,19 @@ export function CampaignList({
                     <Thumbnail row={row} />
                     <span className={styles.adName}>
                       <Link className={styles.rowLink} href={row.href}>
-                        {row.name}
+                        <KeepWordsWhole text={row.name} />
                       </Link>
                       <SampleLabel row={row} />
                     </span>
                   </div>
                   {/* A card has no column header, so each fact is named (writing review W-9). */}
                   <p className={styles.cardFacts}>
-                    {cardFact(CAMPAIGN_CARD_LABELS.topic, topicWords(row))}{" "}
+                    <KeepWordsWhole text={cardFact(CAMPAIGN_CARD_LABELS.topic, topicWords(row))} />{" "}
                     <TextWithDays
                       days={runsWords(row, year).days}
                       text={cardFact(CAMPAIGN_CARD_LABELS.dates, runsWords(row, year).text)}
                     />{" "}
-                    {cardFact(CAMPAIGN_CARD_LABELS.where, whereWords(row))}
+                    <KeepWordsWhole text={cardFact(CAMPAIGN_CARD_LABELS.where, whereWords(row))} />
                   </p>
                   <p>
                     <StatusChip row={row} />{" "}

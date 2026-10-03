@@ -3,6 +3,7 @@ import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { HAND_OFF } from "../../../copy/launch-messages.js";
+import { glyphBeforeWords, glyphMarkup } from "../../../testing/glyph-markup.js";
 import {
   APPROVER,
   CREATOR,
@@ -49,6 +50,15 @@ describe("the approver hand-off card on a version nobody has decided on", () => 
     expect(screen.getByText(HAND_OFF_WORDS)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: HAND_OFF.copyLinkLabel })).toBeInTheDocument();
     expect(handOffAnchors(container)).toBe(1);
+  });
+
+  /** Review pass 2, R2 N-2: the mockup's "Copy the link" carries the copy glyph before its words. */
+  it("draws the copy glyph before the words of its one primary", async () => {
+    await renderCampaign({}, CREATOR);
+
+    expect(glyphBeforeWords(screen.getByRole("button", { name: HAND_OFF.copyLinkLabel }))).toBe(
+      glyphMarkup("copy"),
+    );
   });
 
   it("is not offered to an approver, who can approve it themselves", async () => {

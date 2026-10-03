@@ -6,6 +6,12 @@
   color: var(--tx-strong);
 }
 
+/* The page's blocks and sections are one column of grid items, each held to the column's width so a
+   wide table scrolls inside its own region and never widens the page. */
+.page > * {
+  min-inline-size: 0;
+}
+
 .pageHeader,
 .sectionHeading,
 .previewMeta,
@@ -39,31 +45,49 @@
   letter-spacing: var(--tracking-page);
 }
 
+/* The eyebrow, the title and the line under it sit --space-2 apart, as the mockups' `.page-head__text`
+   spaces them. A bare paragraph carries the browser's 1em margin, which is no step, so the gap under
+   the title was 16px and then 16px more (scored review pass 2, R2 N-5a, self-found). */
+.pageHeader > div {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.pageHeader > div > * {
+  margin: 0;
+}
+
 :is(.page, .supportForm) p {
   color: var(--tx-body);
   line-height: var(--leading-normal);
 }
 
+/* The one eyebrow of the light look: the mockups' `.eyebrow`, sentence case at the secondary step,
+   semibold, no tracking, in body ink (`design/mockups/home-first-run.html:183`; the same rule as
+   `workspace.module.css` and `permission-screen.module.css`, scored review R3 F-11). This page kept
+   the old uppercase eyebrow with a raw 0.04em tracking (pass 2, R2 N-5b). */
 .eyebrow {
-  margin-block: 0 var(--space-1);
-  color: var(--tx-faint);
-  text-transform: uppercase;
-  font-size: var(--text-caption-size);
-  font-weight: var(--weight-medium);
-  letter-spacing: 0.04em;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
 }
 
-.currentVersion,
-.previewMeta span,
-.sectionHeading > span,
-.permissionBadge,
-.fieldStatusHeading > span {
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--st-neutral-bg);
-  color: var(--st-neutral-fg);
+/* A label that is not a status: a version number, a count, a placement. The mockups' `.caption`
+   (`campaign-detail.html`, "Version 2" in a card's head). A status is a `Badge`, which carries a glyph
+   and a tone, so nothing here is drawn as a pill that looks like one and has neither (R2 N-5c). */
+.caption {
+  color: var(--tx-faint);
   font-size: var(--text-caption-size);
   white-space: nowrap;
+}
+
+/* The version picker, the preview of the chosen version, and the actions on it: one group whose parts
+   sit --space-4 apart. Every section after the group is a child of the page and stands the page's one
+   gap below the block before it (R2 N-5a). */
+.versionGroup {
+  display: grid;
+  gap: var(--space-4);
 }
 
 .safetyNotice {
@@ -93,6 +117,13 @@
   flex-wrap: wrap;
 }
 
+/* The version buttons are a row with a step between them. They were bare inline buttons, so they
+   touched edge to edge (self-found in the pass 2 walk of the demo page, axis 2). */
+.versionPicker {
+  display: flex;
+  gap: var(--space-2);
+}
+
 /* A group of actions stays together at the start of its card. With `space-between` from the
  * shared heading rule above, two actions sat at opposite edges once the sections took the whole
  * column (PRD-008d, second redraw, R-15). */
@@ -118,6 +149,12 @@
   align-content: center;
   gap: var(--space-4);
   background: var(--sf-sunken);
+}
+
+/* The preview's parts are --space-4 apart and nothing else: a paragraph's own 1em margin made the
+   gaps 32px and 48px. */
+.preview > * {
+  margin: 0;
 }
 
 .previewMeta {
@@ -397,6 +434,7 @@
   .versionPicker {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
   }
 
   .versionPicker button,

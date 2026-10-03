@@ -11,6 +11,7 @@ import {
   rowOf,
   wholeSentence,
 } from "../../../../server/campaign-page.test-support.js";
+import { glyphBeforeWords, glyphMarkup } from "../../../../testing/glyph-markup.js";
 
 /**
  * PRD-009e 009E-AC-009, 009E-AC-011 and 009E-AC-012. The Campaigns list: the tab strip, one primary
@@ -91,7 +92,9 @@ describe("the Campaigns list (009E-AC-009)", () => {
     expect(thumb.getAttribute("src")).toMatch(
       /\/api\/ads-library\/samples\/sample-first-home\/2\/tall$/u,
     );
-    expect(within(row).getByText("First-time buyers")).toBeInTheDocument();
+    // Topic is the row's second cell. A hyphenated word is a unit of its own (review pass 2, R2 F-8),
+    // so the cell is read as the words it shows.
+    expect(row.querySelectorAll("td")[1]).toHaveTextContent("First-time buyers");
     expect(within(row).getByText(wholeSentence("Oct 6 to Oct 20"))).toBeInTheDocument();
     expect(within(row).getByText("Austin, TX and 1 more")).toBeInTheDocument();
     expect(within(row).getByText("Approved")).toBeInTheDocument();
@@ -219,7 +222,8 @@ describe("a campaign saved before PRD-009 on the list (009E-AC-012)", () => {
     expect(table.textContent ?? "").not.toContain("Earlier flow");
     // Its run dates were open house times, which are not shown; its area is the typed region it saved.
     expect(within(row).getByText("Not set")).toBeInTheDocument();
-    expect(within(row).getByText("Dallas-Fort Worth")).toBeInTheDocument();
+    // "Where it shows" is the fourth cell; its hyphenated word is a unit of its own (pass 2, R2 F-8).
+    expect(row.querySelectorAll("td")[3]).toHaveTextContent("Dallas-Fort Worth");
     expect(within(row).getByText("Approved")).toBeInTheDocument();
     expect(within(row).queryByText("Sample ad")).toBeNull();
     expect(table.textContent ?? "").not.toContain("123 Main Street");
@@ -334,6 +338,80 @@ describe("the dates on the Campaigns list", () => {
       expect(
         container.querySelectorAll("[data-campaign-cards] time").length,
       ).toBeGreaterThanOrEqual(3);
+    },
+  );
+});
+
+/**
+ * The scored baseline review of 2026-10-03, pass 2, part R2 (009G-AC-006): F-8 (a hyphenated word is
+ * never read across a line break), N-2 (the plus on "Launch an ad"), N-3 (the action sits in the
+ * header's action wrappers, which the phone rules stretch), and N-4 (an empty list stands on the
+ * canvas as a card). The stylesheet's measures are pinned in `campaign-list-layout.unit.test.ts`.
+ */
+describe("a hyphenated word in the Campaigns list (review pass 2, R2 F-8)", () => {
+  /** True when the element is the one-line unit `KeepWordsWhole` draws round a hyphenated word. */
+  const isWhole = (element: HTMLElement) =>
+    element.className.split(/\s+/u).some((className) => className.includes("whole"));
+
+  it("keeps 'Pre-approval' whole in the Topic cell, and every hyphenated word of an ad's name whole", async () => {
+    render(<CampaignList now={NOW} rows={await rows()} />);
+
+    const table = screen.getByRole("table");
+    expect(isWhole(within(table).getByText("Pre-approval"))).toBe(true);
+    expect(isWhole(within(table).getByText("pre-approved"))).toBe(true);
+    // A word with no hyphen is left to wrap, so only the hyphenated word is held.
+    expect(within(table).queryByText("shop")).toBeNull();
+  });
+
+  it("holds the topic in a phone card whole too, and changes no word of any of it", async () => {
+    const { container } = render(<CampaignList now={NOW} rows={await rows()} />);
+
+    const cards = container.querySelector("[data-campaign-cards]") as HTMLElement;
+    expect(isWhole(within(cards).getByText("Pre-approval."))).toBe(true);
+    // The name is read exactly as before: the link's name is the ad's name, unbroken and uncut.
+    expect(
+      within(cards).getByRole("link", { name: "Sample: Get pre-approved before you shop" }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("the Launch an ad action of the Campaigns list (review pass 2, R2 N-2, N-3)", () => {
+  it("draws the plus before its words, in the header's action wrappers, so the phone rules stretch it", async () => {
+    const { container } = render(<CampaignList now={NOW} rows={await rows()} />);
+
+    const link = screen.getByRole("link", { name: "Launch an ad" });
+    expect(glyphBeforeWords(link)).toBe(glyphMarkup("plus"));
+    const actions = link.closest("[data-launch-an-ad-actions]");
+    expect(actions, "the header's action wrapper").not.toBeNull();
+    expect(container.querySelector("header")).toContainElement(actions as HTMLElement);
+    // The wrapper's own wrapper is the row of actions the phone rules give the full width to.
+    expect((link.parentElement as HTMLElement).parentElement).toBe(actions);
+  });
+
+  it("draws the plus in the empty state's action as well", () => {
+    render(<CampaignList now={NOW} rows={[]} />);
+
+    expect(glyphBeforeWords(screen.getByRole("link", { name: "Launch an ad" }))).toBe(
+      glyphMarkup("plus"),
+    );
+  });
+});
+
+describe("the Campaigns list with no campaigns, on the canvas (review pass 2, R2 N-4)", () => {
+  it.each([
+    ["with ads in the library", false],
+    ["with none", true],
+  ] as const)(
+    "is a card, which is what a state standing on the page is, %s",
+    (_when, libraryEmpty) => {
+      const { container } = render(
+        <CampaignList libraryEmpty={libraryEmpty} now={NOW} rows={[]} />,
+      );
+
+      expect(container.querySelector(".oalo-async-state[data-state='empty']")).toHaveAttribute(
+        "data-surface",
+        "card",
+      );
     },
   );
 });

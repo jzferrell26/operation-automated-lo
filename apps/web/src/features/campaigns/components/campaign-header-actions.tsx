@@ -16,6 +16,10 @@ import { LaunchSentenceWords } from "./launch-sentence.js";
  * Like 009d's own button, "Launch on Facebook" is disabled by construction: it renders the
  * `disabled` attribute and is given no `onClick`, no `formAction`, and no `href`, because no launch
  * route exists for it to reach. The sentence is tied to it with `aria-describedby`.
+ *
+ * Each button carries the glyph the mockup draws before its words (`campaign-detail.html`): a pencil
+ * on "Make a new version" and a rocket on "Launch on Facebook" (scored review pass 2, R2 N-2). The
+ * `Button` and the `action` link are both rows, so a glyph sits on the line of its words.
  */
 export function CampaignHeaderActions({
   launch,
@@ -34,14 +38,13 @@ export function CampaignHeaderActions({
       <div className={styles.actions}>
         {makeNewVersionHref === undefined ? null : (
           <Link href={makeNewVersionHref} variant="action">
+            <Icon decorative name="pencil" size="sm" />
             {MAKE_A_NEW_VERSION}
           </Link>
         )}
         <Button aria-describedby={reasonId} disabled type="button" variant="primary">
-          <span className={styles.buttonLabel}>
-            <Icon decorative name="megaphone" size="sm" />
-            {LAUNCH_ON_FACEBOOK}
-          </span>
+          <Icon decorative name="rocket" size="sm" />
+          {LAUNCH_ON_FACEBOOK}
         </Button>
       </div>
       <p className={styles.reason} id={reasonId}>

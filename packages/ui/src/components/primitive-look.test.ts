@@ -57,6 +57,7 @@ const fieldCss = stylesheet("./field.module.css");
 const linkCss = stylesheet("./link.module.css");
 const primitivesCss = stylesheet("./primitives.css");
 const selectCss = stylesheet("./Select.module.css");
+const themeCss = stylesheet("./ThemeSegmentedControl.module.css");
 
 describe("a glyph and its words read as one line in a Button (R3 F-03)", () => {
   it("lays the label out as a centred row at the button's gap", () => {
@@ -203,6 +204,15 @@ describe("a compact action link is the small button's twin (pass 2, R4-12; coord
 
     expect(compact).toContain('data-size="sm"');
     expect(normal).toContain('data-size="md"');
+  });
+});
+
+describe("the theme segments are the secondary step, as the mockups' format switch (pass 2, self-found)", () => {
+  it("sets each segment at the secondary step and the medium weight", () => {
+    expect(rule(themeCss, ".segment")).toMatchObject({
+      "font-size": "var(--text-secondary-size)",
+      "font-weight": "var(--weight-medium)",
+    });
   });
 });
 

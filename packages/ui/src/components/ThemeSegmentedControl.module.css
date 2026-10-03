@@ -26,7 +26,10 @@
   border-radius: var(--radius-control);
   box-shadow: none;
   font: inherit;
-  font-size: var(--text-body-size);
+  /* The mockups' `.format-switch label` (`home-first-run.html:356`): the secondary step, as the
+   * account sheet's role and workspace lines and the bar's own controls, so three segments fit the
+   * sheet's 272px column without crowding the glyphs (pass 2, self-found). */
+  font-size: var(--text-secondary-size);
   font-weight: var(--weight-medium);
   line-height: var(--leading-normal);
   cursor: pointer;

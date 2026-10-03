@@ -103,6 +103,37 @@ describe("step 3's cards (R1-12, R1-13, R1-15)", () => {
       "var(--ac-primary-hover)",
     );
   });
+
+  it("leaves the primary links' size, padding and weight to the compact action link (P3-02)", () => {
+    const link = launch.declarationsOf("a.primaryLink");
+    // The mockups draw them as `btn--sm`, the twin of "Copy the link": the secondary step at the
+    // shared medium weight (every button keeps 500). `Link size="sm"` carries the size and the
+    // inline padding, so the rule restates none of them; a semibold here was the 600 the review
+    // measured beside the 500 "Copy the link", and a 16px label was the body step.
+    expect(link["font-weight"]).toBeUndefined();
+    expect(link["font-size"]).toBeUndefined();
+    expect(link["padding"]).toBeUndefined();
+    expect(link["min-block-size"]).toBe("var(--target-min-size)");
+    expect(launch.source).not.toMatch(
+      /a\.primaryLink[^}]*font-weight:\s*var\(--weight-semibold\)/u,
+    );
+  });
+
+  it("draws 'See what we checked' as the mockup's disclosure summary (P3-01)", () => {
+    const summary = launch.declarationsOf(".checked summary");
+    // A flex row (the glyph, then the words), which also takes the browser's triangle away.
+    expect(summary["display"]).toBe("flex");
+    expect(summary["align-items"]).toBe("center");
+    expect(summary["gap"]).toBe("var(--space-2)");
+    expect(summary["font-size"]).toBe("var(--text-secondary-size)");
+    expect(summary["font-weight"]).toBe("var(--weight-semibold)");
+    expect(summary["min-block-size"]).toBe("var(--target-min-size)");
+    expect(summary["color"]).toBe("var(--st-info-fg)");
+    expect(summary["list-style"]).toBe("none");
+    expect(launch.declarationsOf(".checked summary::-webkit-details-marker")["display"]).toBe(
+      "none",
+    );
+  });
 });
 
 describe("the launch header's crumbs (P2-02)", () => {

@@ -126,12 +126,24 @@ describe("the approve card and the hand-off on the campaign page (review R1-13, 
     expect(css.source).not.toMatch(/margin-block-start\s*:\s*calc\(\s*var\(--space-4\)\s*\*\s*-1/u);
   });
 
-  it("sets the hand-off's sentence at the secondary step, as the mockup's .small", async () => {
+  it("sets the hand-off's sentence at the secondary step in the strong ink, as the other decision-card sentences (pass 3, R1 P3-03)", async () => {
     const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
 
     const hint = css.declarationsOf(".hint");
     expect(hint["font-size"]).toBe("var(--text-secondary-size)");
-    expect(hint.color).toBe("var(--tx-body)");
+    // The mockup draws the approved, sent-back, retired and cannot-approve sentences in one ink,
+    // `--tx-strong`; only the approve line is `.muted` (`--tx-body`). The step 3 stylesheet's
+    // decision sentences set no colour, so they take the card's strong ink, and this is the one
+    // that had been the body ink (`launch-look.unit.test.ts` holds the approve line's).
+    expect(hint.color).toBe("var(--tx-strong)");
+  });
+
+  it("keeps the page's primary link at the shared medium weight every button has (pass 3, R1 P3-02)", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
+
+    const link = css.declarationsOf("a.primaryLink.primaryLink");
+    expect(link["font-weight"]).toBe("var(--weight-medium)");
+    expect(link["font-size"]).toBe("var(--text-body-size)");
   });
 
   it("lays the hand-off out as the sentence and a button at the card's width, --space-4 apart", async () => {

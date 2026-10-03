@@ -478,13 +478,26 @@ button.resetLink:hover:not(:disabled) {
 }
 
 /* The summary reads as a link, so it takes the link colour. --ac-primary is a fill and never text in
- * Dark (3.19 on a card, under the 4.5 floor); --st-info-fg is the brief's link colour in both themes. */
+ * Dark (3.19 on a card, under the 4.5 floor); --st-info-fg is the brief's link colour in both themes.
+ * P3-01. It is the mockup's `details.disclosure > summary`: a row of the chevron-right glyph and the
+ * words (`display: flex`, which also takes the browser's own triangle away), at the secondary step in
+ * semibold, with the 44px target kept. The two marker rules are for the engines that still draw a
+ * triangle on a flex summary. */
 .checked summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   min-block-size: var(--target-min-size);
   color: var(--st-info-fg);
   cursor: pointer;
-  font-weight: var(--weight-medium);
-  line-height: var(--target-min-size);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-normal);
+  list-style: none;
+}
+
+.checked summary::-webkit-details-marker {
+  display: none;
 }
 
 .checked ul,
@@ -629,17 +642,20 @@ button.resetLink:hover:not(:disabled) {
 
 /* "Fix it", "Make a new version", and "Choose another ad" lead somewhere, so they are links, drawn
    as the one primary action of their card. The element is named so the rule outranks the link
-   primitive's own button look whatever order the two stylesheets load in. */
+   primitive's own button look whatever order the two stylesheets load in.
+   P3-02. They are the mockups' `btn btn--primary btn--block btn--sm`, the twin of "Copy the link"
+   beside them: the secondary step at the shared medium weight (the 2026-10-03 ruling keeps every
+   button at 500), with the 44px target. The link primitive's `size="sm"` carries the size and the
+   inline padding (`link.module.css`, `.action[data-size="sm"]`), so this rule states neither a size,
+   a padding, nor a weight of its own. The weight it inherits is the primitive's medium. */
 a.primaryLink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-block-size: var(--target-min-size);
-  padding: 0 var(--space-5);
   border-radius: var(--radius-button);
   background: var(--ac-primary);
   color: var(--tx-on-action);
-  font-weight: var(--weight-semibold);
   text-decoration: none;
 }
 

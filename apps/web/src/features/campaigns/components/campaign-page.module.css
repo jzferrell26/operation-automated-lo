@@ -107,7 +107,8 @@
   font-size: var(--text-secondary-size);
 }
 
-/* A link that leads somewhere and is the page's one primary action, drawn as a primary button. */
+/* A link that leads somewhere and is the page's one primary action, drawn as a primary button, so at the
+   shared medium weight every button keeps (the 2026-10-03 ruling; the pass 3 review, R1 P3-02). */
 a.primaryLink.primaryLink {
   display: inline-flex;
   align-items: center;
@@ -119,7 +120,7 @@ a.primaryLink.primaryLink {
   background: var(--ac-primary);
   color: var(--tx-on-action);
   font-size: var(--text-body-size);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-medium);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -454,10 +455,13 @@ a.primaryLink.primaryLink:hover {
   justify-self: stretch;
 }
 
-/* The sentence above "Copy the link" is the mockup's `.small`: the secondary step in body ink. */
+/* The sentence above "Copy the link" is the mockup's `.small`: the secondary step. P3-03. Like the
+   other sentences in the decision cards (approved, sent back, retired, "What to fix") it is in the
+   strong ink the mockup draws, so the four cards of step 3 use one ink; only the approve line, the
+   mockup's `.muted`, is the body ink (`campaign-and-artifact-workflow.md`, "Captions"). */
 .hint {
   margin: 0;
-  color: var(--tx-body);
+  color: var(--tx-strong);
   font-size: var(--text-secondary-size);
   line-height: var(--leading-normal);
 }

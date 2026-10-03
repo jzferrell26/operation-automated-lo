@@ -767,6 +767,49 @@ describe("the look of step 3's cards", () => {
     expect(screen.getByRole("link", { name: "Change" })).toHaveAttribute("data-variant", "inline");
   });
 
+  it("draws 'See what we checked' as the chevron-right glyph and its words, in one summary (P3-01)", () => {
+    render(<LaunchReview review={reviewFixture()} />);
+    const summary = screen.getByText("See what we checked").closest("summary") as HTMLElement;
+    const { container: expected, unmount } = render(
+      <Icon decorative name="chevron-right" size="sm" />,
+    );
+    const chevron = expected.innerHTML;
+    unmount();
+    // The glyph is the first thing in the summary, decorative, so the summary's name is its words.
+    expect(summary.firstElementChild?.outerHTML).toBe(chevron);
+    expect(summary.firstElementChild).toHaveAttribute("aria-hidden", "true");
+    expect(summary.textContent).toBe("See what we checked");
+    expect(summary.querySelectorAll("svg")).toHaveLength(1);
+  });
+
+  it.each([
+    ["needs-changes", reviewFixture({}, [CLAIM]), "Fix it"],
+    [
+      "sent-back",
+      reviewFixture({
+        canApprove: false,
+        decision: {
+          decision: "rejected" as const,
+          approver: "Dana Reyes",
+          decidedAt: "2026-10-02T15:00:00.000Z",
+        },
+      }),
+      "Make a new version",
+    ],
+    ["retired", reviewFixture(RETIRED), "Choose another ad"],
+  ] as const)(
+    "draws %s's action as the compact action link, the twin of Copy the link (P3-02)",
+    (_state, review, name) => {
+      render(<LaunchReview review={review} />);
+      const link = screen.getByRole("link", { name });
+      // `size="sm"` is what gives the link the secondary step and the shared medium weight; the
+      // stylesheet states neither (`launch-look.unit.test.ts`).
+      expect(link).toHaveAttribute("data-variant", "action");
+      expect(link).toHaveAttribute("data-size", "sm");
+      expect(link.className).toMatch(/primaryLink/u);
+    },
+  );
+
   it("puts no chip between the cards when the version is ready to approve (R1-12)", () => {
     const { container } = render(<LaunchReview review={reviewFixture()} />);
     // The approve card says what to do; a chip standing alone between two cards, as wide as the

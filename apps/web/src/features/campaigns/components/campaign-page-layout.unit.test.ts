@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -166,6 +167,41 @@ describe("the approve card and the hand-off on the campaign page (review R1-13, 
     const link = css.declarationsOf("a.primaryLink.primaryLink");
     expect(link["font-weight"]).toBe("var(--weight-medium)");
     expect(link["font-size"]).toBe("var(--text-body-size)");
+  });
+
+  /**
+   * Pass 4, R2 F4-1. `campaign-detail.html:553` draws the Approval card's first sentence ("Approved
+   * by ...", "Sent back for changes by ...", "Nobody has approved this version yet.") as a plain
+   * `.small`, in the body text's `--tx-strong`, and only the sentence under it as `.small muted`
+   * (`--tx-body`). The page drew both in `--tx-body`, so it was the one card whose lead sentence was
+   * quieter than step 3's, and the hand-off sentence two cards below it (`.hint`, `--tx-strong`).
+   */
+  it("draws the Approval card's first sentence in the strong ink, and the one under it in the body ink (pass 4, R2 F4-1)", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
+
+    const lead = css.declarationsOf(".decisionLine");
+    expect(lead["color"]).toBe("var(--tx-strong)");
+    expect(lead["font-size"]).toBe("var(--text-secondary-size)");
+    expect(lead["line-height"]).toBe("var(--leading-normal)");
+    // The second sentence, and every other card's sentence, stay the quiet secondary step.
+    expect(css.declarationsOf(".small")["color"]).toBe("var(--tx-body)");
+  });
+
+  /**
+   * Pass 4, R1 F4-01 asked whether this rule has the step 3 links' grey ring. It does not, and this
+   * holds why: "Launch an ad" is the plain `inline` variant of the link primitive, which draws no
+   * edge, so there is no `--bd-input` border to turn into the action colour. If it were made the
+   * `action` variant, the edge would return and the rule would need the same two declarations
+   * `launch.module.css` has on `a.primaryLink`.
+   */
+  it("draws the page's primary link with no edge, because it is the plain link variant (pass 4, R1 F4-01)", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
+    const link = css.declarationsOf("a.primaryLink.primaryLink");
+    expect(link["border"]).toBeUndefined();
+    expect(link["border-color"]).toBeUndefined();
+
+    const source = await readFile(`${COMPONENTS}/launch-an-ad-link.tsx`, "utf8");
+    expect(source).not.toMatch(/variant=["{]/u);
   });
 
   it("lays the hand-off out as the sentence and a button at the card's width, --space-4 apart", async () => {

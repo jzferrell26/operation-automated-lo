@@ -49,7 +49,7 @@ export function CampaignApprovalSection({
           <h2 className={styles.cardTitle} id="campaign-approval-title">
             {APPROVAL.title}
           </h2>
-          <p className={styles.small}>{APPROVAL.nobody}</p>
+          <p className={styles.decisionLine}>{APPROVAL.nobody}</p>
         </div>
       </Surface>
     );
@@ -71,7 +71,7 @@ export function CampaignApprovalSection({
         <h2 className={styles.cardTitle} id="campaign-approval-title">
           {APPROVAL.title}
         </h2>
-        <p className={styles.small}>
+        <p className={styles.decisionLine}>
           {parts.lead}
           {parts.name === undefined ? null : <strong>{parts.name}</strong>}
           {parts.trail}

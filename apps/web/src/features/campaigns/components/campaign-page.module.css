@@ -171,6 +171,17 @@ a.primaryLink.primaryLink:hover {
   line-height: var(--leading-normal);
 }
 
+/* The Approval card's first sentence ("Approved by ...", "Sent back for changes by ...", "Nobody has
+   approved this version yet.") is the card's lead: the mockup's plain `.small`, in the body text's
+   `--tx-strong` (`campaign-detail.html:553`), where the sentence under it is `.small muted` and stays
+   `.small`. Pass 4, R2 F4-1. Its own class, not `.small` plus a colour, so the two cannot be won by
+   whichever rule loads last. */
+.decisionLine {
+  color: var(--tx-strong);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
 /* The results card, across the whole content width (009E-AC-002). */
 .metrics {
   display: grid;

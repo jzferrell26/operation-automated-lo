@@ -104,6 +104,17 @@ describe("step 3's cards (R1-12, R1-13, R1-15)", () => {
     );
   });
 
+  it("draws the primary links' edge in the action colour, at rest and on hover (pass 4, R1 F4-01)", () => {
+    // The link primitive's `action` look is a card-coloured button with a `--bd-input` edge. The rule
+    // turns it into a primary by fill and colour, so without its own edge a grey 1px ring showed
+    // around the blue fill (the mockups' `.btn--primary` takes `--ac-primary`, then
+    // `--ac-primary-hover`). "Copy the link" beside them is a Button with no visible edge.
+    expect(launch.declarationsOf("a.primaryLink")["border-color"]).toBe("var(--ac-primary)");
+    expect(launch.declarationsOf("a.primaryLink:hover")["border-color"]).toBe(
+      "var(--ac-primary-hover)",
+    );
+  });
+
   it("leaves the primary links' size, padding and weight to the compact action link (P3-02)", () => {
     const link = launch.declarationsOf("a.primaryLink");
     // The mockups draw them as `btn--sm`, the twin of "Copy the link": the secondary step at the

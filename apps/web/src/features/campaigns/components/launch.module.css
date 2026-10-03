@@ -655,12 +655,16 @@ button.resetLink:hover:not(:disabled) {
    beside them: the secondary step at the shared medium weight (the 2026-10-03 ruling keeps every
    button at 500), with the 44px target. The link primitive's `size="sm"` carries the size and the
    inline padding (`link.module.css`, `.action[data-size="sm"]`), so this rule states neither a size,
-   a padding, nor a weight of its own. The weight it inherits is the primitive's medium. */
+   a padding, nor a weight of its own. The weight it inherits is the primitive's medium.
+   Pass 4, R1 F4-01. The primitive's `action` look also draws a 1px `--bd-input` edge, which this
+   rule did not restate, so a grey ring showed around the blue fill. The mockups' `.btn--primary`
+   takes the action colour for its edge, and the hover colour on hover. */
 a.primaryLink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-block-size: var(--target-min-size);
+  border-color: var(--ac-primary);
   border-radius: var(--radius-button);
   background: var(--ac-primary);
   color: var(--tx-on-action);
@@ -668,6 +672,7 @@ a.primaryLink {
 }
 
 a.primaryLink:hover {
+  border-color: var(--ac-primary-hover);
   background: var(--ac-primary-hover);
   color: var(--tx-on-action);
 }

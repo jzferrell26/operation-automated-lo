@@ -44,6 +44,14 @@ vi.mock("next/navigation.js", () => ({ useRouter: () => ({ push: network.navigat
 
 const MACHINE_CODE = /\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/u;
 
+/**
+ * The status the workspace draws while it opens. The tests below wait for it to go. They used to wait
+ * for "no status region at all", which stopped being true when the not-turned-on card became the
+ * product's empty state (an `AsyncState`, which is itself a polite `role="status"`; scored review
+ * pass 2, P2-07).
+ */
+const OPENING_SENTENCE = "Opening homeowner reports…";
+
 let workspace: HomeWorkspace;
 let property: HomeProperty;
 
@@ -141,7 +149,7 @@ describe("a refused homeowner report request", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Homeowner reports are unavailable right now. Your existing data has not been replaced.",
     );
-    await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText(OPENING_SENTENCE)).not.toBeInTheDocument());
     expectNoMachineCodeOnScreen("REPORTS_UNAVAILABLE");
   });
 
@@ -204,7 +212,7 @@ describe("a workspace that has not turned homeowner reports on", () => {
     expect(
       screen.getByRole("heading", { level: 2, name: "Connect the report workspace" }),
     ).toBeVisible();
-    await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText(OPENING_SENTENCE)).not.toBeInTheDocument());
     expect(screen.queryByRole("alert")).toBeNull();
     expect(document.body.textContent).not.toContain(NOT_ENABLED_SENTENCE);
   });
@@ -228,6 +236,31 @@ describe("a workspace that has not turned homeowner reports on", () => {
     expect(screen.getByRole("link", { name: "Workspace connections" })).toHaveAttribute(
       "href",
       "/settings/connections",
+    );
+  });
+
+  /**
+   * The scored baseline review pass 2, P2-07: "screens ... do not implement state views ad hoc"
+   * (`03-components/async-empty-error-permission-state.md`). The card was hand-built, with its own
+   * inset and rhythm; it is the product's empty state now, on the page's card surface, with the two
+   * ways forward in the state's two action slots, as the Realtor partners page's empty list is.
+   */
+  it("draws the empty card as the product's empty state, with its actions in the action slots", async () => {
+    network.read.mockResolvedValue(reportsNotEnabled());
+
+    render(<HomeownerWorkspace />);
+
+    const state = (
+      await screen.findByRole("heading", { level: 2, name: "Connect the report workspace" })
+    ).closest("section");
+    expect(state).toHaveAttribute("data-state", "empty");
+    expect(state).toHaveAttribute("data-surface", "card");
+    const actions = state?.querySelector(".oalo-state-actions");
+    expect(within(actions as HTMLElement).getByRole("button")).toHaveTextContent(
+      "Check connection again",
+    );
+    expect(within(actions as HTMLElement).getByRole("link")).toHaveTextContent(
+      "Workspace connections",
     );
   });
 

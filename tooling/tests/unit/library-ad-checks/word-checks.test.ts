@@ -20,6 +20,33 @@ import { CLEAN_TEXTS, codesFor, findingsFor } from "./word-checks-test-support.j
  */
 const SCAN_TIMEOUT = 60_000;
 
+/**
+ * QA-13. The two linear-time tests below are not scans, but they share a machine with the scans. Each
+ * does 0.2 to 0.6 s of work alone. With 48 busy processes on a 16 core machine (what a full run with
+ * coverage beside other suites does, only worse) they ran for 16.8 s and 5.3 s, past the 5 second
+ * default, and the quality pass saw 4.1 s on a single text. 60 s, the scans' own limit, is about
+ * three and a half times the worst of those. The limit only has to let a loaded machine finish: a
+ * pattern that backtracks catastrophically does not finish at any limit, and `spentCpuMilliseconds`
+ * below holds each text to the cost it always had.
+ */
+const LINEAR_TIME_TIMEOUT = 60_000;
+
+/**
+ * QA-13. What `work` cost the process, in milliseconds of processor time and not of wall-clock time.
+ * Wall-clock time also counts every moment the process waits for a processor, so on a loaded machine
+ * it said 2.2 s and 5.2 s for calls that cost 0.2 s, and the 1.5 s limit failed on the machine instead
+ * of on the pattern. Processor time is what the calls themselves spent, which a busy neighbour does
+ * not add to. The limit stays 1.5 s a text: catastrophic backtracking costs orders of magnitude more,
+ * so nothing it would catch is let through. Each test file runs in its own process, so the count is
+ * this file's alone.
+ */
+function spentCpuMilliseconds(work: () => void): number {
+  const before = process.cpuUsage();
+  work();
+  const spent = process.cpuUsage(before);
+  return (spent.user + spent.system) / 1000;
+}
+
 /** Each scan of all 1.1 million code points runs once, however many tests read its ranges. */
 const RANGES_BY_PROPERTY = new Map<string, [first: number, last: number][]>();
 
@@ -243,38 +270,48 @@ describe("the rate, payment, and term claim detector (009D-AC-010)", () => {
     }
   });
 
-  it("reads a long run of number words in linear time, at every field's length (SEC-009-02)", () => {
-    // The unit pattern takes a run of number words with "and", "a", "an", and "of" between. A run
-    // that ends in no unit must not backtrack catastrophically.
-    const run = "one and a of two ".repeat(400);
-    for (const text of [`${run}x`, `${run}yearsx`, `${run} years`]) {
-      const started = performance.now();
-      findRatePaymentOrTermClaim(text);
-      codesFor("primaryText", text);
-      expect(performance.now() - started).toBeLessThan(1500);
-    }
-  });
+  it(
+    "reads a long run of number words in linear time, at every field's length (SEC-009-02)",
+    () => {
+      // The unit pattern takes a run of number words with "and", "a", "an", and "of" between. A run
+      // that ends in no unit must not backtrack catastrophically.
+      const run = "one and a of two ".repeat(400);
+      for (const text of [`${run}x`, `${run}yearsx`, `${run} years`]) {
+        const spent = spentCpuMilliseconds(() => {
+          findRatePaymentOrTermClaim(text);
+          codesFor("primaryText", text);
+        });
+        expect(spent).toBeLessThan(1500);
+      }
+    },
+    LINEAR_TIME_TIMEOUT,
+  );
 
-  it("reads a number word and its filler words in linear time (SEC-009-07)", () => {
-    // The filler pattern takes one or two ordinary words between a run of number words and the unit.
-    // Long runs with filler words and no unit, or a unit one word too far, must not backtrack. The
-    // longest checked text is 600 characters; these are about five times that, which is far more
-    // than a catastrophic pattern survives and keeps the test steady when the suite runs in parallel.
-    const run = "one and a of two ".repeat(180);
-    const spread = "two short ".repeat(300);
-    for (const text of [
-      `${run}short short`,
-      `${run}short short short years`,
-      `${spread}x`,
-      `${spread}short short years`,
-      `${"two ".repeat(700)}years`,
-    ]) {
-      const started = performance.now();
-      findRatePaymentOrTermClaim(text);
-      codesFor("primaryText", text);
-      expect(performance.now() - started).toBeLessThan(1500);
-    }
-  });
+  it(
+    "reads a number word and its filler words in linear time (SEC-009-07)",
+    () => {
+      // The filler pattern takes one or two ordinary words between a run of number words and the unit.
+      // Long runs with filler words and no unit, or a unit one word too far, must not backtrack. The
+      // longest checked text is 600 characters; these are about five times that, which is far more
+      // than a catastrophic pattern survives and keeps the test steady when the suite runs in parallel.
+      const run = "one and a of two ".repeat(180);
+      const spread = "two short ".repeat(300);
+      for (const text of [
+        `${run}short short`,
+        `${run}short short short years`,
+        `${spread}x`,
+        `${spread}short short years`,
+        `${"two ".repeat(700)}years`,
+      ]) {
+        const spent = spentCpuMilliseconds(() => {
+          findRatePaymentOrTermClaim(text);
+          codesFor("primaryText", text);
+        });
+        expect(spent).toBeLessThan(1500);
+      }
+    },
+    LINEAR_TIME_TIMEOUT,
+  );
 
   it("scores 'score' as a count only after 'a' or a number word", () => {
     for (const text of ["A score of years", "Four score years", "Two score months"]) {

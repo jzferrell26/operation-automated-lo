@@ -47,25 +47,39 @@ async function rows(): Promise<readonly CampaignListRow[]> {
   ];
 }
 
-describe("the Campaigns list (009E-AC-009)", () => {
-  it("heads the page with Campaigns, the two tabs, and one primary action, Launch an ad", async () => {
-    const { container } = render(<CampaignList now={NOW} rows={await rows()} />);
+/**
+ * QA-13. The file's first test pays for what every later test reuses: it loads the sample ads library
+ * once (the catalog and the digest of each picture, `sampleLibrary`) and draws the table for the first
+ * time. That is 0.5 s alone, 5.3 s when the quality pass ran it beside other suites, which crossed the
+ * 5 second default, and 12.6 s with 48 busy processes on a 16 core machine. 30 s is about five times
+ * the pass's figure and more than twice the worst. It is a ceiling for a loaded machine: the test
+ * still checks everything it checked, and a broken page still fails on its assertions.
+ */
+const FIRST_RENDER_TIMEOUT = 30_000;
 
-    expect(screen.getByRole("heading", { level: 1, name: "Campaigns" })).toBeInTheDocument();
-    const tabs = screen.getByRole("navigation", { name: "Campaigns sections" });
-    expect(within(tabs).getByRole("link", { name: "Your campaigns" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-    expect(within(tabs).getByRole("link", { name: "Ads library" })).toHaveAttribute(
-      "href",
-      "/marketing/campaigns/library",
-    );
-    const primary = screen.getAllByRole("link", { name: "Launch an ad" });
-    expect(primary).toHaveLength(1);
-    expect(primary[0]).toHaveAttribute("href", "/marketing/campaigns/new");
-    expect(container.querySelectorAll("button")).toHaveLength(0);
-  });
+describe("the Campaigns list (009E-AC-009)", () => {
+  it(
+    "heads the page with Campaigns, the two tabs, and one primary action, Launch an ad",
+    async () => {
+      const { container } = render(<CampaignList now={NOW} rows={await rows()} />);
+
+      expect(screen.getByRole("heading", { level: 1, name: "Campaigns" })).toBeInTheDocument();
+      const tabs = screen.getByRole("navigation", { name: "Campaigns sections" });
+      expect(within(tabs).getByRole("link", { name: "Your campaigns" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      expect(within(tabs).getByRole("link", { name: "Ads library" })).toHaveAttribute(
+        "href",
+        "/marketing/campaigns/library",
+      );
+      const primary = screen.getAllByRole("link", { name: "Launch an ad" });
+      expect(primary).toHaveLength(1);
+      expect(primary[0]).toHaveAttribute("href", "/marketing/campaigns/new");
+      expect(container.querySelectorAll("button")).toHaveLength(0);
+    },
+    FIRST_RENDER_TIMEOUT,
+  );
 
   it("is a table with Ad, Topic, Dates, Where it shows, Status, and Last change and no other column", async () => {
     render(<CampaignList now={NOW} rows={await rows()} />);

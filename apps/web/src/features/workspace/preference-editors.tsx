@@ -131,7 +131,7 @@ export function ReportBrandEditor({ data }: { data: WorkspacePageData }) {
     <div className={styles.columns}>
       <Card className={styles.panel} padding="lg">
         <form className={styles.stack} onSubmit={(event) => void submit(event)}>
-          <div>
+          <div className={styles.cardHead}>
             {/* Writing review pass 2 (MTK-008, W-4): "Your details", because this card holds the name,
                 company, email, phone and tagline as well as the NMLS numbers, and only the reports use
                 the last three. "Report identity" and "report branding" were two more names for it. */}
@@ -430,7 +430,7 @@ export function AdBrandEditor({ data }: { data: WorkspacePageData }) {
     <div className={styles.columns}>
       <Card className={styles.panel} padding="lg">
         <form className={styles.stack} onSubmit={(event) => void submit(event)}>
-          <div>
+          <div className={styles.cardHead}>
             <h2>Your brand on ads</h2>
             <p>
               Your name and NMLS number go on every ad automatically, with the title, color and

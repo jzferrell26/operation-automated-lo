@@ -61,6 +61,16 @@
   min-inline-size: 0;
 }
 /*
+ * A form card's title and its lead (Brand's "Your details" and "Your brand on ads"): `--space-2`
+ * apart, the same step as the page header's title and lead above. The two sat in a plain block
+ * with no gap, so the lead touched the title. A self-found delta of the pass 2 walk.
+ */
+.cardHead {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+/*
  * The one eyebrow of the light look (the scored review's F-11): the mockup's `.eyebrow`, sentence
  * case at the secondary step, semibold, no tracking, in body ink
  * (`design/mockups/home-first-run.html:183`). It was uppercase, tracked 0.12em, at weight 650

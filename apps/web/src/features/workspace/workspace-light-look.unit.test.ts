@@ -97,6 +97,16 @@ describe("F-11: the page title, section titles and card titles are the brief's",
   });
 });
 
+describe("SELF-FOUND: a form card's title and lead are --space-2 apart (scored review pass 2 walk)", () => {
+  it("makes the title and lead of each Brand form card a grid with the page header's gap", () => {
+    const head = declarationsOf(".cardHead");
+
+    expect(head["display"]).toBe("grid");
+    expect(head["gap"]).toBe("var(--space-2)");
+    expect(declarationsOf(".header > div,\n.sectionHead > div")["gap"]).toBe("var(--space-2)");
+  });
+});
+
 describe("P2-06: the add button stands on the search field's edge (scored review pass 2)", () => {
   /**
    * "Add Realtor partner" was centred on the label and the box together, so it sat 14px above the

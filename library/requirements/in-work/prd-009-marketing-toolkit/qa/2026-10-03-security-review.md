@@ -180,3 +180,161 @@ The lockfile is unchanged by PRD-009 (MTK-010 holds).
 ## Ordering note
 
 This review ran before any MTK-004 report. Any fix made for SEC-009-01 or SEC-009-02 lands before `quality-guardian`, which must audit the final head after the delta pass.
+
+---
+
+# Delta pass (2026-10-03) at `0d539dee`
+
+**Reviewer:** `security-guardian` (paired weapon: `security-weapon`), Opus, read-only pass.
+**Scope:** `git diff de69e09e..0d539dee` (54 commits, 111 non-picture files), on `claude/prd-009-marketing-toolkit` at `0d539dee` (pushed). The run adds only redrawn pictures and documents after this head, so this is the final code. The 468 uncommitted baseline pictures in the worktree were ignored. Nothing in the tree was edited, staged, or committed except this appended section, which is left uncommitted for the orchestrator.
+**Verdict: MTK-003 MET.** Critical 0. High 0 unresolved: SEC-009-01 is **accepted by the owner** (2026-10-03) and recorded as accepted, not unresolved. Medium 0: SEC-009-02 is resolved. Low: SEC-009-03 to 06 are resolved as specified; six new Lows (SEC-009-07 to 12) record what is left, one of them tagged NEEDS HUMAN REVIEW on the Medium/Low line. Info: two new (I8, I9).
+
+## Pre-flight
+
+- **Ordering.** `library/qa/` does not exist, and this PRD's `qa/` folder holds no MTK-004 `quality-guardian` close-out (the 2026-10-03 scored review is `ux-ui-guardian`'s 009G-AC-006 work). No inversion; MTK-004 runs after this pass.
+- **Intelligence freshness.** `research/cve-watchlist.md` still says `Last refreshed: 2026-04-24` (SEC-009-I2 stands). Advisories were checked live instead (below).
+- **Tree state.** `git status` shows only the 468 baseline pictures; `pnpm-lock.yaml` and every `package.json` are unchanged since `de69e09e` (MTK-010 holds).
+
+## Commands run (Node 24.18.0, pnpm 11.15.1)
+
+| Command | Result |
+|---|---|
+| `pnpm audit:dependencies` (`pnpm audit --audit-level=high`) | **Exit 0.** "1 vulnerabilities found. Severity: 1 high (1 ignored)" |
+| `pnpm audit --audit-level=low` | Exit 0, the same single ignored high; nothing at any other level |
+| `pnpm audit --prod --audit-level=low` | "No known vulnerabilities found" |
+| `pnpm audit --json` | `metadata.vulnerabilities`: high 1, every other level 0; 611 dependencies (117 prod, 458 dev, 156 optional) |
+| `pnpm audit:secrets` | "Secret audit passed across 6 source roots and the public environment boundary." |
+| `pnpm test:unit` | 170 files, 2426 tests passed (includes `accepted-advisories.test.ts`, `word-checks.test.ts`, `places.test.ts`) |
+| `vitest run --project contracts tests/security` | 6 files, 40 tests passed |
+| `gh api advisories/GHSA-vfj7-8cjw-p6xm` | updated 2026-10-02T22:36:34Z, not withdrawn, `<= 3.0.3`, `first_patched_version: null`; `npm view braces versions` still ends at 3.0.3 |
+| `gh api advisories?ecosystem=npm&updated>=2026-10-03` (16:28 UTC) | **Zero** npm advisories published or updated today. The 24 updated on 2026-10-02 were checked against the lockfile: only braces applies. trigger.dev (11 advisories, all fixed by 4.5.9 or earlier; the lockfile has 4.6.4) and hono (4 advisories, all `< 4.12.7`; the lockfile has 4.13.11) are past their ranges; http-cache-semantics, dompurify, @fastify/busboy, figlet, probe-image-size, and @a2ui/web_core are not in the lockfile |
+| `pnpm config get auditConfig --json` in a scratch copy | pnpm reads a blank line and `ignoreCves` inside `auditConfig` (SEC-009-12) |
+| Probes (scratchpad only) | `library-ad-words.ts`, `library-ad-places.ts`, and the contract's `ad-places.ts` bundled from source with the repository's esbuild 0.25.0 and run on Node 24.18.0: 112 word cases and 62 place cases, plus a timing battery at every field's maximum length. Check time grows linearly (600 characters: 0.3 to 0.4 ms after warm-up; the one 47 ms reading was first-call compilation). No catastrophic backtracking in the new run patterns or the place words |
+| Added-line sweep | No key, token, private key, connection string, or email address added; the only phone shape is the test value 800-555-1212. No new `dangerouslySetInnerHTML`, `innerHTML` write, `srcDoc`, `eval`, or external `url()`/`@import` in CSS |
+
+Not run, as instructed: browser suites, database suites, `pnpm build`.
+
+## Scorecard at `0d539dee`
+
+| Category | Status | Findings |
+|---|---|---|
+| Financial / payment security | OK | 0 (no payment or budget code changed) |
+| PII exposure | OK | 0; the demo Brand page shows the fixture identity only, in synthetic mode only |
+| Authentication and authorization | OK | 0; no route, handler, principal, or session code changed |
+| Injection (SQL, XSS, path, ReDoS) | OK | 0; text-only rendering, fixed in-app links, linear check time |
+| Ad compliance controls (word checks, places) | OK with Lows | SEC-009-02 resolved; SEC-009-07 (NEEDS HUMAN REVIEW), 08 to 11 (Low) |
+| Sample-ads guard and catalog integrity | OK | 0; files unchanged |
+| Provider side effects (MTK-005) | OK | 0; files unchanged, test passes |
+| Dependency security | OK (accepted) | SEC-009-01 accepted; SEC-009-12 (Low, the guard test) |
+| Configuration and headers | OK | 0; `next.config.ts`, `proxy.ts`, CI unchanged |
+| Public repository hygiene | OK | 0 |
+
+## The early pass's findings on this head
+
+### SEC-009-01. ACCEPTED (owner decision, 2026-10-03)
+
+- **Location:** `pnpm-workspace.yaml:42-49` (dated comment, then `auditConfig.ignoreGhsas: [GHSA-vfj7-8cjw-p6xm]`); `tooling/tests/unit/dependencies/accepted-advisories.test.ts:13` (`ACCEPTED`), `:35-37`, `:39-43`; commits `86a9a672` and `43049f8c`; ledger MKR-003.
+- **Verified:** the list holds only GHSA-vfj7-8cjw-p6xm; the reason beside it names the date, the owner, SEC-009-01, the dev-only path through `trigger.dev`, the clean `pnpm audit --prod`, and when to remove it; the test passes; `pnpm audit:dependencies` exits 0 with "1 high (1 ignored)"; `pnpm audit --prod` stays clean; the advisory is unchanged since the acceptance and still has no fix. The `pnpm-workspace.yaml` setting the early pass marked UNVERIFIED is real: pnpm 11.15.1 reads `opts.auditConfig?.ignoreGhsas` in `pnpm audit` (checked in its bundled source), and `pnpm audit` reports the advisory as ignored.
+- **Status:** accepted, not unresolved. Residuals: SEC-009-12 (the guard test is narrower than it says) and SEC-009-I8 (no revisit date).
+
+### SEC-009-02. RESOLVED
+
+- **Location of the fix:** `packages/domain/src/library-ad-words.ts:81` (`dozen`, `dozens`, and `score` after "a", "an", or another number word), `:91` (`NUMBER_RUN`), `:92` (`NUMBER_WORD_UNIT`), `:189` (the word term pattern); commit `c60c7047`; D5 amended (`0efb391a`).
+- **Probed:** refused, each with `WORDS_RATE_PAYMENT_OR_TERM_CLAIM` and `WORDS_NUMBER`: "A dozen years, fixed", "Fixed for a dozen years", "Two dozen months to pay", "Thirty and a half years", "A score of years", "Four score years", "A baker's dozen years", "Two-dozen months", "Twenty-five years", "Five and twenty years", "Dozens of months to pay", "Twelve. Years. Fixed.". Passing as intended: "Credit score and payment history", "Your credit score, explained", "A score and payment history review", "Score a great home", "Dozens of families helped", "Ask me about first-time buyer programs", "Down payment help". The fix is the one the early pass recommended. What is left is a different, narrower case: SEC-009-07.
+
+### SEC-009-03. RESOLVED (ASCII digits); residual in SEC-009-08
+
+- **Fix:** `library-ad-words.ts:457` (`phoneTerm` refuses a phone shape anywhere, a license reference included).
+- **Probed, refused as `WORDS_CO_BRAND`:** disclosure "NMLS 8005551212. Equal Housing Lender.", "License 2125550199 Equal Housing", "NMLS #8005551212", "NMLS: 18005551212", "NMLS ID 800-555-1212", "Lic. 800.555.1212", fullwidth "NMLS ８００５５５１２１２"; company "Acme NMLS 8005551212 Lending"; name "Alex NMLS 8005551212". Still passing as licenses: "NMLS 1234567", "NMLS 28005551212" (11 digits not starting with 1 is not a phone shape).
+
+### SEC-009-04. RESOLVED (the listed vocabulary); residual in SEC-009-10
+
+- **Fix:** `library-ad-words.ts:138` ("points off/lower"), `:161-181` (closing costs), `:192-198` (`locked`, `locked in`), `:389-414` (realty, real tor, partnered/partnering with, affiliated with, in association/collaboration/affiliation with, brought to you by), `COMPANY_CO_BRAND_TERMS` ("real estate" in the company only).
+- **Probed, refused:** "Locked in for a decade and a half", "Your payment, locked for a decade", "Locked for fifteen years", "A couple of points off", "A few points lower", "Teaser: half off closing", "Half off your closing", "Closing costs covered", company "Mortgage broker & realty partners", title "Partnered with Keller Williams", "Real-tor approved", "R.E.A.L.T.Y approved", company "Prairie Real Estate Lending", "Brought to you by Prairie Homes", "In association with Prairie Homes". **Passing as intended:** "Partnered with you", "Partnering with first-time buyers", "Buying real estate? Start here.", "Understand your closing costs", "Take the stress off closing day", "Points of view on buying".
+
+### SEC-009-05. RESOLVED as specified; the exceptions open no bypass; residual in SEC-009-11
+
+- **Fix:** 39 words in `packages/domain/src/library-ad-places.ts:93` and the equal list in `packages/contracts/src/ad-places.ts:203-243`; 161 exact "Name, ST" pairs in `AD_PLACE_NAMED_EXCEPTIONS` with their Census TIGERweb and GNIS sources; D4 amended, including "before any provider launch every city must resolve to a gazetteer entry or a Meta location key (the Meta publish PRD, future work)", which is the structural fix the early pass asked to record.
+- **Exception bypass attempts (all refused, contract and domain):** "White Plains Black, NY", "Black White Plains, NY", "White Plains Mexican, NY", "White-Plains, NY", "White Plains, TX", "Indian Wells Hindu, CA", "Arab Arab, AL", "Arab, MI", "Falls Church Muslim, VA", "Mexican Hats, UT", "Chinese Camps, CA", "Indian Community, WA", "Black Mountain NC". The exception set is read only as a whole lowercase "Name, ST" after the contract trims and collapses spaces (`ad-places.ts:575-589`) and in the domain by exact value (`library-ad-places.ts` `placeProblem`), so extra words, a hyphen, a plural, or another state always fall back to the word check. **Passing as intended:** "White Plains, NY", "white plains, ny", "  White   Plains ,  NY " (stored "White Plains, NY"), "Arab, AL", "Falls Church, VA", "Mexican Hat, UT", "Black Mountain, NC", "Chinese Camp, CA", "Nisqually Indian Community, WA", "Indian Wells, CA" and "AZ", "Temple, TX". **Refused, the early pass's cases:** "Black Austin, TX", "Indian Houston, TX", "Mexican Austin, TX", "Arab Dearborn, MI", "Hindu Edison, NJ", plus "Korean Fort Lee, NJ", "Church Austin, TX", "Mosque Dearborn, MI", "Blacks Austin, TX", "Asian-American Austin, TX", "Native Austin, TX", "Immigrant Houston, TX".
+
+### SEC-009-06. RESOLVED (default-ignorable marks); residual in SEC-009-09
+
+- **Fix:** `library-ad-words.ts:294-296` (`\p{Default_Ignorable_Code_Point}`), `:301` (U+FE0F allowed only straight after a pictograph).
+- **Probed, refused as `WORDS_INVALID_CHARACTERS`:** "Rates" U+034F "down", "Homes" U+034F "for you", a lone U+FE0F, U+FE0E after a heart, a doubled U+FE0F, U+180B, U+E0100, U+2065, U+3164, U+115F, U+00AD, and the keycap "#" U+FE0F U+20E3 (conservative). **Passing as intended:** a heart, a thumbs-up, and a flag with their presentation selector; a plain line break in the primary text.
+
+## New findings
+
+### SEC-009-07. Number words apart from their unit by an ordinary word still pass (Low, NEEDS HUMAN REVIEW)
+
+- **Severity:** Low, tagged **NEEDS HUMAN REVIEW** because it sits on the Medium/Low line. For Medium: it is the same family as SEC-009-02 (a loan term in words that passes every check), "Pay it off in fifteen short years" is ordinary loan-officer phrasing, and whether it is a regulated term statement is counsel's call. For Low (the grade given): number words are ordinary English, so D5 as amended (`0efb391a`) deliberately reads them only beside a unit or through a run of number words, and any fixed window of filler words can be beaten by one more word, which is the open-vocabulary family R-4 accepts and SEC-009-04 was graded in; every digit is still refused in the words; the person who types the words approves the version, the curator reviews every default, and launch is disabled in PRD-009 (MTK-005).
+- **Location:** `packages/domain/src/library-ad-words.ts:91-95` (`NUMBER_RUN` admits only number words, fraction words, "a", "an", "of", and a linking "and" before the unit), `:189` (the word term pattern), `:199` (`decades? (fixed|loans?|mortgages?|term)` needs adjacency), `:382-387` (`hasNumber`).
+- **Scenario (probed, headline, no saved partner; each produces no finding at all):** "Pay it off in fifteen short years", "Thirty whole years", "Thirty-plus years", "Fifteen or more years", "Twenty-odd years", "A dozen or so years", "Twelve-ish years", "Two doz. months", "A decade and a half, fixed". The headline and primary text are the person's own words (`apps/web/src/server/library-ad-save.ts:52-64`), so this is reachable. "Fixed for thirty whole years" is refused, because `FIXED_SPAN` allows "whole".
+- **Fix (prototyped in the scratchpad against the cases above and the passing table):** add one claim pattern and use the same body in `NUMBER_WORD_UNIT`: ``new RegExp(`\\b(?!one\\b)${NUMBER_RUN}(?: \\p{L}+){1,2} (?:years?|yrs?|months?|mos?|payments?|percent)\\b`, "u")``, plus `/\bdecades? and a half\b/u` as a term. It refuses all nine strings above and still passes "One home, many years of memories", "Make this one of your best years", "One loan officer, many happy years", "Credit score and payment history", "Down payment help", "Dozens of families helped", "Ask me about first-time buyer programs", "Serving our community for generations", and "A decade of helping first-time buyers". Add those as 009D-AC-010 table cases. Excluding "one" keeps "one home", "one of", and "one loan officer" clear. If the owner grades this Medium, it is a few lines and must land before ship; if Low, it can ride with counsel's list extension (009F-AC-014 part c).
+
+### SEC-009-08. A phone number still prints after a license keyword in another script's digits, or spelled in number words (Low)
+
+- **Location:** `packages/domain/src/library-ad-words.ts:321-323` (`LICENSE_REFERENCE` takes any `\p{N}` digits), `:325-328` (`isLicenseDigits` counts `\p{N}`), `:448-449` (`PHONE_NUMBER` uses `\d`, which is ASCII only).
+- **Scenario (probed):** disclosure line "NMLS ٨٠٠٥٥٥١٢١٢. Equal Housing Lender." (Arabic-Indic digits), disclosure line "NMLS ८००५५५१२१२" (Devanagari), and company "Acme NMLS ٨٠٠٥٥٥١٢١٢ Lending" pass every check: the run reads as a 10-digit license reference, and the phone pattern never sees a digit. NFKC does not fold these digits (fullwidth ones it does, and those are refused). Separately, headline "Call eight hundred, five five five, one two one two" passes (no digit, no number word beside a unit).
+- **Why Low:** as for SEC-009-03: it needs deliberate typing, reads to an approver as a number in plain sight, carries contact details rather than a rate or term, and launch is disabled. The headline and primary text already refuse every `\p{N}`.
+- **Fix:** make `LICENSE_REFERENCE` take ASCII digits only (`([0-9]+(?:-[0-9]+)?)(?![ .-]?[0-9])` and `[0-9]` in `isLicenseDigits`), so other scripts' digits in a Brand text fall to `WORDS_NUMBER`; or fold every `\p{Nd}` to ASCII in `normaliseLibraryAdText`. For spelled-out numbers, refuse a run of seven or more single-digit number words ("zero" to "nine", "oh") in any checked text. Table cases: the three strings above refused; "NMLS 1234567" passing.
+
+### SEC-009-09. Two blank marks and unassigned code points pass the invisible-character check (Low)
+
+- **Location:** `packages/domain/src/library-ad-words.ts:294-296` (`INVALID_CHARACTER`), `packages/domain/src/library-ad-text.ts:201` (`LIBRARY_AD_INVISIBLE`).
+- **Scenario (probed on Node 24.18.0):** "Homes" U+1D159 (MUSICAL SYMBOL NULL NOTEHEAD) "for you" and "Homes" U+16FE4 (KHITAN SMALL SCRIPT FILLER) "for you" store with no finding; both are nonspacing marks that Node does not class as default-ignorable, and their Unicode names describe blanks (whether a given browser font draws anything was not checked here: UNVERIFIED). Unassigned code points are not refused either: "Homes" U+0378 "for you" and "Homes" U+1FC00 "for you" pass, and an unassigned code point splits a claim word, so "R" U+1FC00 "ates down" passes the claim check (U+1FC00 is in a reserved pictographic range, so a U+FE0F after it is also allowed). An unassigned code point normally draws as a missing-glyph box, so that split is visible to the approver.
+- **Why Low:** as for SEC-009-06; the readings strip every mark, so no claim hides inside a word through the two blanks, and the approver sees the box.
+- **Fix:** add `\p{Cn}` (unassigned) to `INVALID_CHARACTER`, and U+1D159 and U+16FE4 to `LIBRARY_AD_INVISIBLE` beside the Hangul, Braille, and Khmer blanks. Table cases for each.
+
+### SEC-009-10. Claim and co-brand evasions that remain (Low, accepted family R-4)
+
+- **Location:** `packages/domain/src/library-ad-words.ts:161-181` (closing costs read only "X off closing", "closing costs off/paid/covered/...", and "number closing costs"), `:389-414` (co-brand phrases), `packages/domain/src/library-ad-text.ts:247-290` (word text and joined runs).
+- **Probed passes:** "We pay your closing costs", "Lender-paid closing costs", "Free closing costs", "Closing costs on us" (the word order the patterns do not read); title "Partnered w/ Keller Williams", "Affiliated w/ Prairie Homes", "Teamed up with Keller Williams", company "Prairie Lending, an RE/MAX company" (D5's amendment already records that "a Coldwell Banker company" is not caught without a saved partner); and visible in-word splits of a claim word: "Ra tes down", "Ra-tes down", "R★ates down" (the joined-run reading only joins runs of single characters).
+- **Why Low:** the deterministic detector's open vocabulary, the family the Wave 3 verifier logged as W-1 and the index accepts under R-4; every split is visible on the approver's screen; the structural control 9 holds (no partner field in a library ad); a person approves every version and launch is disabled.
+- **Fix:** add `(?:free|paid|lender paid|waived|covered) closing costs?`, `(?:pay|cover|cut)(?: \p{L}+)? closing costs?`, and `closing costs? on (?:us|me|the house)` as payment claims; read `w` as "with" before the co-brand phrases and add `teamed (?:up )?with` and `an? .{1,40} company` in the company field; counsel extends the lists (009F-AC-014 part c). The in-word splits are a design limit of reading words rather than meaning, kept to the approver under R-4.
+
+### SEC-009-11. Place words that remain (Low)
+
+- **Location:** `packages/domain/src/library-ad-places.ts:80-95` and `packages/contracts/src/ad-places.ts` `AD_PLACE_AUDIENCE_WORDS`.
+- **Probed passes (contract and domain):** "Hispanics Austin, TX" ("hispanic" is listed but not its plural, while latino, latina, asian, christian, muslim, and catholic each have theirs), "Latinx Austin, TX", "Cuban Miami, FL", "Haitian Miami, FL", "Somali Minneapolis, MN", "Polish Chicago, IL", "Irish Boston, MA", "Italian Boston, MA", "Hmong St. Paul, MN", "Navajo Gallup, NM", "Tribal Gallup, NM", "Amish Lancaster, PA", "Orthodox Brooklyn, NY", "Hasidic Brooklyn, NY", "Evangelical Dallas, TX", "Baptist Dallas, TX", "Lutheran Fargo, ND", "Temple Austin, TX", "Spanish-speaking Houston, TX", "Bilingual Houston, TX", "Deaf Austin, TX", "Wheelchair Austin, TX", "Section Eight Austin, TX".
+- **Why Low:** the early pass's reasoning holds (no targeting call exists, a city is a name, step 3 shows every value to the approver), and the structural fix is now recorded in D4 for the Meta publish PRD: every city resolves to a gazetteer entry or a Meta location key before any launch. A word list cannot carry this alone.
+- **Fix:** add "hispanics" now (one word, both lists, one table case); hand the remaining national origin, religion, language, and disability words to counsel with the gazetteer requirement.
+
+### SEC-009-12. The accepted-advisories test guards only an unbroken `ignoreGhsas` list (Low)
+
+- **Location:** `tooling/tests/unit/dependencies/accepted-advisories.test.ts:21-32` (the parser stops at the first line that is not `- <id>`), `:35-37`.
+- **Scenario (verified):** a scratch `pnpm-workspace.yaml` with `ignoreGhsas` holding the accepted id, a blank line, then `- GHSA-aaaa-bbbb-cccc`, and an `ignoreCves: [CVE-2026-0001]` key beside it. `pnpm config get auditConfig --json` reads both ids and the CVE; the test's own parser, run on the same file, returns only `["GHSA-vfj7-8cjw-p6xm"]`, so the test passes. A YAML comment between items does the same. pnpm 11.15.1 honours `auditConfig.ignoreCves` in `pnpm audit` (checked in its bundled source), and `pnpm audit --ignore-unfixable` writes to it. So a second silenced advisory could reach CI without changing the test, which its doc comment says cannot happen.
+- **Why Low:** it needs a deliberate change to a reviewed file, and the pull request shows it; nothing is silenced today beyond the accepted entry.
+- **Fix:** read the whole `auditConfig` block (every indented line under it, skipping blank and comment lines) and assert it deep-equals `{ ignoreGhsas: ["GHSA-vfj7-8cjw-p6xm"] }`, with no `ignoreCves` key; add the blank-line and `ignoreCves` cases to the planted-entry test.
+
+## Info
+
+- **SEC-009-I8. No revisit date for the accepted advisory.** The early pass asked for a revisit date; the comment and the ledger say "remove once a fix ships" instead. Suggest a dated check in the ledger (for example, at the next PRD's close-out) so the ignore cannot outlive a fix unnoticed.
+- **SEC-009-I9. New code since the early pass: no finding.**
+  - *Shared primitives* (`packages/ui`): `Button` wraps its label in a class; `Link` adds a `sentence` style variant and keeps `rel` and `target` out of its props, so `resolveExternalLinkSafety` still forces `noopener noreferrer`; `Surface` gains an `info` style; `AsyncState` gains a `surface` prop that is removed before the remaining props spread onto the section; five new icons are static SVG paths.
+  - *Brand page and `synthetic-brand-page.ts`:* the sample identity renders only when `authenticatedWorkspaceMode` returns `synthetic`, which it does only for `OALO_ENVIRONMENT` local or preview with the stub provider, synthetic data only, and no review flag (`apps/web/src/server/authenticated-workspace-data.ts:163-187`); staging and production either take review mode, where the page reads the signed-in person's own saved Brand through `workspacePageData("profile")`, or throw. `syntheticBrandPageData` has one importer (`brand/page.tsx`), sets `canEdit: false`, and the only save route refuses every mode but review (`apps/web/src/server/workspace-preferences.ts:184`), so the demo page can neither leak into a real account's Brand page nor write. This is the same fixture and gate the deleted screen used.
+  - *`BrandProfileScreen` deletion:* no import, route, or stylesheet reference remains (one comment in a test names it).
+  - *Homeowner reports' not-turned-on state* (`use-home-workspace.ts`): the empty state is taken only for the exact code `REPORTS_NOT_CONFIGURED`, which `apps/web/src/server/homeowners/runtime.ts:89-93` raises only after review mode, sign-in, and the role check, so it cannot hide a 401 or 403; messages render as React text.
+  - *Connections page* (`permission-screen.tsx`): layout, a shared `Badge`, and one de-duplicated fixture sentence; no new data.
+  - *Capture helpers* (`review-session.ts`, `design-quality.ts`): test-only; they add date masks and blur the account control before a picture, and remove their own marks and style afterwards.
+  - *Request, session, and error data:* `RouteError` still shows only Next's opaque `digest`; `AuthProblem` and `AuthNotice` add a decorative glyph beside the same text; every new link is a fixed path or `launchHref` built with `URLSearchParams`; "Launch on Facebook" changed from outline to primary and is still a literal `disabled` button with no handler.
+- **Carried:** I1 (ordering) holds for MTK-004; I2 (stale watchlist, 2026-04-24) stands; I3, I4, I6, and I7 are unchanged because no server, database, or application file changed; I5 stands (`apps/web/src/features/workspace/ad-brand-editor.integration.test.tsx:79`, `:255`).
+
+## Recheck: sample guard, approval binding, provider defaults (MTK-005)
+
+`git diff de69e09e..0d539dee` is empty for `apps/web/src/server`, `apps/web/src/features/ads-library`, `apps/web/src/app/api`, `packages/application`, `packages/ghl`, `packages/db`, the domain and contract campaign foundations, `library-ad-ruleset.ts`, `library-ad-text.ts`, `tests/security`, `supabase`, `.github`, `tooling/scripts`, `next.config.ts`, and `proxy.ts`. So the early pass's evidence stands unchanged at this head: the fail-closed guard (`catalog-loader.ts:60-64`), the derived and contained art read, the content-derived approval snapshot and digest check, the session-sourced approver name, `provider_publish` `available: false` and `providerPublicationAuthorized: false`, and `META_ADAPTER_MODE = "fixture-plan"`. `tests/security/provider-side-effect-default-off.test.ts` passes (40 of 40 in `tests/security`). The one provider-adjacent change in the diff is the "Launch on Facebook" button's style, above.
+
+## Dependency audit at `0d539dee`
+
+| Package | Severity | Advisory | Path | Fix available | Status |
+|---|---|---|---|---|---|
+| braces 3.0.3 | High (CVSS 7.5) | GHSA-vfj7-8cjw-p6xm | `apps/tasks > trigger.dev 4.6.4` (dev), three paths | No (npm's latest is 3.0.3; `first_patched_version: null`) | **Accepted by the owner, 2026-10-03** (`pnpm-workspace.yaml:42-49`) |
+
+No other advisory at any level; `pnpm audit --prod` clean; no npm advisory published or updated on 2026-10-03 as of 16:28 UTC.
+
+## Files changed by this delta pass
+
+- Modified, uncommitted: this file (the section above appended). No other file in the worktree was touched; probes and the scratch `pnpm-workspace.yaml` ran from the session scratchpad.
+
+## MTK-003 at `0d539dee`
+
+Zero unresolved Critical, High, or Medium, in code and in `pnpm audit`, with SEC-009-01 accepted by the owner. **MTK-003 is met.** The owner should rule on SEC-009-07's grade; if it is graded Medium, MTK-003 re-opens until the prototyped fix lands. `quality-guardian` (MTK-004) runs next, on the final tree.

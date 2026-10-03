@@ -18,7 +18,7 @@ export function CampaignDetailScreen({ reporting }: CampaignDetailScreenProps) {
           <h1>{reporting.campaign.title}</h1>
           <p>{reporting.campaign.propertyLabel}</p>
         </div>
-        <span className={styles.currentVersion}>Version {reporting.campaign.currentVersion}</span>
+        <span className={styles.caption}>Version {reporting.campaign.currentVersion}</span>
       </header>
 
       <SampleDataNotice disclosure={reporting.safety.disclosure} />

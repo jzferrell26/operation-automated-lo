@@ -1,11 +1,12 @@
 "use client";
 
-import { Card, Icon, SafeAction, Stack, type SafeActionDecision } from "@oalo/ui";
+import { Badge, Card, Icon, SafeAction, type SafeActionDecision } from "@oalo/ui";
 import { useState } from "react";
 
 import type { DeepReadonly } from "../../ui-foundation/model/synthetic-ui.js";
 import type { SyntheticCampaign } from "../model/synthetic-reporting.js";
 import styles from "./reporting.module.css";
+import { toneForStatus } from "./status-tone.js";
 
 type CampaignLaunchReviewProps = Readonly<{
   campaign: DeepReadonly<SyntheticCampaign>;
@@ -39,19 +40,23 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
     },
   };
 
+  /* The three sections are children of the page, like every other section on it (R2 N-5a). */
   return (
-    <Stack gap="6">
+    <>
       <section aria-labelledby="meta-connection-title" className={styles.launchSection}>
         <div className={styles.sectionHeading}>
           <div>
             <h2 id="meta-connection-title">Your Meta connection</h2>
             <p>Workspace: {campaign.metaConnection.activeLocationName}</p>
           </div>
-          <span data-connection-state={campaign.metaConnection.state}>
+          <Badge
+            data-connection-state={campaign.metaConnection.state}
+            tone={toneForStatus(campaign.metaConnection.state)}
+          >
             {campaign.metaConnection.state}
-          </span>
+          </Badge>
         </div>
-        <Card className={styles.connectionEvidence} padding="sm">
+        <Card className={styles.connectionEvidence} padding="md">
           <Icon decorative name="circle-dot" size="sm" tone="success" />
           <div>
             <strong>{campaign.metaConnection.source}</strong>
@@ -60,10 +65,10 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
         </Card>
         <div className={styles.assetGrid}>
           {campaign.metaConnection.assets.map((asset) => (
-            <Card data-meta-asset-kind={asset.kind} key={asset.providerId} padding="sm">
+            <Card data-meta-asset-kind={asset.kind} key={asset.providerId} padding="md">
               <div className={styles.fieldStatusHeading}>
                 <h3>{asset.label}</h3>
-                <span>{asset.optional ? "Optional, selected" : "Selected"}</span>
+                <Badge tone="neutral">{asset.optional ? "Optional, selected" : "Selected"}</Badge>
               </div>
               <p>{asset.displayName}</p>
             </Card>
@@ -80,7 +85,9 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
               {campaign.approvalSnapshot.approver}
             </p>
           </div>
-          <span>{campaign.approvalSnapshot.status}</span>
+          <Badge tone={toneForStatus(campaign.approvalSnapshot.status)}>
+            {campaign.approvalSnapshot.status}
+          </Badge>
         </div>
         <div
           aria-label="Exactly what was approved"
@@ -114,7 +121,7 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
             <h2 id="final-launch-title">The launch summary</h2>
             <p>{campaign.launchSummary.policyClassification}</p>
           </div>
-          <span>Nothing launches from here</span>
+          <span className={styles.caption}>Nothing launches from here</span>
         </div>
 
         <div className={styles.launchSummaryGrid}>
@@ -180,6 +187,6 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
             : "You have not confirmed the launch summary yet. Nothing can launch from here."}
         </p>
       </section>
-    </Stack>
+    </>
   );
 }

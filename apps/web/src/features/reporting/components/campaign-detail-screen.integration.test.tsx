@@ -124,3 +124,84 @@ describe("synthetic campaign detail screen", () => {
     vi.unstubAllGlobals();
   });
 });
+
+/**
+ * The scored baseline review of 2026-10-03, pass 2, part R2, N-5 (axes 2 to 4; the screen is exempt
+ * from axis 10 by the rubric's section 5 entry of 2026-10-03). The stylesheet's measures are pinned
+ * in `campaign-detail-look.unit.test.ts`.
+ */
+describe("the demo campaign page's status words (review pass 2, R2 N-5c)", () => {
+  it("draws each status as a Badge, so every one carries a glyph and a tone", () => {
+    const { container } = render(<CampaignDetailScreen reporting={loadSyntheticReporting()} />);
+
+    const approved = container.querySelector("[data-artifact-status='approved']") as HTMLElement;
+    expect(approved).toHaveAttribute("data-tone", "success");
+    expect(approved.querySelector("svg")).not.toBeNull();
+    const connected = container.querySelector("[data-connection-state='connected']") as HTMLElement;
+    expect(connected).toHaveAttribute("data-tone", "success");
+    expect(connected.querySelector("svg")).not.toBeNull();
+    for (const selected of screen.getAllByText(/^(Optional, selected|Selected)$/u)) {
+      expect(selected).toHaveAttribute("data-tone", "neutral");
+      expect(selected.querySelector("svg")).not.toBeNull();
+    }
+  });
+
+  it("tells an approved version from a superseded one by tone and glyph, not by the word alone", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<CampaignDetailScreen reporting={loadSyntheticReporting()} />);
+
+    // The preview's badge is one element that takes the chosen version's status, so what the approved
+    // version drew is read before the superseded one is chosen.
+    const approved = container.querySelector("[data-artifact-status='approved']") as HTMLElement;
+    const approvedTone = approved.getAttribute("data-tone");
+    const approvedGlyph = approved.querySelector("svg")?.innerHTML;
+    await user.click(screen.getByRole("button", { name: "Version 2" }));
+    const superseded = container.querySelector(
+      "[data-artifact-status='superseded']",
+    ) as HTMLElement;
+
+    expect(approvedTone).toBe("success");
+    expect(superseded).toHaveAttribute("data-tone", "neutral");
+    expect(superseded.querySelector("svg")?.innerHTML).not.toBe(approvedGlyph);
+  });
+
+  it("draws every row of the history's status as a Badge too", () => {
+    render(<CampaignDetailScreen reporting={loadSyntheticReporting()} />);
+
+    const history = screen.getByRole("region", { name: "What changed, and when" });
+    for (const row of within(history).getAllByRole("listitem")) {
+      expect(row.querySelector(".oalo-state-label"), row.textContent ?? "").not.toBeNull();
+    }
+  });
+});
+
+describe("the demo campaign page's section rhythm (review pass 2, R2 N-5a)", () => {
+  it("makes every section a child of the page, so each section title stands the page's one gap below the block before it", () => {
+    const { container } = render(<CampaignDetailScreen reporting={loadSyntheticReporting()} />);
+
+    const page = container.firstElementChild as HTMLElement;
+    const sections = [
+      "creative-originals-title",
+      "campaign-history-title",
+      "meta-connection-title",
+      "approval-scope-title",
+      "final-launch-title",
+    ].map((id) => container.querySelector(`section[aria-labelledby='${id}']`));
+    for (const section of sections) {
+      expect(section, "a section with a title").not.toBeNull();
+      expect(section?.parentElement).toBe(page);
+    }
+  });
+
+  it("keeps the version picker, the preview and the actions together as one group", () => {
+    const { container } = render(<CampaignDetailScreen reporting={loadSyntheticReporting()} />);
+
+    const picker = container.querySelector("[aria-label='Preview a version']") as HTMLElement;
+    const group = picker.parentElement as HTMLElement;
+    expect(group.parentElement).toBe(container.firstElementChild);
+    expect(within(group).getByRole("link", { name: /^Open the approved page/u })).not.toBeNull();
+    expect(
+      within(group).getByRole("button", { name: "Start a new draft from this" }),
+    ).not.toBeNull();
+  });
+});

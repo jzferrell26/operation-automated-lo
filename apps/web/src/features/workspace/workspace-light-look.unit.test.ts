@@ -18,6 +18,12 @@ const { source, declarationsOf } = await readCssRules(
   join(resolve(import.meta.dirname), "workspace.module.css"),
 );
 
+/**
+ * The section-title rule's whole selector. The shared state view's own `h2` is left to the primitive
+ * (pass 3, R3 P3-01), so the rule says which `h2` it is not for.
+ */
+const SECTION_TITLE = ".workspace h2:not(:global(.oalo-async-state__title))";
+
 /** The text between the braces of the `@media` rule whose condition is exactly `condition`. */
 function mediaBody(condition: string): string {
   const escaped = condition.replaceAll(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`);
@@ -87,9 +93,9 @@ describe("F-11: the page title, section titles and card titles are the brief's",
   });
 
   it("sets section and card titles semibold with no tracking", () => {
-    expect(declarationsOf(".workspace h2")["font-weight"]).toBe("var(--weight-semibold)");
+    expect(declarationsOf(SECTION_TITLE)["font-weight"]).toBe("var(--weight-semibold)");
     expect(declarationsOf(".workspace h3")["font-weight"]).toBe("var(--weight-semibold)");
-    expect(declarationsOf(".workspace h2")).not.toHaveProperty("letter-spacing");
+    expect(declarationsOf(SECTION_TITLE)).not.toHaveProperty("letter-spacing");
   });
 
   it("sets the page's text on the body leading token, not 1.6", () => {
@@ -126,5 +132,113 @@ describe("P2-06: the add button stands on the search field's edge (scored review
 
   it("still stretches the row below 760px, where it stacks", () => {
     expect(mediaBody("(max-width: 760px)")).toMatch(/\.toolbar \{\s*align-items: stretch;/u);
+  });
+});
+
+describe("P3-01: the shared state view keeps its own title step (scored review pass 3)", () => {
+  /**
+   * `EmptyState` is a `section` holding an `h2` that the primitive sets at the card step, one state
+   * view for every screen. A page sheet's `.workspace h2` (0,1,1) outranks the primitive's single
+   * class (0,1,0), so Realtor partners drew "Add your first Realtor partner" at 19px beside
+   * Campaigns' 16px. No stylesheet here can compute the cascade, so the rule is pinned by what it must
+   * say: every sheet rule that sets a size on an `h2` excludes the state view's title.
+   */
+  const h2Rules = [...source.matchAll(/(?:^|\})\s*([^{}]*\bh2\b[^{}]*)\{([^}]*)\}/gu)].filter(
+    (match) => /font-size/u.test(match[2] ?? ""),
+  );
+
+  it("finds the rule that sets the section step on an h2, so an empty scan cannot pass", () => {
+    expect(h2Rules.length).toBeGreaterThan(0);
+  });
+
+  it("excludes the state view's title from every h2 rule that sets a size", () => {
+    for (const match of h2Rules) {
+      expect(match[1], "an h2 rule that sets a size").toContain(
+        ":not(:global(.oalo-async-state__title))",
+      );
+    }
+  });
+
+  it("is the heading that class sits on in the primitive, so the exclusion reaches the state view's title", async () => {
+    // The primitive's source, not an import of it: this file reads stylesheets and stays light.
+    const { readFile } = await import("node:fs/promises");
+    const primitive = await readFile(
+      join(
+        resolve(import.meta.dirname),
+        "../../../../../packages/ui/src/components/async-state.tsx",
+      ),
+      "utf8",
+    );
+
+    expect(primitive).toMatch(/<h2 className="oalo-async-state__title"/u);
+  });
+});
+
+describe("P3-03: the page note is the information notice, not a sunken well (scored review pass 3)", () => {
+  it("sets only the row and the secondary step, because the Surface variant owns the tint, radius, padding and ink", () => {
+    const note = declarationsOf(".pageNote");
+
+    expect(note["display"]).toBe("flex");
+    expect(note["gap"]).toBe("var(--space-3)");
+    expect(note["font-size"]).toBe("var(--text-secondary-size)");
+    for (const property of ["background", "border", "border-radius", "padding", "color"]) {
+      expect(note, `${property} comes from the Surface variant`).not.toHaveProperty(property);
+    }
+  });
+
+  it("takes the notice's strong ink for its sentence, over the page's body-ink paragraphs", () => {
+    expect(declarationsOf(".workspace .pageNote p")["color"]).toBe("inherit");
+  });
+
+  it("sets the glyph on the first line's middle, by the line and a step, not by a raw length", () => {
+    expect(declarationsOf(".pageNote > svg")["margin-block-start"]).toBe(
+      "calc((1lh - var(--space-4)) / 2)",
+    );
+  });
+
+  it("keeps no sunken note rule that could bring the well back", () => {
+    expect(source).not.toMatch(/(?:^|\n)\.note\s*\{/u);
+  });
+});
+
+describe("P3-04: a disabled save's reason is a plain line under the buttons (scored review pass 3)", () => {
+  it("puts the buttons and the reason in one grid, --space-2 apart, as the campaign page's header does", () => {
+    const block = declarationsOf(".formActions");
+
+    expect(block["display"]).toBe("grid");
+    expect(block["gap"]).toBe("var(--space-2)");
+  });
+
+  it("draws the reason at the secondary step with no box of its own", () => {
+    const reason = declarationsOf(".reason");
+
+    expect(reason["font-size"]).toBe("var(--text-secondary-size)");
+    for (const property of ["background", "border", "padding", "border-radius"]) {
+      expect(reason, `the reason sets ${property}`).not.toHaveProperty(property);
+    }
+  });
+});
+
+describe("P3-08: on a phone the page's actions span the column (scored review pass 3)", () => {
+  const phone = (): string => mediaBody("(max-width: 760px)");
+
+  it("makes the header's action and the toolbar's button the column's width", () => {
+    expect(phone()).toMatch(
+      /\.header \.headerAction,\s*\.toolbar \.toolbarAction \{\s*inline-size: 100%;/u,
+    );
+  });
+
+  it("stacks a page-level row of actions and stretches them, where align-items on a wrapping row stretched only height", () => {
+    const row = /\.actions\.pageActions \{([^}]*)\}/u.exec(phone())?.[1] ?? "";
+
+    expect(row).toMatch(/flex-direction:\s*column;/u);
+    expect(row).toMatch(/flex-wrap:\s*nowrap;/u);
+    expect(row).toMatch(/align-items:\s*stretch;/u);
+  });
+
+  it("leaves a card's own actions at their width, as the mockups' card actions are", () => {
+    // Only the page-level row (`.actions.pageActions`) is stacked; a bare `.actions` rule would reach
+    // Settings' card links and a partner card's Edit and Remove too.
+    expect(phone()).not.toMatch(/(?:^|[\s,])\.actions\s*[{,]/u);
   });
 });

@@ -314,8 +314,14 @@
   padding: 0;
 }
 
+/*
+ * A summary line that wraps returns to the text's edge, not under the bullet (scored review pass 3, R2
+ * P3-3). With the marker inside the text box the wrapped line started at the browser's marker width,
+ * which is no `--space-*` token; the marker is outside and the list's start padding is the step.
+ */
 .launchSummaryGrid ul {
-  list-style-position: inside;
+  padding-inline-start: var(--space-5);
+  list-style-position: outside;
 }
 
 .launchDetails div {
@@ -454,8 +460,14 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /*
+   * One column below 768px, and the version's chip keeps its own width in it (scored review pass 3,
+   * R2 P3-1): a grid item stretches across its track unless it is told where to stand, so the chip
+   * ("Replaced", "Approved") drew as a bar as wide as its row.
+   */
   .history li {
     grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
   }
 
   .launchDetails div {

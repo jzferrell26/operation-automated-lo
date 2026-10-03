@@ -32,7 +32,15 @@
   line-height: var(--leading-tight);
   letter-spacing: var(--tracking-page);
 }
-.workspace h2 {
+/*
+ * A section title is the section step, except the shared state view's own title: `EmptyState` is a
+ * `section` holding an `h2` that the primitive sets at the card step (`primitives.css`,
+ * `.oalo-async-state__title`), one state view for every screen. `.workspace h2` outranks that single
+ * class, so Realtor partners drew its empty title at 19px beside Campaigns' 16px (scored review
+ * pass 3, R3 P3-01). The state view's title is left to the primitive; `workspace-type-steps.unit.test.ts`
+ * holds the exclusion.
+ */
+.workspace h2:not(:global(.oalo-async-state__title)) {
   font-size: var(--text-section-size);
   font-weight: var(--weight-semibold);
   line-height: var(--leading-tight);
@@ -87,6 +95,20 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
+}
+/*
+ * A form's buttons and, under them, the reason one of them is off (Brand's two saves for a role that
+ * cannot edit). The reason is the plain line the mockups draw under a disabled action, `--space-2`
+ * below it as the campaign page's header does, and the disabled button points at it with
+ * `aria-describedby` (`button-and-safe-action.md`, the reason in adjacent text; scored review pass 3,
+ * R3 P3-04). It was a sunken, bordered box a form gap away.
+ */
+.formActions {
+  display: grid;
+  gap: var(--space-2);
+}
+.reason {
+  font-size: var(--text-secondary-size);
 }
 .stack {
   display: grid;
@@ -196,16 +218,36 @@
   font-size: var(--text-caption-size);
 }
 /*
- * A page note ("Your Realtor partner list is saved...", "Your role has read-only access..."): the
- * secondary step, as the mockups' `.notice` draws it (`design/mockups/campaigns-list.html:508`). It was
- * a raw 12px, which is a step's value but not its token (scored review pass 2, P2-05).
+ * A page note ("Your Realtor partner list is saved..."): the mockups' `.notice`
+ * (`design/mockups/campaigns-list.html:508`), which is the `Surface` primitive's `info` variant, as
+ * Connections draws its notice: the information tint, the control radius, `--space-4` inside and the
+ * strong ink. This sheet sets only the row (the glyph beside its words) and the secondary step. It was
+ * a sunken well with a hairline on the page's own canvas, an outline in Light and a panel lighter than
+ * the cards in Dark (scored review pass 3, R3 P3-03; pass 2, P2-05 for the size). The sentence is a
+ * paragraph, and `.workspace p` would make it body ink, so it takes the notice's.
  */
-.note {
-  padding: var(--space-4);
-  border: 1px solid var(--bd-hairline);
-  border-radius: var(--radius-button);
-  background: var(--sf-sunken);
+.pageNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
   font-size: var(--text-secondary-size);
+}
+.workspace .pageNote p {
+  color: inherit;
+}
+/* The 16px glyph centres on the note's first line (`1lh` is that 14px line), where the row's
+ * `flex-start` would hang it from the line's top edge. */
+.pageNote > svg {
+  margin-block-start: calc((1lh - var(--space-4)) / 2);
+}
+/*
+ * What a card says where it cannot offer an action (Brand's report preview while homeowner reports are
+ * off): the reason, and the next safe step under it, `--space-2` apart. `link.md`: a destination that is
+ * not available is not a link, so the page gives the reason and the next safe action instead.
+ */
+.unavailable {
+  display: grid;
+  gap: var(--space-2);
 }
 /*
  * The line a search that found nothing says in the partner list (writing review delta check, D-7).
@@ -340,6 +382,23 @@
   }
   .header {
     align-items: start;
+  }
+  /*
+   * Scored review pass 3, R3 P3-08. On a phone the mockups' page-head action, field-and-button row and
+   * form actions span the column (`campaigns-list.html:433-438`, `launch-step-2-set-up.html:514-515`),
+   * as step 2's Add and the Campaigns list's "Launch an ad" do. `align-items: stretch` on the toolbar
+   * stretches height in a flex row, not width, so the buttons say so themselves. A card's own actions
+   * (Settings' links, a partner's Edit and Remove) keep their width, as the mockups' card actions do.
+   * `.header .headerAction` and its two siblings carry two classes so they outrank the primitive's.
+   */
+  .header .headerAction,
+  .toolbar .toolbarAction {
+    inline-size: 100%;
+  }
+  .actions.pageActions {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
   }
 }
 /*

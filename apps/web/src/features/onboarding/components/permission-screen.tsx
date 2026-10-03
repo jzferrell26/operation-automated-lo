@@ -72,19 +72,24 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
       <div className={styles.permissionGroups}>
         {onboarding.permissionGroups.map((group) => (
           <section aria-labelledby={`permission-${group.category}`} key={group.category}>
-            <div className={styles.permissionHeading}>
-              <h2 id={`permission-${group.category}`}>{group.label}</h2>
-              {/* The scored review's F-09: the shared `Badge`, which pairs the words with a glyph.
-                  Neutral on purpose: each names a kind of access, not a state of this workspace,
-                  so a success or critical tone would claim a check that was never made. The
-                  writing review delta check's D-2 holds the words to the same rule: a workspace
-                  with nothing connected carries its own (`stateLabel`), so no chip says
-                  "Confirmed" or "Missing" over a card that says "Nothing checked yet." */}
-              <Badge data-permission-category={group.category} tone="neutral">
-                {group.stateLabel ?? ACCESS_GROUP_STATE_LABELS[group.category]}
-              </Badge>
+            {/* The group's head is one block, so the section is two rows of the groups' grid (the
+                head, then the cards) that the two groups of a row share (scored review pass 3, R3
+                P3-07). */}
+            <div className={styles.permissionGroupHead}>
+              <div className={styles.permissionHeading}>
+                <h2 id={`permission-${group.category}`}>{group.label}</h2>
+                {/* The scored review's F-09: the shared `Badge`, which pairs the words with a glyph.
+                    Neutral on purpose: each names a kind of access, not a state of this workspace,
+                    so a success or critical tone would claim a check that was never made. The
+                    writing review delta check's D-2 holds the words to the same rule: a workspace
+                    with nothing connected carries its own (`stateLabel`), so no chip says
+                    "Confirmed" or "Missing" over a card that says "Nothing checked yet." */}
+                <Badge data-permission-category={group.category} tone="neutral">
+                  {group.stateLabel ?? ACCESS_GROUP_STATE_LABELS[group.category]}
+                </Badge>
+              </div>
+              {sharedDescription === undefined ? <p>{group.description}</p> : null}
             </div>
-            {sharedDescription === undefined ? <p>{group.description}</p> : null}
             <Stack gap="3">
               {group.capabilities.map((capability) => (
                 <Card key={capability.id} padding="lg">

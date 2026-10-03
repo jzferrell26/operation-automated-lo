@@ -313,3 +313,38 @@ describe("the title and the primary button stay on the project's type steps", ()
     expect(rule(".start .primaryLink")["font-size"]).toBe("var(--text-body-size)");
   });
 });
+
+describe("the empty states keep the mockup's .empty details (scored review pass 3, R4-14 and R3 P3-09)", () => {
+  /**
+   * `design/mockups/home-first-run.html:246-250`. The glyph is `--tx-faint` with `--space-1` under it
+   * (the checklist's glyphs on the same page already are faint), the sentence is the secondary step,
+   * and the link under it is the secondary step too: it was the 16px body step under a 14px sentence,
+   * so the link was larger than its own sentence. The link's size is the `Link` primitive's `size="sm"`
+   * (`link.md`), so no rule here sets one; the markup half is in the overview integration test.
+   */
+  it("draws the glyph in the faint ink, with --space-1 under it", () => {
+    const glyph = rule(".empty .emptyGlyph");
+
+    expect(glyph["color"]).toBe("var(--tx-faint)");
+    expect(glyph["margin-block-end"]).toBe("var(--space-1)");
+  });
+
+  it("keeps the mockup's gap, so the glyph's --space-1 is the only addition", () => {
+    expect(rule(".empty")["gap"]).toBe("var(--space-2)");
+  });
+
+  it("sets no size and no weight on the empty state's link: the primitive's compact size draws it", () => {
+    const empties = blocks.filter((item) => /^\.empty(?:\s|$)/u.test(item.selector));
+
+    expect(empties.length).toBeGreaterThan(0);
+    for (const block of empties) {
+      expect(block.declarations, block.selector).not.toHaveProperty("font-size");
+      expect(block.declarations, block.selector).not.toHaveProperty("font-weight");
+    }
+    expect(source).not.toMatch(/\.empty\s+a\b/u);
+  });
+
+  it("keeps the sentence above the link at the secondary step", () => {
+    expect(rule(".emptyBody")["font-size"]).toBe("var(--text-secondary-size)");
+  });
+});

@@ -82,6 +82,14 @@
   min-inline-size: var(--target-min-size);
 }
 
+/* The compact plain link (scored review pass 3, R4-14 and R3 P3-09): the secondary step, and nothing
+ * else. The weight stays the link's 500 and the 44px target stays the `inline` rule's, so a link that
+ * stands alone under smaller text ("Launch an ad" under Home's 14px empty-state sentence) is the
+ * same step as the sentence, not the 16px body step. */
+.inline[data-size="sm"] {
+  font-size: var(--text-secondary-size);
+}
+
 /* `03-components/link.md`, "A link inside a sentence" (PRD-009 scored review R2 F-4 and R1-15).
  * The link takes the sentence's own size, weight, and leading, as the mockups' plain `a` inside
  * `.reason` does, so it is no longer 16px inside 14px text. The 44 by 44 target stays: the box is

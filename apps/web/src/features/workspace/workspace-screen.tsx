@@ -149,7 +149,7 @@ function Routing({ data }: { data: WorkspacePageData }) {
           </Card>
         ))}
       </div>
-      <div className={styles.actions}>
+      <div className={`${styles.actions} ${styles.pageActions}`}>
         <Link href="/homeowners" variant="action">
           Manage report updates
         </Link>
@@ -177,7 +177,11 @@ export function WorkspaceScreen({ data }: { data: WorkspacePageData }) {
           <p>{heading.description}</p>
         </div>
         {!["profile", "partners"].includes(data.view) ? (
-          <Button variant="outline" onClick={() => router.refresh()}>
+          <Button
+            className={styles.headerAction}
+            variant="outline"
+            onClick={() => router.refresh()}
+          >
             Refresh page
           </Button>
         ) : null}

@@ -142,8 +142,11 @@ describe("the demo campaign page's status words (review pass 2, R2 N-5c)", () =>
     const connected = container.querySelector("[data-connection-state='connected']") as HTMLElement;
     expect(connected).toHaveAttribute("data-tone", "success");
     expect(connected.querySelector("svg")).not.toBeNull();
+    // Pass 3, R2 P3-2: `badge-and-live-region.md`, "Tones and glyphs", puts "selected" under `info`
+    // (and `neutral` under draft, inactive, unavailable), so a selected asset is not the grey of
+    // "Replaced" or "Not live yet".
     for (const selected of screen.getAllByText(/^(Optional, selected|Selected)$/u)) {
-      expect(selected).toHaveAttribute("data-tone", "neutral");
+      expect(selected).toHaveAttribute("data-tone", "info");
       expect(selected.querySelector("svg")).not.toBeNull();
     }
   });

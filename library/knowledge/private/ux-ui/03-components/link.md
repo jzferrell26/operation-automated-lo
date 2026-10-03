@@ -38,14 +38,14 @@ real code. The `action` variant is unchanged.)_
 
 | Variant | Use | Rendering |
 | --- | --- | --- |
-| `inline` (default) | A link that reads as text rather than as a control. | `--st-info-fg`, underlined with `text-underline-offset: var(--space-1)`, `--text-body-size` at `--weight-medium`. Hover moves the colour to `--tx-strong` and keeps the underline. |
+| `inline` (default) | A link that reads as text rather than as a control. | `--st-info-fg`, underlined with `text-underline-offset: var(--space-1)`, `--text-body-size` at `--weight-medium` (`--text-secondary-size` with `size="sm"`, see "Size"). Hover moves the colour to `--tx-strong` and keeps the underline. |
 | `action` | A link that behaves like a button: a navigation that is the next step on the screen. | `min-block-size` and `min-inline-size` of `var(--target-min-size)`, `padding-block: var(--space-2)`, `padding-inline: var(--space-4)`, `--sf-card` on a `--bd-input` boundary at `--radius-button` with `--shadow-rest`, no underline. Hover moves the fill to `--sf-sunken` and the boundary to `--ac-primary`. |
 | `sentence` | A link set inside a running sentence or a row of smaller text: "See what's needed for Meta." under a button, the "Campaigns" crumb. Added 2026-10-03 (PRD-009 scored review, R2 F-4). | `--st-info-fg`, underlined as `inline`, and it takes the size, weight, and leading of the text around it (`font-size`, `font-weight`, `line-height: inherit`), so "Campaigns" beside a 14px crumb is 14px. The 44 by 44 target is kept; see "A link inside a sentence" below for how it is kept without stretching the line. It does not wrap (`white-space: nowrap`), so keep its words to a phrase. |
 
 ### Size
 
-`size` is `md` (the default) or `sm`, and it changes the `action` variant only: the other two take their
-size from their text. `action` with `size="sm"` is the compact action link, the small secondary
+`size` is `md` (the default) or `sm`, and it changes the `action` and `inline` variants: `sentence`
+takes its size from its text. `action` with `size="sm"` is the compact action link, the small secondary
 button's twin (`button-and-safe-action.md`, "Sizes and type"): `--text-secondary-size` (14px),
 `padding-inline: var(--space-3)`, and the link's own `--weight-medium` (500), with the 44px target kept.
 The primitive carries `data-size` so the rule selects on the attribute. A screen draws a row action
@@ -53,6 +53,17 @@ beside a smaller text step as `<Link variant="action" size="sm">` and never with
 or weight in a module. _(Added 2026-10-03 by the PRD-009 scored baseline review, pass 2, R4-12: Home's
 checklist actions set 14px and 600 locally while the notice's "Resend the link." was the 16px `Button`,
 two small-button looks on one page.)_
+
+`inline` with `size="sm"` is the plain link at the secondary step: `--text-secondary-size` (14px) and
+nothing else, so it keeps the link's `--weight-medium` (500), its underline and colour, and the 44px
+target of the `inline` rule. Use it for a link that stands on its own line under text at the secondary
+step (an empty state's "Launch an ad" under its 14px sentence, as the mockups' `.empty a` draws it,
+`design/mockups/home-first-run.html:250`); a link inside the running text is `sentence`, which takes
+the text's own size. A screen never sets a link's size in a module. _(Added 2026-10-03 by the PRD-009
+scored baseline review, pass 3, R4-14 and R3 P3-09: Home's empty-list link was the 16px body step under
+a 14px sentence, where the mockup draws it at the secondary step. The mockup sets that link at weight
+600; the shared Link weight is 500 and the 2026-10-03 ruling keeps controls at 500, so the weight is not
+part of the change.)_
 
 The link foreground is `--st-info-fg`, not `--ac-primary`. This is deliberate and
 it is enforced by a test. `--ac-primary` is 3.20:1 on the Dark card surface, which
@@ -133,7 +144,9 @@ internal link carries neither `target` nor `rel`.
 `packages/ui/src/components/primitive-look.test.ts` pins the `sentence` rule:
 inherited size, weight, and leading, the 44px box, and the one-line margin box.
 It also pins the compact `action` link: the `sm` rule at the secondary step and
-`--space-3`, matching the `sm` Button, with no weight and no height of its own.
+`--space-3`, matching the `sm` Button, with no weight and no height of its own; and the compact
+`inline` link: the `sm` rule at the secondary step and nothing else, so the weight and the 44px target
+stay the plain link's.
 `apps/web/src/theme/token-contrast.unit.test.ts` asserts that the `.link`
 foreground is `--st-info-fg` and measures it on all three surfaces in both
 themes.

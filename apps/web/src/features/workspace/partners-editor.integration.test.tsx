@@ -54,6 +54,22 @@ describe("the Realtor partners card (writing review W-11)", () => {
     expect(state).toHaveAttribute("role", "status");
   });
 
+  /**
+   * The scored review pass 3, R3 P3-03. The page note is the mockups' `.notice`, which is the
+   * `Surface` primitive's `info` variant with the information glyph, as Connections draws its notice,
+   * not a sunken well of its own on the canvas.
+   */
+  it("draws the page note as the information notice with its glyph (R3 P3-03)", () => {
+    renderEmpty();
+    const sentence = screen.getByText(
+      "Your Realtor partner list is saved to this account and workspace. Adding a partner sends no invitation.",
+    );
+    const notice = sentence.closest("[data-variant]");
+
+    expect(notice).toHaveAttribute("data-variant", "info");
+    expect(notice?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  });
+
   // The writing review delta check, D-7. The list has partners in it, so the empty state's "Empty"
   // chip would say something untrue. A search that found nothing is one plain line, and a status.
   it("says a search that found nothing in one plain line, not in the empty state", () => {

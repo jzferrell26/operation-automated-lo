@@ -1,7 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
-  FULL_PAGE_SCREENSHOT_TIMEOUT_MS,
   REVIEW_FRAMES,
   captureNamedState,
   expectAxeClean,
@@ -10,13 +9,13 @@ import {
   expectTargetsAreLargeEnough,
   expectThePageFillsTheContentColumn,
   expectThePageOpensAtTheTopOfItsContent,
+  expectThePictureMatches,
   expectThemeResolved,
   expectTypographyOnBrief,
   expectZeroMotionUnderReducedMotion,
   screenshotName,
   settleForScreenshot,
   useStoredTheme,
-  warmFullPageCapture,
   type ReviewTheme,
 } from "./helpers/design-quality.js";
 import { withAnEmptyCampaignWorkspace } from "./helpers/empty-campaign-workspace.js";
@@ -139,11 +138,9 @@ for (const { screen, path } of SYNTHETIC_SCREENS.filter(
         await expectTypographyOnBrief(page);
         // Axes 1, 2, 3, 8 and 10, as far as a machine can hold them: the whole composition is
         // compared against a committed baseline, so any of them moving is a failure with a picture.
-        await warmFullPageCapture(page);
-        await expect(page).toHaveScreenshot(screenshotName(screen, frame.name, theme), {
-          fullPage: true,
-          timeout: FULL_PAGE_SCREENSHOT_TIMEOUT_MS,
-        });
+        // The shared helper warms the capture and masks every date (scored review H-2), so a day
+        // that moved with the clock never fails a picture.
+        await expectThePictureMatches(page, screenshotName(screen, frame.name, theme));
 
         expect(externalRequests).toEqual([]);
       });
@@ -398,7 +395,8 @@ test("no screen links to the demo route", async ({ page }) => {
 
 /**
  * Brief section 9, "blue means informational", and the notice pattern `permission-screen.module.css`
- * carries over from the setup page's styles: every "nothing goes out" notice title carries the informational tone, on every screen.
+ * carries over from the setup page's styles: every "nothing goes out" notice title carries the
+ * informational tone, on every screen.
  *
  * PRD-008d, the scored baseline review of 2026-10-01. The title's colour was decided by the order
  * the bundle loaded two equally specific rules in, so it was blue on some screens and dark on
@@ -411,8 +409,10 @@ test("every notice title carries the informational tone, whatever order the styl
   await blockAnythingOffOrigin(page);
   await page.setViewportSize({ width: 1180, height: 900 });
   // PRD-009d: "Launch an ad" replaced the create screen and carries no notice card of its own.
+  // PRD-009f D4: the Brand Engine page and its "Suggestions only" notice are gone, so the one
+  // notice left is Connections', drawn as the `Surface` primitive's info variant.
   const notices = [
-    { path: "/brand", title: "Suggestions only. You decide what's saved." },
+    { path: "/settings/connections", title: "Nothing is connected from this page" },
   ] as const;
   for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
     await useStoredTheme(page, theme);

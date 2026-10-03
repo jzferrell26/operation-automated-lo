@@ -9,6 +9,7 @@ import {
   expectNoHorizontalOverflow,
   expectTargetsAreLargeEnough,
   expectThePageFillsTheContentColumn,
+  expectThePictureMatches,
   expectThemeResolved,
   expectTypographyOnBrief,
   expectZeroMotionUnderReducedMotion,
@@ -160,9 +161,7 @@ for (const { screen, path } of ACCOUNT_SCREENS) {
         await expectNoHorizontalOverflow(page);
         await expectTargetsAreLargeEnough(page);
         await expectTypographyOnBrief(page);
-        await expect(page).toHaveScreenshot(screenshotName(screen, frame.name, theme), {
-          fullPage: true,
-        });
+        await expectThePictureMatches(page, screenshotName(screen, frame.name, theme));
 
         expectNoExternalRequests(guard);
       });
@@ -306,9 +305,7 @@ test("change-password meets the design quality bar at every frame in both themes
       await expectTargetsAreLargeEnough(page);
       await expectTypographyOnBrief(page);
       await expectTheFormKeepsTheAccountMeasure(page, frame);
-      await expect(page).toHaveScreenshot(screenshotName("change-password", frame.name, theme), {
-        fullPage: true,
-      });
+      await expectThePictureMatches(page, screenshotName("change-password", frame.name, theme));
     }
 
     /**
@@ -379,9 +376,9 @@ test("the workspace after a saved password meets the design quality bar", async 
       await expectNoHorizontalOverflow(page);
       await expectTargetsAreLargeEnough(page);
       await expectTypographyOnBrief(page);
-      await expect(page).toHaveScreenshot(
+      await expectThePictureMatches(
+        page,
         screenshotName("reset-password", frame.name, theme, "saved-notice"),
-        { fullPage: true },
       );
     }
   }

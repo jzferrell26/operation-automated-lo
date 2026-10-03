@@ -741,16 +741,21 @@ test("canonical profile, creative delivery, Meta assets, approval scope, and lau
   await page.setViewportSize({ width: 1180, height: 900 });
 
   await page.goto("/brand");
-  // PRD-006b D8. The version reference is still there, inside the collapsed support region, which
-  // is closed by default: that is the point, so it is asserted as present rather than as visible.
-  await expect(page.getByText("Details for support")).toBeVisible();
-  await expect(page.getByText("Version ID")).toBeAttached();
-  await expect(page.getByText("brand-v3", { exact: true })).toBeAttached();
-  await expect(page.locator('[data-profile-field-state="missing"]')).toHaveCount(2);
-  await expect(page.getByText("Approved spring newsletter")).toBeVisible();
-  await page.getByRole("button", { name: "Use this for Voice" }).click();
-  await expect(page.getByRole("status")).toContainText("1 suggestion added to your draft");
-  await expect(page.getByText("brand-v3", { exact: true })).toBeAttached();
+  // The scored review's F-13. The local demo shows the PRD-009 Brand page, the one a signed-in loan
+  // officer sees, fed by the demo's own sample identity (the one its Launch an ad flow puts on its
+  // ads). The old page's profile version, field states, and Voice suggestions are gone with it.
+  await expect(page.getByRole("heading", { level: 1, name: "Brand" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your details" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your brand on ads" })).toBeVisible();
+  await expect(page.getByLabel("Loan officer name")).toHaveValue("Alex Morgan");
+  await expect(page.getByLabel("Title on your ads")).toHaveValue("Loan officer");
+  await expect(page.getByLabel("Disclosure line")).toHaveValue("Equal Housing Opportunity.");
+  // The demo writes nothing, so the fields are read only and both saves are disabled, each saying
+  // so under its own buttons; the page stays synthetic.
+  await expect(page.getByLabel("Loan officer name")).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Save your details" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Save ad settings" })).toBeDisabled();
+  await expect(page.getByText("Your role has read-only access to these details.")).toHaveCount(2);
 
   await page.goto("/marketing/campaigns/synthetic-open-house-001");
   await expect(page.getByAltText("Open House feed creative preview")).toBeVisible();

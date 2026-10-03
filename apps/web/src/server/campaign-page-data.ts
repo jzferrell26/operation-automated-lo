@@ -1,7 +1,9 @@
 import {
   CAMPAIGN_MUTATION_ROLES,
   deriveCampaignStanding,
+  libraryAdRefusalFor,
   projectCampaignVersions,
+  recordedLibraryAdOf,
   projectCampaignWorkspace,
   type AuthenticatedPrincipal,
   type CampaignPersistenceKind,
@@ -55,7 +57,8 @@ function libraryStandingOf(
     return { inLibrary: false, retired: false, retiredOn: null };
   }
   const highest = library.find(manifest.libraryAd.id, standing.highestVersion);
-  const retired = standing.highestStatus === "retired";
+  // QA-06. "Retired" is the approval command's own answer, so the page and the command agree.
+  const retired = libraryAdRefusalFor(recordedLibraryAdOf(manifest), standing) === "retired";
   return {
     inLibrary: true,
     retired,
@@ -257,10 +260,15 @@ export function buildCampaignPage(input: CampaignPageInput): CampaignPageData | 
         brandChanged,
       })
     : Object.freeze([]);
-  // 009c D4. A version nobody approved whose ad is retired, missing, or replaced cannot be approved,
-  // so the page does not offer a control that would only be refused; the notice says what to do.
+  // 009c D4 and QA-06. A version nobody approved whose ad is retired, missing, replaced, or whose
+  // art changed cannot be approved, so the page does not offer a control that would only be
+  // refused; the notice says what to do. The answer is the approval command's own rule.
   const approvalBlockedByLibrary =
-    undecided && (shownStanding.retired || !shownStanding.inLibrary || offer !== undefined);
+    undecided &&
+    libraryAdRefusalFor(
+      recordedLibraryAdOf(shownManifest),
+      library.standingOf(shownManifest.libraryAd),
+    ) !== undefined;
   const page: LibraryAdCampaignPage = {
     ...common,
     kind: "library-ad",

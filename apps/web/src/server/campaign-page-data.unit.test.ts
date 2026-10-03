@@ -10,6 +10,7 @@ import {
   libraryCampaign,
   pageOf,
   rowOf,
+  sampleLibrary,
 } from "./campaign-page.test-support.js";
 import type { LibraryAdCampaignPage } from "../features/campaigns/campaign-page-model.js";
 
@@ -247,6 +248,22 @@ describe("the library notices (009E-AC-006)", () => {
     for (const decision of ["approved", "rejected"] as const) {
       expect((await libraryPageOf({ decision })).approvalControls, decision).toBeUndefined();
     }
+  });
+
+  it("offers no approve control when the ad's art changed after the version was saved (QA-06)", async () => {
+    const sample = await sampleLibrary();
+    const artChanged = {
+      find: sample.find.bind(sample),
+      standingOf: (ad: Readonly<{ id: string; version: number }>) => {
+        const standing = sample.standingOf(ad);
+        return standing === undefined ? undefined : { ...standing, tallSha256: "0".repeat(64) };
+      },
+    };
+    const campaign = await libraryCampaign();
+    const page = await pageOf(campaign, { principal: OWNER, library: artChanged });
+    if (page.kind !== "library-ad") throw new Error("Expected a library-ad page.");
+    expect(page.approvalControls).toBeUndefined();
+    expect((await libraryPageOf()).approvalControls).toBeDefined();
   });
 
   it("offers choosing another ad on a sent-back version whose ad is retired", async () => {

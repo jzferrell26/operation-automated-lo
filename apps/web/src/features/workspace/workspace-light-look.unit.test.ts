@@ -96,3 +96,25 @@ describe("F-11: the page title, section titles and card titles are the brief's",
     expect(declarationsOf(".workspace")["line-height"]).toBe("var(--leading-normal)");
   });
 });
+
+describe("P2-06: the add button stands on the search field's edge (scored review pass 2)", () => {
+  /**
+   * "Add Realtor partner" was centred on the label and the box together, so it sat 14px above the
+   * search box it belongs to (rows 232 to 275 against 246 to 289 at 1440). The mockups' field and
+   * button rows align the button to the field's end (`launch-step-2-set-up.html:504` and `:261`).
+   */
+  it("aligns the toolbar's items to the end, after the shared flex rule that centres them", () => {
+    expect(declarationsOf(".toolbar")["align-items"]).toBe("end");
+
+    // `.toolbar` is also in the shared header rule, which centres. Equal weight, so the later one
+    // wins: the end rule must come after it in the file.
+    const shared = source.indexOf(".header,\n.toolbar,");
+    const own = source.search(/\n\.toolbar\s*\{/u);
+    expect(shared).toBeGreaterThanOrEqual(0);
+    expect(own).toBeGreaterThan(shared);
+  });
+
+  it("still stretches the row below 760px, where it stacks", () => {
+    expect(mediaBody("(max-width: 760px)")).toMatch(/\.toolbar \{\s*align-items: stretch;/u);
+  });
+});

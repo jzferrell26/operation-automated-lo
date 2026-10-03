@@ -13,6 +13,12 @@
   color: var(--tx-strong);
 }
 
+/* A day is never broken inside itself, so a date that wraps leaves "Oct" and "20" together, and a
+   mask painted over it covers the one day and not the sentence round it (review pass 1, H-3). */
+.page time {
+  white-space: nowrap;
+}
+
 .title {
   color: var(--tx-strong);
   font-size: var(--text-page-size);
@@ -70,18 +76,32 @@
   min-inline-size: 0;
 }
 
+/* A cell that keeps one line while the table has room; at the tablet frame it may wrap. */
 .nowrap {
   white-space: nowrap;
 }
 
+/* The status chip is a single-line pill at every width (`badge-and-live-region.md`, "Shape and
+   type"), so its cell is never released: the table finds the room for it (review pass 1, F-8). */
+.chipCell {
+  white-space: nowrap;
+}
+
 .thumb {
+  display: grid;
   flex: none;
+  place-items: center;
   inline-size: 3rem;
   aspect-ratio: 4 / 5;
   overflow: hidden;
   border: 1px solid var(--bd-hairline);
   border-radius: var(--radius-control);
   background: var(--sf-sunken);
+}
+
+/* No art to show: the glyph is quiet and says nothing a picture would (review pass 1, F-10). */
+.thumb[data-thumb="none"] {
+  color: var(--tx-faint);
 }
 
 .thumb img {
@@ -117,9 +137,11 @@ a.rowLink.rowLink:hover {
   list-style: none;
 }
 
+/* A phone card, after the mockup's list card: --space-5 all round, the thumbnail beside the name. */
 .card {
   display: grid;
   gap: var(--space-2);
+  padding: var(--space-5);
 }
 
 .card p {
@@ -127,8 +149,8 @@ a.rowLink.rowLink:hover {
 }
 
 .cardHead {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: var(--space-3);
 }
@@ -139,23 +161,31 @@ a.rowLink.rowLink:hover {
 }
 
 /* Between 720px and the tablet frame the table keeps all six columns, so the cells tighten, the
-   decorative thumbnail steps aside, and the name takes the room it needs. */
+   decorative thumbnail steps aside, and the browser shares the width out: the status chip keeps its
+   one line, and the other cells wrap only when they must. The phone cards below 720px keep their
+   thumbnail, which is why the rule is for the table's tile alone (review pass 1, F-8, F-11). */
 @media (max-width: 63.99rem) {
   .table th,
   .table td {
-    padding: var(--space-3);
+    padding: var(--space-3) var(--space-2);
   }
 
-  .thumb {
+  .table th:first-child,
+  .table td:first-child {
+    padding-inline-start: var(--space-3);
+  }
+
+  .table th:last-child,
+  .table td:last-child {
+    padding-inline-end: var(--space-3);
+  }
+
+  .table .thumb {
     display: none;
   }
 
   .adCell {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .table {
-    table-layout: fixed;
   }
 
   .table th {
@@ -166,8 +196,9 @@ a.rowLink.rowLink:hover {
     white-space: normal;
   }
 
+  /* Hints, not rules: the status chip's width still comes first, and the rest share what is left. */
   .table th:nth-child(1) {
-    inline-size: 28%;
+    inline-size: 27%;
   }
 
   .table th:nth-child(2) {
@@ -175,19 +206,19 @@ a.rowLink.rowLink:hover {
   }
 
   .table th:nth-child(3) {
-    inline-size: 12%;
+    inline-size: 14%;
   }
 
   .table th:nth-child(4) {
-    inline-size: 16%;
+    inline-size: 14%;
   }
 
   .table th:nth-child(5) {
-    inline-size: 17%;
+    inline-size: 20%;
   }
 
   .table th:nth-child(6) {
-    inline-size: 12%;
+    inline-size: 10%;
   }
 }
 

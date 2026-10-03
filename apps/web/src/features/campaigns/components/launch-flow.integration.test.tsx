@@ -110,12 +110,14 @@ describe("the header's order (R1-05)", () => {
     const steps = screen.getByRole("navigation", { name: "Launch an ad steps" });
     const card = TEST_CARDS.find((item) => item.id === "sample-first-home");
     expect(card).toBeDefined();
+    // The words of the lead's version are joined with no-break spaces (pass 3, R2 P3-4), and a text
+    // query collapses whitespace in the page's text, so the expected sentence is collapsed too.
     const lead = screen.getByText(
       setUpLead(
         card?.name ?? "",
         TOPIC_LABELS[card?.topic ?? "first-time-buyers"],
         card?.version ?? 0,
-      ),
+      ).replaceAll(/\s+/gu, " "),
     );
     expect(before(title, lead)).toBe(true);
     expect(before(lead, steps)).toBe(true);

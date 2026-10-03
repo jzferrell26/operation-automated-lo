@@ -191,11 +191,19 @@ describe("authenticated settings connections route", () => {
     );
     expect(capabilities.every((capability) => capability.impact === "No effect yet.")).toBe(true);
     expect(container.textContent).not.toContain("Synthetic App Test evidence verified");
+    // The four groups share one description, "You haven't connected HighLevel yet, so there's
+    // nothing to confirm here.", and the page's notice says as much once. The scored review's F-12
+    // found it four times under four headings, so the page leaves the shared copy out and the
+    // notice is the one statement (see `permission-screen.integration.test.tsx`).
     expect(
-      screen.getAllByText(
+      new Set(workspace.ui.onboarding.permissionGroups.map((group) => group.description)).size,
+    ).toBe(1);
+    expect(
+      screen.queryByText(
         "You haven't connected HighLevel yet, so there's nothing to confirm here.",
-      ).length,
-    ).toBe(4);
+      ),
+    ).toBeNull();
+    expect(screen.getByText("Nothing is connected from this page")).toBeInTheDocument();
   });
 
   it("restates each group label as the category's meaning rather than an observation", () => {

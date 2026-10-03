@@ -206,6 +206,11 @@ Dated 2026-10-01, on the owner's decisions OD-A to OD-H and his design answers, 
 | S-101 | `library/knowledge/private/ux-ui/03-components/icon-and-icon-button.md:24` | Navigation icons follow the deep navy surface | Amended: navigation icons sit on the light top bar and inherit `--tx-on-nav` (navy) | OD-E |
 | S-102 | `library/knowledge/private/ux-ui/03-components/stepper.md:16` | The six-stage Open House Boost stepper | Superseded: the three-step "Launch an ad" stepper | OD-H |
 | S-103 | `library/knowledge/private/ux-ui/02-surfaces-and-borders.css:20` | `.ui-nav` maps to `.desktopSidebar` | Amended: `.ui-nav` maps to the top bar | D-2 |
+| S-104 | `library/knowledge/private/product/highlevel-marketplace-submission.md:22`, `:24`, `:90` _(added 2026-10-03, quality close-out QA-04)_ | A reviewer installs the app, creates an Open House Boost, persists it, and approves it; the listing describes only that; the screenshots are the create, persist, and approve screens | Superseded in substance: the library-ad flow, with an empty real library until the owner supplies ads (checklist step 11); the listing's scope stays owner decision D-5 | OD-H |
+| S-105 | `library/knowledge/private/commercial/founding-cohort-plan.md:16`, `:50`, `:126` _(added 2026-10-03, QA-04)_ | The included product is one Open House Boost blueprint with co-branded collateral and reporting; the demonstration is an open house example; the expansion path follows Open House Boost | Amended: the library of ads and "Launch an ad", no collateral (S-01), results per campaign (S-04); the wording of the offer is an owner decision | OD-H |
+| S-106 | `library/knowledge/private/integrations/ghl-marketplace-and-scopes.md:215` _(added 2026-10-03, QA-04)_ | Prove the complete Open House Boost path with test Meta assets and no real spend | Amended: the library-ad path; the proof waits on the Meta publish PRD (gate G3) | OD-H |
+| S-107 | `library/knowledge/private/ux-ui/03-components/link.md:25`; `select-and-product-setup.md`, section "Self onboarding and help"; `sheet-and-dialog.md`, the sections that use the guided setup panel as the worked example _(added 2026-10-03, QA-04, the three `ux-ui/` files the raid log left for a ruling)_ | A `Link` example that points at `/onboarding` with "Finish setup"; the preview's welcome, `/onboarding` journey, and page guides as current; the panel's placement model and its file | Amended (`link.md`: the example is illustrative only) and superseded (the other two: the preview's journey and the panel are retired, the `Select` and `Sheet` rules stand) | D-15, S-100 |
+| S-108 | `library/knowledge/private/ux-ui/04-screens/workspace-page-completion.md:9`, `:10`, `:12`, `:13`, `:14`, and the Verification paragraph _(added 2026-10-03, QA-04)_ | The Ads, Email and SMS, Templates, Explore, and Property sites and creative pages, the report exports, the routing simulation, and "the existing onboarding journey" | Superseded in part, completing S-66: those pages are removed or redirected (D1) | OD-D, D-6, D-15 |
 
 ### Kept, reaffirmed, or left alone
 
@@ -274,3 +279,195 @@ Dated 2026-10-01, on the owner's decisions OD-A to OD-H and his design answers, 
 - **2026-10-01, OD-H.** The register gains the Open House Boost scope and naming (S-01 to S-03, S-05 to S-08, S-43, S-44, S-72 to S-76, S-78 to S-80) and the library address (`/marketing/blueprints` now redirects to the library). The first draft's rows that superseded compliance control 9 and the blueprint's storage plan are withdrawn, because OD-H makes both moot. The operator checklist items change accordingly: no migration step, no link import counsel item, and a new "Supply the first approved ads" step.
 - **2026-10-01, the authoring quality review** (`qa/2026-10-01-authoring-qa-report.md`, W-2, W-3, W-5). The register gains S-82 to S-103 (fifteen criteria from PRD-004, 005, 006, and 008, the re-scoped `006D-AC-011`, and six knowledge-file rows), with a sweep in 009F-AC-011; D4 lists the whole removal footprint, including the Marketing Suite, `/onboarding`, `/settings/profile`, `/settings/team`, the dashboard preview's walkthrough, and the 144 deleted baselines; 009F-AC-005's link scan and 009F-AC-007's test scan are verified after Wave 2 and Wave 3.
 - **2026-10-02, the writing review, pass 2** ([`qa/2026-10-02-writing-review-pass-2.md`](qa/2026-10-02-writing-review-pass-2.md), MTK-008). W-28: the contract's section 4 row for provider publication and its section 5 rows for a metric's source and the next step are reworded (contract v1.2), and 009F-AC-008 and D-8 carry a dated note. No criterion was added or removed.
+- **2026-10-03, the quality close-out** ([`qa/2026-10-03-quality-report.md`](qa/2026-10-03-quality-report.md), QA-04). The register gains S-104 to S-108 (three private documents that still described the open house flow as current, and the three `ux-ui/` files the raid log left for a ruling, with the page list S-66 left out), each applied as a dated note in its file. The per-file dispositions that 009F-AC-011's part (2) calls for, which the records lane left in an uncommitted lane report, are rebuilt in Appendix A. Line numbers in the new rows are those of `983d3776`. No criterion was added or removed; the total stays 120.
+
+## Appendix A. Sweep part 2: a disposition for every file (009F-AC-011)
+
+_(Added 2026-10-03 by the PRD-009 quality close-out, QA-04. No criterion changed.)_
+
+009F-AC-011 asks for a disposition for every file that part (2) of the sweep finds. The records lane wrote the list into its lane report, which was never committed, and the Wave 3 verifier could not read it ([`qa/2026-10-02-wave-3-verification.md`](qa/2026-10-02-wave-3-verification.md), sections 5 and 10). This appendix rebuilds it from the register, the sweep, and each file, read at `983d3776` (the run branch before this pass's edits).
+
+**The sweep.** `git grep -c -i -E 'guided setup|walkthrough|Finish setup|Show me around|Open House Boost|/reports|/leads|/automations|/marketplace|Expand Marketing|Geist|deep navy' 983d3776 -- library/knowledge docs library/requirements EXECUTION_LEDGER.md ':(exclude)library/knowledge/private/ux-ui/05-html-examples'` returns 143 files. At the Wave 3 verification it returned 140: the lane's 138, the ledger, and the verification report itself. Three PRD-009 reports written since make up the rest. "Lines" is the number of matching lines in the file, so a hit is a line.
+
+**The dispositions.**
+
+- **Register row.** The file carries dated notes on register rows S-01 to S-103. The Basis column names the rows and the lines.
+- **Kept.** Left as written on purpose, and its hits are correct today: PRD-009's own plan, a file the register's "Kept" list names, or a document about data that still exists (009F-AC-006).
+- **History.** A report, record, or spec of its own date that describes the old flow or screens as they were. PRD-009 does not rewrite it (Non-Goals, and the register's list of historical records), and anything in it that PRD-009 overtakes is on a register row.
+- **Fixed.** The file carries a dated PRD-009 note that sits on no row of 2026-10-01: a note from 009f D1 or 009a, or one this close-out added (rows S-104 to S-108, seven files).
+- **False positive.** Every hit is part of a link, a folder path, a URL, or an unrelated use of the words: `requirements/.../reports/`, `marketplace.gohighlevel.com`, a public API path that ends in `/leads`, a "founder walkthrough".
+
+**The result.** 143 files: 34 register row, 16 kept, 50 history, 11 fixed, and 32 false positive. Part (1) of the sweep, re-run on 2026-10-03 after this pass's edits, returns two lines, `what-is-automated-lo.md:20` and `open-house-boost-faq.md:18`, each a dated PRD-009 note. This list is not a second check of each register row against its file; the Wave 3 verifier did that for S-01 to S-103. A file added after `983d3776` that matches the pattern needs its own row here.
+
+**Operations documents and the ledger** (9 files)
+
+| File | Lines | Disposition | Basis |
+|---|---|---|---|
+| `EXECUTION_LEDGER.md` | 78 | Register row | The "Rows superseded by PRD-009" table and the 46 marker lines are register rows. The other hits are rows and log entries that record what was verified at the time, which the register names as history (`:738`). |
+| `docs/operations/dashboard-preview-release.md` | 1 | Fixed | Dated note at `:46` (009f D1): `/reports` redirects to Campaigns. |
+| `docs/operations/evidence-packs/design-quality-signoff.md` | 21 | History | PRD-008's sign-off of the screens of its date, still "Status: SIGNED" for them. Its rows for removed screens are on the register's historical list, and 009G-AC-007 re-signs the document (still open). |
+| `docs/operations/evidence-packs/guided-setup-timing.md` | 4 | Register row | S-31, note at `:7`. The first table is kept as history because `CRR-162` cites it. |
+| `docs/operations/evidence-packs/reviewable-preview-smoke.md` | 5 | Register row | S-15 (`:22`, `:40`, `:52`) and S-94 (`:41`, `:53`), dated notes in place. |
+| `docs/operations/export.md` | 2 | Kept | The heading and `guided_setup.v1` line (`:26`, `:32`) describe rows that still exist in `platform.user_preferences`, because 009F-AC-006 keeps saved data. |
+| `docs/operations/homeowner-avm-activation.md` | 3 | False positive | Three `marketplace.gohighlevel.com` documentation URLs match `/marketplace`. |
+| `docs/operations/retention-and-deletion.md` | 2 | Kept | Same as `export.md`: the guided setup's `guided_setup.v1` row still exists (`:27`, `:33`). |
+| `docs/production-environments.md` | 2 | Fixed | Dated notes at `:65` and `:67` (009f D1): `/reports` and `/onboarding` redirect. |
+
+**Private knowledge outside `ux-ui/`** (18 files)
+
+| File | Lines | Disposition | Basis |
+|---|---|---|---|
+| `library/knowledge/private/architecture/system-runtime-contracts.md` | 1 | False positive | `:114` is the public API path `POST /api/v1/public/campaigns/:publicCampaignId/leads`, not the removed Leads page. |
+| `library/knowledge/private/commercial/founding-cohort-plan.md` | 4 | Fixed | Notes added 2026-10-03 at `:16`, `:50`, and `:126` (S-105, QA-04). `:29` ("launch walkthrough") is a demonstration, a false positive. |
+| `library/knowledge/private/competitive/broker-marketplace-authenticated-teardown.md` | 2 | History | A July 2026 teardown of a competitor. `:18` is the competitor's own address, and `:237` is a recommendation of that date. |
+| `library/knowledge/private/competitive/competitive-landscape.md` | 1 | History | The July 2026 "Build now" mapping of a competitor's tool to the product of that date (`:120`). |
+| `library/knowledge/private/compliance/compliance-and-risk.md` | 2 | Register row | S-74 (`:55`) and S-75 (`:154`), dated notes in place. |
+| `library/knowledge/private/discovery/experiments/2026-07-20-founding-cohort-demand.md` | 1 | False positive | `:21` "founder walkthrough" is a demonstration given to a founder, not the product's walkthrough. |
+| `library/knowledge/private/integrations/ghl-marketplace-and-scopes.md` | 1 | Fixed | Note added 2026-10-03 at `:215` (S-106, QA-04). |
+| `library/knowledge/private/operations/finish-line-operator-checklist.md` | 6 | False positive | All six hits are relative links through `requirements/.../reports/` and `product/marketplace-listing-copy-pack.md`. This pass also edits the file for QA-05 and QA-08 (changelog v1.7). |
+| `library/knowledge/private/operations/production-tonight-operator-runbook.md` | 3 | Register row | S-94, note at `:55`. `:11` and `:100` are links to the listing copy pack. |
+| `library/knowledge/private/product/highlevel-marketplace-submission.md` | 8 | Fixed | Notes added 2026-10-03 at `:22`, `:24`, and `:90` (S-104, QA-04). `:49`, `:50`, `:52`, `:135`, and `:136` are `marketplace.gohighlevel.com` URLs. |
+| `library/knowledge/private/product/marketplace-listing-copy-pack.md` | 8 | Register row | S-80, a whole-file note at `:7`. |
+| `library/knowledge/private/product/product-definition.md` | 4 | Register row | S-72, notes at `:15`, `:17`, `:49` (the section), and `:92`. `:79` is the campaign roadmap's first row, which S-72 leaves as history. |
+| `library/knowledge/private/product/project-map.md` | 7 | Register row | S-73, notes at `:173`, `:184`, `:199`, and `:284`. `:89` is PRD-009's own entry, and `:120` and `:137` are `requirements/reports/` links. |
+| `library/knowledge/private/research/2026-build-readiness-and-research-gate.md` | 5 | History | A dated research record. `:83` is the 2026-08-25 Meta Housing ruling, which still holds for library ads (D-19). The other hits are `marketplace.gohighlevel.com` URLs. |
+| `library/knowledge/private/research/sources.md` | 19 | False positive | Nineteen `marketplace.gohighlevel.com` documentation URLs. |
+| `library/knowledge/private/standards/README.md` | 1 | False positive | The folder path `library/requirements/reports/`. |
+| `library/knowledge/private/standards/documentation-framework.md` | 4 | False positive | The folder path `library/requirements/reports/`. |
+| `library/knowledge/private/standards/user-language-contract.md` | 2 | Register row | S-76 (`:27`), S-77 (section 5), S-98 (`:13`), and S-99 (`:19`), dated notes in place. |
+
+**Private knowledge, `ux-ui/`** (16 files)
+
+| File | Lines | Disposition | Basis |
+|---|---|---|---|
+| `library/knowledge/private/ux-ui/00-design-brief.md` | 6 | Register row | S-45 to S-54, dated notes at `:7`, `:28`, `:109`, `:139`, and `:165`. |
+| `library/knowledge/private/ux-ui/01-master-tokens.css` | 1 | Fixed | 009a's comment at `:117` records that Inter replaces Geist. |
+| `library/knowledge/private/ux-ui/03-components/application-shell-and-navigation.md` | 5 | Register row | S-58, notes at `:11`, `:15`, `:27`, `:32`, `:101`, and `:113`. The section at `:62-85` is a record of 2026-09-20 about the sticky top bar and the retired panel's placement model, and is history; the `data-shell-sticky-header` attribute stays in the shell. |
+| `library/knowledge/private/ux-ui/03-components/campaign-and-artifact-workflow.md` | 1 | Register row | S-60, notes at `:9`, `:20`, `:24`, and `:36`; `:11` is the stage list the first note covers. |
+| `library/knowledge/private/ux-ui/03-components/icon-and-icon-button.md` | 1 | Register row | S-101, note at `:24`. |
+| `library/knowledge/private/ux-ui/03-components/link.md` | 1 | Fixed | Note added 2026-10-03 under the example (S-107, QA-04). `:25` is an illustrative usage line, not a statement about the product. |
+| `library/knowledge/private/ux-ui/03-components/select-and-product-setup.md` | 1 | Fixed | Block note added 2026-10-03 under "Self onboarding and help" (S-107, QA-04). |
+| `library/knowledge/private/ux-ui/03-components/sheet-and-dialog.md` | 4 | Fixed | Block note added 2026-10-03 at the first section that uses the retired panel (S-107, QA-04). `:25` is example copy inside a `Dialog` sample. |
+| `library/knowledge/private/ux-ui/03-components/stepper.md` | 3 | Register row | S-102, note at `:16`. `:20` is a sample prop. |
+| `library/knowledge/private/ux-ui/04-screens/campaign-lifecycle.md` | 1 | Register row | S-63, notes at `:9` and `:25`; `:5` is the purpose line that the first note covers. |
+| `library/knowledge/private/ux-ui/04-screens/dashboard-preview.md` | 2 | Register row | S-100, note at `:9`. `:31` records that the Vercel ignore pattern for root `reports` artifacts stays anchored, which is still true; history. |
+| `library/knowledge/private/ux-ui/04-screens/marketing-suite-campaign-performance.md` | 1 | Register row | S-64, a whole-file note at `:3`. |
+| `library/knowledge/private/ux-ui/04-screens/onboarding-brand-and-platform-settings.md` | 2 | Register row | S-65, notes at `:71` and `:78`. `:53` and `:55` ("Canonical Open House Boost profile") describe the Brand profile, which is kept, in a spec heading; ruled history, because D-16 retires the name from what a person reads. |
+| `library/knowledge/private/ux-ui/04-screens/workspace-page-completion.md` | 1 | Fixed | S-66 notes at `:11`, `:15`, and `:16`, and a block note added 2026-10-03 for the pages S-66 left out (S-108, QA-04). |
+| `library/knowledge/private/ux-ui/06-review-rubric.md` | 4 | Register row | S-68 to S-71, dated notes in place. |
+| `library/knowledge/private/ux-ui/README.md` | 2 | Fixed | 009a's notes at `:9` (the `05-html-examples/` canvases are history) and `:41` (the font record). |
+
+**Public knowledge** (3 files)
+
+| File | Lines | Disposition | Basis |
+|---|---|---|---|
+| `library/knowledge/public/README.md` | 1 | False positive | `:12` is a link to the listing copy pack. |
+| `library/knowledge/public/faqs/open-house-boost-faq.md` | 2 | Register row | S-79, note at `:18`. `:10` is a link to the listing copy pack. |
+| `library/knowledge/public/overview/what-is-automated-lo.md` | 2 | Register row | S-78, note at `:20`. `:10` is a link to the listing copy pack. |
+
+**Requirements: PRD-001 to PRD-008, lifecycle READMEs, and standalone reports** (76 files)
+
+| File | Lines | Disposition | Basis |
+|---|---|---|---|
+| `library/requirements/backlog/README.md` | 1 | History | `:30` is the PRD-006 lineage row of 2026-09-19; its text already says the guided setup is retired by PRD-009 (S-19 to S-35). The PRD-009 lineage row is the lifecycle record (009F-AC-015). |
+| `library/requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002-operation-automated-lo-add-ons-index.md` | 2 | Kept | Same: PRD-002's `AC-6` and its other Open House Boost mentions (`:12`, `:97`) are on the Kept list. |
+| `library/requirements/backlog/prd-002-operation-automated-lo-add-ons/prd-002c-operation-automated-lo-add-ons-blueprint-packs.md` | 1 | Kept | PRD-002's other Open House Boost mentions (an unauthorized backlog PRD) are on the register's Kept list. |
+| `library/requirements/completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md` | 4 | History | PRD-008's own text of 2026-09-30 and 2026-10-01 (`:16`, `:31`, and the follow-up `:227`, which PRD-009's index says 009b removes). `:242` is a `reports/` link. |
+| `library/requirements/completed/prd-008-finish-line-hardening/prd-008b-finish-line-hardening-product-correctness.md` | 6 | Register row | S-43 (`:65`), S-44 (`:67`), S-89 (`:74`), and S-90 (`:75`), notes in place. `:20`, `:112`, and `:113` describe the state before PRD-009. |
+| `library/requirements/completed/prd-008-finish-line-hardening/prd-008c-finish-line-hardening-user-language-completion.md` | 1 | History | `:21` quotes the old routing text on `/settings/routing` and `/automations` as PRD-008's criterion of 2026-09-30 read it. |
+| `library/requirements/completed/prd-008-finish-line-hardening/prd-008d-finish-line-hardening-verification-depth.md` | 3 | Register row | S-91 to S-93 (`:54`, `:55`, `:57`), notes in place. `:24` and `:26` describe the state of 2026-10-01 as it was. |
+| `library/requirements/completed/prd-008-finish-line-hardening/prd-008e-finish-line-hardening-records-and-independent-review.md` | 5 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/completed/prd-008-finish-line-hardening/qa/2026-09-30-authoring-qa-report.md` | 1 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/completed/prd-008-finish-line-hardening/qa/2026-09-30-authoring-security-review.md` | 1 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/completed/prd-008-finish-line-hardening/qa/2026-10-01-008c-writing-review.md` | 14 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/completed/prd-008-finish-line-hardening/qa/2026-10-01-008d-baseline-review.md` | 35 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/completed/prd-008-finish-line-hardening/qa/2026-10-01-closeout-quality-report.md` | 8 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/completed/prd-008-finish-line-hardening/qa/2026-10-01-closeout-security-audit.md` | 2 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/completed/prd-008-finish-line-hardening/qa/README.md` | 1 | History | An index of PRD-008's reports; `:11` is the row for the 008c writing review. |
+| `library/requirements/in-work/README.md` | 1 | Register row | S-19 to S-35, note at `:26`. |
+| `library/requirements/in-work/prd-001-operation-automated-lo/prd-001-operation-automated-lo-index.md` | 7 | Register row | S-01 to S-09 (`:9`, `:13`, `:24`, `:52`, `:58`, `:75`, `:87`, `:108`, `:109`, `:112`, `:140`, `:148`), notes in place. |
+| `library/requirements/in-work/prd-001-operation-automated-lo/prd-001b-brand-partner-and-compliance-profile.md` | 1 | History | A spec of the first release's open house flow. The `open-house-boost` blueprint stays in the code and open house versions stay readable (R-6), and S-01 and S-02 re-scope the product at the PRD-001 index. |
+| `library/requirements/in-work/prd-001-operation-automated-lo/prd-001c-campaign-blueprint-and-preflight.md` | 3 | History | A spec of the first release's open house flow. The `open-house-boost` blueprint stays in the code and open house versions stay readable (R-6), and S-01 and S-02 re-scope the product at the PRD-001 index. S-06 covers the index row that names this file. |
+| `library/requirements/in-work/prd-001-operation-automated-lo/prd-001d-page-pdf-and-creative-rendering.md` | 2 | History | A spec of the first release's open house flow. The `open-house-boost` blueprint stays in the code and open house versions stay readable (R-6), and S-01 and S-02 re-scope the product at the PRD-001 index. |
+| `library/requirements/in-work/prd-001-operation-automated-lo/prd-001e-meta-ad-launch.md` | 1 | History | A spec of the first release's open house flow. The `open-house-boost` blueprint stays in the code and open house versions stay readable (R-6), and S-01 and S-02 re-scope the product at the PRD-001 index. Compliance control 9 (named in the register's Kept list) still holds. |
+| `library/requirements/in-work/prd-001-operation-automated-lo/prd-001f-ghl-lead-routing-and-attribution.md` | 1 | History | A spec of the first release's open house flow. The `open-house-boost` blueprint stays in the code and open house versions stay readable (R-6), and S-01 and S-02 re-scope the product at the PRD-001 index. |
+| `library/requirements/in-work/prd-001-operation-automated-lo/prd-001g-campaign-and-portfolio-reporting.md` | 1 | Register row | S-10 to S-13, notes in place; the one hit is the S-13 note at `:59`. |
+| `library/requirements/in-work/prd-001-operation-automated-lo/prd-001h-self-onboarding-and-launch-readiness.md` | 1 | History | A spec of the first release's open house flow. The `open-house-boost` blueprint stays in the code and open house versions stay readable (R-6), and S-01 and S-02 re-scope the product at the PRD-001 index. |
+| `library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-07-19-research-quality-review.md` | 1 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-07-20-qa-report.md` | 2 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-07-21-prd001-completion-raid-qa-report-post-security-fixes.md` | 2 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-07-21-prd001-completion-raid-qa-report.md` | 1 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-12-prd001-core-raid-qa-report.md` | 1 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-25-g2-harness-security-audit.md` | 1 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-25-gauntlet-closeout-qa-report.md` | 6 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/in-work/prd-001-operation-automated-lo/qa/2026-08-25-gauntlet-closeout-security-audit.md` | 1 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/in-work/prd-003-authenticated-product-activation/prd-003-authenticated-product-activation-index.md` | 4 | History | The activation PRD for the open house flow of 2026-09, kept for the same reason. |
+| `library/requirements/in-work/prd-003-authenticated-product-activation/prd-003a-authenticated-product-activation-campaign-persistence.md` | 2 | History | The persistence spec for the open house flow, which stays in the code as the `open-house-boost` blueprint (R-6). |
+| `library/requirements/in-work/prd-004-reviewable-go-live/prd-004-reviewable-go-live-index.md` | 6 | Register row | S-94, note at `:58`. `:113` is a link labelled with the FAQ's earlier title; the FAQ file name is kept so the link resolves (S-79). |
+| `library/requirements/in-work/prd-004-reviewable-go-live/prd-004a-reviewable-go-live-preview-deploy-smoke.md` | 2 | Register row | S-95, note at `:36`, and the reaffirmation of `004A-AC-003` at `:35`. |
+| `library/requirements/in-work/prd-004-reviewable-go-live/prd-004b-reviewable-go-live-portal-and-test-link.md` | 4 | Kept | `:20` is the operator's Test Link exercise. The listing and demonstration scope waits on owner decision D-5 (S-80 gives the same reason for the copy pack), so the spec is left as written. The other hits are `marketplace.gohighlevel.com` URLs. |
+| `library/requirements/in-work/prd-004-reviewable-go-live/prd-004c-reviewable-go-live-marketplace-submission.md` | 3 | Kept | `:11` names the demonstrated open house scope. The listing and demonstration scope waits on owner decision D-5 (S-80 gives the same reason for the copy pack), so the spec is left as written. |
+| `library/requirements/in-work/prd-004-reviewable-go-live/prd-004e-reviewable-go-live-listing-content-and-demo-script.md` | 5 | Kept | `:33` and `:38` name the demonstrated open house scope. The listing and demonstration scope waits on owner decision D-5 (S-80 gives the same reason for the copy pack), so the spec is left as written. |
+| `library/requirements/in-work/prd-004-reviewable-go-live/qa/2026-09-16-ggl-b16-postgres-gate-qa-report.md` | 2 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-004-reviewable-go-live/qa/2026-10-01-004e-re-audit.md` | 12 | History | The re-audit of the listing of its date (2026-10-01). Its findings F-01 to F-04 are owner decision D-5. |
+| `library/requirements/in-work/prd-005-authenticated-review-runtime/prd-005-authenticated-review-runtime-index.md` | 2 | Register row | S-96, note at `:74`. |
+| `library/requirements/in-work/prd-005-authenticated-review-runtime/prd-005d-authenticated-review-runtime-handoff-reconciliation.md` | 1 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/in-work/prd-005-authenticated-review-runtime/prd-005e-authenticated-review-runtime-deployed-qualification.md` | 2 | Register row | S-97 (`:64`) and S-15 (`:68`), notes in place. |
+| `library/requirements/in-work/prd-005-authenticated-review-runtime/qa/2026-09-19-prd-005-qa-report.md` | 3 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/prd-006-first-party-sign-in-and-guided-experience-index.md` | 12 | Register row | S-82 to S-84, notes at `:78`, `:80`, and `:81`. `:17`, `:22`, `:33`, `:42`, `:55`, `:148` are the owner's words and the plan of 2026-09-19. |
+| `library/requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/prd-006a-first-party-sign-in-and-guided-experience-email-password-auth.md` | 1 | History | `:363` is a link whose text names the guided setup; the target file carries its own S-19 to S-35 notes. |
+| `library/requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/prd-006b-first-party-sign-in-and-guided-experience-user-language.md` | 14 | Register row | S-16 to S-18 and S-85, S-86. The string inventories (`:26` to `:28`, `:182` to `:193`, `:218`, `:230`) record the copy as it stood on 2026-09-19 and are history. |
+| `library/requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/prd-006c-first-party-sign-in-and-guided-experience-guided-setup.md` | 19 | Register row | S-19 to S-35, notes in each criterion row. The design text above the table describes the retired setup as it was. |
+| `library/requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/prd-006d-first-party-sign-in-and-guided-experience-design-quality-bar.md` | 10 | Register row | S-36 to S-41, S-87, S-88, notes in place. The Geist and deep navy text (`:19`, `:97`, `:136`, `:183`) is the brief of 2026-09-19 that S-45 to S-54 supersede. |
+| `library/requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/qa/2026-09-19-batch-security-audit.md` | 1 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/qa/2026-09-19-prd-006-qa-report.md` | 12 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/qa/2026-09-19-prd-006d-design-review.md` | 19 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/qa/2026-09-19-writing-review.md` | 4 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-007-homeowner-reports/README.md` | 1 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/in-work/prd-007-homeowner-reports/prd-007-homeowner-reports-index.md` | 3 | False positive | Three `marketplace.gohighlevel.com` documentation URLs. |
+| `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-09-24-authenticated-pages-quality.md` | 4 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-09-24-authenticated-pages-security.md` | 3 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-09-24-quality-review.md` | 1 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-09-24-release-followup.md` | 2 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-09-24-security-review.md` | 1 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-10-01-independent-quality-review.md` | 1 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/in-work/prd-007-homeowner-reports/reports/README.md` | 1 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/reports/2026-07-20-g8-accepted-constraint-qa-report.md` | 4 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/reports/2026-07-20-g8-founder-validation-qa-report.md` | 3 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/reports/2026-07-25-library-schema-v2-raid-qa-report.md` | 5 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/reports/2026-07-25-library-schema-v2-raid-security-audit.md` | 2 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/reports/2026-08-26-full-reverse-review-report.md` | 1 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/reports/2026-08-26-reverse-review-remediation-qa-report.md` | 4 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/reports/2026-09-03-actions-major-qa-report.md` | 7 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/reports/2026-09-03-actions-major-security-audit.md` | 3 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/reports/2026-09-03-repo-hygiene-qa-report.md` | 1 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/reports/2026-09-16-production-tonight-requirements-coverage-report.md` | 1 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+| `library/requirements/reports/2026-09-22-onboarding-and-control-polish.md` | 4 | History | A review or report of its own date. It quotes the old flow while it audits, and a report is not edited (Non-Goals). |
+| `library/requirements/reports/2026-09-23-workspace-pages-quality-review.md` | 2 | History | Named in the register's list of historical records PRD-009 overtakes and does not edit (`:11`, `:14`). |
+| `library/requirements/reports/2026-10-01-library-drift-report.md` | 3 | False positive | Every hit is part of a relative link or a folder path (`reports/`, `marketplace-listing-copy-pack.md`), not the removed page or flow. |
+
+**Requirements: PRD-009** (21 files)
+
+| File | Lines | Disposition | Basis |
+|---|---|---|---|
+| `library/requirements/in-work/prd-009-marketing-toolkit/design/00-direction.md` | 17 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/design/01-open-decisions.md` | 4 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md` | 11 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009a-marketing-toolkit-light-look-and-top-menu.md` | 7 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009b-marketing-toolkit-home-for-a-new-account.md` | 11 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009d-marketing-toolkit-launch-an-ad.md` | 1 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009e-marketing-toolkit-campaign-page-and-list.md` | 2 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009f-marketing-toolkit-removals-and-records.md` | 69 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009g-marketing-toolkit-verification.md` | 2 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-01-authoring-qa-report.md` | 28 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-01-authoring-security-review.md` | 1 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-02-pre-redraw-verification.md` | 12 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-02-wave-3-verification.md` | 2 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. It records that part 2 could not be read, which this appendix answers. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-02-writing-review-pass-1.md` | 1 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-03-quality-report.md` | 3 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. QA-04 is the finding this appendix answers. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-03-scored-baseline-review.md` | 4 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/research/2026-10-01-listing-studio-recon.md` | 1 | History | A PRD-009 research input, dated 2026-10-01 or 2026-10-02. It records the product as it stood and what the owner said, and it is not rewritten. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/research/2026-10-01-oalo-toolkit-recon.md` | 24 | History | A PRD-009 research input, dated 2026-10-01 or 2026-10-02. It records the product as it stood and what the owner said, and it is not rewritten. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/research/2026-10-01-owner-direction-od-h.md` | 1 | History | A PRD-009 research input, dated 2026-10-01 or 2026-10-02. It records the product as it stood and what the owner said, and it is not rewritten. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/research/2026-10-01-owner-direction.md` | 3 | History | A PRD-009 research input, dated 2026-10-01 or 2026-10-02. It records the product as it stood and what the owner said, and it is not rewritten. |
+| `library/requirements/in-work/prd-009-marketing-toolkit/research/README.md` | 1 | History | An index of the research inputs; `:9` describes the recon's removal footprint. |

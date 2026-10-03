@@ -20,12 +20,21 @@
  * the card rhythm is no longer outranked by the element reset, so the checklist intro sits 20px
  * above the first item; the lead has the previews' measure; the two lists are two equal columns
  * from 1100px, so "Running now" stays half width when a person who cannot approve gets no approval
- * card (009B D3); the item glyphs are 24px; and the state chips read at the secondary step.
+ * card (009B D3); and the item glyphs are 24px.
+ *
+ * Scored review pass 2 (P2-01, R4-11, R4-12, R4-13): the state chips are the shared `Badge` as it
+ * is, the 12px chip of `badge-and-live-region.md` (ruled 2026-10-03 over the mockups' 14px); Home's
+ * buttons keep the shared weight 500 (the same ruling), so none of them sets a weight; and the page
+ * gap is the mockups' `.page` rule, for the greeting and for a notice above it.
  */
 
+/*
+ * The mockups' `.page { gap: var(--space-6) }`, and `--space-5` under 720px (`home-first-run.html:179`
+ * and `:420`): the gap between a notice, the greeting and the grid (R4-13).
+ */
 .home {
   display: grid;
-  gap: var(--space-5);
+  gap: var(--space-6);
   min-inline-size: 0;
 }
 
@@ -210,14 +219,16 @@
   list-style: none;
 }
 
-/* A secondary button in the shape of a pill: white, with the visible field edge. */
+/*
+ * A secondary button in the shape of a pill: white, with the visible field edge. The mockup's `.chip`
+ * is at weight 500 and the ruling is that buttons keep it, so no weight is set here.
+ */
 .start .chip {
   min-block-size: var(--target-min-size);
   padding-inline: var(--space-4);
   border-radius: var(--radius-pill);
   box-shadow: none;
   font-size: var(--text-secondary-size);
-  font-weight: var(--weight-semibold);
 }
 
 /* The one primary button on the page, drawn as a link because it goes to another page. */
@@ -229,7 +240,6 @@
   box-shadow: none;
   color: var(--tx-on-action);
   font-size: var(--text-body-size);
-  font-weight: var(--weight-semibold);
 }
 
 .start .primaryLink:hover {
@@ -381,23 +391,26 @@
 }
 
 /*
- * The mockup's chip (`.badge`): words at the secondary step (14px) in a pill with 2px above and
- * below and 8px before the glyph and 12px after the words. The shared `Badge` draws 12px words in
- * 4px by 8px padding, so Home sets its own size here; the primitive is not Home's to change. Written
- * as `.card .stateChip` so it outranks the primitive's single class whichever stylesheet loads last.
+ * The state chip is the shared `Badge` as it is: 12px words in `--space-1` by `--space-2` padding
+ * (`03-components/badge-and-live-region.md`, "Shape and type"). The mockups draw it at 14px, and the
+ * 2026-10-03 ruling is that the 12px chip wins, for every chip in the product at once (scored review
+ * pass 2, P2-01 and R4-11). Home adds only the mockup's `.badge { white-space: nowrap }`: a state is
+ * one line, never a two-line pill. Written as `.card .stateChip` so it outranks the primitive's
+ * single class whichever stylesheet loads last.
  */
 .card .stateChip {
-  padding-block: 0.125rem;
-  padding-inline: var(--space-2) var(--space-3);
-  font-size: var(--text-secondary-size);
-  /* The mockup's `.badge { white-space: nowrap }`: a state is one line, never a two-line pill. */
   white-space: nowrap;
 }
 
+/*
+ * The row's action is a link drawn as the small secondary button: the secondary step (14px) and the
+ * small button's padding (`--space-3`, `Button.module.css` `.sm`), at the shared weight 500, which
+ * the link and the button both inherit (R4-12). The weight is not set here; it was 600.
+ */
 .itemAction {
   grid-area: action;
+  padding-inline: var(--space-3);
   font-size: var(--text-secondary-size);
-  font-weight: var(--weight-semibold);
 }
 
 /* The two lists. */

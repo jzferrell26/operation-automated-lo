@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { HOME_FOOTER, homeGreeting } from "../../../copy/home-messages.js";
 import type { HomeData } from "../model/home-view.js";
 import { HomeNeedsApproval, HomeRunningNow } from "./home-campaign-lists.js";
@@ -9,6 +11,13 @@ type OverviewScreenProps = Readonly<{
   /** The person's first name for the greeting, or nothing when the account has none. */
   firstName: string | undefined;
   home: HomeData;
+  /**
+   * A notice that stands above the greeting (the saved-password confirmation of PRD-006b D10). It is
+   * a child of the page, so the page's own gap spaces it: `--space-6`, and `--space-5` under 720px,
+   * as the mockups' `.page` does (scored review pass 2, R4-13). A wrapper outside the page would
+   * need a second copy of that rule, and a fixed `Stack` gap cannot change at the phone width.
+   */
+  notice?: ReactNode;
   /** True when the person opened the finished checklist again (`?review=setup`). */
   reviewSetup?: boolean;
 }>;
@@ -32,9 +41,15 @@ type OverviewScreenProps = Readonly<{
  * 009B-AC-010), so "Running now" is alone in the row at half width, as the mockup draws each card,
  * rather than an empty approval card saying "Nothing to approve" to someone who never approves.
  */
-export function OverviewScreen({ firstName, home, reviewSetup = false }: OverviewScreenProps) {
+export function OverviewScreen({
+  firstName,
+  home,
+  notice,
+  reviewSetup = false,
+}: OverviewScreenProps) {
   return (
     <div className={styles.home}>
+      {notice}
       <p className={styles.welcome}>{homeGreeting(firstName)}</p>
       <div className={styles.grid}>
         <HomeStartCard topics={home.topics} />

@@ -3,8 +3,14 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
 import { BAND_PLACEHOLDER } from "../../../copy/launch-messages.js";
+import {
+  LIGHT,
+  SHIPPED_TOKENS,
+  blockDeclarations,
+  readCss,
+} from "../../../theme/token-source.test-support.js";
 import type { LaunchBand } from "../launch-model.js";
-import { AD_INK, AD_PAPER, AdCreative } from "./ad-creative.js";
+import { AD_INK, AD_PAPER, AD_RULE, AdCreative } from "./ad-creative.js";
 import { BrandBand, bandNameSize } from "./brand-band.js";
 import { TEST_BAND } from "./launch-flow.test-support.js";
 
@@ -83,6 +89,20 @@ describe("the brand band (009D-AC-004)", () => {
     delete document.documentElement.dataset["theme"];
     expect(AD_PAPER).toBe("#FFFFFF");
     expect(AD_INK).toBe("#061E35");
+  });
+
+  it("draws its rules in the Light hairline in both themes (scored review R1-17)", () => {
+    for (const theme of ["light", "dark"]) {
+      document.documentElement.dataset["theme"] = theme;
+      const { container, unmount } = creative("tall");
+      const root = container.querySelector<HTMLElement>("[data-ad-creative]");
+      expect(root?.style.getPropertyValue("--ad-band-rule")).toBe(AD_RULE);
+      unmount();
+    }
+    delete document.documentElement.dataset["theme"];
+    // The constant is the Light look's `--bd-hairline`, so it cannot drift from the token.
+    const light = blockDeclarations(readCss(SHIPPED_TOKENS), LIGHT);
+    expect(AD_RULE.toLowerCase()).toBe(light.get("--bd-hairline"));
   });
 });
 

@@ -1,4 +1,4 @@
-import { Icon, Link } from "@oalo/ui";
+import { Icon, Link, Surface } from "@oalo/ui";
 
 import { NOTICES, retiredKept } from "../../../copy/campaign-page-messages.js";
 import { adRetiredNotice } from "../../../copy/launch-messages.js";
@@ -66,21 +66,25 @@ export function CampaignLibraryNotices({
       {notices.map((notice) => {
         if (notice.kind === "newer-version") {
           return (
-            <li className={styles.notice} data-notice={notice.kind} key={notice.kind}>
-              <UseNewVersion canUse={notice.canUse} offer={notice.offer} />
+            <li data-notice={notice.kind} key={notice.kind}>
+              <Surface className={styles.notice} padding="lg">
+                <UseNewVersion canUse={notice.canUse} offer={notice.offer} />
+              </Surface>
             </li>
           );
         }
         const action = noticeAction(notice);
         return (
-          <li className={styles.notice} data-notice={notice.kind} key={notice.kind}>
-            <p className={styles.noticeText}>
-              <Icon decorative name="info" size="sm" tone="info" />
-              <span>
-                <TextWithDays days={noticeDays(notice)} text={noticeSentence(notice)} />
-              </span>
-            </p>
-            {action === null ? null : <div className={styles.noticeActions}>{action}</div>}
+          <li data-notice={notice.kind} key={notice.kind}>
+            <Surface className={styles.notice} padding="lg">
+              <p className={styles.noticeText}>
+                <Icon decorative name="info" size="sm" tone="info" />
+                <span>
+                  <TextWithDays days={noticeDays(notice)} text={noticeSentence(notice)} />
+                </span>
+              </p>
+              {action === null ? null : <div className={styles.noticeActions}>{action}</div>}
+            </Surface>
           </li>
         );
       })}

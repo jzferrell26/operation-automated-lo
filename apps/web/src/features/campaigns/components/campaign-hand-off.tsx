@@ -19,8 +19,7 @@ import styles from "./campaign-page.module.css";
  * The sentence comes first and the action after it, and the action is the card's one primary, as the
  * mockup draws the cannot-approve state (`launch-step-3-review-and-launch.html`, the "Ready for
  * approval" card): a person who cannot approve has exactly one thing to press, so it is the blue
- * button (scored review R1-13). The mockup's copy glyph on the button is not drawn: `Icon` has no
- * such name, and the label says what the button does.
+ * button (scored review R1-13), with the copy glyph the mockup draws before its words (pass 2, R2 N-2).
  *
  * The clipboard write is wrapped: a browser that refuses it must not break the page. When it fails
  * the address is still on screen and still selectable, so nobody is stuck.
@@ -56,6 +55,7 @@ export function CampaignHandOff({ campaignHref }: Readonly<{ campaignHref: strin
         size="sm"
         variant="primary"
       >
+        <Icon decorative name="copy" size="sm" />
         {HAND_OFF.copyLinkLabel}
       </Button>
     </div>

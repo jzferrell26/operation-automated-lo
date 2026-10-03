@@ -21,6 +21,10 @@ import {
   type InternalRefusal,
 } from "../../http/internal-api.js";
 import { SupportReference } from "../../shell/components/support-details.js";
+import styles from "./campaign-page.module.css";
+
+/** The design system's visually-hidden box (`packages/ui` `primitives.css`): on the page, out of the flow. */
+const VISUALLY_HIDDEN = "oalo-visually-hidden";
 
 export type CampaignApprovalControlsProps = Readonly<{
   /** Where this campaign lives, so a user who cannot approve can hand the address to someone who can. */
@@ -158,7 +162,7 @@ export function CampaignApprovalControls({
     return (
       <Card data-approval-card="" padding="lg">
         <strong>{APPROVE_TITLE}</strong>
-        <p ref={outcomeRef} role="status" tabIndex={-1}>
+        <p className={styles.small} ref={outcomeRef} role="status" tabIndex={-1}>
           {status?.sentence}
         </p>
       </Card>
@@ -168,7 +172,8 @@ export function CampaignApprovalControls({
   return (
     <Card data-approval-card="" padding="lg">
       <strong>{APPROVE_TITLE}</strong>
-      <p>{APPROVE_LINE}</p>
+      {/* The mockup's `.small .muted`: a card's sentence is the secondary step (scored review P2-08). */}
+      <p className={styles.small}>{APPROVE_LINE}</p>
       <SafeAction
         confirmLabel="Yes, approve"
         decision={decision}
@@ -214,8 +219,21 @@ export function CampaignApprovalControls({
         The live region stays on the page so an outcome is announced, but it says nothing until there
         is one. "Nobody has approved this version yet." is the Approval card's own sentence, directly
         above, so it is not said twice (writing review W-7).
+
+        While it is empty it is the shared visually-hidden box, which is out of the card's flow: the
+        card spaces its children with a grid gap, and an empty child still takes a row (and the gap
+        before it), which left 16px of dead space at the card's foot. A negative margin cannot give
+        that back, because a grid track never shrinks below zero (scored review R1-13r). Taken out of
+        the flow it has no row, so no stylesheet has to remember to cancel it, and it is still on the
+        page, so the sentence that lands in it is announced.
       */}
-      <p role="status">{status?.sentence}</p>
+      <p
+        className={status?.sentence ? styles.small : VISUALLY_HIDDEN}
+        data-approval-status=""
+        role="status"
+      >
+        {status?.sentence}
+      </p>
       <SupportReference refusal={status?.refusal} />
     </Card>
   );

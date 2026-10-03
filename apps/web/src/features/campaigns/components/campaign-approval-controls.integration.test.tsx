@@ -468,6 +468,38 @@ describe.each(HOSTS)("the words of the approval card %s", (_where, mount) => {
     }
   });
 
+  /**
+   * The scored baseline review of 2026-10-03, pass 2, R1-13r. The card spaces its children with a
+   * grid gap, and an empty paragraph in a grid still takes a row and the gap before it: 16px of dead
+   * space at the card's foot, which no negative margin can give back because a grid track does not
+   * shrink below zero. The empty live region is therefore the shared visually-hidden box, which is
+   * out of the flow and still on the page, and it is an ordinary paragraph again when it speaks.
+   */
+  it("keeps its empty live region out of the card's flow, so the card has no dead space at its foot", () => {
+    const { container } = render(mount(APPROVABLE));
+
+    const line = container.querySelector("[data-approval-status]");
+    expect(line).toHaveAttribute("role", "status");
+    expect(line).toBeEmptyDOMElement();
+    expect(line).toHaveClass("oalo-visually-hidden");
+  });
+
+  it("brings the live region back into the flow when it has something to say", async () => {
+    stubRefusedFetch("CAMPAIGN_APPROVAL_CONFLICT", SUPPORT_REFERENCE, 409);
+    const { container } = render(mount(APPROVABLE));
+
+    await sendBack();
+
+    await waitFor(() => {
+      expect(container.querySelector("[data-approval-status]")).toHaveTextContent(
+        userMessageSentence("CAMPAIGN_APPROVAL_CONFLICT"),
+      );
+    });
+    expect(container.querySelector("[data-approval-status]")).not.toHaveClass(
+      "oalo-visually-hidden",
+    );
+  });
+
   it("says what approving does, in plain words, and what it does not do", async () => {
     const user = userEvent.setup();
     render(mount(APPROVABLE));

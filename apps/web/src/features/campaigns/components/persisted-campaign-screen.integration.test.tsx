@@ -12,6 +12,7 @@ import {
   wholeSentence,
   type LibraryCampaignOptions,
 } from "../../../server/campaign-page.test-support.js";
+import { glyphBeforeWords, glyphMarkup } from "../../../testing/glyph-markup.js";
 import { PersistedCampaignScreen } from "./persisted-campaign-screen.js";
 
 // The approval card refreshes the page after a decision (PRD-008b D2), and "Use the new version"
@@ -851,5 +852,46 @@ describe("the cards on the campaign page (review R2, F-2)", () => {
     const { container } = render(<PersistedCampaignScreen page={page} />);
 
     expect(new Set(insets(container))).toEqual(new Set(["lg"]));
+  });
+});
+
+/**
+ * The scored baseline review of 2026-10-03, pass 2, part R2, N-2 and N-1. The mockup draws a glyph
+ * before the words of each action on the page (`campaign-detail.html`), and the `Button` and the
+ * `action` link are rows, so a glyph passed with the words sits on their first line.
+ */
+describe("the glyphs on the campaign page's actions (review pass 2, R2 N-2)", () => {
+  it("draws a pencil before 'Make a new version' and a rocket before 'Launch on Facebook'", async () => {
+    await renderCampaign();
+
+    expect(glyphBeforeWords(screen.getByRole("link", { name: "Make a new version" }))).toBe(
+      glyphMarkup("pencil"),
+    );
+    expect(glyphBeforeWords(screen.getByRole("button", { name: "Launch on Facebook" }))).toBe(
+      glyphMarkup("rocket"),
+    );
+  });
+
+  it("draws a plus before 'Launch an ad' on a page saved before PRD-009, in the header's action wrappers", async () => {
+    const page = await pageOf(await earlierFlowCampaign(), { principal: OWNER });
+    const { container } = render(<PersistedCampaignScreen page={page} />);
+
+    const link = screen.getByRole("link", { name: "Launch an ad" });
+    expect(glyphBeforeWords(link)).toBe(glyphMarkup("plus"));
+    // The wrappers the phone rules stretch, so the action spans the column on a phone (N-3).
+    const actions = link.closest("[data-launch-an-ad-actions]");
+    expect(container.querySelector("header")).toContainElement(actions as HTMLElement);
+  });
+});
+
+describe("a library notice's card (review pass 2, R2 N-1)", () => {
+  it("is a Surface at the large inset, so a phone takes the primitive's phone inset with every other card", async () => {
+    const { container } = await renderCampaign({ adId: "sample-spring-search", adVersion: 1 });
+
+    const notice = container.querySelector("[data-notice]") as HTMLElement;
+    expect(notice).not.toBeNull();
+    const card = notice.querySelector("[data-padding]");
+    expect(card).toHaveAttribute("data-padding", "lg");
+    expect(card).toHaveAttribute("data-variant", "card");
   });
 });

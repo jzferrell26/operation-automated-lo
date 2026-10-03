@@ -39,11 +39,44 @@ describe("the campaign page's header (review R2, F-1)", () => {
 });
 
 describe("the campaign page's cards (review R2, F-2)", () => {
-  it("gives the library notices and the support details the same inset as every other card, --space-6", async () => {
+  it("gives the support details the same inset as every other card, --space-6", async () => {
     const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
 
-    expect(css.declarationsOf(".notice").padding).toBe("var(--space-6)");
     expect(css.declarationsOf(".support details").padding).toBe("var(--space-3) var(--space-6)");
+  });
+
+  it("leaves a library notice's fill, edge, shadow and inset to the Surface it is drawn on", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
+
+    // The notice is a `Surface` at `lg` (see `persisted-campaign-screen.integration.test.tsx`), so its
+    // inset is the primitive's at every width, the phone's included. A padding here would be a second
+    // value for the same card, and the one that drifted from the mockup's phone rule (review pass 2, N-1).
+    const notice = css.declarationsOf(".notice");
+    for (const property of ["padding", "border", "border-radius", "background", "box-shadow"]) {
+      expect(notice, property).not.toHaveProperty(property);
+    }
+  });
+});
+
+/**
+ * Review pass 2, R2 N-1. The mockup's phone rules (`campaign-detail.html`, below 720px) set the page's
+ * gap and a card's padding to `--space-5`; Home applies both. The cards on this page are `Surface`s,
+ * whose inset is the primitive's, so the stylesheet restates the value only for the one card that is
+ * not a `Surface`: the support details, a `details` element.
+ */
+describe("the campaign page on a phone (review pass 2, R2 N-1)", () => {
+  it("keeps the page's blocks --space-5 apart, and the support details' inset at --space-5", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
+
+    const phone = mediaBody(css.source, "(max-width: 719.98px)");
+    expect(declarationsIn(phone, ".page").gap).toBe("var(--space-5)");
+    expect(declarationsIn(phone, ".support details")["padding-inline"]).toBe("var(--space-5)");
+  });
+
+  it("keeps --space-6 between the page's blocks above the phone frame", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
+
+    expect(css.declarationsOf(".page").gap).toBe("var(--space-6)");
   });
 });
 
@@ -78,19 +111,27 @@ describe("a date on the campaign page (review R2, H-3)", () => {
   });
 });
 
-describe("the approve card and the hand-off on the campaign page (review R1-13)", () => {
-  it("spaces the approve card's children --space-4 apart and gives the empty live region's gap back", async () => {
+describe("the approve card and the hand-off on the campaign page (review R1-13, R1-13r)", () => {
+  it("spaces the approve card's children --space-4 apart, and does not try to cancel the empty live region's row with a margin", async () => {
     const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
 
     const card = css.declarationsOf(".stack [data-approval-card]");
     expect(card.display).toBe("grid");
     expect(card.gap).toBe("var(--space-4)");
     expect(css.declarationsOf(".stack [data-approval-card] > *").margin).toBe("0");
-    expect(
-      css.declarationsOf('.stack [data-approval-card] > [role="status"]:empty')[
-        "margin-block-start"
-      ],
-    ).toBe("calc(var(--space-4) * -1)");
+    // R1-13r. A negative margin on an empty child cannot shrink a grid track below zero, so it left
+    // 16px of dead space at the card's foot. The component takes the empty live region out of the
+    // flow instead (`campaign-approval-controls.integration.test.tsx`), and nothing here cancels it.
+    expect(css.source).not.toMatch(/\[data-approval-card\]\s*>\s*\[role="status"\]:empty/u);
+    expect(css.source).not.toMatch(/margin-block-start\s*:\s*calc\(\s*var\(--space-4\)\s*\*\s*-1/u);
+  });
+
+  it("sets the hand-off's sentence at the secondary step, as the mockup's .small", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
+
+    const hint = css.declarationsOf(".hint");
+    expect(hint["font-size"]).toBe("var(--text-secondary-size)");
+    expect(hint.color).toBe("var(--tx-body)");
   });
 
   it("lays the hand-off out as the sentence and a button at the card's width, --space-4 apart", async () => {

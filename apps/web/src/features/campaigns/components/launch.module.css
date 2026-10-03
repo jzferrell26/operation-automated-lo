@@ -416,9 +416,24 @@ button.resetLink:hover:not(:disabled) {
   gap: var(--space-4);
 }
 
-.approveCard {
+/* R1-13. Every child of a step 3 card is one `--space-4` from the next, as the mockup's
+   `.card > * + *` sets it; a `Card` is a block, so without this the paragraphs' own margins were the
+   only space between a card's pieces. */
+.approveCard,
+.launchCard,
+.decisionCard {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
+}
+
+.decisionCard > *,
+.approveCard > * {
+  margin: 0;
+}
+
+/* A status chip sits at its own width inside its card (R1-12), never stretched to the column. */
+.decisionChip {
+  justify-self: start;
 }
 
 /* The summary reads as a link, so it takes the link colour. --ac-primary is a fill and never text in
@@ -496,19 +511,33 @@ button.resetLink:hover:not(:disabled) {
   color: var(--tx-strong);
 }
 
+/* The approve card is the shared `CampaignApprovalControls`, which this page and the campaign page
+   both draw. Its pieces take the same rhythm here, left-aligned so the buttons are not stretched, and
+   the empty status line (it is a live region, so it stays in the page) takes back the gap it would
+   otherwise leave as dead space at the card's foot. */
 .decision {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
-.launchCard {
+.decision [data-approval-card] {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  justify-items: start;
+}
+
+.decision [data-approval-card] > * {
+  margin: 0;
+}
+
+.decision [data-approval-card] > [role="status"]:empty {
+  margin-block-start: calc(var(--space-4) * -1);
 }
 
 /* "Fix it", "Make a new version", and "Choose another ad" lead somewhere, so they are links, drawn
-   as the one primary action of their card. */
-.primaryLink {
+   as the one primary action of their card. The element is named so the rule outranks the link
+   primitive's own button look whatever order the two stylesheets load in. */
+a.primaryLink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -521,7 +550,7 @@ button.resetLink:hover:not(:disabled) {
   text-decoration: none;
 }
 
-.primaryLink:hover {
+a.primaryLink:hover {
   background: var(--ac-primary-hover);
   color: var(--tx-on-action);
 }

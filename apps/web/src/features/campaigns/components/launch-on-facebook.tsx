@@ -23,7 +23,7 @@ export function LaunchOnFacebook({
   const sentenceId = useId();
   const sentence = launchSentenceFor(state);
   return (
-    <Card className={styles.launchCard} data-launch-card="" padding="md">
+    <Card className={styles.launchCard} data-launch-card="" padding="lg">
       <h2 className={styles.cardTitle}>{LAUNCH_TITLE}</h2>
       <Button aria-describedby={sentenceId} disabled type="button" variant="outline">
         <span className={styles.withIcon}>

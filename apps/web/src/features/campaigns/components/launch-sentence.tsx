@@ -2,6 +2,7 @@ import { Link } from "@oalo/ui";
 
 import { LAUNCH_SENTENCES, launchRetiredSentence } from "../../../copy/launch-messages.js";
 import type { LaunchSentence } from "../launch-model.js";
+import styles from "./launch-sentence.module.css";
 import { TextWithDays } from "./text-with-days.js";
 
 /**
@@ -12,6 +13,9 @@ import { TextWithDays } from "./text-with-days.js";
  * pass 2 (MTK-008, W-25) puts the markup here, once. The Meta sentence links to the connections
  * page, where what each account needs is explained; the retired sentence writes its date as a
  * `time` element, which is why it needs the day as `YYYY-MM-DD` as well as the words.
+ *
+ * The link is a 44px target set inside a running sentence, so it takes the sentence's size and does
+ * not stretch its line (`sentenceLink`, scored review R1-15).
  */
 export function LaunchSentenceWords({
   sentence,
@@ -27,7 +31,9 @@ export function LaunchSentenceWords({
       return (
         <>
           {words.before}
-          <Link href="/settings/connections">{words.link}</Link>
+          <Link className={styles.sentenceLink} href="/settings/connections">
+            {words.link}
+          </Link>
           {words.after}
         </>
       );

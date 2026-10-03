@@ -2,8 +2,17 @@ import { CampaignStateSchema } from "@oalo/contracts";
 import { describe, expect, it } from "vitest";
 
 import { findVocabularyHits } from "./forbidden-vocabulary.js";
+import {
+  AD_ART_CHANGED_CHIP,
+  AD_MISSING_CHIP,
+  AD_REPLACED_CHIP,
+  AD_RETIRED_CHIP,
+} from "./launch-messages.js";
 import * as userLanguage from "./user-language.js";
 import {
+  CAMPAIGN_AD_ART_CHANGED_LABEL,
+  CAMPAIGN_AD_MISSING_LABEL,
+  CAMPAIGN_AD_NEWER_VERSION_LABEL,
   CAMPAIGN_AD_RETIRED_LABEL,
   CAMPAIGN_NEXT_ACTION_LABELS,
   CAMPAIGN_NOT_AN_AD_YET,
@@ -117,8 +126,35 @@ describe("the campaign standings the list and the campaign page read (009E-AC-01
     expect(CAMPAIGN_VERSION_REPLACED_LABEL).toBe("Replaced by a newer version");
   });
 
+  /**
+   * QA-11. The approval rule refuses a library ad for four reasons, and each has a standing with the
+   * words step 3's chip uses for it (writing review delta check, D-5), so the list, the campaign page,
+   * and step 3 call one thing by one name.
+   */
+  it("says the other three reasons the library can refuse an ad in the words step 3 settled on", () => {
+    expect(campaignStateLabel("ad_newer_version", undefined)).toBe("Newer ad version");
+    expect(campaignStateLabel("ad_art_changed", undefined)).toBe("Ad picture changed");
+    expect(campaignStateLabel("ad_missing", undefined)).toBe("Ad not in the library");
+    expect(CAMPAIGN_AD_NEWER_VERSION_LABEL).toBe("Newer ad version");
+    expect(CAMPAIGN_AD_ART_CHANGED_LABEL).toBe("Ad picture changed");
+    expect(CAMPAIGN_AD_MISSING_LABEL).toBe("Ad not in the library");
+  });
+
+  it("is the one source of the chips step 3 draws for a refused ad (009E-AC-010)", () => {
+    expect(AD_RETIRED_CHIP).toBe(campaignStateLabel("ad_retired", undefined));
+    expect(AD_REPLACED_CHIP).toBe(campaignStateLabel("ad_newer_version", undefined));
+    expect(AD_ART_CHANGED_CHIP).toBe(campaignStateLabel("ad_art_changed", undefined));
+    expect(AD_MISSING_CHIP).toBe(campaignStateLabel("ad_missing", undefined));
+  });
+
   it("reads a standing the same with or without a decision, except a send-back", () => {
-    for (const standing of ["ad_retired", "replaced"] as const) {
+    for (const standing of [
+      "ad_retired",
+      "ad_newer_version",
+      "ad_art_changed",
+      "ad_missing",
+      "replaced",
+    ] as const) {
       for (const decision of [undefined, "approved", "rejected"] as const) {
         expect(campaignStateLabel(standing, decision), `${standing}/${String(decision)}`).toBe(
           campaignStateLabel(standing, undefined),
@@ -128,10 +164,24 @@ describe("the campaign standings the list and the campaign page read (009E-AC-01
   });
 
   it("carries no forbidden word and no stored token", () => {
-    for (const phrase of [CAMPAIGN_AD_RETIRED_LABEL, CAMPAIGN_VERSION_REPLACED_LABEL]) {
+    for (const phrase of [
+      CAMPAIGN_AD_RETIRED_LABEL,
+      CAMPAIGN_AD_NEWER_VERSION_LABEL,
+      CAMPAIGN_AD_ART_CHANGED_LABEL,
+      CAMPAIGN_AD_MISSING_LABEL,
+      CAMPAIGN_VERSION_REPLACED_LABEL,
+    ]) {
       expect(findVocabularyHits(phrase), phrase).toEqual([]);
       expect(phrase).not.toContain("_");
     }
+  });
+
+  it("gives no two standings the same words, so a chip says one thing", () => {
+    const words = (
+      ["ad_retired", "ad_newer_version", "ad_art_changed", "ad_missing", "replaced"] as const
+    ).map((standing) => campaignStateLabel(standing, undefined));
+    expect(new Set(words).size).toBe(words.length);
+    for (const phrase of Object.values(CAMPAIGN_STATE_LABELS)) expect(words).not.toContain(phrase);
   });
 });
 

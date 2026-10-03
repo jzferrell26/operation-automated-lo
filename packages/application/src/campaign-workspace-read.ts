@@ -5,6 +5,7 @@ import {
   type PreflightResult,
 } from "@oalo/contracts";
 
+import type { LibraryAdRefusalReason } from "./campaign-approval-command.js";
 import {
   CAMPAIGN_APPROVAL_ROLES,
   assertCampaignAccessible,
@@ -224,13 +225,32 @@ export function deriveCampaignNextActions(
 
 /**
  * PRD-009e D3 and 009E-AC-005, 009E-AC-010. Where one version of a campaign stands, in a single
- * vocabulary every screen shares: the stored state, plus the two standings the state cannot say.
- * "Ad retired" is a standing of a version nobody has approved whose library ad was taken out of the
- * library (009c D4); "replaced" is a standing of an older version nobody decided on.
+ * vocabulary every screen shares: the stored state, plus the standings the state cannot say.
+ *
+ * Four of them are the library's verdict on the ad, one for each reason the approval rule refuses a
+ * library-ad version (`libraryAdRefusalFor`, 009c D4) and so one for each reason a version nobody has
+ * approved is not "ready for approval": the ad was taken out of the library (`ad_retired`), a newer
+ * version of the ad replaced the one this version was made from (`ad_newer_version`), the ad's pictures
+ * changed after the version was saved (`ad_art_changed`), or the library no longer holds the ad
+ * (`ad_missing`). `replaced` is something else: a standing of an older version of the campaign that
+ * nobody decided on.
  */
-export type CampaignStanding = CampaignState | "ad_retired" | "replaced";
+export type CampaignStanding =
+  CampaignState | "ad_retired" | "ad_newer_version" | "ad_art_changed" | "ad_missing" | "replaced";
 
-/** The states a version nobody has decided on can still be in, and so the ones retirement changes. */
+/**
+ * The standing each reason the approval rule gives takes. The map is exhaustive over the reasons, so a
+ * fifth reason is a typecheck failure here until a screen has a standing and words for it.
+ */
+const AD_REFUSAL_STANDINGS: Readonly<Record<LibraryAdRefusalReason, CampaignStanding>> =
+  Object.freeze({
+    retired: "ad_retired",
+    replaced: "ad_newer_version",
+    art_changed: "ad_art_changed",
+    missing: "ad_missing",
+  });
+
+/** The states a version nobody has decided on can still be in, and so the ones the library's verdict changes. */
 const UNAPPROVED_STATES: ReadonlySet<CampaignState> = new Set([
   "draft",
   "generated",
@@ -243,18 +263,27 @@ const UNAPPROVED_STATES: ReadonlySet<CampaignState> = new Set([
  *
  * The recorded decision comes first, as PRD-008b requires of every surface (008B-AC-004): a send-back
  * leaves the state at `awaiting_approval`, so a rejected version keeps that state and the label
- * function reads the decision. Then retirement, which beats the checks, because a version whose ad
- * is gone cannot be approved however its checks came out (009d D8). Then the state itself.
+ * function reads the decision. Then the library's verdict on the ad, which beats the checks, because
+ * a version whose ad is gone, replaced, or changed cannot be approved however its checks came out
+ * (009d D8). Then the state itself.
+ *
+ * `adRefusal` is the approval rule's own answer (`libraryAdRefusalFor`), so a screen's chip and the
+ * approval command cannot disagree (QA-11): "ready for approval" is said only where the rule allows
+ * an approval.
  */
 export function deriveCampaignStanding(
   input: Readonly<{
     state: CampaignState;
     decision: ApprovalDecision["decision"] | undefined;
-    adRetired: boolean;
+    adRefusal: LibraryAdRefusalReason | undefined;
   }>,
 ): CampaignStanding {
-  if (input.decision === undefined && input.adRetired && UNAPPROVED_STATES.has(input.state)) {
-    return "ad_retired";
+  if (
+    input.decision === undefined &&
+    input.adRefusal !== undefined &&
+    UNAPPROVED_STATES.has(input.state)
+  ) {
+    return AD_REFUSAL_STANDINGS[input.adRefusal];
   }
   return input.state;
 }
@@ -304,13 +333,13 @@ function approvalProjectionOf(approval: ApprovalDecision): CampaignWorkspaceAppr
 /**
  * Every version of a campaign as a versions-list row, newest first. A version in another location
  * is refused with the same error as everywhere else, so a list can never mix locations. The newest
- * version takes the campaign's stored state and the library's verdict on its ad; every older one
- * is read from its own decision and check.
+ * version takes the campaign's stored state and the library's verdict on its ad (the approval rule's
+ * answer, `adRefusal`); every older one is read from its own decision and check.
  */
 export function projectCampaignVersions(
   records: readonly CampaignWorkspaceVersionRecord[],
   principal: Readonly<AuthenticatedPrincipal>,
-  latest: Readonly<{ state: CampaignState; adRetired: boolean }>,
+  latest: Readonly<{ state: CampaignState; adRefusal: LibraryAdRefusalReason | undefined }>,
 ): readonly CampaignVersionSummary[] {
   const frozen = freezeAuthenticatedPrincipal(principal);
   const ordered = [...records].sort(
@@ -331,7 +360,7 @@ export function projectCampaignVersions(
           ? deriveCampaignStanding({
               state: latest.state,
               decision: record.approval?.decision,
-              adRetired: latest.adRetired,
+              adRefusal: latest.adRefusal,
             })
           : deriveOlderVersionStanding(record),
         ...(record.approval === undefined

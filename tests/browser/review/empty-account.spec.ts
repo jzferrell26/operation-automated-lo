@@ -382,6 +382,8 @@ test.describe.serial("a brand-new account, from its first page to its first appr
 
     await page.goto(seeded.newerVersion.page);
     await expect(page.locator("[data-notice='newer-version']")).toBeVisible();
+    // QA-11. The chip is the approval rule's answer, so it is not "Ready for approval".
+    await expect(page.locator("[data-campaign-standing='ad_newer_version']")).toBeVisible();
     await expect(page.locator("[data-library-notices] > li")).toHaveCount(1);
 
     await page.goto(seeded.earlierFlow.page);
@@ -432,6 +434,7 @@ test.describe.serial("a brand-new account, from its first page to its first appr
       "Approved",
       "Sent back for changes",
       "Ad retired",
+      "Newer ad version",
     ]) {
       await expect(
         list.getByText(chip, { exact: true }).first(),

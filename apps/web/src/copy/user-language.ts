@@ -296,15 +296,26 @@ export const CAMPAIGN_STATE_LABELS: Readonly<Record<CampaignState, string>> = Ob
 });
 
 /**
- * PRD-009e 009E-AC-010. The two standings a campaign can be in that the stored state cannot say.
+ * PRD-009e 009E-AC-010. The standings a campaign can be in that the stored state cannot say.
  *
- * "Ad retired": the library took the ad this version was made from out of the library, and nobody
- * has approved the version, so it can no longer be approved (009c D4). "Replaced": a newer version
- * of the campaign exists and nobody ever decided on this one, so it is neither waiting for an
- * approver nor approved. Neither is a stored state, so they are standings, and the label function
- * below reads them with the state.
+ * Four of them are the library's verdict on the ad, one for each reason the approval rule refuses a
+ * version nobody has approved (`libraryAdRefusalFor`, 009c D4), so a version that cannot be approved
+ * is never called "Ready for approval" (QA-11). "Ad retired": the library took the ad out of the
+ * library. "Newer ad version": a newer version of the ad replaced the one this version was made from.
+ * "Ad picture changed": the ad's pictures changed after the version was saved. "Ad not in the
+ * library": the library no longer holds the ad. Step 3 draws the same four chips from these words
+ * (`launch-messages.ts`), which settled them in the writing review delta check (D-5).
+ *
+ * "Replaced": a newer version of the campaign exists and nobody ever decided on this one, so it is
+ * neither waiting for an approver nor approved.
+ *
+ * None is a stored state, so they are standings, and the label function below reads them with the
+ * state.
  */
 export const CAMPAIGN_AD_RETIRED_LABEL = "Ad retired";
+export const CAMPAIGN_AD_NEWER_VERSION_LABEL = "Newer ad version";
+export const CAMPAIGN_AD_ART_CHANGED_LABEL = "Ad picture changed";
+export const CAMPAIGN_AD_MISSING_LABEL = "Ad not in the library";
 export const CAMPAIGN_VERSION_REPLACED_LABEL = "Replaced by a newer version";
 
 /**
@@ -320,11 +331,22 @@ export function campaignStateLabel(
   state: CampaignStanding,
   decision: "approved" | "rejected" | undefined,
 ): string {
-  if (state === "ad_retired") return CAMPAIGN_AD_RETIRED_LABEL;
-  if (state === "replaced") return CAMPAIGN_VERSION_REPLACED_LABEL;
-  return state === "awaiting_approval" && decision === "rejected"
-    ? CAMPAIGN_SENT_BACK_LABEL
-    : CAMPAIGN_STATE_LABELS[state];
+  switch (state) {
+    case "ad_retired":
+      return CAMPAIGN_AD_RETIRED_LABEL;
+    case "ad_newer_version":
+      return CAMPAIGN_AD_NEWER_VERSION_LABEL;
+    case "ad_art_changed":
+      return CAMPAIGN_AD_ART_CHANGED_LABEL;
+    case "ad_missing":
+      return CAMPAIGN_AD_MISSING_LABEL;
+    case "replaced":
+      return CAMPAIGN_VERSION_REPLACED_LABEL;
+    case "awaiting_approval":
+      return decision === "rejected" ? CAMPAIGN_SENT_BACK_LABEL : CAMPAIGN_STATE_LABELS[state];
+    default:
+      return CAMPAIGN_STATE_LABELS[state];
+  }
 }
 
 /**

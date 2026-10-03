@@ -1,10 +1,14 @@
 import {
   createCampaignVersion,
+  libraryAdRefusalFor,
+  recordedLibraryAdOf,
   runCampaignPreflight,
   type AuthenticatedPrincipal,
   type CampaignPersistenceKind,
   type CampaignWorkspaceReadRecord,
   type CampaignWorkspaceVersionRecord,
+  type LibraryAdCatalogStanding,
+  type LibraryAdRefusalReason,
 } from "@oalo/application";
 import {
   ApprovalDecisionSchema,
@@ -327,6 +331,78 @@ export async function earlierFlowCampaign(
       }),
     ]),
   });
+}
+
+/**
+ * QA-11. A library ad's standing for each way the approval rule (`libraryAdRefusalFor`) can answer,
+ * so a screen's chip is checked against the rule and not against a second copy of it. Each scenario
+ * is a campaign's newest version and what the library says about its ad today: the repository's own
+ * sample library, that library with one fact changed, or no library at all.
+ */
+export interface AdScenario {
+  readonly name: string;
+  readonly campaign: LibraryCampaignOptions;
+  readonly library: "sample" | "empty" | Partial<LibraryAdCatalogStanding>;
+}
+
+export const AD_SCENARIOS: readonly AdScenario[] = Object.freeze([
+  { name: "an ad nothing is wrong with", campaign: {}, library: "sample" },
+  {
+    name: "an ad the library retired",
+    campaign: { adId: "sample-spring-search", adVersion: 1 },
+    library: "sample",
+  },
+  { name: "an ad with a newer version to move to", campaign: { adVersion: 1 }, library: "sample" },
+  {
+    name: "an ad a newer version replaced, with none to offer",
+    campaign: {},
+    library: { status: "replaced", highestStatus: "replaced" },
+  },
+  {
+    name: "an ad whose picture changed",
+    campaign: {},
+    library: { tallSha256: "0".repeat(64) },
+  },
+  { name: "an ad the library no longer holds", campaign: {}, library: "empty" },
+]);
+
+/** The chip a refused version carries on step 3 (writing review delta check, D-5), by the rule's reason. */
+export const CHIP_FOR_REFUSAL: Readonly<Record<LibraryAdRefusalReason, string>> = Object.freeze({
+  retired: "Ad retired",
+  replaced: "Newer ad version",
+  art_changed: "Ad picture changed",
+  missing: "Ad not in the library",
+});
+
+/** The sample library, with one fact about where every ad stands changed (replaced, new art, and so on). */
+export async function libraryWith(
+  change: Partial<LibraryAdCatalogStanding>,
+): Promise<CampaignLibraryView> {
+  const sample = await sampleLibrary();
+  return {
+    find: sample.find.bind(sample),
+    standingOf: (ad: Readonly<{ id: string; version: number }>) => {
+      const standing = sample.standingOf(ad);
+      return standing === undefined ? undefined : { ...standing, ...change };
+    },
+  };
+}
+
+/** What the library says about the ad of `scenario` today, as the two questions a page asks of it. */
+export async function scenarioLibrary(scenario: AdScenario): Promise<CampaignLibraryView> {
+  if (scenario.library === "sample") return sampleLibrary();
+  if (scenario.library === "empty") return { find: () => undefined, standingOf: () => undefined };
+  return libraryWith(scenario.library);
+}
+
+/** The approval rule's own answer for the newest version of `campaign`, read the way the command reads it. */
+export function ruleAnswerFor(
+  campaign: BuiltCampaign,
+  library: CampaignLibraryView,
+): LibraryAdRefusalReason | undefined {
+  const { manifest } = campaign.record.version;
+  if (manifest.blueprintId !== "library-ad") throw new Error("Not a library-ad version.");
+  return libraryAdRefusalFor(recordedLibraryAdOf(manifest), library.standingOf(manifest.libraryAd));
 }
 
 /** What the campaign page is handed for a built campaign, read by `principal`. */

@@ -49,6 +49,18 @@ interface LibraryStanding {
   readonly retiredOn: string | null;
 }
 
+/**
+ * QA-06, QA-11. Why the approval command would refuse this version's library ad, or `undefined` when
+ * it would not: the command's own rule, asked of the library's answer. Every chip, notice, and control
+ * on the two Campaigns pages that depends on whether a version can be approved reads this one answer.
+ */
+function adRefusalOf(
+  manifest: LibraryAdCampaignManifest,
+  library: CampaignLibraryView,
+): LibraryAdRefusalReason | undefined {
+  return libraryAdRefusalFor(recordedLibraryAdOf(manifest), library.standingOf(manifest.libraryAd));
+}
+
 function libraryStandingOf(
   manifest: LibraryAdCampaignManifest,
   library: CampaignLibraryView,
@@ -59,7 +71,7 @@ function libraryStandingOf(
   }
   const highest = library.find(manifest.libraryAd.id, standing.highestVersion);
   // QA-06. "Retired" is the approval command's own answer, so the page and the command agree.
-  const retired = libraryAdRefusalFor(recordedLibraryAdOf(manifest), standing) === "retired";
+  const retired = adRefusalOf(manifest, library) === "retired";
   return {
     inLibrary: true,
     retired,
@@ -206,11 +218,11 @@ export function buildCampaignPage(input: CampaignPageInput): CampaignPageData | 
   const { record, principal, library } = input;
   const projection = projectCampaignWorkspace(record, principal, input.kind);
   const manifest = record.version.manifest;
-  const libraryStanding =
-    manifest.blueprintId === "library-ad" ? libraryStandingOf(manifest, library) : undefined;
+  // QA-11. The newest version's chip is where the approval rule says its ad stands, not only whether
+  // the ad was retired, so a version the command would refuse is never called "Ready for approval".
   const versions = projectCampaignVersions(input.versions, principal, {
     state: record.state,
-    adRetired: libraryStanding?.retired === true,
+    adRefusal: manifest.blueprintId === "library-ad" ? adRefusalOf(manifest, library) : undefined,
   });
   const shown = versions.find(
     (summary) => summary.versionNo === (input.versionNo ?? record.version.versionNo),
@@ -269,10 +281,7 @@ export function buildCampaignPage(input: CampaignPageInput): CampaignPageData | 
   // 009c D4 and QA-06. A version nobody approved whose ad is retired, missing, replaced, or whose
   // art changed cannot be approved, so the page does not offer a control that would only be
   // refused; a notice says why and what to do (D-4). The answer is the approval command's own rule.
-  const libraryRefusal = libraryAdRefusalFor(
-    recordedLibraryAdOf(shownManifest),
-    library.standingOf(shownManifest.libraryAd),
-  );
+  const libraryRefusal = adRefusalOf(shownManifest, library);
   const approvalBlockedByLibrary = undecided && libraryRefusal !== undefined;
   const notices = isLatest
     ? noticesFor({
@@ -363,7 +372,11 @@ export function buildCampaignListRow(
       startsOn: undefined,
       endsOn: undefined,
       places: Object.freeze([...manifest.meta.targeting.regions]),
-      standing: deriveCampaignStanding({ state: projection.state, decision, adRetired: false }),
+      standing: deriveCampaignStanding({
+        state: projection.state,
+        decision,
+        adRefusal: undefined,
+      }),
       decision,
       updatedAt: projection.updatedAt,
     });
@@ -381,10 +394,11 @@ export function buildCampaignListRow(
     startsOn: manifest.schedule.startsAt?.slice(0, 10),
     endsOn: manifest.schedule.endsAt.slice(0, 10),
     places: placeNames(manifest.meta.targeting),
+    // QA-11. The approval rule's answer, so the list says "Ready for approval" only where it allows one.
     standing: deriveCampaignStanding({
       state: projection.state,
       decision,
-      adRetired: libraryStandingOf(manifest, library).retired,
+      adRefusal: adRefusalOf(manifest, library),
     }),
     decision,
     updatedAt: projection.updatedAt,

@@ -2,10 +2,14 @@ import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  AD_SCENARIOS,
   APPROVER,
+  CHIP_FOR_REFUSAL,
   CREATOR,
   libraryCampaign,
   rowOf,
+  ruleAnswerFor,
+  scenarioLibrary,
   type LibraryCampaignOptions,
 } from "../../../../server/campaign-page.test-support.js";
 import { useReviewModeEnvironment } from "../../review-mode-test-support.js";
@@ -113,6 +117,66 @@ describe("the campaign list's status for every state of 009d D8 (009E-AC-010)", 
 
     expect(screen.getAllByText("Approved").length).toBeGreaterThan(0);
     expect(screen.queryByText("Ad retired")).toBeNull();
+  });
+
+  /**
+   * QA-11. The list said "Ready for approval" for a version whose ad was replaced, whose picture
+   * changed, or that the library no longer holds, while its own page said it could not be approved.
+   * Each scenario asks the approval rule (`libraryAdRefusalFor`) and expects the chip step 3 draws for
+   * that answer, so the list says "Ready for approval" only where the rule allows an approval.
+   */
+  describe("for an ad the approval rule may refuse (QA-11)", () => {
+    it.each(AD_SCENARIOS.map((scenario) => [scenario.name, scenario] as const))(
+      "draws the chip the rule gives for %s, to everybody who reads the list",
+      async (_name, scenario) => {
+        const library = await scenarioLibrary(scenario);
+        const campaign = await libraryCampaign(scenario.campaign);
+        const refusal = ruleAnswerFor(campaign, library);
+        const expected = refusal === undefined ? "Ready for approval" : CHIP_FOR_REFUSAL[refusal];
+        for (const principal of [APPROVER, CREATOR]) {
+          const row = await rowOf(campaign, { principal, library });
+          mocked.read.mockResolvedValue({ authenticated: true, campaigns: [row] });
+          const { container, unmount } = render(await CampaignListPage());
+
+          const chips = container.querySelectorAll(
+            "[data-campaign-table] [data-campaign-standing]",
+          );
+          expect(chips, principal.role).toHaveLength(1);
+          expect(chips[0]?.textContent, principal.role).toBe(expected);
+          // The phone cards carry the same chip, so a narrow screen cannot say something else.
+          const cards = container.querySelectorAll(
+            "[data-campaign-cards] [data-campaign-standing]",
+          );
+          expect([...cards].map((chip) => chip.textContent)).toEqual([expected]);
+          if (refusal !== undefined) {
+            expect(screen.queryByText("Ready for approval"), principal.role).toBeNull();
+          }
+          unmount();
+        }
+      },
+    );
+
+    it("lets a recorded decision win over each reason", async () => {
+      for (const scenario of AD_SCENARIOS) {
+        for (const [decision, chip] of [
+          ["approved", "Approved"],
+          ["rejected", "Sent back for changes"],
+        ] as const) {
+          const library = await scenarioLibrary(scenario);
+          const row = await rowOf(await libraryCampaign({ ...scenario.campaign, decision }), {
+            library,
+          });
+          mocked.read.mockResolvedValue({ authenticated: true, campaigns: [row] });
+          const { container, unmount } = render(await CampaignListPage());
+
+          expect(
+            container.querySelector("[data-campaign-table] [data-campaign-standing]"),
+            `${scenario.name} / ${decision}`,
+          ).toHaveTextContent(chip);
+          unmount();
+        }
+      }
+    });
   });
 
   it("never shows a campaign as live or going live, whatever state it is stored in", async () => {

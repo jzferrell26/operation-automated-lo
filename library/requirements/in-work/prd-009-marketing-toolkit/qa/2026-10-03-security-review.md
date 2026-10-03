@@ -338,3 +338,155 @@ No other advisory at any level; `pnpm audit --prod` clean; no npm advisory publi
 ## MTK-003 at `0d539dee`
 
 Zero unresolved Critical, High, or Medium, in code and in `pnpm audit`, with SEC-009-01 accepted by the owner. **MTK-003 is met.** The owner should rule on SEC-009-07's grade; if it is graded Medium, MTK-003 re-opens until the prototyped fix lands. `quality-guardian` (MTK-004) runs next, on the final tree.
+
+---
+
+# Final delta (2026-10-03) at `e8aae2b5`
+
+**Reviewer:** `security-guardian` (paired weapon: `security-weapon`), Opus, read-only pass.
+**Head:** `e8aae2b5` on `claude/prd-009-marketing-toolkit` (`8178126b` plus the quality report commit). `git log -1`: "docs(qa): PRD-009 quality close-out, delta pass at 8178126b (code and records: SHIP)".
+**Scope:** `git diff 0d539dee..HEAD`, 57 commits, 137 non-picture files: lane F (`84e638b4`, `5cc34787`, `012d5f63`, `7603707d`), the QA-06 approvability refactor (`d1a92183`, `93c1a16d`), the round 2 design lanes G to J, the quality lanes, the writing delta (D-1 to D-8), and the final pre-redraw commits. The uncommitted pictures under `tests/visual/screens/` were ignored. Nothing in the tree was edited, staged, or committed; this appended section is the only change, left uncommitted. Probes ran from the session scratchpad.
+**Verdict: MTK-003 NOT MET on this head**, by one new Medium tagged NEEDS HUMAN REVIEW (SEC-009-13: the word checks read English only). Critical 0, High 0 unresolved (SEC-009-01 still accepted, unchanged), Medium 1, Low 2, Info 4. Every lane F fix holds against a second attack, the QA-06 refactor is equivalent to the command's old rule and the screens are now stricter, and the round 2, quality, and writing lanes add no security surface. MTK-003 is met as soon as the owner rules on SEC-009-13 (see its fix: accept it with a dated record and a pre-launch requirement, or grade it Low), or the run lands a language rule.
+
+## Pre-flight
+
+- **Ordering.** The quality close-out delta (`qa/2026-10-03-quality-report.md`, commit `e8aae2b5`) audited `8178126b` and itself named this pass as gate 1 still due (its section on gates, item 1). This pass changes no code, so that report stays valid. If SEC-009-13 is closed in code rather than by an owner decision, the touched files need a quality re-check. The parallel QA-11 and QA-12 lane (status chips and next-step wording) was not in this tree and was not reviewed; its diff should be shown to this reviewer before ship.
+- **Intelligence freshness.** `research/cve-watchlist.md` still says `Last refreshed: 2026-04-24` (162 days, past 120). SEC-009-I2 stands; advisories were checked live instead.
+- **Stack.** Next.js 16.3.6, React 19.3.0, TypeScript, Node 24.18.0: full coverage.
+
+## Commands run (Node 24.18.0, pnpm 11.15.1, unless stated)
+
+| Command | Result |
+|---|---|
+| `pnpm audit:dependencies` (`pnpm audit --audit-level=high`) | **Exit 0.** "1 vulnerabilities found. Severity: 1 high (1 ignored)" |
+| `pnpm audit --audit-level=low` | Exit 0, the same single ignored high; nothing at any other level |
+| `pnpm audit --prod --audit-level=low` | "No known vulnerabilities found" |
+| `pnpm audit:secrets` | "Secret audit passed across 6 source roots and the public environment boundary." |
+| `gh api advisories/GHSA-vfj7-8cjw-p6xm` | updated 2026-10-02T22:36:34Z, not withdrawn, `<= 3.0.3`, `first_patched_version: null`; `npm view braces versions` still ends at 3.0.3 |
+| `gh api "advisories?ecosystem=npm&updated=>2026-10-03T16:28:00Z"` at 20:36 UTC | Zero npm advisories updated since the delta pass's check |
+| `vitest run --project contracts tests/security` | 6 files, 40 tests pass |
+| `vitest run tests/security/provider-side-effect-default-off.test.ts` (MTK-005) | 15 of 15 pass |
+| `vitest run` on `library-ad-approval-command.test.ts`, `launch-an-ad.unit.test.ts`, `campaign-page-data.unit.test.ts`, `home-campaigns.unit.test.ts` | 4 files, 85 tests pass |
+| `vitest run --project unit` on `accepted-advisories.test.ts`, `library-ad-checks/`, `unit/application` | 4 files, 740 tests pass |
+| `pnpm test:unit`, twice, on a machine shared with other lanes (45 `node.exe` processes) | Run 1: 2611 of 2612, the SEC-009-02 timing guard over its bound (3509 ms against 1500 ms). Run 2: 2610 of 2612, `sample-flag-scan.test.ts` (120 s timeout) and `sample-catalog.test.ts` (61 s) timed out. Each passes alone (388 of 388, and 9 of 9). Load, not a defect: SEC-009-I11 |
+| Probes (scratchpad only) | The head's `library-ad-words.ts`, `library-ad-places.ts`, `ad-places.ts`, and the approval rule bundled with the repository's esbuild 0.25.0: 156 adversarial word cases (0 against expectation) on Node 24.18.0 (`process.versions.unicode` is 17.0) and on Node 22.19.0 (same results), 20 non-English cases, and a timing battery; the `0d539dee` words module bundled the same way for a before and after |
+| Accepted-advisory sidesteps against real pnpm 11.15.1, in a scratch copy of the manifests and lockfile | See SEC-009-12 below and SEC-009-I10 |
+| Added-line sweep (6,005 lines) | No key, token, private key, connection string, or real email; phone shapes are the 800-555-1212 test value only; no hidden Unicode in a non-test file; `.cursor`, `.claude`, `AGENTS.md`, `CLAUDE.md` unchanged; no new `dangerouslySetInnerHTML`, `innerHTML` write, `srcDoc`, or `eval` (the `innerHTML` reads are in the test-only `apps/web/src/testing/glyph-markup.tsx`) |
+
+Not run, as instructed: browser suites, database suites, `pnpm build`.
+
+## Scorecard at `e8aae2b5`
+
+| Category | Status | Findings |
+|---|---|---|
+| Financial / payment security | OK | 0 (no payment or budget code changed) |
+| PII exposure | OK | 0; the Brand preview hides an empty NMLS line; Spanish private-detail requests fall under SEC-009-13 |
+| Authentication and authorization | OK | 0; no route, handler, session, or role code changed; the mutation role is still enforced in `library-ad-save.ts:121` |
+| Injection (SQL, XSS, path, ReDoS) | OK | 0; text-only rendering; new patterns linear at field length |
+| Ad compliance controls (word checks, places) | **ATTN** | SEC-009-13 (Medium, NEEDS HUMAN REVIEW); SEC-009-14, 15 (Low) |
+| Approval rule (QA-06) | OK | 0; equivalent in the command, stricter on the screens |
+| Sample-ads guard and catalog integrity | OK | 0; guard files unchanged; one test comment |
+| Provider side effects (MTK-005) | OK | 0; test passes; "Launch on Facebook" still a literal `disabled` button with no handler |
+| Dependency security | OK (accepted) | SEC-009-01 accepted; SEC-009-12 resolved; I10 |
+| Configuration and headers | OK | 0; `next.config.ts`, `src/proxy.ts`, CI unchanged |
+| Public repository hygiene | OK | 0 |
+
+## 1. Lane F's fixes, verified and attacked again
+
+### SEC-009-07. RESOLVED as specified (window of two words)
+
+- **Fix:** `packages/domain/src/library-ad-words.ts:107` (`NUMBER_WORDS_APART`), `:110-113` (kind from the unit), `:115-118` (`NUMBER_WORD_UNIT`), `:223` (claim pattern), `:234` (`decades? and a half`); D5 note `prd-009d-marketing-toolkit-launch-an-ad.md:132`.
+- **Refused, each with a claim and `WORDS_NUMBER`:** the nine strings of the delta pass, plus "Fifteen short, sweet years", "Thirty fixed-rate years", "Fifteen and a half short years", "Thirty short years and done", "Fifteen" and "short" and "years" separated by U+2013 dashes, "Fifteen ye" + Cyrillic a + "rs" and "Fift" + Cyrillic e + "en years" (confusables), "One hundred eighty payments", "One payment a month for thirty years". **Passing as intended:** "One home, many years of memories", "Make this one of your best years", "One loan officer, many happy years", "Credit score and payment history", "Down payment help", "Dozens of families helped", "Serving our community for generations", "A decade of helping first-time buyers".
+- **Still passing, by design:** three fillers ("Fifteen happy, happy, happy years"), an "and" between fillers ("Fifteen short and sweet years"). This is the window the amendment records and counsel holds (checklist step 12). Other English phrasings found open are in SEC-009-14.
+- **Cost:** the 600-character worst case is 2.4 ms. The repository's own guard input (6,800 characters) takes about 125 ms on Node 24 against 93 ms at `0d539dee`, roughly quadratic in length, so no denial of service at any field's limit (headline 120, ad text 600, request body 16,000 bytes before parsing).
+
+### SEC-009-08. RESOLVED
+
+- **Fix:** `library-ad-words.ts:368-369` and `:376-379` (license digits are ASCII only), `:516-520` (`SPOKEN_PHONE_NUMBER`), `:536-560` (`foldDecimalDigits`), `:806-807` (number rule on the typed reading, every other rule on the folded reading), `:665` and `:794` (saved partners and own words folded too).
+- **Refused:** "NMLS" followed by 8005551212 in Arabic-Indic, Devanagari, Bengali, Adlam, Osmanya, and Mathematical Bold digits, and fullwidth (each as `WORDS_NUMBER` and `WORDS_CO_BRAND`, or `WORDS_CO_BRAND` where NFKC already folds); "NMLS" with 1234567 in Extended Arabic-Indic, "License" with Thai digits, "NMLS 12345" plus two Arabic-Indic digits, dingbat and Ethiopic numerals (`WORDS_NUMBER`); company "Acme NMLS" plus Arabic-Indic digits, and "Acme" plus Arabic-Indic 8005551212 plus "th Lending"; "Call eight hundred, five five five, one two one two", "Text five-five-five, one-two-one-two", the same in capitals, with dots, with a Cyrillic letter, and in the title. A saved partner "Team 7 Realty" refuses "Team" plus Arabic-Indic 7, and the reverse. **Passing as intended:** "NMLS 1234567", "Lic. 12-3456", circled and superscript digits (NFKC makes them an ordinary license number), "One, two, three: buying made simple", "Step one, step two, step three, then keys." Residuals: SEC-009-15.
+
+### SEC-009-09. RESOLVED
+
+- **Fix:** `library-ad-words.ts:341-342` (`\p{Cn}`, U+1D159, U+16FE4 added).
+- **Refused (Node 24.18.0, Unicode 17.0, and Node 22.19.0):** U+1D159, U+16FE4, U+0378, U+1FC00 inside "Rates", U+1FC00 followed by U+FE0F, the noncharacters U+FDD0 and U+FFFF, U+E01F0, U+1D173, U+1D17A, U+13430, U+1BCA0, U+2800, U+FFA0, U+17B4, U+2063, U+115F, U+3164, U+E0020, U+061C. Accents and enclosing marks inside "Rates" are stripped by the readings, so the claim is found. **Passing:** U+1680, U+FFFC, U+0F0C, U+2BFE, U+0CF3 between two words, each of which draws or reads as a visible gap or symbol; a heart with U+FE0F, a house, a waving hand with a skin tone, "Café". See SEC-009-I12 and I13.
+
+### SEC-009-10. RESOLVED for the listed vocabulary
+
+- **Fix:** `library-ad-words.ts:204` (free, paid, lender paid, waived, covered before closing costs), `:444` (`WITH` reads "w"), `:452`, `:461-466`.
+- **Refused:** "Free closing costs", "Lender-paid closing costs", "Seller-paid closing costs", "Closing cost free"; titles "Partnered w/ Keller Williams", "Partnered w. ...", "Partnered W/ ...", fullwidth w, "Partnered with: ...", "Partnered-with ...", "Affiliated w/ Prairie Homes". **Passing as intended:** "Partnered w/ you", "Understand your closing costs", "Take the stress off closing day", "Buying real estate? Start here.", "Questions? I am here w/ answers." Residuals: SEC-009-14.
+
+### SEC-009-11. RESOLVED
+
+- **Fix:** "hispanics" in `packages/domain/src/library-ad-places.ts:91` and `packages/contracts/src/ad-places.ts:190`; the equality test passes. The other words stay with counsel (checklist step 12, item 2).
+
+### SEC-009-12 and I8. RESOLVED
+
+- **Fix:** `tooling/tests/unit/dependencies/accepted-advisories.test.ts:51-86` reads every entry under `auditConfig` (block and flow lists, blank and comment lines skipped, unknown shapes thrown) and holds the whole block to `{ ignoreGhsas: ["GHSA-vfj7-8cjw-p6xm"] }` (`:89-91`); `:93-98` holds the dated reason and the revisit date; `pnpm-workspace.yaml:46` "Revisit 2026-11-03", mirrored as decision D-9 in `finish-line-operator-checklist.md:39`.
+- **Sidesteps tried against real pnpm 11.15.1, each blocked:** a second `auditConfig` key (pnpm itself fails: "duplicated mapping key"); `audit-config:` in kebab case (pnpm ignores it, the advisory is reported); `pnpm.auditConfig` in the root `package.json` (pnpm ignores it); a quoted `"auditConfig":` key (pnpm honours it, but the test then reads no block and fails); a quoted inner key, a multi-line flow list, an anchor, a merge key, a block scalar, and a comment, quote, or bare carriage return used to hide an entry from the reader (each either parses the same in both or makes the reader throw). The test's claim, a second ignore "under either key", holds. One route outside the file it reads: SEC-009-I10.
+
+## 2. The QA-06 approvability refactor
+
+- **The command's refusal is unchanged.** `libraryAdRefusalFor` (`packages/application/src/campaign-approval-command.ts:127-143`) is the old `assertLibraryAdApprovable` body returning a reason instead of throwing: same order (missing, retired by this or the newest version, not active or not highest, either art digest changed), same comparisons. `recordedLibraryAdOf` (`:107-116`) reads the same id, version, and two digests the old code destructured. `assertLibraryAdApprovable` (`:149-160`) still runs after the role check and before the idempotent retry and every other check (`:362-364`). The shared table `REFUSED_STANDINGS` drives both the command's cases and a new equivalence suite in which the rule's reason equals the reason the command throws for all seven standings and both answer nothing for an active one (`tooling/tests/unit/ads-library/library-ad-approval-command.test.ts`, passing).
+- **No screen or route trusts a client value.** Step 3 (`apps/web/src/server/launch-an-ad.ts:192`), Home (`apps/web/src/server/home-reads.ts:228` through `home-campaigns.ts:76`), and the campaign page (`apps/web/src/server/campaign-page-data.ts:62`, `:272-276`) each call the rule on the server with the server's catalog standing; the client receives only the answer, for display. The campaign page is stricter than before: it now withholds Approve for a changed-art version and for a replaced version with no offer, which it used to offer. The approve route and handler are unchanged (`campaign-approval-handler.ts` takes no approvability field, re-reads the version, and passes the catalog port at `:104`); no API route was added. The only client import from `@oalo/application` is a type (`launch-review.tsx:3`). "Make a new version" and "Use the new version" go through the unchanged strict save route, which re-resolves the ad from the catalog and enforces the mutation role (`library-ad-save.ts:121`); `canMakeNewVersion` only decides what is drawn.
+- **The catalog port is still required:** a required parameter of `executeHumanCampaignApproval` (`:318-323`), asserted at run time (`:84-92`, `:324`), with the `@ts-expect-error` and run-time rejection test at `library-ad-approval-command.test.ts:146-156`.
+
+## 3. Round 2 design lanes, quality lanes, and the final pre-redraw lane
+
+- **No new route.** The only added files are two components (`keep-words-whole.tsx`, `launch-an-ad-link.tsx`), `status-tone.ts`, a test helper, tests, and documents. Added pages: none; the three homeowner pages gain static `metadata` titles only.
+- **Request, session, and error data.** The password-reset notice still reads only its own flag and now renders as a child of `OverviewScreen` (`overview/page.tsx`); nothing new reads cookies, headers, or query strings. `UseNewVersion` gains a `lead` and an `askWhenCannot` string, both copy constants; its refusal and support reference paths are unchanged. The approval card's status line keeps the same sentence source and becomes visually hidden while empty. Every new link is a fixed path or `launchHref` built with `URLSearchParams`. `labelForStatus` reads its table with `Object.hasOwn` and is fed only the synthetic demo campaign.
+- **Unchanged:** the sample guard and catalog loader, the sample art route, `synthetic-brand-page.ts` and the Brand page's mode gate, `support-details.tsx`, `apps/web/src/features/http`, `apps/web/src/app/api`, `packages/ghl`, `packages/db`, `supabase`, `.github`, `tooling/scripts`, `next.config.ts`, `src/proxy.ts`, `pnpm-lock.yaml`, every `package.json`.
+- **Connections page.** Review mode adds `stateLabel` from a server constant (`ACCESS_GROUP_NOT_CONNECTED_STATE_LABELS`); the synthetic schema accepts it as an optional string; the demo keeps its words. No data source changed.
+- **Shared primitives.** `Link` gains `size` (a `data-size` attribute only) and still omits `rel` and `target` from its props; three static icons; `Select`, `Button`, and theme CSS only.
+
+## New findings
+
+### SEC-009-13. The word checks read English only, so a rate, payment, or term claim written in Spanish passes every rule (Medium, NEEDS HUMAN REVIEW)
+
+- **Severity:** Medium by this review's own calibration, tagged **NEEDS HUMAN REVIEW**. For Medium: SEC-009-02 was graded Medium because "A dozen years, fixed", a term claim in ordinary words, passed every check; "Tasa fija por treinta años" ("fixed rate for thirty years") is the same claim in the second language of the US mortgage market, written without any evasion by a bilingual loan officer, and it also beats the conservative number rule, because the rule refuses digits and English number words only. Unlike SEC-009-07, this is a whole class, not one more filler word, and a finite list closes its most common case. For Low: launch is disabled in PRD-009 (MTK-005), a named human approves every version, step 3 shows the words, and counsel reviews before any live launch (checklist step 12), the same mitigations that held SEC-009-05 at Low until the publish PRD.
+- **Location:** `packages/domain/src/library-ad-words.ts:74-81` (number words, English only), `:135-237` (`CLAIM_PATTERNS`), `:446-474` (co-brand phrases), `:713-737` (`PRIVATE_DETAILS`), `:516-520` (spoken digits); the free-text inputs are the headline and ad text (`apps/web/src/server/library-ad-save.ts:52-64`) and every Brand text. No PRD line limits the ad's language (009d D5 and the index risk R-4 name none).
+- **Scenario (probed on this head, no saved partner; each produces no finding at all, while its English twin is refused):** headline "Tasas bajas para tu casa" (English "Low rates for your home": refused), "Tasa fija por treinta años" (and without the tilde), "Pagos mensuales bajos", "Tres por ciento de enganche", "Sin enganche, sin costos de cierre", "Interés bajo, pagos pequeños"; ad text "Compra tu casa con una tasa fija por quince años y pagos mensuales bajos."; title "En colaboración con Keller Williams" and "Socio de Keller Williams"; lead form wording "Escriba su número de seguro social" (asks for a Social Security number); headline "Llame al ocho cero cero, cinco cinco cinco, uno dos uno dos". The same holds in Portuguese ("Taxas baixas"), Vietnamese ("Lãi suất thấp"), Tagalog ("Mababang interes"), Chinese, and Korean.
+- **Fix (owner decision first; neither option is under five lines, so this read-only pass applies nothing):**
+  1. **Recommended for PRD-009:** the owner records that library-ad words and Brand texts are checked in English only, accepts SEC-009-13 with a dated note (the SEC-009-01 pattern: D5 note, ledger, and a revisit tied to the Meta publish PRD), and the checklist's step 12 gains item (4): "the checks read English; before any live launch, either refuse ads in other languages or give counsel a word list for each language the product allows." MTK-003 is then met.
+  2. **If the owner wants it closed in code now:** in `library-ad-words.ts`, refuse in the headline and ad text any letter outside the Latin script (closes Chinese, Korean, and the rest), and add a Spanish list with table cases: rates (`\btasas?\b`, `\binter[eé]s\b`, `\bpor ciento\b`), payments (`\bpagos? (?:mensuales?|bajos?|de)\b`, `\bmensualidad(?:es)?\b`, `\bsin enganche\b`, `\bcostos? de cierre (?:gratis|pagados?|cubiertos?)\b`), terms (Spanish number words, `uno` to `cien`, `docena`, `quince`, `treinta`, beside `años?|anos?|meses`), co-brand (`\b(?:en )?colaboraci[oó]n con\b`, `\bsocios? de\b`), private details (`n[uú]mero de seguro social`). Counsel calibrates it (009F-AC-014 part c). Other Latin-script languages would still need item 1.
+
+### SEC-009-14. English phrasings the claim, co-brand, and closing-cost lists still miss (Low, R-4 family)
+
+- **Location:** `library-ad-words.ts:122` (`FIXED_SPAN`), `:135-237`, `:446-474`.
+- **Probed passes:** a number word with its unit left out ("Paid off in fifteen", "Locked in for thirty"), a Roman numeral ("Fixed for XV years"), "A quarter century, fixed", "Thirty and change years", a year in words ("Fixed till twenty fifty-five"), "Fifteen summers to pay it off"; "No-cost closing", "Zero-cost closing", "Closing costs: on the house", "We cover closing"; titles "A partnership with Keller Williams", "Together with ...", "Hosted by ...", "Powered by ...", "In conjunction with ...", company "Prairie Lending, an RE/MAX company". D5's amendment (`prd-009d...:135`) already lists "We pay your closing costs", "Closing costs on us", "Teamed up with", and "an ... company" as open.
+- **Why Low:** the open vocabulary R-4 accepts, as SEC-009-04 and 10 were graded; control 9 holds by structure (no partner field in a library ad); a person approves every version; launch is disabled.
+- **Fix:** hand the strings to counsel with step 12 item (1). Cheap, low-risk additions if wanted: `\b(?:fixed|locked(?: in)?|paid off)(?: (?:for|in|over))? (?:NUMBER_RUN)\b` as a term, `\bquarter century\b`, `\b(?:no|zero) cost closing\b`, `\bclosing costs? on (?:us|me|the house)\b`, and `\b(?:partnership|together|in conjunction) with\b` and `\b(?:hosted|powered) by\b` as co-brand, each with a table case and the "you" exception.
+
+### SEC-009-15. Contact details that still pass: spoken numbers in groups, and a regrouped ten-digit license (Low)
+
+- **Location:** `library-ad-words.ts:516-520` (`SPOKEN_PHONE_NUMBER` counts only single digit words), `:368-379` (a license reference is 4 to 12 ASCII digits with at most one hyphen anywhere), `:508-509` (`PHONE_NUMBER` reads the 3-3-4 shape).
+- **Scenario (probed):** headline "Call eight oh oh, five five five, twelve twelve", "Call five five five, twelve twelve", "Call five fifty-five, twelve twelve", "Call five double-five, one two one two", "Call fivefivefive onetwoonetwo"; disclosure line "NMLS 8005-551212. Equal Housing Lender." and "NMLS 80055-51212" (the ten digits of a phone number, grouped so the phone pattern misses them).
+- **Why Low:** as SEC-009-03 and 08: deliberate typing, in plain sight of the approver, contact details rather than a rate or term, launch disabled.
+- **Fix:** count spoken digits rather than digit words (a teen or "twelve" is two digits, "double five" is two), and refuse seven or more in a row; in `isLicenseDigits`, refuse exactly ten digits, or eleven starting with 1, whatever the hyphen's position, which keeps "Lic. 12-3456" and "NMLS 1234567". Table cases for each.
+
+## Info
+
+- **SEC-009-I10. The `audit:dependencies` script is a second way to silence an advisory, outside the test's file.** Verified on pnpm 11.15.1: `pnpm audit --audit-level=high --ignore GHSA-...` writes the entry into `pnpm-workspace.yaml` at run time and exits 0, and `--audit-level=critical` passes a high. A change to `package.json:30` is visible in review, and the test claims only `auditConfig`. The environment cannot weaken it (`pnpm_config_audit_level=critical` loses to the script's `--audit-level=high`, verified). Suggest one assertion in `accepted-advisories.test.ts` that the root `package.json` script is exactly `pnpm audit --audit-level=high`.
+- **SEC-009-I11. Security guard tests time out on a loaded machine.** In two full `pnpm test:unit` runs on this shared machine, the SEC-009-02 linear-time guard exceeded its 1500 ms bound once, and the sample-flag allowlist scan (009C-AC-004, 120 s) and the catalog generator test (61 s) timed out once; each passes alone. The linear-time guard's input is 6,800 characters, eleven times the largest field, although its name says "at every field's length"; at 600 characters the cost is 2.4 ms. A red required check blocks MTK-002 for a reason that is not a defect (the QA-10 family). Suggest measuring at each field's real limit with a generous bound, and keeping the long input only as a growth ratio check.
+- **SEC-009-I12. D5 names the wrong Unicode version.** `prd-009d...:134` says the unassigned set is "Unicode 16.0 on Node 24.18.0"; Node 24.18.0 reports `process.versions.unicode` 17.0. The behaviour is right (the server's engine decides; a browser on another version may disagree with the server, and the server wins). Correct the note when the file is next touched.
+- **SEC-009-I13. A family emoji is refused as hidden characters.** "Family homes" followed by a man, woman, girl ZWJ sequence is refused, because U+200D is a format character (unchanged since the authoring review). It blocks a clean sentence (the other side of R-4), not a security gap; counsel or design may want ZWJ allowed between two pictographs.
+- **Carried:** I1 (ordering, see pre-flight), I2 (stale watchlist, 162 days), I3, I4, I6, I7 (no server read path, database, or homeowner gate changed), I5 (`ad-brand-editor.integration.test.tsx:79`, `:255` still "NMLS 123456"). I8 is resolved (revisit date 2026-11-03, test-held).
+
+## Dependency audit at `e8aae2b5`
+
+| Package | Severity | Advisory | Path | Fix available | Status |
+|---|---|---|---|---|---|
+| braces 3.0.3 | High (CVSS 7.5) | GHSA-vfj7-8cjw-p6xm | `apps/tasks > trigger.dev 4.6.4` (dev), three paths | No (`first_patched_version: null`; npm's latest is 3.0.3) | Accepted by the owner, 2026-10-03; revisit 2026-11-03 (`pnpm-workspace.yaml:42-51`) |
+
+No other advisory at any level; `pnpm audit --prod` clean; the lockfile and every `package.json` are unchanged since `0d539dee` (MTK-010 holds).
+
+## Files changed by this final delta
+
+- Modified, uncommitted: this file (this section appended). No other file in the worktree was touched; probes and the scratch workspace copy ran from the session scratchpad.
+
+## MTK-003 at `e8aae2b5`
+
+Zero Critical, zero unresolved High (SEC-009-01 accepted), one **Medium**: SEC-009-13, tagged NEEDS HUMAN REVIEW. **MTK-003 is not met on this head.** It is met when the owner either accepts SEC-009-13 with a dated record and the step 12 pre-launch item (fix option 1), or grades it Low; or when the run lands fix option 2 and `quality-guardian` re-checks `library-ad-words.ts` and its tests. Lane F's six fixes, the QA-06 refactor, and every other change since `0d539dee` pass this review. The QA-11 and QA-12 lane's diff remains to be seen.
+
+### Owner decision on SEC-009-13 (2026-10-03)
+
+The owner was asked in plain English and chose to record SEC-009-13 and fix it later: the finding is accepted with this dated record, operator checklist step 12 carries an item to settle which languages an ad's words may be in and to cover each one before any live launch, and the PRD-009 index lists it under "Follow-ups after PRD-009". Launch is disabled in PRD-009, so nothing is exposed. With SEC-009-01 and SEC-009-13 both accepted by the owner, no Critical, High, or Medium finding is unresolved, and MTK-003 is met.

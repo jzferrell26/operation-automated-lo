@@ -292,3 +292,160 @@ Recommended in the same pass, because each is small: QA-06 (one exported approva
 | Configuration (7) | `package.json` (`audit:sample-ads`), `pnpm-workspace.yaml` (the accepted advisory), both Playwright configs, `vitest.config.ts` (the `server-only` alias), two workflows |
 
 The uncommitted second redraw (468 pictures) is not in this diff.
+
+---
+
+## Delta pass (2026-10-03) at `8178126b`
+
+> **Auditor:** `quality-guardian` (paired weapon `quality-weapon`), opus, read-only.
+> **Tree:** `claude/prd-009-marketing-toolkit` at `8178126b` (pushed, the head of PR #75), diff `2ec0affe..8178126b`: 44 commits, 128 files outside `tests/visual/screens/`, no picture committed. Node v24.18.0.
+> **Scope:** QA-03 to QA-10; round 2 design lanes G (`c83789fa`), H (`ffdab456`), I (`983d3776`) and J (`b00ef873`) with the orchestrator's `0a40c87a`; the quality code lane (`2405c6ec`, then `93c1a16d`) and records lane (`0c5d6680`, then `823f3539`); the writing delta check (`44b4170d`) and the final pre-redraw lane (`e61bfc2d`..`c7d49f36`); the ledger commit `8178126b`.
+> **Security lanes E and F:** both were merged before the early pass (`c97d2d26` and `a173b9bb` are ancestors of `2ec0affe`), so the early pass already covered them: its 132 probe cases include the SEC-009-02 to 11 amendment cases. Since then `packages/domain/src/library-ad-words.ts` changed in one comment (`823f3539`, `:783`). The same probe, rebuilt from the head's source, gives 132 of 132 again.
+> **Order:** `security-guardian` ran in this cycle (early pass, then the delta pass at `0d539dee`, MTK-003 met there) and left no Critical, High, or Medium open, so this is not an ordering violation and the audit was not halted. Its last pass does predate lane F's fixes (SEC-009-07 to 12: `library-ad-words.ts` +148 lines, the accepted-advisory test +180 lines, `pnpm-workspace.yaml`) and the QA-06 refactor of the approval rule (`packages/application/src/campaign-approval-command.ts`). MTK-003 asks for a security run on the final tree, so it is gate 1 of QA-02 below; if that run changes code, the files it touches need a quality re-check.
+> **Writes:** this section only, appended, uncommitted. The uncommitted second-redraw pictures under `tests/visual/screens/` were left as found. Probes ran from the session scratchpad (`qa-probe-delta/`).
+> **Not run, as instructed:** `test:browser`, `test:browser:dashboard`, `test:db`.
+
+### D1. Summary
+
+**Verdict for the code and records: SHIP.** Every fix the early pass asked for has landed. QA-03, QA-04, QA-05, QA-06, QA-08, QA-09 and QA-10 are closed; QA-07 is closed in part. The approval rule is one exported function, and I found no screen that offers Approve (or Send back, or the hand-off) where the command would refuse. The eight writing findings were applied in the reviewer's own words. No assertion was weakened without a recorded reason, and the one disclosed loosening is sound (QA-I10). Three new Lows (QA-11 to QA-13) are worth doing in the final pass and block nothing. The branch is not yet shippable: the gates in D6 remain.
+
+| Severity | Open after this pass | IDs |
+|---|---|---|
+| Critical | 0 | |
+| High | 2 | QA-01, QA-02 (open gates, carried) |
+| Medium | 0 | QA-03, QA-04, QA-05 closed |
+| Low | 4 | QA-07 (in part), QA-11, QA-12, QA-13 |
+| Info | 3 new | QA-I10 to QA-I12; carried items in D5 |
+
+### D2. Suites and probes run (each alone, Node 24.18.0, `bash -lc 'cd <worktree> && ...'`)
+
+| Command | Result |
+|---|---|
+| `pnpm format:check` | Pass |
+| `pnpm lint` | Pass (oxlint) |
+| `pnpm exec turbo run typecheck --force` then `tsc -p tsconfig.tooling.json` | Pass, 16 of 16 packages, 0 cached |
+| `pnpm test:unit` | First run: 1 of 2612 failed under load, `word-checks.test.ts:246` measured 4,104 ms against its 1,500 ms budget (QA-13); that file alone passes 388 of 388. Second run: 173 files, 2612 of 2612 pass, coverage on |
+| `pnpm test:integration` | First run: 1 failed, `campaigns-list.integration.test.tsx:51` hit the 5 s default at 5,286 ms (QA-13); that file alone passes 25 of 25. Second run: 52 files, 773 pass, 1 skipped |
+| `pnpm test:contracts` | 13 files, 112 pass |
+| `pnpm test:components` | 5 files, 69 pass |
+| `pnpm jscpd` | 0 clones in 583 files |
+| `pnpm audit:boundaries`, `audit:product-types`, `audit:secrets` | Pass |
+| `pnpm audit:dependencies` | "1 high (1 ignored)", exit 0 (SEC-009-01, accepted) |
+| Word and place probe (scratchpad) | Rebuilt from the head's `library-ad-words.ts`, `library-ad-places.ts` and `contracts/src/ad-places.ts` with the repository's esbuild 0.25.0: 132 of 132 as specified; "Texas" stores `TX` |
+| Sweep part 2, 009F-AC-011 | The criterion's `git grep` returns the same 143 files at `983d3776` and at `8178126b`. Appendix A lists exactly those 143 (a set compare, no file missing or extra), and its dispositions sum to 34 register row, 16 kept, 50 history, 11 fixed, 32 false positive, as it states |
+| Sweep part 1, 009F-AC-011 | 2 lines, `what-is-automated-lo.md:20` and `open-house-boost-faq.md:18`, each a dated PRD-009 note |
+| Dash scan, MTK-007 | 0 U+2013 or U+2014 in lines added since `2ec0affe` (pattern proven on a planted dash) |
+| Scope contract | No change since `2ec0affe` to `pnpm-lock.yaml`, any `package.json`, `pnpm-workspace.yaml`, `supabase/`, `vercel.json`, `apps/web/next.config.ts`, `.github/`, `tests/security/`, `packages/contracts`, `packages/ghl`, `packages/db`, or `apps/web/src/app/api/`; no new `.only` or `.skip`; no new mention of `OALO_ADS_LIBRARY_SAMPLES` |
+| Ledger, MTK-006 | Since `2ec0affe` only MKR-004 (OPEN to IN PROGRESS), the evidence of MKR-008 and MKR-104, and two raid-log lines changed; no pre-PRD-009 row changed. Statuses: 101 VERIFIED, 10 DONE, 3 IN PROGRESS, 6 OPEN |
+| `gh` (read-only) | PR #75: draft, `MERGEABLE`, `BLOCKED`, 0 commits behind `main` (`e89058e`). On `8178126b`: Release and recovery pass; Application verification and Real PostgreSQL in progress; Preview smoke contract not yet started (it needs them). Screen-baselines run 37149916536 on `8178126b` in progress |
+
+### D3. The early findings, re-checked
+
+- **QA-01, QA-02: open gates.** What each still needs is in D6.
+- **QA-03: closed.** `qa/2026-10-03-writing-review-delta.md` read every user-visible string changed in `301f24f7..823f3539`: 0 BLOCKING, 8 ADVISORY. Each fix uses the reviewer's proposed words verbatim: D-1 `EMPTY_LIBRARY_TITLE` "No ads in the library yet" and `EMPTY_LIBRARY_REASON` (`apps/web/src/copy/launch-messages.ts:54-57`), drawn at `ad-library-cards.tsx:152-156`, with `EMPTY_LIBRARY` kept whole for Home and the list; D-2 `ACCESS_GROUP_NOT_CONNECTED_STATE_LABELS` (`user-language.ts:102-107`) carried as `stateLabel` by the hosted projection (`authenticated-workspace-data.ts:360`) and drawn at `permission-screen.tsx:84`, with the demo unchanged; D-3 `lead` and `askWhenCannot` on `UseNewVersion` (`use-new-version.tsx:65-71`, `:122-127`) passed by step 3 (`launch-review.tsx:466-471`); D-4 the `art-changed` and `replaced` notices (`campaign-page-data.ts:179-188`, `campaign-library-notices.tsx:52-57`, `:68-83`); D-5 "Ad picture changed" and `AD_RETIRED_UNDATED_NOTICE` (`launch-messages.ts:251-257`); D-6 three titles (`page-titles.ts:53-55`, set in the three Homeowner reports `page.tsx` files); D-7 the no-match line (`preference-editors.tsx:286-292`); D-8 `labelForStatus` (`status-tone.ts:22-33`). Dated notes (`15aab749`) on 009C-AC-012, 009b D1, 009D-AC-002, 009E-AC-006 and 009d D8; MKR-008's evidence names the delta check. Because every applied string is the reviewer's own, no further review is due; the only rendered words the reviewer did not write are `labelForStatus`'s fallback for a data word that does not exist today.
+- **QA-04: closed.** Dated notes at every line the early pass cited: `highlevel-marketplace-submission.md:22`, `:24`, `:90` (S-104), `founding-cohort-plan.md:16`, `:50`, `:126` (S-105), `ghl-marketplace-and-scopes.md:215` (S-106); the three ux-ui files ruled and noted (S-107), and `workspace-page-completion.md` completed (S-108). Appendix A of 009f holds the part (2) dispositions and matches the sweep exactly (D2). MKR-104 says so.
+- **QA-05: closed.** Checklist step 12 names SEC-009-04, 07 (with its NEEDS HUMAN REVIEW tag), 10 and 11, the open place words, and the gazetteer requirement (SEC-009-05), links the security review and the 009d amendments, adds a Return line, and records changelog v1.7; no status cell changed.
+- **QA-06: closed.** `libraryAdRefusalFor` and `recordedLibraryAdOf` are exported beside the command (`packages/application/src/campaign-approval-command.ts:107-143`, `index.ts:118-119`). Callers: the command, after its role check and before the idempotent retry (`:149-160`, `:364`); step 3 (`apps/web/src/server/launch-an-ad.ts:192`, mapped by the exhaustive `AD_REFUSAL_STATES`, `launch-model.ts:228-234`); Home (`home-campaigns.ts:72-77`, `home-reads.ts:227-230`); and the campaign page (`campaign-page-data.ts:62`, `:272-276`, `:331-334`). All four read the same loader (`approval-catalog-port.ts:12-20` wraps `loadAdsLibrary`). Adversarial search: `CampaignApprovalControls` renders in two places only, step 3 (`launch-review.tsx:532`, reached only after the refusal branch at `:454-488` returns) and the campaign page (`persisted-campaign-screen.tsx:175-177`, only when `approvalControls` is set, which `approvalBlockedByLibrary` withholds); `CampaignHandOff` renders inside those controls and in step 3's cannot-approve card (`launch-review.tsx:499`, after the refusal branch); no other file under `apps/web/src` draws an approve control (the reporting, overview, and app-route sources have none). The command refuses every decision for a refused ad, not only Approve, and both screens withhold Send back with Approve. Step 3's missing-ad card cannot be reached, because `loadLaunchPage` drops to step 1 when the ad is not found (`launch-an-ad.ts:313-325`). Tests, each failing on the old code: the rule and the command agree on seven standings (`tooling/tests/unit/ads-library/library-ad-approval-command.test.ts:209-249`), step 3 per reason (`launch-review.integration.test.tsx:478`, the QA-06 block), its data (`launch-an-ad.unit.test.ts:53`), the campaign page (`campaign-page-data.unit.test.ts:254`, `:270-373`), and Home (`home-campaigns.unit.test.ts:216-245`). Two residuals, neither of which offers Approve: QA-11 and QA-12.
+- **QA-07: closed in part (Low).** The index has "Follow-ups after PRD-009" (`prd-009-marketing-toolkit-index.md:278-288`) with W-20, W-12, `outputFileTracingIncludes`, the advisory revisit, the Meta items and the security Lows, and checklist D-9 carries the revisit date. Still missing: QA-I2, QA-I3 and QA-I7, which the fix named, and the bullet "The approval rule is written in four places" (`:287`) still describes QA-06 as work to come although `2405c6ec` and `93c1a16d` did it. **Fix:** `library-guardian` adds the three Info items and rewrites that bullet as done (or removes it), with no criterion change.
+- **QA-08: closed.** Checklist decision D-8 names the screens that still say "contact support" (`user-messages.ts:137`, `:237`, `server/homeowners/runtime.ts:168`, `:182`, and the three unrendered `reporting-messages.ts` sentences) and asks for one address.
+- **QA-09: closed.** The 009d D5 note (`d5c68822`) describes the shipped matching; I checked it against `library-ad-words.ts:599-704`: the corporate-ending list, the 33-word stop list (counted), the 3-letter word rule, the 4-character whole-name rule, and the person's own words excluded. The function comment now says three characters (`:783`).
+- **QA-10: closed.** The removed-address scan has an explicit 20 s limit with its reason (`no-links-to-removed-addresses.test.ts:221-225`, `:240`); the flag scan keeps 120 s with its reason (`sample-flag-scan.test.ts:62-67`, `:90`). The `git ls-files` half was declined in the commit ("Neither scan reads fewer files"); I accept that, because CI checks out a clean tree, so only a local untracked file can trip the flag scan. Other load-sensitive tests are QA-13.
+
+### D4. New findings
+
+#### QA-11 (Low). The campaign page's chip and the Campaigns list say "Ready for approval" for a version the page says can't be approved
+
+- **Files:** `apps/web/src/server/campaign-page-data.ts:211-214` and `:384-388`; `packages/application/src/campaign-workspace-read.ts:249-260`; `apps/web/src/features/campaigns/components/persisted-campaign-screen.tsx:69-77`.
+- **Evidence:** `deriveCampaignStanding` knows one library reason, `adRetired`. For an undecided latest version whose ad was replaced, whose picture changed, or that is missing from the catalog, the standing stays `awaiting_approval`, so the page's header chip and the list's Status cell say "Ready for approval" while, since D-4, the same page says "...so this version can't be approved." and offers no Approve. 009d D8's new rows (`prd-009d-marketing-toolkit-launch-an-ad.md:177-179`, dated 2026-10-03) record "The version's own chip" for the list, but say nothing about the campaign page's chip, and for "Ad not in the library" the campaign page column reads "Same", which beside the "Ad retired" row (whose "Same" includes the chip) reads as the chip "Ad not in the library". Reachable only once a real ad gets a newer version or new art; the shipped catalog is empty, and an entry cannot leave the append-only catalog, so "missing" is practically unreachable outside the local sample flag.
+- **Fix:** a ruling from `library-guardian` (plan ambiguity, Notes column below). Either extend `deriveCampaignStanding` with the refusal reason, as it already takes retirement, so the chip says the step 3 chip ("Newer ad version", "Ad picture changed", "Ad not in the library") on the page and the list; or add a dated D8 note that the version's own chip stays on both and say why.
+
+#### QA-12 (Low). A viewer who cannot save a version is treated differently on step 3 and on the campaign page
+
+- **Files:** `apps/web/src/features/campaigns/components/campaign-library-notices.tsx:98`; `apps/web/src/features/ads-library/components/use-new-version.tsx:68`, `:123`; `apps/web/src/features/campaigns/components/launch-review.tsx:474-488`.
+- **Evidence:** (a) On the campaign page, an undecided version whose ad has a newer version on offer draws `<UseNewVersion canUse={notice.canUse} offer={notice.offer} />` with neither `lead` nor `askWhenCannot`, so an approver who cannot save a version, arriving from the hand-off link, sees the Approval card, no Approve, and "A newer version of this ad is in the library." with nothing to press, no reason, and nobody named. That is the gap D-3 closed on step 3 and D-4 closed on this page for the other two reasons. 009d D8's note records this column as it is, so it is a records change too. (b) The reverse on step 3: the retired, replaced-without-offer, and changed-picture cards always draw "Choose another ad" or "Make a new version" (`:474-488`), whatever `canMakeNewVersion` says, while the campaign page shows those links only to a viewer who can edit (`campaign-page-data.ts:158-160`, `:182-184`), and step 3's own replaced card asks such a viewer to ask someone. A viewer who cannot save a version reaches step 3 only by its address, so this is rare.
+- **Fix:** pass `askWhenCannot={USE_NEW_VERSION_ASK}` on the campaign page (its default lead, 009C-AC-009's notice, can stay), and on step 3 draw the card's link only when `canMakeNewVersion`, with `USE_NEW_VERSION_ASK` or a sibling sentence otherwise; one integration case each, and a dated D8 note from `library-guardian`.
+
+#### QA-13 (Low). Two more tests fail under local load
+
+- **Files:** `tooling/tests/unit/library-ad-checks/word-checks.test.ts:246-256` and `apps/web/src/app/(authenticated)/marketing/campaigns/campaigns-list.integration.test.tsx:51`.
+- **Evidence:** in my first full runs the SEC-009-02 linear-time test measured 4,104 ms against `toBeLessThan(1500)` (the file alone runs in 1.9 s), and the list's first render test took 5,286 ms against the 5 s default (the file alone passes). Both passed on the second run. The wall-clock bound is the weaker kind of test for what it guards: catastrophic backtracking costs orders of magnitude, not 3x, so a bound that load can cross makes noise without adding protection. CI has not shown either failing.
+- **Fix:** in the word check, compare the time at a run length n and 2n (linear growth stays near 2x, backtracking explodes) or raise the bound well above load noise with the reason written beside it; give the list's first test an explicit timeout or warm its imports in a `beforeAll`, as QA-10 did for the scans.
+
+### D5. Info
+
+- **QA-I10. The disclosed loosening is sound.** `apps/web/src/theme/ux-ui-supersession.unit.test.ts:180` now accepts `on 2026-10-\d{2} by PRD-009` where it required `on 2026-10-01`. The test still requires the verb and "by PRD-009" on every note in every file the register cites, and the stronger checks beside it are untouched: every cited line is still there once, has "PRD-009" within three lines, and its row ID is in the file (`:150-165`). What is lost is only the check that a note carries the day the row was applied, which 009A-AC-015 does not ask for; the reason is written beside it (`:167-175`). It also accepts an impossible day such as 2026-10-99; `2026-10-(0[1-9]|[12]\d|3[01])` would close that at no cost.
+- **QA-I11. The checklist's own header lags its changelog.** `finish-line-operator-checklist.md:3` says "Version: 1.7" while the newest changelog entry is v1.8 (`:70`, D-9); the introduction (`:5`) says a person closes "steps 10 to 13 below and decision D-8 above", and the "Statuses are as of" line (`:14`) names D-8, both without D-9. Records only.
+- **QA-I12. The partners no-match line is a live region mounted with its words.** `preference-editors.tsx:290` renders `<p role="status">` only when the search finds nothing, with its text already inside. Some screen readers announce a live region only when its content changes after it is in the page, so the comment's "a screen reader hears it as the person types" may not hold everywhere. A region kept in the page and filled when the search empties would. For `ux-ui-guardian`.
+- **Carried from the early pass.** QA-I1 open (009C-AC-008's retired-notice clause is not amended). QA-I2 open (the block is renamed by D-1 but still runs only with `OALO_EXPECT_EMPTY_LIBRARY=true`, `tests/browser/ads-library.spec.ts:210-213`). QA-I3 open (`review-not-connected-screen.tsx` still exists with no importer). QA-I4 superseded by CI on `8178126b` (D6). QA-I5 open (the timing record can take the third dispatch's figure at re-sign). QA-I6 updated: 24 lines (32 occurrences) of `in-work/prd-009` in 12 files outside the folder, the checklist now 7 lines, plus the ledger; links inside the folder use `../../in-work/` or `../../completed/` and I found no `../prd-00N` sibling link, so they survive the move. QA-I7 open (`authenticated-workspace-data.ts:113-118`). QA-I8 and QA-I9 need nothing.
+- **Held, worth recording.** `page-titles.unit.test.ts` moved from one `toEqual` to two `toMatchObject` groups plus `toHaveLength(15)` (`:30-58`), which together pin exactly the 15 titles, so nothing was loosened. Every other removed assertion in the range (`campaign-page-layout`, `launch-look`, `home-polish`, `home-first-run-geometry`, `campaigns-list`, `refusal-messages`, `campaign-detail-screen`, `connections-review-surface`) was replaced by a check of the ruled value (12 px chips, the visually-hidden live region, the Surface inset, the hyphen-safe cell, the opening sentence, "Connected"); the D-2 lane removed a review-surface allowance ("Missing"), which tightens the sweep. "Launch on Facebook" is still a literal `disabled` with no handler (`launch-on-facebook.tsx:32`).
+
+### D6. The gates that remain, exactly
+
+**QA-01 (High, open gate): 009G-AC-006, 009G-AC-011, MTK-011.**
+
+1. Screen-baselines run 37149916536 on `8178126b` finishes with both jobs successful; its ID goes into MKR-119 (009G-AC-011).
+2. Every picture it produces is installed in place of the uncommitted second redraw; none from run 37136898883 remains.
+3. Scored review pass 3 (`ux-ui-guardian`) scores every changed and new picture, Light first, in `qa/2026-10-03-scored-baseline-review.md`: every installed picture at 3 on every axis in Light and in Dark, including R3 P2-06 (pass 2's one Medium) and the Lows still open after pass 2. A picture below 3 is a defect fixed with a test before the commit, and a fix that moves rendered output re-opens 009G-AC-004 and 007 under 009G-AC-011 (another dispatch, recorded).
+4. MKR-114 and MKR-011 then go to VERIFIED; MTK-011's guard and Light-first halves already hold.
+
+**QA-02 (High, open gate): MTK-001, MTK-002, MTK-003, MTK-004, 009G-AC-005, 009G-AC-007, 009F-AC-015.**
+
+1. **MTK-003 on the final tree.** A `security-guardian` delta pass at the final code head (`8178126b`; the redraw commit adds only pictures), covering lane F's SEC-009-07 to 12 fixes (merged after the `0d539dee` pass and not re-attacked), the approval rule refactor, and the accepted-advisory test and revisit date, with its result in `qa/2026-10-03-security-review.md`; then MKR-003 to VERIFIED. If it changes code, the touched files need a quality re-check, and 009G-AC-011 applies if rendered output moves.
+2. **009G-AC-005.** Commit the installed pictures with the "Baseline change:" note; `Application verification` and `Real PostgreSQL migrations and pgTAP` pass on the head that installs them (MKR-113).
+3. **MTK-002.** On the final head, all four required checks are green, `Preview smoke contract` included (it runs only on `pull_request`, after the others); `gh pr view 75 --json mergeable,mergeStateStatus` reports `MERGEABLE` against current `origin/main` (the ruleset's strict policy needs the branch up to date: 0 behind `e89058e` today); `pnpm verify` and `pnpm test:db` green on the final tree (MKR-002).
+4. **009G-AC-007.** Re-sign `docs/operations/evidence-packs/design-quality-signoff.md` against the final commit. It is unchanged since `e89058e` and still "Status: SIGNED" for PRD-008's screens. Rows for removed screens read "Removed by PRD-009 on <date>" and stay as history; every new screen and state has a row, each empty-account state included (the library's empty state now has a title and a reason; the Connections chips changed); no "not photographed" or "asserted" cell remains; the screenshots-outside-git, no-real-personal-data statement stays (MKR-115). The timing record can take the final dispatch's figure (QA-I5).
+5. **009F-AC-015.** Move the folder to `library/requirements/completed/` in one commit that repairs every inbound link: the 32 occurrences in 12 files (QA-I6), the ledger's source link, the `in-work/README.md` and `completed/README.md` entries, `library/README.md`'s catalog label, and the backlog lineage row; a relative-link check over the changed files finds none broken (MKR-108).
+6. **Ledger.** MKR-006 to VERIFIED (no pre-PRD-009 status cell changed, re-checked at `8178126b`); MKR-004 to VERIFIED citing this report once gate 1 has run without a code change; MKR-108, 113, 114 and 115, and the DONE rows MKR-109 to 112 and 116 to 120, VERIFIED by a pass other than the lane that did them; then MKR-001 and MKR-002.
+
+### D7. Verdict
+
+**Code and records: SHIP.** Nothing in this pass must change before ship. Recommended in the final pass because each is small: QA-07's residual (three Info items and one stale bullet in the index), QA-11 (a `library-guardian` ruling, then code or a note), QA-12 (two small screen changes and a D8 note), QA-13 (two test hardenings), QA-I11, and the regex in QA-I10.
+
+**Gates that remain before the branch is shippable:** (1) the security delta pass on the final code head (MTK-003); (2) the third redraw installed, scored review pass 3 at 3 on every axis in Light and Dark (009G-AC-006, MTK-011); (3) the baselines committed with the note and CI green on that head (009G-AC-005); (4) the design sign-off re-signed against the final commit (009G-AC-007); (5) all four required checks green and `MERGEABLE` (MTK-002); (6) the move to `completed/` with every inbound link repaired (009F-AC-015); (7) the ledger rows above flipped, then MTK-001 and MTK-004.
+
+### D8. Plan item traceability, delta
+
+Only the criteria this pass touched; every other row stands as in section 8.
+
+| Criterion | Ledger status | This pass | Evidence or note |
+|---|---|---|---|
+| MTK-002 | OPEN | Open | PR #75 `MERGEABLE`, `BLOCKED`, 0 behind `main`; CI on `8178126b` in progress (D6, gate 3). |
+| MTK-003 | DONE | Open | Met at `0d539dee`; lane F and the approval rule refactor post-date it (D6, gate 1). |
+| MTK-004 | IN PROGRESS | Checked | This delta pass; closes when gate 1 runs without a code change. |
+| MTK-005 | VERIFIED | Checked | `tests/security/`, `packages/ghl`, and `apps/web/src/app/api/` unchanged since `2ec0affe`. |
+| MTK-006 | OPEN | Checked | No pre-PRD-009 ledger row changed since `2ec0affe`; with the early compare, 0 status cells since `e89058e`. |
+| MTK-007 | VERIFIED | Checked | 0 em or en dashes in added lines since `2ec0affe`. |
+| MTK-008 | VERIFIED | Checked | QA-03 closed: delta check 0 BLOCKING, D-1 to D-8 applied verbatim. |
+| MTK-010 | VERIFIED | Checked | `pnpm-lock.yaml`, `package.json` files, `pnpm-workspace.yaml` unchanged since `2ec0affe`. |
+| MTK-011 | OPEN | Open | QA-01, pass 3 pending. |
+| 009B-AC-010 | VERIFIED | Checked | Home asks `libraryAdRefusalFor` (`home-campaigns.ts:72-77`). |
+| 009C-AC-008 | VERIFIED | Checked | QA-06 closed; one rule for the command and every screen. Note: QA-I1 still open. |
+| 009C-AC-012 | VERIFIED | Checked | Amended 2026-10-03 (D-1); the tab and step 1 say title and reason once each, Home and the list the whole sentence; `ads-library-page.integration.test.tsx:349-383`, `first-impression.spec.ts:64-81`. |
+| 009D-AC-002 | VERIFIED | Checked | Amended 2026-10-03 (D-1), as above. |
+| 009D-AC-008, 009D-AC-010 | VERIFIED | Checked | Probe 132 of 132 at `8178126b`. |
+| 009D-AC-016 | VERIFIED | Checked | Literal `disabled` kept; the glyph is now the rocket. |
+| 009d D8 (note of 2026-10-03) | n/a | Gap | QA-11 (the chip on the campaign page and list) and QA-12 (a viewer who cannot save a version). Note: "Same" in the campaign page column of the "Ad not in the library" row is ambiguous; for `library-guardian`. |
+| 009E-AC-006 | VERIFIED | Checked | Amended 2026-10-03 (D-4); `art-changed` and `replaced` notices with their links for a viewer who can edit (`campaign-page-data.ts:179-188`; `persisted-campaign-screen.integration.test.tsx`, D-4 cases). |
+| 009F-AC-011 | VERIFIED | Checked | QA-04 closed; Appendix A equals the sweep's 143 files. |
+| 009F-AC-014 | VERIFIED | Checked | Step 12 additions, D-8 and D-9, changelog v1.7 and v1.8 (header lag: QA-I11). |
+| 009F-AC-015 | IN PROGRESS | Open | D6, gate 5. |
+| 009G-AC-005 | OPEN | Open | D6, gate 2. |
+| 009G-AC-006 | IN PROGRESS | Open | QA-01, gate 3. |
+| 009G-AC-007 | OPEN | Open | D6, gate 4; the sign-off is unchanged since `e89058e`. |
+| 009G-AC-011 | DONE | Open | Third dispatch 37149916536 in progress; record its ID when it finishes. |
+
+### D9. Files changed, `2ec0affe..8178126b`
+
+128 files outside `tests/visual/screens/` (11 added, 117 modified, none deleted); no picture is committed in the range.
+
+| Area | Files | What changed |
+|---|---|---|
+| `apps/web` | 84 (8 added) | Round 2 layout and CSS for Home, workspace pages, Launch an ad, the campaign page, the list and the demo page; `KeepWordsWhole`, `LaunchAnAdLink`, `status-tone.ts`, `glyph-markup.tsx`; QA-06 on step 3, Home and the campaign page; D-1 to D-8 |
+| `packages/application` | 2 | `libraryAdRefusalFor` and `recordedLibraryAdOf` exported |
+| `packages/domain` | 1 | One comment (`library-ad-words.ts:783`) |
+| `packages/ui` | 9 | `Link size="sm"`, compact button, Select edge and weight, theme segments, large-card phone inset, their tests |
+| `tests/browser` | 4 | The empty-library title and reason (D-1); Home geometry at 12 px chips, weight 500, the page gap |
+| `tooling/tests` | 3 | The approval rule table shared with the command; the two scan timeouts |
+| `library/knowledge` | 16 (1 added) | QA-04 notes (S-104 to S-108), checklist v1.7 and v1.8, ux-ui component notes for round 2 |
+| `library/requirements` | 8 (2 added) | The early report, the writing delta check, 009f Appendix A and S-104 to S-108, dated notes on 009b, 009c, 009d (D5, D8), 009e, the index's follow-ups |
+| `EXECUTION_LEDGER.md` | 1 | MKR-004, MKR-008, MKR-104 evidence, two raid-log lines |

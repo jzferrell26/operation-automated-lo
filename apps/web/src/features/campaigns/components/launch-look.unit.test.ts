@@ -237,6 +237,25 @@ describe("the ad card and the topic chips (R1-03, R1-04)", () => {
     );
   });
 
+  it("leaves the card's fill, edge, radius and shadow to the shared Card (P3-06)", () => {
+    const card = cards.declarationsOf(".card");
+    for (const own of ["border", "border-radius", "background", "box-shadow", "padding"]) {
+      expect(card[own], `${own} on .card`).toBeUndefined();
+    }
+    // Three rows: the art, the body that takes the room left over, and the action's foot.
+    expect(card["grid-template-rows"]).toBe("auto 1fr auto");
+    expect(card["overflow"]).toBe("hidden");
+  });
+
+  it("puts the action in a foot that follows the body's own bottom inset (P3-06)", () => {
+    // The mockup's `.ad-card__foot` is `padding: 0 --space-5 --space-5` after the body's
+    // `--space-5` bottom, so "Use this ad" is 20px under the version line; the hand-built
+    // `.cardAction` put it 16px under (`--space-2` gap and `--space-2` padding in the body).
+    expect(cards.declarationsOf(".cardFoot")["padding"]).toBe("0 var(--space-5) var(--space-5)");
+    expect(cards.declarationsOf(".cardFoot > *")["inline-size"]).toBe("100%");
+    expect(cards.source).not.toMatch(/\.cardAction/u);
+  });
+
   it("sets the chip's words at the secondary step, and keeps the chosen chip's ink", () => {
     expect(cards.declarationsOf(".chip")["font-size"]).toBe("var(--text-secondary-size)");
     const chosen = cards.declarationsOf('.chip[aria-current="true"],\n.chip[aria-pressed="true"]');

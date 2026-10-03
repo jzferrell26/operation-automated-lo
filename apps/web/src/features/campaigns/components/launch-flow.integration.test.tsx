@@ -278,6 +278,27 @@ describe("step 1, Choose an ad (009D-AC-002)", () => {
     expect(document.querySelectorAll('[data-variant="primary"]')).toHaveLength(0);
   });
 
+  // P3-06. The card is the shared `Card`, so it draws the card shadow every other card draws, and its
+  // action is in a foot after the body, as the mockups' `.ad-card__foot` is.
+  it("draws each ad in the shared Card, with the action in a foot after the body (P3-06)", () => {
+    renderFlow({ step: 1 });
+    for (const card of TEST_CARDS) {
+      const article = screen.getByRole("article", { name: card.name });
+      expect(article).toHaveClass("oalo-surface");
+      expect(article).toHaveAttribute("data-variant", "card");
+      expect(article).toHaveAttribute("data-padding", "none");
+      // The art, then the body (topic, name, words, version), then the foot with the one button.
+      const rows = [...article.children];
+      expect(rows).toHaveLength(3);
+      const [art, body, foot] = rows as [HTMLElement, HTMLElement, HTMLElement];
+      expect(art).toHaveAttribute("data-ad-creative");
+      expect(body.className).toMatch(/cardBody/u);
+      expect(within(body).queryByRole("button")).toBeNull();
+      expect(foot.className).toMatch(/cardFoot/u);
+      expect(within(foot).getAllByRole("button")).toHaveLength(1);
+    }
+  });
+
   // Writing review pass 2, W-31. Eight identical "Use this ad" buttons told a screen reader's list of
   // buttons nothing; the ads library tab already names each by its ad, and now so does step 1.
   it("names each Use this ad button by its ad, as the library tab does", () => {

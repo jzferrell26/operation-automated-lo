@@ -1,5 +1,5 @@
 import { ADS_LIBRARY_TOPICS, type AdsLibraryTopic } from "@oalo/contracts";
-import { Badge, EmptyState } from "@oalo/ui";
+import { Badge, Card, EmptyState } from "@oalo/ui";
 import type { ReactNode } from "react";
 
 import {
@@ -99,11 +99,21 @@ export type AdCardProps = Readonly<{
   titleLevel?: AdCardTitleLevel;
 }>;
 
-/** One ad: the art with the viewer's own brand band applied, its topic, name, words, and version. */
+/**
+ * One ad: the art with the viewer's own brand band applied, its topic, name, words, and version, then
+ * the action in a foot of its own. The card is the shared `Card` (the one implementation of the card's
+ * fill, edge, radius and shadow), and the foot follows the body's own bottom inset, as the mockups'
+ * `.ad-card__foot` does (R1 P3-06).
+ */
 export function AdCard({ card, advertiser, action, titleLevel = 3 }: AdCardProps) {
   const Title = titleLevel === 2 ? "h2" : "h3";
   return (
-    <article aria-labelledby={`ad-card-${card.id}`} className={styles.card} data-ad-card={card.id}>
+    <Card
+      aria-labelledby={`ad-card-${card.id}`}
+      className={styles.card}
+      data-ad-card={card.id}
+      padding="none"
+    >
       <AdCreative
         advertiser={advertiser}
         alt={card.alt}
@@ -125,9 +135,9 @@ export function AdCard({ card, advertiser, action, titleLevel = 3 }: AdCardProps
             text={adCardVersionLine(card.version, shortDay(card.approvedOn))}
           />
         </p>
-        <div className={styles.cardAction}>{action}</div>
       </div>
-    </article>
+      <div className={styles.cardFoot}>{action}</div>
+    </Card>
   );
 }
 

@@ -171,7 +171,7 @@ function LibraryAdScreen({ page }: Readonly<{ page: LibraryAdCampaignPage }>) {
           <CampaignApprovalSection decision={page.decision} />
           <Fixes fixes={page.fixes} />
           {page.approvalControls === undefined ? null : (
-            <CampaignApprovalControls {...page.approvalControls} padding="lg" />
+            <CampaignApprovalControls {...page.approvalControls} />
           )}
           <CampaignLibraryNotices notices={page.notices} />
           <CampaignVersionsCard shownVersionNo={page.versionNo} versions={page.versions} />

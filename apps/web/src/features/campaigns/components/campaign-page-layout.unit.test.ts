@@ -65,3 +65,30 @@ describe("a date on the campaign page (review R2, H-3)", () => {
     expect(css.declarationsOf(".page time")["white-space"]).toBe("nowrap");
   });
 });
+
+describe("the approve card and the hand-off on the campaign page (review R1-13)", () => {
+  it("spaces the approve card's children --space-4 apart and gives the empty live region's gap back", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
+
+    const card = css.declarationsOf(".stack [data-approval-card]");
+    expect(card.display).toBe("grid");
+    expect(card.gap).toBe("var(--space-4)");
+    expect(css.declarationsOf(".stack [data-approval-card] > *").margin).toBe("0");
+    expect(
+      css.declarationsOf('.stack [data-approval-card] > [role="status"]:empty')[
+        "margin-block-start"
+      ],
+    ).toBe("calc(var(--space-4) * -1)");
+  });
+
+  it("lays the hand-off out as the sentence and a button at the card's width, --space-4 apart", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
+
+    const handOff = css.declarationsOf(".handOff");
+    expect(handOff.gap).toBe("var(--space-4)");
+    expect(handOff["justify-items"]).toBe("stretch");
+    expect(handOff["justify-self"]).toBe("stretch");
+    // The glyph of "Link copied." shares a row with its words.
+    expect(css.declarationsOf(".copied").display).toBe("flex");
+  });
+});

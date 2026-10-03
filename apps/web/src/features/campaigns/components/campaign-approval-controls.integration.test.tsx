@@ -489,27 +489,20 @@ describe.each(HOSTS)("the words of the approval card %s", (_where, mount) => {
 });
 
 /**
- * The scored baseline review of 2026-10-03, pass 1, part R2 (009G-AC-006), F-2. The campaign page
- * gives every card one inset and asks for it; step 3 of "Launch an ad" mounts the same control among
- * cards of its own and keeps the card's own default, so that page's rhythm does not move with this
- * one's.
+ * The scored baseline review of 2026-10-03, pass 1 (009G-AC-006), R2 F-2 and R1-16. The card takes
+ * one inset, --space-6, wherever it is mounted: among the campaign page's other cards, and among step
+ * 3's side cards, which are drawn the same.
  */
-describe("the approval card's inset (review R2, F-2)", () => {
-  it("keeps its own default, and takes the page's when the page asks", () => {
-    const { container, unmount } = render(<CampaignApprovalControls {...APPROVABLE} />);
-    expect(container.querySelector("[data-approval-card]")).toHaveAttribute("data-padding", "md");
-    unmount();
+describe("the approval card's inset (review R2 F-2, R1-16)", () => {
+  it.each(HOSTS)("is --space-6 %s", (_host, mount) => {
+    const { container } = render(mount(APPROVABLE));
 
-    const asked = render(<CampaignApprovalControls {...APPROVABLE} padding="lg" />);
-    expect(asked.container.querySelector("[data-approval-card]")).toHaveAttribute(
-      "data-padding",
-      "lg",
-    );
+    expect(container.querySelector("[data-approval-card]")).toHaveAttribute("data-padding", "lg");
   });
 
-  it("takes the same inset on the card that records a decision", () => {
+  it("is --space-6 on the card that records a decision, too", () => {
     const { container } = render(
-      <CampaignApprovalControls {...APPROVABLE} alreadyDecided="approved" padding="lg" />,
+      <CampaignApprovalControls {...APPROVABLE} alreadyDecided="approved" />,
     );
 
     expect(container.querySelector("[data-approval-card]")).toHaveAttribute("data-padding", "lg");

@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { HAND_OFF } from "../../../copy/launch-messages.js";
@@ -109,4 +110,50 @@ describe("the approver hand-off card on a version whose checks need changes", ()
       expect(screen.getByRole("button", { name: "Approve this version" })).toBeDisabled();
     },
   );
+});
+
+/**
+ * The scored baseline review of 2026-10-03, pass 1 (009G-AC-006), R1-13. The mockup draws the
+ * cannot-approve state as the sentence and then one primary action, "Copy the link"
+ * (`launch-step-3-review-and-launch.html`), so a person who cannot approve has exactly one thing to
+ * press and it is the blue button. The card is the same on the campaign page and on step 3.
+ */
+describe("the approver hand-off card's order and its one action (review R1-13)", () => {
+  async function handOff(): Promise<HTMLElement> {
+    const { container } = await renderCampaign({}, CREATOR);
+    return container.querySelector("[data-hand-off]") as HTMLElement;
+  }
+
+  it("says its sentence before the button", async () => {
+    const card = await handOff();
+
+    expect([...card.children].map((child) => child.tagName.toLowerCase())).toEqual(["p", "button"]);
+    expect(card.firstElementChild).toHaveTextContent(HAND_OFF_WORDS);
+    expect(card.lastElementChild).toHaveTextContent(HAND_OFF.copyLinkLabel);
+  });
+
+  it("makes Copy the link the card's one primary", async () => {
+    const card = await handOff();
+
+    const button = screen.getByRole("button", { name: HAND_OFF.copyLinkLabel });
+    expect(card).toContainElement(button);
+    expect(button).toHaveAttribute("data-variant", "primary");
+    expect(card.querySelectorAll("button")).toHaveLength(1);
+  });
+
+  it("confirms the copy in a row with its glyph, where the sentence was", async () => {
+    const card = await handOff();
+
+    // `userEvent.setup()` gives the page a clipboard of its own, which the copy is read back from.
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: HAND_OFF.copyLinkLabel }));
+
+    await waitFor(() => expect(card.firstElementChild).toHaveTextContent(HAND_OFF.copiedNotice));
+    await expect(navigator.clipboard.readText()).resolves.toMatch(
+      /\/marketing\/campaigns\/campaign_01LibraryPage$/u,
+    );
+    // The glyph is a block, so it shares a row with its words instead of standing alone above them.
+    const row = card.querySelector("p > span") as HTMLElement;
+    expect([...row.children].map((child) => child.tagName.toLowerCase())).toEqual(["svg", "span"]);
+  });
 });

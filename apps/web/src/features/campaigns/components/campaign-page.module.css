@@ -441,14 +441,42 @@ a.primaryLink.primaryLink:hover {
 }
 
 /* The hand-off control for a user who cannot approve (PRD-006c D3 step 6). */
+/* The approve card's children are --space-4 apart, as the mockup's `.card > * + *` spaces them, and
+   the live region (which says nothing until there is an outcome) gives its gap back, so the card has
+   no dead space at its foot. Step 3 of "Launch an ad" draws the same card the same way (R1-13). */
+.stack [data-approval-card] {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: start;
+}
+
+.stack [data-approval-card] > * {
+  margin: 0;
+}
+
+.stack [data-approval-card] > [role="status"]:empty {
+  margin-block-start: calc(var(--space-4) * -1);
+}
+
+/* The sentence, then the card's one primary at the card's width, --space-4 apart, as the mockup's
+   `.card > * + *` spaces every child (R1-13). */
 .handOff {
   display: grid;
-  gap: var(--space-2);
-  justify-items: start;
+  gap: var(--space-4);
+  justify-items: stretch;
+  justify-self: stretch;
 }
 
 .hint {
   margin: 0;
+}
+
+/* "Link copied." keeps its glyph on its own line's row: `Icon` is a block, so left in running text it
+   would take a line of its own. */
+.copied {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 @media (max-width: 73.74rem) {

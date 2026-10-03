@@ -434,6 +434,102 @@ describe("the PRD-008b states on step 3 (D8, 009D-AC-018)", () => {
   });
 });
 
+// Scored review R1-08, R1-12, R1-13, R1-15 and R1-16: how step 3's cards are drawn.
+describe("the look of step 3's cards", () => {
+  const SENT_BACK = {
+    canApprove: false,
+    decision: {
+      decision: "rejected" as const,
+      approver: "Dana Reyes",
+      decidedAt: "2026-10-02T15:00:00.000Z",
+    },
+  };
+  const APPROVED = {
+    state: "approved",
+    decision: {
+      decision: "approved" as const,
+      approver: "Dana Reyes",
+      decidedAt: "2026-10-02T15:00:00.000Z",
+    },
+  };
+
+  it.each([
+    ["ready", reviewFixture()],
+    ["cannot-approve", reviewFixture({ canApprove: false })],
+    ["needs-changes", reviewFixture({}, [CLAIM])],
+    ["approved", reviewFixture(APPROVED)],
+    ["sent-back", reviewFixture(SENT_BACK)],
+    ["retired", reviewFixture({ retiredOn: "2026-09-30" })],
+  ] as const)("pads every side card at --space-6, in the %s state (R1-16)", (_state, review) => {
+    const { container } = render(<LaunchReview review={review} />);
+    // The approve card is the shared `CampaignApprovalControls`, whose own padding belongs to the
+    // campaign page's sibling-card fix (scored review F-2), so it is not counted here.
+    const cards = [
+      screen.getByRole("heading", { name: "What you approve" }).closest("article"),
+      screen.getByRole("heading", { name: "Launch" }).closest("article"),
+      ...container.querySelectorAll(
+        "article[data-decision-card], [data-decision-card] > article:not([data-approval-card])",
+      ),
+    ];
+    expect(cards.length).toBeGreaterThanOrEqual(2);
+    for (const card of cards) expect(card).toHaveAttribute("data-padding", "lg");
+  });
+
+  it("holds Details for support in a card of its own (R1-16)", () => {
+    render(<LaunchReview review={reviewFixture()} />);
+    const details = document.querySelector("[data-support-details]") as HTMLElement;
+    expect(details.parentElement?.className).toMatch(/support/u);
+  });
+
+  it("draws Change as a text link, not a bordered button (R1-08)", () => {
+    render(<LaunchReview review={reviewFixture()} />);
+    expect(screen.getByRole("link", { name: "Change" })).toHaveAttribute("data-variant", "inline");
+  });
+
+  it("puts no chip between the cards when the version is ready to approve (R1-12)", () => {
+    const { container } = render(<LaunchReview review={reviewFixture()} />);
+    // The approve card says what to do; a chip standing alone between two cards, as wide as the
+    // column, is what the scored review found. The checks chip stays inside "What you approve".
+    expect(screen.queryByText("Ready for approval")).toBeNull();
+    const decision = container.querySelector("[data-decision-card='ready']") as HTMLElement;
+    expect(decision.querySelector(".oalo-state-label")).toBeNull();
+    expect(decision.querySelector("[data-approval-card]")).not.toBeNull();
+  });
+
+  it.each([
+    ["cannot-approve", reviewFixture({ canApprove: false })],
+    ["needs-changes", reviewFixture({}, [CLAIM])],
+    ["approved", reviewFixture(APPROVED)],
+    ["sent-back", reviewFixture(SENT_BACK)],
+    ["retired", reviewFixture({ retiredOn: "2026-09-30" })],
+  ] as const)(
+    "keeps the %s state's chip inside its card, at its own width (R1-12)",
+    (_s, review) => {
+      const { container } = render(<LaunchReview review={review} />);
+      const chip = container.querySelector("[data-decision-card] .oalo-state-label") as HTMLElement;
+      expect(chip).not.toBeNull();
+      expect(chip.closest("article")).not.toBeNull();
+      expect(chip.className).toMatch(/decisionChip/u);
+    },
+  );
+
+  it("stacks the pieces of every decision card with the card rhythm (R1-13)", () => {
+    const { container } = render(<LaunchReview review={reviewFixture({}, [CLAIM])} />);
+    const fixes = screen.getByRole("link", { name: "Fix it" }).closest("article") as HTMLElement;
+    expect(fixes.className).toMatch(/decisionCard/u);
+    expect(container.querySelector("[data-launch-card]")?.className).toMatch(/launchCard/u);
+    const approve = screen.getByRole("heading", { name: "What you approve" }).closest("article");
+    expect(approve?.className).toMatch(/approveCard/u);
+  });
+
+  it("gives the Meta sentence's link the class that keeps the line one line tall (R1-15)", () => {
+    render(<LaunchReview review={reviewFixture()} />);
+    const link = screen.getByRole("link", { name: "See what's needed for Meta" });
+    expect(link.className).toMatch(/sentenceLink/u);
+    expect(link).toHaveAttribute("href", "/settings/connections");
+  });
+});
+
 describe("Fix it (009D-AC-019)", () => {
   it.each([
     [{ ...CLAIM, affected: "advertiser.company" }, "#brand"],

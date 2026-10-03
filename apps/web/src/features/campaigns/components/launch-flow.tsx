@@ -3,7 +3,7 @@
 import type { AdsLibraryTopic } from "@oalo/contracts";
 import { Button, Card, Icon, Link, LiveRegion, Stepper, TextArea, TextField } from "@oalo/ui";
 import { useRouter } from "next/navigation.js";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useThisAdSuffix } from "../../../copy/ads-library-messages.js";
 import {
@@ -336,6 +336,7 @@ export function LaunchFlow({
             <div className={styles.sectionHeading}>
               <h2 id="launch-words-title">{WORDS_TITLE}</h2>
               <Button
+                className={styles.resetLink}
                 onClick={() => update({ headline: card.headline, primaryText: card.primaryText })}
                 size="sm"
                 variant="ghost"
@@ -427,7 +428,10 @@ export function LaunchFlow({
               }
               variant="outline"
             >
-              {BACK}
+              <span className={styles.withIcon}>
+                <Icon className={styles.backGlyph} decorative name="chevron-down" size="sm" />
+                {BACK}
+              </span>
             </Button>
             <Button
               loading={busy}
@@ -449,31 +453,43 @@ export function LaunchFlow({
         </Card>
         <aside aria-labelledby="launch-preview-title" className={styles.preview}>
           <div className={styles.sectionHeading}>
-            <h2 id="launch-preview-title">{PREVIEW_TITLE}</h2>
+            <h2 className={styles.previewTitle} id="launch-preview-title">
+              {PREVIEW_TITLE}
+            </h2>
             <span className={styles.note}>{PREVIEW_NOTE}</span>
           </div>
-          <AdFeedPreview
-            advertiser={advertiser}
-            alt={card.alt}
-            art={card.art}
-            callToAction={card.callToAction}
-            headline={draft.headline}
-            primaryText={draft.primaryText}
-            sample={card.sample}
-            shape="tall"
-          />
+          <div className={styles.feedFrame}>
+            <AdFeedPreview
+              advertiser={advertiser}
+              alt={card.alt}
+              art={card.art}
+              callToAction={card.callToAction}
+              headline={draft.headline}
+              primaryText={draft.primaryText}
+              sample={card.sample}
+              shape="tall"
+            />
+          </div>
         </aside>
       </div>
     </div>
   );
 }
 
+/**
+ * The crumbs, the title, the step indicator, and the lead, in the order and at the distances the
+ * launch mockups draw them (scored review R1-05). Each piece is one page gap from the next. Step 1
+ * puts the indicator directly under the title and the lead under the indicator, because its lead
+ * speaks to the ads below it; steps 2 and 3 keep the lead under the title as a subtitle, as their
+ * mockups do, and put the indicator after the pair. A step with no lead draws none.
+ */
 export function LaunchHeader({
   step,
   title,
   lead,
-  children,
-}: Readonly<{ step: 1 | 2 | 3; title: string; lead: string; children?: ReactNode }>) {
+}: Readonly<{ step: 1 | 2 | 3; title: string; lead?: string | undefined }>) {
+  const stepper = <Stepper label={LAUNCH_STEPPER_LABEL} steps={launchSteps(step)} />;
+  const leadLine = lead === undefined ? null : <p className={styles.lead}>{lead}</p>;
   return (
     <header className={styles.header}>
       <nav aria-label={CRUMBS_LABEL} className={styles.crumbs}>
@@ -481,10 +497,21 @@ export function LaunchHeader({
         <span aria-hidden="true">/</span>
         <span>{LAUNCH_AN_AD}</span>
       </nav>
-      <h1>{title}</h1>
-      <p className={styles.lead}>{lead}</p>
-      {children}
-      <Stepper label={LAUNCH_STEPPER_LABEL} steps={launchSteps(step)} />
+      {step === 1 ? (
+        <>
+          <h1>{title}</h1>
+          {stepper}
+          {leadLine}
+        </>
+      ) : (
+        <>
+          <div className={styles.headText}>
+            <h1>{title}</h1>
+            {leadLine}
+          </div>
+          {stepper}
+        </>
+      )}
     </header>
   );
 }
@@ -515,7 +542,7 @@ function BrandSummary({ advertiser }: Readonly<{ advertiser: LaunchBand }>) {
         <br />
         <span className={styles.summaryDetail}>{detail}</span>
       </span>
-      <Link href="/brand" variant="action">
+      <Link className={styles.textLink} href="/brand">
         {hasBrandName(advertiser) ? CHANGE_IN_BRAND : ADD_IN_BRAND}
       </Link>
     </div>
@@ -540,7 +567,13 @@ function StepOne({
 }>) {
   return (
     <div className={styles.page} data-launch-step="1">
-      <LaunchHeader lead={CHOOSE_LEAD} step={1} title={LAUNCH_STEP_TITLES.choose} />
+      {/* R1-06. With no ad in the library the lead would describe ads that do not exist; the empty
+          state says what there is. The library tab drops its lead for the same reason. */}
+      <LaunchHeader
+        lead={cards.length === 0 ? undefined : CHOOSE_LEAD}
+        step={1}
+        title={LAUNCH_STEP_TITLES.choose}
+      />
       {adGone ? (
         <p className={styles.lead} data-ad-gone="">
           {AD_NOT_IN_LIBRARY_NOTICE}

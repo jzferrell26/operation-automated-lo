@@ -6,6 +6,8 @@ Governing brief: sections 5, 7, 14, 15, 16 and 18 of `../00-design-brief.md`.
 
 Continue the approved dashboard aesthetic with useful secondary pages. Keep the existing demo boundary, theme tokens, shared form controls, explicit campaign approval, and connection requirements. This work does not activate providers or implement the future product portfolio.
 
+> **Superseded in part on 2026-10-03 by PRD-009** (S-108, which completes S-66; OD-D, D-6): the dated notes below name three pages that are removed. The other pages in the list are removed too: Ads, Email and SMS, Templates, and Property sites and creative were Marketing Suite sub-pages that now redirect (009f D1), and Explore was the Marketplace page, which redirects to Home. The Verification paragraph's report exports, routing simulation, and "existing onboarding journey" lapse with them. The list is kept as history.
+
 - Ads shows saved campaign readiness, planned budgets, status filters and direct review links. Unavailable delivery and spend must never appear as zero performance.
 - Email and SMS provides editable, locally saved copy for invitations, buyer follow-up and partner updates. Copy and save actions report their actual result. No recipient selection, sending or scheduling is available.
 - Automations explains and simulates the existing lead-routing preferences using a clearly labeled sample lead. The simulation has no provider side effects. _(Superseded on 2026-10-01 by PRD-009 (S-66; OD-D): the Automations page is removed.)_

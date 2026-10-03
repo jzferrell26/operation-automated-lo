@@ -26,6 +26,11 @@ scan names it by file with that reason.
 <Link href="https://business.facebook.com" external>Meta business settings</Link>
 ```
 
+_(Amended on 2026-10-03 by PRD-009 (S-107; D-15): the second line of the example
+shows how a `Link` is written and nothing else. `/onboarding` now redirects to
+Home and the "Finish setup" chip is retired, so use another address and label in
+real code. The `action` variant is unchanged.)_
+
 `Link` renders an `<a>` and spreads the rest of its props, so `href`, `download`,
 `hrefLang`, and a framework's client-navigation props all reach the element.
 

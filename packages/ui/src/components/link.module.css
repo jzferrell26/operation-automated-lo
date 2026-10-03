@@ -74,6 +74,25 @@
   min-inline-size: var(--target-min-size);
 }
 
+/* `03-components/link.md`, "A link inside a sentence" (PRD-009 scored review R2 F-4 and R1-15).
+ * The link takes the sentence's own size, weight, and leading, as the mockups' plain `a` inside
+ * `.reason` does, so it is no longer 16px inside 14px text. The 44 by 44 target stays: the box is
+ * 44px, and its block margins take back exactly what the box is taller than one line of the
+ * sentence, so the margin box the line is built from is one line tall and the sentence keeps its
+ * leading. It never wraps, because a second line would draw over the sentence's next line. */
+.sentence {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--target-min-size);
+  min-inline-size: var(--target-min-size);
+  margin-block: calc((1lh - var(--target-min-size)) / 2);
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  white-space: nowrap;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .link {
     transition-duration: 0ms;

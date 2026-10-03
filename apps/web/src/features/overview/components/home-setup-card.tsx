@@ -129,6 +129,7 @@ function ChecklistRow({ item }: Readonly<{ item: HomeChecklistItem }>) {
         aria-label={homeChecklistActionName(item.id, item.state)}
         className={styles.itemAction}
         href={HOME_CHECKLIST_HREFS[item.id]}
+        size="sm"
         variant="action"
       >
         {copy.actions[item.state]}

@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { LoadingState } from "./async-state.js";
 import { Button } from "./Button.js";
 import { Icon } from "./Icon.js";
+import { Link } from "./Link.js";
 import { Select } from "./Select.js";
 import { Card, Surface } from "./structural.js";
 
@@ -170,6 +171,38 @@ describe("the compact Button is the secondary step at the shared weight (pass 2,
     expect(rule(buttonCss, ".button")["font-size"]).toBe("var(--text-body-size)");
     expect(rule(buttonCss, ".md")).not.toHaveProperty("font-size");
     expect(rule(buttonCss, ".lg")["font-size"]).toBe("var(--text-card-size)");
+  });
+});
+
+describe("a compact action link is the small button's twin (pass 2, R4-12; coordinator, lane H)", () => {
+  const small = rule(linkCss, '.action[data-size="sm"]');
+
+  it("takes the secondary step and --space-3 of inline padding, as the sm Button", () => {
+    expect(small).toMatchObject({
+      "font-size": "var(--text-secondary-size)",
+      "padding-inline": "var(--space-3)",
+    });
+    expect(small["font-size"]).toBe(rule(buttonCss, ".sm")["font-size"]);
+    expect(small["padding-inline"]).toBe(rule(buttonCss, ".sm")["padding-inline"]);
+  });
+
+  it("sets no weight and no height, so it keeps the link's 500 and the 44px target", () => {
+    expect(small).not.toHaveProperty("font-weight");
+    expect(small).not.toHaveProperty("min-block-size");
+    expect(rule(linkCss, ".link")["font-weight"]).toBe("var(--weight-medium)");
+    expect(rule(linkCss, ".action")["min-block-size"]).toBe("var(--target-min-size)");
+  });
+
+  it("is carried by data-size on the anchor, md by default", () => {
+    const compact = renderToStaticMarkup(
+      createElement(Link, { href: "/x", size: "sm", variant: "action" }, "Connect"),
+    );
+    const normal = renderToStaticMarkup(
+      createElement(Link, { href: "/x", variant: "action" }, "Connect"),
+    );
+
+    expect(compact).toContain('data-size="sm"');
+    expect(normal).toContain('data-size="md"');
   });
 });
 

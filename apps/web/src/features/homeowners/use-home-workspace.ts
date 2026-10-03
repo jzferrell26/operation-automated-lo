@@ -60,7 +60,7 @@ const empty: HomeWorkspace = {
 /**
  * The code `apps/web/src/server/homeowners/runtime.ts` answers with when homeowner reports are not
  * turned on for the workspace. The server module reads the database and the environment, so it is
- * not imported into the browser; `home-reports-not-enabled.integration.test.tsx` holds the two
+ * not imported into the browser; `refusal-messages.integration.test.tsx` holds the two
  * together.
  */
 const REPORTS_NOT_CONFIGURED = "REPORTS_NOT_CONFIGURED";

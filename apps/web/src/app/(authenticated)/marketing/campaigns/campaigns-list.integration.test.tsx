@@ -314,6 +314,46 @@ describe("a row of the Campaigns list (review R2, F-9, F-10, F-11)", () => {
     expect(tile.querySelector("svg")).toBeNull();
   });
 
+  it("draws the tile in every row of the table, which is also the table the 768 frame shows (pass 3, R2 P3-6)", async () => {
+    const earlier = await rowOf(await earlierFlowCampaign(), { principal: APPROVER });
+    render(<CampaignList now={NOW} rows={[...(await rows()), earlier]} />);
+
+    // 009E-AC-009: "Ad (a decorative thumbnail and the name as the link)". There is one table and the
+    // stylesheet no longer hides its tile between 720px and 1023px, so each row has its tile first
+    // in the Ad cell, with the name as the link beside it.
+    const dataRows = within(screen.getByRole("table")).getAllByRole("row").slice(1);
+    expect(dataRows).toHaveLength(3);
+    for (const row of dataRows) {
+      const cell = row.querySelector("td") as HTMLElement;
+      const tile = cell.querySelector("[data-thumb]") as HTMLElement;
+      expect(tile).toHaveAttribute("aria-hidden", "true");
+      expect(tile.parentElement?.firstElementChild).toBe(tile);
+      expect(within(cell).getByRole("link")).toBeInTheDocument();
+    }
+  });
+
+  it("puts a phone card's status chip on a line of its own, and its last change in a caption after it (pass 3, R2 P3-7)", async () => {
+    const { container } = render(<CampaignList now={NOW} rows={await rows()} />);
+
+    const items = within(
+      container.querySelector("[data-campaign-cards]") as HTMLElement,
+    ).getAllByRole("listitem");
+    for (const item of items) {
+      const chip = item.querySelector("[data-campaign-standing]") as HTMLElement;
+      const chipLine = chip.parentElement as HTMLElement;
+      // The chip's line holds the chip and nothing else, so no running words share its baseline.
+      expect(chipLine.tagName).toBe("P");
+      expect(chipLine.textContent).toBe(chip.textContent);
+      // The caption is the next line, and carries the date as a time element.
+      const caption = chipLine.nextElementSibling as HTMLElement;
+      expect(caption.tagName).toBe("P");
+      expect(caption.className).toMatch(/cardCaption/u);
+      expect(caption).toHaveTextContent(/^Last change: [A-Z][a-z]{2} \d{1,2}$/u);
+      expect(caption.querySelector("time")).not.toBeNull();
+      expect(caption.nextElementSibling).toBeNull();
+    }
+  });
+
   it("draws the tile on every phone card, beside the name, with or without art", async () => {
     const earlier = await rowOf(await earlierFlowCampaign(), { principal: APPROVER });
     const { container } = render(<CampaignList now={NOW} rows={[...(await rows()), earlier]} />);

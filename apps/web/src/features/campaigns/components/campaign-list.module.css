@@ -172,14 +172,30 @@ a.rowLink.rowLink:hover {
   font-size: var(--text-secondary-size);
 }
 
-/* Between 720px and the tablet frame the table keeps all six columns, so the cells tighten, the
-   decorative thumbnail steps aside, and the browser shares the width out: the status chip keeps its
-   one line, and the other cells wrap only when they must. The phone cards below 720px keep their
-   thumbnail, which is why the rule is for the table's tile alone (review pass 1, F-8, F-11). */
+/* P3-7. "Last change: Oct 1" is the card's caption, the caption step in the faint ink, as the mockup's
+   `.caption` under the chip is, on a line of its own. */
+.cardCaption {
+  color: var(--tx-faint);
+  font-size: var(--text-caption-size);
+}
+
+/* Between 720px and the tablet frame the table keeps all six columns, so the cells tighten and the
+   browser shares the width out: the status chip keeps its one line, and the other cells wrap only
+   when they must. The Ad column keeps its thumbnail (009E-AC-009: "Ad (a decorative thumbnail and the
+   name as the link)"; scored review pass 3, R2 P3-6): pass 1 hid it to make the chips fit (F-8), and
+   now that the chips keep one line and hyphenated words stay whole it comes back. The tile takes 60px
+   (its width and the gap), so the Ad column's share below is larger by about that much, and the
+   name's track may not shrink under its longest unbreakable word (`min-content`): with a zero
+   minimum the column gave the tile and the name no more than the hint's share, and "pre-approved"
+   ran into the Topic column. */
 @media (max-width: 63.99rem) {
   .table th,
   .table td {
     padding: var(--space-3) var(--space-2);
+  }
+
+  .adCell {
+    grid-template-columns: auto minmax(min-content, 1fr);
   }
 
   .table th:first-child,
@@ -192,14 +208,6 @@ a.rowLink.rowLink:hover {
     padding-inline-end: var(--space-3);
   }
 
-  .table .thumb {
-    display: none;
-  }
-
-  .adCell {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .table th {
     white-space: normal;
   }
@@ -208,21 +216,22 @@ a.rowLink.rowLink:hover {
     white-space: normal;
   }
 
-  /* Hints, not rules: the status chip's width still comes first, and the rest share what is left. */
+  /* Hints, not rules: the status chip's width still comes first, and the rest share what is left. The
+     Ad column's share is 32%, which is the 27% it had without the tile and the tile's 60px. */
   .table th:nth-child(1) {
-    inline-size: 27%;
+    inline-size: 32%;
   }
 
   .table th:nth-child(2) {
-    inline-size: 15%;
+    inline-size: 14%;
   }
 
   .table th:nth-child(3) {
-    inline-size: 14%;
+    inline-size: 13%;
   }
 
   .table th:nth-child(4) {
-    inline-size: 14%;
+    inline-size: 12%;
   }
 
   .table th:nth-child(5) {
@@ -230,7 +239,17 @@ a.rowLink.rowLink:hover {
   }
 
   .table th:nth-child(6) {
-    inline-size: 10%;
+    inline-size: 9%;
+  }
+}
+
+/* From 720px to 767px the six columns, the widest status chip, and a tile beside the name need about
+   750px, so the tile sits above the name in the Ad cell instead of beside it: still in every row, and
+   the table still fits its card. */
+@media (min-width: 45rem) and (max-width: 47.99rem) {
+  .adCell {
+    grid-template-columns: minmax(min-content, 1fr);
+    justify-items: start;
   }
 }
 

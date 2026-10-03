@@ -60,13 +60,51 @@ describe("the Campaigns table and cards (review R2, F-8, F-11)", () => {
     expect(tablet).not.toContain(".chipCell");
   });
 
-  it("hides the thumbnail in the tablet table alone, so a phone card keeps it", async () => {
+  it("keeps the thumbnail in the tablet table, as 009E-AC-009 asks, and in a phone card (pass 3, R2 P3-6)", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-list.module.css`);
+
+    // Pass 1 hid the table's tile between 720px and 1023px to make the chips fit; the chips now keep
+    // one line and hyphenated words stay whole, so nothing at this width hides a tile any more.
+    const tablet = mediaBody(css.source, "(max-width: 63.99rem)");
+    expect(tablet).not.toMatch(/\.thumb/u);
+    expect(tablet).not.toMatch(/display\s*:\s*none/u);
+    expect(css.declarationsOf(".thumb")["inline-size"]).toBe("3rem");
+    // The Ad cell keeps its two columns, the tile beside the name, and the name's track may not
+    // shrink under its longest unbreakable word: with a zero minimum, "pre-approved" ran into the
+    // Topic column at 720px.
+    expect(css.declarationsOf(".adCell")["grid-template-columns"]).toBe("auto minmax(0, 1fr)");
+    expect(declarationsIn(tablet, ".adCell")["grid-template-columns"]).toBe(
+      "auto minmax(min-content, 1fr)",
+    );
+  });
+
+  it("gives the Ad column the tile's room in the tablet table, and stacks the tile above the name only from 720px to 767px (pass 3, R2 P3-6)", async () => {
     const css = await readCssRules(`${COMPONENTS}/campaign-list.module.css`);
 
     const tablet = mediaBody(css.source, "(max-width: 63.99rem)");
-    expect(declarationsIn(tablet, ".table .thumb").display).toBe("none");
-    // No rule at this width hides the bare tile: that was the one that also hid the card's.
-    expect(tablet).not.toMatch(/(?:^|[{}])\s*\.thumb\s*\{/u);
+    // 27% without the tile, 32% with its 60px; the six hints still add up to the whole table.
+    const shares = [
+      ...tablet.matchAll(/\.table th:nth-child\((\d)\)\s*\{\s*inline-size:\s*(\d+)%/gu),
+    ].map((match) => Number.parseInt(match[2] ?? "", 10));
+    expect(shares).toHaveLength(6);
+    expect(shares[0]).toBe(32);
+    expect(shares.reduce((sum, share) => sum + share, 0)).toBe(100);
+    // Six columns, the widest status chip and a tile beside the name need about 750px, so the narrow
+    // end of the table frame draws the tile above the name, still in every row.
+    const narrow = mediaBody(css.source, "(min-width: 45rem) and (max-width: 47.99rem)");
+    expect(declarationsIn(narrow, ".adCell")["grid-template-columns"]).toBe(
+      "minmax(min-content, 1fr)",
+    );
+  });
+
+  it("sets a phone card's last change as a caption in the faint ink, on a line after the chip (pass 3, R2 P3-7)", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-list.module.css`);
+
+    const caption = css.declarationsOf(".cardCaption");
+    expect(caption["font-size"]).toBe("var(--text-caption-size)");
+    expect(caption.color).toBe("var(--tx-faint)");
+    // The card's children are `--space-2` apart, as the mockup's `.list-card` sets them.
+    expect(css.declarationsOf(".card").gap).toBe("var(--space-2)");
   });
 
   it("lays a phone card out with the thumbnail beside the name and one inset round it", async () => {

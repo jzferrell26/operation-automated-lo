@@ -36,6 +36,8 @@ describe("the account notices (R4-06, R4-08)", () => {
       "align-items": "start",
     });
     expect(css.declarationsOf(".feedbackGlyph")["margin-block-start"]).toBe("var(--space-1)");
+    const afterTheGlyph = ".problem > :not(.feedbackGlyph),\n.notice > :not(.feedbackGlyph)";
+    expect(css.declarationsOf(afterTheGlyph)["grid-column"]).toBe("2");
   });
 });
 

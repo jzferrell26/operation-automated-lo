@@ -25,7 +25,7 @@ export function AuthProblem({ children }: Readonly<{ children: ReactNode }>): Re
       message={
         <>
           <Icon className={styles.feedbackGlyph} decorative name="circle-x" size="sm" />
-          <div className={styles.feedbackBody}>{children}</div>
+          {children}
         </>
       }
       urgency="alert"
@@ -40,6 +40,10 @@ export function AuthProblem({ children }: Readonly<{ children: ReactNode }>): Re
  * decorative, so the sentence alone is what a screen reader hears (PRD-009 scored review R4-08).
  * The refusal's glyph takes the region's critical colour; the notice's takes the information blue
  * beside words in the body colour.
+ *
+ * The words stay direct children of the region, beside the glyph rather than inside a wrapper, so
+ * a region found by its sentence is the region itself; the stylesheet puts every child after the
+ * glyph in the second column.
  */
 export function AuthNotice({ children }: Readonly<{ children: ReactNode }>): ReactNode {
   return (
@@ -48,7 +52,7 @@ export function AuthNotice({ children }: Readonly<{ children: ReactNode }>): Rea
       message={
         <>
           <Icon className={styles.feedbackGlyph} decorative name="info" size="sm" tone="info" />
-          <div className={styles.feedbackBody}>{children}</div>
+          {children}
         </>
       }
       urgency="status"

@@ -71,15 +71,28 @@ export interface LibraryAdWordFinding {
   readonly remediation: string;
 }
 
-const NUMBER_WORDS =
+const COUNT_WORDS =
   "zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million";
-const NUMBER_WORD_UNIT = new RegExp(
-  `\\b(?:${NUMBER_WORDS}) (?:percent|per cent|percentage|pct|years?|yrs?|months?|mos?|monthly|payments?|points?)\\b`,
-  "u",
-);
+/**
+ * The number words the claim and number rules read. "dozen" and "dozens" count, and so does "score"
+ * (twenty), but "score" only as a count: straight after "a", "an", or another number word ("a score
+ * of years", "four score"), never as the noun in "credit score and payment history".
+ */
+const NUMBER_WORDS = `${COUNT_WORDS}|dozens?|(?<=\\b(?:a|an|${COUNT_WORDS}) )score`;
 /** Fractions written as words: "half a percent", "three quarters of a point". */
 const FRACTION_WORDS =
   "half|halves|quarter|quarters|third|thirds|fourth|fourths|fifth|fifths|eighth|eighths|tenth|tenths|hundredth|hundredths";
+/**
+ * A run of number words, which need not stand beside the unit they count: "thirty", "two dozen",
+ * "ten and a half", "dozens of", "a score of". It starts on a number word and goes on through more
+ * number words, fraction words, "a", "an", "of", and an "and" that leads into another number word
+ * or "a" ("a score and payment history" is not a run).
+ */
+const NUMBER_RUN = `(?:${NUMBER_WORDS})(?: (?:${NUMBER_WORDS}|${FRACTION_WORDS}|a|an|of|and(?= (?:${NUMBER_WORDS}|${FRACTION_WORDS}|a|an)\\b)))*`;
+const NUMBER_WORD_UNIT = new RegExp(
+  `\\b${NUMBER_RUN} (?:percent|per cent|percentage|pct|years?|yrs?|months?|mos?|monthly|payments?|points?)\\b`,
+  "u",
+);
 /** A quantity written in words: at least one number or fraction word, with "a", "and", "of" between. */
 const QUANTITY_IN_WORDS = `(?:(?:a|an|and|of) )*(?:${NUMBER_WORDS}|${FRACTION_WORDS})(?: (?:and|a|an|of|${NUMBER_WORDS}|${FRACTION_WORDS}))*`;
 /** What can stand between "fixed" and the length of time it is fixed for. */
@@ -121,6 +134,8 @@ const CLAIM_PATTERNS: readonly Readonly<{ kind: ClaimKind; pattern: RegExp }>[] 
   },
   { kind: "rate", pattern: /\b(?:\d+|no|zero|discount) points?\b/u },
   { kind: "rate", pattern: new RegExp(`\\b(?:${NUMBER_WORDS}) points?\\b`, "u") },
+  // "A couple of points off", "a few points lower": points taken off a rate, whatever the count.
+  { kind: "rate", pattern: /\bpoints? (?:off|lower|less|cheaper)\b/u },
   {
     kind: "payment",
     pattern: /\$ \d+(?: \d+)*(?: (?:a|per|each|every) (?:month|mo|week|year))?/u,
@@ -143,17 +158,43 @@ const CLAIM_PATTERNS: readonly Readonly<{ kind: ClaimKind; pattern: RegExp }>[] 
   { kind: "payment", pattern: /\b(?:zero|no|nothing|\d+) (?:money )?down\b/u },
   { kind: "payment", pattern: /\bdown payment of\b/u },
   { kind: "payment", pattern: /\bno closing costs?\b/u },
+  // Closing costs with an amount or "off": "half off closing", "closing costs paid", "two closing
+  // costs". Closing costs named with no amount ("understand your closing costs") state nothing, and
+  // neither does "take the stress off closing day".
+  {
+    kind: "payment",
+    pattern: new RegExp(
+      `\\b(?:${NUMBER_WORDS}|${FRACTION_WORDS}|money|cash|extra|more) off (?:of )?(?:your |the |our )?closing\\b`,
+      "u",
+    ),
+  },
+  {
+    kind: "payment",
+    pattern: /\bclosing costs? (?:off|paid|covered|credits?|waived|free|reduced)\b/u,
+  },
+  {
+    kind: "payment",
+    pattern: new RegExp(
+      `\\b(?:${NUMBER_WORDS}|${FRACTION_WORDS}) (?:of )?(?:your |the )?closing costs?\\b`,
+      "u",
+    ),
+  },
   { kind: "payment", pattern: /\bas low as\b/u },
   { kind: "payment", pattern: /\bbelow market\b/u },
   { kind: "term", pattern: /\b\d+ (?:years?|yrs?|months?|mos?)(?: fixed)?\b/u },
+  // A length of time in words, with the number words beside it or apart from it: "twelve years",
+  // "a dozen years", "two dozen months", "ten and a half years", "a score of years".
   {
     kind: "term",
-    pattern: new RegExp(`\\b(?:${NUMBER_WORDS}) (?:years?|yrs?|months?|mos?)\\b`, "u"),
+    pattern: new RegExp(`\\b${NUMBER_RUN} (?:years?|yrs?|months?|mos?)\\b`, "u"),
   },
   { kind: "term", pattern: /\b(?:year|yr) fixed\b/u },
   {
     kind: "term",
-    pattern: new RegExp(`\\bfixed${FIXED_SPAN} (?:decades?|years?|yrs?|months?)\\b`, "u"),
+    pattern: new RegExp(
+      `\\b(?:fixed|locked(?: in)?)${FIXED_SPAN} (?:decades?|years?|yrs?|months?)\\b`,
+      "u",
+    ),
   },
   { kind: "term", pattern: /\bdecades? (?:fixed|loans?|mortgages?|term)\b/u },
   { kind: "term", pattern: /\b\d+ \d+ arm\b/u },
@@ -242,16 +283,31 @@ const CLAIM_FIX: Readonly<Record<ClaimKind, string>> = Object.freeze({
  * Unicode control and format characters (which include U+200B to U+200F, U+202A to U+202E, U+2060
  * to U+2069, and U+FEFF), the line and paragraph separators, and angle brackets. The primary text
  * may hold a plain line break and nothing else here.
+ *
+ * Every default-ignorable code point is refused as well. Most are format characters already, but
+ * some are nonspacing marks or unassigned, which the categories above miss: the combining grapheme
+ * joiner U+034F, the Mongolian free variation selectors U+180B to U+180D and U+180F, the variation
+ * selectors U+FE00 to U+FE0F and U+E0100 to U+E01EF, and the unassigned U+2065, U+FFF0 to U+FFF8,
+ * U+E0000, U+E0002 to U+E001F, and U+E01F0 to U+E0FFF. They draw nothing, so a person and an
+ * approver cannot see them (PRD-009 security review, SEC-009-06).
  */
-const INVALID_CHARACTER = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}\p{Co}\p{Cs}<>]/u;
+const INVALID_CHARACTER =
+  /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}\p{Co}\p{Cs}\p{Default_Ignorable_Code_Point}<>]/u;
+
+/**
+ * U+FE0F straight after a pictograph only picks the colour picture of a heart, a telephone, or a
+ * check mark. It draws, so it stays legal there, and it is the only default-ignorable mark that does.
+ */
+const EMOJI_SELECTOR = /(?<=\p{Extended_Pictographic})\uFE0F/gu;
 
 function hasInvalidCharacter(field: LibraryAdTextField, text: string): boolean {
   const checked = field === "primaryText" ? text.replaceAll("\n", " ") : text;
   // The blank fillers too (Hangul, Braille, Khmer), which Unicode counts as letters or symbols.
   const invisible = new RegExp(LIBRARY_AD_INVISIBLE.source, "u");
-  return [checked, checked.normalize("NFKC")].some(
-    (form) => INVALID_CHARACTER.test(form) || invisible.test(form),
-  );
+  return [checked, checked.normalize("NFKC")].some((form) => {
+    const drawn = form.replace(EMOJI_SELECTOR, "");
+    return INVALID_CHARACTER.test(drawn) || invisible.test(drawn);
+  });
 }
 
 /**
@@ -340,7 +396,22 @@ const CO_BRAND_TERMS: readonly RegExp[] = [
   /\bpresented by\b/u,
   /\bcourtesy of\b/u,
   /\bsponsored by\b/u,
+  // The PRD-009 security review, SEC-009-04: more ways to name someone else, and the word a
+  // brokerage is named with. "Real-tor" is "real tor" once the hyphen reads as a space.
+  /\brealty\b/u,
+  /\breal tors?\b/u,
+  // "partnered with you" and "partnering with first-time buyers" name no one else.
+  /\bpartner(?:ed|ing) with(?! (?:you|your|me|us|them|families|buyers|homebuyers|first time|clients|borrowers)\b)/u,
+  /\baffiliated with\b/u,
+  /\bin (?:association|collaboration|affiliation) with\b/u,
+  /\bbrought to you by\b/u,
 ];
+
+/**
+ * Words that name a brokerage only in the company name: "real estate" is ordinary in the ad text
+ * ("Buying real estate? Start here."), and in a company name it names a real estate business.
+ */
+const COMPANY_CO_BRAND_TERMS: readonly RegExp[] = [/\breal estate\b/u];
 
 /** "broker" and "brokers", except the whole phrase "mortgage broker" (D5's one phrase exception). */
 const BROKER = /(?<!\p{L})brokers?(?!\p{L})/gu;
@@ -377,22 +448,19 @@ function webAddressTerm(field: LibraryAdTextField, normalised: string): string |
 const PHONE_NUMBER =
   /(?<!\p{N})(?:\+?1[\s.-]?)?(?:\(\d{3}\)|\d{3})[\s.-]?\d{3}[\s.-]?\d{4}(?!\p{N})|(?<![\p{N}-])\d{3}[\s.-]\d{4}(?!\p{N})/gu;
 
+/**
+ * A phone number anywhere in the text, a license reference included. A license reference is 4 to 12
+ * digits, and the only runs of that length a phone number's pattern matches are ten digits (or
+ * eleven after a 1, or ten with one hyphen), so a license keyword in front of one does not make it
+ * a license: "NMLS 8005551212" prints a phone number (PRD-009 security review, SEC-009-03).
+ */
 function phoneTerm(normalised: string): string | undefined {
-  const licenses = [...normalised.matchAll(LICENSE_REFERENCE)]
-    .filter((match) => isLicenseDigits(match[1] ?? ""))
-    .map((match) => [match.index, match.index + match[0].length]);
-  for (const match of normalised.matchAll(PHONE_NUMBER)) {
-    const start = match.index;
-    const end = start + match[0].length;
-    if (!licenses.some(([from = 0, to = 0]) => start >= from && end <= to)) {
-      return "the phone number";
-    }
-  }
-  return undefined;
+  return normalised.search(PHONE_NUMBER) >= 0 ? "the phone number" : undefined;
 }
 
 /** Co-brand words as substrings of a run of single characters closed up ("r e a l t o r"). */
-const CO_BRAND_RUN = /realtors?|brokerages?|brokers?|listedby|courtesyof|presentedby|sponsoredby/u;
+const CO_BRAND_RUN =
+  /realtors?|realty|brokerages?|brokers?|listedby|courtesyof|presentedby|sponsoredby/u;
 
 function coBrandTerm(
   field: LibraryAdTextField,
@@ -404,7 +472,9 @@ function coBrandTerm(
     libraryAdWordText(normalised),
     libraryAdWordText(joinSpacedLetters(normalised)),
   ]) {
-    for (const term of CO_BRAND_TERMS) {
+    for (const term of field === "company"
+      ? [...CO_BRAND_TERMS, ...COMPANY_CO_BRAND_TERMS]
+      : CO_BRAND_TERMS) {
       const match = term.exec(words);
       if (match !== null) return match[0];
     }

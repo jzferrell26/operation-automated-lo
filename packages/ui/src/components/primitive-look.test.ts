@@ -118,6 +118,23 @@ describe("a disabled Select is drawn as a disabled field (pass 2, R3 P2-04)", ()
     }
   });
 
+  it("draws the field's control box, so a Select is the same 44px beside a text field", () => {
+    const field = rule(fieldCss, ".control");
+    const trigger = rule(selectCss, ".trigger");
+
+    for (const property of [
+      "min-block-size",
+      "padding-block",
+      "padding-inline",
+      "font-size",
+      "font-weight",
+      "line-height",
+      "border-radius",
+    ]) {
+      expect(trigger[property], property).toBe(field[property]);
+    }
+  });
+
   it("starts from the enabled edge, so the disabled edge is a change and not a default", () => {
     expect(rule(selectCss, ".trigger")["border"]).toBe("1px solid var(--bd-input)");
   });

@@ -189,6 +189,12 @@
   text-wrap: pretty;
 }
 
+/* "8 minutes ago" is one phrase, so the number never ends a line while its unit starts the next
+   (pass 4, R3 N-9). */
+.relativeTime {
+  white-space: nowrap;
+}
+
 @media (max-width: 768px) {
   .pageHeader {
     flex-direction: column;

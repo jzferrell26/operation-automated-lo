@@ -3,6 +3,7 @@ import { Badge, Card, Icon, Stack, Surface } from "@oalo/ui";
 import { ACCESS_GROUP_STATE_LABELS } from "../../../copy/user-language.js";
 import type { DeepReadonly, Onboarding } from "../../ui-foundation/model/synthetic-ui.js";
 import styles from "./permission-screen.module.css";
+import { RelativeTimeText } from "./relative-time-text.js";
 
 type PermissionScreenProps = Readonly<{
   onboarding: DeepReadonly<Onboarding>;
@@ -101,7 +102,9 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
                     </div>
                     <div>
                       <dt>What we checked</dt>
-                      <dd>{capability.evidence}</dd>
+                      <dd>
+                        <RelativeTimeText text={capability.evidence} />
+                      </dd>
                     </div>
                     <div>
                       <dt>What it affects</dt>

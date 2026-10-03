@@ -28,6 +28,20 @@ describe("the Settings card description is on the brief's type steps (009G-AC-00
 });
 
 /**
+ * Pass 4, R3 N-10. Brand's reason line ("Homeowner reports aren't turned on in this workspace yet.")
+ * left "yet." alone on its second line at 1180. `text-wrap: pretty` keeps a last line from being one
+ * word, as `permission-screen.module.css` already does on its facts.
+ */
+describe("the line that gives the reason a save is off (pass 4, R3 N-10)", () => {
+  it("is the secondary step and keeps a single word off its last line", () => {
+    const reason = declarationsOf(".reason");
+
+    expect(reason["font-size"]).toBe("var(--text-secondary-size)");
+    expect(reason["text-wrap"]).toBe("pretty");
+  });
+});
+
+/**
  * The scored baseline review pass 2, P2-05. The sheet kept five raw `12px` sizes (`.openLink`,
  * `.metrics`, the page note, `.record small`, `.details > div`). 12px is a step's value, so the browser
  * run's type-step gate passed, but it cannot see a literal: the steps come from the tokens, never

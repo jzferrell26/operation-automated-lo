@@ -442,6 +442,8 @@
   color: var(--tx-body);
   font-size: var(--text-secondary-size);
   line-height: var(--leading-normal);
+  /* A last line is never one word ("yet." alone at 390; pass 4, R3 N-11). */
+  text-wrap: pretty;
 }
 
 .rows {

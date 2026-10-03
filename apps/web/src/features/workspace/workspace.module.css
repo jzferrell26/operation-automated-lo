@@ -109,6 +109,9 @@
 }
 .reason {
   font-size: var(--text-secondary-size);
+  /* A last line is never one word ("yet." alone at 1180; pass 4, R3 N-10), as the facts on the
+     Connections page (`permission-screen.module.css`). */
+  text-wrap: pretty;
 }
 .stack {
   display: grid;

@@ -347,4 +347,13 @@ describe("the empty states keep the mockup's .empty details (scored review pass 
   it("keeps the sentence above the link at the secondary step", () => {
     expect(rule(".emptyBody")["font-size"]).toBe("var(--text-secondary-size)");
   });
+
+  /**
+   * Pass 4, R3 N-11. At 390 the "Running now" sentence ("... yet.") left "yet." alone on its last
+   * line (`review/home--first-run--390--*`). `text-wrap: pretty` keeps a last line from being one
+   * word, and costs nothing where the sentence already fits.
+   */
+  it("keeps the sentence from leaving one word alone on its last line (pass 4, R3 N-11)", () => {
+    expect(rule(".emptyBody")["text-wrap"]).toBe("pretty");
+  });
 });

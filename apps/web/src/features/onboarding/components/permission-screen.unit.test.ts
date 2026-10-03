@@ -52,6 +52,17 @@ describe("F-10: the notice", () => {
   });
 });
 
+/**
+ * Pass 4, R3 N-9. The sample-data Connections page read "verified 8 / minutes ago." across two lines
+ * (the `pretty` wrap that keeps "yet." off its own line moved the break to the number). A relative
+ * time is one phrase, so the page draws it in a span that does not wrap.
+ */
+describe("N-9: a relative time stays on one line", () => {
+  it("does not wrap the span that holds it", () => {
+    expect(declarationsOf(".relativeTime")["white-space"]).toBe("nowrap");
+  });
+});
+
 describe("F-09: no hand-built pill is left", () => {
   it("styles no span as a pill, because the group's state is the shared Badge", () => {
     expect(source).not.toMatch(/\.permissionHeading\s+span/u);

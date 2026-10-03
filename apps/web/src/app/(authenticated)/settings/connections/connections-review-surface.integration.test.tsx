@@ -253,6 +253,43 @@ describe("what each capability affects, while nothing can be connected", () => {
   });
 });
 
+/**
+ * Pass 4, R3 N-9. The sample data's evidence sentence ("... verified 8 minutes ago.") broke across
+ * two lines between "8" and "minutes", leaving the number alone at the end of a line. A relative
+ * time is one phrase, so it is drawn in a span the browser does not break; the words of the
+ * sentence are not changed. The span's `white-space` is held in `permission-screen.unit.test.ts`.
+ */
+describe("N-9: a relative time on a card is one unbreakable phrase", () => {
+  function evidenceSentences(container: HTMLElement): readonly Element[] {
+    return [...container.querySelectorAll("dt")]
+      .filter((term) => term.textContent === "What we checked")
+      .flatMap((term) => (term.nextElementSibling === null ? [] : [term.nextElementSibling]));
+  }
+
+  it("wraps '8 minutes ago' in one span of its own and leaves the sentence's words as they were", () => {
+    const { container } = renderConnections("local", undefined);
+
+    const sentence = evidenceSentences(container).find(
+      (item) => item.textContent === "Synthetic App Test evidence verified 8 minutes ago.",
+    );
+    expect(sentence, "the sample grant's evidence sentence").toBeDefined();
+    const phrase = sentence?.querySelectorAll("[data-relative-time]");
+    expect(phrase).toHaveLength(1);
+    expect(phrase?.[0]?.textContent).toBe("8 minutes ago");
+    expect(phrase?.[0]?.className).toMatch(/relativeTime/u);
+  });
+
+  it("draws a sentence with no relative time as plain text, with no span", () => {
+    const { container } = renderConnections("production", OALO_REVIEW_SURFACE_AUTHORIZED);
+
+    const sentences = evidenceSentences(container);
+    expect(sentences.length).toBeGreaterThan(0);
+    for (const sentence of sentences) {
+      expect(sentence.querySelector("[data-relative-time]")).toBeNull();
+    }
+  });
+});
+
 describe("the next step, said once (009G-AC-009, D2)", () => {
   it("states a next step every capability shares once, under the notice, and on no card", () => {
     const { container, workspace } = renderConnections(

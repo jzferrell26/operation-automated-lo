@@ -1,7 +1,11 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import { HOME_START } from "../../../../apps/web/src/copy/home-messages.js";
-import { EMPTY_LIBRARY } from "../../../../apps/web/src/copy/launch-messages.js";
+import {
+  EMPTY_LIBRARY,
+  EMPTY_LIBRARY_REASON,
+  EMPTY_LIBRARY_TITLE,
+} from "../../../../apps/web/src/copy/launch-messages.js";
 import { LIBRARY_PATH, settleTheLibrary } from "../../helpers/ads-library.js";
 import {
   REVIEW_FRAMES,
@@ -57,9 +61,23 @@ async function expectNoTopicsAndNoAds(page: Page): Promise<void> {
   await expect(main.getByRole("button", { name: /^Use this ad/u })).toHaveCount(0);
 }
 
-/** The sentence is said once on the page, in the page's own main region. */
+/** Home's start card says the criterion's whole sentence, once, in the page's own main region. */
 async function expectTheEmptyLibrarySentenceOnce(page: Page): Promise<void> {
   await expect(page.getByRole("main").getByText(EMPTY_LIBRARY, { exact: true })).toHaveCount(1);
+}
+
+/**
+ * The library tab and step 1 say the same two sentences in the empty state's own two places (the
+ * writing review delta check, D-1): the fact as its title and the reason as its description. Each is
+ * said once, and the two are not also said joined, so no fact is repeated on the page.
+ */
+async function expectTheEmptyLibraryOnce(page: Page): Promise<void> {
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { name: EMPTY_LIBRARY_TITLE, exact: true })).toHaveCount(
+    1,
+  );
+  await expect(main.getByText(EMPTY_LIBRARY_REASON, { exact: true })).toHaveCount(1);
+  await expect(main.getByText(EMPTY_LIBRARY, { exact: true })).toHaveCount(0);
 }
 
 const PAGES: readonly EmptyCatalogPage[] = Object.freeze([
@@ -84,7 +102,7 @@ const PAGES: readonly EmptyCatalogPage[] = Object.freeze([
     state: "real-catalog",
     path: LIBRARY_PATH,
     assertEmpty: async (page) => {
-      await expectTheEmptyLibrarySentenceOnce(page);
+      await expectTheEmptyLibraryOnce(page);
       await expectNoTopicsAndNoAds(page);
     },
   },
@@ -94,7 +112,7 @@ const PAGES: readonly EmptyCatalogPage[] = Object.freeze([
     path: "/marketing/campaigns/new",
     assertEmpty: async (page) => {
       await expect(page.getByRole("heading", { level: 1, name: "Choose an ad" })).toBeVisible();
-      await expectTheEmptyLibrarySentenceOnce(page);
+      await expectTheEmptyLibraryOnce(page);
       await expectNoTopicsAndNoAds(page);
     },
   },
@@ -130,7 +148,7 @@ test.describe.serial("a brand-new account against the real, empty catalog", () =
     expect(response.status()).toBe(404);
     await page.goto(LIBRARY_PATH);
     await expect(page.getByText("Sample ad")).toHaveCount(0);
-    await expect(page.getByText(EMPTY_LIBRARY, { exact: true })).toBeVisible();
+    await expect(page.getByText(EMPTY_LIBRARY_REASON, { exact: true })).toBeVisible();
   });
 
   for (const theme of REVIEW_THEMES) {

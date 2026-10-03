@@ -5,7 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Icon } from "@oalo/ui";
 
 import { ADS_LIBRARY_HEADING, ADS_LIBRARY_LEAD } from "../../../../../copy/ads-library-messages.js";
-import { EMPTY_LIBRARY, EMPTY_LIBRARY_TITLE } from "../../../../../copy/launch-messages.js";
+import {
+  EMPTY_LIBRARY,
+  EMPTY_LIBRARY_REASON,
+  EMPTY_LIBRARY_TITLE,
+} from "../../../../../copy/launch-messages.js";
 import {
   ADS_LIBRARY_SAMPLES_FLAG,
   loadAdsLibrary,
@@ -342,13 +346,17 @@ describe("a viewer with no Brand yet", () => {
 describe("the empty library (009C-AC-012)", () => {
   beforeEach(() => syntheticWorkspace(false));
 
-  it("says so in one sentence, with no chips and no grid", async () => {
+  it("says so, as the criterion's two sentences in the state's title and description, with no chips and no grid", async () => {
     const { container } = await renderLibrary();
 
-    expect(screen.getByText(EMPTY_LIBRARY)).toBeInTheDocument();
+    // The criterion's sentence is fixed, and Home and the Campaigns list draw it whole. This state
+    // draws its two halves in its own two places, so no fact is said twice (D-1).
     expect(EMPTY_LIBRARY).toBe(
       "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then.",
     );
+    expect(`${EMPTY_LIBRARY_TITLE}. ${EMPTY_LIBRARY_REASON}`).toBe(EMPTY_LIBRARY);
+    expect(screen.getByText(EMPTY_LIBRARY_REASON)).toBeInTheDocument();
+    expect(screen.queryByText(EMPTY_LIBRARY)).toBeNull();
     expect(screen.queryByRole("list", { name: "Show ads about" })).toBeNull();
     expect(container.querySelector("[data-ad-card-grid]")).toBeNull();
     expect(screen.queryAllByRole("article")).toHaveLength(0);
@@ -364,15 +372,21 @@ describe("the empty library (009C-AC-012)", () => {
     const status = screen.getByRole("status");
     expect(status).toHaveAttribute("data-state", "empty");
     expect(status).toHaveAttribute("data-empty-library");
-    expect(within(status).getByRole("heading", { level: 2, name: EMPTY_LIBRARY_TITLE })).toBeInTheDocument();
-    expect(within(status).getByText(EMPTY_LIBRARY)).toBeInTheDocument();
+    expect(
+      within(status).getByRole("heading", { level: 2, name: EMPTY_LIBRARY_TITLE }),
+    ).toBeInTheDocument();
+    expect(within(status).getByText(EMPTY_LIBRARY_REASON)).toBeInTheDocument();
+    // The fact is said once, not by the title, the first sentence and the end of the second (D-1).
+    const said = status.textContent ?? "";
+    expect(said.match(/no ads in the library/giu)).toHaveLength(1);
+    expect(said.match(/\bnothing\b/giu)).toHaveLength(1);
   });
 
   it("is empty even with the flag set when the environment is not local", async () => {
     syntheticWorkspace(true);
     vi.stubEnv("VERCEL", "1");
     await renderLibrary();
-    expect(screen.getByText(EMPTY_LIBRARY)).toBeInTheDocument();
+    expect(screen.getByText(EMPTY_LIBRARY_REASON)).toBeInTheDocument();
     expect(screen.queryAllByRole("article")).toHaveLength(0);
   });
 
@@ -380,7 +394,7 @@ describe("the empty library (009C-AC-012)", () => {
     vi.stubEnv("OALO_ENVIRONMENT", "preview");
     vi.stubEnv("OALO_DASHBOARD_PREVIEW", "enabled");
     await renderLibrary();
-    expect(screen.getByText(EMPTY_LIBRARY)).toBeInTheDocument();
+    expect(screen.getByText(EMPTY_LIBRARY_REASON)).toBeInTheDocument();
     expect(redirectCalls).toEqual([]);
   });
 });

@@ -41,15 +41,20 @@ export const USE_THIS_AD = "Use this ad";
 export const AD_NOT_IN_LIBRARY_NOTICE = "That ad isn't in the library anymore. Choose another ad.";
 export const CANCEL = "Cancel";
 export const SAMPLE_AD_LABEL = "Sample ad";
-/** 009C-AC-012: the library with no active ad, said once, with what happens next. */
-export const EMPTY_LIBRARY =
-  "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then.";
 /**
- * The title of the empty-library state (scored review R1-06). `AsyncState` names what is absent in
- * its title and says why in its description, which is `EMPTY_LIBRARY` itself, word for word, so the
- * sentence the criterion fixes is not split or reworded.
+ * 009C-AC-012: the library with no active ad, said once, with what happens next.
+ *
+ * Amended 2026-10-03 by the PRD-009 writing review delta check (MTK-008, D-1). The criterion's two
+ * sentences are said in the empty state's own two places, as every other empty state in the product
+ * says its two: the title states the fact and the description gives the reason. The words are the
+ * criterion's, each said once. The whole sentence below is the two joined, for the places that draw
+ * it whole (Home's start card and the Campaigns list's empty description), and it reads exactly as
+ * 009C-AC-012 fixes it.
  */
-export const EMPTY_LIBRARY_TITLE = "Nothing to choose from yet";
+export const EMPTY_LIBRARY_TITLE = "No ads in the library yet";
+export const EMPTY_LIBRARY_REASON =
+  "New ads are added after they're reviewed, so there's nothing to set up until then.";
+export const EMPTY_LIBRARY = `${EMPTY_LIBRARY_TITLE}. ${EMPTY_LIBRARY_REASON}`;
 export function adCardVersionLine(version: number, reviewedOn: string): string {
   return `Version ${String(version)}. Reviewed ${reviewedOn}.`;
 }

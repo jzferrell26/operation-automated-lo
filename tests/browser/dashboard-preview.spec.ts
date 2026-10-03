@@ -29,17 +29,20 @@ async function open(page: Page, path: string) {
 }
 /**
  * PRD-009d D1 and 009c D3. "Launch an ad" in the preview: the preview has no session and its
- * library is the real one, which is empty, so step 1 says so in one sentence and nothing on the
+ * library is the real one, which is empty, so step 1 says so, as the empty state's title and its
+ * description (009C-AC-012's two sentences, the writing review delta check D-1), and nothing on the
  * page can be saved or checked. The preview's own check route is gone.
  */
-const EMPTY_LIBRARY =
-  "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then.";
+const EMPTY_LIBRARY_TITLE = "No ads in the library yet";
+const EMPTY_LIBRARY_REASON =
+  "New ads are added after they're reviewed, so there's nothing to set up until then.";
 
 async function expectTheEmptyLibrary(page: Page, path: string) {
   await open(page, path);
   const main = page.getByRole("main");
   await expect(main.getByRole("heading", { level: 1, name: "Choose an ad" })).toBeVisible();
-  await expect(main.getByText(EMPTY_LIBRARY, { exact: true })).toBeVisible();
+  await expect(main.getByRole("heading", { name: EMPTY_LIBRARY_TITLE, exact: true })).toBeVisible();
+  await expect(main.getByText(EMPTY_LIBRARY_REASON, { exact: true })).toBeVisible();
   await expect(main.getByRole("button", { name: /^Use this ad/u })).toHaveCount(0);
   await expect(main.getByRole("button", { name: "Save and check" })).toHaveCount(0);
 }

@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-import { EMPTY_LIBRARY } from "../../apps/web/src/copy/launch-messages.js";
+import {
+  EMPTY_LIBRARY_REASON,
+  EMPTY_LIBRARY_TITLE,
+} from "../../apps/web/src/copy/launch-messages.js";
 
 import {
   CARDS_PER_ROW,
@@ -212,7 +215,7 @@ test.describe("The Ads library tab with no ad in the library (009C-AC-012)", () 
 
   for (const theme of ["light", "dark"] as const) {
     for (const frame of REVIEW_FRAMES) {
-      test(`says so in one sentence, with no chips and no grid, at ${frame.name} in ${theme === "light" ? "Light" : "Dark"}`, async ({
+      test(`says so, with no chips and no grid, at ${frame.name} in ${theme === "light" ? "Light" : "Dark"}`, async ({
         page,
       }) => {
         test.setTimeout(60_000);
@@ -220,7 +223,9 @@ test.describe("The Ads library tab with no ad in the library (009C-AC-012)", () 
         await page.setViewportSize({ width: frame.width, height: frame.height });
         await page.goto(LIBRARY_PATH);
         await expectThemeResolved(page, theme);
-        await expect(page.getByText(EMPTY_LIBRARY)).toBeVisible();
+        // The two sentences of 009C-AC-012, in the empty state's title and description (D-1).
+        await expect(page.getByRole("heading", { name: EMPTY_LIBRARY_TITLE })).toBeVisible();
+        await expect(page.getByText(EMPTY_LIBRARY_REASON)).toBeVisible();
         await settleTheLibrary(page);
         await expect(page.getByRole("list", { name: "Show ads about" })).toHaveCount(0);
         await expect(page.locator("[data-ad-card-grid], [data-ad-card]")).toHaveCount(0);

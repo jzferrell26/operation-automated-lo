@@ -11,6 +11,7 @@ import {
   CHOOSE_LEAD,
   DAILY_BUDGET_FIX,
   EMPTY_LIBRARY,
+  EMPTY_LIBRARY_REASON,
   EMPTY_LIBRARY_TITLE,
   PLACE_REFUSED,
   TOPIC_LABELS,
@@ -329,22 +330,25 @@ describe("step 1, Choose an ad (009D-AC-002)", () => {
     expect(screen.getByRole("link", { name: "Cancel" })).toHaveAttribute("href", href);
   });
 
-  it("says the library is empty in one sentence, with no chips", () => {
+  it("says the library is empty, as the criterion's two sentences, with no chips", () => {
     renderFlow({ step: 1 }, { cards: [] });
-    expect(screen.getByText(EMPTY_LIBRARY)).toBeInTheDocument();
+    expect(screen.getByText(EMPTY_LIBRARY_REASON)).toBeInTheDocument();
+    expect(screen.queryByText(EMPTY_LIBRARY)).toBeNull();
     expect(screen.queryByRole("list", { name: "Show ads about" })).toBeNull();
     expect(screen.queryByRole("button", { name: /^Use this ad/u })).toBeNull();
   });
 
   // Scored review R1-06. The empty library is the shared empty state, and step 1 does not keep a lead
   // that describes ads there are none of.
-  it("draws the empty library as an AsyncState empty, with its sentence whole and no lead", () => {
+  // The writing review delta check, D-1: the criterion's two sentences are the state's title and its
+  // description, each said once, in the same words.
+  it("draws the empty library as an AsyncState empty, with its title, its reason and no lead", () => {
     const { container } = renderFlow({ step: 1 }, { cards: [] });
     const state = container.querySelector("[data-empty-library]") as HTMLElement;
     expect(state).not.toBeNull();
     expect(state).toHaveAttribute("data-state", "empty");
     expect(within(state).getByRole("heading", { name: EMPTY_LIBRARY_TITLE })).toBeInTheDocument();
-    expect(within(state).getByText(EMPTY_LIBRARY)).toBeInTheDocument();
+    expect(within(state).getByText(EMPTY_LIBRARY_REASON)).toBeInTheDocument();
     expect(screen.queryByText(CHOOSE_LEAD)).toBeNull();
     expect(screen.getByRole("navigation", { name: "Launch an ad steps" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Cancel" })).toBeInTheDocument();

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import {
   ALL_TOPICS,
-  EMPTY_LIBRARY,
+  EMPTY_LIBRARY_REASON,
   EMPTY_LIBRARY_TITLE,
   TOPIC_CHIPS_LABEL,
   TOPIC_LABELS,
@@ -149,7 +149,11 @@ export function AdCardGrid({ cards, topic, advertiser, actionFor, titleLevel }: 
     // R1-06: the shared empty state, not a hand-built paragraph (rubric axis 9). The description is
     // 009C-AC-012's sentence, whole.
     return (
-      <EmptyState data-empty-library="" description={EMPTY_LIBRARY} title={EMPTY_LIBRARY_TITLE} />
+      <EmptyState
+        data-empty-library=""
+        description={EMPTY_LIBRARY_REASON}
+        title={EMPTY_LIBRARY_TITLE}
+      />
     );
   }
   const shown = orderedCards(cards).filter((card) => topic === undefined || card.topic === topic);

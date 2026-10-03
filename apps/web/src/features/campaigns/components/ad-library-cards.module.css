@@ -105,16 +105,13 @@
   padding: var(--space-4) var(--space-5) var(--space-5);
 }
 
-/* R1-04. The topic is the shared `Badge` pill with the tag glyph, as the mockup's `.badge--topic`
-   draws it: the secondary step in the strong ink, 2px above and below, --space-2 before the glyph and
-   --space-3 after the words, on one line. Written as `.cardBody .topic` so it outranks the
-   primitive's single class whichever stylesheet loads last. */
+/* P2-01. The topic is the shared `Badge` pill with the tag glyph, and nothing else of its own: the
+   caption step, `--space-1` above and below, and the neutral tone's ink and fill, as the badge
+   specification sets every chip (12px; the 2026-10-03 ruling supersedes the mockup's 14px
+   `.badge--topic`). Only where it sits in the card and that it stays on one line are the card's to
+   say. */
 .cardBody .topic {
   align-self: flex-start;
-  padding-block: 0.125rem;
-  padding-inline: var(--space-2) var(--space-3);
-  color: var(--tx-strong);
-  font-size: var(--text-secondary-size);
   white-space: nowrap;
 }
 

@@ -507,9 +507,12 @@ button.resetLink:hover:not(:disabled) {
 }
 
 /* The approve card is the shared `CampaignApprovalControls`, which this page and the campaign page
-   both draw. Its pieces take the same rhythm here, left-aligned so the buttons are not stretched, and
-   the empty status line (it is a live region, so it stays in the page) takes back the gap it would
-   otherwise leave as dead space at the card's foot. */
+   both draw. Its pieces take the same rhythm here, left-aligned so the buttons are not stretched.
+   R1-13r. Its status line is a live region, so it stays in the page, but it says nothing until a
+   decision is made. A grid's row gap cannot be taken back with a negative margin, so while the line
+   is empty it leaves the grid's flow altogether (an absolutely positioned child takes no track and so
+   no gap) and is visually hidden, which leaves the card's last row at the card's own 24px. The
+   moment it holds a sentence it is back in flow and drawn. */
 .decision {
   display: grid;
   gap: var(--space-4);
@@ -526,7 +529,34 @@ button.resetLink:hover:not(:disabled) {
 }
 
 .decision [data-approval-card] > [role="status"]:empty {
-  margin-block-start: calc(var(--space-4) * -1);
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* P2-08. The sentences in the decision cards are the secondary step, as the mockup's `.small` sets
+   them: the approve line, the approved, sent-back, retired, and cannot-approve lines, and the "What
+   to fix" items. The approve line is also the body ink (`.muted`). The card's title is the card step
+   at the semibold weight, like every other card title on the page. */
+.decision [data-approval-card] > p,
+.decisionCard p,
+.fixes {
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+.decision [data-approval-card] > p:not([role="status"]) {
+  color: var(--tx-body);
+}
+
+.decision [data-approval-card] > strong {
+  color: var(--tx-strong);
+  font-size: var(--text-card-size);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
 }
 
 /* "Fix it", "Make a new version", and "Choose another ad" lead somewhere, so they are links, drawn
@@ -549,3 +579,7 @@ a.primaryLink:hover {
   background: var(--ac-primary-hover);
   color: var(--tx-on-action);
 }
+  position: relative;
+  /* A sentence never leaves its last word alone on a line: "This version needs changes before anyone
+     can approve it." used to end with "it." by itself at 1440. */
+  text-wrap: pretty;

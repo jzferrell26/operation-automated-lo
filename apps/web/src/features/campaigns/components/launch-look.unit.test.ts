@@ -71,9 +71,29 @@ describe("step 3's cards (R1-12, R1-13, R1-15)", () => {
     expect(launch.declarationsOf(".decision [data-approval-card]")["justify-items"]).toBe("start");
   });
 
-  it("takes back the gap an empty status line would leave at the foot of the approve card", () => {
+  it("takes an empty status line out of the approve card's grid, so it leaves no gap at the foot (R1-13r)", () => {
     const empty = launch.declarationsOf('.decision [data-approval-card] > [role="status"]:empty');
-    expect(empty["margin-block-start"]).toBe("calc(var(--space-4) * -1)");
+    // An absolutely positioned child takes no grid track, so the row gap before it is not drawn;
+    // a negative margin could not shrink that gap, which is what the first fix tried.
+    expect(empty["position"]).toBe("absolute");
+    expect(empty["clip-path"]).toBe("inset(50%)");
+    expect(empty["margin-block-start"]).toBeUndefined();
+    expect(launch.declarationsOf(".decision [data-approval-card]")["position"]).toBe("relative");
+    // The one sentence the review saw end on "it." alone (R1 pass 2, observation 2).
+    expect(launch.declarationsOf(".decision [data-approval-card]")["text-wrap"]).toBe("pretty");
+  });
+
+  it("sets the decision cards' sentences at the secondary step, the approve line in the body ink (P2-08)", () => {
+    const sentences = launch.declarationsOf(
+      ".decision [data-approval-card] > p,\n.decisionCard p,\n.fixes",
+    );
+    expect(sentences["font-size"]).toBe("var(--text-secondary-size)");
+    expect(
+      launch.declarationsOf('.decision [data-approval-card] > p:not([role="status"])')["color"],
+    ).toBe("var(--tx-body)");
+    const title = launch.declarationsOf(".decision [data-approval-card] > strong");
+    expect(title["font-size"]).toBe("var(--text-card-size)");
+    expect(title["font-weight"]).toBe("var(--weight-semibold)");
   });
 
   it("outranks the link primitive's button look on the primary links of the decision cards", () => {
@@ -113,11 +133,14 @@ describe("the ad card and the topic chips (R1-03, R1-04)", () => {
     expect(chosen["font-weight"]).toBe("var(--weight-semibold)");
   });
 
-  it("sets the topic badge as the mockup draws it: the strong ink, on one line, tight in the card", () => {
+  it("leaves the topic pill's size, padding and ink to the shared Badge (P2-01)", () => {
     const topic = cards.declarationsOf(".cardBody .topic");
-    expect(topic["color"]).toBe("var(--tx-strong)");
-    expect(topic["font-size"]).toBe("var(--text-secondary-size)");
-    expect(topic["padding-inline"]).toBe("var(--space-2) var(--space-3)");
+    // The chip is 12px on every screen (the badge specification, ruled 2026-10-03), with
+    // `--space-1` above and below; a raw 0.125rem and a 14px step were the first fix's mistake.
+    expect(topic["font-size"]).toBeUndefined();
+    expect(topic["padding-block"]).toBeUndefined();
+    expect(topic["padding-inline"]).toBeUndefined();
+    expect(topic["color"]).toBeUndefined();
     expect(topic["white-space"]).toBe("nowrap");
     expect(topic["align-self"]).toBe("flex-start");
   });
@@ -156,3 +179,4 @@ describe("the ad's company line (F-7)", () => {
     expect(company["text-transform"]).toBe("uppercase");
   });
 });
+    expect(cards.source).not.toMatch(/0\.125rem/u);

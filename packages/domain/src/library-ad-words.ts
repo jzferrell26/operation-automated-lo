@@ -780,7 +780,7 @@ function wordFinding(
 /**
  * Every word finding for the texts of one library ad, in field order, at most one per rule and
  * field. `partnerNames` are the person's saved Realtor partners' names and companies; each is
- * compared after normalising, and one shorter than four characters is not compared at all.
+ * compared after normalising, and one shorter than three characters is not compared at all.
  */
 export function evaluateLibraryAdWords(
   texts: LibraryAdTexts,

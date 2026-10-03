@@ -164,12 +164,20 @@ describe("the ux-ui supersession notes (009A-AC-015)", () => {
     },
   );
 
+  /**
+   * Every note carries a verb and a day: "Superseded on 2026-10-01 by PRD-009". The register rows
+   * this file checks were applied on 2026-10-01, and a later lane of the same PRD adds notes of its
+   * own to the same files with the day it wrote them (S-108, 2026-10-03, on
+   * `04-screens/workspace-page-completion.md`), so the day is any in October 2026, the month the
+   * PRD ran. The pattern used to name the one day 2026-10-01 and failed that later note, though the
+   * note is dated and names what it does, which is all this check asks.
+   */
   it("dates every note and names what it does", () => {
     for (const file of new Set(CITED_LINES.map(([, cited]) => cited))) {
       const notes = linesOf(file).filter((line) => line.includes("by PRD-009"));
       for (const note of notes) {
         expect(note, `${file}: ${note.slice(0, 60)}`).toMatch(
-          /(Superseded|Superseded in part|Re-scoped|Amended)\** on 2026-10-01 by PRD-009/u,
+          /(Superseded|Superseded in part|Re-scoped|Amended)\** on 2026-10-\d{2} by PRD-009/u,
         );
       }
     }

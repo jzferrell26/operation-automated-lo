@@ -28,7 +28,7 @@ describe("the words in a browser tab", () => {
   });
 
   it("say what each signed-in page is", () => {
-    expect(PAGE_TITLES).toEqual({
+    expect(PAGE_TITLES).toMatchObject({
       home: "Home",
       campaigns: "Campaigns",
       adsLibrary: "Ads library",
@@ -40,11 +40,21 @@ describe("the words in a browser tab", () => {
       partners: "Realtor partners",
       routing: "Where new leads go",
       billing: "Plan and usage",
+      gone: "Page gone",
+    });
+  });
+
+  // The writing review delta check, D-6: the menu's Homeowner reports item and its two pages.
+  it("say what the three Homeowner reports pages are", () => {
+    expect(PAGE_TITLES).toMatchObject({
       homeownerReports: "Homeowner reports",
       newHomeownerReport: "Create a homeowner report",
       homeownerReport: "Homeowner report",
-      gone: "Page gone",
     });
+  });
+
+  it("hold no title this file has not read, so a new page is read before it ships", () => {
+    expect(Object.keys(PAGE_TITLES)).toHaveLength(15);
   });
 
   it("describe the product in plain words, with the approval saved by name", () => {

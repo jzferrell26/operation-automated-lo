@@ -74,9 +74,11 @@ export function CampaignLibraryNotices({
         const action = noticeAction(notice);
         return (
           <li className={styles.notice} data-notice={notice.kind} key={notice.kind}>
-            <p>
-              <Icon decorative name="info" size="sm" tone="info" />{" "}
-              <TextWithDays days={noticeDays(notice)} text={noticeSentence(notice)} />
+            <p className={styles.noticeText}>
+              <Icon decorative name="info" size="sm" tone="info" />
+              <span>
+                <TextWithDays days={noticeDays(notice)} text={noticeSentence(notice)} />
+              </span>
             </p>
             {action === null ? null : <div className={styles.noticeActions}>{action}</div>}
           </li>

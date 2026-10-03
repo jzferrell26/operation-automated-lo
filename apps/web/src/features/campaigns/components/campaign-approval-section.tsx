@@ -42,7 +42,7 @@ export function CampaignApprovalSection({
       <Surface
         aria-labelledby="campaign-approval-title"
         data-approval-section=""
-        padding="md"
+        padding="lg"
         role="region"
       >
         <div className={styles.body}>
@@ -64,7 +64,7 @@ export function CampaignApprovalSection({
       aria-labelledby="campaign-approval-title"
       data-approval-section=""
       data-decision={decision.decision}
-      padding="md"
+      padding="lg"
       role="region"
     >
       <div className={styles.body}>

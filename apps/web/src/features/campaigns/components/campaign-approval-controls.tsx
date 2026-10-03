@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, SafeAction, type SafeActionDecision } from "@oalo/ui";
+import { Button, Card, SafeAction, type SafeActionDecision, type SurfacePadding } from "@oalo/ui";
 import { useRouter } from "next/navigation.js";
 import { useEffect, useRef, useState } from "react";
 
@@ -54,7 +54,15 @@ function recorded(sentence: string): ApprovalStatus {
   return Object.freeze({ sentence, refusal: undefined });
 }
 
+/**
+ * The card's inner padding. The campaign page gives every card one inset (`lg`, review pass 1, F-2);
+ * step 3 of "Launch an ad" mounts the same controls among cards of its own and keeps its `md`.
+ */
+export type CampaignApprovalControlsCardProps = CampaignApprovalControlsProps &
+  Readonly<{ padding?: SurfacePadding }>;
+
 export function CampaignApprovalControls({
+  padding = "md",
   campaignHref,
   campaignRef,
   campaignVersionRef,
@@ -65,7 +73,7 @@ export function CampaignApprovalControls({
   alreadyDecided,
   blocking,
   state,
-}: CampaignApprovalControlsProps) {
+}: CampaignApprovalControlsCardProps) {
   const [status, setStatus] = useState<ApprovalStatus | null>(
     alreadyDecided === undefined ? null : recorded(decisionStatus(alreadyDecided, false)),
   );
@@ -151,7 +159,7 @@ export function CampaignApprovalControls({
     // just decided on is the same card, by name, as the one a later visit shows, and not the only
     // untitled card on the page.
     return (
-      <Card data-approval-card="" padding="md">
+      <Card data-approval-card="" padding={padding}>
         <strong>{APPROVE_TITLE}</strong>
         <p ref={outcomeRef} role="status" tabIndex={-1}>
           {status?.sentence}
@@ -161,7 +169,7 @@ export function CampaignApprovalControls({
   }
 
   return (
-    <Card data-approval-card="" padding="md">
+    <Card data-approval-card="" padding={padding}>
       <strong>{APPROVE_TITLE}</strong>
       <p>{APPROVE_LINE}</p>
       <SafeAction

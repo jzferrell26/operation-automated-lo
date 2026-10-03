@@ -77,7 +77,7 @@ function StandingChip({ page }: Readonly<{ page: CampaignPageData }>) {
 function Fixes({ fixes }: Readonly<{ fixes: readonly string[] }>) {
   if (fixes.length === 0) return null;
   return (
-    <Surface aria-labelledby="campaign-fixes-title" data-fixes="" padding="md" role="region">
+    <Surface aria-labelledby="campaign-fixes-title" data-fixes="" padding="lg" role="region">
       <div className={styles.body}>
         <h2 className={styles.cardTitle} id="campaign-fixes-title">
           {FIXES_TITLE}
@@ -94,7 +94,7 @@ function Fixes({ fixes }: Readonly<{ fixes: readonly string[] }>) {
 
 function OlderVersionNotice({ page }: Readonly<{ page: CampaignPageData }>) {
   return (
-    <Surface data-older-version="" padding="md">
+    <Surface data-older-version="" padding="lg">
       <div className={styles.older}>
         <p>{OLDER_VERSION.notice}</p>
         <div className={styles.noticeActions}>
@@ -171,7 +171,7 @@ function LibraryAdScreen({ page }: Readonly<{ page: LibraryAdCampaignPage }>) {
           <CampaignApprovalSection decision={page.decision} />
           <Fixes fixes={page.fixes} />
           {page.approvalControls === undefined ? null : (
-            <CampaignApprovalControls {...page.approvalControls} />
+            <CampaignApprovalControls {...page.approvalControls} padding="lg" />
           )}
           <CampaignLibraryNotices notices={page.notices} />
           <CampaignVersionsCard shownVersionNo={page.versionNo} versions={page.versions} />

@@ -25,7 +25,7 @@ export function CampaignVersionsCard({
   shownVersionNo,
 }: Readonly<{ versions: readonly CampaignVersionSummary[]; shownVersionNo: number }>) {
   return (
-    <Surface aria-labelledby="campaign-versions-title" data-versions="" padding="md" role="region">
+    <Surface aria-labelledby="campaign-versions-title" data-versions="" padding="lg" role="region">
       <div className={styles.body}>
         <h2 className={styles.cardTitle} id="campaign-versions-title">
           {VERSIONS.title}

@@ -68,7 +68,9 @@ export function CampaignLaunchReview({ campaign }: CampaignLaunchReviewProps) {
             <Card data-meta-asset-kind={asset.kind} key={asset.providerId} padding="md">
               <div className={styles.fieldStatusHeading}>
                 <h3>{asset.label}</h3>
-                <Badge tone="neutral">{asset.optional ? "Optional, selected" : "Selected"}</Badge>
+                {/* `badge-and-live-region.md`, "Tones and glyphs": a selection is `info`, not the
+                    neutral of a draft or an inactive item (scored review pass 3, R2 P3-2). */}
+                <Badge tone="info">{asset.optional ? "Optional, selected" : "Selected"}</Badge>
               </div>
               <p>{asset.displayName}</p>
             </Card>

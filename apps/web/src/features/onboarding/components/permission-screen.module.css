@@ -108,17 +108,41 @@
   gap: var(--space-8) var(--space-6);
 }
 
+/*
+ * Scored review pass 3, R3 P3-07. Each group is two rows of the groups' grid, its head (the heading,
+ * its chip and its description) and its cards, taken as a subgrid so the two groups of one row share
+ * the rows: a head that runs to two lines moves the cards beside it too, and the next row starts
+ * where the taller column ends. Each section was its own grid, so a two-line heading in one column
+ * left the cards 22px apart, and at 1180 both rows stepped. The section's own gap stays `--space-3`,
+ * closer than the `--space-8` between the groups (F-08), and a subgrid takes the gap it declares.
+ * In the one-column layout each section is simply its own pair of rows.
+ */
 .permissionGroups section {
   display: grid;
-  align-content: start;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
   gap: var(--space-3);
 }
 
+.permissionGroupHead {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+/*
+ * The mockups' `.card-head` (`design/mockups/campaign-detail.html:200`): the title and its chip are one
+ * wrapping row, `--space-4` apart. The chip takes the next line before the title takes a third (it
+ * was one unwrapping row, so at 390 "Access this app confirms after you connect" broke into three
+ * lines beside a 140px chip).
+ */
 .permissionHeading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .permissionHeading h2,
@@ -132,27 +156,37 @@
   flex: none;
 }
 
+/*
+ * A card's facts: the mockups' `.facts` (`design/mockups/campaign-detail.html:360-363`), as the
+ * campaign page and step 3 draw theirs (`campaign-page.module.css`, `launch.module.css`). The label and
+ * the value are both the secondary step, the label in body ink and the value in strong ink at the
+ * medium weight, on an `8rem` label column and `--space-3` between rows. They were a 12px faint label
+ * beside a 16px value, on a 7rem column and `--space-2` rows, so the two sat on baselines 5px apart
+ * (scored review pass 3, R3 P3-06). The pair stacks only below 720px, as the mockups'.
+ */
 .permissionDetails {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
   margin: var(--space-3) 0 0;
 }
 
 .permissionDetails div {
   display: grid;
-  grid-template-columns: minmax(7rem, 0.35fr) minmax(0, 1fr);
+  grid-template-columns: 8rem minmax(0, 1fr);
   gap: var(--space-3);
+  font-size: var(--text-secondary-size);
 }
 
 .permissionDetails dt {
-  color: var(--tx-faint);
-  font-size: var(--text-caption-size);
-  font-weight: var(--weight-medium);
+  color: var(--tx-body);
 }
 
 .permissionDetails dd {
   margin: 0;
-  color: var(--tx-body);
+  color: var(--tx-strong);
+  font-weight: var(--weight-medium);
+  /* A date or a unit does not stand alone on a line ("it.", "ago."), as step 3's facts. */
+  text-wrap: pretty;
 }
 
 @media (max-width: 768px) {
@@ -163,10 +197,12 @@
   .permissionGroups {
     grid-template-columns: minmax(0, 1fr);
   }
+}
 
+@media (max-width: 719.98px) {
   .permissionDetails div {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-1);
+    gap: 0;
   }
 }
 

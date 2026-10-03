@@ -83,3 +83,46 @@ describe("the demo campaign page's rhythm (review pass 2, R2 N-5a)", () => {
     expect(css.source).not.toMatch(/\.currentVersion|\.permissionBadge/u);
   });
 });
+
+/**
+ * Scored review pass 3, part R2. The demo campaign page stays exempt from axis 10 only, so it is held
+ * to the composition at every frame (axis 7).
+ */
+describe("the demo campaign page at 768 and 390 (review pass 3, R2 P3-1 and P3-3)", () => {
+  /**
+   * P3-1. Below 768px a version's row is one column, and a grid item stretches across its track, so
+   * the Badge ("Replaced", "Approved") drew as a bar as wide as its row. It keeps its own width.
+   */
+  it("keeps a version's chip its own width when its row is one column", async () => {
+    const css = await readCssRules(REPORTING);
+    const narrow = mediaBody(css.source, "(max-width: 768px)");
+    const row = declarationsIn(narrow, ".history li");
+
+    expect(row["grid-template-columns"]).toBe("minmax(0, 1fr)");
+    expect(row["justify-items"]).toBe("start");
+  });
+
+  it("does not stretch the chip at any other width either", async () => {
+    const css = await readCssRules(REPORTING);
+    const wide = css.declarationsOf(".history li");
+
+    // Three tracks (the version, the chip, the summary), each as wide as what is in it.
+    expect(wide["grid-template-columns"]).toBe("auto auto minmax(0, 1fr)");
+    expect(wide["align-items"]).toBe("start");
+    expect(wide).not.toHaveProperty("justify-items", "stretch");
+  });
+
+  /**
+   * P3-3. With `list-style-position: inside` the marker is part of the text box, so a wrapped line
+   * began under the bullet at the browser's own marker width, which is no token. The marker is outside
+   * and the list's start padding is the step, so a wrapped line returns to the text's edge.
+   */
+  it("hangs the summary list's marker outside a start padding that is a step", async () => {
+    const css = await readCssRules(REPORTING);
+    const list = css.declarationsOf(".launchSummaryGrid ul");
+
+    expect(list["list-style-position"]).toBe("outside");
+    expect(list["padding-inline-start"]).toBe("var(--space-5)");
+    expect(css.source).not.toMatch(/list-style-position:\s*inside/u);
+  });
+});

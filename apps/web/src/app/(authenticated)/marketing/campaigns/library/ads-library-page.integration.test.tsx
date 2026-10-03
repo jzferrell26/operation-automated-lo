@@ -3,7 +3,7 @@ import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ADS_LIBRARY_HEADING, ADS_LIBRARY_LEAD } from "../../../../../copy/ads-library-messages.js";
-import { EMPTY_LIBRARY } from "../../../../../copy/launch-messages.js";
+import { EMPTY_LIBRARY, EMPTY_LIBRARY_TITLE } from "../../../../../copy/launch-messages.js";
 import {
   ADS_LIBRARY_SAMPLES_FLAG,
   loadAdsLibrary,
@@ -341,7 +341,13 @@ describe("the empty library (009C-AC-012)", () => {
       screen.getByRole("heading", { level: 2, name: ADS_LIBRARY_HEADING }),
     ).toBeInTheDocument();
     expect(screen.queryByText(ADS_LIBRARY_LEAD)).toBeNull();
-    expect(screen.queryByRole("status")).toBeNull();
+    // The one status on the page is the empty state itself (scored review R1-06: an AsyncState, not
+    // a hand-built paragraph), and the browser's hidden "ads shown" status is not there.
+    const status = screen.getByRole("status");
+    expect(status).toHaveAttribute("data-state", "empty");
+    expect(status).toHaveAttribute("data-empty-library");
+    expect(within(status).getByRole("heading", { level: 2, name: EMPTY_LIBRARY_TITLE })).toBeInTheDocument();
+    expect(within(status).getByText(EMPTY_LIBRARY)).toBeInTheDocument();
   });
 
   it("is empty even with the flag set when the environment is not local", async () => {

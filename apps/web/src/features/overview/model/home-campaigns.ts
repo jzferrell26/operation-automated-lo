@@ -1,4 +1,8 @@
-import type { LibraryAdCatalogStanding } from "@oalo/application";
+import {
+  libraryAdRefusalFor,
+  type LibraryAdCatalogStanding,
+  type RecordedLibraryAd,
+} from "@oalo/application";
 import type { CampaignState } from "@oalo/contracts";
 
 import { CHECK_RESULT_READY, campaignStateLabel } from "../../../copy/user-language.js";
@@ -57,36 +61,19 @@ export type HomeList = Readonly<{
 }>;
 
 /**
- * The ad a version recorded, as the approval command compares it: the library ad's id and version,
- * and the digest of each picture the version was saved with.
- */
-export type RecordedLibraryAd = Readonly<{
-  id: string;
-  version: number;
-  tallSha256: string;
-  squareSha256: string;
-}>;
-
-/**
  * 009B-AC-010. Whether the approval command would still accept this library ad: the version is in
  * the catalog, neither it nor the ad's newest version was retired, it is the newest version, and
  * both pictures are the bytes the version recorded.
  *
- * This restates `assertLibraryAdApprovable` in `packages/application/src/campaign-approval-command.ts`
- * so that Home never lists, as waiting for an approver, a campaign that command would refuse. That
- * function is not exported and 009e owns its file in Wave 3; the unit cases pin the same four
- * refusals, and a later wave can export one rule for both.
+ * The command's own rule, `libraryAdRefusalFor`, answers this (QA-06): Home asks the function the
+ * command calls, so it never lists, as waiting for an approver, a campaign that command would
+ * refuse, and the two cannot drift apart.
  */
 export function libraryAdStillApprovable(
   recorded: RecordedLibraryAd,
   standing: LibraryAdCatalogStanding | undefined,
 ): boolean {
-  if (standing === undefined) return false;
-  if (standing.status === "retired" || standing.highestStatus === "retired") return false;
-  if (standing.status !== "active" || standing.highestVersion !== recorded.version) return false;
-  return (
-    recorded.tallSha256 === standing.tallSha256 && recorded.squareSha256 === standing.squareSha256
-  );
+  return libraryAdRefusalFor(recorded, standing) === undefined;
 }
 
 function newestFirst(left: HomeCampaignFacts, right: HomeCampaignFacts): number {

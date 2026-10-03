@@ -2,6 +2,7 @@ import {
   CampaignResourceNotAccessibleError,
   principalHasCampaignApprovalRole,
   projectCampaignWorkspace,
+  recordedLibraryAdOf,
   type AuthenticatedPrincipal,
   type CampaignPersistenceKind,
   type CampaignWorkspaceReadRecord,
@@ -217,7 +218,6 @@ function factsFor(
       sample: false,
     });
   }
-  const [tall, square] = manifest.images;
   const loaded = library.find(manifest.libraryAd.id, manifest.libraryAd.version);
   return Object.freeze({
     ...common,
@@ -225,12 +225,7 @@ function factsFor(
     startsAt: manifest.schedule.startsAt ?? undefined,
     endsAt: manifest.schedule.endsAt,
     adAvailable: libraryAdStillApprovable(
-      {
-        id: manifest.libraryAd.id,
-        version: manifest.libraryAd.version,
-        tallSha256: tall.contentSha256,
-        squareSha256: square.contentSha256,
-      },
+      recordedLibraryAdOf(manifest),
       library.standingOf(manifest.libraryAd),
     ),
     sample: loaded?.source === "sample",

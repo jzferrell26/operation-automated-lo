@@ -4,6 +4,7 @@ import {
   type CampaignEvent,
   type CampaignState,
   type CampaignVersion,
+  type LibraryAdCampaignManifest,
   type PreflightResult,
 } from "@oalo/contracts";
 
@@ -91,35 +92,71 @@ function assertLibraryAdCatalogPort(catalog: unknown): asserts catalog is Librar
 }
 
 /**
- * PRD-009c D4, 009C-AC-008. A library-ad version is approvable only while its ad is in the catalog,
- * active, at its highest version, and still has the art digests the version recorded. A version of
- * an ad that was retired gets the retired refusal even when a newer version was retired, and an
- * older version gets the newer-version refusal. An open house version has no library ad, so the
- * catalog is not consulted for it.
+ * PRD-009c D4. The library ad a campaign version recorded: the ad's id and version, and the digest
+ * of each picture the version was saved with. It is what the approval rule compares the catalog's
+ * answer against.
+ */
+export interface RecordedLibraryAd {
+  readonly id: string;
+  readonly version: number;
+  readonly tallSha256: string;
+  readonly squareSha256: string;
+}
+
+/** What a library-ad version recorded about its ad, read from the version's own manifest. */
+export function recordedLibraryAdOf(manifest: LibraryAdCampaignManifest): RecordedLibraryAd {
+  const [tall, square] = manifest.images;
+  return Object.freeze({
+    id: manifest.libraryAd.id,
+    version: manifest.libraryAd.version,
+    tallSha256: tall.contentSha256,
+    squareSha256: square.contentSha256,
+  });
+}
+
+/**
+ * PRD-009c D4, 009C-AC-008. The one approval rule for a library ad, written once. A library-ad
+ * version is approvable only while its ad is in the catalog, active, at its highest version, and
+ * still has the art digests the version recorded; this answers why it is not, or `undefined` when
+ * it is. A version of an ad that was retired gets the retired reason even when only a newer version
+ * was retired, and an older version of a live ad gets the newer-version reason.
+ *
+ * The approval command refuses on this, and every screen that decides whether to offer Approve asks
+ * it too (step 3 of "Launch an ad", Home), so no screen offers a decision the command will refuse.
+ */
+export function libraryAdRefusalFor(
+  recorded: RecordedLibraryAd,
+  standing: LibraryAdCatalogStanding | undefined,
+): LibraryAdRefusalReason | undefined {
+  if (standing === undefined) return "missing";
+  if (standing.status === "retired" || standing.highestStatus === "retired") return "retired";
+  if (standing.status !== "active" || standing.highestVersion !== recorded.version) {
+    return "replaced";
+  }
+  if (
+    recorded.tallSha256 !== standing.tallSha256 ||
+    recorded.squareSha256 !== standing.squareSha256
+  ) {
+    return "art_changed";
+  }
+  return undefined;
+}
+
+/**
+ * PRD-009c D4, 009C-AC-008. Refuses a library-ad version the rule above refuses. An open house
+ * version has no library ad, so the catalog is not consulted for it.
  */
 async function assertLibraryAdApprovable(
   manifest: CampaignVersion["manifest"],
   catalog: LibraryAdCatalogPort,
 ): Promise<void> {
   if (manifest.blueprintId !== "library-ad") return;
-  const standing = await catalog.standingOf({
-    id: manifest.libraryAd.id,
-    version: manifest.libraryAd.version,
-  });
-  if (standing === undefined) throw new CampaignLibraryAdRefusedError("missing");
-  if (standing.status === "retired" || standing.highestStatus === "retired") {
-    throw new CampaignLibraryAdRefusedError("retired");
-  }
-  if (standing.status !== "active" || standing.highestVersion !== manifest.libraryAd.version) {
-    throw new CampaignLibraryAdRefusedError("replaced");
-  }
-  const [tall, square] = manifest.images;
-  if (
-    tall.contentSha256 !== standing.tallSha256 ||
-    square.contentSha256 !== standing.squareSha256
-  ) {
-    throw new CampaignLibraryAdRefusedError("art_changed");
-  }
+  const recorded = recordedLibraryAdOf(manifest);
+  const refusal = libraryAdRefusalFor(
+    recorded,
+    await catalog.standingOf({ id: recorded.id, version: recorded.version }),
+  );
+  if (refusal !== undefined) throw new CampaignLibraryAdRefusedError(refusal);
 }
 
 export interface CampaignApprovalEvidence {

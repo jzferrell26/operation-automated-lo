@@ -1,5 +1,8 @@
 import {
+  CAMPAIGN_MUTATION_ROLES,
   campaignMayBeApprovedBy,
+  libraryAdRefusalFor,
+  recordedLibraryAdOf,
   rulesetRuleCodes,
   type AuthenticatedPrincipal,
   type CampaignWorkspaceReadRecord,
@@ -8,6 +11,7 @@ import type { LibraryAdCampaignManifest } from "@oalo/contracts";
 
 import { RULE_PLAIN_NAMES } from "../copy/launch-messages.js";
 import { APPROVAL_ROLE_LABELS } from "../copy/user-language.js";
+import { newerVersionOffer } from "../features/ads-library/newer-version.js";
 import {
   loadAdsLibrary,
   type LoadedAdsLibrary,
@@ -183,8 +187,22 @@ export function reviewDataOf(
     standing === undefined
       ? undefined
       : library.find(manifest.libraryAd.id, standing.highestVersion);
+  // QA-06. Whether this version's ad can still be approved is the approval command's own rule, so
+  // step 3 never offers Approve for a version the command would refuse.
+  const adRefusal = libraryAdRefusalFor(recordedLibraryAdOf(manifest), standing);
   const retiredOn =
-    standing?.highestStatus === "retired" ? (highest?.entry.retired?.on ?? null) : null;
+    adRefusal === "retired"
+      ? (highest?.entry.retired?.on ?? loaded.entry.retired?.on ?? null)
+      : null;
+  const newerVersion =
+    adRefusal === "replaced"
+      ? newerVersionOffer({
+          campaignRef: record.version.campaignRef,
+          manifest,
+          decided: record.approval !== undefined,
+          library,
+        })
+      : undefined;
   const approval = record.approval;
   return Object.freeze({
     campaignRef: record.version.campaignRef,
@@ -217,6 +235,9 @@ export function reviewDataOf(
       defaults: Object.freeze({ ...loaded.entry.defaults }),
     }),
     retiredOn,
+    adRefusal,
+    newerVersion,
+    canMakeNewVersion: (CAMPAIGN_MUTATION_ROLES as readonly string[]).includes(principal.role),
     words: Object.freeze({
       headline: manifest.content.headline,
       primaryText: manifest.content.body,

@@ -117,6 +117,9 @@ export function reviewFixture(
       },
     },
     retiredOn: null,
+    adRefusal: undefined,
+    newerVersion: undefined,
+    canMakeNewVersion: true,
     words: {
       headline: "Buying your first home in Austin? Start with a plan.",
       primaryText: "Send me a message and let's talk about your plans.",

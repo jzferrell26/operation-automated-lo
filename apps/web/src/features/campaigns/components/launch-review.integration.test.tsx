@@ -8,6 +8,7 @@ import {
   CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION,
   CHECK_RESULT_NEEDS_CHANGES,
 } from "../../../copy/user-language.js";
+import type { NewerVersionOffer } from "../../ads-library/newer-version.js";
 import { LaunchOnFacebook } from "./launch-on-facebook.js";
 import { reviewFixture } from "./launch-flow.test-support.js";
 import { LaunchReview, launchReviewState } from "./launch-review.js";
@@ -35,6 +36,9 @@ const CLAIM = {
   affected: "content.headline",
   remediation: "Take 'low rates' out of the headline. Ads can't state rate claims.",
 };
+
+/** A version whose ad the library retired on Sep 30: the approval command refuses it as retired. */
+const RETIRED = { retiredOn: "2026-09-30", adRefusal: "retired" } as const;
 
 /**
  * A sentence whose day is drawn as a `time` element (so it lines up in tabular figures): matched on
@@ -422,7 +426,7 @@ describe("the PRD-008b states on step 3 (D8, 009D-AC-018)", () => {
   });
 
   it("ad retired, undecided: the chip, the notice, and Choose another ad", () => {
-    render(<LaunchReview review={reviewFixture({ retiredOn: "2026-09-30" })} />);
+    render(<LaunchReview review={reviewFixture(RETIRED)} />);
     expect(screen.getByText("Ad retired")).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -446,7 +450,7 @@ describe("the PRD-008b states on step 3 (D8, 009D-AC-018)", () => {
     };
     const base = {
       canApprove: true,
-      retiredOn: "2026-09-30",
+      adRefusal: "retired" as const,
       checks: { ...reviewFixture().checks, blocking: true },
     };
     expect(launchReviewState({ ...base, decision: decided })).toBe("approved");
@@ -454,8 +458,168 @@ describe("the PRD-008b states on step 3 (D8, 009D-AC-018)", () => {
       "sent-back",
     );
     expect(launchReviewState({ ...base, decision: undefined })).toBe("retired");
-    expect(launchReviewState({ ...base, retiredOn: null, decision: undefined })).toBe(
+    expect(launchReviewState({ ...base, adRefusal: undefined, decision: undefined })).toBe(
       "needs-changes",
+    );
+  });
+});
+
+/**
+ * QA-06, 009C-AC-008. Step 3 offered "Approve this version" for a version whose library ad had been
+ * replaced, and the command then refused it. Step 3 now reads the command's own rule (the server
+ * hands it `adRefusal`), so it draws a state of its own, and no Approve, for each reason the
+ * command refuses: retired, replaced, missing from the catalog, or art changed.
+ */
+describe("step 3 never offers Approve where the command refuses (QA-06, 009C-AC-008)", () => {
+  const REASONS = ["missing", "retired", "replaced", "art_changed"] as const;
+  const STATE_OF = {
+    missing: "missing",
+    retired: "retired",
+    replaced: "replaced",
+    art_changed: "art-changed",
+  } as const;
+  const OFFER: NewerVersionOffer = {
+    campaignRef: "campaign_0123456789abcdef",
+    ad: { id: "sample-first-home", name: "Sample: First home, start here" },
+    fromVersion: 1,
+    toVersion: 2,
+    newWords: {
+      headline: "Thinking about your first home? Start here.",
+      primaryText: "Send me a message and let's talk about your plans.",
+    },
+    kept: {
+      dailyBudgetDollars: 25,
+      totalBudgetDollars: 350,
+      endsOn: "2026-10-20",
+      places: ["TX", "Austin, TX"],
+    },
+    undecided: true,
+  };
+
+  it.each(REASONS)(
+    "draws no Approve, no Send back, and its own state, when the ad is refused as %s",
+    (reason) => {
+      const { container } = render(
+        <LaunchReview
+          review={reviewFixture({
+            adRefusal: reason,
+            retiredOn: reason === "retired" ? "2026-09-30" : null,
+            newerVersion: reason === "replaced" ? OFFER : undefined,
+          })}
+        />,
+      );
+      expect(container.querySelector("[data-review-state]")).toHaveAttribute(
+        "data-review-state",
+        STATE_OF[reason],
+      );
+      expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Send back for changes" })).toBeNull();
+      expect(container.querySelector("[data-approval-card]")).toBeNull();
+      expect(screen.getByRole("button", { name: "Launch on Facebook" })).toBeDisabled();
+    },
+  );
+
+  it("replaced ad: the newer-version notice and Use the new version, in place of Approve", () => {
+    const { container } = render(
+      <LaunchReview review={reviewFixture({ adRefusal: "replaced", newerVersion: OFFER })} />,
+    );
+    const card = container.querySelector("[data-decision-card='replaced']") as HTMLElement;
+    expect(within(card).getByText("Newer ad version")).toBeInTheDocument();
+    expect(
+      within(card).getByText("A newer version of this ad is in the library."),
+    ).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: "Use the new version" })).toBeEnabled();
+  });
+
+  it("replaced ad, a viewer who can't save a version: the notice, and nothing to press", () => {
+    const { container } = render(
+      <LaunchReview
+        review={reviewFixture({
+          adRefusal: "replaced",
+          newerVersion: OFFER,
+          canMakeNewVersion: false,
+          canApprove: false,
+        })}
+      />,
+    );
+    const card = container.querySelector("[data-decision-card='replaced']") as HTMLElement;
+    expect(
+      within(card).getByText("A newer version of this ad is in the library."),
+    ).toBeInTheDocument();
+    expect(within(card).queryByRole("button")).toBeNull();
+  });
+
+  it("replaced ad whose newer version can't be offered: says so, and offers another ad", () => {
+    render(<LaunchReview review={reviewFixture({ adRefusal: "replaced" })} />);
+    expect(
+      screen.getByText(
+        "A newer version of this ad is in the library, so this version can't be approved. Your budget, dates and area are kept.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Choose another ad" })).toHaveAttribute(
+      "href",
+      "/marketing/campaigns/new?step=1&campaign=campaign_0123456789abcdef",
+    );
+  });
+
+  it("pictures changed: says so, and offers a new version that records the pictures now held", () => {
+    render(<LaunchReview review={reviewFixture({ adRefusal: "art_changed" })} />);
+    expect(screen.getByText("Ad pictures changed")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "The picture for this ad changed after this version was saved, so this version can't be approved.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Make a new version" })).toHaveAttribute(
+      "href",
+      "/marketing/campaigns/new?step=2&campaign=campaign_0123456789abcdef",
+    );
+  });
+
+  it("not in the library: says so, and offers another ad", () => {
+    render(<LaunchReview review={reviewFixture({ adRefusal: "missing" })} />);
+    expect(screen.getByText("Ad not in the library")).toBeInTheDocument();
+    expect(
+      screen.getByText("This ad isn't in the library, so this version can't be approved."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Choose another ad" })).toBeInTheDocument();
+  });
+
+  it("retired with no day on record: still no Approve, and the sentence without a day", () => {
+    render(<LaunchReview review={reviewFixture({ adRefusal: "retired", retiredOn: null })} />);
+    expect(screen.getByText("Ad retired")).toBeInTheDocument();
+    expect(
+      screen.getByText("This ad isn't in the library, so this version can't be approved."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Choose another ad" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
+  });
+
+  it("states each reason from the one rule, ahead of the checks and of who may approve", () => {
+    const checks = { ...reviewFixture().checks, blocking: true };
+    for (const reason of REASONS) {
+      expect(launchReviewState({ adRefusal: reason, checks, canApprove: false })).toBe(
+        STATE_OF[reason],
+      );
+      expect(
+        launchReviewState({ adRefusal: reason, checks: reviewFixture().checks, canApprove: true }),
+      ).toBe(STATE_OF[reason]);
+    }
+    expect(
+      launchReviewState({ adRefusal: undefined, checks: reviewFixture().checks, canApprove: true }),
+    ).toBe("ready");
+  });
+
+  it("leaves a recorded decision standing, whatever the library says now", () => {
+    const decided = {
+      decision: "approved" as const,
+      approver: "Dana Reyes",
+      decidedAt: "2026-10-02T15:00:00.000Z",
+    };
+    const review = reviewFixture({ adRefusal: "replaced", newerVersion: OFFER, decision: decided });
+    expect(launchReviewState(review)).toBe("approved");
+    expect(launchReviewState({ ...review, decision: { ...decided, decision: "rejected" } })).toBe(
+      "sent-back",
     );
   });
 });
@@ -485,7 +649,7 @@ describe("the look of step 3's cards", () => {
     ["needs-changes", reviewFixture({}, [CLAIM])],
     ["approved", reviewFixture(APPROVED)],
     ["sent-back", reviewFixture(SENT_BACK)],
-    ["retired", reviewFixture({ retiredOn: "2026-09-30" })],
+    ["retired", reviewFixture(RETIRED)],
   ] as const)("pads every side card at --space-6, in the %s state (R1-16)", (_state, review) => {
     const { container } = render(<LaunchReview review={review} />);
     // The approve card is the shared `CampaignApprovalControls`, whose own padding belongs to the
@@ -527,7 +691,7 @@ describe("the look of step 3's cards", () => {
     ["needs-changes", reviewFixture({}, [CLAIM])],
     ["approved", reviewFixture(APPROVED)],
     ["sent-back", reviewFixture(SENT_BACK)],
-    ["retired", reviewFixture({ retiredOn: "2026-09-30" })],
+    ["retired", reviewFixture(RETIRED)],
   ] as const)(
     "keeps the %s state's chip inside its card, at its own width (R1-12)",
     (_s, review) => {

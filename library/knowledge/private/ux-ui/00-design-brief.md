@@ -165,8 +165,8 @@ The focus ring is not one of those accents. Ruled 2026-09-20 with rubric delta D
 - Interface font: Geist, with system sans-serif fallback _(Superseded on 2026-10-01 by PRD-009 (S-54; OD-E): Inter, vendored in `apps/web/public/fonts/`. Monospace survives only inside "Details for support"; numbers and dates use Inter with tabular figures. The steps are 28, 19, 16, 16, 14, and 12px.)_
 - Data, provider IDs, versions, hashes, timestamps, and correlation IDs: Geist Mono
 - Page title: 23px, weight 700, negative 0.02em tracking
-- Section title: 17px, weight 700
-- Card title: 14px, weight 700
+- Section title: 17px, weight 700 _(Superseded on 2026-10-01 by PRD-009 (design `00-direction.md` section 2.3): 19px at weight 600, `--weight-semibold`. Recorded here 2026-10-03 by the PRD-009 scored baseline review (R1-02, R4-09), which found titles no module weighed drawn at the browser's bold; `globals.css` sets the floor on `h2` to `h6`.)_
+- Card title: 14px, weight 700 _(Superseded on 2026-10-01 by PRD-009 (design `00-direction.md` section 2.3): 16px at weight 600, `--weight-semibold`. Recorded 2026-10-03 with the section title above.)_
 - Body and control: 13px, weight 500 where interactive _(Superseded on 2026-10-01 by PRD-009 (S-54): 16px.)_
 - Secondary: 11.5px, weight 400
 - Caption and freshness: 10.5px, weight 400 _(Superseded on 2026-10-01 by PRD-009 (S-54): 12px; the end of the superseded steps.)_

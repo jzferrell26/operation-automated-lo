@@ -71,6 +71,8 @@ export const RESET_PASSWORD = Object.freeze({
   confirmPasswordLabel: "Confirm new password",
   submitLabel: "Save new password",
   expiredError: "This reset link has expired or was already used. Request a new one.",
+  /** The control that does what `expiredError` says: it goes to the page that sends a new link. */
+  requestNewLinkLabel: "Request a new link",
   mismatchError: "Those passwords don't match.",
   successNotice: "Your password is saved. You're signed in.",
 });

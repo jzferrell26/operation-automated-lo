@@ -122,6 +122,12 @@ const REFUSED: readonly string[] = [
   "Blacks of Austin, TX",
   "Caucasian Plano, TX",
   "Mormon Provo, UT",
+  // SEC-009-11: "hispanic" was listed without its plural, though latino, latina, asian, christian,
+  // muslim, and catholic each have theirs. The other national origin, religion, language, and
+  // disability words go to counsel with the gazetteer requirement (D4), not into this list.
+  "Hispanics Austin, TX",
+  "Hispanics, TX",
+  "hispanics austin, tx",
   // A real place's name in a state that does not hold it is not that place.
   "White Plains, TX",
   "Indian Wells, TX",
@@ -394,6 +400,15 @@ describe("the place rules (009D-AC-008)", () => {
       ]),
     );
     expect(LIBRARY_AD_PLACE_AUDIENCE_WORDS).toEqual(expect.arrayContaining(["black", "white"]));
+  });
+
+  it("lists the plural of each status word that has one, hispanics included (SEC-009-11)", () => {
+    for (const words of [AD_PLACE_AUDIENCE_WORDS, LIBRARY_AD_PLACE_AUDIENCE_WORDS]) {
+      expect(words).toEqual(
+        expect.arrayContaining(["hispanic", "hispanics", "latinos", "latinas", "asians"]),
+      );
+      expect(new Set(words).size).toBe(words.length);
+    }
   });
 
   it("lists each named exception once", () => {

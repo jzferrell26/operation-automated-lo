@@ -89,8 +89,31 @@ const FRACTION_WORDS =
  * or "a" ("a score and payment history" is not a run).
  */
 const NUMBER_RUN = `(?:${NUMBER_WORDS})(?: (?:${NUMBER_WORDS}|${FRACTION_WORDS}|a|an|of|and(?= (?:${NUMBER_WORDS}|${FRACTION_WORDS}|a|an)\\b)))*`;
+
+type ClaimKind = "rate" | "payment" | "term";
+
+/**
+ * A run of number words, then one or two ordinary words, then a unit: "fifteen short years", "thirty
+ * whole years", "thirty-plus years", "twelve-ish years", "a dozen or so years" (PRD-009 security delta
+ * pass, SEC-009-07). The units are a length of time, a payment count, and percent; "points" and
+ * "monthly" are left out, because "three key points" and "two monthly check-ins" are ordinary English.
+ *
+ * A run that starts on "one" is not read, because "one" is the ordinary word of "one home, many
+ * years" and "one of your best years". A filler word is never "and", which joins two things and counts
+ * nothing ("a score and payment history" is not a length of time). The window is two words: any fixed
+ * window can be beaten by one more word, which is the open vocabulary the delta pass grades Low, and
+ * a person approves every version. One pattern serves the claim list and the number rule.
+ */
+const NUMBER_WORDS_APART = `\\b(?!one\\b)${NUMBER_RUN}(?: (?!and\\b)\\p{L}+){1,2} (?:years?|yrs?|months?|mos?|payments?|percent|per cent|percentage|pct)\\b`;
+
+/** What a match of `NUMBER_WORDS_APART` claims, from the unit it ends on. */
+function numberWordsApartKind(matched: string): ClaimKind {
+  if (/\bpayments?$/u.test(matched)) return "payment";
+  return /\b(?:percent|cent|percentage|pct)$/u.test(matched) ? "rate" : "term";
+}
+
 const NUMBER_WORD_UNIT = new RegExp(
-  `\\b${NUMBER_RUN} (?:percent|per cent|percentage|pct|years?|yrs?|months?|mos?|monthly|payments?|points?)\\b`,
+  `\\b${NUMBER_RUN} (?:percent|per cent|percentage|pct|years?|yrs?|months?|mos?|monthly|payments?|points?)\\b|${NUMBER_WORDS_APART}`,
   "u",
 );
 /** A quantity written in words: at least one number or fraction word, with "a", "and", "of" between. */
@@ -98,14 +121,18 @@ const QUANTITY_IN_WORDS = `(?:(?:a|an|and|of) )*(?:${NUMBER_WORDS}|${FRACTION_WO
 /** What can stand between "fixed" and the length of time it is fixed for. */
 const FIXED_SPAN = `(?: rate)?(?: (?:for|over|through|until|till))?(?: (?:a|an|the|full|whole|next|entire|first|several|many|\\d+|${NUMBER_WORDS}))*`;
 
-type ClaimKind = "rate" | "payment" | "term";
+/** A claim pattern's kind is fixed, or read from what it matched when one pattern covers several. */
+interface ClaimPattern {
+  readonly kind: ClaimKind | ((matched: string) => ClaimKind);
+  readonly pattern: RegExp;
+}
 
 /**
  * The claim vocabulary, read on the word text (single spaces between words, "%" and "$" as words of
  * their own). Each pattern names what kind of claim it is, so the plain fix says rate, payment, or
  * loan term. "Down payment help" states no amount and passes; "payment" alone is not a claim.
  */
-const CLAIM_PATTERNS: readonly Readonly<{ kind: ClaimKind; pattern: RegExp }>[] = [
+const CLAIM_PATTERNS: readonly ClaimPattern[] = [
   { kind: "rate", pattern: /\b(?:low|lower|lowest|great|best|record low) rates?\b/u },
   { kind: "rate", pattern: /\brates? as low as\b/u },
   { kind: "rate", pattern: /\brates?\b/u },
@@ -172,6 +199,9 @@ const CLAIM_PATTERNS: readonly Readonly<{ kind: ClaimKind; pattern: RegExp }>[] 
     kind: "payment",
     pattern: /\bclosing costs? (?:off|paid|covered|credits?|waived|free|reduced)\b/u,
   },
+  // The other word order ("free closing costs", "lender paid closing costs"): PRD-009 security delta
+  // pass, SEC-009-10. The list is the reviewer's; counsel extends it (009F-AC-014 part c).
+  { kind: "payment", pattern: /\b(?:free|paid|lender paid|waived|covered) closing costs?\b/u },
   {
     kind: "payment",
     pattern: new RegExp(
@@ -188,6 +218,9 @@ const CLAIM_PATTERNS: readonly Readonly<{ kind: ClaimKind; pattern: RegExp }>[] 
     kind: "term",
     pattern: new RegExp(`\\b${NUMBER_RUN} (?:years?|yrs?|months?|mos?)\\b`, "u"),
   },
+  // The same number words with one or two ordinary words before the unit ("fifteen short years",
+  // "thirty-plus years", "a dozen or so years", "twelve-ish years"): SEC-009-07.
+  { kind: numberWordsApartKind, pattern: new RegExp(NUMBER_WORDS_APART, "u") },
   { kind: "term", pattern: /\b(?:year|yr) fixed\b/u },
   {
     kind: "term",
@@ -197,6 +230,8 @@ const CLAIM_PATTERNS: readonly Readonly<{ kind: ClaimKind; pattern: RegExp }>[] 
     ),
   },
   { kind: "term", pattern: /\bdecades? (?:fixed|loans?|mortgages?|term)\b/u },
+  // "A decade and a half" is fifteen years said without a number word.
+  { kind: "term", pattern: /\bdecades? and a half\b/u },
   { kind: "term", pattern: /\b\d+ \d+ arm\b/u },
   { kind: "term", pattern: /\badjustable\b/u },
 ];
@@ -257,7 +292,11 @@ function findClaim(normalised: string): Readonly<{ kind: ClaimKind; term: string
   const words = libraryAdWordText(normalised);
   for (const { kind, pattern } of CLAIM_PATTERNS) {
     const match = pattern.exec(words);
-    if (match !== null) return { kind, term: spelledAsWritten(normalised, match[0]) };
+    if (match === null) continue;
+    return {
+      kind: typeof kind === "function" ? kind(match[0]) : kind,
+      term: spelledAsWritten(normalised, match[0]),
+    };
   }
   const closedUp = libraryAdClosedUpText(normalised);
   for (const { kind, pattern } of CLOSED_UP_SIGNATURES) {
@@ -290,9 +329,17 @@ const CLAIM_FIX: Readonly<Record<ClaimKind, string>> = Object.freeze({
  * selectors U+FE00 to U+FE0F and U+E0100 to U+E01EF, and the unassigned U+2065, U+FFF0 to U+FFF8,
  * U+E0000, U+E0002 to U+E001F, and U+E01F0 to U+E0FFF. They draw nothing, so a person and an
  * approver cannot see them (PRD-009 security review, SEC-009-06).
+ *
+ * The delta pass (SEC-009-09) adds every unassigned code point (`\p{Cn}`), which draws a missing-glyph
+ * box or nothing and can split a claim word, and two blank marks that are not default-ignorable:
+ * U+1D159 (musical symbol null notehead, a symbol) and U+16FE4 (Khitan small script filler, a
+ * nonspacing mark). Which code points are unassigned is the running engine's Unicode version, so a
+ * code point assigned after that version is refused until the runtime knows it, which errs on the
+ * side of refusing. The readings strip U+16FE4 with the other marks and do not strip U+1D159 or an
+ * unassigned code point; the text is refused here either way, so it cannot be saved.
  */
 const INVALID_CHARACTER =
-  /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}\p{Co}\p{Cs}\p{Default_Ignorable_Code_Point}<>]/u;
+  /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}\p{Co}\p{Cs}\p{Cn}\p{Default_Ignorable_Code_Point}\u{1D159}\u{16FE4}<>]/u;
 
 /**
  * U+FE0F straight after a pictograph only picks the colour picture of a heart, a telephone, or a
@@ -319,12 +366,16 @@ function hasInvalidCharacter(field: LibraryAdTextField, text: string): boolean {
  * reference, so they are a number like any other.
  */
 const LICENSE_REFERENCE =
-  /(?<![\p{L}\p{N}])(?:nmls(?: id)?|license|lic\.?) ?[#:]? ?(\p{N}+(?:-\p{N}+)?)(?![ .-]?\p{N})/gu;
+  /(?<![\p{L}\p{N}])(?:nmls(?: id)?|license|lic\.?) ?[#:]? ?([0-9]+(?:-[0-9]+)?)(?![ .-]?\p{N})/gu;
 
-/** The digits of a license reference, when they are 4 to 12 and not shaped like a phone number. */
+/**
+ * The digits of a license reference, when they are 4 to 12 and not shaped like a phone number. The
+ * digits are ASCII only: a run in another script's digits is no license reference, so it falls to
+ * `WORDS_NUMBER` like any other digit (PRD-009 security delta pass, SEC-009-08).
+ */
 function isLicenseDigits(digits: string): boolean {
-  const count = [...digits.matchAll(/\p{N}/gu)].length;
-  return count >= 4 && count <= 12 && !/^\p{N}{3}-\p{N}{4}$/u.test(digits);
+  const count = [...digits.matchAll(/[0-9]/gu)].length;
+  return count >= 4 && count <= 12 && !/^[0-9]{3}-[0-9]{4}$/u.test(digits);
 }
 
 const TERM_WORDS: ReadonlySet<string> = new Set([
@@ -386,13 +437,19 @@ function hasNumber(field: LibraryAdTextField, normalised: string): boolean {
   return /\p{N}/u.test(normalised);
 }
 
+/**
+ * "with" as the co-brand phrases read it: the word, or "w" (the word text of "w/" and "w."), as a
+ * whole word (PRD-009 security delta pass, SEC-009-10: "Partnered w/ Keller Williams").
+ */
+const WITH = "(?:with|w)\\b";
+
 const CO_BRAND_TERMS: readonly RegExp[] = [
   /\brealtors?\b/u,
   /\bbrokerages?\b/u,
   /\breal estate agents?\b/u,
   /\blisted by\b/u,
   /\blisting agents?\b/u,
-  /\bin partnership with\b/u,
+  new RegExp(`\\bin partnership ${WITH}`, "u"),
   /\bpresented by\b/u,
   /\bcourtesy of\b/u,
   /\bsponsored by\b/u,
@@ -401,9 +458,12 @@ const CO_BRAND_TERMS: readonly RegExp[] = [
   /\brealty\b/u,
   /\breal tors?\b/u,
   // "partnered with you" and "partnering with first-time buyers" name no one else.
-  /\bpartner(?:ed|ing) with(?! (?:you|your|me|us|them|families|buyers|homebuyers|first time|clients|borrowers)\b)/u,
-  /\baffiliated with\b/u,
-  /\bin (?:association|collaboration|affiliation) with\b/u,
+  new RegExp(
+    `\\bpartner(?:ed|ing) ${WITH}(?! (?:you|your|me|us|them|families|buyers|homebuyers|first time|clients|borrowers)\\b)`,
+    "u",
+  ),
+  new RegExp(`\\baffiliated ${WITH}`, "u"),
+  new RegExp(`\\bin (?:association|collaboration|affiliation) ${WITH}`, "u"),
   /\bbrought to you by\b/u,
 ];
 
@@ -449,13 +509,54 @@ const PHONE_NUMBER =
   /(?<!\p{N})(?:\+?1[\s.-]?)?(?:\(\d{3}\)|\d{3})[\s.-]?\d{3}[\s.-]?\d{4}(?!\p{N})|(?<![\p{N}-])\d{3}[\s.-]\d{4}(?!\p{N})/gu;
 
 /**
+ * Seven digit words in a row, which is how a local number is spoken ("five five five, one two one
+ * two"). Whatever is not a letter or a digit may stand between them, so commas and hyphens do not
+ * break the run, and "eight hundred" does (PRD-009 security delta pass, SEC-009-08).
+ */
+const DIGIT_WORD = "(?:zero|one|two|three|four|five|six|seven|eight|nine|oh)";
+const SPOKEN_PHONE_NUMBER = new RegExp(
+  `(?<![\\p{L}\\p{N}])(?:${DIGIT_WORD}[^\\p{L}\\p{N}]+){6}${DIGIT_WORD}(?![\\p{L}\\p{N}])`,
+  "u",
+);
+
+/**
  * A phone number anywhere in the text, a license reference included. A license reference is 4 to 12
  * digits, and the only runs of that length a phone number's pattern matches are ten digits (or
  * eleven after a 1, or ten with one hyphen), so a license keyword in front of one does not make it
- * a license: "NMLS 8005551212" prints a phone number (PRD-009 security review, SEC-009-03).
+ * a license: "NMLS 8005551212" prints a phone number (PRD-009 security review, SEC-009-03). The text
+ * is read with every digit as an ASCII digit and with spoken digits too (`foldDecimalDigits`,
+ * `SPOKEN_PHONE_NUMBER`).
  */
 function phoneTerm(normalised: string): string | undefined {
-  return normalised.search(PHONE_NUMBER) >= 0 ? "the phone number" : undefined;
+  return normalised.search(PHONE_NUMBER) >= 0 || SPOKEN_PHONE_NUMBER.test(normalised)
+    ? "the phone number"
+    : undefined;
+}
+
+const DECIMAL_DIGIT = /^\p{Nd}$/u;
+
+/**
+ * The value of a decimal digit of any script. Unicode encodes every `Nd` code point in a run made of
+ * whole sets of ten, zero first, so a digit's value is its distance from the start of its run, modulo
+ * ten (U+0668 and U+096E are both eight). A unit test holds every run in the engine to that.
+ */
+function decimalDigitValue(digit: string): number {
+  const codePoint = digit.codePointAt(0) ?? 0;
+  let first = codePoint;
+  while (first > 0 && DECIMAL_DIGIT.test(String.fromCodePoint(first - 1))) first -= 1;
+  return (codePoint - first) % 10;
+}
+
+/**
+ * The text with every decimal digit of every script written as its ASCII digit. NFKC has already done
+ * this for full-width and mathematical digits, and leaves Arabic-Indic, Devanagari, and the rest, which
+ * the digit rules (`\d`) do not read as digits (PRD-009 security delta pass, SEC-009-08). The number
+ * rule reads the text as typed instead, so it refuses these digits outright.
+ */
+function foldDecimalDigits(text: string): string {
+  return text.replace(/\p{Nd}/gu, (digit) =>
+    /^[0-9]$/u.test(digit) ? digit : String(decimalDigitValue(digit)),
+  );
 }
 
 /** Co-brand words as substrings of a run of single characters closed up ("r e a l t o r"). */
@@ -561,7 +662,7 @@ function wholeWords(words: readonly string[]): RegExp {
 }
 
 function savedPartner(saved: string): SavedPartner {
-  const normalised = normaliseLibraryAdText(saved);
+  const normalised = foldDecimalDigits(normaliseLibraryAdText(saved));
   const words = libraryAdWordText(normalised).split(" ").filter(Boolean);
   const phrases: { shown: string; pattern: RegExp }[] = [];
   const spoken = words.join(" ");
@@ -690,15 +791,20 @@ export function evaluateLibraryAdWords(
     .filter((partner) => [...partner.compared].length >= 3);
   const own = new Set(
     [texts.name, texts.company].flatMap((text) =>
-      libraryAdWordText(normaliseLibraryAdText(text)).split(" ").filter(Boolean),
+      libraryAdWordText(foldDecimalDigits(normaliseLibraryAdText(text)))
+        .split(" ")
+        .filter(Boolean),
     ),
   );
   const findings: LibraryAdWordFinding[] = [];
   for (const field of LIBRARY_AD_TEXT_FIELDS) {
     const raw = texts[field];
     const name = FIELD_NAMES[field];
-    const readings = libraryAdReadings(raw);
-    const normalised = readings[0] ?? "";
+    // The readings as typed, for the number rule, which refuses a digit of any script outside the
+    // ASCII ones; and the same readings with every digit written as ASCII, for the other rules, so a
+    // claim or a phone number written in Arabic-Indic or Devanagari digits is read as one.
+    const typed = libraryAdReadings(raw);
+    const readings = typed.map(foldDecimalDigits);
     const claim = firstInReadings(readings, findClaim);
     if (claim !== undefined) {
       findings.push(
@@ -720,7 +826,7 @@ export function evaluateLibraryAdWords(
         ),
       );
     }
-    if (hasNumber(field, normalised)) {
+    if (hasNumber(field, typed[0] ?? "")) {
       findings.push(
         wordFinding(
           "WORDS_NUMBER",

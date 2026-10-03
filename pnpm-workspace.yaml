@@ -43,7 +43,9 @@ strictPeerDependencies: true
 # (GHSA-vfj7-8cjw-p6xm, high) reaches this repository only through the trigger.dev CLI, a
 # devDependency of apps/tasks; `pnpm audit --prod` is clean, and no fixed braces (3.0.4) is
 # published. Remove this entry as soon as a fixed braces ships and the lockfile takes it.
-# tooling/tests/unit/dependencies/accepted-advisories.test.ts holds the list to this one entry.
+# Revisit 2026-11-03: look for a fixed braces and remove the entry, or record a new owner decision.
+# tooling/tests/unit/dependencies/accepted-advisories.test.ts holds everything under auditConfig
+# (ignoreGhsas and ignoreCves, blank lines and comments included) to this one entry.
 auditConfig:
   ignoreGhsas:
     - GHSA-vfj7-8cjw-p6xm

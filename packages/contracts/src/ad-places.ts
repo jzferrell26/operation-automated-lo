@@ -187,6 +187,7 @@ export const AD_PLACE_AUDIENCE_WORDS: readonly string[] = Object.freeze([
   "renters",
   "homeowners",
   "hispanic",
+  "hispanics",
   "latino",
   "latinos",
   "latina",

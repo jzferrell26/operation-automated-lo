@@ -14,6 +14,75 @@ import { CLEAN_TEXTS, codesFor, findingsFor } from "./word-checks-test-support.j
  * that ordinary words which merely contain "rate" or "apr" stay legal.
  */
 
+/**
+ * The tests that scan every code point run in a few seconds alone and several times that when the
+ * whole suite runs in parallel with coverage, so they carry their own limit.
+ */
+const SCAN_TIMEOUT = 60_000;
+
+/** Each scan of all 1.1 million code points runs once, however many tests read its ranges. */
+const RANGES_BY_PROPERTY = new Map<string, [first: number, last: number][]>();
+
+/**
+ * The code points a `\p{...}` property holds, grouped into runs of consecutive code points. The
+ * property is read from the engine, so a range the listed characters miss still fails.
+ */
+function codePointRanges(property: RegExp): [first: number, last: number][] {
+  const known = RANGES_BY_PROPERTY.get(property.source);
+  if (known !== undefined) return known;
+  const ranges: [first: number, last: number][] = [];
+  for (let codePoint = 0; codePoint <= 0x10ffff; codePoint += 1) {
+    if (codePoint >= 0xd800 && codePoint <= 0xdfff) continue;
+    if (!property.test(String.fromCodePoint(codePoint))) continue;
+    const last = ranges.at(-1);
+    if (last !== undefined && last[1] === codePoint - 1) last[1] = codePoint;
+    else ranges.push([codePoint, codePoint]);
+  }
+  RANGES_BY_PROPERTY.set(property.source, ranges);
+  return ranges;
+}
+
+/** The two ends and the middle of a run, which is how a run of code points is tried. */
+function endsAndMiddle([first, last]: readonly [number, number]): number[] {
+  return [...new Set([first, Math.floor((first + last) / 2), last])];
+}
+
+/** ASCII digits written in another script, from that script's zero: "800" in Arabic-Indic digits. */
+function digitsIn(zero: number, digits: string): string {
+  return [...digits].map((digit) => String.fromCodePoint(zero + Number(digit))).join("");
+}
+
+const ARABIC_INDIC_ZERO = 0x0660;
+const DEVANAGARI_ZERO = 0x0966;
+
+/**
+ * The PRD-009 security delta pass, SEC-009-07: a number word with an ordinary word between it and its
+ * unit. The first nine each produced no finding at all; the last nine are the controls that must keep
+ * passing, because number words are ordinary English ("one" most of all).
+ */
+const NUMBER_WORD_APART_REFUSED: readonly string[] = [
+  "Pay it off in fifteen short years",
+  "Thirty whole years",
+  "Thirty-plus years",
+  "Fifteen or more years",
+  "Twenty-odd years",
+  "A dozen or so years",
+  "Twelve-ish years",
+  "Two doz. months",
+  "A decade and a half, fixed",
+];
+const NUMBER_WORD_APART_PASSED: readonly string[] = [
+  "One home, many years of memories",
+  "Make this one of your best years",
+  "One loan officer, many happy years",
+  "Credit score and payment history",
+  "Down payment help",
+  "Dozens of families helped",
+  "Ask me about first-time buyer programs",
+  "Serving our community for generations",
+  "A decade of helping first-time buyers",
+];
+
 const CLAIMS: readonly string[] = [
   // The criterion's named cases.
   "low rates",
@@ -85,6 +154,14 @@ const CLAIMS: readonly string[] = [
   "All closing costs covered",
   "Two closing costs on us",
   "Money off closing costs",
+  // SEC-009-07: number words with an ordinary word before the unit (nine strings, each of which
+  // produced no finding at all before the filler-word pattern).
+  ...NUMBER_WORD_APART_REFUSED,
+  // SEC-009-10: the closing-costs wording the delta pass found open. The lists are not exhaustive.
+  "Free closing costs",
+  "Lender-paid closing costs",
+  // SEC-009-08: a loan term in digits from another script (Arabic-Indic "30") is the same term.
+  `${digitsIn(ARABIC_INDIC_ZERO, "30")} year fixed`,
 ];
 
 const CLEAN: readonly string[] = [
@@ -123,6 +200,8 @@ const CLEAN: readonly string[] = [
   "Take the stress off closing day",
   "I will explain all your closing costs",
   "Buying real estate? Start here.",
+  // SEC-009-07's nine controls: number words that count nothing, and "one" in "one home".
+  ...NUMBER_WORD_APART_PASSED,
 ];
 
 describe("the rate, payment, and term claim detector (009D-AC-010)", () => {
@@ -169,6 +248,27 @@ describe("the rate, payment, and term claim detector (009D-AC-010)", () => {
     // that ends in no unit must not backtrack catastrophically.
     const run = "one and a of two ".repeat(400);
     for (const text of [`${run}x`, `${run}yearsx`, `${run} years`]) {
+      const started = performance.now();
+      findRatePaymentOrTermClaim(text);
+      codesFor("primaryText", text);
+      expect(performance.now() - started).toBeLessThan(1500);
+    }
+  });
+
+  it("reads a number word and its filler words in linear time (SEC-009-07)", () => {
+    // The filler pattern takes one or two ordinary words between a run of number words and the unit.
+    // Long runs with filler words and no unit, or a unit one word too far, must not backtrack. The
+    // longest checked text is 600 characters; these are about five times that, which is far more
+    // than a catastrophic pattern survives and keeps the test steady when the suite runs in parallel.
+    const run = "one and a of two ".repeat(180);
+    const spread = "two short ".repeat(300);
+    for (const text of [
+      `${run}short short`,
+      `${run}short short short years`,
+      `${spread}x`,
+      `${spread}short short years`,
+      `${"two ".repeat(700)}years`,
+    ]) {
       const started = performance.now();
       findRatePaymentOrTermClaim(text);
       codesFor("primaryText", text);
@@ -361,6 +461,74 @@ const EVASIONS: readonly Readonly<{
     text: "Your first\u034Fhome starts here",
     expected: ["WORDS_INVALID_CHARACTERS"],
   },
+  // The PRD-009 security delta pass, SEC-009-09: two blank marks that Node does not class as
+  // default-ignorable, and unassigned code points, which draw a missing-glyph box and split a word.
+  {
+    // U+1D159 is a symbol (So), not a nonspacing mark, in Unicode 16 (Node 24.18.0): the readings do
+    // not strip it, so the claim reading does not see through it. The text is refused as hidden
+    // characters and cannot be saved, so no claim hides in a saved version.
+    label: "a musical null notehead (U+1D159) inside rates",
+    field: "headline",
+    text: "Great ra\u{1D159}tes this week",
+    expected: ["WORDS_INVALID_CHARACTERS"],
+  },
+  {
+    label: "a musical null notehead (U+1D159) between two words",
+    field: "headline",
+    text: "Homes\u{1D159} for you",
+    expected: ["WORDS_INVALID_CHARACTERS"],
+  },
+  {
+    label: "a Khitan small script filler (U+16FE4) between two words",
+    field: "headline",
+    text: "Homes\u{16FE4} for you",
+    expected: ["WORDS_INVALID_CHARACTERS"],
+  },
+  {
+    label: "a Khitan small script filler (U+16FE4) inside rates",
+    field: "headline",
+    text: "Great ra\u{16FE4}tes this week",
+    expected: ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM", "WORDS_INVALID_CHARACTERS"],
+  },
+  {
+    label: "an unassigned code point (U+0378) between two words",
+    field: "headline",
+    text: "Homes\u0378 for you",
+    expected: ["WORDS_INVALID_CHARACTERS"],
+  },
+  {
+    label: "an unassigned pictograph (U+1FC00) between two words",
+    field: "headline",
+    text: "Homes\u{1FC00} for you",
+    expected: ["WORDS_INVALID_CHARACTERS"],
+  },
+  {
+    // The claim reading does not see through an unassigned code point, so the text is refused as
+    // hidden characters and cannot be saved until the person takes it out.
+    label: "an unassigned pictograph (U+1FC00) splitting a claim word",
+    field: "headline",
+    text: "R\u{1FC00}ates down",
+    expected: ["WORDS_INVALID_CHARACTERS"],
+  },
+  {
+    label: "an unassigned pictograph (U+1FC00) with a colour selector after it",
+    field: "headline",
+    text: "Homes \u{1FC00}\uFE0F for you",
+    expected: ["WORDS_INVALID_CHARACTERS"],
+  },
+  // SEC-009-08: digits from another script are digits to the claim rules too.
+  {
+    label: "Arabic-Indic digits in a loan term",
+    field: "headline",
+    text: `${digitsIn(ARABIC_INDIC_ZERO, "30")} year fixed`,
+    expected: ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM", "WORDS_NUMBER"],
+  },
+  {
+    label: "Devanagari digits in a payment",
+    field: "headline",
+    text: `Pay ${digitsIn(DEVANAGARI_ZERO, "1200")} per month`,
+    expected: ["WORDS_RATE_PAYMENT_OR_TERM_CLAIM", "WORDS_NUMBER"],
+  },
 ];
 
 describe("evasions (009D-AC-010)", () => {
@@ -413,6 +581,12 @@ describe("evasions (009D-AC-010)", () => {
       "\uFFF8",
       "\u{E0002}",
       "\u{E01F0}",
+      // SEC-009-09: two blank marks (nonspacing marks, not default-ignorable) and two unassigned
+      // code points, one of them in a reserved pictographic range.
+      "\u{1D159}",
+      "\u{16FE4}",
+      "͸",
+      "\u{1FC00}",
     ]) {
       expect(
         codesFor("title", `Loan${character} officer`),
@@ -424,18 +598,10 @@ describe("evasions (009D-AC-010)", () => {
   it("refuses every default-ignorable code point, whatever its category (SEC-009-06)", () => {
     // The property is read from the engine, grouped into its ranges, and the two ends and the
     // middle of each range are tried, so a range the listed characters above miss still fails.
-    const ignorable = /^\p{Default_Ignorable_Code_Point}$/u;
-    const ranges: [first: number, last: number][] = [];
-    for (let codePoint = 0; codePoint <= 0x10ffff; codePoint += 1) {
-      if (codePoint >= 0xd800 && codePoint <= 0xdfff) continue;
-      if (!ignorable.test(String.fromCodePoint(codePoint))) continue;
-      const last = ranges.at(-1);
-      if (last !== undefined && last[1] === codePoint - 1) last[1] = codePoint;
-      else ranges.push([codePoint, codePoint]);
-    }
+    const ranges = codePointRanges(/^\p{Default_Ignorable_Code_Point}$/u);
     expect(ranges.length).toBeGreaterThanOrEqual(15);
-    for (const [first, last] of ranges) {
-      for (const codePoint of new Set([first, Math.floor((first + last) / 2), last])) {
+    for (const range of ranges) {
+      for (const codePoint of endsAndMiddle(range)) {
         // U+FE0F after a pictograph is the one allowed use (below); here it follows a letter.
         expect(
           codesFor("title", `Loan${String.fromCodePoint(codePoint)} officer`),
@@ -445,12 +611,37 @@ describe("evasions (009D-AC-010)", () => {
     }
   });
 
+  it(
+    "refuses every unassigned code point, in every plane (SEC-009-09)",
+    () => {
+      // An unassigned code point draws a missing-glyph box or nothing, and it splits a claim word,
+      // so the stored text must not hold one. The noncharacters (U+FFFE, U+FFFF, U+FDD0 to U+FDEF and
+      // the last two code points of each plane) are unassigned too.
+      const ranges = codePointRanges(/^\p{Cn}$/u);
+      expect(ranges.length).toBeGreaterThanOrEqual(100);
+      for (const range of ranges) {
+        for (const codePoint of endsAndMiddle(range)) {
+          expect(
+            codesFor("title", `Loan${String.fromCodePoint(codePoint)} officer`),
+            `U+${codePoint.toString(16).toUpperCase()}`,
+          ).toEqual(["WORDS_INVALID_CHARACTERS"]);
+        }
+      }
+    },
+    SCAN_TIMEOUT,
+  );
+
   it("allows an emoji's colour selector (U+FE0F) only straight after a pictograph", () => {
     // A heart, a telephone, and a check mark, each with U+FE0F: they draw, and are common in ad copy.
+    // SEC-009-09 closes unassigned code points, and the colour selector stays legal after the
+    // assigned pictographs: a thumbs-up and a house with garden, and a flag, which needs no selector.
     for (const text of [
       "Your first home \u2764\uFE0F starts here",
       "Call me \u260E\uFE0F",
       "\u2714\uFE0F",
+      "Welcome home \u{1F44D}\uFE0F",
+      "Welcome home \u{1F3E1}\uFE0F",
+      "Welcome home \u{1F1FA}\u{1F1F8}",
     ]) {
       expect(codesFor("headline", text), text).toEqual([]);
     }
@@ -460,6 +651,8 @@ describe("evasions (009D-AC-010)", () => {
       "Home 5\uFE0F",
       "Your \uFE0F home",
       "\u2764\uFE0F\uFE0F home",
+      // After an unassigned pictograph it is hidden text too: the unassigned code point is refused.
+      "Welcome home \u{1FC00}\uFE0F",
     ]) {
       expect(codesFor("headline", text), text).toContain("WORDS_INVALID_CHARACTERS");
     }
@@ -521,6 +714,24 @@ describe("the number rule (009D-AC-010)", () => {
     ["primaryText", "Serving our community for twelve years"],
     ["company", "A Dozen Years Lending"],
     ["title", "Two dozen percent"],
+    // SEC-009-07: a number word with an ordinary word before its unit is a number all the same.
+    ["headline", "Pay it off in fifteen short years"],
+    ["headline", "Thirty whole years"],
+    ["headline", "Thirty-plus years"],
+    ["headline", "Fifteen or more years"],
+    ["headline", "Twenty-odd years"],
+    ["primaryText", "A dozen or so years"],
+    ["headline", "Twelve-ish years"],
+    ["primaryText", "Two doz. months"],
+    ["company", "Thirty Whole Years Lending"],
+    // SEC-009-08: digits from another script are digits. They are no license reference (the run is
+    // refused as a number, even a license-shaped one), and a ten-digit run is a phone number.
+    ["disclosureLine", `NMLS ${digitsIn(ARABIC_INDIC_ZERO, "8005551212")}. Equal Housing Lender.`],
+    ["disclosureLine", `NMLS ${digitsIn(DEVANAGARI_ZERO, "8005551212")}. Equal Housing Lender.`],
+    ["company", `Acme NMLS ${digitsIn(ARABIC_INDIC_ZERO, "8005551212")} Lending`],
+    ["disclosureLine", `Equal Housing Opportunity. NMLS ${digitsIn(ARABIC_INDIC_ZERO, "1234567")}`],
+    ["name", `Alex Morgan, NMLS ${digitsIn(DEVANAGARI_ZERO, "1234567")}`],
+    ["title", `Loan officer ${digitsIn(ARABIC_INDIC_ZERO, "5")}`],
   ];
   const passed: readonly Readonly<[field: Parameters<typeof codesFor>[0], text: string]>[] = [
     ["primaryText", "Know your credit score and payment history"],
@@ -537,6 +748,12 @@ describe("the number rule (009D-AC-010)", () => {
     ["company", "21st Century Lending"],
     ["company", "Prairie Home Lending NMLS 0000000"],
     ["name", "Alex Morgan, NMLS 1234567"],
+    // SEC-009-07's controls, as a number rule: a number word beside no unit, or "one" in "one home".
+    ["headline", "One home, many years of memories"],
+    ["headline", "Make this one of your best years"],
+    ["headline", "One loan officer, many happy years"],
+    ["primaryText", "Serving our community for generations"],
+    ["primaryText", "A decade of helping first-time buyers"],
   ];
 
   it.each(refused)("refuses %s %j", (field, text) => {
@@ -566,6 +783,32 @@ describe("the number rule (009D-AC-010)", () => {
     );
   });
 
+  it(
+    "refuses a decimal digit of any script outside the ASCII ones (SEC-009-08)",
+    () => {
+      // Every Nd code point, except the ASCII digits and the ones NFKC already writes as ASCII
+      // (full-width and mathematical digits, which pass as a license reference like the ASCII ones).
+      const ranges = codePointRanges(/^\p{Nd}$/u);
+      expect(ranges.length).toBeGreaterThanOrEqual(60);
+      let tried = 0;
+      for (const [first, last] of ranges) {
+        for (let codePoint = first; codePoint <= last; codePoint += 1) {
+          const digit = String.fromCodePoint(codePoint);
+          if (/^[0-9]$/u.test(digit.normalize("NFKC"))) continue;
+          tried += 1;
+          expect(
+            codesFor("disclosureLine", `Equal Housing Opportunity. NMLS 123456${digit}`),
+            `U+${codePoint.toString(16).toUpperCase()}`,
+          ).toContain("WORDS_NUMBER");
+        }
+      }
+      expect(tried).toBeGreaterThanOrEqual(400);
+      // The ASCII license reference beside them still passes.
+      expect(codesFor("disclosureLine", "Equal Housing Opportunity. NMLS 1234567")).toEqual([]);
+    },
+    SCAN_TIMEOUT,
+  );
+
   it("names the field in the plain fix", () => {
     expect(findingsFor("company", "Acme #5000 Grant Lending")[0]).toMatchObject({
       ruleCode: "WORDS_NUMBER",
@@ -573,6 +816,116 @@ describe("the number rule (009D-AC-010)", () => {
       remediation:
         "Take the number out of the company name in Brand. Ads can't state rates, payments or terms.",
     });
+  });
+});
+
+describe("a phone number in another script's digits (SEC-009-08)", () => {
+  it(
+    "is a phone number in every script, whatever keyword stands before it",
+    () => {
+      // Each run of Nd code points is a whole number of sets of ten digits, from zero to nine, so
+      // every set is tried: the ten digits of "800 555 1212" written in that script.
+      const ranges = codePointRanges(/^\p{Nd}$/u);
+      let sets = 0;
+      for (const [first, last] of ranges) {
+        expect((last - first + 1) % 10, `U+${first.toString(16).toUpperCase()}`).toBe(0);
+        for (let zero = first; zero < last; zero += 10) {
+          sets += 1;
+          const phone = digitsIn(zero, "8005551212");
+          for (const [field, text] of [
+            ["disclosureLine", `NMLS ${phone}. Equal Housing Lender.`],
+            ["company", `Acme NMLS ${phone} Lending`],
+            ["headline", `Call ${phone} today`],
+          ] as const) {
+            expect(
+              codesFor(field, text),
+              `U+${zero.toString(16).toUpperCase()} ${field}`,
+            ).toContain("WORDS_CO_BRAND");
+          }
+        }
+      }
+      expect(sets).toBeGreaterThanOrEqual(60);
+    },
+    SCAN_TIMEOUT,
+  );
+
+  it(
+    "reads every digit of every script at its own value",
+    () => {
+      // The plain fix quotes the text the rules read, so the digits it quotes are the digits folded to
+      // ASCII: "0123456789" written in each script's ten digits must come back as "0123456789".
+      for (const [first, last] of codePointRanges(/^\p{Nd}$/u)) {
+        for (let zero = first; zero < last; zero += 10) {
+          const typed = digitsIn(zero, "0123456789");
+          expect(
+            findingsFor("headline", `${typed} years`)[0]?.remediation,
+            `U+${zero.toString(16)}`,
+          ).toBe("Take '0123456789 years' out of the headline. Ads can't state loan terms.");
+        }
+      }
+    },
+    SCAN_TIMEOUT,
+  );
+
+  it("is a phone number spelled in number words, seven or more digit words in a row", () => {
+    for (const text of [
+      "Call eight hundred, five five five, one two one two",
+      "Text me: five five five one two one two",
+      "Ring eight zero zero five five five one two one two",
+      "Dial five-five-five-oh-one-two-one",
+      "Count with me: one two three four five six seven",
+    ]) {
+      expect(codesFor("headline", text), text).toContain("WORDS_CO_BRAND");
+      expect(findingsFor("primaryText", text)[0]?.remediation, text).toContain("the phone number");
+    }
+    for (const text of [
+      "Count with me: one two three four five six, then ask your questions",
+      "Three easy steps: one, two, three",
+      "Zero stress, one call, two minutes to talk, three ways to start",
+      "Oh, the places a home can take you",
+    ]) {
+      expect(codesFor("headline", text), text).not.toContain("WORDS_CO_BRAND");
+    }
+  });
+});
+
+describe("the number rule, number words and fillers (SEC-009-07)", () => {
+  it("has the delta pass's nine refusals and nine controls", () => {
+    expect(NUMBER_WORD_APART_REFUSED).toHaveLength(9);
+    expect(NUMBER_WORD_APART_PASSED).toHaveLength(9);
+  });
+
+  it.each(NUMBER_WORD_APART_REFUSED)("names a claim in %j, in the plain fix too", (text) => {
+    expect(findingsFor("headline", text)[0]).toMatchObject({
+      ruleCode: "WORDS_RATE_PAYMENT_OR_TERM_CLAIM",
+      affected: "content.headline",
+    });
+  });
+
+  it("calls a year, month, or payment count a loan term, and a percent a rate", () => {
+    expect(findingsFor("headline", "Thirty whole years")[0]?.remediation).toContain(
+      "Ads can't state loan terms.",
+    );
+    expect(findingsFor("headline", "Two short percent")[0]?.remediation).toContain(
+      "Ads can't state rate claims.",
+    );
+    expect(findingsFor("headline", "Twelve easy payments")[0]?.remediation).toContain(
+      "Ads can't state payment claims.",
+    );
+  });
+
+  it.each(NUMBER_WORD_APART_PASSED)("finds no finding at all in %j", (text) => {
+    expect(codesFor("headline", text)).toEqual([]);
+    expect(codesFor("primaryText", text)).toEqual([]);
+  });
+
+  it("reads one or two filler words between the number word and the unit", () => {
+    // The window is two words. Any fixed window can be beaten by one more word, which is the open
+    // vocabulary the delta pass grades Low (R-4); a person approves every version, and every digit
+    // is refused wherever it stands.
+    for (const text of ["Thirty long years", "Thirty very long years", "Twelve easy payments"]) {
+      expect(codesFor("headline", text), text).toContain("WORDS_NUMBER");
+    }
   });
 });
 
@@ -644,6 +997,24 @@ describe("the co-brand rule (009D-AC-010, compliance control 9)", () => {
     ["primaryText", "Brought to you by a friend"],
     ["headline", "Real-tor approved"],
     ["company", "Prairie R E A L T Y"],
+    // SEC-009-10: "w/" is "with" in the phrases that name someone else.
+    ["title", "Partnered w/ Keller Williams"],
+    ["primaryText", "Affiliated w/ Oak Street Homes"],
+    ["primaryText", "In partnership w/ Oak Street Homes"],
+    ["primaryText", "In association w/ Oak Street Homes"],
+    ["primaryText", "Partnering w Oak Street Homes"],
+    // SEC-009-08: a ten-digit run in another script's digits prints a phone number all the same,
+    // and so does a phone number spelled in number words (seven or more digit words in a row).
+    [
+      "disclosureLine",
+      `Equal Housing Opportunity. NMLS ${digitsIn(ARABIC_INDIC_ZERO, "8005551212")}`,
+    ],
+    [
+      "disclosureLine",
+      `Equal Housing Opportunity. NMLS ${digitsIn(DEVANAGARI_ZERO, "8005551212")}`,
+    ],
+    ["company", `Acme NMLS ${digitsIn(ARABIC_INDIC_ZERO, "8005551212")} Lending`],
+    ["headline", "Call eight hundred, five five five, one two one two"],
   ];
   const passed: readonly Readonly<[field: Parameters<typeof codesFor>[0], text: string]>[] = [
     ["title", "Mortgage Broker"],
@@ -652,6 +1023,8 @@ describe("the co-brand rule (009D-AC-010, compliance control 9)", () => {
     ["primaryText", "I enjoy partnering with first-time buyers"],
     ["primaryText", "We have partnered with families across the state"],
     ["primaryText", "Partnered with you every step of the way"],
+    ["primaryText", "Partnered w/ you every step of the way"],
+    ["primaryText", "I enjoy partnering w/ first-time buyers"],
     ["primaryText", "Real talk about your first home"],
     ["disclosureLine", "Equal Housing Opportunity. NMLS 1234567"],
     ["disclosureLine", "Equal Housing Opportunity. NMLS 123456789012"],

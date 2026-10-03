@@ -49,11 +49,14 @@ function ListCard({
       </h2>
       {list.rows.length === 0 ? (
         <div className={styles.empty}>
-          <Icon decorative name={icon} size="lg" tone="neutral" />
+          {/* The mockups' `.empty svg` (`home-first-run.html:247`): the faint ink, as the checklist's
+              glyphs on this page are, and `--space-1` more under it. The link is the secondary step,
+              as the sentence above it is (`.empty a`, `:250`). Scored review pass 3, R4-14. */}
+          <Icon className={styles.emptyGlyph} decorative name={icon} size="lg" />
           <p className={styles.emptyTitle}>{emptyTitle}</p>
           <p className={styles.emptyBody}>{emptyBody}</p>
           {emptyAction === undefined ? null : (
-            <Link href={emptyAction.href} variant="inline">
+            <Link href={emptyAction.href} size="sm" variant="inline">
               {emptyAction.label}
             </Link>
           )}

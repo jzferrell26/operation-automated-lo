@@ -420,6 +420,18 @@
   text-align: center;
 }
 
+/*
+ * The mockups' `.empty svg` (`design/mockups/home-first-run.html:247`): the faint ink and
+ * `--space-1` under the glyph, on top of the grid gap. It was the neutral status ink, so one Home drew
+ * its decorative glyphs in two greys (`.itemIcon` is already `--tx-faint`), and the title stood 4px
+ * closer than the mockup's (scored review pass 3, R4-14). Written as `.empty .emptyGlyph` so it
+ * outranks the Icon's own tone class whichever stylesheet loads last.
+ */
+.empty .emptyGlyph {
+  color: var(--tx-faint);
+  margin-block-end: var(--space-1);
+}
+
 .emptyTitle {
   color: var(--tx-strong);
   font-weight: var(--weight-semibold);

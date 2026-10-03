@@ -16,9 +16,10 @@ import styles from "./link.module.css";
 export type LinkVariant = "inline" | "action" | "sentence";
 
 /**
- * `sm` is the compact `action` link, the small secondary button's twin: the secondary step and
- * `--space-3` of inline padding at the shared weight, with the 44px target kept (`Button size="sm"`).
- * The other variants take their size from their text, so `size` changes nothing on them.
+ * `sm` is the secondary step, with the 44px target kept. On the `action` link it is the small
+ * secondary button's twin (`--space-3` of inline padding at the shared weight, `Button size="sm"`);
+ * on the plain `inline` link it is the same 14px as the text it stands under. `sentence` takes its
+ * size from its text, so `size` changes nothing on it.
  */
 export type LinkSize = "md" | "sm";
 

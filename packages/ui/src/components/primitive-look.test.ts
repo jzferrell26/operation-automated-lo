@@ -207,6 +207,32 @@ describe("a compact action link is the small button's twin (pass 2, R4-12; coord
   });
 });
 
+describe("a compact plain link is the secondary step and nothing else (pass 3, R4-14 and R3 P3-09)", () => {
+  const small = rule(linkCss, '.inline[data-size="sm"]');
+
+  it("takes the secondary step as a token", () => {
+    expect(small["font-size"]).toBe("var(--text-secondary-size)");
+  });
+
+  it("sets nothing else, so it keeps the link's 500, its underline, and the inline rule's 44px target", () => {
+    expect(Object.keys(small)).toEqual(["font-size"]);
+    expect(rule(linkCss, ".link")["font-weight"]).toBe("var(--weight-medium)");
+    expect(rule(linkCss, ".inline")).toMatchObject({
+      "min-block-size": "var(--target-min-size)",
+      "min-inline-size": "var(--target-min-size)",
+    });
+  });
+
+  it("is carried by data-size and class on a plain link, md by default", () => {
+    const compact = renderToStaticMarkup(createElement(Link, { href: "/x", size: "sm" }, "Launch"));
+    const normal = renderToStaticMarkup(createElement(Link, { href: "/x" }, "Launch"));
+
+    expect(compact).toContain('data-size="sm"');
+    expect(compact).toContain('data-variant="inline"');
+    expect(normal).toContain('data-size="md"');
+  });
+});
+
 describe("the theme segments are the secondary step, as the mockups' format switch (pass 2, self-found)", () => {
   it("sets each segment at the secondary step and the medium weight", () => {
     expect(rule(themeCss, ".segment")).toMatchObject({

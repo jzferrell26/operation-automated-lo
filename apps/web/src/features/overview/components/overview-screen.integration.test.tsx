@@ -13,6 +13,7 @@ import {
   repeatedConnectionStatements,
 } from "./connection-statements.test-support.js";
 import { OverviewScreen } from "./overview-screen.js";
+import styles from "./overview.module.css";
 
 /**
  * PRD-009b 009B-AC-001, 002, 004, 006, 007, 008, 009, 010, and 014, at the screen.
@@ -560,6 +561,29 @@ describe("Running now (009B-AC-009)", () => {
     expect(within(running).queryByRole("button")).toBeNull();
   });
 
+  it("draws the empty state's link as the compact plain link, at the sentence's own step (pass 3, R4-14)", () => {
+    renderHome();
+    const launch = within(card("Running now")).getByRole("link", { name: "Launch an ad" });
+
+    // The mockups' `.empty a` is the secondary step, as the 14px sentence above it is; the plain
+    // link is the 16px body step unless it asks for the compact size.
+    expect(launch).toHaveAttribute("data-variant", "inline");
+    expect(launch).toHaveAttribute("data-size", "sm");
+  });
+
+  it("draws both empty states' glyphs through the page's faint-ink class, not the neutral status ink (pass 3, R4-14)", () => {
+    renderHome();
+
+    for (const title of ["Running now", "Needs your approval"]) {
+      const glyph = card(title).querySelector("svg");
+      expect(glyph, `${title}'s empty glyph`).not.toBeNull();
+      // The Icon's own tone stays "current"; the page's rule turns that to `--tx-faint`
+      // (`home-polish.unit.test.ts` pins the rule). A neutral tone would be the status ink.
+      expect(glyph?.getAttribute("class")).toContain(styles.emptyGlyph);
+      expect(glyph?.getAttribute("class")).not.toMatch(/neutral/u);
+    }
+  });
+
   it("shows one live campaign: its name, run dates, status, and one link", () => {
     renderHome(homeData({ running: { rows: [row()], total: 1 } }));
     const running = card("Running now");
@@ -686,9 +710,15 @@ describe("the two lists row (Wave 3 polish, 009B D3)", () => {
 
 describe("the checklist glyphs and chips (Wave 3 polish)", () => {
   /** What `Icon` draws for a name at a size, to compare an item's glyph against, class names included. */
-  function iconMarkup(name: IconName, size: IconSize, tone?: IconTone): string {
+  function iconMarkup(name: IconName, size: IconSize, tone?: IconTone, className?: string): string {
     const { container, unmount } = render(
-      <Icon decorative name={name} size={size} {...(tone === undefined ? {} : { tone })} />,
+      <Icon
+        decorative
+        name={name}
+        size={size}
+        {...(tone === undefined ? {} : { tone })}
+        {...(className === undefined ? {} : { className })}
+      />,
     );
     const markup = container.innerHTML;
     unmount();
@@ -713,8 +743,14 @@ describe("the checklist glyphs and chips (Wave 3 polish)", () => {
     const drawnIn = (title: string): string | undefined =>
       card(title).querySelector("svg")?.outerHTML;
 
-    expect(drawnIn("Running now")).toBe(iconMarkup("megaphone", "lg", "neutral"));
-    expect(drawnIn("Needs your approval")).toBe(iconMarkup("circle-check", "lg", "neutral"));
+    // Faint ink and its extra space come from the page's `.emptyGlyph` rule, as the mockups' `.empty svg`
+    // (R4-14), so the glyph carries that class and no tone of its own.
+    expect(drawnIn("Running now")).toBe(
+      iconMarkup("megaphone", "lg", undefined, styles.emptyGlyph),
+    );
+    expect(drawnIn("Needs your approval")).toBe(
+      iconMarkup("circle-check", "lg", undefined, styles.emptyGlyph),
+    );
   });
 
   it("marks every state chip so it stays one line, in the checklist and in both lists", () => {

@@ -77,6 +77,18 @@ describe("the page column starts where the wordmark does (Wave 1 verifier, 1440 
     expect(rule(".content")["row-gap"]).toBe("var(--space-6)");
   });
 
+  /**
+   * PRD-009 scored review pass 2, R4-13. The mockups' `.page` gap is `--space-6` and `--space-5`
+   * under 720px (`home-first-run.html:179` and `:420`). The padding took the phone value in R1-01;
+   * the gap did not, so a notice stood 24px above the page at 390 where the mockup draws 20px.
+   */
+  it("steps the page gap down to --space-5 below 720px, with the page's own padding", () => {
+    const narrowContent = rule(".content", "@media (max-width: 719.98px)");
+
+    expect(narrowContent["row-gap"]).toBe("var(--space-5)");
+    expect(narrowContent["padding"]).toBe("var(--space-6) var(--space-4)");
+  });
+
   it("no longer reserves room for a floating walkthrough panel", () => {
     expect(stylesheet).not.toContain("guided-setup-panel-room");
   });

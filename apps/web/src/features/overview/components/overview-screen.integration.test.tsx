@@ -399,6 +399,18 @@ describe("the Get set up card (009B-AC-004, 009B-AC-007)", () => {
     expect(within(setup).queryByRole("link", { name: /^Connect/u })).toBeNull();
   });
 
+  /** Scored review pass 2, R4-12: the row action is the compact action link, the small button's twin. */
+  it("draws every checklist action as the compact action link", () => {
+    renderHome();
+    const actions = within(card("Get set up")).getAllByRole("link");
+
+    expect(actions).toHaveLength(3);
+    for (const action of actions) {
+      expect(action).toHaveAttribute("data-variant", "action");
+      expect(action).toHaveAttribute("data-size", "sm");
+    }
+  });
+
   it("keeps each link's visible words inside its accessible name (WCAG 2.5.3)", () => {
     renderHome();
     const setup = card("Get set up");

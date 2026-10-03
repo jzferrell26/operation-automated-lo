@@ -226,6 +226,18 @@ describe("the top bar (009A-AC-009)", () => {
     expect(menu).toHaveFocus();
   });
 
+  /**
+   * PRD-009 scored review pass 2 (self-found). The bar sets its links, Help and the account at the
+   * secondary step; the Menu button drew its word at the body step, 16px beside 14px neighbours,
+   * where the mockups' `summary` is `--text-secondary-size`. Both bar buttons are the compact size.
+   */
+  it("draws the Menu and Help buttons at the compact size, the bar's own step", () => {
+    renderShell();
+
+    expect(screen.getByRole("button", { name: "Menu" })).toHaveAttribute("data-size", "sm");
+    expect(screen.getByRole("button", { name: /^Help/u })).toHaveAttribute("data-size", "sm");
+  });
+
   it("closes the menu sheet when a link in it is followed", async () => {
     const user = userEvent.setup();
     renderShell();

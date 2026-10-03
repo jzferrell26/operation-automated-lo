@@ -1,6 +1,6 @@
 .button {
-  min-block-size: 44px;
-  min-inline-size: 44px;
+  min-block-size: var(--target-min-size);
+  min-inline-size: var(--target-min-size);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -31,8 +31,13 @@
   min-inline-size: 0;
 }
 
+/* PRD-009 scored review pass 2, R4-12. The compact button is the secondary step, 14px, as the
+ * mockups' `.btn--sm` (`home-first-run.html:212`), so "Resend the link." and Home's own "Connect"
+ * and "Add" are one rendering. The weight is the shared `--weight-medium` of `.button`: the
+ * 2026-10-03 ruling keeps every button at 500, so the size is the only thing `.sm` changes. */
 .sm {
   padding-inline: var(--space-3);
+  font-size: var(--text-secondary-size);
 }
 
 .md {

@@ -15,11 +15,19 @@ import styles from "./link.module.css";
  */
 export type LinkVariant = "inline" | "action" | "sentence";
 
+/**
+ * `sm` is the compact `action` link, the small secondary button's twin: the secondary step and
+ * `--space-3` of inline padding at the shared weight, with the 44px target kept (`Button size="sm"`).
+ * The other variants take their size from their text, so `size` changes nothing on them.
+ */
+export type LinkSize = "md" | "sm";
+
 export type LinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "rel" | "target"> &
   Readonly<{
     children: ReactNode;
     external?: boolean | undefined;
     newTabLabel?: string | undefined;
+    size?: LinkSize | undefined;
     variant?: LinkVariant | undefined;
   }>;
 
@@ -45,6 +53,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
     className,
     external = false,
     newTabLabel = "opens in a new tab",
+    size = "md",
     variant = "inline",
     ...anchorProps
   },
@@ -57,6 +66,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
       {...anchorProps}
       ref={ref}
       className={joinClassNames(styles.link, styles[variant], className)}
+      data-size={size}
       data-variant={variant}
       rel={safety.rel}
       target={safety.target}

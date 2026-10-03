@@ -7,7 +7,9 @@ import { describe, expect, it } from "vitest";
 import { LoadingState } from "./async-state.js";
 import { Button } from "./Button.js";
 import { Icon } from "./Icon.js";
-import { Surface } from "./structural.js";
+import { Link } from "./Link.js";
+import { Select } from "./Select.js";
+import { Card, Surface } from "./structural.js";
 
 /**
  * The PRD-009 scored baseline review (009G-AC-006, pass 1) found these primitives drawing off the
@@ -34,11 +36,28 @@ function rule(css: string, selector: string): Readonly<Record<string, string>> {
   return declarations;
 }
 
+/** The inside of the first `@media` block whose query is exactly `query`, braces balanced. */
+function mediaBlock(css: string, query: string): string {
+  const opening = `@media ${query} {`;
+  const start = css.indexOf(opening);
+  expect(start, `a ${opening} block`).toBeGreaterThanOrEqual(0);
+  let depth = 1;
+  let cursor = start + opening.length;
+  while (cursor < css.length && depth > 0) {
+    if (css[cursor] === "{") depth += 1;
+    if (css[cursor] === "}") depth -= 1;
+    cursor += 1;
+  }
+  return css.slice(start + opening.length, cursor - 1);
+}
+
 const buttonCss = stylesheet("./Button.module.css");
 const iconCss = stylesheet("./Icon.module.css");
 const fieldCss = stylesheet("./field.module.css");
 const linkCss = stylesheet("./link.module.css");
 const primitivesCss = stylesheet("./primitives.css");
+const selectCss = stylesheet("./Select.module.css");
+const themeCss = stylesheet("./ThemeSegmentedControl.module.css");
 
 describe("a glyph and its words read as one line in a Button (R3 F-03)", () => {
   it("lays the label out as a centred row at the button's gap", () => {
@@ -79,6 +98,152 @@ describe("a disabled control looks disabled (R1-14, R2 F-5; design section 2.3)"
 
   it("draws a disabled IconButton the same way", () => {
     expect(rule(iconCss, ".iconButton:disabled")).toMatchObject(disabledLook);
+  });
+});
+
+describe("a disabled Select is drawn as a disabled field (pass 2, R3 P2-04)", () => {
+  it("takes the field's disabled look: sunken fill, body text, hairline boundary", () => {
+    expect(rule(selectCss, ".trigger:disabled")).toMatchObject({
+      background: "var(--sf-sunken)",
+      "border-color": "var(--bd-hairline)",
+      color: "var(--tx-body)",
+      cursor: "not-allowed",
+    });
+  });
+
+  it("is the same look a disabled text field draws", () => {
+    const field = rule(fieldCss, ".control:disabled");
+    const trigger = rule(selectCss, ".trigger:disabled");
+
+    for (const property of ["background", "border-color", "color", "cursor"]) {
+      expect(trigger[property], property).toBe(field[property]);
+    }
+  });
+
+  it("draws the field's control box, so a Select is the same 44px beside a text field", () => {
+    const field = rule(fieldCss, ".control");
+    const trigger = rule(selectCss, ".trigger");
+
+    for (const property of [
+      "min-block-size",
+      "padding-block",
+      "padding-inline",
+      "font-size",
+      "font-weight",
+      "line-height",
+      "border-radius",
+    ]) {
+      expect(trigger[property], property).toBe(field[property]);
+    }
+  });
+
+  it("starts from the enabled edge, so the disabled edge is a change and not a default", () => {
+    expect(rule(selectCss, ".trigger")["border"]).toBe("1px solid var(--bd-input)");
+  });
+
+  it("renders the trigger disabled with a Select's own markup", () => {
+    const markup = renderToStaticMarkup(
+      createElement(Select, {
+        disabled: true,
+        label: "Brand color",
+        onValueChange: () => undefined,
+        options: ["Blue"],
+        value: "Blue",
+      }),
+    );
+
+    expect(markup).toMatch(/<button[^>]*role="combobox"[^>]*disabled=""/u);
+  });
+});
+
+describe("the compact Button is the secondary step at the shared weight (pass 2, R4-12)", () => {
+  it("sets the sm size at the secondary step, like the mockups' .btn--sm", () => {
+    expect(rule(buttonCss, ".sm")["font-size"]).toBe("var(--text-secondary-size)");
+  });
+
+  it("leaves the weight to the shared button, 500, in every size", () => {
+    expect(rule(buttonCss, ".button")["font-weight"]).toBe("var(--weight-medium)");
+    for (const size of [".sm", ".md", ".lg"]) {
+      expect(rule(buttonCss, size), size).not.toHaveProperty("font-weight");
+    }
+  });
+
+  it("keeps md at the body step and lg at the card step", () => {
+    expect(rule(buttonCss, ".button")["font-size"]).toBe("var(--text-body-size)");
+    expect(rule(buttonCss, ".md")).not.toHaveProperty("font-size");
+    expect(rule(buttonCss, ".lg")["font-size"]).toBe("var(--text-card-size)");
+  });
+});
+
+describe("a compact action link is the small button's twin (pass 2, R4-12; coordinator, lane H)", () => {
+  const small = rule(linkCss, '.action[data-size="sm"]');
+
+  it("takes the secondary step and --space-3 of inline padding, as the sm Button", () => {
+    expect(small).toMatchObject({
+      "font-size": "var(--text-secondary-size)",
+      "padding-inline": "var(--space-3)",
+    });
+    expect(small["font-size"]).toBe(rule(buttonCss, ".sm")["font-size"]);
+    expect(small["padding-inline"]).toBe(rule(buttonCss, ".sm")["padding-inline"]);
+  });
+
+  it("sets no weight and no height, so it keeps the link's 500 and the 44px target", () => {
+    expect(small).not.toHaveProperty("font-weight");
+    expect(small).not.toHaveProperty("min-block-size");
+    expect(rule(linkCss, ".link")["font-weight"]).toBe("var(--weight-medium)");
+    expect(rule(linkCss, ".action")["min-block-size"]).toBe("var(--target-min-size)");
+  });
+
+  it("is carried by data-size on the anchor, md by default", () => {
+    const compact = renderToStaticMarkup(
+      createElement(Link, { href: "/x", size: "sm", variant: "action" }, "Connect"),
+    );
+    const normal = renderToStaticMarkup(
+      createElement(Link, { href: "/x", variant: "action" }, "Connect"),
+    );
+
+    expect(compact).toContain('data-size="sm"');
+    expect(normal).toContain('data-size="md"');
+  });
+});
+
+describe("the theme segments are the secondary step, as the mockups' format switch (pass 2, self-found)", () => {
+  it("sets each segment at the secondary step and the medium weight", () => {
+    expect(rule(themeCss, ".segment")).toMatchObject({
+      "font-size": "var(--text-secondary-size)",
+      "font-weight": "var(--weight-medium)",
+    });
+  });
+});
+
+describe("a large card insets 24px, and 20px on a phone (pass 2, R1 P2-06b, R2 N-1)", () => {
+  const phone = mediaBlock(primitivesCss, "(max-width: 719.98px)");
+
+  it("insets the large step at --space-6 above the phone edge", () => {
+    expect(rule(primitivesCss, '.oalo-surface[data-padding="lg"]')["padding"]).toBe(
+      "var(--space-6)",
+    );
+  });
+
+  it("steps it down to --space-5 below the shell's 720px phone edge", () => {
+    expect(rule(phone, '.oalo-surface[data-padding="lg"]')["padding"]).toBe("var(--space-5)");
+  });
+
+  it("moves no other step on a phone", () => {
+    expect(phone).not.toContain('data-padding="sm"');
+    expect(phone).not.toContain('data-padding="md"');
+    expect(rule(primitivesCss, '.oalo-surface[data-padding="md"]')["padding"]).toBe(
+      "var(--space-4)",
+    );
+  });
+
+  it("is carried by the attribute a Card and a Surface both render", () => {
+    expect(renderToStaticMarkup(createElement(Card, { padding: "lg" }, "x"))).toContain(
+      'data-padding="lg"',
+    );
+    expect(renderToStaticMarkup(createElement(Surface, { padding: "lg" }, "x"))).toContain(
+      'data-padding="lg"',
+    );
   });
 });
 

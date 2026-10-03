@@ -403,14 +403,12 @@
 }
 
 /*
- * The row's action is a link drawn as the small secondary button: the secondary step (14px) and the
- * small button's padding (`--space-3`, `Button.module.css` `.sm`), at the shared weight 500, which
- * the link and the button both inherit (R4-12). The weight is not set here; it was 600.
+ * The row's action is a `Link variant="action" size="sm"`, the small secondary button's twin: the
+ * secondary step (14px), `--space-3` of inline padding and the shared weight 500 all come from the
+ * primitive (`link.module.css`, R4-12), so this rule only places it in the row's grid.
  */
 .itemAction {
   grid-area: action;
-  padding-inline: var(--space-3);
-  font-size: var(--text-secondary-size);
 }
 
 /* The two lists. */

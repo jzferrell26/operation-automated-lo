@@ -195,11 +195,13 @@ describe("Home's buttons keep the shared weight 500 (scored review pass 2, R4-12
     },
   );
 
-  it("draws the row action at the small button's step and padding", () => {
+  it("leaves the row action's size and padding to the compact Link, which draws the small button", () => {
     const action = rule(".itemAction");
 
-    expect(action["font-size"]).toBe("var(--text-secondary-size)");
-    expect(action["padding-inline"]).toBe("var(--space-3)");
+    for (const property of ["font-size", "padding", "padding-block", "padding-inline"]) {
+      expect(action, `.itemAction sets ${property}`).not.toHaveProperty(property);
+    }
+    expect(action["grid-area"]).toBe("action");
   });
 
   it("sets no weight on any rule that styles a button, so none is 600 while the primitive is 500", () => {

@@ -13,7 +13,10 @@
  * The mapping, so a reviewer can check one against the other:
  *
  *   .ui-canvas          -> `apps/web/src/app/globals.css`, the `html, body` rule
- *   .ui-card            -> `.oalo-surface[data-variant="card"]`
+ *   .ui-card            -> `.oalo-surface[data-variant="card"]` (Added on 2026-10-03 by the
+ *                          PRD-009 scored baseline review, pass 2, R1 P2-06 and R2 N-1: the card's
+ *                          padding steps, including the large step's 20px phone inset below 720px,
+ *                          are in `03-components/card-and-surface.md`.)
  *   .ui-panel           -> `.oalo-surface[data-variant="raised"]`, `.panel` in
  *                          `overlay.module.css`
  *   .ui-sunken          -> `.oalo-surface[data-variant="sunken"]`

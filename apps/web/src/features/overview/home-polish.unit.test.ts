@@ -228,6 +228,15 @@ describe("the page gap is the mockups' .page rule (scored review pass 2, R4-13)"
   it("is --space-5 under 720px", () => {
     expect(rule(".home", "@media (max-width: 719.98px)")["gap"]).toBe("var(--space-5)");
   });
+
+  /**
+   * The scored review, pass 2 (lane G's note): on a phone the mockup gives every card, the start card
+   * included, the 20px inset, as the shared Card does below 720px. The start card kept 24px.
+   */
+  it("gives the start card and every card the 20px inset under 720px", () => {
+    expect(rule(".start", "@media (max-width: 719.98px)")["padding"]).toBe("var(--space-5)");
+    expect(rule(".card", "@media (max-width: 719.98px)")["padding"]).toBe("var(--space-5)");
+  });
 });
 
 /** One declaration's value with its line breaks and runs of spaces folded to single spaces. */

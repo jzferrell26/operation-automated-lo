@@ -467,8 +467,11 @@
     gap: var(--space-5);
   }
 
+  /* The mockup's phone rule gives every card, the start card included, the 20px inset
+   * (`home-first-run.html`: `.card` follows `.start` at equal specificity), as the shared Card does
+   * below 720px. */
   .start {
-    padding: var(--space-6);
+    padding: var(--space-5);
   }
 
   .card {

@@ -754,3 +754,93 @@ describe("a campaign that needs changes", () => {
     expect(screen.queryByRole("heading", { name: "Needs changes" })).toBeNull();
   });
 });
+
+/**
+ * The scored baseline review of 2026-10-03, pass 1, part R2 (009G-AC-006). What each finding's
+ * picture showed is held in the page's own structure here; the stylesheet's measures are pinned in
+ * `campaign-page-layout.unit.test.ts`.
+ */
+describe("a library notice's glyph (review R2, F-3)", () => {
+  it.each([
+    ["a retired ad", { adId: "sample-spring-search", adVersion: 1 }],
+    [
+      "a retired ad on an approved version",
+      { adId: "sample-spring-search", adVersion: 1, decision: "approved" as const },
+    ],
+  ] as const)(
+    "is in the row of its sentence, first, so it sits on the sentence's first line, for %s",
+    async (_state, options) => {
+      const { container } = await renderCampaign(options);
+
+      const text = container.querySelector("[data-notice] p") as HTMLElement;
+      expect(text).not.toBeNull();
+      // The glyph and the sentence are the row's two children and nothing else: the glyph is a block,
+      // so left among running words it takes a line of its own.
+      expect([...text.children].map((child) => child.tagName.toLowerCase())).toEqual([
+        "svg",
+        "span",
+      ]);
+      expect(text.firstElementChild).toHaveAttribute("aria-hidden", "true");
+      expect(text.lastElementChild?.textContent ?? "").toMatch(
+        /^This ad was taken out of the library/u,
+      );
+    },
+  );
+});
+
+describe("the cards on the campaign page (review R2, F-2)", () => {
+  /** The inner padding every card on the page takes from `Surface` and `Card`. */
+  function insets(container: HTMLElement): string[] {
+    return [...container.querySelectorAll("[data-padding]")].map(
+      (card) => card.getAttribute("data-padding") ?? "",
+    );
+  }
+
+  it("gives every card one inset, whatever the page holds", async () => {
+    const { container } = await renderCampaign({ needsChanges: true });
+
+    const names = [
+      "[data-results-card]",
+      "[data-ad-card]",
+      "[data-approval-section]",
+      "[data-fixes]",
+      "[data-approval-card]",
+      "[data-versions]",
+    ];
+    for (const selector of names) {
+      expect(container.querySelector(selector), `a ${selector}`).not.toBeNull();
+      expect(container.querySelector(selector)).toHaveAttribute("data-padding", "lg");
+    }
+    expect(new Set(insets(container))).toEqual(new Set(["lg"]));
+  });
+
+  it("gives the older-version notice and the approved page the same inset", async () => {
+    const older = await renderCampaign(
+      {
+        olderVersions: [
+          {
+            decision: "rejected",
+            decidedAt: "2026-09-30T10:00:00.000Z",
+            createdAt: "2026-09-29T10:00:00.000Z",
+          },
+        ],
+      },
+      OWNER,
+      1,
+    );
+    expect(older.container.querySelector("[data-older-version]")).not.toBeNull();
+    expect(new Set(insets(older.container))).toEqual(new Set(["lg"]));
+    older.unmount();
+
+    const approved = await renderCampaign({ decision: "approved" }, OWNER);
+    expect(new Set(insets(approved.container))).toEqual(new Set(["lg"]));
+  });
+
+  it("gives a page made before PRD-009 the same inset", async () => {
+    const campaign = await earlierFlowCampaign({ decision: "approved" });
+    const page = await pageOf(campaign, { principal: OWNER });
+    const { container } = render(<PersistedCampaignScreen page={page} />);
+
+    expect(new Set(insets(container))).toEqual(new Set(["lg"]));
+  });
+});

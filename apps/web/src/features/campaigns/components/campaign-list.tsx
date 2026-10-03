@@ -1,4 +1,4 @@
-import { Badge, EmptyState, Link, Surface } from "@oalo/ui";
+import { Badge, EmptyState, Icon, Link, Surface } from "@oalo/ui";
 
 import {
   CAMPAIGNS_PAGE,
@@ -61,10 +61,21 @@ function whereWords(row: CampaignListRow): string {
   return first === undefined ? WHERE_NOT_SET : wherePreview(first, others.length);
 }
 
+/**
+ * The ad's tall art, decorative. A campaign with no art to show (one made with the earlier flow, or
+ * one whose ad the library no longer holds) keeps the tile, so the names line up, and says so with a
+ * quiet words-only glyph instead of an empty box that reads as a picture that failed to load.
+ */
 function Thumbnail({ row }: Readonly<{ row: CampaignListRow }>) {
   return (
-    <span aria-hidden="true" className={styles.thumb}>
-      {row.thumbnail === undefined ? null : (
+    <span
+      aria-hidden="true"
+      className={styles.thumb}
+      data-thumb={row.thumbnail === undefined ? "none" : "art"}
+    >
+      {row.thumbnail === undefined ? (
+        <Icon decorative name="file-text" size="md" />
+      ) : (
         <img alt={THUMBNAIL_ALT} height={60} src={row.thumbnail} width={48} />
       )}
     </span>
@@ -158,12 +169,12 @@ export function CampaignList({
                         </span>
                       </span>
                     </td>
-                    <td>{topicWords(row)}</td>
+                    <td className={styles.nowrap}>{topicWords(row)}</td>
                     <td className={styles.nowrap}>
                       <TextWithDays {...runsWords(row, year)} />
                     </td>
                     <td>{whereWords(row)}</td>
-                    <td className={styles.nowrap}>
+                    <td className={styles.chipCell}>
                       <StatusChip row={row} />
                     </td>
                     <td className={`${styles.muted} ${styles.nowrap}`}>
@@ -181,13 +192,15 @@ export function CampaignList({
           >
             {rows.map((row) => (
               <li key={row.campaignRef}>
-                <Surface className={styles.card} padding="md">
+                <Surface className={styles.card} padding="none">
                   <div className={styles.cardHead}>
                     <Thumbnail row={row} />
-                    <Link className={styles.rowLink} href={row.href}>
-                      {row.name}
-                    </Link>
-                    <SampleLabel row={row} />
+                    <span className={styles.adName}>
+                      <Link className={styles.rowLink} href={row.href}>
+                        {row.name}
+                      </Link>
+                      <SampleLabel row={row} />
+                    </span>
                   </div>
                   {/* A card has no column header, so each fact is named (writing review W-9). */}
                   <p className={styles.cardFacts}>

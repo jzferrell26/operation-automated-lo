@@ -241,6 +241,82 @@ describe("a campaign saved before PRD-009 on the list (009E-AC-012)", () => {
   });
 });
 
+/**
+ * The scored baseline review of 2026-10-03, pass 1, part R2 (009G-AC-006). A row is one line of
+ * facts and a tile; the stylesheet's measures are pinned in `campaign-page-layout.unit.test.ts`, and
+ * what each cell and tile is made of is held here.
+ */
+describe("a row of the Campaigns list (review R2, F-9, F-10, F-11)", () => {
+  it("keeps Topic, Dates, and Last change on one line while the table has room, and gives Status a cell the stylesheet never releases", async () => {
+    render(<CampaignList now={NOW} rows={await rows()} />);
+
+    const cells = [
+      ...(within(screen.getByRole("table")).getAllByRole("row")[1] as HTMLElement).querySelectorAll(
+        "td",
+      ),
+    ];
+    const keeps = (cell: Element | undefined, name: string) =>
+      (cell?.className ?? "").split(/\s+/u).some((className) => className.includes(name));
+    // Ad, Topic, Dates, Where it shows, Status, Last change.
+    expect(keeps(cells[1], "nowrap")).toBe(true);
+    expect(keeps(cells[2], "nowrap")).toBe(true);
+    expect(keeps(cells[3], "nowrap")).toBe(false);
+    expect(keeps(cells[4], "chipCell")).toBe(true);
+    expect(keeps(cells[5], "nowrap")).toBe(true);
+  });
+
+  it("keeps a campaign with no art in a tile with a glyph, and no image that could look as if it failed to load", async () => {
+    const earlier = await rowOf(await earlierFlowCampaign({ decision: "approved" }), {
+      principal: APPROVER,
+    });
+    expect(earlier.thumbnail).toBeUndefined();
+    render(<CampaignList now={NOW} rows={[earlier]} />);
+
+    const row = within(screen.getByRole("table"))
+      .getByRole("link", { name: "Tour this home this weekend" })
+      .closest("tr") as HTMLElement;
+    const tile = row.querySelector("[data-thumb]") as HTMLElement;
+    expect(tile).toHaveAttribute("data-thumb", "none");
+    expect(tile).toHaveAttribute("aria-hidden", "true");
+    expect(tile.querySelector("svg")).not.toBeNull();
+    expect(tile.querySelector("img")).toBeNull();
+    // The glyph says nothing: the tile is decorative, so a screen reader reads the name and the facts.
+    expect(tile).toHaveTextContent("");
+  });
+
+  it("keeps the picture in a tile of its own kind when the ad has art", async () => {
+    render(<CampaignList now={NOW} rows={await rows()} />);
+
+    const row = within(screen.getByRole("table"))
+      .getByRole("link", { name: "Sample: First home, start here" })
+      .closest("tr") as HTMLElement;
+    const tile = row.querySelector("[data-thumb]") as HTMLElement;
+    expect(tile).toHaveAttribute("data-thumb", "art");
+    expect(tile.querySelector("img")).not.toBeNull();
+    expect(tile.querySelector("svg")).toBeNull();
+  });
+
+  it("draws the tile on every phone card, beside the name, with or without art", async () => {
+    const earlier = await rowOf(await earlierFlowCampaign(), { principal: APPROVER });
+    const { container } = render(<CampaignList now={NOW} rows={[...(await rows()), earlier]} />);
+
+    const items = within(
+      container.querySelector("[data-campaign-cards]") as HTMLElement,
+    ).getAllByRole("listitem");
+    expect(items).toHaveLength(3);
+    for (const item of items) {
+      const head = item.querySelector("[data-thumb]")?.parentElement as HTMLElement;
+      expect(head, "a tile in the card's head").not.toBeNull();
+      // The tile and the name share the head, the tile first.
+      expect(head.firstElementChild).toBe(item.querySelector("[data-thumb]"));
+      expect(within(head).getByRole("link")).toBeInTheDocument();
+    }
+    expect(
+      items.map((item) => item.querySelector("[data-thumb]")?.getAttribute("data-thumb")),
+    ).toEqual(["art", "art", "none"]);
+  });
+});
+
 describe("the dates on the Campaigns list", () => {
   it.each([
     ["this year", NOW],

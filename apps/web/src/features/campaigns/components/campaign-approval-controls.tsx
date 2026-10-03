@@ -54,6 +54,11 @@ function recorded(sentence: string): ApprovalStatus {
   return Object.freeze({ sentence, refusal: undefined });
 }
 
+/**
+ * Both cards take `--space-6` (`lg`), the one inset every card has on the campaign page (scored review
+ * R2 F-2) and on step 3 of "Launch an ad", whose side cards are drawn the same (R1-16), as the
+ * mockups' `.card` is.
+ */
 export function CampaignApprovalControls({
   campaignHref,
   campaignRef,
@@ -151,7 +156,7 @@ export function CampaignApprovalControls({
     // just decided on is the same card, by name, as the one a later visit shows, and not the only
     // untitled card on the page.
     return (
-      <Card data-approval-card="" padding="md">
+      <Card data-approval-card="" padding="lg">
         <strong>{APPROVE_TITLE}</strong>
         <p ref={outcomeRef} role="status" tabIndex={-1}>
           {status?.sentence}
@@ -161,7 +166,7 @@ export function CampaignApprovalControls({
   }
 
   return (
-    <Card data-approval-card="" padding="md">
+    <Card data-approval-card="" padding="lg">
       <strong>{APPROVE_TITLE}</strong>
       <p>{APPROVE_LINE}</p>
       <SafeAction

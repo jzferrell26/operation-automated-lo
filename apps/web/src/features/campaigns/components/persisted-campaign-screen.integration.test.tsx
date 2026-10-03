@@ -18,6 +18,7 @@ import {
   wholeSentence,
   type LibraryCampaignOptions,
 } from "../../../server/campaign-page.test-support.js";
+import { USE_NEW_VERSION_ASK } from "../../../copy/ads-library-messages.js";
 import { glyphBeforeWords, glyphMarkup } from "../../../testing/glyph-markup.js";
 import { PersistedCampaignScreen } from "./persisted-campaign-screen.js";
 
@@ -572,6 +573,44 @@ describe("the library notices on the page (009E-AC-006)", () => {
       .getByText("A newer version of this ad is in the library.")
       .closest("li") as HTMLElement;
     expect(within(item).queryByRole("button")).toBeNull();
+  });
+
+  /**
+   * QA-12. An approver who cannot save a version, arriving from the hand-off link, saw the Approval
+   * card, no Approve, and "A newer version of this ad is in the library." with nothing to press, no
+   * reason, and nobody named. Step 3 names who can (writing review delta check, D-3), in
+   * `USE_NEW_VERSION_ASK`, and the page now says that same sentence in the same place. Step 3's own
+   * test is in `launch-review.integration.test.tsx`.
+   */
+  it("tells somebody who can't save a version who can, in the sentence step 3 uses, and nobody else", async () => {
+    const sentence = "Ask the campaign creator or your workspace owner to use the new version.";
+    expect(USE_NEW_VERSION_ASK).toBe(sentence);
+    const noticeOf = () =>
+      screen
+        .getByText("A newer version of this ad is in the library.")
+        .closest("li") as HTMLElement;
+
+    const approver = await renderCampaign({ adVersion: 1 }, APPROVER);
+    expect(within(noticeOf()).getByText(sentence)).toBeInTheDocument();
+    expect(within(noticeOf()).queryByRole("button")).toBeNull();
+    expect(within(noticeOf()).queryByRole("link")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
+    approver.unmount();
+
+    // Somebody who can save a version has the action, and is not told to ask anybody else.
+    const owner = await renderCampaign({ adVersion: 1 }, OWNER);
+    expect(
+      within(noticeOf()).getByRole("button", { name: "Use the new version" }),
+    ).toBeInTheDocument();
+    expect(within(noticeOf()).queryByText(sentence)).toBeNull();
+    owner.unmount();
+
+    // A version somebody decided on has nothing left to move, so nobody is asked to move it.
+    for (const decision of ["approved", "rejected"] as const) {
+      const decided = await renderCampaign({ adVersion: 1, decision }, APPROVER);
+      expect(within(noticeOf()).queryByText(sentence), decision).toBeNull();
+      decided.unmount();
+    }
   });
 
   it("says the ad is not in the library when the catalog does not hold it", async () => {

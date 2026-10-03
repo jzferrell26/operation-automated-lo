@@ -44,8 +44,9 @@ import styles from "./use-new-version.module.css";
  *
  * Step 3 of "Launch an ad" mounts it too, in place of Approve (writing review delta check, D-3). It
  * passes its own `lead`, which says why the version can't be approved, and `askWhenCannot`, which
- * tells somebody who can't save a version who can. The campaign page passes neither, so the notice
- * 009C-AC-009 fixes is unchanged there.
+ * tells somebody who can't save a version who can. The campaign page passes `askWhenCannot` too, the
+ * same sentence (quality close-out, QA-12), and no `lead`, so the notice 009C-AC-009 fixes is
+ * unchanged there.
  */
 
 export type UseNewVersionProps = Readonly<{

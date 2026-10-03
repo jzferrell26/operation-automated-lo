@@ -56,7 +56,9 @@ export function PersistedCampaignScreen({ page }: Readonly<{ page: CampaignPageD
 function Crumbs({ current }: Readonly<{ current: string }>) {
   return (
     <nav aria-label={CRUMBS_LABEL} className={styles.crumbs}>
-      <Link href="/marketing/campaigns">{CAMPAIGNS_CRUMB}</Link>
+      <Link href="/marketing/campaigns" variant="sentence">
+        {CAMPAIGNS_CRUMB}
+      </Link>
       <span aria-hidden="true">/</span>
       <span aria-current="page">{current}</span>
     </nav>

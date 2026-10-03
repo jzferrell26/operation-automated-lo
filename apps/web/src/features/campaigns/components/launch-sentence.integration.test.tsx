@@ -80,6 +80,8 @@ describe("the launch sentence, drawn once for step 3 and the campaign page", () 
       name: "See what's needed for Meta",
     });
     expect(link).toHaveAttribute("href", "/settings/connections");
+    // A link inside a running sentence takes the sentence's size (R2 F-4), not the 16px body step.
+    expect(link).toHaveAttribute("data-variant", "sentence");
   });
 
   it("uses the link words Home uses, so one fact has one voice", () => {

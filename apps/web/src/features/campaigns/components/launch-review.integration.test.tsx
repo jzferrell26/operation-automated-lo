@@ -232,6 +232,9 @@ describe("Launch on Facebook (009D-AC-016)", () => {
     const launch = screen.getByRole("button", { name: "Launch on Facebook" });
     expect(launch).toBeDisabled();
     expect(launch).toHaveAttribute("disabled");
+    // R1-14: the step 3 mockup draws it as the card's primary button; the primitive greys a
+    // disabled primary, so it is not mistaken for an enabled one.
+    expect(launch).toHaveAttribute("data-variant", "primary");
     expect(launch).not.toHaveAttribute("formaction");
     expect(launch).not.toHaveAttribute("href");
     expect(launch).toHaveAccessibleDescription(
@@ -522,10 +525,10 @@ describe("the look of step 3's cards", () => {
     expect(approve?.className).toMatch(/approveCard/u);
   });
 
-  it("gives the Meta sentence's link the class that keeps the line one line tall (R1-15)", () => {
+  it("draws the Meta sentence's link as the link primitive's sentence variant (R1-15, F-4)", () => {
     render(<LaunchReview review={reviewFixture()} />);
     const link = screen.getByRole("link", { name: "See what's needed for Meta" });
-    expect(link.className).toMatch(/sentenceLink/u);
+    expect(link).toHaveAttribute("data-variant", "sentence");
     expect(link).toHaveAttribute("href", "/settings/connections");
   });
 });

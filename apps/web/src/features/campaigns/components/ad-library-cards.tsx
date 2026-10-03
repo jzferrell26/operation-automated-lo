@@ -1,5 +1,5 @@
 import { ADS_LIBRARY_TOPICS, type AdsLibraryTopic } from "@oalo/contracts";
-import { EmptyState } from "@oalo/ui";
+import { Badge, EmptyState } from "@oalo/ui";
 import type { ReactNode } from "react";
 
 import {
@@ -112,7 +112,9 @@ export function AdCard({ card, advertiser, action, titleLevel = 3 }: AdCardProps
         shape="tall"
       />
       <div className={styles.cardBody}>
-        <span className={styles.topic}>{TOPIC_LABELS[card.topic]}</span>
+        <Badge className={styles.topic} icon="tag" tone="neutral">
+          {TOPIC_LABELS[card.topic]}
+        </Badge>
         <Title className={styles.cardTitle} id={`ad-card-${card.id}`}>
           {card.name}
         </Title>

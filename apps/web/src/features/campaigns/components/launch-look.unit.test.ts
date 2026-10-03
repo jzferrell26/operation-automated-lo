@@ -14,7 +14,6 @@ const here = resolve(import.meta.dirname);
 const launch = await readCssRules(join(here, "launch.module.css"));
 const cards = await readCssRules(join(here, "ad-library-cards.module.css"));
 const creative = await readCssRules(join(here, "ad-creative.module.css"));
-const sentence = await readCssRules(join(here, "launch-sentence.module.css"));
 
 describe("the launch header (R1-05)", () => {
   it("puts one page gap between its pieces, and a phone's page gap on a phone", () => {
@@ -84,16 +83,6 @@ describe("step 3's cards (R1-12, R1-13, R1-15)", () => {
       "var(--ac-primary-hover)",
     );
   });
-
-  it("keeps the Meta link's 44px target without growing its line", () => {
-    const link = sentence.declarationsOf("a.sentenceLink");
-    expect(link["margin-block"]).toBe("calc((1lh - var(--target-min-size)) / 2)");
-    expect(link["font-size"]).toBe("inherit");
-    expect(link["line-height"]).toBe("inherit");
-    // The 44px minimum comes from the link primitive and is not taken away here.
-    expect(link["min-block-size"]).toBeUndefined();
-    expect(link["display"]).toBeUndefined();
-  });
 });
 
 describe("the ad card and the topic chips (R1-03, R1-04)", () => {
@@ -122,6 +111,15 @@ describe("the ad card and the topic chips (R1-03, R1-04)", () => {
     const chosen = cards.declarationsOf('.chip[aria-current="true"],\n.chip[aria-pressed="true"]');
     expect(chosen["color"]).toBe("var(--tx-strong)");
     expect(chosen["font-weight"]).toBe("var(--weight-semibold)");
+  });
+
+  it("sets the topic badge as the mockup draws it: the strong ink, on one line, tight in the card", () => {
+    const topic = cards.declarationsOf(".cardBody .topic");
+    expect(topic["color"]).toBe("var(--tx-strong)");
+    expect(topic["font-size"]).toBe("var(--text-secondary-size)");
+    expect(topic["padding-inline"]).toBe("var(--space-2) var(--space-3)");
+    expect(topic["white-space"]).toBe("nowrap");
+    expect(topic["align-self"]).toBe("flex-start");
   });
 
   it("has no hand-built empty paragraph; the empty library is an AsyncState", () => {

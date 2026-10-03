@@ -429,7 +429,7 @@ export function LaunchFlow({
               variant="outline"
             >
               <span className={styles.withIcon}>
-                <Icon className={styles.backGlyph} decorative name="chevron-down" size="sm" />
+                <Icon decorative name="chevron-left" size="sm" />
                 {BACK}
               </span>
             </Button>

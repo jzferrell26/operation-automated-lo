@@ -2,6 +2,8 @@ import { render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { Icon } from "@oalo/ui";
+
 import { ADS_LIBRARY_HEADING, ADS_LIBRARY_LEAD } from "../../../../../copy/ads-library-messages.js";
 import { EMPTY_LIBRARY, EMPTY_LIBRARY_TITLE } from "../../../../../copy/launch-messages.js";
 import {
@@ -255,6 +257,22 @@ describe("a library card (009C-AC-011, 009C-AC-013)", () => {
     await renderLibrary();
     const card = screen.getByRole("article", { name: "Sample: Home loans for veterans" });
     expect(within(card).getByText("VA loans")).toBeInTheDocument();
+  });
+
+  it("draws each card's topic with the tag glyph, as the mockup's topic badge does (R1-04)", async () => {
+    await renderLibrary();
+    const card = screen.getByRole("article", { name: "Sample: Home loans for veterans" });
+    const topic = within(card).getByText("VA loans");
+    const { container: expected, unmount } = render(
+      <Icon decorative name="tag" size="sm" tone="current" />,
+    );
+    const tag = expected.innerHTML;
+    unmount();
+
+    // The topic is the shared pill (`Badge`), so it takes the library's neutral tone and a glyph.
+    expect(topic).toHaveClass("oalo-state-label");
+    expect(topic).toHaveAttribute("data-tone", "neutral");
+    expect(topic.querySelector("svg")?.outerHTML).toBe(tag);
   });
 
   it("offers only secondary controls, so no single blue button competes with the ads", async () => {

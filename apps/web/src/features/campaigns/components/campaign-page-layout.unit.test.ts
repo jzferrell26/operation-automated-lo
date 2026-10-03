@@ -58,6 +58,18 @@ describe("a library notice (review R2, F-3)", () => {
   });
 });
 
+describe("the campaign page's crumb (review R2, F-4)", () => {
+  it("keeps the crumb row at the 44px target, because its link is a sentence-sized link with its margin taken back", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
+
+    const crumbs = css.declarationsOf(".crumbs");
+    expect(crumbs["font-size"]).toBe("var(--text-secondary-size)");
+    expect(crumbs["min-block-size"]).toBe("var(--target-min-size)");
+    // The link primitive's `sentence` variant sets the link's own box; the page does not redo it.
+    expect(css.source).not.toMatch(/\.crumbs a\b/u);
+  });
+});
+
 describe("a date on the campaign page (review R2, H-3)", () => {
   it("is never broken inside itself, so a mask over it covers the one day and not the sentence round it", async () => {
     const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);

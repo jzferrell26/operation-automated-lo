@@ -216,11 +216,6 @@
   white-space: nowrap;
 }
 
-/* The chevron before "Back" is the icon set's down chevron turned a quarter, so it points left. */
-.backGlyph {
-  transform: rotate(90deg);
-}
-
 /* R1-08. "Add in Brand", "Change in Brand", and "Change" are text links, as in the mockups: the
    secondary step in semibold, with the link primitive's own colour and 44px target. The element is
    named so the rule outranks the primitive's body-step size. */

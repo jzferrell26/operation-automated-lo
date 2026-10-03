@@ -2,6 +2,8 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { Icon } from "@oalo/ui";
+
 import {
   AREA_HINT,
   BAND_PLACEHOLDER,
@@ -445,10 +447,16 @@ describe("step 2, Set it up", () => {
       expect(preview.closest("aside")).not.toBe(preview.parentElement);
     });
 
-    it("puts a chevron before Back (R1-10)", () => {
+    it("puts the icon set's left chevron before Back, not a turned down chevron (R1-10)", () => {
       renderFlow(STEP_TWO);
       const back = screen.getByRole("button", { name: "Back" });
-      expect(back.querySelector("svg")).not.toBeNull();
+      const { container: expected, unmount } = render(
+        <Icon decorative name="chevron-left" size="sm" />,
+      );
+      const left = expected.innerHTML;
+      unmount();
+
+      expect(back.querySelector("svg")?.outerHTML).toBe(left);
     });
   });
 

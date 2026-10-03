@@ -15,6 +15,9 @@ import styles from "./launch.module.css";
  * from D7's function is tied to it through `aria-describedby`; the Meta sentence links to the
  * connections page, where what Meta needs is explained. The sentence is drawn by
  * `LaunchSentenceWords`, which the campaign page's header uses too (writing review W-25).
+ *
+ * It is the card's primary button, as the step 3 mockup draws it (scored review R1-14). A disabled
+ * primary is drawn grey by the button primitive, so it never reads as an enabled outline button.
  */
 export function LaunchOnFacebook({
   state,
@@ -25,7 +28,7 @@ export function LaunchOnFacebook({
   return (
     <Card className={styles.launchCard} data-launch-card="" padding="lg">
       <h2 className={styles.cardTitle}>{LAUNCH_TITLE}</h2>
-      <Button aria-describedby={sentenceId} disabled type="button" variant="outline">
+      <Button aria-describedby={sentenceId} disabled type="button" variant="primary">
         <span className={styles.withIcon}>
           <Icon decorative name="megaphone" size="sm" /> {LAUNCH_ON_FACEBOOK}
         </span>

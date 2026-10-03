@@ -62,6 +62,15 @@ describe("the campaign page header (009E-AC-001)", () => {
     ).toBeInTheDocument();
   });
 
+  it("draws the Campaigns crumb as a sentence-sized link inside the crumb row (R2 F-4)", async () => {
+    await renderCampaign();
+
+    const crumbs = screen.getByRole("navigation", { name: "Where you are" });
+    const link = within(crumbs).getByRole("link", { name: "Campaigns" });
+    expect(link).toHaveAttribute("href", "/marketing/campaigns");
+    expect(link).toHaveAttribute("data-variant", "sentence");
+  });
+
   it("says the ad starts when it is launched when no start day was chosen", async () => {
     await renderCampaign({ endsAt: "2026-10-20T23:59:59.000Z" });
 

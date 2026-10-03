@@ -176,6 +176,21 @@ describe("dates, captions, and the phone (P2-03 to P2-07)", () => {
     expect(launch.source).not.toMatch(/\.placeAdd > button/u);
   });
 
+  it("keeps the save note one --space-3 from its buttons, on a line of its own in the actions row (P3-05)", () => {
+    // The note is a child of `.actions` (`launch-flow.integration.test.tsx`), so the row's own gap
+    // is the distance to the buttons; as a child of the form's `--space-6` grid it stood 24px off.
+    expect(launch.declarationsOf(".actions")["gap"]).toBe("var(--space-3)");
+    expect(launch.declarationsOf(".actions")["flex-wrap"]).toBe("wrap");
+    expect(launch.declarationsOf(".saveNote")["flex-basis"]).toBe("100%");
+    // On a phone the row is a column that does not wrap, and the note takes its own height.
+    expect(launch.source).toMatch(
+      /@media \(max-width: 47\.99rem\) \{\s*\.actions \{\s*flex-direction: column-reverse;\s*flex-wrap: nowrap;/u,
+    );
+    expect(launch.source).toMatch(
+      /@media \(max-width: 47\.99rem\) \{\s*\.saveNote \{[^}]*flex-basis: auto;/u,
+    );
+  });
+
   it("leaves 'Your ad so far' to the shared Card, with no edge, radius or padding of its own (P2-06)", () => {
     const preview = launch.declarationsOf(".preview");
     expect(preview["gap"]).toBe("var(--space-4)");

@@ -143,15 +143,21 @@
   text-align: center;
 }
 
+/* P3-05. The note is a child of the actions row, on a line of its own (`flex-basis: 100%`), so the row's
+   own `--space-3` gap is the distance to the buttons it describes, as the mockup's
+   `.form-actions__note` sets it; as a child of the form's grid it stood a `--space-6` page gap away. */
 .saveNote {
+  flex-basis: 100%;
   text-align: end;
 }
 
-/* P2-07. On a phone the note under the stacked buttons starts at the start edge, as the mockup's
-   `.form-actions__note` does, so it does not read ragged on the left. */
+/* P2-07. On a phone the note beside the stacked buttons starts at the start edge, as the mockup's
+   `.form-actions__note` does, so it does not read ragged on the left. The row is a column there, so
+   the note takes its own height and not a share of the row's. */
 @media (max-width: 47.99rem) {
   .saveNote {
     text-align: start;
+    flex-basis: auto;
   }
 }
 
@@ -365,10 +371,12 @@ button.resetLink:hover:not(:disabled) {
   gap: var(--space-3);
 }
 
-/* On a phone, Back and "Save and check" stack, the save first. */
+/* On a phone, Back and "Save and check" stack, the save first, with the note above the save as the
+   mockup's `.form-actions` draws it (a column that does not wrap). */
 @media (max-width: 47.99rem) {
   .actions {
     flex-direction: column-reverse;
+    flex-wrap: nowrap;
     align-items: stretch;
   }
 }

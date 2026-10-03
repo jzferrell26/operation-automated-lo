@@ -472,6 +472,20 @@ describe("step 2, Set it up", () => {
       expect(card?.className).toMatch(/preview/u);
     });
 
+    it("keeps the save note in the actions row with the buttons it describes (P3-05)", () => {
+      renderFlow(STEP_TWO);
+      const note = screen.getByText(
+        "We save this version and run the checks. Nothing is published.",
+      );
+      const row = screen.getByRole("button", { name: "Back" }).parentElement as HTMLElement;
+      // The note is the row's last child, so the row's own `--space-3` gap is its distance to the
+      // buttons; as a child of the form's `--space-6` grid it stood 24px under them.
+      expect(row.className).toMatch(/actions/u);
+      expect(note.parentElement).toBe(row);
+      expect(row.lastElementChild).toBe(note);
+      expect(within(row).getByRole("button", { name: "Save and check" })).toBeInTheDocument();
+    });
+
     it("sets 'Updates as you type' as a caption beside the preview's title (P2-05)", () => {
       renderFlow(STEP_TWO);
       expect(screen.getByText("Updates as you type").className).toMatch(/previewNote/u);

@@ -442,8 +442,10 @@ export function LaunchFlow({
             >
               {SAVE_AND_CHECK}
             </Button>
+            {/* P3-05. The note belongs to the buttons it describes, so it is one `--space-3` from them in
+                the row's own gap, on every frame, as the mockup's `.form-actions__note` is. */}
+            <p className={styles.saveNote}>{SAVE_NOTE}</p>
           </div>
-          <p className={styles.saveNote}>{SAVE_NOTE}</p>
           {failure === undefined ? null : (
             <>
               <LiveRegion message={failure.sentence} urgency="alert" visible />

@@ -39,10 +39,32 @@ describe("the campaign page's header (review R2, F-1)", () => {
 });
 
 describe("the campaign page's cards (review R2, F-2)", () => {
-  it("gives the support details the same inset as every other card, --space-6", async () => {
+  it("gives the support details the same inline inset as every other card, --space-6, and the mockup's --space-1 above and below (pass 3, R1 P3-04)", async () => {
     const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
 
-    expect(css.declarationsOf(".support details").padding).toBe("var(--space-3) var(--space-6)");
+    // The mockup's `details.card.support { padding-block: var(--space-1) }` on the card's inset: a
+    // 52px card, where `--space-3` made it 70px. Opened, the last row gets room again.
+    const card = css.declarationsOf(".support details");
+    expect(card.padding).toBe("var(--space-1) var(--space-6)");
+    // Not a grid: a closed `details` keeps its hidden content box, and a row gap before it is 8px of
+    // dead space under the summary (a 62px card measured against the mockup's 54). The rows take
+    // their own `--space-2` from the summary instead.
+    expect(card.display).toBeUndefined();
+    expect(card.gap).toBeUndefined();
+    expect(css.declarationsOf(".support dl")["padding-block-start"]).toBe("var(--space-2)");
+    expect(css.declarationsOf(".support details[open]")["padding-block-end"]).toBe(
+      "var(--space-3)",
+    );
+  });
+
+  it("sets the support summary at the secondary step in semibold, as the mockup's disclosure summary (pass 3, R1 P3-04)", async () => {
+    const css = await readCssRules(`${COMPONENTS}/campaign-page.module.css`);
+
+    const summary = css.declarationsOf(".support summary");
+    expect(summary["font-size"]).toBe("var(--text-secondary-size)");
+    expect(summary["font-weight"]).toBe("var(--weight-semibold)");
+    expect(summary["min-block-size"]).toBe("var(--target-min-size)");
+    expect(summary.color).toBe("var(--st-info-fg)");
   });
 
   it("leaves a library notice's fill, edge, shadow and inset to the Surface it is drawn on", async () => {

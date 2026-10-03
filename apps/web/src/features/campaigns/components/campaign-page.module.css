@@ -384,15 +384,23 @@ a.primaryLink.primaryLink:hover {
   font-size: var(--text-secondary-size);
 }
 
-/* "Details for support" sits in the stack as a quiet card, collapsed until opened. */
+/* "Details for support" sits in the stack as a quiet card, collapsed until opened. P3-04. It is the
+   mockup's `details.card.support` (`--space-1` above and below the card's own inline inset) with the
+   disclosure summary's look (`--text-secondary-size` at the semibold weight): a 52px card with 14px
+   words, not a 70px card with 16px ones. The card is a block and not a grid with a row gap: a closed
+   `details` still has its hidden content box, and a gap before it drew 8px of dead space under the
+   summary. The rows take their own `--space-2` from the summary (the mockup's `.support dl`), and,
+   opened, a little room at the foot so the last row does not sit `--space-1` from the edge. */
 .support details {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-6);
+  padding: var(--space-1) var(--space-6);
   border: 1px solid var(--bd-hairline);
   border-radius: var(--radius-card);
   background: var(--sf-card);
   box-shadow: var(--shadow-card);
+}
+
+.support details[open] {
+  padding-block-end: var(--space-3);
 }
 
 .support summary {
@@ -400,6 +408,7 @@ a.primaryLink.primaryLink:hover {
   align-items: center;
   min-block-size: var(--target-min-size);
   color: var(--st-info-fg);
+  font-size: var(--text-secondary-size);
   font-weight: var(--weight-semibold);
   cursor: pointer;
 }
@@ -408,6 +417,7 @@ a.primaryLink.primaryLink:hover {
   display: grid;
   gap: var(--space-2);
   margin: 0;
+  padding-block-start: var(--space-2);
   font-size: var(--text-secondary-size);
 }
 

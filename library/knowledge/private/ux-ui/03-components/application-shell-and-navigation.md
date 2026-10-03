@@ -174,6 +174,20 @@ previews (design `00-direction.md` section 2.1).
 No frame scrolls sideways, and every control in the bar is at least `--target-min-size` (44px)
 tall at every frame, not only on touch.
 
+### The page column and its rhythm
+
+The shell's `main` is the mockups' `.page` (`home-first-run.html:179` and `:420`): a `--content-max`
+column, centred, on `padding: var(--space-8)` above 720px and `padding: var(--space-6) var(--space-4)`
+below it, and the blocks it stacks (the unverified-email notice, then the page) stand one page gap
+apart: `row-gap: var(--space-6)` above 720px, `var(--space-5)` below it. A page's own top-level
+blocks (the page head, then the cards) follow the same two values in the page's module, and its
+`padding="lg"` cards inset `--space-6`, then `--space-5` below 720px (see
+[card-and-surface.md](card-and-surface.md)). The 719.98px edge is the same for all four, so the
+column edge, the gap and the card inset change at one width.
+
+_(Recorded 2026-10-03 by the PRD-009 scored baseline review, pass 2, R4-13: the shell kept
+`--space-6` at 390, so a notice stood 24px above the page where the mockup draws 20px.)_
+
 ### Tokens
 
 `--sf-nav` (white in Light, `#1b1e25` in Dark), `--tx-on-nav`, `--bd-hairline` under the bar,

@@ -1,4 +1,4 @@
-import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import { EARLIER_FLOW_LINE } from "../../../apps/web/src/copy/campaign-page-messages.js";
 import { settleTheLibrary } from "../helpers/ads-library.js";
@@ -92,10 +92,13 @@ import { seedCampaignHistory } from "./helpers/seed-campaign-history.js";
  * carries a "Brand changed" notice that belongs to another state.
  */
 
-/** Dates are a fact about the run: every `time` element and every date field is painted over. */
-function dateMasks(page: Page): readonly Locator[] {
-  return [page.locator("time"), page.locator("input[type='date']")];
-}
+/*
+ * Dates are a fact about the run, and every picture taken through `captureNamedState` paints them
+ * over on their own line boxes (`expectThePictureMatches` in `../helpers/design-quality.ts`). This
+ * spec used to pass its own `time` locators, which Playwright masks by their bounding box, so a
+ * date that wrapped blacked out the words around it ("Version 1. Reviewed", "From launch until"):
+ * the PRD-009 scored review's R1-18.
+ */
 
 async function settleImages(page: Page): Promise<void> {
   await expect
@@ -249,7 +252,6 @@ test.describe.serial("a brand-new account, from its first page to its first appr
           state: entry.state,
           theme,
           idleNetwork: entry.hasArt !== true,
-          mask: dateMasks(page),
         });
       }
     });
@@ -489,7 +491,6 @@ test.describe.serial("a brand-new account, from its first page to its first appr
           screen: "launch-an-ad",
           state: `step-3-${state}`,
           theme,
-          mask: dateMasks(page),
         });
       }
     });
@@ -512,7 +513,6 @@ test.describe.serial("a brand-new account, from its first page to its first appr
           screen: "campaign-page",
           state,
           theme,
-          mask: dateMasks(page),
         });
       }
     });
@@ -530,7 +530,6 @@ test.describe.serial("a brand-new account, from its first page to its first appr
         screen: "campaigns",
         state: "all-states",
         theme,
-        mask: dateMasks(page),
       });
     });
 
@@ -608,7 +607,6 @@ test.describe.serial("a brand-new account, from its first page to its first appr
         screen: "launch-an-ad",
         state: "step-3-cannot-approve",
         theme,
-        mask: dateMasks(creator),
       });
       expectNoExternalRequests(creatorGuard);
       await creatorContext.close();
@@ -636,7 +634,6 @@ test.describe.serial("a brand-new account, from its first page to its first appr
         screen: "campaign-page",
         state: "library-notice",
         theme,
-        mask: dateMasks(page),
       });
       await expectEachConnectionStatedOnce(page, "the campaign page with a notice");
     });

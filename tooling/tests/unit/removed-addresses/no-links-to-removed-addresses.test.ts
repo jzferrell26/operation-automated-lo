@@ -218,6 +218,11 @@ describe("the scan finds a link to a removed address (it goes red when one is pl
 });
 
 describe("apps/web/src holds no link to a removed address (009F-AC-005)", () => {
+  // QA-10. This reads and parses every product file under `apps/web/src`, a whole-tree scan: about a
+  // third of a second on a warm machine, and several seconds when a cold file cache or other suites
+  // share the disk and the processor. The 5 second default is a limit for a unit, not for a walk of
+  // the tree, and a loaded run timed out on it twice. 20 seconds fits the scan; the files it reads
+  // and the links it looks for are unchanged.
   it("has none in any file a test does not name them in", async () => {
     const addresses = await removedAddresses();
     const found: string[] = [];
@@ -232,5 +237,5 @@ describe("apps/web/src holds no link to a removed address (009F-AC-005)", () => 
     }
 
     expect(found).toEqual([]);
-  });
+  }, 20_000);
 });

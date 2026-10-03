@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { LibraryAdCatalogStanding } from "@oalo/application";
+import { libraryAdRefusalFor, type LibraryAdCatalogStanding } from "@oalo/application";
 
 import {
   HOME_LIST_LIMIT,
@@ -171,8 +171,8 @@ describe("Needs your approval (009B-AC-010)", () => {
 
 /**
  * 009B-AC-010, "an ad-retired version never appears". The approval command refuses a library-ad
- * version for the four reasons of `assertLibraryAdApprovable` (`campaign-approval-command.ts`), so
- * a campaign it would refuse is not waiting for anybody. This is that rule, case for case.
+ * version for the four reasons of `libraryAdRefusalFor` (`campaign-approval-command.ts`), so a
+ * campaign it would refuse is not waiting for anybody. This is that rule, case for case.
  */
 describe("a library ad that can still be approved", () => {
   const recorded = { id: "first-home", version: 2, tallSha256: "tall", squareSha256: "square" };
@@ -210,5 +210,38 @@ describe("a library ad that can still be approved", () => {
   it("is not approvable when either picture changed since the version was saved", () => {
     expect(libraryAdStillApprovable(recorded, standing({ tallSha256: "other" }))).toBe(false);
     expect(libraryAdStillApprovable(recorded, standing({ squareSha256: "other" }))).toBe(false);
+  });
+
+  /**
+   * QA-06. Home no longer restates the command's rule: it asks `libraryAdRefusalFor`, the function
+   * the command calls, so Home lists a campaign as waiting exactly when the command would take the
+   * decision. Every standing above, and each reason, agrees.
+   */
+  it("answers whatever the approval command's own rule answers, for every standing", () => {
+    const standings = [
+      undefined,
+      standing(),
+      standing({ status: "retired" }),
+      standing({ highestStatus: "retired" }),
+      standing({ status: "replaced", highestVersion: 3 }),
+      standing({ highestVersion: 3 }),
+      standing({ tallSha256: "other" }),
+      standing({ squareSha256: "other" }),
+    ];
+    for (const each of standings) {
+      expect(libraryAdStillApprovable(recorded, each), JSON.stringify(each)).toBe(
+        libraryAdRefusalFor(recorded, each) === undefined,
+      );
+    }
+    expect(standings.map((each) => libraryAdRefusalFor(recorded, each))).toEqual([
+      "missing",
+      undefined,
+      "retired",
+      "retired",
+      "replaced",
+      "replaced",
+      "art_changed",
+      "art_changed",
+    ]);
   });
 });

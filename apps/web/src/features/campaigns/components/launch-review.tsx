@@ -1,11 +1,17 @@
 "use client";
 
+import type { LibraryAdRefusalReason } from "@oalo/application";
 import type { AdsLibraryCallToAction, AdsLibraryTopic } from "@oalo/contracts";
 import { adPlaceLabel } from "@oalo/contracts";
 import { Badge, Card, Icon, Link } from "@oalo/ui";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import {
+  AD_ART_CHANGED_CHIP,
+  AD_ART_CHANGED_NOTICE,
+  AD_MISSING_CHIP,
+  AD_REPLACED_CHIP,
+  AD_REPLACED_NOTICE,
   AD_RETIRED_CHIP,
   AD_TEXT_CHANGED,
   AD_TEXT_UNCHANGED,
@@ -40,6 +46,7 @@ import {
   checksCount,
   runsFact,
 } from "../../../copy/launch-messages.js";
+import { NOTICES } from "../../../copy/campaign-page-messages.js";
 import {
   CAMPAIGN_SENT_BACK_LABEL,
   CAMPAIGN_SENT_BACK_NEEDS_NEW_VERSION,
@@ -48,13 +55,17 @@ import {
   CHECK_RESULT_READY,
   SUPPORT_DETAILS_LABELS,
 } from "../../../copy/user-language.js";
+import { UseNewVersion } from "../../ads-library/components/use-new-version.js";
+import type { NewerVersionOffer } from "../../ads-library/newer-version.js";
 import { SupportDetails } from "../../shell/components/support-details.js";
 import {
+  AD_REFUSAL_STATES,
   dollars,
   fixTargetFor,
   launchHref,
   readableDay,
   shortDay,
+  type LaunchAdRefusalState,
   type LaunchBand,
   type LaunchFrom,
 } from "../launch-model.js";
@@ -74,7 +85,13 @@ import styles from "./launch.module.css";
  * Everything here is read from the saved version, its stored check result, and its recorded
  * decision; nothing on this page is typed by hand. The state D8 draws comes from the recorded
  * decision first, as PRD-008b requires of every surface (008B-AC-004, 008B-AC-009 to 011), then from
- * the catalog (a retired ad), then from the checks, then from whether the viewer may approve.
+ * the catalog (an ad the approval command would refuse), then from the checks, then from whether
+ * the viewer may approve.
+ *
+ * "The catalog says no" is not decided here. The server asks `libraryAdRefusalFor`, the one rule the
+ * approval command itself uses, and hands step 3 its answer as `adRefusal` (QA-06), so this step
+ * never offers Approve for a version the command would refuse: a retired ad, a replaced ad, an ad
+ * missing from the catalog, or an ad whose pictures changed (009C-AC-008).
  */
 
 export interface LaunchReviewFinding {
@@ -107,7 +124,17 @@ export interface LaunchReviewData {
     callToAction: AdsLibraryCallToAction;
     defaults: Readonly<{ headline: string; primaryText: string }> | undefined;
   }>;
+  /** The day the library took the ad out, when the ad was retired and the library says when. */
   readonly retiredOn: string | null;
+  /**
+   * Why the approval command would refuse this version's library ad, or `undefined` when it would
+   * not (`libraryAdRefusalFor`). It is required, never optional, so no caller can leave it out.
+   */
+  readonly adRefusal: LibraryAdRefusalReason | undefined;
+  /** The offer to move to the ad's newer version, set only for a replaced ad that has one. */
+  readonly newerVersion: NewerVersionOffer | undefined;
+  /** Whether the viewer may save a campaign version, which "Use the new version" does. */
+  readonly canMakeNewVersion: boolean;
   readonly words: Readonly<{ headline: string; primaryText: string }>;
   readonly advertiser: LaunchBand;
   readonly budget: Readonly<{ dailyDollars: number; totalDollars: number }>;
@@ -123,15 +150,20 @@ export interface LaunchReviewData {
 }
 
 export type LaunchReviewState =
-  "ready" | "cannot-approve" | "needs-changes" | "approved" | "sent-back" | "retired";
+  "ready" | "cannot-approve" | "needs-changes" | "approved" | "sent-back" | LaunchAdRefusalState;
 
-/** D8: which state step 3 draws. The recorded decision comes first, then retirement, then the checks. */
+/**
+ * D8: which state step 3 draws. The recorded decision comes first, then what the catalog says about
+ * the ad (any reason the approval command would refuse it, which beats the checks because a version
+ * whose ad is gone, replaced, or changed cannot be approved however its checks came out), then the
+ * checks.
+ */
 export function launchReviewState(
-  review: Pick<LaunchReviewData, "decision" | "retiredOn" | "checks" | "canApprove">,
+  review: Pick<LaunchReviewData, "decision" | "adRefusal" | "checks" | "canApprove">,
 ): LaunchReviewState {
   if (review.decision?.decision === "approved") return "approved";
   if (review.decision?.decision === "rejected") return "sent-back";
-  if (review.retiredOn !== null) return "retired";
+  if (review.adRefusal !== undefined) return AD_REFUSAL_STATES[review.adRefusal];
   if (review.checks.blocking) return "needs-changes";
   return review.canApprove ? "ready" : "cannot-approve";
 }
@@ -320,6 +352,58 @@ export function LaunchReview({
   );
 }
 
+/**
+ * What the card for an ad the approval command refuses says and offers: a chip, the sentence the
+ * command's own refusal says, and the one action that fixes it. A retired or missing ad has nowhere
+ * to go but another ad; an ad whose pictures changed is fixed by saving a new version, which records
+ * the pictures the library holds now. An undated retirement (the library did not say when) says the
+ * campaign page's sentence for an ad that is no longer there.
+ */
+function refusedCard(
+  state: LaunchAdRefusalState,
+  review: Pick<LaunchReviewData, "retiredOn">,
+  hrefs: Readonly<{ chooseAnotherAd: string; makeANewVersion: string }>,
+): Readonly<{ chip: string; sentence: ReactNode; href: string; action: string }> {
+  switch (state) {
+    case "retired":
+      return {
+        chip: AD_RETIRED_CHIP,
+        sentence:
+          review.retiredOn === null ? (
+            NOTICES.missingUndecided
+          ) : (
+            <TextWithDays
+              days={[{ dateTime: review.retiredOn.slice(0, 10), text: shortDay(review.retiredOn) }]}
+              text={adRetiredNotice(shortDay(review.retiredOn))}
+            />
+          ),
+        href: hrefs.chooseAnotherAd,
+        action: CHOOSE_ANOTHER_AD,
+      };
+    case "replaced":
+      return {
+        chip: AD_REPLACED_CHIP,
+        sentence: AD_REPLACED_NOTICE,
+        href: hrefs.chooseAnotherAd,
+        action: CHOOSE_ANOTHER_AD,
+      };
+    case "art-changed":
+      return {
+        chip: AD_ART_CHANGED_CHIP,
+        sentence: AD_ART_CHANGED_NOTICE,
+        href: hrefs.makeANewVersion,
+        action: MAKE_A_NEW_VERSION,
+      };
+    case "missing":
+      return {
+        chip: AD_MISSING_CHIP,
+        sentence: NOTICES.missingUndecided,
+        href: hrefs.chooseAnotherAd,
+        action: CHOOSE_ANOTHER_AD,
+      };
+  }
+}
+
 /** D8: the decision card for each state step 3 can be in. */
 function LaunchDecision({
   review,
@@ -365,24 +449,32 @@ function LaunchDecision({
       </Card>
     );
   }
-  if (state === "retired" && review.retiredOn !== null) {
+  const refused = review.adRefusal === undefined ? undefined : AD_REFUSAL_STATES[review.adRefusal];
+  if (refused !== undefined && state === refused) {
+    if (refused === "replaced" && review.newerVersion !== undefined) {
+      // 009c D4: a replaced version gets the newer-version notice instead of an approval, with the
+      // ads library's own "Use the new version" for somebody who can save a version.
+      return (
+        <Card className={styles.decisionCard} data-decision-card={refused} padding="lg">
+          <Badge className={styles.decisionChip} tone="neutral">
+            {AD_REPLACED_CHIP}
+          </Badge>
+          <UseNewVersion canUse={review.canMakeNewVersion} offer={review.newerVersion} />
+        </Card>
+      );
+    }
+    const card = refusedCard(refused, review, {
+      chooseAnotherAd: launchHref({ step: 1, campaign: review.campaignRef, from }),
+      makeANewVersion: changeHref,
+    });
     return (
-      <Card className={styles.decisionCard} data-decision-card="retired" padding="lg">
+      <Card className={styles.decisionCard} data-decision-card={refused} padding="lg">
         <Badge className={styles.decisionChip} tone="neutral">
-          {AD_RETIRED_CHIP}
+          {card.chip}
         </Badge>
-        <p>
-          <TextWithDays
-            days={[{ dateTime: review.retiredOn.slice(0, 10), text: shortDay(review.retiredOn) }]}
-            text={adRetiredNotice(shortDay(review.retiredOn))}
-          />
-        </p>
-        <Link
-          className={styles.primaryLink}
-          href={launchHref({ step: 1, campaign: review.campaignRef, from })}
-          variant="action"
-        >
-          {CHOOSE_ANOTHER_AD}
+        <p>{card.sentence}</p>
+        <Link className={styles.primaryLink} href={card.href} variant="action">
+          {card.action}
         </Link>
       </Card>
     );

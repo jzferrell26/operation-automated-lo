@@ -1,4 +1,4 @@
-import type { PreflightRuleCode } from "@oalo/application";
+import type { LibraryAdRefusalReason, PreflightRuleCode } from "@oalo/application";
 import {
   ADS_LIBRARY_TOPICS,
   AdsLibraryAdIdSchema,
@@ -213,6 +213,24 @@ export const CALL_TO_ACTION_LABELS: Readonly<Record<AdsLibraryCallToAction, stri
     LEARN_MORE: "Learn more",
     SIGN_UP: "Sign up",
     SUBSCRIBE: "Subscribe",
+  });
+
+/** The states step 3 draws in place of Approve, one for each reason the approval command refuses. */
+export type LaunchAdRefusalState = "retired" | "replaced" | "art-changed" | "missing";
+
+/**
+ * QA-06, 009C-AC-008, 009D D8. Which state step 3 draws for each reason the approval command refuses
+ * a library-ad version (`libraryAdRefusalFor`, the one rule the command and every screen share). It
+ * is exhaustive over the reasons (a `Record` keyed by the reason union), so a new refusal cannot be
+ * added without saying what step 3 shows for it, and step 3 never offers Approve where the command
+ * would refuse.
+ */
+export const AD_REFUSAL_STATES: Readonly<Record<LibraryAdRefusalReason, LaunchAdRefusalState>> =
+  Object.freeze<Record<LibraryAdRefusalReason, LaunchAdRefusalState>>({
+    retired: "retired",
+    replaced: "replaced",
+    art_changed: "art-changed",
+    missing: "missing",
   });
 
 /** D7's inputs. In PRD-009 `metaConnected` and `launchingTurnedOn` are always false in the product. */

@@ -59,6 +59,12 @@ function isRootLedger(path: string): boolean {
 }
 
 describe("where the sample flag may appear (009C-AC-004)", () => {
+  // QA-10. This reads every text file in the working tree outside the skipped directories, which is
+  // thousands of files (most of them the agent skill folders). It takes about a second warm, and a
+  // cold file cache took it past 50 seconds on this repository's Windows disk, with other suites
+  // sharing the machine making it worse. The limit was already set well above the 5 second default
+  // for that reason and stays at 120 seconds: a shorter one fails a cold run that is not wrong. The
+  // files it reads and the name it looks for are unchanged.
   it("appears only in the allowlist", async () => {
     const hits: string[] = [];
     for (const path of await filesUnder(repositoryRoot)) {

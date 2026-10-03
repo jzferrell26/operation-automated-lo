@@ -226,6 +226,22 @@ export function adRetiredNotice(retiredOn: string): string {
 export const CHOOSE_ANOTHER_AD = "Choose another ad";
 
 /**
+ * Added 2026-10-03 (QA-06). Step 3 for a version the approval command refuses for a reason other
+ * than retirement. The sentences are the command's own (`apps/web/src/features/http/user-messages.ts`
+ * says them for the refusal that follows a press of Approve), so a screen and a refusal agree. A
+ * replaced ad with a newer version to move to draws the ads library's own newer-version notice
+ * instead (`UseNewVersion`), and an ad that is not in the library reuses the campaign page's
+ * sentence (`NOTICES.missingUndecided`).
+ */
+export const AD_REPLACED_CHIP = "Newer ad version";
+export const AD_REPLACED_NOTICE =
+  "A newer version of this ad is in the library, so this version can't be approved. Your budget, dates and area are kept.";
+export const AD_ART_CHANGED_CHIP = "Ad pictures changed";
+export const AD_ART_CHANGED_NOTICE =
+  "The picture for this ad changed after this version was saved, so this version can't be approved.";
+export const AD_MISSING_CHIP = "Ad not in the library";
+
+/**
  * D8's hand-off card, for a person who cannot approve. It moved here from the guided setup's copy,
  * which PRD-009b removed.
  */

@@ -43,7 +43,7 @@ export function PermissionScreen({ onboarding }: PermissionScreenProps) {
   return (
     <div className={styles.onboarding}>
       <header className={styles.pageHeader}>
-        <div>
+        <div className={styles.pageHeaderText}>
           <p className={styles.eyebrow}>Connections</p>
           <h1>What Automated LO asks for, and why</h1>
           <p>

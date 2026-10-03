@@ -17,7 +17,8 @@ import styles from "./launch.module.css";
  * `LaunchSentenceWords`, which the campaign page's header uses too (writing review W-25).
  *
  * It is the card's primary button, as the step 3 mockup draws it (scored review R1-14). A disabled
- * primary is drawn grey by the button primitive, so it never reads as an enabled outline button.
+ * primary is drawn grey by the button primitive, so it never reads as an enabled outline button. Its
+ * glyph is the rocket both mockups draw (scored review pass 2, R2 N-2 note).
  */
 export function LaunchOnFacebook({
   state,
@@ -30,7 +31,7 @@ export function LaunchOnFacebook({
       <h2 className={styles.cardTitle}>{LAUNCH_TITLE}</h2>
       <Button aria-describedby={sentenceId} disabled type="button" variant="primary">
         <span className={styles.withIcon}>
-          <Icon decorative name="megaphone" size="sm" /> {LAUNCH_ON_FACEBOOK}
+          <Icon decorative name="rocket" size="sm" /> {LAUNCH_ON_FACEBOOK}
         </span>
       </Button>
       <p className={styles.note} id={sentenceId}>

@@ -458,6 +458,38 @@ describe("step 2, Set it up", () => {
 
       expect(back.querySelector("svg")?.outerHTML).toBe(left);
     });
+
+    it("draws 'Your ad so far' in the shared Card at its large inset, inside the complementary landmark (P2-06)", () => {
+      renderFlow(STEP_TWO);
+      const preview = screen.getByRole("complementary", { name: "Your ad so far" });
+      const card = preview.querySelector("article.oalo-surface");
+      expect(card).toHaveAttribute("data-variant", "card");
+      expect(card).toHaveAttribute("data-padding", "lg");
+      expect(card?.className).toMatch(/preview/u);
+    });
+
+    it("sets 'Updates as you type' as a caption beside the preview's title (P2-05)", () => {
+      renderFlow(STEP_TWO);
+      expect(screen.getByText("Updates as you type").className).toMatch(/previewNote/u);
+    });
+  });
+
+  // P2-02. The header's crumbs, on both steps: the link takes the crumb's own size and the current
+  // crumb is marked, as the campaign page's crumbs are.
+  describe("the crumbs", () => {
+    it.each([
+      ["step 1", { step: 1 } satisfies LaunchAddress],
+      ["step 2", { step: 2, ad: "sample-first-home" } satisfies LaunchAddress],
+    ])("draws the Campaigns link as a sentence link and marks the current crumb on %s", (_, at) => {
+      renderFlow(at);
+      const crumbs = screen.getByRole("navigation", { name: "Where you are" });
+      const link = within(crumbs).getByRole("link", { name: "Campaigns" });
+      expect(link).toHaveAttribute("data-variant", "sentence");
+      expect(link).toHaveAttribute("href", "/marketing/campaigns");
+      const current = crumbs.querySelector('[aria-current="page"]');
+      expect(current).toHaveTextContent("Launch an ad");
+      expect(crumbs.querySelectorAll("[aria-current]")).toHaveLength(1);
+    });
   });
 
   it("summarises the band read-only, with Change in Brand (009D-AC-005)", () => {

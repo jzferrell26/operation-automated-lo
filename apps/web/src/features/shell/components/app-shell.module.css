@@ -412,9 +412,12 @@
   }
 
   /* R1-01: the mockups' phone page is `padding: var(--space-6) var(--space-4)` (`:420`), so the
-   * title starts 24px under the bar and the inline edge stays the bar's 16px. */
+   * title starts 24px under the bar and the inline edge stays the bar's 16px. Pass 2, R4-13: the
+   * same line sets the phone page's gap, `.page { gap: var(--space-5) }`, so the notice and the
+   * page stand 20px apart at 390 where they stand 24px apart above 720px. */
   .content {
     padding: var(--space-6) var(--space-4);
+    row-gap: var(--space-5);
   }
 }
 

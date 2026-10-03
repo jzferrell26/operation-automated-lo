@@ -114,6 +114,7 @@ export function AppShell({
                 aria-controls={isMenuOpen ? "main-menu-sheet" : undefined}
                 aria-expanded={isMenuOpen}
                 onClick={() => setMenuOpen((open) => !open)}
+                size="sm"
                 variant="secondary"
               >
                 <span className={styles.buttonContent}>
@@ -262,6 +263,7 @@ function ShellHelp({ roleLabel }: Readonly<{ roleLabel: string }>) {
         aria-expanded={isOpen}
         className={styles.helpButton}
         onClick={() => setOpen((open) => !open)}
+        size="sm"
         variant="ghost"
       >
         <span className={styles.buttonContent}>

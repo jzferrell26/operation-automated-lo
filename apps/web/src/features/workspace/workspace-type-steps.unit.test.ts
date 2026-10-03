@@ -26,3 +26,30 @@ describe("the Settings card description is on the brief's type steps (009G-AC-00
     expect(source).not.toMatch(/font-size:\s*13px/u);
   });
 });
+
+/**
+ * The scored baseline review pass 2, P2-05. The sheet kept five raw `12px` sizes (`.openLink`,
+ * `.metrics`, `.note`, `.record small`, `.details > div`). 12px is a step's value, so the browser
+ * run's type-step gate passed, but it cannot see a literal: the steps come from the tokens, never
+ * an ad-hoc size (rubric axis 3). This scan is the check that can.
+ */
+describe("every size in the sheet is a type token (scored review pass 2, P2-05)", () => {
+  const sizes = [...source.matchAll(/font-size:\s*([^;]+);/gu)].map((match) =>
+    (match[1] ?? "").trim(),
+  );
+
+  it("finds the sizes the sheet sets, so an empty scan cannot pass", () => {
+    expect(sizes.length).toBeGreaterThan(8);
+  });
+
+  it("names no pixel, rem or em length", () => {
+    expect(sizes.filter((size) => !size.startsWith("var(--text-"))).toEqual([]);
+  });
+
+  it("draws a page note at the secondary step and the small print at the caption step", () => {
+    expect(declarationsOf(".note")["font-size"]).toBe("var(--text-secondary-size)");
+    for (const selector of [".openLink", ".record small"]) {
+      expect(declarationsOf(selector)["font-size"], selector).toBe("var(--text-caption-size)");
+    }
+  });
+});

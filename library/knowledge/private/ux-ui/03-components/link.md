@@ -37,6 +37,18 @@ scan names it by file with that reason.
 | `action` | A link that behaves like a button: a navigation that is the next step on the screen. | `min-block-size` and `min-inline-size` of `var(--target-min-size)`, `padding-block: var(--space-2)`, `padding-inline: var(--space-4)`, `--sf-card` on a `--bd-input` boundary at `--radius-button` with `--shadow-rest`, no underline. Hover moves the fill to `--sf-sunken` and the boundary to `--ac-primary`. |
 | `sentence` | A link set inside a running sentence or a row of smaller text: "See what's needed for Meta." under a button, the "Campaigns" crumb. Added 2026-10-03 (PRD-009 scored review, R2 F-4). | `--st-info-fg`, underlined as `inline`, and it takes the size, weight, and leading of the text around it (`font-size`, `font-weight`, `line-height: inherit`), so "Campaigns" beside a 14px crumb is 14px. The 44 by 44 target is kept; see "A link inside a sentence" below for how it is kept without stretching the line. It does not wrap (`white-space: nowrap`), so keep its words to a phrase. |
 
+### Size
+
+`size` is `md` (the default) or `sm`, and it changes the `action` variant only: the other two take their
+size from their text. `action` with `size="sm"` is the compact action link, the small secondary
+button's twin (`button-and-safe-action.md`, "Sizes and type"): `--text-secondary-size` (14px),
+`padding-inline: var(--space-3)`, and the link's own `--weight-medium` (500), with the 44px target kept.
+The primitive carries `data-size` so the rule selects on the attribute. A screen draws a row action
+beside a smaller text step as `<Link variant="action" size="sm">` and never with its own size, padding
+or weight in a module. _(Added 2026-10-03 by the PRD-009 scored baseline review, pass 2, R4-12: Home's
+checklist actions set 14px and 600 locally while the notice's "Resend the link." was the 16px `Button`,
+two small-button looks on one page.)_
+
 The link foreground is `--st-info-fg`, not `--ac-primary`. This is deliberate and
 it is enforced by a test. `--ac-primary` is 3.20:1 on the Dark card surface, which
 is enough for a fill carrying `--tx-on-action` and not enough for text.
@@ -115,6 +127,8 @@ policy as a pure function and as markup, the variants, and the guarantee that an
 internal link carries neither `target` nor `rel`.
 `packages/ui/src/components/primitive-look.test.ts` pins the `sentence` rule:
 inherited size, weight, and leading, the 44px box, and the one-line margin box.
+It also pins the compact `action` link: the `sm` rule at the secondary step and
+`--space-3`, matching the `sm` Button, with no weight and no height of its own.
 `apps/web/src/theme/token-contrast.unit.test.ts` asserts that the `.link`
 foreground is `--st-info-fg` and measures it on all three surfaces in both
 themes.

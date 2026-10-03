@@ -59,8 +59,8 @@
 }
 
 .iconButton {
-  min-block-size: 44px;
-  min-inline-size: 44px;
+  min-block-size: var(--target-min-size);
+  min-inline-size: var(--target-min-size);
   display: inline-flex;
   align-items: center;
   justify-content: center;

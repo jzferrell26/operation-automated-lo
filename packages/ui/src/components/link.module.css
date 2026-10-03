@@ -49,6 +49,14 @@
   text-decoration-line: none;
 }
 
+/* The compact action link, as the `sm` Button (`Button.module.css`, `.sm`): the secondary step and
+ * `--space-3` of inline padding, the weight the link already has, and the same 44px target. Home's
+ * checklist actions were a local rule doing this (scored review pass 2, R4-12). */
+.action[data-size="sm"] {
+  padding-inline: var(--space-3);
+  font-size: var(--text-secondary-size);
+}
+
 .action:hover {
   color: var(--tx-strong);
   background: var(--sf-sunken);

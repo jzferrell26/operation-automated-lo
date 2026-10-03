@@ -451,25 +451,27 @@ export function LaunchFlow({
             </>
           )}
         </Card>
-        <aside aria-labelledby="launch-preview-title" className={styles.preview}>
-          <div className={styles.sectionHeading}>
-            <h2 className={styles.previewTitle} id="launch-preview-title">
-              {PREVIEW_TITLE}
-            </h2>
-            <span className={styles.note}>{PREVIEW_NOTE}</span>
-          </div>
-          <div className={styles.feedFrame}>
-            <AdFeedPreview
-              advertiser={advertiser}
-              alt={card.alt}
-              art={card.art}
-              callToAction={card.callToAction}
-              headline={draft.headline}
-              primaryText={draft.primaryText}
-              sample={card.sample}
-              shape="tall"
-            />
-          </div>
+        <aside aria-labelledby="launch-preview-title" className={styles.previewRail}>
+          <Card className={styles.preview} padding="lg">
+            <div className={styles.sectionHeading}>
+              <h2 className={styles.previewTitle} id="launch-preview-title">
+                {PREVIEW_TITLE}
+              </h2>
+              <span className={styles.previewNote}>{PREVIEW_NOTE}</span>
+            </div>
+            <div className={styles.feedFrame}>
+              <AdFeedPreview
+                advertiser={advertiser}
+                alt={card.alt}
+                art={card.art}
+                callToAction={card.callToAction}
+                headline={draft.headline}
+                primaryText={draft.primaryText}
+                sample={card.sample}
+                shape="tall"
+              />
+            </div>
+          </Card>
         </aside>
       </div>
     </div>
@@ -493,9 +495,11 @@ export function LaunchHeader({
   return (
     <header className={styles.header}>
       <nav aria-label={CRUMBS_LABEL} className={styles.crumbs}>
-        <Link href="/marketing/campaigns">{CAMPAIGNS_CRUMB}</Link>
+        <Link href="/marketing/campaigns" variant="sentence">
+          {CAMPAIGNS_CRUMB}
+        </Link>
         <span aria-hidden="true">/</span>
-        <span>{LAUNCH_AN_AD}</span>
+        <span aria-current="page">{LAUNCH_AN_AD}</span>
       </nav>
       {step === 1 ? (
         <>

@@ -12,8 +12,9 @@ import { describe, expect, it } from "vitest";
  *    reset (`.card p`, `.card ul`, specificity 0,1,1) outranked the card rhythm (`.card > * + *`,
  *    0,1,0), so every paragraph and list that is a direct child of a card lost its top margin.
  * 2. The lead ran 604px wide against 518px in the previews, which were drawn in Segoe UI.
- * 3. The item glyphs were 20px against the mockup's 24px, and the state chips drew 12px words
- *    against the mockup's 14px.
+ * 3. The item glyphs were 20px against the mockup's 24px. (The state chips drew 12px words against
+ *    the mockup's 14px, and Wave 3 made them 14px; the 2026-10-03 ruling that chips are 12px
+ *    everywhere reversed that, and the chip tests below hold the 12px.)
  * 4. With no approval card (a person who cannot approve, 009B D3) "Running now" filled the whole
  *    column, because `repeat(auto-fit, ...)` drops an empty track.
  * 5. The topic question drew at the 16px body step where the mockup has the 14px secondary step,
@@ -154,13 +155,78 @@ describe("the two lists are two equal columns from 1100px, with or without an ap
   });
 });
 
-describe("the state chip reads at the secondary step (verifier: larger text in the mockup)", () => {
-  it("sets 14px words and the mockup's padding on every Home chip", () => {
+describe("the state chip is the shared 12px chip (scored review pass 2, P2-01 and R4-11)", () => {
+  /**
+   * `badge-and-live-region.md`, "Shape and type": `--text-caption-size` words in `--space-1` by
+   * `--space-2` padding, ruled on 2026-10-03 over the mockups' 14px `.badge`. Home was the only
+   * place in the product that set its own size (14px, with a raw 2px block padding that is no
+   * `--space-*` token), so it showed one status role at two sizes.
+   */
+  it("sets no size and no padding of its own, so the Badge draws as it does everywhere", () => {
     const chip = rule(".card .stateChip");
 
-    expect(chip["font-size"]).toBe("var(--text-secondary-size)");
-    expect(chip["padding-inline"]).toBe("var(--space-2) var(--space-3)");
-    expect(pixels(chip["padding-block"])).toBe(2);
+    for (const property of ["font-size", "padding", "padding-block", "padding-inline"]) {
+      expect(chip, `.card .stateChip sets ${property}`).not.toHaveProperty(property);
+    }
+  });
+
+  it("names no raw length for a chip anywhere in the sheet", () => {
+    const chipRules = blocks.filter((block) => /stateChip|stateBadge/u.test(block.selector));
+
+    for (const block of chipRules) {
+      for (const value of Object.values(block.declarations)) {
+        expect(value, `${block.selector} uses a raw length`).not.toMatch(/\d(?:px|rem)\b/u);
+      }
+    }
+  });
+});
+
+describe("Home's buttons keep the shared weight 500 (scored review pass 2, R4-12)", () => {
+  /**
+   * Home drew its buttons at weight 600 while the shared `Button` and `Link` are 500, so the
+   * resend button under a notice and "See what's needed" on the same page were two small-button
+   * looks. The ruling of 2026-10-03: buttons keep 500 everywhere, Home included. A button of
+   * Home's sets no weight, so it takes the primitive's.
+   */
+  it.each([".itemAction", ".start .chip", ".start .primaryLink"])(
+    "%s sets no font weight of its own",
+    (selector) => {
+      expect(rule(selector)).not.toHaveProperty("font-weight");
+    },
+  );
+
+  it("leaves the row action's size and padding to the compact Link, which draws the small button", () => {
+    const action = rule(".itemAction");
+
+    for (const property of ["font-size", "padding", "padding-block", "padding-inline"]) {
+      expect(action, `.itemAction sets ${property}`).not.toHaveProperty(property);
+    }
+    expect(action["grid-area"]).toBe("action");
+  });
+
+  it("sets no weight on any rule that styles a button, so none is 600 while the primitive is 500", () => {
+    const buttons = blocks.filter((block) =>
+      /\.(?:itemAction|chip|primaryLink)\b/u.test(block.selector),
+    );
+
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const block of buttons) expect(block.declarations).not.toHaveProperty("font-weight");
+  });
+});
+
+describe("the page gap is the mockups' .page rule (scored review pass 2, R4-13)", () => {
+  /**
+   * `design/mockups/home-first-run.html:179` and `:420`: `.page { gap: var(--space-6) }`, and
+   * `--space-5` under 720px. Home's gap was `--space-5` at every width, so "Welcome" stood 20px
+   * above the cards where the mockup has 24px. A notice above the greeting is a child of the page
+   * (`OverviewScreen`'s `notice`), so this one rule spaces it too: 24px on a desktop, 20px on a phone.
+   */
+  it("is --space-6 above 720px", () => {
+    expect(rule(".home")["gap"]).toBe("var(--space-6)");
+  });
+
+  it("is --space-5 under 720px", () => {
+    expect(rule(".home", "@media (max-width: 719.98px)")["gap"]).toBe("var(--space-5)");
   });
 });
 

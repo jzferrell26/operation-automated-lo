@@ -70,6 +70,19 @@ Material changes invalidate affected approvals and create a new campaign version
 
 The approval scope renders as a labeled table on wide screens and remains an explicitly scrollable data region on narrow screens. It includes exactly page, PDF, creative, copy, disclosure, targeting, budget, dates, form, and destination versions.
 
+### The three Launch an ad screens
+
+_(Recorded on 2026-10-03 by the PRD-009 scored baseline review, pass 2, lane I: the rules the launch mockups draw that no other file stated, so a reviewer scores against this file and the mockups agree.)_
+
+- **Crumbs.** "Campaigns" is `Link` with `variant="sentence"`, so it is the crumb's own `--text-secondary-size`; the current crumb carries `aria-current="page"` in `--tx-strong` at `--weight-medium`; the row stands `--target-min-size` tall.
+- **Captions.** "Updates as you type" beside the preview's title, and the two lines under the ad on step 3, are `--text-caption-size` in `--tx-faint`. Every other sentence on the three screens (notes, hints, the save note, the sentences in the decision cards, "What to fix") is `--text-secondary-size`, in `--tx-body` unless a state colours it.
+- **Cards.** "Your ad so far" is the shared `Card` at `padding="lg"`, with its children one `--space-4` apart, like the form beside it and every card on step 3. No card on these screens states its own edge, radius, or padding. The last child of a card sits one card inset (`--space-6`) from its foot, so a live region that says nothing yet leaves the flow instead of leaving a gap.
+- **Facts.** Each fact is a group of its label and its value: side by side (`8rem` label) from 48rem up, and the label over its value, `0` apart, below 48rem.
+- **Dates.** A date is one unit. It never breaks across two lines (`white-space: nowrap` on `time`), so a date that does not fit moves whole to the next line.
+- **Shape switch (Tall and Square).** Its words are `--text-secondary-size` at `--weight-medium`; the chosen shape takes `--st-info-bg` and `--weight-semibold`, so the choice shows in more than the radio's dot. It is not the theme control, which keeps its own selected state.
+- **Phone.** The save note starts at the start edge under the stacked buttons, and "Add" is as wide as the place field above it.
+- **Glyphs.** "Launch on Facebook" draws `rocket`; "Back" draws `chevron-left`; a topic is the neutral `Badge` with `tag`, at the chip step (12px), with no size or padding of its own.
+
 ## Meta connection and asset selection
 
 Campaign launch review names the active synthetic location and its connected or blocked Meta state. Selected ad account, page, optional Instagram identity, lead form, and pixel each display a safe synthetic provider ID and safe display name. Missing or inaccessible assets have a named remediation and cannot be represented by an unlabeled placeholder.

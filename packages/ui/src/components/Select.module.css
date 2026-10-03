@@ -49,10 +49,15 @@
   outline: var(--focus-width) solid var(--focus-color);
   outline-offset: var(--focus-offset);
 }
+/* PRD-009 scored review pass 2, R3 P2-04. A disabled Select is drawn as a disabled field is
+ * (`field.module.css`, `.control:disabled`; `form-field-and-text-inputs.md`, Disabled): the sunken
+ * fill, `--tx-body` text and the `--bd-hairline` boundary. It kept the enabled `--bd-input` edge
+ * and read as the one editable field on a read-only page. */
 .trigger:disabled {
   cursor: not-allowed;
-  color: var(--tx-faint);
+  color: var(--tx-body);
   background: var(--sf-sunken);
+  border-color: var(--bd-hairline);
 }
 .trigger[data-empty="true"] {
   color: var(--tx-faint);

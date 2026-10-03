@@ -53,6 +53,18 @@
   padding: var(--space-6);
 }
 
+/* PRD-009 scored review pass 2, R1 P2-06(b) and R2 N-1. The mockups' `.card` is `--space-6`, and
+ * below 720px it drops to `--space-5` (`campaign-detail.html:426`; the spec is
+ * `03-components/card-and-surface.md`). The `lg` step had no phone value, so every large card drew
+ * 24px at 390 while Home and the account card drew 20px. The 719.98px edge is the shell's own phone
+ * edge (`app-shell.module.css`), so a page's column padding, its gap and its cards step down
+ * together. The `md` and `sm` steps are unchanged. */
+@media (max-width: 719.98px) {
+  .oalo-surface[data-padding="lg"] {
+    padding: var(--space-5);
+  }
+}
+
 .oalo-stack {
   display: flex;
   flex-direction: column;

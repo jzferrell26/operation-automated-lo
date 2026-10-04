@@ -163,7 +163,7 @@ export function CampaignList({
                       <span className={styles.adCell}>
                         <Thumbnail row={row} />
                         <span className={styles.adName}>
-                          <Link className={styles.rowLink} href={row.href}>
+                          <Link href={row.href} variant="title">
                             <KeepWordsWhole text={row.name} />
                           </Link>
                           <SampleLabel row={row} />
@@ -201,7 +201,7 @@ export function CampaignList({
                   <div className={styles.cardHead}>
                     <Thumbnail row={row} />
                     <span className={styles.adName}>
-                      <Link className={styles.rowLink} href={row.href}>
+                      <Link href={row.href} variant="title">
                         <KeepWordsWhole text={row.name} />
                       </Link>
                       <SampleLabel row={row} />

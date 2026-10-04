@@ -82,7 +82,10 @@ function CampaignRow({ row }: Readonly<{ row: HomeCampaignRow }>) {
   return (
     <li>
       <h3 className={styles.rowTitle}>
-        <Link href={row.href} variant="inline">
+        {/* The name is an ink title, as the Campaigns list draws it and the mockups' `.row-link` does:
+            the one shared `title` variant (`link.md`, "A name in a list row"; final scored review,
+            FU-2). It was the blue underlined `inline` link, and this heading's weight never reached it. */}
+        <Link href={row.href} variant="title">
           {row.name}
         </Link>
       </h3>

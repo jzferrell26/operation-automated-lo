@@ -3,6 +3,8 @@ import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { readCssRules } from "../../testing/css-rules.js";
+
 /**
  * PRD-009 Wave 3 polish: what an independent verifier measured on Home against
  * `design/mockups/home-first-run.html` and its previews, at 1440, 1180, 768 and 390 in Light and
@@ -23,6 +25,10 @@ import { describe, expect, it } from "vitest";
  *    "Needs your approval" sat beside "Running now". 009B-AC-003 says the cards stack in order at
  *    768 and 390, and a criterion outranks the mockup, so the lists are two columns from 1100px,
  *    the page's own breakpoint (the Wave 3 verification, defect D-2).
+ *
+ * The final scored review (2026-10-04) added two more, held at the end of this file: a date in a row
+ * never breaks across two lines (FU-1), and a campaign's name in a row is the one shared ink title
+ * the Campaigns list draws, not a blue underlined link (FU-2).
  *
  * jsdom has no layout, so these read the stylesheet. The measurements themselves are in
  * `tests/browser/home-first-run-geometry.spec.ts` (needs a browser run).
@@ -355,5 +361,133 @@ describe("the empty states keep the mockup's .empty details (scored review pass 
    */
   it("keeps the sentence from leaving one word alone on its last line (pass 4, R3 N-11)", () => {
     expect(rule(".emptyBody")["text-wrap"]).toBe("pretty");
+  });
+});
+
+describe("a date in a row is one unit and never breaks across two lines (final scored review, FU-1)", () => {
+  /**
+   * `03-components/campaign-and-artifact-workflow.md`, "Dates": `white-space: nowrap` on `time`. Home's
+   * "Needs your approval" row at 1440 and 1180 drew "Starts when you launch it, ends" and then the
+   * end date split over two lines, the day and the year apart. The Campaigns list, the campaign page
+   * and the Launch screens each carry the rule on their own `time`; Home's rows had none. The rule is
+   * local to Home's rows, as theirs are local to theirs.
+   */
+  it("keeps a day in a row whole, so a date that does not fit moves to the next line as a unit", () => {
+    expect(rule(".rows time")["white-space"]).toBe("nowrap");
+  });
+
+  it("is never released by a narrower frame or a later rule", () => {
+    const dateRules = blocks.filter((block) => /(?:^|\s)time\b/u.test(block.selector));
+
+    expect(dateRules.length).toBeGreaterThan(0);
+    for (const block of dateRules) {
+      expect(
+        block.declarations["white-space"],
+        `${block.selector} in ${block.media ?? "all"}`,
+      ).toBe("nowrap");
+    }
+  });
+});
+
+const repository = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
+const campaignsDirectory = join(
+  repository,
+  "apps",
+  "web",
+  "src",
+  "features",
+  "campaigns",
+  "components",
+);
+const linkSheet = await readCssRules(
+  join(repository, "packages", "ui", "src", "components", "link.module.css"),
+);
+const campaignsSheet = await readCssRules(join(campaignsDirectory, "campaign-list.module.css"));
+const homeMarkup = await readFile(
+  join(resolve(import.meta.dirname), "components", "home-campaign-lists.tsx"),
+  "utf8",
+);
+const campaignsMarkup = await readFile(join(campaignsDirectory, "campaign-list.tsx"), "utf8");
+
+/** The opening tag of every `Link` that is a row's name: the one whose destination is the row's own. */
+function rowNameLinks(markup: string): readonly string[] {
+  return markup.match(/<Link\b[^>]*\bhref=\{row\.href\}[^>]*>/gu) ?? [];
+}
+
+describe("a campaign's name in a row is the one ink title the Campaigns list draws (final scored review, FU-2)", () => {
+  /**
+   * Home drew a campaign's name as the blue underlined `inline` link at `--weight-medium` (`--st-info-fg`,
+   * `#005fcc` in Light), where the mockups' `.table td a.row-link` and `.list-card a`
+   * (`home-first-run.html:393` and `:398`) and the Campaigns list draw an ink title: `--tx-strong`,
+   * `--weight-semibold`, no underline until hover, `--target-min-size` tall. The weight on `.rowTitle`
+   * never rendered either, because the `Link` sets its own. The treatment is now the `Link`'s `title`
+   * variant (`03-components/link.md`, "A name in a list row"), written once and consumed by both lists,
+   * so these tests read that one rule and then check both screens use it and neither restyles it.
+   */
+  it("is an ink title: --tx-strong, --weight-semibold, the body step, and no underline at rest", () => {
+    const title = linkSheet.declarationsOf(".title");
+
+    expect(title["color"]).toBe("var(--tx-strong)");
+    expect(title["font-weight"]).toBe("var(--weight-semibold)");
+    expect(title["font-size"]).toBe("var(--text-body-size)");
+    expect(title["text-decoration"]).toBe("none");
+  });
+
+  it("keeps the 44 by 44 target of the link it replaces", () => {
+    const title = linkSheet.declarationsOf(".title");
+
+    expect(title["display"]).toBe("inline-flex");
+    expect(title["min-block-size"]).toBe("var(--target-min-size)");
+    expect(title["min-inline-size"]).toBe("var(--target-min-size)");
+  });
+
+  it("draws the underline on hover and keeps the ink", () => {
+    const hover = linkSheet.declarationsOf(".title:hover");
+
+    expect(hover["color"]).toBe("var(--tx-strong)");
+    expect(hover["text-decoration"]).toBe("underline");
+  });
+
+  it("is written after the base link rule at the same weight of selector, so the order of that file decides it", () => {
+    const base = linkSheet.source.search(/(?:^|\})\s*\.link\s*\{/u);
+    const title = linkSheet.source.search(/(?:^|\})\s*\.title\s*\{/u);
+
+    expect(base).toBeGreaterThanOrEqual(0);
+    expect(title).toBeGreaterThan(base);
+  });
+
+  it("is what Home's row name is drawn with, with no class of its own on the anchor", () => {
+    const names = rowNameLinks(homeMarkup);
+
+    expect(names).toHaveLength(1);
+    expect(names[0]).toContain('variant="title"');
+    expect(names[0]).not.toContain("className");
+  });
+
+  it("is what the Campaigns table and the phone cards draw the name with, so the two lists cannot drift", () => {
+    const names = rowNameLinks(campaignsMarkup);
+
+    expect(names, "the table's name and the phone card's name").toHaveLength(2);
+    for (const name of names) {
+      expect(name).toContain('variant="title"');
+      expect(name).not.toContain("className");
+    }
+  });
+
+  it("is restyled by neither screen: no rule for the anchor in Home's rows or in the Campaigns list", () => {
+    const homeAnchors = blocks
+      .map((block) => block.selector)
+      .filter((selector) => /(?:^|[\s>+~])a\b|\browLink\b|\.rowTitle\s+\S/u.test(selector));
+
+    expect(homeAnchors, "Home sets nothing on the anchor").toEqual([]);
+    expect(campaignsSheet.source).not.toMatch(/rowLink/u);
+    expect(campaignsSheet.source).not.toMatch(/(?:^|[\s,}])a\./u);
+  });
+
+  it("leaves the heading around the name no colour or underline to disagree with", () => {
+    const heading = rule(".rowTitle");
+
+    expect(heading).not.toHaveProperty("color");
+    expect(heading).not.toHaveProperty("text-decoration");
   });
 });

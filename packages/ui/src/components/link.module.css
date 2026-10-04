@@ -109,6 +109,34 @@
   white-space: nowrap;
 }
 
+/* `03-components/link.md`, "A name in a list row" (PRD-009 final scored review, FU-2). The name a
+ * list row is led by: an ink title, not a blue link. It is the mockups' `.table td a.row-link` and
+ * `.list-card a` (`home-first-run.html:393` and `:398`, the same rules in `campaigns-list.html`):
+ * `--tx-strong` at `--weight-semibold`, no underline until hover, and the 44px target of the
+ * `inline` rule, which it restates because it replaces `inline` and does not sit on top of it.
+ *
+ * It is one definition so the Campaigns table, the Campaigns phone cards, and Home's two lists
+ * draw a campaign's name the same way and cannot drift. It is written after `.link` and at the same
+ * weight of selector, so it wins by order in this one file, with no doubled class and no
+ * dependence on which stylesheet loads last. The focus ring is the `.link:focus-visible` rule
+ * above, which this variant does not touch. */
+.title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--target-min-size);
+  min-inline-size: var(--target-min-size);
+  color: var(--tx-strong);
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.title:hover {
+  color: var(--tx-strong);
+  text-decoration: underline;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .link {
     transition-duration: 0ms;

@@ -96,6 +96,13 @@ _(Recorded on 2026-10-03 by the PRD-009 scored baseline review, pass 3.)_
 - **Approval card.** Its first sentence ("Approved by ...", "Sent back for changes by ...", or "Nobody has approved this version yet.") is the card's lead and is `--tx-strong`, as step 3 draws the same sentence; the sentence under it ("The approval covers this version and these words only...") is the quiet `--tx-body`. Both are the secondary step. _(Recorded on 2026-10-03 by the PRD-009 scored baseline review, pass 4, R2 F4-1; the mockup is `campaign-detail.html:553`.)_
 - **Saved words.** On a campaign saved before PRD-009 the main column's card ("The saved words") is titled at `--text-section-size`, as "The ad" and "Results" are, and not at the card step the side cards use.
 
+### A campaign's name and dates in a list row
+
+_(Recorded on 2026-10-04 by the PRD-009 final scored review, FU-1 and FU-2. Home's two lists, "Running now" and "Needs your approval", are rows of the same shape as the Campaigns list, so the rules above that cover a row cover them.)_
+
+- **The name.** A campaign's name that leads a row is `Link` with `variant="title"`: an ink title in `--tx-strong` at `--weight-semibold`, no underline until hover, `--target-min-size` tall, with the shared focus ring. It is the same in the Campaigns table, the Campaigns phone cards, and Home's two lists, and it is one definition (`03-components/link.md`, "A name in a list row"), so no list restyles it in its own module. Home had drawn it as the blue underlined `inline` link at `--weight-medium`, where the mockups' `.row-link` and `.list-card a` draw an ink title (`home-first-run.html:393` and `:398`).
+- **The dates.** A date in Home's rows is one unit and never breaks across two lines, as it does on the Launch screens (the "Dates" line above), the Campaigns list, and the campaign page: `white-space: nowrap` on `time` inside Home's `.rows` (`overview.module.css`). A date that does not fit moves whole to the next line. It is a local rule on Home's rows, not a change to the global `time` rule.
+
 ## Meta connection and asset selection
 
 Campaign launch review names the active synthetic location and its connected or blocked Meta state. Selected ad account, page, optional Instagram identity, lead form, and pixel each display a safe synthetic provider ID and safe display name. Missing or inaccessible assets have a named remediation and cannot be represented by an unlabeled placeholder.

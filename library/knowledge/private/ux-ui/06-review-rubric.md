@@ -479,7 +479,7 @@ review of the redrawn 1440 and 1180 pictures scores 3 on axes 2, 7, and 10.
 
 Ruled by the orchestrator of the PRD-009 Gauntlet run on the scored baseline
 review's finding R2 F-14
-(`library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-03-scored-baseline-review.md`,
+(`library/requirements/completed/prd-009-marketing-toolkit/qa/2026-10-03-scored-baseline-review.md`,
 part R2).
 
 **The screen.** The synthetic demo campaign,

@@ -1,7 +1,7 @@
 # PRD-009b: Marketing Toolkit - Home for a Brand-New Account
 
 > **Parent:** [PRD-009](./prd-009-marketing-toolkit-index.md)
-> **Status:** In Work (Gauntlet run started 2026-10-01). Authored 2026-10-01; revised the same day for OD-H (the lead card goes to "Launch an ad", the checklist drops the Realtor partner).
+> **Status:** Completed. Moved to `completed/` with PRD-009 on 2026-10-03 at ship (009F-AC-015); the Gauntlet run started 2026-10-01. Authored 2026-10-01; revised the same day for OD-H (the lead card goes to "Launch an ad", the checklist drops the Realtor partner).
 > **Priority:** P0. This is the page the owner saw.
 > **Schema changes:** None (reads `platform.marketplace_installations`, which `app_runtime` can already select)
 > **Owner Guardians:** `react-guardian` (the page and its server read); `product-tour-onboarding-ui-guardian` (retiring the walkthrough, the inline checklist)

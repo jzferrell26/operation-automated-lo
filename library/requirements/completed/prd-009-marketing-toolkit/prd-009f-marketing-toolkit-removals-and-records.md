@@ -1,7 +1,7 @@
 # PRD-009f: Marketing Toolkit - Removals and Records
 
 > **Parent:** [PRD-009](./prd-009-marketing-toolkit-index.md)
-> **Status:** In Work (Gauntlet run started 2026-10-01). Authored 2026-10-01; revised the same day for OD-H (the register gains the Open House Boost scope and naming, and drops the co-branding and storage rows the first draft carried).
+> **Status:** Completed. Moved to `completed/` with PRD-009 on 2026-10-03 at ship (009F-AC-015); the Gauntlet run started 2026-10-01. Authored 2026-10-01; revised the same day for OD-H (the register gains the Open House Boost scope and naming, and drops the co-branding and storage rows the first draft carried).
 > **Priority:** P0 for the removals (OD-D); P1 for the records.
 > **Schema changes:** None
 > **Owner Guardians:** `react-guardian` (removals, redirects, the gone page, the Realtor partners line); `technical-writing-craft-guardian` (copy under the contract); `library-guardian` (the register, ledger, README, maps, operator checklist)
@@ -450,24 +450,24 @@ _(Added 2026-10-03 by the PRD-009 quality close-out, QA-04. No criterion changed
 
 | File | Lines | Disposition | Basis |
 |---|---|---|---|
-| `library/requirements/in-work/prd-009-marketing-toolkit/design/00-direction.md` | 17 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/design/01-open-decisions.md` | 4 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md` | 11 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009a-marketing-toolkit-light-look-and-top-menu.md` | 7 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009b-marketing-toolkit-home-for-a-new-account.md` | 11 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009d-marketing-toolkit-launch-an-ad.md` | 1 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009e-marketing-toolkit-campaign-page-and-list.md` | 2 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009f-marketing-toolkit-removals-and-records.md` | 69 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/prd-009g-marketing-toolkit-verification.md` | 2 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-01-authoring-qa-report.md` | 28 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-01-authoring-security-review.md` | 1 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-02-pre-redraw-verification.md` | 12 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-02-wave-3-verification.md` | 2 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. It records that part 2 could not be read, which this appendix answers. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-02-writing-review-pass-1.md` | 1 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-03-quality-report.md` | 3 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. QA-04 is the finding this appendix answers. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/qa/2026-10-03-scored-baseline-review.md` | 4 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/research/2026-10-01-listing-studio-recon.md` | 1 | History | A PRD-009 research input, dated 2026-10-01 or 2026-10-02. It records the product as it stood and what the owner said, and it is not rewritten. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/research/2026-10-01-oalo-toolkit-recon.md` | 24 | History | A PRD-009 research input, dated 2026-10-01 or 2026-10-02. It records the product as it stood and what the owner said, and it is not rewritten. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/research/2026-10-01-owner-direction-od-h.md` | 1 | History | A PRD-009 research input, dated 2026-10-01 or 2026-10-02. It records the product as it stood and what the owner said, and it is not rewritten. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/research/2026-10-01-owner-direction.md` | 3 | History | A PRD-009 research input, dated 2026-10-01 or 2026-10-02. It records the product as it stood and what the owner said, and it is not rewritten. |
-| `library/requirements/in-work/prd-009-marketing-toolkit/research/README.md` | 1 | History | An index of the research inputs; `:9` describes the recon's removal footprint. |
+| `library/requirements/completed/prd-009-marketing-toolkit/design/00-direction.md` | 17 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/completed/prd-009-marketing-toolkit/design/01-open-decisions.md` | 4 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/completed/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md` | 11 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/completed/prd-009-marketing-toolkit/prd-009a-marketing-toolkit-light-look-and-top-menu.md` | 7 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/completed/prd-009-marketing-toolkit/prd-009b-marketing-toolkit-home-for-a-new-account.md` | 11 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/completed/prd-009-marketing-toolkit/prd-009d-marketing-toolkit-launch-an-ad.md` | 1 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/completed/prd-009-marketing-toolkit/prd-009e-marketing-toolkit-campaign-page-and-list.md` | 2 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/completed/prd-009-marketing-toolkit/prd-009f-marketing-toolkit-removals-and-records.md` | 69 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/completed/prd-009-marketing-toolkit/prd-009g-marketing-toolkit-verification.md` | 2 | Kept | PRD-009's own plan. It names the removed screens and the retired flow because it removes them. |
+| `library/requirements/completed/prd-009-marketing-toolkit/qa/2026-10-01-authoring-qa-report.md` | 28 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
+| `library/requirements/completed/prd-009-marketing-toolkit/qa/2026-10-01-authoring-security-review.md` | 1 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
+| `library/requirements/completed/prd-009-marketing-toolkit/qa/2026-10-02-pre-redraw-verification.md` | 12 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
+| `library/requirements/completed/prd-009-marketing-toolkit/qa/2026-10-02-wave-3-verification.md` | 2 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. It records that part 2 could not be read, which this appendix answers. |
+| `library/requirements/completed/prd-009-marketing-toolkit/qa/2026-10-02-writing-review-pass-1.md` | 1 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
+| `library/requirements/completed/prd-009-marketing-toolkit/qa/2026-10-03-quality-report.md` | 3 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. QA-04 is the finding this appendix answers. |
+| `library/requirements/completed/prd-009-marketing-toolkit/qa/2026-10-03-scored-baseline-review.md` | 4 | History | A PRD-009 report of its own date. It quotes the old flow while it audits. |
+| `library/requirements/completed/prd-009-marketing-toolkit/research/2026-10-01-listing-studio-recon.md` | 1 | History | A PRD-009 research input, dated 2026-10-01 or 2026-10-02. It records the product as it stood and what the owner said, and it is not rewritten. |
+| `library/requirements/completed/prd-009-marketing-toolkit/research/2026-10-01-oalo-toolkit-recon.md` | 24 | History | A PRD-009 research input, dated 2026-10-01 or 2026-10-02. It records the product as it stood and what the owner said, and it is not rewritten. |
+| `library/requirements/completed/prd-009-marketing-toolkit/research/2026-10-01-owner-direction-od-h.md` | 1 | History | A PRD-009 research input, dated 2026-10-01 or 2026-10-02. It records the product as it stood and what the owner said, and it is not rewritten. |
+| `library/requirements/completed/prd-009-marketing-toolkit/research/2026-10-01-owner-direction.md` | 3 | History | A PRD-009 research input, dated 2026-10-01 or 2026-10-02. It records the product as it stood and what the owner said, and it is not rewritten. |
+| `library/requirements/completed/prd-009-marketing-toolkit/research/README.md` | 1 | History | An index of the research inputs; `:9` describes the recon's removal footprint. |

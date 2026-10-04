@@ -1,7 +1,7 @@
 # PRD-009c: Marketing Toolkit - The Ads Library
 
 > **Parent:** [PRD-009](./prd-009-marketing-toolkit-index.md)
-> **Status:** In Work (Gauntlet run started 2026-10-01). Authored 2026-10-01 after OD-H. It replaces the property-intake 009c of the first draft (commit `22e6b87`), which OD-H made moot.
+> **Status:** Completed. Moved to `completed/` with PRD-009 on 2026-10-03 at ship (009F-AC-015); the Gauntlet run started 2026-10-01. Authored 2026-10-01 after OD-H. It replaces the property-intake 009c of the first draft (commit `22e6b87`), which OD-H made moot.
 > **Priority:** P0. Every ad the product launches comes from this library (OD-H).
 > **Schema changes:** None in the database. The campaign manifest contract and the approval snapshot each gain a second variant, additively (D5).
 > **Owner Guardians:** `typescript-node-guardian` (the catalog schema, its validation, the loader, the manifest variant and its builder); `react-guardian` (the library page); `security-guardian` (the sample-catalog guard)

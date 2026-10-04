@@ -9,7 +9,7 @@ Automated LO is a web app for loan officers who use HighLevel. It is a marketing
 - [Launch an ad FAQ](../faqs/open-house-boost-faq.md)
 - [Marketplace listing copy pack](../../private/product/marketplace-listing-copy-pack.md) (internal)
 - [PRD-004e: listing content and demo script](../../../requirements/in-work/prd-004-reviewable-go-live/prd-004e-reviewable-go-live-listing-content-and-demo-script.md) (internal)
-- [PRD-009: Marketing Toolkit](../../../requirements/in-work/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md) (internal)
+- [PRD-009: Marketing Toolkit](../../../requirements/completed/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md) (internal)
 
 ---
 

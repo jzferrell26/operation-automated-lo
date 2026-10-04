@@ -1,7 +1,7 @@
 # PRD-009a: Marketing Toolkit - The Light Look and the Top Menu
 
 > **Parent:** [PRD-009](./prd-009-marketing-toolkit-index.md)
-> **Status:** In Work (Gauntlet run started 2026-10-01). Authored 2026-10-01; checked against OD-H the same day (the look and the menu are unchanged; only the register row numbers moved). Not started.
+> **Status:** Completed. Moved to `completed/` with PRD-009 on 2026-10-03 at ship (009F-AC-015); the Gauntlet run started 2026-10-01. Authored 2026-10-01; checked against OD-H the same day (the look and the menu are unchanged; only the register row numbers moved).
 > **Priority:** P0. Every other sub-PRD renders inside the shell this one rebuilds.
 > **Schema changes:** None
 > **Owner Guardians:** `ux-ui-guardian` (tokens, shell, the `ux-ui/` amendment); `react-guardian` (the shell component and navigation sources); `typography-font-guardian` (Inter); `dark-mode-theming-guardian` (the first-visit theme)

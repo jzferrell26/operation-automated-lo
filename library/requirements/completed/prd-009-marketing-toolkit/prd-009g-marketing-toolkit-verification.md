@@ -1,7 +1,7 @@
 # PRD-009g: Marketing Toolkit - Verification
 
 > **Parent:** [PRD-009](./prd-009-marketing-toolkit-index.md)
-> **Status:** In Work (Gauntlet run started 2026-10-01). Authored 2026-10-01; revised the same day for OD-H (the library screens join the captures; the click and field count moved to 009D-AC-022).
+> **Status:** Completed. Moved to `completed/` with PRD-009 on 2026-10-03 at ship (009F-AC-015); the Gauntlet run started 2026-10-01. Authored 2026-10-01; revised the same day for OD-H (the library screens join the captures; the click and field count moved to 009D-AC-022).
 > **Priority:** P0. The bad first impression shipped because no check ever looked at an empty account.
 > **Schema changes:** None
 > **Owner Guardians:** `ux-ui-guardian` (captures, the redraw, the scored review, the sign-off); `browser-automation-guardian` (the new review-project specs); `react-guardian` (fixes the review finds)

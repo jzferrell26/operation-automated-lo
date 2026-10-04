@@ -2596,3 +2596,223 @@ Pass 3 was the last full scan. Pass 4 does three things only:
 Write `.../scratchpad/review-parts/<your-id>-p4.md`: (1) pass 3 findings with status; (2) the score
 table for changed pictures; (3) REGRESSION and FOLLOW-UP lists; (4) a summary: pictures in your set,
 how many at 3 on every axis now, regressions, follow-ups. Final message under 200 words.
+
+## Pass 5 (final confirmation)
+
+Run 2026-10-04 by two `ux-ui-guardian` reviewers (opus), `fa` and `fb`, on the pictures of screen-baselines run 37163215460 (head `ee03945a`), drawn after one micro-round fixed pass 4's follow-ups (`efe066ab`, `20a4fa08`, `b47a7090`) and added the capture of Home with campaigns (`75ba3d51`). 476 pictures; 201 differ from run 37157590605's, 8 of them new. Every other picture is byte-identical to pass 4 and keeps its pass 4 score. The brief is reproduced in the appendix below.
+
+- Every micro-round fix is confirmed on every picture it applies to, and there is no regression.
+- Of the 201 changed pictures, 193 score 3 on every axis (the demo route at 3 on axes 1 to 9, axis 10 exempt).
+- The 8 new `review/home--with-campaigns--*` pictures score 2 on axis 10, and the 4 at 1440 and 1180 also 2 on axis 3: part fb's FU-1 (a date in a Home row breaks across two lines) and FU-2 (a campaign name in Home's lists is a blue underlined link where the list mockup draws an ink title). Both are fixed, with tests, before the baselines are committed, and the affected pictures are redrawn and confirmed (009G-AC-011); the result is recorded under "Pass 6" below.
+- Part fa records that about 30 pictures changed only because masked dates are 1 to 4px wider on the day of this redraw (2026-10-04 UTC) than on pass 4's (2026-10-03), which also reflows some lines. It is recorded as a dated follow-up: captures should not depend on the clock's date.
+
+## Pass 5, part fa
+
+Reviewer: fa (`ux-ui-guardian`). Final pictures: screen-baselines run 37163215460, head `ee03945a`,
+installed uncommitted in `C:\Users\jzfer\Projects\oalo-prd-009\tests\visual\screens\`. Previous: the
+pass 4 pictures in `.../scratchpad/baselines4/`. Read only: nothing in the repository was edited.
+
+**Set.** The pictures in `changed-p5.txt` whose names start `launch-an-ad--`, `campaign-page--`,
+`campaign-detail--` or `campaigns--`: 145 (none of them "NEW"). Fixes in scope: 1 (R1 F4-01) and 2
+(R2 F4-1). Fixes 3, 4 and 5 (reset link, Brand and Home wrapping, Connections time) are in no picture
+of this set.
+
+**Read first.** `BRIEF-FINAL.md`, `BRIEF.md`, `BRIEF-PASS4.md`, `r1-p4.md`, `r2-p4.md`;
+`06-review-rubric.md` sections 1 to 3; the micro-round commit `efe066ab` (the only one of
+`efe066ab`..`75ba3d51` that touches this set): `launch.module.css:662-678`,
+`campaign-page.module.css:179-183`, `campaign-approval-section.tsx:52` and `:74`, and its two records in
+`03-components/campaign-and-artifact-workflow.md` ("Link actions"; "Approval card"); the mockups
+`campaign-detail.html:123-126`, `:186-187`, `:553` and `launch-step-3-review-and-launch.html:205-206`.
+
+**Method.** Every picture pixel-compared with its pass 4 twin (same size: changed bands by rows, with x
+extent, pixel count and largest channel-sum delta; different size: re-aligned crops). Every changed band
+opened as a pass 4 over final crop (scratch under `review-parts/fa/`). The fix 1 edges and the fix 2
+inks were sampled in all 24 and all 80 pictures, Light and Dark. Light and Dark of every pair change in
+the same bands, so they share each score line.
+
+### 1. Fixes in this set
+
+| Fix | Status | Evidence |
+|---|---|---|
+| 1. R1 F4-01: no grey ring on "Fix it", "Make a new version", "Choose another ad" | CONFIRMED, 24 of 24 | `review/launch-an-ad--step-3-sent-back--1440--light.png`: the action is one 44-row block of 0,95,204 (`--ac-primary`), y 1129 to 1172, x 877 to 1262, edge to edge, and the pixel just outside it on every side is the card (255,255,255 above, 252,252,252 at the sides). Pass 4 drew a 42-row fill (y 1109 to 1150, x 878 to 1261) inside a 1px ring of 113,131,153 (`--bd-input`). Dark: 53,102,214 edge to edge with 26,29,36 outside, where pass 4 had a 107,115,133 ring. The same at every frame of `-needs-changes`, `-sent-back` and `-ad-retired`, both themes (e.g. `-needs-changes--768--dark` y 2099 to 2142, x 57 to 710; `-ad-retired--390--light` y 2145 to 2188, x 37 to 352). It is now the twin of "Copy the link": on `-cannot-approve--1180--light` that `Button` primary fills the identical box (y 1129 to 1172, x 745 to 1122) as "Make a new version" on `-sent-back--1180--light`, with the same 3-row shadow under it (246,247,248, then 252, then 255) as "Approve this version"; the rounded corners differ only in anti-aliasing. Labels unchanged (the changed pixels are the perimeter only: 864 at 1180). Source `launch.module.css:667` (`border-color: var(--ac-primary)`) and `:675` (hover `--ac-primary-hover`), as `launch-step-3-review-and-launch.html:205-206`. |
+| 2. R2 F4-1: the Approval card's first sentence in the strong ink | CONFIRMED, 80 of 80 | `review/campaign-page--approved--1440--light.png`: "Approved by **Dana Reyes**, workspace owner, on [date]." (y 659 to 672) samples 6,30,53 (`--tx-strong`), name included; pass 4: 82,101,121. The sentence under it ("The approval covers this version and these words only...", y 717 to 751) stays 82,101,121 (`--tx-body`). Dark: 232,234,239 and 176,183,196. The undecided "Nobody has approved this version yet." on `chromium/campaign-detail--permission-restricted--1440--light.png` (y 689 to 702): 6,30,53, pass 4 82,101,121; it now matches the hand-off sentence two cards below (6,30,53) and step 3's same sentence. Sampled on every one of the 80: `campaign-page--{approved,sent-back,library-notice,newer-version,ad-retired,saved-before-prd-009}--*` (48), `campaign-detail--{ready,approved,already-decided}--*` (24), `chromium/campaign-detail--permission-restricted--*` (8): the lead is `--tx-strong` and the second sentence, where there is one, `--tx-body`, at every frame and in both themes. Source `.decisionLine` (`campaign-page.module.css:179-183`), used at `campaign-approval-section.tsx:52` and `:74`, as `campaign-detail.html:553` (`.small` in the body's `--tx-strong`, then `.small muted`). |
+
+Both recorded in `campaign-and-artifact-workflow.md` ("Link actions", "Approval card", dated
+2026-10-03).
+
+### 2. What else changed, and why
+
+Outside the two fixes, three kinds of difference, none from the micro-round's code:
+
+- **Sub-pixel noise.** The account chip in the top bar (largest channel-sum delta 4, about 50 to 80
+  pixels): the 10 `launch-an-ad--step-1-*` pictures and `chromium/campaign-detail--default--1440--dark`
+  differ by this alone; it also appears beside real changes on several other pictures.
+- **Masked dates 1 to 4px wider (date drift).** Every date is masked by the capture helper
+  (`tests/browser/helpers/design-quality.ts:938-949`), and the masks are 1 to 4px wider than in pass 4.
+  The likely cause (inference, not verified: the masks hide the text) is the clock: the end date carries
+  a weekday ("Tue, Oct 20, 2026", `campaign-page-messages.unit.test.ts:152`), and run 37163215460 started
+  2026-10-03T23:53:54Z, so its captures probably crossed midnight UTC and drew a different weekday name.
+  `campaigns--all-states--{1440,1180,768}` differ by this (the "Last change" mask) and the chip noise
+  alone; step 3's `-ready-for-approval`, `-approved` and `-cannot-approve` by this alone (a 4px strip at
+  the end of the "Dates" mask, e.g. x 1006 to 1009 at 1180).
+- **Lines that moved with the wider dates.** Each reads correctly and splits no unit:
+  - Step 3 at 1440: "From launch until" now puts the date on a line of its own, so the right column is
+    21px taller; the pictures `-ready-for-approval`, `-cannot-approve`, `-needs-changes`, `-sent-back` and
+    `-ad-retired` at 1440 are 21px taller (1504 to 1525, etc.), and `-approved--1440` keeps its height
+    (its left column is the taller) with the right column shifted.
+  - The campaign page header at 1440 and 768: "... $25 a day, up to" / "$350 in total." (pass 4: "... up
+    to $350" / "in total.").
+  - The Versions card at 390 (`campaign-detail--{approved,already-decided}--390`): "by Review" /
+    "approver, approver" (pass 4 left "approver" alone on the last line).
+
+  A redraw on another day may move these lines again; picture stability is the gates' (rubric section 6).
+
+### 3. Scores, changed pictures (145)
+
+Axes: 1 hierarchy, 2 spacing, 3 typography, 4 colour and contrast, 5 states, 6 motion,
+7 responsiveness, 8 Dark and Light, 9 empty and error, 10 PRD-009 mockups. "ex" is the dated demo-route
+exemption. Light and Dark share each line.
+
+| # | Picture group (count) | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Sub-PRD | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | review `launch-an-ad--step-3-{needs-changes,sent-back,ad-retired}`, all frames (24) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009d | Fix 1 confirmed: axes 4 and 10 back to 3. Date drift on the "Dates" fact (1440: 21px taller). |
+| 2 | review `launch-an-ad--step-3-{ready-for-approval,approved,cannot-approve}`, all frames (24) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009d | Date drift only ("Dates" mask; 1440 reflow). Scores as pass 4. |
+| 3 | review `launch-an-ad--step-1-all` (1180 light, 1440, 768), `--step-1-filtered` (1180, 1440, 768 dark) (10) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009d | Sub-pixel noise only (account chip, delta at most 4). |
+| 4 | review `campaign-page--{approved,sent-back,library-notice}`, all frames (24) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e | Fix 2 confirmed: axis 10 back to 3. Header and Versions dates drift. |
+| 5 | review `campaign-page--{newer-version,ad-retired}`, all frames (16) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e (QA-11 chips unchanged) | Fix 2 confirmed ("Nobody has approved this version yet."). Header date drift. |
+| 6 | review `campaign-page--saved-before-prd-009`, all frames (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e D4 | Fix 2 confirmed; the only band that changed. |
+| 7 | review `campaign-detail--{ready,approved,already-decided}`, all frames (24) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e, 009d approve card | Fix 2 confirmed. Header and Versions dates drift. |
+| 8 | chromium `campaign-detail--permission-restricted`, all frames (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e, 009d hand-off | Fix 2 confirmed; the only band that changed. |
+| 9 | review `campaigns--all-states--{1440,1180,768}` (6) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009e (QA-11 row 2 unchanged) | Date drift ("Last change" mask 1px wider) and chip noise only. |
+| 10 | chromium `campaign-detail--default--1440--dark` (1) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | ex | 009f D1 demo route | Sub-pixel noise only (account chip, delta at most 3). |
+
+Total 145 (24 + 24 + 10 + 24 + 16 + 8 + 24 + 8 + 6 + 1).
+
+### 4. REGRESSION and FOLLOW-UP
+
+**REGRESSION: none.** The micro-round changed exactly the two bands the fixes name (the three links'
+edge; the Approval card's lead sentence), and each now reads as its mockup. Nothing in this set scores
+below 3.
+
+**FOLLOW-UP: none new.** Pass 4's two follow-ups in this set (R1 F4-01, R2 F4-1) are closed by the
+fixes above. Carried from pass 3 and pass 4, unchanged and not scored: step 3's `.facts dd` still breaks
+"Headline unchanged. Ad" / "text unchanged" at 1440 (R1's observation; visible in
+`launch-an-ad--step-3-sent-back--1440--light.png`), and R2's noted items (the 768 table's height, the
+newer-version notice without a glyph).
+
+### 5. Summary
+
+145 pictures in my set, all changed, none new. Fix 1 CONFIRMED in all 24 pictures (no `--bd-input` ring;
+the link is the 44px `--ac-primary` twin of "Copy the link"). Fix 2 CONFIRMED in all 80 pictures (the
+lead sentence `--tx-strong`, the one under it `--tx-body`). The other 41 differ only by sub-pixel noise
+(11) or masked-date drift (30), and the dates also reflow lines on many of the 104 fixed pictures, with
+no unit split. 144 pictures score 3 on every axis; the demo route picture scores 3 on axes 1 to 9 with
+axis 10 exempt. Regressions: 0. Follow-ups: 0 new.
+
+## Pass 5, part fb
+
+Reviewer `fb` (`ux-ui-guardian`). Final redraw: screen-baselines run 37163215460, head `ee03945a`, pictures installed uncommitted in `C:\Users\jzfer\Projects\oalo-prd-009\tests\visual\screens\`. Read against `BRIEF-FINAL.md`, the pass 1 brief, `06-review-rubric.md`, the pass 4 parts `r3-p4.md` and `r4-p4.md`, the micro-round commits `20a4fa08` (expired reset link), `b47a7090` (wrapping) and `75ba3d51` (the new Home picture), and the mockups `home-first-run.html` and `campaigns-list.html`. Read only; nothing in the repository was edited. Scripts and crops in `.../review-parts/fb/` (`diff.py`, `crop.py`).
+
+Set: the 56 names in `changed-p5.txt` that do not start with `launch-an-ad--`, `campaign-page--`, `campaign-detail--` or `campaigns--` (48 changed, 8 NEW). Every changed picture was diffed against `baselines4/` (threshold 8 levels per channel):
+
+- **19 differ only by sub-pixel noise** (max 2 levels; one picture a single pixel at 8): the account pill (rows 10 to 53, top right) on `chromium/design-surfaces--home-under-notice--1440--light`, `chromium/settings-connections--default--768--{light,dark}`, `review/ads-library--one-topic--{1180--dark,1440--light}`, `review/home--first-run--{1440--dark,768--light,768--dark}`, `review/home--real-catalog--{1180--light,1180--dark,1440--light}`, `review/reset-password--saved-notice--{1180--dark,1440--dark,768--light}`, `review/settings-connections--empty-account--768--{light,dark}`, `review/shell--help-menu-open--1440--dark`; plus `review/sign-in--refused--1440--light` (max 1, input edges, rows 451 to 488) and `review/change-password--saved--1440--dark` (one pixel at 195, 37). No element is drawn differently.
+- **29 changed exactly in the band a micro-round fix names**, and nowhere else: the expired reset card (8), Brand's reason line at 1180 (4), Home's "Running now" sentence at 390 (11), the Connections relative time (6). Same picture sizes as pass 4; Light and Dark pairs move identically.
+- **8 NEW** `review/home--with-campaigns--*`, scored in full.
+
+Axes: 1 hierarchy, 2 spacing, 3 typography, 4 colour and contrast, 5 states, 6 motion, 7 responsiveness, 8 Dark and Light, 9 empty and error, 10 consistency with the PRD-009 mockups.
+
+### 1. The micro-round's fixes in my set
+
+| Fix | Status | Evidence (final picture) |
+|---|---|---|
+| 3. R4 F4-01: the expired reset link offers "Request a new link" | **CONFIRMED** | `review/reset-password--link-expired--1440--light.png`: inside the critical notice (tint rows 297 to 420), under "This reset link has expired or was already used. Request a new one.", the link "Request a new link" (ink rows 381 to 397, x 573 to 714), aligned with the sentence and 66 rows below its first line, the same placement as "Sign in" and "Reset your password" in `review/sign-up--address-already-has-an-account--1440--light.png`. Link `#005fcc` on `#fff0f2` is 5.41:1 (Light), `#8bb0ff` on `#2f1715` 7.78:1 (Dark). The form below moved down 42 rows; nothing else changed. Every frame and theme (8 pictures). Axis 9 is back to 3 on all 8. `auth-feedback.tsx`, `reset-password/page.tsx` (`20a4fa08`). |
+| 4a. R3 N-10: no single word alone on Brand's reason line at 1180 | **CONFIRMED** | `chromium/brand--default--1180--light.png` (and `--dark`, `review/brand--empty-account--1180--{light,dark}`): "Homeowner reports aren't turned on in this / workspace yet." (pass 4: "...in this workspace / yet."). Only that line moved (rows 683 to 717 on `brand--default`, 615 to 649 on `brand--empty-account`). `workspace.module.css:110-115` (`text-wrap: pretty`). |
+| 4b. R3 N-11: no single word alone in Home's empty "Running now" sentence at 390 | **CONFIRMED** | `chromium/overview--default--390--light.png` rows 1737 to 1771: "...Launching isn't turned / on yet." (pass 4: "...isn't turned on / yet."); the card height is unchanged. The same band on all 11 Home-at-390 pictures in my set: `overview--default--390` L/D, `home--first-run--390` L/D, `home--real-catalog--390` L/D, `reset-password--saved-notice--390` L/D, `shell--help-menu-open--390` L/D, `design-surfaces--home-under-notice--390--light`, and on the new `home--with-campaigns--390` L/D. `overview.module.css:440-447`. |
+| 5. R3 N-9: a relative time stays on one line | **CONFIRMED** | `chromium/settings-connections--default--1440--light.png` rows 530 to 564: "Synthetic App Test evidence / verified 8 minutes ago." (pass 4: "...verified 8 / minutes ago."); the same at 1180 and 390 (rows 1163 to 1197), both themes; at 768 the sentence already fit one line and is unchanged. `relative-time-text.tsx`, `permission-screen.module.css:192-196` (`b47a7090`). |
+
+Fixes 1 and 2 (step 3 links, the Approval card) are not in my set.
+
+### 2. Scores
+
+| Picture group (L/D = Light and Dark) | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Sub-PRD | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `review/reset-password--link-expired--{1440,1180,768,390}` L/D (8) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009a (PRD-006a D5) | Fix 3; pass 4's axis 9 at 2 is resolved. |
+| `chromium/brand--default--1180`, `review/brand--empty-account--1180` L/D (4) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009d D3, 009a | Fix 4a. Note N-1. |
+| Home at 390 (11, listed under fix 4b) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009b (009a shell, 009g surface) | Fix 4b. |
+| `chromium/settings-connections--default--{1440,1180,390}` L/D (6) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 009f D4, 009a | Fix 5. |
+| Noise-only (19, listed above) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | as pass 4 | Sub-pixel noise only; keep pass 4's 3s. |
+| `review/home--with-campaigns--{1440,1180}` L/D (4), NEW | 3 | 3 | **2** | 3 | 3 | 3 | 3 | 3 | 3 | **2** | 009b (AC-009, AC-010) | FU-1, FU-2. |
+| `review/home--with-campaigns--{768,390}` L/D (4), NEW | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | **2** | 009b (AC-003, AC-009, AC-010) | FU-2. |
+
+Total 56 (8 + 4 + 11 + 6 + 19 + 4 + 4).
+
+**The full read of the 8 NEW pictures** (the populated state, read against `home-first-run.html`, whose lists are drawn empty at `:557-561`, and the row rules its own stylesheet carries at `:393` and `:398`):
+- Composition (axes 1, 7): greeting, start card with the one primary "Choose an ad", "Get set up", then the two lists side by side under the start card at 1440 and 1180, and stacked start, checklist, running, approval at 768 and 390 (009B-AC-003 over the mockup, as ruled). No overflow; the Menu button at 390.
+- "Get set up" in this state: "1 of 3 done", the bar at one third, Add your brand "Done" (success chip with check) and the action "Edit", as direction section 4.2; HighLevel and Meta "Not connected yet" with "See what's needed" (MTK-008 amendment).
+- "Running now" is honestly empty (launching is off): glyph `--tx-faint`, "No ads running", the sentence, the 14px "Launch an ad" link, as first-run (axis 9 at 3).
+- "Needs your approval" lists two campaigns, newest first, each its name as one link, its dates where it has them ("Tour this home this weekend" has none, so no date line; honest), the info chip "Ready for approval", and "Sample ad" (neutral) on the sample-ad campaign (009C-AC-005). No "See all campaigns" (2 rows, under the 3 cap). Rhythm: `.rows` `--space-4` between rows, `--space-1` within (`overview.module.css:449-458`); measured at 1440, title to chip 22 rows, chip to next title 39 rows, so rows read as groups (axis 2 at 3).
+- Dark matches Light in every element (axis 8). The magenta blocks are the capture's date masks, not product colour; not scored.
+- Two deltas, FU-1 and FU-2 below.
+
+### 3. REGRESSION and FOLLOW-UP
+
+#### REGRESSION
+
+**None.** Every micro-round change in my set is inside the band its fix names, and each scores 3. The 19 other changed pictures differ only by sub-pixel noise.
+
+#### FOLLOW-UP (dated 2026-10-04; not caused by the micro-round: `75ba3d51` only photographed a state whose rendering, `home-campaign-lists.tsx` and `overview.module.css` `.rows`, the micro-round did not change; first visible now because no pass 4 picture showed a populated Home)
+
+**FU-1. A date in a Home row breaks across two lines (axis 3), Low, 009b.**
+- Screen, frame, theme, state: Home, 1440 and 1180, Light and Dark, an approver's account with campaigns, "Needs your approval", second row ("Sample: First home, start here").
+- What I see: "Starts when you launch it, ends" then the end date split over two lines: its mask covers x 736 to 784 at rows 878 to 894 and x 527 to 564 at rows 899 to 915 on `review/home--with-campaigns--1440--light.png` (1180: 610 to 658 and 401 to 438), the day and the year apart. At 768 and 390 the date fits one line (one mask, 90px wide).
+- Required: `library/knowledge/private/ux-ui/03-components/campaign-and-artifact-workflow.md:81`, "A date is one unit. It never breaks across two lines (`white-space: nowrap` on `time`)", as `campaign-list.module.css:35-43`, `campaign-page.module.css:18-20` and `launch.module.css:61-63` already do; the micro-round applied the same rule to relative times (fix 5).
+- File and line: `apps/web/src/features/overview/components/overview.module.css:449-458` (`.rows` has no rule for `time`); the `time` is drawn by `TextWithDays` from `home-campaign-lists.tsx:89-93`.
+- Fix: add `.rows time { white-space: nowrap; }` to `overview.module.css`. Each screen re-declaring it is how Home missed it; moving the rule onto `time` in `apps/web/src/app/globals.css:42-46` would close the class (a shared-stylesheet change, so the fix lane records it in the spec line above). The redraw moves the 4 pictures at 1440 and 1180.
+
+**FU-2. Home draws a campaign's name as a blue underlined link where the list mockup draws an ink title (axis 10), Low, 009b.**
+- Screen, frame, theme, state: Home, every frame, Light and Dark, with campaigns, both rows of "Needs your approval" (and any row of "Running now", same component).
+- What I see: "Tour this home this weekend" and "Sample: First home, start here" in `--st-info-fg` (`#005fcc` Light, `#8bb0ff` Dark), underlined, at the link's `--weight-medium`. The same campaign names on Campaigns (`chromium/campaigns--populated--1440--light.png`) are `--tx-strong`, `--weight-semibold`, underlined only on hover. `.rowTitle` sets `--weight-semibold` (`overview.module.css:460-463`), but the `Link` sets its own `--weight-medium` (`packages/ui/src/components/link.module.css:12`), so that declaration never renders.
+- Required: the mockups' list-row name, `.table td a.row-link` and `.list-card a` (`home-first-run.html:393`, `:398`, the same rules in `campaigns-list.html:393`, `:398`): `--weight-semibold`, `--tx-strong`, no underline, `--target-min-size` tall; Home's mockup draws its lists only empty (`home-first-run.html:557-561`), so the row rule its stylesheet carries is the nearest sibling (rubric axis 10).
+- File and line: `apps/web/src/features/overview/components/home-campaign-lists.tsx:84-88` (`<Link href={row.href} variant="inline">`).
+- Fix: draw the name with the campaigns list's row-link treatment (`campaign-list.module.css:126-139`). So the two lists cannot drift, record the row-name treatment once in `03-components/link.md` (or the campaign workflow spec) and consume it in both places, rather than a second local copy. The redraw moves the 8 `home--with-campaigns--*` pictures.
+
+#### Notes (not scored below 3; the rubric has no one-word-last-line rule and no spec line names it, as R3 ruled in pass 4)
+
+- **N-1.** Brand at 1180: the Report preview paragraph above the fixed reason still ends "with." alone (`chromium/brand--default--1180--*`, `review/brand--empty-account--1180--*`), unchanged since pass 3 and outside fix 4a's named line. `text-wrap: pretty` on that `<p>` (`preference-editors.tsx:194-197`) would hold it.
+- **N-2.** The same class on the new Home pictures' checklist at 1440 ("connected.", "account.", "automatically.") and 1180 ("connected.", "account."), and at 390 ("launch."); the checklist is unchanged from the pictures scored 3 in passes 1 to 4.
+
+### 4. Summary
+
+56 pictures in my set: 19 sub-pixel noise only, 29 changed exactly where a micro-round fix says, 8 new. Fixes 3, 4 (both halves) and 5 are CONFIRMED at every frame and theme they apply to, each cited above; the expired reset card's axis 9 is back to 3. **48 of 56 at 3 on every axis**; the 8 new `home--with-campaigns` pictures are at 2 on axis 10 and the 4 at 1440 and 1180 also at 2 on axis 3. **0 regressions. 2 follow-ups, both Low, both 009b, both in the new populated Home state**: FU-1 a row's date splits across two lines at 1440 and 1180 (one CSS line); FU-2 the row's campaign name is a blue underlined link where the list mockup draws an ink semibold title. Two notes on one-word last lines, not scored.
+
+## Appendix: the pass 5 brief
+
+The final redraw: screen-baselines run 37163215460, head `ee03945a`, after the micro-round
+(`efe066ab`..`75ba3d51`) fixed pass 4's follow-ups and added `home--with-campaigns`. Read the pass 1
+brief for the rubric: `.../scratchpad/review-parts/BRIEF.md`. Read only: never edit the repository.
+
+### Pictures
+- Final: installed, uncommitted, in `C:\Users\jzfer\Projects\oalo-prd-009\tests\visual\screens\`.
+- Previous (the fourth redraw, pass 4): `.../scratchpad/baselines4/`.
+- The changed or new pictures: `.../scratchpad/review-parts/changed-p5.txt` ("NEW " marks the 8
+  `home--with-campaigns` pictures). Everything else is byte-identical to pass 4.
+
+### The micro-round's fixes to confirm (from the pass 4 files `r1-p4.md` to `r4-p4.md`)
+1. R1 F4-01: no grey ring on "Fix it", "Make a new version", "Choose another ad" (step 3).
+2. R2 F4-1: the Approval card's first sentence in the strong ink (campaign page).
+3. R4 F4-01: the expired reset link offers "Request a new link".
+4. R3 N-10, N-11: no single word left alone on Brand's reason line at 1180, or Home's empty "Running
+   now" sentence at 390.
+5. R3 N-9: a relative time stays on one line (sample Connections).
+
+### Do
+1. Confirm each fix in your set, citing a picture; or report it OPEN.
+2. Score every changed or new picture in your set on axes 1 to 10. Give the 8 `home--with-campaigns`
+   pictures a full score (compare with `design/mockups/home-first-run.html`'s lists for the populated
+   state; "Running now" is honestly empty because launching is off).
+3. Classify anything below 3 as REGRESSION (caused by the micro-round: compare with `baselines4`) or
+   FOLLOW-UP (also in the pass 4 picture). Pictures that only differ by sub-pixel noise: say so.
+
+### Output
+Write `.../scratchpad/review-parts/<your-id>-final.md` with the confirmations, the score table, and
+the REGRESSION and FOLLOW-UP lists. Final message under 150 words.

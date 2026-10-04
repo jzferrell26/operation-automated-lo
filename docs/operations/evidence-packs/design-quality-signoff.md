@@ -1,242 +1,406 @@
 # Design quality sign-off
 
-PRD-006d D9 and acceptance criterion 006D-AC-015, re-signed for PRD-008d 008D-AC-010 and
-008D-AC-011. **Status: SIGNED.** `ux-ui-guardian` prepared the skeleton; the orchestrator filled it
-in from real screenshots of the running application and signed it on 2026-09-21. On 2026-10-01
-`ux-ui-guardian` re-signed every row against the PRD-008d tree, from the baselines the
-`ubuntu-24.04` runner drew for it, and re-signed it again the same day after the D-009 and D-010
-fix moved 343 of the 376 pictures (see "How this was filled").
+PRD-006d D9 and acceptance criterion 006D-AC-015, re-signed for PRD-008d (008D-AC-010 and
+008D-AC-011) and again for PRD-009g (009G-AC-007). **Status: SIGNED.** `ux-ui-guardian` prepared the
+skeleton; the orchestrator filled it in from real screenshots of the running application and signed
+it on 2026-09-21. On 2026-10-01 `ux-ui-guardian` re-signed every row against the PRD-008d tree, twice.
+On 2026-10-03 `ux-ui-guardian` re-signed the whole table against the PRD-009 tree, from the
+baselines the `ubuntu-24.04` runner drew for it (see "How this was filled").
 
-- Commit reviewed: `cad9bf6`, the commit that installs the baselines drawn by screen-baselines run
-  36844271868 from `eaf34e6` (the commit after it changes only this file, the review report, and
-  the rubric's D-009 and D-010 rows and section 6)
-  - Re-checked at the ship head of PR #74, as 008D-AC-010 and 008D-AC-011 ask: no file under
-    `tests/visual/` and no baselined screen changed after `cad9bf6`, through that head.
-    `git diff --stat cad9bf6 HEAD -- tests/visual`, run on the ship head, is empty, and the
-    close-out quality report's 008D-AC-011 section accounts for every later rendered-code change.
-    The re-check is recorded in PR #74: UNVERIFIED here, because the pull request body is outside
-    this checkout.
-- Date: 2026-10-01 (first signed 2026-09-21 against `74999a8`; re-signed against `d7af15a` earlier
-  on 2026-10-01)
-- Signed by: `ux-ui-guardian`, Gauntlet lane L6c (Claude Code), for the orchestrator
+- Commit reviewed: the commit that installs the baselines drawn by screen-baselines run 37163215460
+  from `ee03945a`
+  - Nothing rendered changed between `ee03945a` and that commit: `git diff --name-only ee03945a
+    4511100d` lists documentation, `EXECUTION_LEDGER.md`, and `apps/web/src/app/globals.css`, whose
+    only change is a path inside a comment.
+- Date: 2026-10-04 (first signed 2026-09-21 against `74999a8`; re-signed against `d7af15a` and
+  `cad9bf6` on 2026-10-01, and against run 37157590605's pictures on 2026-10-03)
+- Signed by: `ux-ui-guardian`, Gauntlet PRD-009 Wave 4, for the orchestrator
 
-The screenshots themselves are retained outside git. They are large, some come from the deployed
-review URL, and none of them is needed to read the result: the table below is the result. Every
-screenshot contains only synthetic data or the seeded review people, never a real address, a real
-name, a form with a value somebody typed, a cookie store, or developer tools.
+The reviewers' own screenshots, contact sheets, and crops are retained outside git. They are large,
+and none of them is needed to read the result: the table below is the result, and every picture it
+names is a committed baseline under `tests/visual/screens/`. Every screenshot contains only
+synthetic data or the seeded review people, never a real address, a real name, a form with a value
+somebody typed, a cookie store, or developer tools. For PRD-009 that means two things. The Ads
+library, the launch steps, and the campaign pictures show the labelled sample ads, the sample
+catalog that only a local or review run switches on (the samples flag named in
+`docs/production-environments.md`, which a deployment never sets), drawn with their SAMPLE art; the real-catalog pictures show none. And every account in a picture is one of the review run's
+`@oalo.invalid` accounts: the three seeded people (`review-creator@`, `review-approver@`, and
+`review-outsider@`) and the fresh `review-<run>@oalo.invalid` accounts the run signs up (the brand-new
+account's pages come from the one `tests/browser/review/empty-account.spec.ts` signs up and reuses).
+The synthetic server's pictures carry its own "Local demo with sample data." line.
 
 ## How to fill this in
 
-1. **Synthetic screens.** Build and start the application yourself:
-   `pnpm --filter @oalo/web... build && pnpm --filter @oalo/web exec next start --hostname 127.0.0.1 --port 3100`.
-   Every row marked `synthetic` below is reachable at `http://127.0.0.1:3100`.
-2. **Account screens and the guided setup.** They are 404 in synthetic mode. Start the review
-   composition the way `pnpm test:db` does (`tooling/scripts/database/review-browser-run.mjs`), and
-   use the TLS terminator at `https://127.0.0.1:3443` with the seeded creator and approver the gate
-   writes; or use the deployed review URL with the operator present.
-3. **Theme.** Set the theme from the workspace header's Light and Dark control. On a public account
-   screen there is no control, so set `oalo:theme-preference` to `light` or `dark` in local storage
-   and reload.
-4. **Frames.** 1440x900, 1180x900, 768x1024, 390x844.
-5. **Score.** Each cell is `pass` or a finding reference from
-   `library/requirements/in-work/prd-006-first-party-sign-in-and-guided-experience/qa/2026-09-19-prd-006d-design-review.md`.
-   A fail on any axis returns the batch to implementation and this table is filled in again on the
-   next tree.
+1. **Draw the pictures once.** `.github/workflows/screen-baselines.yml` draws both suites on the
+   `ubuntu-24.04` runner. 009G-AC-004 allows one dispatch for the whole change set and any later one
+   only under 009G-AC-011. Download its two artifacts into `tests/visual/screens/chromium/` and
+   `tests/visual/screens/review/`, as `tests/visual/screens/README.md` says.
+2. **Build the rows from the files, not from memory.** List what is installed, group it by
+   `<screen>--<state>`, and give each group a row. A screen PRD-009 removed keeps its row and reads
+   "Removed by PRD-009 on 2026-10-03".
+3. **Name the picture in every cell.** The cell holds the file under `tests/visual/screens/`, for
+   example `review/home--first-run--1440--light.png`. A frame a state does not have reads "frame not
+   drawn", and the reason is in "Frames a state does not have". No cell reads "not photographed" or
+   "asserted".
+4. **Score.** The scored review (009G-AC-006) scores every picture on the rubric's ten axes, 0 to 3,
+   and the bar is 3 on every axis (`library/knowledge/private/ux-ui/06-review-rubric.md`, section 1).
+   A row is signed when every picture it names clears that bar there. A fix after the dispatch that
+   changes a picture re-opens that picture under 009G-AC-011, and this table is re-signed.
+5. **Check the table against the disk.** From the repository root, this prints a line for each
+   picture the table names that is not on disk, then the number of distinct pictures the table names
+   and the number missing, then the number of pictures installed.
+
+   ```
+   named=0; missing=0
+   for f in $(grep -o '`[a-z]*/[a-z0-9-]*--[0-9]*--[a-z]*\.png`' docs/operations/evidence-packs/design-quality-signoff.md | tr -d '`' | sort -u); do
+     named=$((named+1)); [ -f "tests/visual/screens/$f" ] || { echo "missing $f"; missing=$((missing+1)); }
+   done; echo "$named named, $missing missing"
+   ls tests/visual/screens/chromium tests/visual/screens/review | grep -c '\.png$'
+   ```
+
+   The number named and the number installed match when every installed picture has a row, and the
+   number missing is 0 when every row's picture exists.
 
 The ten axes are the rubric's, in `library/knowledge/private/ux-ui/06-review-rubric.md` section 2:
 1 hierarchy, 2 spacing rhythm, 3 typography, 4 colour and contrast, 5 states, 6 motion,
-7 responsiveness, 8 dark and light, 9 empty and error states, 10 consistency with the canvases.
+7 responsiveness, 8 dark and light, 9 empty and error states, 10 consistency with the PRD-009
+mockups.
 
 ## The table
 
-Each row is one screen in one named state. Fill in the eight frame-and-theme cells with `pass`, or
-with a finding reference. A row is signed only when all eight are `pass` on all ten axes.
+Each row is one screen in one named state. Each of the eight cells names the picture of that frame
+(1440, 1180, 768, 390) and theme (L is Light, D is Dark) under `tests/visual/screens/`, or reads
+"frame not drawn", with the reason under "Frames a state does not have". Server is the project that
+drew the picture: `synthetic` is the `chromium/` folder and `review` is the `review/` folder. A row
+is signed when every picture it names scores 3 on every one of the ten axes in the scored review.
+Rows for screens PRD-009 removed read "Removed by PRD-009 on 2026-10-03" and stay as history, in the
+last table.
+
+### Account screens
 
 | Screen | State | Server | 1440 L | 1440 D | 1180 L | 1180 D | 768 L | 768 D | 390 L | 390 D |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Sign in | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Sign in | signed out | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Sign in | refused | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Choose workspace | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Sign up | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Sign up | address already has an account | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Forgot password | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Forgot password | confirmation | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Reset password | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Reset password | link expired | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Verify email | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Verify email | confirmed | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Verify email | link expired | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Change password | default | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Change password | saved | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Shell | rail | synthetic | pass | pass | pass | pass | n/a (tablet rail row) | n/a (tablet rail row) | n/a (drawer row) | n/a (drawer row) |
-| Shell | collapsed rail | review | pass | pass | pass | pass | pass | pass | n/a (no rail at 390) | n/a (no rail at 390) |
-| Shell | tablet rail | synthetic | n/a (rail row) | n/a (rail row) | n/a (rail row) | n/a (rail row) | pass | pass | n/a (drawer row) | n/a (drawer row) |
-| Shell | topbar | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Shell | mobile drawer | review | n/a (drawer only at 390) | n/a (drawer only at 390) | n/a (drawer only at 390) | n/a (drawer only at 390) | n/a (drawer only at 390) | n/a (drawer only at 390) | pass | pass |
-| Shell | not-connected banner | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Shell | "Finish setup" chip | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Shell | help menu | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Overview | default | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Campaigns list | empty | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Campaigns list | populated | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Create | empty | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Create | prefilled | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Create | saving | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Create | ready for approval | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Create | needs changes | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Campaign detail | ready | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Campaign detail | permission-restricted | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Campaign detail | approved | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Campaign detail | already decided | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Reports | not connected | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Onboarding | default | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Settings and connections | default | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Brand | default | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Guided setup step 1 | welcome | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Guided setup step 2 | your details | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Guided setup step 3 | your Realtor partner | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Guided setup step 4 | create the campaign, first field | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Guided setup step 4 | create the campaign, last field | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Guided setup step 5 | read the result, ready | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Guided setup step 5 | read the result, needs changes | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Guided setup step 6 | approve | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Guided setup step 6 | hand off | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Guided setup step 7 | what happens next | review | pass | pass | pass | pass | pass | pass | pass | pass |
-| Unverified email notice | unverified, with resend | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Route error boundary | failed to load | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Route loading boundary | loading | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Email preview | reset password, 600px | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
-| Email preview | confirm email, 600px | synthetic | pass | pass | pass | pass | pass | pass | pass | pass |
+| Sign in | default | review | `review/sign-in--default--1440--light.png` | `review/sign-in--default--1440--dark.png` | `review/sign-in--default--1180--light.png` | `review/sign-in--default--1180--dark.png` | `review/sign-in--default--768--light.png` | `review/sign-in--default--768--dark.png` | `review/sign-in--default--390--light.png` | `review/sign-in--default--390--dark.png` |
+| Sign in | signed out | review | `review/sign-in--signed-out--1440--light.png` | `review/sign-in--signed-out--1440--dark.png` | `review/sign-in--signed-out--1180--light.png` | `review/sign-in--signed-out--1180--dark.png` | `review/sign-in--signed-out--768--light.png` | `review/sign-in--signed-out--768--dark.png` | `review/sign-in--signed-out--390--light.png` | `review/sign-in--signed-out--390--dark.png` |
+| Sign in | refused | review | `review/sign-in--refused--1440--light.png` | `review/sign-in--refused--1440--dark.png` | `review/sign-in--refused--1180--light.png` | `review/sign-in--refused--1180--dark.png` | `review/sign-in--refused--768--light.png` | `review/sign-in--refused--768--dark.png` | `review/sign-in--refused--390--light.png` | `review/sign-in--refused--390--dark.png` |
+| Choose workspace | default | review | `review/choose-workspace--default--1440--light.png` | `review/choose-workspace--default--1440--dark.png` | `review/choose-workspace--default--1180--light.png` | `review/choose-workspace--default--1180--dark.png` | `review/choose-workspace--default--768--light.png` | `review/choose-workspace--default--768--dark.png` | `review/choose-workspace--default--390--light.png` | `review/choose-workspace--default--390--dark.png` |
+| Sign up | default | review | `review/sign-up--default--1440--light.png` | `review/sign-up--default--1440--dark.png` | `review/sign-up--default--1180--light.png` | `review/sign-up--default--1180--dark.png` | `review/sign-up--default--768--light.png` | `review/sign-up--default--768--dark.png` | `review/sign-up--default--390--light.png` | `review/sign-up--default--390--dark.png` |
+| Sign up | address already has an account | review | `review/sign-up--address-already-has-an-account--1440--light.png` | `review/sign-up--address-already-has-an-account--1440--dark.png` | `review/sign-up--address-already-has-an-account--1180--light.png` | `review/sign-up--address-already-has-an-account--1180--dark.png` | `review/sign-up--address-already-has-an-account--768--light.png` | `review/sign-up--address-already-has-an-account--768--dark.png` | `review/sign-up--address-already-has-an-account--390--light.png` | `review/sign-up--address-already-has-an-account--390--dark.png` |
+| Forgot password | default | review | `review/forgot-password--default--1440--light.png` | `review/forgot-password--default--1440--dark.png` | `review/forgot-password--default--1180--light.png` | `review/forgot-password--default--1180--dark.png` | `review/forgot-password--default--768--light.png` | `review/forgot-password--default--768--dark.png` | `review/forgot-password--default--390--light.png` | `review/forgot-password--default--390--dark.png` |
+| Forgot password | confirmation | review | `review/forgot-password--confirmation--1440--light.png` | `review/forgot-password--confirmation--1440--dark.png` | `review/forgot-password--confirmation--1180--light.png` | `review/forgot-password--confirmation--1180--dark.png` | `review/forgot-password--confirmation--768--light.png` | `review/forgot-password--confirmation--768--dark.png` | `review/forgot-password--confirmation--390--light.png` | `review/forgot-password--confirmation--390--dark.png` |
+| Reset password | default | review | `review/reset-password--default--1440--light.png` | `review/reset-password--default--1440--dark.png` | `review/reset-password--default--1180--light.png` | `review/reset-password--default--1180--dark.png` | `review/reset-password--default--768--light.png` | `review/reset-password--default--768--dark.png` | `review/reset-password--default--390--light.png` | `review/reset-password--default--390--dark.png` |
+| Reset password | link expired | review | `review/reset-password--link-expired--1440--light.png` | `review/reset-password--link-expired--1440--dark.png` | `review/reset-password--link-expired--1180--light.png` | `review/reset-password--link-expired--1180--dark.png` | `review/reset-password--link-expired--768--light.png` | `review/reset-password--link-expired--768--dark.png` | `review/reset-password--link-expired--390--light.png` | `review/reset-password--link-expired--390--dark.png` |
+| Reset password | saved (the person lands on Home under the saved-password notice) | review | `review/reset-password--saved-notice--1440--light.png` | `review/reset-password--saved-notice--1440--dark.png` | `review/reset-password--saved-notice--1180--light.png` | `review/reset-password--saved-notice--1180--dark.png` | `review/reset-password--saved-notice--768--light.png` | `review/reset-password--saved-notice--768--dark.png` | `review/reset-password--saved-notice--390--light.png` | `review/reset-password--saved-notice--390--dark.png` |
+| Verify email | default | review | `review/verify-email--default--1440--light.png` | `review/verify-email--default--1440--dark.png` | `review/verify-email--default--1180--light.png` | `review/verify-email--default--1180--dark.png` | `review/verify-email--default--768--light.png` | `review/verify-email--default--768--dark.png` | `review/verify-email--default--390--light.png` | `review/verify-email--default--390--dark.png` |
+| Verify email | confirmed | review | `review/verify-email--confirmed--1440--light.png` | `review/verify-email--confirmed--1440--dark.png` | `review/verify-email--confirmed--1180--light.png` | `review/verify-email--confirmed--1180--dark.png` | `review/verify-email--confirmed--768--light.png` | `review/verify-email--confirmed--768--dark.png` | `review/verify-email--confirmed--390--light.png` | `review/verify-email--confirmed--390--dark.png` |
+| Verify email | link expired | review | `review/verify-email--link-expired--1440--light.png` | `review/verify-email--link-expired--1440--dark.png` | `review/verify-email--link-expired--1180--light.png` | `review/verify-email--link-expired--1180--dark.png` | `review/verify-email--link-expired--768--light.png` | `review/verify-email--link-expired--768--dark.png` | `review/verify-email--link-expired--390--light.png` | `review/verify-email--link-expired--390--dark.png` |
+| Change password | default | review | `review/change-password--default--1440--light.png` | `review/change-password--default--1440--dark.png` | `review/change-password--default--1180--light.png` | `review/change-password--default--1180--dark.png` | `review/change-password--default--768--light.png` | `review/change-password--default--768--dark.png` | `review/change-password--default--390--light.png` | `review/change-password--default--390--dark.png` |
+| Change password | saved | review | `review/change-password--saved--1440--light.png` | `review/change-password--saved--1440--dark.png` | `review/change-password--saved--1180--light.png` | `review/change-password--saved--1180--dark.png` | `review/change-password--saved--768--light.png` | `review/change-password--saved--768--dark.png` | `review/change-password--saved--390--light.png` | `review/change-password--saved--390--dark.png` |
+
+### The top bar and its sheets
+
+| Screen | State | Server | 1440 L | 1440 D | 1180 L | 1180 D | 768 L | 768 D | 390 L | 390 D |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Shell | top bar (drawn on the synthetic Home) | synthetic | `chromium/overview--default--1440--light.png` | `chromium/overview--default--1440--dark.png` | `chromium/overview--default--1180--light.png` | `chromium/overview--default--1180--dark.png` | `chromium/overview--default--768--light.png` | `chromium/overview--default--768--dark.png` | `chromium/overview--default--390--light.png` | `chromium/overview--default--390--dark.png` |
+| Shell | Help sheet open | review | `review/shell--help-menu-open--1440--light.png` | `review/shell--help-menu-open--1440--dark.png` | `review/shell--help-menu-open--1180--light.png` | `review/shell--help-menu-open--1180--dark.png` | `review/shell--help-menu-open--768--light.png` | `review/shell--help-menu-open--768--dark.png` | `review/shell--help-menu-open--390--light.png` | `review/shell--help-menu-open--390--dark.png` |
+| Shell | Menu sheet open (390 only) | review | frame not drawn | frame not drawn | frame not drawn | frame not drawn | frame not drawn | frame not drawn | `review/shell--menu-sheet-open--390--light.png` | `review/shell--menu-sheet-open--390--dark.png` |
+
+### Home
+
+| Screen | State | Server | 1440 L | 1440 D | 1180 L | 1180 D | 768 L | 768 D | 390 L | 390 D |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Home | first run (a brand-new account) | review | `review/home--first-run--1440--light.png` | `review/home--first-run--1440--dark.png` | `review/home--first-run--1180--light.png` | `review/home--first-run--1180--dark.png` | `review/home--first-run--768--light.png` | `review/home--first-run--768--dark.png` | `review/home--first-run--390--light.png` | `review/home--first-run--390--dark.png` |
+| Home | first run on the real catalog (the hosted first impression) | review | `review/home--real-catalog--1440--light.png` | `review/home--real-catalog--1440--dark.png` | `review/home--real-catalog--1180--light.png` | `review/home--real-catalog--1180--dark.png` | `review/home--real-catalog--768--light.png` | `review/home--real-catalog--768--dark.png` | `review/home--real-catalog--390--light.png` | `review/home--real-catalog--390--dark.png` |
+| Home | sample data (the local demo; Overview before PRD-009) | synthetic | `chromium/overview--default--1440--light.png` | `chromium/overview--default--1440--dark.png` | `chromium/overview--default--1180--light.png` | `chromium/overview--default--1180--dark.png` | `chromium/overview--default--768--light.png` | `chromium/overview--default--768--dark.png` | `chromium/overview--default--390--light.png` | `chromium/overview--default--390--dark.png` |
+| Home | with campaigns | review | `review/home--with-campaigns--1440--light.png` | `review/home--with-campaigns--1440--dark.png` | `review/home--with-campaigns--1180--light.png` | `review/home--with-campaigns--1180--dark.png` | `review/home--with-campaigns--768--light.png` | `review/home--with-campaigns--768--dark.png` | `review/home--with-campaigns--390--light.png` | `review/home--with-campaigns--390--dark.png` |
+| Home | under the unverified-email notice (1440 Light and 390 Light only) | synthetic | `chromium/design-surfaces--home-under-notice--1440--light.png` | frame not drawn | frame not drawn | frame not drawn | frame not drawn | frame not drawn | `chromium/design-surfaces--home-under-notice--390--light.png` | frame not drawn |
+
+### Ads library
+
+| Screen | State | Server | 1440 L | 1440 D | 1180 L | 1180 D | 768 L | 768 D | 390 L | 390 D |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Ads library | all ads | review | `review/ads-library--all--1440--light.png` | `review/ads-library--all--1440--dark.png` | `review/ads-library--all--1180--light.png` | `review/ads-library--all--1180--dark.png` | `review/ads-library--all--768--light.png` | `review/ads-library--all--768--dark.png` | `review/ads-library--all--390--light.png` | `review/ads-library--all--390--dark.png` |
+| Ads library | one topic | review | `review/ads-library--one-topic--1440--light.png` | `review/ads-library--one-topic--1440--dark.png` | `review/ads-library--one-topic--1180--light.png` | `review/ads-library--one-topic--1180--dark.png` | `review/ads-library--one-topic--768--light.png` | `review/ads-library--one-topic--768--dark.png` | `review/ads-library--one-topic--390--light.png` | `review/ads-library--one-topic--390--dark.png` |
+| Ads library | empty (the real catalog, which ships empty) | review | `review/ads-library--real-catalog--1440--light.png` | `review/ads-library--real-catalog--1440--dark.png` | `review/ads-library--real-catalog--1180--light.png` | `review/ads-library--real-catalog--1180--dark.png` | `review/ads-library--real-catalog--768--light.png` | `review/ads-library--real-catalog--768--dark.png` | `review/ads-library--real-catalog--390--light.png` | `review/ads-library--real-catalog--390--dark.png` |
+
+### Launch an ad
+
+| Screen | State | Server | 1440 L | 1440 D | 1180 L | 1180 D | 768 L | 768 D | 390 L | 390 D |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Launch an ad, step 1 | all ads | review | `review/launch-an-ad--step-1-all--1440--light.png` | `review/launch-an-ad--step-1-all--1440--dark.png` | `review/launch-an-ad--step-1-all--1180--light.png` | `review/launch-an-ad--step-1-all--1180--dark.png` | `review/launch-an-ad--step-1-all--768--light.png` | `review/launch-an-ad--step-1-all--768--dark.png` | `review/launch-an-ad--step-1-all--390--light.png` | `review/launch-an-ad--step-1-all--390--dark.png` |
+| Launch an ad, step 1 | filtered to one topic | review | `review/launch-an-ad--step-1-filtered--1440--light.png` | `review/launch-an-ad--step-1-filtered--1440--dark.png` | `review/launch-an-ad--step-1-filtered--1180--light.png` | `review/launch-an-ad--step-1-filtered--1180--dark.png` | `review/launch-an-ad--step-1-filtered--768--light.png` | `review/launch-an-ad--step-1-filtered--768--dark.png` | `review/launch-an-ad--step-1-filtered--390--light.png` | `review/launch-an-ad--step-1-filtered--390--dark.png` |
+| Launch an ad, step 1 | empty (the real catalog, no ad to choose) | review | `review/launch-an-ad--step-1-real-catalog--1440--light.png` | `review/launch-an-ad--step-1-real-catalog--1440--dark.png` | `review/launch-an-ad--step-1-real-catalog--1180--light.png` | `review/launch-an-ad--step-1-real-catalog--1180--dark.png` | `review/launch-an-ad--step-1-real-catalog--768--light.png` | `review/launch-an-ad--step-1-real-catalog--768--dark.png` | `review/launch-an-ad--step-1-real-catalog--390--light.png` | `review/launch-an-ad--step-1-real-catalog--390--dark.png` |
+| Launch an ad, step 2 | first campaign, the area still empty | review | `review/launch-an-ad--step-2-first-campaign--1440--light.png` | `review/launch-an-ad--step-2-first-campaign--1440--dark.png` | `review/launch-an-ad--step-2-first-campaign--1180--light.png` | `review/launch-an-ad--step-2-first-campaign--1180--dark.png` | `review/launch-an-ad--step-2-first-campaign--768--light.png` | `review/launch-an-ad--step-2-first-campaign--768--dark.png` | `review/launch-an-ad--step-2-first-campaign--390--light.png` | `review/launch-an-ad--step-2-first-campaign--390--dark.png` |
+| Launch an ad, step 3 | needs changes | review | `review/launch-an-ad--step-3-needs-changes--1440--light.png` | `review/launch-an-ad--step-3-needs-changes--1440--dark.png` | `review/launch-an-ad--step-3-needs-changes--1180--light.png` | `review/launch-an-ad--step-3-needs-changes--1180--dark.png` | `review/launch-an-ad--step-3-needs-changes--768--light.png` | `review/launch-an-ad--step-3-needs-changes--768--dark.png` | `review/launch-an-ad--step-3-needs-changes--390--light.png` | `review/launch-an-ad--step-3-needs-changes--390--dark.png` |
+| Launch an ad, step 3 | ready for approval | review | `review/launch-an-ad--step-3-ready-for-approval--1440--light.png` | `review/launch-an-ad--step-3-ready-for-approval--1440--dark.png` | `review/launch-an-ad--step-3-ready-for-approval--1180--light.png` | `review/launch-an-ad--step-3-ready-for-approval--1180--dark.png` | `review/launch-an-ad--step-3-ready-for-approval--768--light.png` | `review/launch-an-ad--step-3-ready-for-approval--768--dark.png` | `review/launch-an-ad--step-3-ready-for-approval--390--light.png` | `review/launch-an-ad--step-3-ready-for-approval--390--dark.png` |
+| Launch an ad, step 3 | approved | review | `review/launch-an-ad--step-3-approved--1440--light.png` | `review/launch-an-ad--step-3-approved--1440--dark.png` | `review/launch-an-ad--step-3-approved--1180--light.png` | `review/launch-an-ad--step-3-approved--1180--dark.png` | `review/launch-an-ad--step-3-approved--768--light.png` | `review/launch-an-ad--step-3-approved--768--dark.png` | `review/launch-an-ad--step-3-approved--390--light.png` | `review/launch-an-ad--step-3-approved--390--dark.png` |
+| Launch an ad, step 3 | sent back | review | `review/launch-an-ad--step-3-sent-back--1440--light.png` | `review/launch-an-ad--step-3-sent-back--1440--dark.png` | `review/launch-an-ad--step-3-sent-back--1180--light.png` | `review/launch-an-ad--step-3-sent-back--1180--dark.png` | `review/launch-an-ad--step-3-sent-back--768--light.png` | `review/launch-an-ad--step-3-sent-back--768--dark.png` | `review/launch-an-ad--step-3-sent-back--390--light.png` | `review/launch-an-ad--step-3-sent-back--390--dark.png` |
+| Launch an ad, step 3 | ad retired | review | `review/launch-an-ad--step-3-ad-retired--1440--light.png` | `review/launch-an-ad--step-3-ad-retired--1440--dark.png` | `review/launch-an-ad--step-3-ad-retired--1180--light.png` | `review/launch-an-ad--step-3-ad-retired--1180--dark.png` | `review/launch-an-ad--step-3-ad-retired--768--light.png` | `review/launch-an-ad--step-3-ad-retired--768--dark.png` | `review/launch-an-ad--step-3-ad-retired--390--light.png` | `review/launch-an-ad--step-3-ad-retired--390--dark.png` |
+| Launch an ad, step 3 | ready for approval, the viewer cannot approve (the hand-off) | review | `review/launch-an-ad--step-3-cannot-approve--1440--light.png` | `review/launch-an-ad--step-3-cannot-approve--1440--dark.png` | `review/launch-an-ad--step-3-cannot-approve--1180--light.png` | `review/launch-an-ad--step-3-cannot-approve--1180--dark.png` | `review/launch-an-ad--step-3-cannot-approve--768--light.png` | `review/launch-an-ad--step-3-cannot-approve--768--dark.png` | `review/launch-an-ad--step-3-cannot-approve--390--light.png` | `review/launch-an-ad--step-3-cannot-approve--390--dark.png` |
+
+### The campaign page
+
+| Screen | State | Server | 1440 L | 1440 D | 1180 L | 1180 D | 768 L | 768 D | 390 L | 390 D |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Campaign page | approved | review | `review/campaign-page--approved--1440--light.png` | `review/campaign-page--approved--1440--dark.png` | `review/campaign-page--approved--1180--light.png` | `review/campaign-page--approved--1180--dark.png` | `review/campaign-page--approved--768--light.png` | `review/campaign-page--approved--768--dark.png` | `review/campaign-page--approved--390--light.png` | `review/campaign-page--approved--390--dark.png` |
+| Campaign page | sent back | review | `review/campaign-page--sent-back--1440--light.png` | `review/campaign-page--sent-back--1440--dark.png` | `review/campaign-page--sent-back--1180--light.png` | `review/campaign-page--sent-back--1180--dark.png` | `review/campaign-page--sent-back--768--light.png` | `review/campaign-page--sent-back--768--dark.png` | `review/campaign-page--sent-back--390--light.png` | `review/campaign-page--sent-back--390--dark.png` |
+| Campaign page | library notice (the Brand changed after the version was saved) | review | `review/campaign-page--library-notice--1440--light.png` | `review/campaign-page--library-notice--1440--dark.png` | `review/campaign-page--library-notice--1180--light.png` | `review/campaign-page--library-notice--1180--dark.png` | `review/campaign-page--library-notice--768--light.png` | `review/campaign-page--library-notice--768--dark.png` | `review/campaign-page--library-notice--390--light.png` | `review/campaign-page--library-notice--390--dark.png` |
+| Campaign page | a newer version of the ad exists | review | `review/campaign-page--newer-version--1440--light.png` | `review/campaign-page--newer-version--1440--dark.png` | `review/campaign-page--newer-version--1180--light.png` | `review/campaign-page--newer-version--1180--dark.png` | `review/campaign-page--newer-version--768--light.png` | `review/campaign-page--newer-version--768--dark.png` | `review/campaign-page--newer-version--390--light.png` | `review/campaign-page--newer-version--390--dark.png` |
+| Campaign page | ad retired | review | `review/campaign-page--ad-retired--1440--light.png` | `review/campaign-page--ad-retired--1440--dark.png` | `review/campaign-page--ad-retired--1180--light.png` | `review/campaign-page--ad-retired--1180--dark.png` | `review/campaign-page--ad-retired--768--light.png` | `review/campaign-page--ad-retired--768--dark.png` | `review/campaign-page--ad-retired--390--light.png` | `review/campaign-page--ad-retired--390--dark.png` |
+| Campaign page | saved before PRD-009 | review | `review/campaign-page--saved-before-prd-009--1440--light.png` | `review/campaign-page--saved-before-prd-009--1440--dark.png` | `review/campaign-page--saved-before-prd-009--1180--light.png` | `review/campaign-page--saved-before-prd-009--1180--dark.png` | `review/campaign-page--saved-before-prd-009--768--light.png` | `review/campaign-page--saved-before-prd-009--768--dark.png` | `review/campaign-page--saved-before-prd-009--390--light.png` | `review/campaign-page--saved-before-prd-009--390--dark.png` |
+| Campaign detail | ready for approval (the approver's view) | review | `review/campaign-detail--ready--1440--light.png` | `review/campaign-detail--ready--1440--dark.png` | `review/campaign-detail--ready--1180--light.png` | `review/campaign-detail--ready--1180--dark.png` | `review/campaign-detail--ready--768--light.png` | `review/campaign-detail--ready--768--dark.png` | `review/campaign-detail--ready--390--light.png` | `review/campaign-detail--ready--390--dark.png` |
+| Campaign detail | approved (the approver's view) | review | `review/campaign-detail--approved--1440--light.png` | `review/campaign-detail--approved--1440--dark.png` | `review/campaign-detail--approved--1180--light.png` | `review/campaign-detail--approved--1180--dark.png` | `review/campaign-detail--approved--768--light.png` | `review/campaign-detail--approved--768--dark.png` | `review/campaign-detail--approved--390--light.png` | `review/campaign-detail--approved--390--dark.png` |
+| Campaign detail | already decided (the approver's view) | review | `review/campaign-detail--already-decided--1440--light.png` | `review/campaign-detail--already-decided--1440--dark.png` | `review/campaign-detail--already-decided--1180--light.png` | `review/campaign-detail--already-decided--1180--dark.png` | `review/campaign-detail--already-decided--768--light.png` | `review/campaign-detail--already-decided--768--dark.png` | `review/campaign-detail--already-decided--390--light.png` | `review/campaign-detail--already-decided--390--dark.png` |
+| Campaign detail | permission-restricted (a creator) | synthetic | `chromium/campaign-detail--permission-restricted--1440--light.png` | `chromium/campaign-detail--permission-restricted--1440--dark.png` | `chromium/campaign-detail--permission-restricted--1180--light.png` | `chromium/campaign-detail--permission-restricted--1180--dark.png` | `chromium/campaign-detail--permission-restricted--768--light.png` | `chromium/campaign-detail--permission-restricted--768--dark.png` | `chromium/campaign-detail--permission-restricted--390--light.png` | `chromium/campaign-detail--permission-restricted--390--dark.png` |
+| Campaign detail | demo campaign (unlinked; axis 10 exempt) | synthetic | `chromium/campaign-detail--default--1440--light.png` | `chromium/campaign-detail--default--1440--dark.png` | `chromium/campaign-detail--default--1180--light.png` | `chromium/campaign-detail--default--1180--dark.png` | `chromium/campaign-detail--default--768--light.png` | `chromium/campaign-detail--default--768--dark.png` | `chromium/campaign-detail--default--390--light.png` | `chromium/campaign-detail--default--390--dark.png` |
+
+The demo campaign is scored on axes 1 to 9 only. The rubric's section 5 exempts it from axis 10, by
+the dated entry "Amended 2026-10-03 by the PRD-009 scored review (R2 F-14)", which ends when a PRD
+retires the route or links a PRD-009 screen to it.
+
+### Campaigns list and the gone page
+
+| Screen | State | Server | 1440 L | 1440 D | 1180 L | 1180 D | 768 L | 768 D | 390 L | 390 D |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Campaigns list | empty | synthetic | `chromium/campaigns--empty--1440--light.png` | `chromium/campaigns--empty--1440--dark.png` | `chromium/campaigns--empty--1180--light.png` | `chromium/campaigns--empty--1180--dark.png` | `chromium/campaigns--empty--768--light.png` | `chromium/campaigns--empty--768--dark.png` | `chromium/campaigns--empty--390--light.png` | `chromium/campaigns--empty--390--dark.png` |
+| Campaigns list | empty (a brand-new account) | review | `review/campaigns--empty-account--1440--light.png` | `review/campaigns--empty-account--1440--dark.png` | `review/campaigns--empty-account--1180--light.png` | `review/campaigns--empty-account--1180--dark.png` | `review/campaigns--empty-account--768--light.png` | `review/campaigns--empty-account--768--dark.png` | `review/campaigns--empty-account--390--light.png` | `review/campaigns--empty-account--390--dark.png` |
+| Campaigns list | populated | synthetic | `chromium/campaigns--populated--1440--light.png` | `chromium/campaigns--populated--1440--dark.png` | `chromium/campaigns--populated--1180--light.png` | `chromium/campaigns--populated--1180--dark.png` | `chromium/campaigns--populated--768--light.png` | `chromium/campaigns--populated--768--dark.png` | `chromium/campaigns--populated--390--light.png` | `chromium/campaigns--populated--390--dark.png` |
+| Campaigns list | populated, every status chip | review | `review/campaigns--all-states--1440--light.png` | `review/campaigns--all-states--1440--dark.png` | `review/campaigns--all-states--1180--light.png` | `review/campaigns--all-states--1180--dark.png` | `review/campaigns--all-states--768--light.png` | `review/campaigns--all-states--768--dark.png` | `review/campaigns--all-states--390--light.png` | `review/campaigns--all-states--390--dark.png` |
+| Gone page | default | review | `review/gone--default--1440--light.png` | `review/gone--default--1440--dark.png` | `review/gone--default--1180--light.png` | `review/gone--default--1180--dark.png` | `review/gone--default--768--light.png` | `review/gone--default--768--dark.png` | `review/gone--default--390--light.png` | `review/gone--default--390--dark.png` |
+
+### Brand, Realtor partners, Homeowner reports, and Settings
+
+| Screen | State | Server | 1440 L | 1440 D | 1180 L | 1180 D | 768 L | 768 D | 390 L | 390 D |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Brand | default | synthetic | `chromium/brand--default--1440--light.png` | `chromium/brand--default--1440--dark.png` | `chromium/brand--default--1180--light.png` | `chromium/brand--default--1180--dark.png` | `chromium/brand--default--768--light.png` | `chromium/brand--default--768--dark.png` | `chromium/brand--default--390--light.png` | `chromium/brand--default--390--dark.png` |
+| Brand | empty (a brand-new account) | review | `review/brand--empty-account--1440--light.png` | `review/brand--empty-account--1440--dark.png` | `review/brand--empty-account--1180--light.png` | `review/brand--empty-account--1180--dark.png` | `review/brand--empty-account--768--light.png` | `review/brand--empty-account--768--dark.png` | `review/brand--empty-account--390--light.png` | `review/brand--empty-account--390--dark.png` |
+| Realtor partners | empty | review | `review/partners--empty--1440--light.png` | `review/partners--empty--1440--dark.png` | `review/partners--empty--1180--light.png` | `review/partners--empty--1180--dark.png` | `review/partners--empty--768--light.png` | `review/partners--empty--768--dark.png` | `review/partners--empty--390--light.png` | `review/partners--empty--390--dark.png` |
+| Homeowner reports | empty (a brand-new account) | review | `review/homeowners--empty-account--1440--light.png` | `review/homeowners--empty-account--1440--dark.png` | `review/homeowners--empty-account--1180--light.png` | `review/homeowners--empty-account--1180--dark.png` | `review/homeowners--empty-account--768--light.png` | `review/homeowners--empty-account--768--dark.png` | `review/homeowners--empty-account--390--light.png` | `review/homeowners--empty-account--390--dark.png` |
+| Settings | default | review | `review/settings--default--1440--light.png` | `review/settings--default--1440--dark.png` | `review/settings--default--1180--light.png` | `review/settings--default--1180--dark.png` | `review/settings--default--768--light.png` | `review/settings--default--768--dark.png` | `review/settings--default--390--light.png` | `review/settings--default--390--dark.png` |
+| Settings connections | default | synthetic | `chromium/settings-connections--default--1440--light.png` | `chromium/settings-connections--default--1440--dark.png` | `chromium/settings-connections--default--1180--light.png` | `chromium/settings-connections--default--1180--dark.png` | `chromium/settings-connections--default--768--light.png` | `chromium/settings-connections--default--768--dark.png` | `chromium/settings-connections--default--390--light.png` | `chromium/settings-connections--default--390--dark.png` |
+| Settings connections | empty (a brand-new account) | review | `review/settings-connections--empty-account--1440--light.png` | `review/settings-connections--empty-account--1440--dark.png` | `review/settings-connections--empty-account--1180--light.png` | `review/settings-connections--empty-account--1180--dark.png` | `review/settings-connections--empty-account--768--light.png` | `review/settings-connections--empty-account--768--dark.png` | `review/settings-connections--empty-account--390--light.png` | `review/settings-connections--empty-account--390--dark.png` |
+
+### Boundaries, the unverified-email notice, and the emails
+
+| Screen | State | Server | 1440 L | 1440 D | 1180 L | 1180 D | 768 L | 768 D | 390 L | 390 D |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Unverified email notice | unverified, with resend | synthetic | `chromium/design-surfaces--default--1440--light.png` | `chromium/design-surfaces--default--1440--dark.png` | `chromium/design-surfaces--default--1180--light.png` | `chromium/design-surfaces--default--1180--dark.png` | `chromium/design-surfaces--default--768--light.png` | `chromium/design-surfaces--default--768--dark.png` | `chromium/design-surfaces--default--390--light.png` | `chromium/design-surfaces--default--390--dark.png` |
+| Route error boundary | failed to load | synthetic | `chromium/design-surfaces--default--1440--light.png` | `chromium/design-surfaces--default--1440--dark.png` | `chromium/design-surfaces--default--1180--light.png` | `chromium/design-surfaces--default--1180--dark.png` | `chromium/design-surfaces--default--768--light.png` | `chromium/design-surfaces--default--768--dark.png` | `chromium/design-surfaces--default--390--light.png` | `chromium/design-surfaces--default--390--dark.png` |
+| Route loading boundary | loading | synthetic | `chromium/design-surfaces--default--1440--light.png` | `chromium/design-surfaces--default--1440--dark.png` | `chromium/design-surfaces--default--1180--light.png` | `chromium/design-surfaces--default--1180--dark.png` | `chromium/design-surfaces--default--768--light.png` | `chromium/design-surfaces--default--768--dark.png` | `chromium/design-surfaces--default--390--light.png` | `chromium/design-surfaces--default--390--dark.png` |
+| Email preview | reset password, 600px | synthetic | `chromium/email-preview--default--1440--light.png` | `chromium/email-preview--default--1440--dark.png` | `chromium/email-preview--default--1180--light.png` | `chromium/email-preview--default--1180--dark.png` | `chromium/email-preview--default--768--light.png` | `chromium/email-preview--default--768--dark.png` | `chromium/email-preview--default--390--light.png` | `chromium/email-preview--default--390--dark.png` |
+| Email preview | confirm email, 600px | synthetic | `chromium/email-preview--default--1440--light.png` | `chromium/email-preview--default--1440--dark.png` | `chromium/email-preview--default--1180--light.png` | `chromium/email-preview--default--1180--dark.png` | `chromium/email-preview--default--768--light.png` | `chromium/email-preview--default--768--dark.png` | `chromium/email-preview--default--390--light.png` | `chromium/email-preview--default--390--dark.png` |
 
 The two email rows are scored on axes 1, 3, 4, and 10 only, per the rubric's section 4: an email
 has no states, no motion, and no responsive frames of its own. The frame columns record the frame
 the surrounding preview page was at.
 
-The three rows above them, the two route boundaries and the unverified-email notice, share one
-picture each frame and theme: `design-surfaces--default--<frame>--<theme>.png`. They are three
-screens in the rubric and one page in the product, because none of the three can be navigated to
-and each is scored on its own axes. PRD-006d's reopened-row review, F-28, says why the page exists.
+The three rows above them, the route error boundary, the route loading boundary, and the
+unverified-email notice, share one picture each frame and theme:
+`design-surfaces--default--<frame>--<theme>.png`. They are three screens in the rubric and one page
+in the product, because none of the three can be navigated to and each is scored on its own axes.
+PRD-006d's reopened-row review, F-28, says why the page exists. Home under the unverified-email
+notice, in the Home table, is the same page's fourth state, `?state=home-under-notice`.
+
+### Removed by PRD-009
+
+Every row below was signed in PRD-008d's table. Each now reads "Removed by PRD-009 on 2026-10-03"
+and stays as history. The pictures of a removed screen were deleted with the capture that drew them,
+by the lane that removed the screen (009F D4), and `tooling/tests/unit/design-quality/baselines-follow-the-screens.test.ts`
+fails if one comes back or a spec names one.
+
+| Screen | State | Server | Row reads | Why it left | Its own pictures deleted |
+| --- | --- | --- | --- | --- | --- |
+| Shell | rail | synthetic | Removed by PRD-009 on 2026-10-03 | The left rail (D-2, 009a); the top bar replaces it | none of its own; judged on other screens' pictures |
+| Shell | collapsed rail | review | Removed by PRD-009 on 2026-10-03 | The left rail (D-2, 009a); the top bar replaces it | 6 (`shell--collapsed-rail`: 1440, 1180, 768, in both themes) |
+| Shell | tablet rail | synthetic | Removed by PRD-009 on 2026-10-03 | The left rail (D-2, 009a); the top bar replaces it | none of its own; judged on other screens' pictures |
+| Shell | mobile drawer | review | Removed by PRD-009 on 2026-10-03 | The rail's mobile drawer (D-2, 009a); the Menu sheet replaces it | 2 (`shell--mobile-drawer`: 390, in both themes) |
+| Shell | not-connected banner | review | Removed by PRD-009 on 2026-10-03 | The shell-wide not-connected banner (D-11, 009a); connection facts are stated once, where they matter | none of its own; judged on other screens' pictures |
+| Shell | "Finish setup" chip | review | Removed by PRD-009 on 2026-10-03 | The walkthrough's chip in the top bar (009b D4) | 8 (`shell--finish-setup-chip`) |
+| Create | empty | synthetic | Removed by PRD-009 on 2026-10-03 | The open house create screen (009d); "Launch an ad" replaces it | 8 (`campaign-create--default`) |
+| Create | prefilled | review | Removed by PRD-009 on 2026-10-03 | The open house create screen (009d); "Launch an ad" replaces it | none of its own; judged on the guided setup's step 4 pictures, counted there |
+| Create | saving | synthetic | Removed by PRD-009 on 2026-10-03 | The open house create screen (009d); "Launch an ad" replaces it | 8 (`campaign-create--saving`) |
+| Create | ready for approval | synthetic | Removed by PRD-009 on 2026-10-03 | The open house create screen (009d); "Launch an ad" replaces it | 8 (`campaign-create--ready-for-approval`) |
+| Create | needs changes | synthetic | Removed by PRD-009 on 2026-10-03 | The open house create screen (009d); "Launch an ad" replaces it | 8 (`campaign-create--needs-changes`) |
+| Reports | not connected | synthetic | Removed by PRD-009 on 2026-10-03 | The Reports page (OD-D, 009f D1) | 8 (`reports--default`) |
+| Onboarding | default | synthetic | Removed by PRD-009 on 2026-10-03 | The /onboarding checklist (009f D1) | 8 (`onboarding--default`) |
+| Guided setup step 1 | welcome | review | Removed by PRD-009 on 2026-10-03 | The guided-setup walkthrough (009b D4) | 8 of the 80 `guided-setup--*` pictures |
+| Guided setup step 2 | your details | review | Removed by PRD-009 on 2026-10-03 | The guided-setup walkthrough (009b D4) | 8 of the 80 |
+| Guided setup step 3 | your Realtor partner | review | Removed by PRD-009 on 2026-10-03 | The guided-setup walkthrough (009b D4) | 8 of the 80 |
+| Guided setup step 4 | create the campaign, first field | review | Removed by PRD-009 on 2026-10-03 | The guided-setup walkthrough (009b D4) | 8 of the 80 (`guided-setup--step-4-create-the-campaign-first-field`) |
+| Guided setup step 4 | create the campaign, last field | review | Removed by PRD-009 on 2026-10-03 | The guided-setup walkthrough (009b D4) | 8 of the 80 (`guided-setup--step-4-create-the-campaign-last-field`) |
+| Guided setup step 5 | read the result, ready | review | Removed by PRD-009 on 2026-10-03 | The guided-setup walkthrough (009b D4) | 8 of the 80 |
+| Guided setup step 5 | read the result, needs changes | review | Removed by PRD-009 on 2026-10-03 | The guided-setup walkthrough (009b D4) | 8 of the 80 |
+| Guided setup step 6 | approve | review | Removed by PRD-009 on 2026-10-03 | The guided-setup walkthrough (009b D4) | 8 of the 80 |
+| Guided setup step 6 | hand off | review | Removed by PRD-009 on 2026-10-03 | The guided-setup walkthrough (009b D4) | 8 of the 80 |
+| Guided setup step 7 | what happens next | review | Removed by PRD-009 on 2026-10-03 | The guided-setup walkthrough (009b D4) | 8 of the 80 |
+
+The pictures deleted add up to 144 of the 376 PRD-008d left: 48 under `chromium/` (8 reports, 8 onboarding, 32 create) and 96 under `review/` (80 guided setup, 8 "Finish setup" chip, 6 collapsed rail, 2 mobile drawer), the count 009F D4 and the inventory test hold.
 
 ## Where each row's picture comes from
 
 The two screenshot suites capture one picture per row, frame, and theme, named
 `<screen>--<state>--<frame>--<theme>.png` with the state as this table's state word in lower case
-with hyphens. `tests/visual/screens/README.md` says how to take a set without touching a baseline.
-A row whose picture the suites take is a row the orchestrator can check against
-`tests/visual/screens/` rather than re-stage by hand. Since 2026-10-01 every row in the table has
-its picture there.
+with hyphens, and a cell names it as `<folder>/<file>`. `tests/visual/screens/README.md` says where
+each suite runs and how to take a set without touching a baseline. The table was built from the
+installed files, not from a list of screens.
 
-The campaigns list's two rows come from two fixture workspaces rather than from whatever the
-synthetic store held when the suite reached the screen: `campaigns--empty` from
-`tests/browser/helpers/empty-campaign-workspace.ts` (no campaigns) and `campaigns--populated` from
-`tests/browser/helpers/populated-campaign-workspace.ts` (two campaigns saved through the create
-screen, one ready for approval and one that needs changes). There is no `campaigns--default`. Until
-2026-10-01 the matrix took one, and on the runner, whose workspace is empty when the matrix runs, it
-was always the empty list, so the populated row had been signed from a workstation capture that no
-committed picture matched.
+Installed: 74 under `chromium/` and 402 under `review/`, 476 in all, each named by at least one row.
+The table names 476 distinct pictures in 508 cells (the three boundary rows and the two email rows
+share pictures, and the synthetic Home is named by the top-bar row and by its own), and the check in
+"How to fill this in" reads "476 named, 0 missing".
 
-Two pictures carry a painted-over region. On campaign detail's approved and already-decided rows
-the moment the decision was recorded is blanked, because it is a fact about the run rather than
-about the design and a baseline that changed with the clock would fail every time. PRD-008b's
-"Who decided" card put that moment on the approved row too. They are the only such regions in
-either suite, and the loud colour is Playwright's own, chosen so nobody reads it as a surface.
+### Rows that share a picture, or name another row's
 
-### Rows whose server column changed
+- **Shell, top bar.** The bar has no picture of its own. It is on every in-shell picture and was
+  scored on all of them. The row names the synthetic Home's eight because they draw it with the
+  "Local demo with sample data." line, the one place the bar differs.
+- **Shell, Help sheet open** draws the Help sheet over Home.
+- **Reset password, saved** draws Home, not the reset form: the person has just set a password, is
+  signed in, and lands on Home under the "Your password is saved. You're signed in." notice.
+- **Campaign detail and the campaign page** are one page with two sets of names. The
+  `campaign-detail--*` pictures kept the names their earlier captures gave them. Ready, approved, and
+  already decided draw the page of a campaign the seeded creator saved through "Launch an ad", as the
+  seeded approver sees it before and after deciding (`tests/browser/review/review-campaign-decision.spec.ts`).
+  Permission-restricted draws a campaign page as a creator, who cannot approve, sees it. The default
+  picture is the unlinked demo campaign, `/marketing/campaigns/synthetic-open-house-001`. The
+  `campaign-page--*` pictures are the new account's own saved campaigns.
+- **The two emails** are one page, `email-preview--default--*`, with each message in its own
+  600px frame, so both rows name the same eight pictures.
+- **The boundaries and the notice** share `design-surfaces--default--*`, as the note under the table
+  says.
 
-Four states are not states a synthetic deployment has, so the suites take them from the review
-server and the `Server` column says so.
+### Rows whose server column is review
 
 | Row | Why it is a review row |
 | --- | --- |
-| Campaign detail, ready / approved / already decided | Synthetic mode's principal holds `campaign_creator` (`apps/web/src/server/authenticated-principal.ts:210-224`), and `campaignMayBeApprovedBy` (`packages/application/src/campaign-workspace-read.ts:110-119`) needs an approval role. A synthetic deployment can therefore never render an approvable or an approved campaign. The seeded approver can. Campaign detail's permission-restricted state stays synthetic, because that is exactly what a creator sees. |
-| Shell, collapsed rail and mobile drawer | Both are states of the signed-in shell that a person reaches with a control, and the review server is where a real session exists. |
+| Every account screen | Every auth page answers 404 unless the deployment serves the signed-in product (`apps/web/src/features/auth/auth-page-gate.ts`, 006A-AC-026). The review composition is where a real session and a real sign-up exist. |
+| Campaign detail: ready, approved, already decided | Synthetic mode's principal holds `campaign_creator` (`apps/web/src/server/authenticated-principal.ts:240`), and `campaignMayBeApprovedBy` (`packages/application/src/campaign-workspace-read.ts:153-162`) needs an approval role. A synthetic deployment can therefore never render an approvable or an approved campaign. The seeded approver can. Permission-restricted stays synthetic, because that is exactly what a creator sees. |
+| Home first run, the Campaigns list for a brand-new account, the Ads library, launch steps 1 and 2, Brand, Realtor partners, Homeowner reports, Settings, and Connections for a brand-new account | They are pictures of a real sign-up's own pages, from one account that `tests/browser/review/empty-account.spec.ts` signs up once and reuses (009G D1), photographed before anything is saved. |
+| Launch step 3, the campaign page states, the Campaigns list with every chip, and the gone page | The same account, after it has saved its brand and four campaigns through "Launch an ad" and had three more stored beside them (the next row) (009G-AC-002). |
+| Ads library, Home, and step 1 on the real catalog | The review run starts a second server without the samples flag, so the real catalog, which ships empty, is what the page shows (`tests/browser/review/real-catalog/first-impression.spec.ts`). That is the hosted first impression. |
+| Campaign page: ad retired, newer version, saved before PRD-009 | The product never saves a version against a retired, replaced, or missing ad (009D-AC-011), so no browser reaches these. They are stored through `seedCampaignHistory` with the product's own manifest builder, and the pages that show them read what is stored. |
+| Help sheet open and Menu sheet open | Both are states of the signed-in shell that a person reaches with a control, and the review server is where a real session exists. |
 
 ### What the review run spends, per run
 
 The review project shares one client address with the product's own rate limits, so how many
-sign-ups it spends is part of its coverage. Since the named-state review's F-22:
+sign-ups it spends is part of its coverage. The product allows ten sign-ups an hour per client
+address and counts every submission, refusals included. The header of
+`tests/browser/review/empty-account.spec.ts` counts eight for the review run and names the spec that
+spends each: two refusals in `design-quality.spec.ts`, and one account each in
+`workspace-pages.spec.ts`, `home-first-run.spec.ts`, `launch-an-ad.click-count.spec.ts`,
+`launch-an-ad.timed.spec.ts`, `empty-account.spec.ts`, and `real-catalog/first-impression.spec.ts`.
+That leaves two, which is the room a retry has under CI, because a retried file that signs up in
+`beforeAll` signs up again. The count is the same eight it was under PRD-008d (six accounts and two
+refusals both times): the walkthrough's specs left, and the brand-new account's pages now share one
+account instead of costing one sign-up each.
 
-| Spec | Sign-up submissions | Note |
-| --- | --- | --- |
-| `guided-setup.accessibility.spec.ts` | 1 | Was four, one per frame and theme. One account now walks all four cells, put back to step 1 from the help menu between them. |
-| `guided-setup.tablet-anchoring.spec.ts` | 1 | Was three, one per frame. One account now walks all three. |
-| `guided-setup.resume.spec.ts` | 2 | Unchanged. The two cases are two different account lifetimes: one dismissed and restarted, one completed. |
-| `guided-setup.timed.spec.ts` | 1 | Unchanged. The run measures account creation, so it has to create one. |
-| `guided-setup.walkthrough-captures.spec.ts` | 1 | Step 6's approve branch needs a workspace owner, and a self-serve account is the only owner this composition can make. The hand-off branch spends none: the seeded creator gives it. |
-| `design-quality.spec.ts`, the sign-up refusal | 2 | One submission per theme, each refused. Neither creates an account. |
-| **Total** | **8 of 10** | Six accounts created and two refusals. The limit is ten an hour per client address (`apps/web/src/server/password-authentication-handler.ts:118`), counted before the body is parsed (the same file, line 771). The gate drops and recreates the disposable database on every run, so the budget is per run rather than per hour of wall clock. |
+### Pictures carrying a painted-over region
 
-Measured on 2026-09-20 against the seeded review database: the review project is **82 passed, 0
-failed, 12.8 minutes**, with the eight submissions above and none refused. On 2026-10-01 the
-runner's `pnpm test:db` in screen-baselines run 36828316006 is **104 passed, 0 failed**, with the same
-eight submissions: PRD-008d's verify-email confirmed state spends two confirmations against the
-verify limit and no sign-up, steps 1 and 2 sign the seeded creator in, and step 5's refusal is
-walked on the approver's path with no new sign-in. The second redraw's three runs, 36838168997,
-36841695906, and 36844271868, each ran the review project at **104 passed, 0 failed** with the same
-eight submissions.
+Every date in every picture is painted over, in Playwright's own mask colour, on the date's own line
+boxes (`markTheMasks` in `tests/browser/helpers/design-quality.ts`). A date is a fact about the clock
+or about the catalogue's fixed review dates, never about the design, and a baseline that changed
+with the clock would fail on another day. The colour is loud on purpose, so that nobody reads it as
+a surface. Read a picture with a painted date as a picture whose date is absent.
 
 ### Frames a state does not have
 
-Two of these rows are scored at fewer than four frames, because the product does not have the state
-at the others. This is the brief's own frame rule, not a gap.
+Cells read "frame not drawn" in these rows, and nowhere else. Each has fewer than eight pictures
+because the product does not have the state at the other frames.
 
-| Row | Frames | Why |
+| Row | Frames drawn | Why |
 | --- | --- | --- |
-| Shell, collapsed rail | 1440, 1180, 768 | The rail exists at three frames and the toggle reaches all three, which is what design brief section 14 and `03-components/application-shell-and-navigation.md:26` mean by a collapsible tablet rail. Until F-19 it was a 1440 state only, because the stylesheet hid the toggle from 1180 down and forced the rail compact there. At 390 there is no rail to collapse: it is replaced by the drawer, which is the row below. |
-| Shell, mobile drawer | 390 only | The drawer trigger is `display: none` above 767.98px (`apps/web/src/features/shell/components/app-shell.module.css`, the mobile block), which PRD-006d D5 moved deliberately so the 768 frame keeps the rail. |
+| Shell, Menu sheet open | 390 Light and 390 Dark | The sheet exists only below 720px (009A-AC-011). Above it the bar shows every link, and at 768 it shows them on a second row. |
+| Home, under the unverified-email notice | 1440 Light and 390 Light | 009G-AC-001 names the pair. The review run configures no email, so it can never show Home and the notice together, and the synthetic design surfaces page draws them instead (`?state=home-under-notice`). |
 
-### Rows no automated suite could take, which the orchestrator used to stage by hand
+### Rows no automated suite could take
 
-None remains. The last two left on 2026-10-01 with PRD-008d: verify email's confirmed state is
-taken by `tests/browser/review/design-quality.spec.ts` with a token minted for the seeded outsider
-through the product's own credential port (`tests/browser/review/helpers/verification-token.ts`),
-and step 5's needs-changes answer is taken at the end of the approver's journey in
-`tests/browser/review/guided-setup.walkthrough-captures.spec.ts`, from a draft whose open house has
-already finished. The table below is kept as the record of why each row was once staged by hand.
-
-Three rows left this table on 2026-09-20. Campaign detail's ready and approved states were
-blocked by a control that failed the target-size check, and F-18 moved that control onto the
-`Button` primitive, so `tests/browser/review/review-campaign-decision.spec.ts` now takes both with
-every check at full strength. Sign up's address-already-has-an-account state was blocked by
-arithmetic, and F-22 made room for it, so `tests/browser/review/design-quality.spec.ts` takes it
-once per theme.
-
-**Three more left it later the same day**, by the PRD-006d reopened-row review's F-28: the route
-error boundary, the route loading boundary, and the unverified-email notice. Each of the three
-reasons below was true, and each was a reason about how a state arrives rather than about the state
-itself, which is why they went unreviewed for a batch. `/design-surfaces` renders all three from
-placeholder values inside the real shell, gated on `canRenderSyntheticDemo()` like the email
-preview, so `tests/browser/design-quality.spec.ts` now takes them at all four frames in both themes
-with axe, the keyboard walk, the motion check, and the target-size check, and
-`tests/browser/review/design-quality.spec.ts` proves the address answers 404 on a connected-account
-deployment.
-
-The orchestrator still stages the unverified notice on a deployment with a sending domain if it
-wants the shell's own live instance of it rather than the boundary page's, because only a real
-`unverified` session produces one. What the boundary page removes is the case where nobody had
-looked at the surface at all.
-
-| Row | Why the suite could not reach it before 2026-09-20 |
-| --- | --- |
-| Verify email, confirmed | Confirming needs an `email_verification` token, and `scheduleVerificationEmail` issues one only when a sending domain is configured (`apps/web/src/server/password-authentication-handler.ts:812-816`). The review composition leaves `OALO_RESEND_API_KEY` and `OALO_EMAIL_FROM` absent on purpose (`tooling/scripts/database/review-browser-run.mjs:48-51`), so no token exists for a browser to spend. Stage it on a deployment with a sending domain. |
-| Unverified email notice | `UnverifiedEmailNotice` renders it, and only for `unverified` (`apps/web/src/features/auth/components/unverified-email-notice.tsx:38`). 006A-AC-021 is explicit that a deployment with no sending domain shows no verification notice, and the review composition leaves the email variables absent on purpose (`tooling/scripts/database/review-browser-run.mjs:48-51`), so every session in the run carries `not_applicable` and there is no notice on the shell to photograph. Stage it on a deployment with a sending domain. |
-| Guided setup step 5, needs changes | The walkthrough's own journey saves a campaign the checks pass, because that is the path the budget in PRD-006c D3 is written against. The needs-changes branch of step 5 needs a campaign the checks refuse, which the synthetic suite already photographs on the create screen (`create--needs-changes`) but which no journey in the review run produces. Stage it by giving the walkthrough an open house that has already finished, which is the product's own blocking finding. |
-| Route error boundary | Nothing a browser can do makes a synthetic server component throw, and `(authenticated)/error.tsx` only renders when one does. |
-| Route loading boundary | `loading.tsx` is a streaming fallback. The shell's navigation is plain `<a href>` (`apps/web/src/features/shell/components/app-shell.tsx:346-360`) and the only `useRouter().push` in the product is the guided setup's (`apps/web/src/features/guided-setup/guided-setup-provider.tsx:226`), so a synthetic navigation is always a document load and the fallback is never on screen long enough to photograph. |
+None was staged by hand for PRD-009, and the 2026-09-20 table that explained why each earlier row
+once had to be staged by hand is in this file's git history; every row that table named is now taken
+by a suite or was removed. Home with campaigns, the last state without a picture, is drawn by
+`tests/browser/review/empty-account.spec.ts` since run 37163215460.
 
 ## Out of scope, recorded rather than fixed
 
-PRD-006d 006D-AC-018 and the rubric's section 5, entries D-004 and D-005.
+PRD-006d 006D-AC-018 and the rubric's section 5, entries D-004 and D-005. Re-read on 2026-10-03
+against the PRD-009 tree.
 
 | Surface | Recorded drift | Why it is out of scope |
 | --- | --- | --- |
-| `/demo` | A private nine-token palette, 76 hex values, a `backdrop-filter`, and no Dark block in `apps/web/src/components/demo/founding-offer-demo.module.css`. | PRD-006d Non-Goals. It never renders in review mode, review mode answers 404 for it, and no screen in either mode links to it. Both facts are asserted: `tests/browser/design-quality.spec.ts` for synthetic mode and `tests/browser/review/design-quality.spec.ts` for review mode. |
-| The synthetic reporting gallery | Demonstration rows and filters that exist only to show the reporting surface. | PRD-006d Non-Goals. It renders only in synthetic mode. Its controls were nonetheless moved onto the governed primitives under 006D-AC-003, so it no longer drifts on the field specification. |
-| `<select>` on the reporting screens | Two native selects remain, wrapped in `FormField`. | PRD-006d D4 defers a `Select` primitive; nothing in PRD-006 needs one. Rubric section 5, entry D-004. |
-| Checkbox and radio controls | Native controls inside an associated label on sign-in, the workspace choice, and the create screen. | PRD-006d D4 ships no primitive for either. They are allowed by name in `tooling/tests/unit/design-quality/governed-controls.test.ts`, not hidden. |
+| `/demo` | A private nine-token palette, 76 hex values, a `backdrop-filter`, and no Dark block in `apps/web/src/components/demo/founding-offer-demo.module.css`. | PRD-006d Non-Goals. The route is served only in synthetic mode and answers 404 everywhere else (`apps/web/src/app/demo/page.tsx`), and no screen in either mode links to it. The second fact is held by `tests/browser/design-quality.spec.ts` for synthetic mode and `tests/browser/review/design-quality.spec.ts` for review mode. |
+| The synthetic reporting gallery | Demonstration rows and filters that existed only to show the reporting surface. | Removed by PRD-009 on 2026-10-03 with the Reports page (009F D1): `reporting-acceptance-surface.tsx` and `reports-screen.tsx` no longer exist. |
+| `<select>` on the reporting screens | Two native selects, wrapped in `FormField`. | Removed with the same screens: a search of `apps/web/src` on 2026-10-03 finds no `<select>` element. PRD-006d D4 still defers a `Select` primitive; rubric section 5, entry D-004. |
+| Checkbox and radio controls | Native controls inside an associated label on sign-in, the workspace choice, step 3 of "Launch an ad", and the Homeowner reports builder. | PRD-006d D4 ships no primitive for either. They are allowed by name in `tooling/tests/unit/design-quality/governed-controls.test.ts`, not hidden. Step 3 and the Homeowner reports builder replace the create screen as the places they appear. |
 
 ## How this was filled
+
+### The PRD-009 re-sign of 2026-10-03 (009G-AC-007)
+
+Re-signed by `ux-ui-guardian`, Gauntlet PRD-009 Wave 4, for the orchestrator, against the whole
+PRD-009 tree: the light look and top menu (009a), Home (009b), the Ads library (009c), "Launch an
+ad" (009d), the campaign page and list (009e), the removals (009f), and the verification specs
+(009g). The table was built fresh from the installed files. Nothing in it is carried forward from
+PRD-008d's cells. Of the 376 pictures PRD-008d left, 144 belonged to screens PRD-009 removed and were
+deleted, 232 belong to screens it kept and were redrawn, and 244 are new (the first dispatch's 236,
+and the eight of Home with campaigns that the fifth redraw added), which is the 476 installed.
+
+**The five redraws.** Each is a dispatch of `screen-baselines.yml`.
+
+- Run 37059676544 on `de69e09e`: the single dispatch 009G-AC-004 allows. It drew all 468 pictures
+  (74 synthetic, 394 review), 232 changed and 236 new.
+- Run 37136898883 on `0d539dee`, under 009G-AC-011: pass 1's fixes changed rendered output.
+- Run 37149916536 on `8178126b`, under 009G-AC-011: round 2's design lanes (G, H, I, J), the
+  quality close-out's lanes, the glyphs, and the writing fixes changed rendered output again.
+- Run 37157590605 on `963630c9`, under 009G-AC-011: round 3's two fix lanes (X for "Launch an ad",
+  the library, the campaign page and list; Y for Home, the workspace pages, Connections, Homeowner
+  reports, and the demo page).
+- Run 37163215460 on `ee03945a`, under 009G-AC-011: one micro-round fixed pass 4's follow-ups (the
+  grey ring on step 3's links, the Approval card's first sentence, "Request a new link" on the
+  expired reset link, single words left alone on a line, a relative time that wrapped) and added the
+  capture of Home with campaigns. It drew 476 pictures; 201 differ from run 37157590605's, the eight
+  of Home with campaigns among them. **Its pictures are the ones installed and named above.**
+
+**The scored review passes and the stopping rule.** Four `ux-ui-guardian` reviewers on opus each
+took a set of the 468 pictures and scored every one on the ten axes against the rubric, the PRD-009
+design direction, and the PRD-009 mockups: R1 "Launch an ad" and the Ads library (104), R2 the
+campaign page and list, the gone page, and the shell (138), R3 Home, Settings, Connections, Brand,
+partners, and Homeowner reports (80), R4 the account screens, the email preview, and the design
+surfaces (146). The report is
+`library/requirements/completed/prd-009-marketing-toolkit/qa/2026-10-03-scored-baseline-review.md`.
+
+- Pass 1, on run 37059676544: no picture at 3 on every axis. 58 findings (4 High, 17 Medium, 37 Low),
+  each fixed with a test where a test can pin it.
+- Pass 2, on run 37136898883: 194 of 468 at 3 on every axis. One Medium and about 25 Low remained.
+- Pass 3, on run 37149916536: every earlier finding resolved, and 270 of 468 at 3 on every axis.
+  One Medium and 22 Low remained, most of them visible in the earlier passes and missed there.
+- The stopping rule, the orchestrator's: pass 3 is the last full scan. Its 23 findings were fixed in
+  one round (lanes X and Y), the affected pictures were redrawn once more (run 37157590605), and pass
+  4 confirms that each of the 23 is resolved on the final pictures. Anything new that pass 4 sees is
+  recorded as a dated follow-up and does not reopen the review. Pass 4's result is in the report under
+  its own heading, and it is part of what this sign-off rests on.
+
+**Rulings that shape how the rows were read.** Chips are 12px everywhere (the component spec over the
+mockups' 14px). Buttons keep the shared weight 500 (the brief over the mockups' 600). A large Card's
+inset is 20px below 720px and 24px above. Where a written spec line and a PRD-009 mockup disagree,
+the mockup wins and the spec line gets a dated note. The demo campaign page is exempt from axis 10
+only (rubric section 5, R2 F-14). Each is in the report, with the finding that caused it.
+
+**What this file does not repeat.** The findings, with their pictures, sources, and fixes, are in the
+report. The machine checks PRD-009g adds for these screens are 009G-AC-001 and 009G-AC-002 (axe at
+zero for each capture), 009G-AC-010 (the keyboard, the 2 px focus ring with its 3 px offset, and the
+sticky bar), and 009G-AC-012 (reduced motion). This file does not restate their results.
+
+**Signed.** Every row of the table names pictures that exist on disk, or names a frame the state does
+not have and says why, and no cell reads "not photographed" or "asserted". One state has no picture
+at any frame, Home with campaigns, and is recorded under "Frames a state does not have" rather than
+signed on a picture. The scores that make a row signed are the report's: pass 3's for the 270 of 468
+pictures it found at 3 on every axis, and pass 4's confirmation for the rest, whose pass 3 findings
+round 3 fixed.
+
+**The earlier sections stay as history.** Everything from "The second re-sign of 2026-10-01" down is
+the record of PRD-008d and PRD-006d, kept as written. The findings, fixes, and numbers in it describe
+those trees, and the rows it names (the rail, the guided setup, reports, onboarding, the open house
+create screen) are the rows PRD-009 removed.
 
 ### The second re-sign of 2026-10-01 (D-009 and D-010, 008D-AC-011)
 

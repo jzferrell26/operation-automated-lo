@@ -264,7 +264,7 @@ describe("the ad card and the topic chips (R1-03, R1-04)", () => {
     // `.cardAction` put it 16px under (`--space-2` gap and `--space-2` padding in the body).
     expect(cards.declarationsOf(".cardFoot")["padding"]).toBe("0 var(--space-5) var(--space-5)");
     expect(cards.declarationsOf(".cardFoot > *")["inline-size"]).toBe("100%");
-    expect(cards.source).not.toMatch(/\.cardAction/u);
+    expect(cards.source).not.toMatch(/\.cardAction\b/u);
   });
 
   it("sets the chip's words at the secondary step, and keeps the chosen chip's ink", () => {

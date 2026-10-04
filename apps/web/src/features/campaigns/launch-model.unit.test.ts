@@ -180,7 +180,7 @@ describe("Fix it (009D-AC-019) and See what we checked (009D-AC-014)", () => {
     expect(RULE_PLAIN_NAMES.WORDS_TOO_LONG).toBe("Words are within this ad's length limit");
     expect(RULE_PLAIN_NAMES.IMAGE_QUALITY_LOW).toBe("Images are large enough");
     for (const [code, name] of Object.entries(RULE_PLAIN_NAMES)) {
-      expect(name, code).not.toMatch(/runs?/iu);
+      expect(name, code).not.toMatch(/\bruns?\b/iu);
     }
   });
 

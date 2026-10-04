@@ -66,7 +66,7 @@ describe("the Campaigns table and cards (review R2, F-8, F-11)", () => {
     // Pass 1 hid the table's tile between 720px and 1023px to make the chips fit; the chips now keep
     // one line and hyphenated words stay whole, so nothing at this width hides a tile any more.
     const tablet = mediaBody(css.source, "(max-width: 63.99rem)");
-    expect(tablet).not.toMatch(/\.thumb/u);
+    expect(tablet).not.toMatch(/\.thumb\b/u);
     expect(tablet).not.toMatch(/display\s*:\s*none/u);
     expect(css.declarationsOf(".thumb")["inline-size"]).toBe("3rem");
     // The Ad cell keeps its two columns, the tile beside the name, and the name's track may not

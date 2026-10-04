@@ -67,6 +67,7 @@ describe("the account screens say exactly what PRD-006b D10 says", () => {
     expect(RESET_PASSWORD.expiredError).toBe(
       "This reset link has expired or was already used. Request a new one.",
     );
+    expect(RESET_PASSWORD.requestNewLinkLabel).toBe("Request a new link");
     expect(RESET_PASSWORD.mismatchError).toBe("Those passwords don't match.");
     expect(RESET_PASSWORD.successNotice).toBe("Your password is saved. You're signed in.");
   });

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { assertAuthPageIsServed } from "../../../features/auth/auth-page-gate.js";
+import { ResetLinkMissing } from "../../../features/auth/components/auth-feedback.js";
 import { AuthPanel } from "../../../features/auth/components/auth-panel.js";
 import { ResetPasswordForm } from "../../../features/auth/components/reset-password-form.js";
 import { RESET_PASSWORD } from "../../../features/auth/strings.js";
@@ -33,11 +34,7 @@ export default async function ResetPasswordPage({
   const token = tokenFrom(parameters["token"]);
   return (
     <AuthPanel title={RESET_PASSWORD.title}>
-      {token.length === 0 ? (
-        <p>{RESET_PASSWORD.expiredError}</p>
-      ) : (
-        <ResetPasswordForm token={token} />
-      )}
+      {token.length === 0 ? <ResetLinkMissing /> : <ResetPasswordForm token={token} />}
     </AuthPanel>
   );
 }

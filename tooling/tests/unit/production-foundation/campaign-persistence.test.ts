@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { createCampaignVersion, runCampaignPreflight } from "@oalo/application";
 import {
-  CampaignManifestSchema,
+  OpenHouseCampaignManifestSchema,
   type CampaignInputVersions,
-  type CampaignManifest,
+  type OpenHouseCampaignManifest,
   type CampaignVersion,
   type PreflightRules,
 } from "@oalo/contracts";
@@ -40,7 +40,7 @@ const inputVersions: CampaignInputVersions = {
   rulesetVersionRef: "ruleset_01Policy",
 };
 
-const manifest: CampaignManifest = CampaignManifestSchema.parse({
+const manifest: OpenHouseCampaignManifest = OpenHouseCampaignManifestSchema.parse({
   schemaVersion: 1,
   blueprintId: "open-house-boost",
   property: {
@@ -485,7 +485,7 @@ describe("campaign persistence contracts", () => {
 });
 
 async function createFrozenVersion(
-  nextManifest: CampaignManifest = manifest,
+  nextManifest: OpenHouseCampaignManifest = manifest,
 ): Promise<CampaignVersion> {
   return createCampaignVersion(
     {

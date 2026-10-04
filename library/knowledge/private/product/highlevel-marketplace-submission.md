@@ -19,9 +19,9 @@ Internal operator packet for Automated LO Marketplace listing, sandbox App Test,
 
 ## What "reviewable" means
 
-A HighLevel reviewer and a sandbox location can install Automated LO, create an Open House Boost, persist it in Postgres, and record a human approval. The product is hosted on the existing Vercel project (`operation-automated-lo-web.vercel.app`) and submitted to the Marketplace for that demonstrated scope only.
+A HighLevel reviewer and a sandbox location can install Automated LO, create an Open House Boost, persist it in Postgres, and record a human approval. The product is hosted on the existing Vercel project (`operation-automated-lo-web.vercel.app`) and submitted to the Marketplace for that demonstrated scope only. _(Superseded in substance on 2026-10-03 by PRD-009 (S-104; OD-H): the product's first flow is now "Launch an ad" from the curated library, so a reviewer chooses a library ad, sets it up, and approves it, and the open house create screens no longer exist. The real library is empty until the owner supplies approved ads (finish-line operator checklist, step 11), so the hosted app cannot show a reviewer an ad to launch yet. Which scope the listing may claim is owner decision D-5 of that checklist.)_
 
-The listing must describe **only** Open House Boost create, persist, and approve. Do not advertise automatic ad publishing, lead delivery, or billing.
+The listing must describe **only** Open House Boost create, persist, and approve. Do not advertise automatic ad publishing, lead delivery, or billing. _(Superseded in substance on 2026-10-03 by PRD-009 (S-104; OD-H): read "Open House Boost create, persist, and approve" as the library-ad flow, "Launch an ad": choose an ad, set it up, review and approve. The prohibitions in this paragraph still hold, and "Launch on Facebook" is disabled in PRD-009. The listing's wording is owner decision D-5.)_
 
 ---
 
@@ -87,7 +87,7 @@ Complete only after [PRD-004a](../../../requirements/in-work/prd-004-reviewable-
 | Artifact | Requirement |
 | --- | --- |
 | Profile | Logo, description, support email |
-| Screenshots | Open House Boost create → persist → approve only; **no misleading synthetic spend/lead metrics** (`004C-AC-004`) |
+| Screenshots | Open House Boost create → persist → approve only; **no misleading synthetic spend/lead metrics** (`004C-AC-004`) _(Superseded in substance on 2026-10-03 by PRD-009 (S-104; OD-H): the open house create screens are gone. The screens to photograph are Home, the Ads library, the three steps of "Launch an ad", and the campaign page, and the shot list waits on owner decision D-5 and on the first approved ads (operator checklist step 11). The rule against misleading synthetic metrics stands: the campaign page shows no figure that has no live source (MTK-009).)_ |
 | Pricing | As applicable for founding scope |
 | OAuth | HTTPS callback on verified preview/staging domain |
 | Demo video | Loom: install → setup → create → approve → disconnect; must match live Test Link (`004C-AC-003`) |

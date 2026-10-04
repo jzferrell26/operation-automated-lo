@@ -72,6 +72,13 @@ export declare function readLocationCorrelationIds(
   locationId: string,
 ): Promise<readonly string[]>;
 
+/** PRD-009b 009B-AC-004. One of the six statuses `platform.marketplace_installations` allows. */
+export declare function setReviewInstallationStatus(
+  pool: DatabasePool,
+  locationId: string,
+  status: "pending" | "active" | "missing_scope" | "reconnect_required" | "revoked" | "uninstalled",
+): Promise<void>;
+
 export declare function seedReviewLocationWithoutInstallation(
   pool: DatabasePool,
   displayName: string,
@@ -169,3 +176,91 @@ export declare function readAuthRateLimitRows(
     windowStart: string;
   }>[]
 >;
+
+/**
+ * PRD-009g, 009G-AC-002. Campaign history for the review run's own accounts: the states of the
+ * campaign page and of step 3 that the product refuses to create through its own flow. See
+ * `seedReviewAccountCampaigns` in `campaign-integration-support.mjs`.
+ */
+
+/** The workspace and person a review account belongs to. */
+export interface ReviewAccount {
+  readonly locationId: string;
+  readonly actorId: string;
+  readonly locationRef: string;
+  readonly actorRef: string;
+}
+
+/** One campaign to store: a version as `createCampaignVersion` takes it, and the rules its check runs under. */
+export interface ReviewCampaignSeed {
+  /** What the campaign is for, named in a failure and answered back in the summary. */
+  readonly label: string;
+  /** The instant the version was "saved", as an ISO date and time. */
+  readonly createdAt: string;
+  readonly version: Readonly<{
+    schemaVersion: 1;
+    locationRef: string;
+    campaignRef: string;
+    campaignVersionRef: string;
+    inputVersions: import("@oalo/contracts").CampaignInputVersions;
+    manifest: import("@oalo/contracts").CampaignManifest;
+    createdBy: string;
+  }>;
+  readonly rules: import("@oalo/contracts").PreflightRules;
+}
+
+export interface ReviewCampaignTemplate {
+  readonly inputVersions: import("@oalo/contracts").CampaignInputVersions;
+  readonly manifest: import("@oalo/contracts").LibraryAdCampaignManifest;
+}
+
+export interface SeededReviewCampaign {
+  readonly label: string;
+  readonly campaignRef: string;
+  readonly campaignVersionRef: string;
+  readonly versionNo: number;
+}
+
+export interface ReviewAccountRepositories {
+  readonly versions: import("@oalo/application").CampaignVersionRepository & {
+    persistPreflight(
+      result: import("@oalo/contracts").PreflightResult,
+    ): Promise<import("@oalo/contracts").PreflightResult>;
+  };
+  readonly reads: {
+    getByCampaignRef(
+      campaignRef: string,
+    ): Promise<import("@oalo/application").CampaignWorkspaceReadRecord | undefined>;
+  };
+}
+
+/**
+ * The refusal that keeps review campaign history inside the review run's disposable database. It is
+ * called before a connection is opened, and answers the database name when every rule holds.
+ */
+export declare function assertReviewRunDatabase(
+  connectionString: string,
+  environment?: Readonly<Record<string, string | undefined>>,
+): string;
+
+export declare function seedReviewAccountCampaigns(
+  input: Readonly<{
+    connectionString: string;
+    /** The address of an account under `@oalo.invalid`. */
+    email: string;
+    /** A campaign that account saved through the product, which the seeds take their brand from. */
+    templateCampaignRef: string;
+    build: (
+      context: Readonly<{
+        account: Pick<ReviewAccount, "locationRef" | "actorRef">;
+        template: ReviewCampaignTemplate;
+      }>,
+    ) => Promise<readonly ReviewCampaignSeed[]> | readonly ReviewCampaignSeed[];
+  }>,
+  dependencies?: Readonly<{
+    environment?: Readonly<Record<string, string | undefined>>;
+    openPool?: (connectionString: string) => DatabasePool;
+    resolveAccount?: (pool: DatabasePool, emailNormalized: string) => Promise<ReviewAccount>;
+    openRepositories?: (pool: DatabasePool, account: ReviewAccount) => ReviewAccountRepositories;
+  }>,
+): Promise<readonly SeededReviewCampaign[]>;

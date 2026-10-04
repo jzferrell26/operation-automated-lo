@@ -35,6 +35,15 @@ const REVIEW_TEST_DIR = "./tests/browser/review";
 const reviewRun = process.env["OALO_REVIEW_BROWSER_RUN"] === "true";
 
 /**
+ * PRD-009g, 009G-AC-001. The review browser run runs this project twice, against two servers
+ * (`tooling/scripts/database/review-browser-run.mjs`, `REVIEW_PASSES`). The first shows the labelled
+ * sample ads and runs every spec except the ones under `real-catalog/`; the second shows the real
+ * catalog, which ships empty, and runs only those. The run names the pass in this variable, so the
+ * split lives in one place and a spec cannot land in the wrong pass by where it is written.
+ */
+const realCatalogPass = process.env["OALO_REVIEW_CATALOG"] === "real";
+
+/**
  * PRD-006d D8, the platform rule. Text rasterises differently on every platform, so a screen
  * baseline only means something on the platform that drew it. The committed baselines under
  * `tests/visual/screens/` are drawn by the `ubuntu-24.04` runner
@@ -103,7 +112,16 @@ export default defineConfig({
         webServer: {
           command:
             "pnpm --filter @oalo/web... build && pnpm --filter @oalo/web exec next start --hostname 127.0.0.1 --port 3100",
-          env: { OALO_LOCAL_CAMPAIGN_STORE: localCampaignStore },
+          /**
+           * PRD-009c D3, 009C-AC-004. The synthetic server shows the labelled sample ads, so both
+           * halves of the sample guard are set here: a raw `local` environment (an unset one is not
+           * local) and the flag. This server is a local run; no deployment ever sets the flag.
+           */
+          env: {
+            OALO_LOCAL_CAMPAIGN_STORE: localCampaignStore,
+            OALO_ENVIRONMENT: "local",
+            OALO_ADS_LIBRARY_SAMPLES: "enabled",
+          },
           reuseExistingServer: false,
           timeout: 180_000,
           url: `${baseURL}/overview`,
@@ -125,6 +143,11 @@ export default defineConfig({
           {
             name: "review",
             testDir: REVIEW_TEST_DIR,
+            // The patterns are relative to `testDir`, as the synthetic project's `review/**` is
+            // relative to its own.
+            ...(realCatalogPass
+              ? { testMatch: "real-catalog/**/*.spec.ts" }
+              : { testIgnore: "real-catalog/**" }),
             // The certificate is self-signed and generated per run into a temporary directory.
             // The browser is pointed at the loopback interface by the gate that made the
             // certificate, so there is no authority for it to check.

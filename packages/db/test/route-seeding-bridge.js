@@ -10,6 +10,7 @@
  * holder. Its types live in `route-seeding-bridge.d.ts`.
  */
 export {
+  assertReviewRunDatabase,
   withMigrationOwnerTransaction,
   clearAuthRateLimitsForKey,
   countAuditEventsForActor,
@@ -28,9 +29,11 @@ export {
   readUserIdForEmail,
   revokeReviewBinding,
   revokeReviewSession,
+  seedReviewAccountCampaigns,
   seedReviewActor,
   seedReviewCredential,
   seedReviewLocation,
   seedReviewLocationWithoutInstallation,
+  setReviewInstallationStatus,
   suspendReviewActor,
 } from "./campaign-integration-support.mjs";

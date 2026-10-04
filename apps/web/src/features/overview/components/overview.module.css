@@ -1,231 +1,503 @@
-.overview {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-  color: var(--tx-strong);
+/*
+ * PRD-009b and design `00-direction.md` section 4: Home, first run.
+ *
+ * Superseded on 2026-10-01 by PRD-009: the CRM overview this file styled (health strip, metric
+ * grids, attention list, activity feed, workspace grid, edge-state gallery) is gone. Home is a
+ * greeting, the start card, the "Get set up" card, two short lists, and one sentence.
+ *
+ * Layout, from the mockup (`design/mockups/home-first-run.html`): at 1100px and wider the start card
+ * and the two lists sit in the left column (1.55fr) and the checklist in the right (1fr), top
+ * aligned; below 1100px everything stacks in document order, which is start, checklist, running,
+ * approval (D1), the two lists included. Every control is at least 44px tall at every width, and no
+ * figure appears on the page, so nothing here styles a number.
+ *
+ * Amended on 2026-10-02 (the Wave 3 verification, defect D-2): the mockup keeps the two lists side
+ * by side down to 720px, which put "Needs your approval" beside "Running now" at 768. 009B-AC-003
+ * says the cards stack in that order at 768 and 390, and a criterion outranks a mockup, so the lists
+ * row is two columns only from 1100px, the same breakpoint as the rest of the page.
+ *
+ * Wave 3 polish, against the mockup and its previews at 1440, 1180, 768 and 390 in Light and Dark:
+ * the card rhythm is no longer outranked by the element reset, so the checklist intro sits 20px
+ * above the first item; the lead has the previews' measure; the two lists are two equal columns
+ * from 1100px, so "Running now" stays half width when a person who cannot approve gets no approval
+ * card (009B D3); and the item glyphs are 24px.
+ *
+ * Scored review pass 2 (P2-01, R4-11, R4-12, R4-13): the state chips are the shared `Badge` as it
+ * is, the 12px chip of `badge-and-live-region.md` (ruled 2026-10-03 over the mockups' 14px); Home's
+ * buttons keep the shared weight 500 (the same ruling), so none of them sets a weight; and the page
+ * gap is the mockups' `.page` rule, for the greeting and for a notice above it.
+ */
+
+/*
+ * The mockups' `.page { gap: var(--space-6) }`, and `--space-5` under 720px (`home-first-run.html:179`
+ * and `:420`): the gap between a notice, the greeting and the grid (R4-13).
+ */
+.home {
+  display: grid;
+  gap: var(--space-6);
+  min-inline-size: 0;
 }
 
-.pageHeader,
-.sectionHeading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.pageHeader h1,
-.sectionHeading h2,
-.listGrid h3,
-.workspaceGrid h3 {
+.welcome {
   margin: 0;
-}
-
-.pageHeader h1 {
-  font-size: var(--text-page-size);
-  letter-spacing: var(--tracking-page);
-  line-height: var(--leading-tight);
-}
-
-.pageHeader p,
-.sectionHeading p,
-.listGrid p,
-.workspaceGrid p {
   color: var(--tx-body);
-  line-height: var(--leading-normal);
-}
-
-.eyebrow,
-.itemMeta {
-  margin-block: 0 var(--space-1);
-  color: var(--tx-faint);
-  font-size: var(--text-caption-size);
+  font-size: var(--text-secondary-size);
   font-weight: var(--weight-medium);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
-.headerActions {
+.grid {
   display: grid;
-  min-inline-size: min(22rem, 100%);
-  gap: var(--space-3);
-  justify-items: end;
-}
-
-.readiness,
-.statusLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  border-radius: var(--radius-pill);
-  background: var(--st-neutral-bg);
-  color: var(--st-neutral-fg);
-  font-size: var(--text-caption-size);
-  font-weight: var(--weight-medium);
-  padding: var(--space-1) var(--space-2);
-  text-transform: capitalize;
-}
-
-.readiness[data-status="launch_ready"],
-.statusLabel[data-status="healthy"] {
-  background: var(--st-success-bg);
-  color: var(--st-success-fg);
-}
-
-.readiness[data-status="attention_required"],
-.statusLabel[data-status="attention"],
-.statusLabel[data-status="setup_required"],
-.statusLabel[data-status="warning"] {
-  background: var(--st-warning-bg);
-  color: var(--st-warning-fg);
-}
-
-.statusLabel[data-status="critical"] {
-  background: var(--st-critical-bg);
-  color: var(--st-critical-fg);
-}
-
-.statusLabel[data-status="restricted"],
-.statusLabel[data-status="uncertain"] {
-  background: var(--st-uncertain-bg);
-  color: var(--st-uncertain-fg);
-}
-
-.healthStrip,
-.metricGrid,
-.workspaceGrid,
-.stateGrid,
-.listGrid {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.healthStrip {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
-
-.healthItem,
-.workspaceGrid article,
-.listGrid article {
-  display: grid;
-  align-content: start;
-  gap: var(--space-2);
-}
-
-.healthItem span:not(.statusLabel),
-.healthItem small,
-.workspaceGrid small,
-.listGrid time {
-  color: var(--tx-body);
-  font-size: var(--text-caption-size);
-}
-
-.section,
-.healthSection,
-.quickActionsSection,
-.secondaryActionsSection {
-  display: grid;
-  gap: var(--space-4);
-}
-
-/* Each action keeps its own height. Stretched to its row, a link beside an unavailable action and
- * its explanation became a button some 200px tall (PRD-008d, second redraw, R-14). */
-.quickActions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
-  gap: var(--space-3);
+  gap: var(--space-6);
+  grid-template-columns: minmax(0, 1fr);
 }
 
-.metricGrid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.listGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.workspaceGrid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.stateGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--space-1);
-}
-
-.evidenceList {
+/* The two lists stack, running then approval, until the page itself has two columns (009B-AC-003). */
+.lists {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
+  gap: var(--space-6);
+  grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
 }
 
-.evidenceList div {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.evidenceList dt {
-  color: var(--tx-faint);
-  font-size: var(--text-caption-size);
-}
-
-.evidenceList dd {
-  margin: 0;
-  color: var(--tx-body);
-  font-size: var(--text-body-size);
-}
-
-@media (max-width: 1180px) {
-  .healthStrip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+@media (min-width: 1100px) {
+  .grid {
+    grid-template-areas:
+      "start setup"
+      "lists setup";
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
   }
 
-  .metricGrid {
+  .start {
+    grid-area: start;
+  }
+
+  .setup {
+    grid-area: setup;
+  }
+
+  /*
+   * Two equal columns (the mockup's `.home-lists`), from 1100px only. It was `repeat(auto-fit, ...)`,
+   * which drops an empty track, so a lone "Running now" (no approval card for a person who cannot
+   * approve, 009B D3) grew to the whole column. A fixed pair keeps it at half width, and the second
+   * track stays empty rather than holding an approval card that would say "Nothing to approve" to
+   * someone who never approves.
+   */
+  .lists {
+    grid-area: lists;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 768px) {
-  .overview {
-    gap: var(--space-6);
+/* The bordered white card of the light look (design section 2.3): the border is the edge. */
+.card,
+.start {
+  min-inline-size: 0;
+  padding: var(--space-6);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  background: var(--sf-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* The card rhythm: one `--space-4` between a card's direct children (the mockup's `.card > * + *`). */
+.card > * + * {
+  margin-block-start: var(--space-4);
+}
+
+/*
+ * The reset takes the browser's default margins off headings, paragraphs, and lists. It is written
+ * with `:where` so it has no specificity of its own. As `.card p` (0,1,1) it outranked the rhythm
+ * above (0,1,0) on every paragraph and list that is a direct child of a card, so the checklist
+ * intro sat 4px above its first item where the mockup has 20px, and the progress bar sat flush on
+ * the intro. The mockup's reset is the bare element selector, which is also the weakest rule.
+ */
+:where(.card, .start) :where(h1, h2, h3, p, ul, ol) {
+  margin: 0;
+}
+
+.sectionTitle {
+  color: var(--tx-strong);
+  font-size: var(--text-section-size);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+.secondary {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+.eyebrow {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+}
+
+/* The start card. */
+.start {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-8);
+}
+
+/* The page title step (28px). The mockup draws this one at 34px and the primary button at 17px, which
+ * are between the brief's six type steps (28, 19, 16, 14, 12); `expectTypographyOnBrief` refuses text
+ * between them, so Home uses the steps and gets its weight from the bold face and the card's space. */
+.startTitle {
+  color: var(--tx-strong);
+  font-size: var(--text-page-size);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-page);
+  line-height: var(--leading-tight);
+}
+
+/*
+ * The lead's measure is the previews': 518px, which is 32.375rem at the 16px body step. The mockup
+ * writes it as `60ch`, and the previews were drawn in Segoe UI because no Inter file was on the
+ * machine that drew them (design section 12), where 60ch is 517.5px. In Inter, which the product
+ * loads, 60ch is 603.75px and the lead ran 86px wider than the picture it is checked against. A
+ * length in rem keeps the picture's measure whichever face draws it.
+ */
+.lead {
+  max-inline-size: 32.375rem;
+  color: var(--tx-body);
+  font-size: var(--text-body-size);
+  line-height: var(--leading-normal);
+}
+
+/*
+ * 009B-AC-003. The primary button is first in the document so it is the first control after the
+ * skip link and the top bar, and the topics follow it. The design draws the question and the topic
+ * buttons above the button, so the column is reordered visually; the document order is what a
+ * keyboard and a screen reader follow.
+ */
+.startActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.topics,
+.emptyLibrary {
+  order: 1;
+}
+
+.primaryRow {
+  order: 2;
+}
+
+/* The mockup's `.topic-question`: the secondary step (14px), semibold. It was the 16px body step. */
+.question {
+  color: var(--tx-strong);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+}
+
+/*
+ * The question sits `--space-5` (20px) above its chips, the same gap the mockup's start card puts
+ * between every one of its children (`.start { gap: var(--space-5) }`). It was `--space-3` (12px).
+ */
+.topics {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.emptyLibrary {
+  max-inline-size: 52ch;
+  color: var(--tx-body);
+  font-size: var(--text-body-size);
+  line-height: var(--leading-normal);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * A secondary button in the shape of a pill: white, with the visible field edge. The mockup's `.chip`
+ * is at weight 500 and the ruling is that buttons keep it, so no weight is set here.
+ */
+.start .chip {
+  min-block-size: var(--target-min-size);
+  padding-inline: var(--space-4);
+  border-radius: var(--radius-pill);
+  box-shadow: none;
+  font-size: var(--text-secondary-size);
+}
+
+/* The one primary button on the page, drawn as a link because it goes to another page. */
+.start .primaryLink {
+  min-block-size: 3.25rem;
+  padding-inline: var(--space-8);
+  border-color: var(--ac-primary);
+  background: var(--ac-primary);
+  box-shadow: none;
+  color: var(--tx-on-action);
+  font-size: var(--text-body-size);
+}
+
+.start .primaryLink:hover {
+  border-color: var(--ac-primary-hover);
+  background: var(--ac-primary-hover);
+  color: var(--tx-on-action);
+}
+
+.start .primaryLink:active {
+  background: var(--ac-primary-active);
+}
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  padding: 0;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  list-style: none;
+}
+
+.steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stepDot {
+  display: grid;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--st-info-bg);
+  color: var(--st-info-fg);
+  font-size: var(--text-caption-size);
+  font-weight: var(--weight-bold);
+}
+
+/* The "Get set up" card. */
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.count {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress {
+  block-size: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--st-neutral-bg);
+}
+
+.progress > span {
+  display: block;
+  block-size: 100%;
+  background: var(--ac-primary);
+}
+
+.setupDone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.setupDone > * + * {
+  margin-block-start: 0;
+}
+
+.checklist {
+  display: grid;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * A row is glyph, text, action (the mockup's `.checklist li`). The amended action, "See what's
+ * needed" (MTK-008 W-3), is about 171px wide where the mockup drew "Connect" at 86px, so beside the
+ * text it left the sentence 167px at 1440 and 90px at 390 (the scored review's F-01 and R4-01). The
+ * card is the container, not the window: a card two columns wide at 1440 and 1180 is as narrow as
+ * the one on a phone, so the width of the card decides, not a media query. Below 32rem of card the
+ * action takes its own row under the text, which keeps the whole text column for the sentence and
+ * the chip.
+ */
+.setup {
+  container-name: setup;
+  container-type: inline-size;
+}
+
+.checklist > li {
+  display: grid;
+  align-items: start;
+  gap: var(--space-3);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "icon text action";
+  padding-block: var(--space-4);
+  border-block-start: 1px solid var(--bd-hairline);
+}
+
+@container setup (max-inline-size: 32rem) {
+  .checklist > li {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "icon text"
+      ". action";
   }
 
-  .pageHeader,
-  .sectionHeading {
-    flex-direction: column;
-  }
-
-  .headerActions {
-    inline-size: 100%;
-    justify-items: start;
-  }
-
-  .healthStrip,
-  .metricGrid,
-  .workspaceGrid,
-  .stateGrid,
-  .listGrid,
-  .quickActions,
-  .evidenceList {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .filters {
-    justify-content: flex-start;
+  .itemAction {
+    justify-self: start;
   }
 }
 
-/* Brief section 12: the overview declares no motion, and cannot gain any. */
-@media (prefers-reduced-motion: reduce) {
-  .overview,
-  .overview * {
-    animation: none;
-    transition-duration: 0ms;
+.checklist > li:first-child {
+  padding-block-start: var(--space-1);
+  border-block-start: 0;
+}
+
+.itemIcon {
+  display: inline-grid;
+  grid-area: icon;
+  margin-block-start: 0.0625rem;
+  color: var(--tx-faint);
+}
+
+.itemText {
+  grid-area: text;
+  min-inline-size: 0;
+}
+
+.itemTitle {
+  color: var(--tx-strong);
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-semibold);
+}
+
+.stateBadge {
+  margin-block-start: var(--space-2);
+}
+
+/*
+ * The state chip is the shared `Badge` as it is: 12px words in `--space-1` by `--space-2` padding
+ * (`03-components/badge-and-live-region.md`, "Shape and type"). The mockups draw it at 14px, and the
+ * 2026-10-03 ruling is that the 12px chip wins, for every chip in the product at once (scored review
+ * pass 2, P2-01 and R4-11). Home adds only the mockup's `.badge { white-space: nowrap }`: a state is
+ * one line, never a two-line pill. Written as `.card .stateChip` so it outranks the primitive's
+ * single class whichever stylesheet loads last.
+ */
+.card .stateChip {
+  white-space: nowrap;
+}
+
+/*
+ * The row's action is a `Link variant="action" size="sm"`, the small secondary button's twin: the
+ * secondary step (14px), `--space-3` of inline padding and the shared weight 500 all come from the
+ * primitive (`link.module.css`, R4-12), so this rule only places it in the row's grid.
+ */
+.itemAction {
+  grid-area: action;
+}
+
+/* The two lists. */
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-2) var(--space-2);
+  text-align: center;
+}
+
+/*
+ * The mockups' `.empty svg` (`design/mockups/home-first-run.html:247`): the faint ink and
+ * `--space-1` under the glyph, on top of the grid gap. It was the neutral status ink, so one Home drew
+ * its decorative glyphs in two greys (`.itemIcon` is already `--tx-faint`), and the title stood 4px
+ * closer than the mockup's (scored review pass 3, R4-14). Written as `.empty .emptyGlyph` so it
+ * outranks the Icon's own tone class whichever stylesheet loads last.
+ */
+.empty .emptyGlyph {
+  color: var(--tx-faint);
+  margin-block-end: var(--space-1);
+}
+
+.emptyTitle {
+  color: var(--tx-strong);
+  font-weight: var(--weight-semibold);
+}
+
+.emptyBody {
+  max-inline-size: 36ch;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+  /* A last line is never one word ("yet." alone at 390; pass 4, R3 N-11). */
+  text-wrap: pretty;
+}
+
+.rows {
+  display: grid;
+  gap: var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.rows > li > * + * {
+  margin-block-start: var(--space-1);
+}
+
+/* A date is one unit and never breaks across two lines: a date that does not fit moves whole to the
+   next line, so "Oct 20" and "2026" are never read on two (campaign-and-artifact-workflow.md,
+   "Dates"; final scored review, FU-1). The Campaigns list and the Launch screens carry the same rule
+   on their own `time`, and Home's rows are drawn with `TextWithDays`, so each of its days is a
+   `time`. */
+.rows time {
+  white-space: nowrap;
+}
+
+.rowTitle {
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-semibold);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.footer {
+  margin: 0;
+  padding-block: var(--space-2) var(--space-6);
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  text-align: center;
+}
+
+@media (max-width: 719.98px) {
+  .home {
+    gap: var(--space-5);
+  }
+
+  /* The mockup's phone rule gives every card, the start card included, the 20px inset
+   * (`home-first-run.html`: `.card` follows `.start` at equal specificity), as the shared Card does
+   * below 720px. */
+  .start {
+    padding: var(--space-5);
+  }
+
+  .card {
+    padding: var(--space-5);
   }
 }

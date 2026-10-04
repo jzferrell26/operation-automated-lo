@@ -31,9 +31,13 @@ export type IconName =
   | "alert-triangle"
   | "check"
   | "chevron-down"
+  | "chevron-left"
+  | "chevron-right"
+  | "circle-check"
   | "circle-dot"
   | "circle-x"
   | "clock"
+  | "copy"
   | "external-link"
   | "eye"
   | "eye-off"
@@ -43,7 +47,12 @@ export type IconName =
   | "menu"
   | "monitor"
   | "moon"
+  | "palette"
+  | "pencil"
+  | "plug"
+  | "rocket"
   | "sun"
+  | "tag"
   | "x";
 
 export type IconSize = "sm" | "md" | "lg";
@@ -217,6 +226,22 @@ function IconGeometry({ name }: Readonly<{ name: IconName }>) {
       return <path d="m5 12 4 4L19 6" />;
     case "chevron-down":
       return <path d="m6 9 6 6 6-6" />;
+    /* Added 2026-10-03 for the PRD-009 scored review. `chevron-left` is the launch steps' "Back"
+     * (R1-10, the mockups' `launch-step-2-set-up.html:566`), and `circle-check` is Home's "Nothing
+     * to approve" (R3 F-02, `home-first-run.html:561`). */
+    case "chevron-left":
+      return <path d="m15 6-6 6 6 6" />;
+    /* Added 2026-10-03 for the PRD-009 scored review, pass 3 (R1 P3-01): the disclosure chevron of
+     * "See what we checked" (`launch-step-3-review-and-launch.html`). */
+    case "chevron-right":
+      return <path d="m9 6 6 6-6 6" />;
+    case "circle-check":
+      return (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="m8 12.5 3 3 5-6" />
+        </>
+      );
     case "circle-dot":
       return (
         <>
@@ -315,6 +340,61 @@ function IconGeometry({ name }: Readonly<{ name: IconName }>) {
           <path d="M20 12h2" />
           <path d="m6.3 17.7-1.4 1.4" />
           <path d="m19.1 4.9-1.4 1.4" />
+        </>
+      );
+    /* Added 2026-10-03 for the PRD-009 scored review (R3 F-02): Home's "Get set up" glyphs, drawn
+     * inline by `design/mockups/home-first-run.html:552-554`, a plug for each connection and a
+     * palette for the brand. */
+    case "palette":
+      return (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="8" cy="10" r="1.2" />
+          <circle cx="12" cy="7.5" r="1.2" />
+          <circle cx="16" cy="10" r="1.2" />
+          <path d="M12 21a2.5 2.5 0 0 1 0-5h1.5a2.5 2.5 0 0 0 2.5-2.5" />
+        </>
+      );
+    case "plug":
+      return (
+        <>
+          <path d="M9 3v5M15 3v5" />
+          <path d="M6 8h12v3a6 6 0 0 1-12 0Z" />
+          <path d="M12 17v4" />
+        </>
+      );
+    /* Added 2026-10-03 for the PRD-009 scored review (R1-04): the ads library's topic label, the
+     * mockups' `badge--topic` tag (`ads-library.html:541`). */
+    case "tag":
+      return (
+        <>
+          <path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9Z" />
+          <circle cx="7.5" cy="7.5" r="1.3" />
+        </>
+      );
+    /* Added 2026-10-03 for the PRD-009 scored review, pass 2 (R2 N-2, R1 P2-08): the glyphs the
+     * mockups draw on "Copy the link" (`launch-step-3-review-and-launch.html`), "Make a new version"
+     * (`campaign-detail.html`), and "Launch on Facebook" (both). */
+    case "copy":
+      return (
+        <>
+          <rect x="8" y="8" width="12" height="12" rx="2" />
+          <path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" />
+        </>
+      );
+    case "pencil":
+      return (
+        <>
+          <path d="M4 20h4L19 9l-4-4L4 16Z" />
+          <path d="m13.5 6.5 4 4" />
+        </>
+      );
+    case "rocket":
+      return (
+        <>
+          <path d="M5 15c-1.5 1.5-2 5-2 5s3.5-.5 5-2" />
+          <path d="M9 15l-3-3c1.5-4 5-8 13-9-1 8-5 11.5-9 13Z" />
+          <circle cx="14.5" cy="9.5" r="1.5" />
         </>
       );
     case "x":

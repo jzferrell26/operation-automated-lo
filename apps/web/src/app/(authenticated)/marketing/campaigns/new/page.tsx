@@ -1,44 +1,60 @@
+import type { Metadata } from "next";
 import { headers } from "next/headers.js";
+import { redirect } from "next/navigation.js";
 
-import { OpenHouseDraftBuilder } from "../../../../../features/campaigns/components/open-house-draft-builder.js";
-import { readSetupPreferencesForRequest } from "../../../../../server/setup-preferences.js";
+import { PAGE_TITLES } from "../../../../../copy/page-titles.js";
+import { LaunchFlow } from "../../../../../features/campaigns/components/launch-flow.js";
+import { LaunchReview } from "../../../../../features/campaigns/components/launch-review.js";
 import { canRenderDashboardPreview } from "../../../../../server/dashboard-preview.js";
-import { authenticatedWorkspaceMode } from "../../../../../server/authenticated-workspace-data.js";
 import {
-  readWorkspacePreferences,
-  workspacePrincipal,
-} from "../../../../../server/workspace-preferences.js";
-import { campaignDatabasePool } from "../../../../../server/campaign-persistence-runtime.js";
-import { UnauthenticatedPrincipalError } from "../../../../../server/authenticated-principal.js";
+  loadPreviewLaunchPage,
+  readLaunchPageForRequest,
+  type LaunchPageData,
+} from "../../../../../server/launch-an-ad.js";
+import { SIGN_IN_PATH } from "../../../../../server/runtime-authentication.js";
 
 export const dynamic = "force-dynamic";
 
+/** Writing review W-13: the tab says which page this is. */
+export const metadata: Metadata = { title: PAGE_TITLES.launchAnAd };
+
+type SearchParams = Promise<Readonly<Record<string, string | string[] | undefined>>>;
+
+function LaunchPage({ data }: Readonly<{ data: LaunchPageData }>) {
+  if (data.review !== undefined) {
+    return <LaunchReview from={data.address.from} review={data.review} />;
+  }
+  return (
+    <LaunchFlow
+      // A different campaign or step 2 target is a different draft; the flow starts afresh for it.
+      key={`${data.address.campaign ?? "new"}:${data.address.ad ?? ""}`}
+      advertiser={data.advertiser}
+      campaign={data.campaign}
+      cards={data.cards}
+      initial={data.address}
+      rememberedPlaces={data.rememberedPlaces}
+      today={data.today}
+    />
+  );
+}
+
 /**
- * PRD-006c D3's prefill rule. The profile is read on the server and handed to the builder, so the
- * create screen never makes a request of its own to find out who the user is, and the first paint
- * already carries the user's own Realtor name rather than a demo default that a later render would
- * replace.
+ * PRD-009d D1 and 009D-AC-001. "Launch an ad": choose an ad, set it up, review and launch.
+ *
+ * The step is in the address. Steps 1 and 2 are one page that moves between them without losing
+ * what was typed; step 3 reads the saved version named by the address, so a reload re-reads it.
+ * The dashboard preview has no session and an empty library, so it shows step 1 saying so.
  */
-export default async function NewCampaignPage() {
-  if (canRenderDashboardPreview()) return <OpenHouseDraftBuilder />;
+export default async function NewCampaignPage({
+  searchParams,
+}: Readonly<{ searchParams: SearchParams }>) {
+  const search = await searchParams;
+  if (canRenderDashboardPreview()) {
+    return <LaunchPage data={await loadPreviewLaunchPage(search)} />;
+  }
   const incoming = await headers();
   const request = new Request("https://oalo.local/marketing/campaigns/new", { headers: incoming });
-  const preferences = await readSetupPreferencesForRequest(request, process.env);
-  if (authenticatedWorkspaceMode() === "review") {
-    try {
-      const principal = await workspacePrincipal(request);
-      const saved = await readWorkspacePreferences(principal, campaignDatabasePool());
-      return (
-        <OpenHouseDraftBuilder
-          profile={preferences.profile}
-          savedPartners={saved.partners?.value.items ?? []}
-        />
-      );
-    } catch (error) {
-      // The existing signed-out create page contains no personal data. Its mutation
-      // endpoint still requires authentication before anything can be saved.
-      if (!(error instanceof UnauthenticatedPrincipalError)) throw error;
-    }
-  }
-  return <OpenHouseDraftBuilder profile={preferences.profile} />;
+  const read = await readLaunchPageForRequest(request, search, process.env);
+  if (!read.authenticated) redirect(SIGN_IN_PATH);
+  return <LaunchPage data={read.data} />;
 }

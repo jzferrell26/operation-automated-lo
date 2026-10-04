@@ -4,7 +4,7 @@ export const TEST_DATABASE_NAME_PREFIX: "oalo_test_";
 export const WEB_POSTGRES_PROJECT: "web-postgres";
 /** 005C-AC-006. The plan step that runs `packages/db`'s connectionless `node:test` suites. */
 export const DATABASE_UNIT_TEST_LABEL: "run the @oalo/db package unit tests";
-/** PRD-006c D9. The plan step that runs the guided setup in a real browser. */
+/** PRD-006c D9. The plan step that runs the review browser suite in a real browser. */
 export const REVIEW_BROWSER_RUN_LABEL: "run the review browser suite";
 
 /** PRD-006a D8. The throwaway credentials the gate seeds and then signs in with. */

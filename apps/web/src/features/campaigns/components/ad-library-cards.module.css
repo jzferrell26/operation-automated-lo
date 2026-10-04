@@ -1,0 +1,159 @@
+/*
+ * PRD-009d D2 and design 00-direction.md section 5.2. The topic chips, the card grid, and one card.
+ * The grid holds four cards a row at 1440, three at 1180, two at 768, and one at 390; the chips
+ * scroll sideways on a phone rather than wrapping into a tall block.
+ */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 47.99rem) {
+  .chips {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-block-end: var(--space-1);
+    scrollbar-width: thin;
+  }
+
+  .chips > li {
+    flex: none;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--target-min-size);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--bd-input);
+  border-radius: var(--radius-pill);
+  background: var(--sf-card);
+  color: var(--tx-strong);
+  font: inherit;
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* R1-04. The chosen chip keeps its ink and is marked by the tint, the edge, and a heavier weight, as
+   the ads-library mockup draws it; it does not turn blue. */
+.chip[aria-current="true"],
+.chip[aria-pressed="true"] {
+  border-color: var(--ac-primary);
+  background: var(--st-info-bg);
+  color: var(--tx-strong);
+  font-weight: var(--weight-semibold);
+}
+
+.chipCount {
+  color: var(--tx-body);
+  font-weight: var(--weight-regular);
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 87.49rem) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 63.99rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .grid {
+    gap: var(--space-4);
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* P3-06. The card is the shared `Card` at `padding="none"`: its fill, edge, radius and shadow are the
+   primitive's, so no ad card states its own (`card-and-surface.md`, "Canonical exports"). What the
+   page says is only how the three rows (the art, the body, the foot) sit in it: the body takes the
+   room left over, so every card's "Use this ad" sits on the same line across a row (the launch-step-1
+   mockup). `overflow: hidden` clips the art to the card's rounded corners and never the card's own
+   shadow. */
+.card {
+  display: grid;
+  overflow: hidden;
+  block-size: 100%;
+  grid-template-rows: auto 1fr auto;
+}
+
+/* The words: a flex column, as the mockup's `.ad-card__body` is. */
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
+/* P2-01. The topic is the shared `Badge` pill with the tag glyph, and nothing else of its own: the
+   caption step, `--space-1` above and below, and the neutral tone's ink and fill, as the badge
+   specification sets every chip (12px; the 2026-10-03 ruling supersedes the mockup's 14px
+   `.badge--topic`). Only where it sits in the card and that it stays on one line are the card's to
+   say. */
+.cardBody .topic {
+  align-self: flex-start;
+  white-space: nowrap;
+}
+
+.cardTitle {
+  margin: 0;
+  color: var(--tx-strong);
+  font-size: var(--text-card-size);
+  line-height: var(--leading-tight);
+}
+
+.cardWords {
+  margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+
+/* R1-03. The version line is a caption: the mockup's `.ad-card__meta` is the caption step in the
+   faint ink, and at the secondary step "Version 1. Reviewed Sep 28, 2026." did not fit the card at
+   1440 and broke its date across two lines. The date itself never breaks. */
+.cardVersion {
+  margin: 0;
+  color: var(--tx-faint);
+  font-size: var(--text-caption-size);
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.cardVersion time {
+  white-space: nowrap;
+}
+
+/* P3-06. The action's foot follows the body's own bottom inset (`--space-5`), then takes `--space-5`
+   at its sides and below, as the mockup's `.ad-card__foot` does, so "Use this ad" sits 20px under the
+   version line on the tallest card and not 16px. */
+.cardFoot {
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+.cardFoot > * {
+  inline-size: 100%;
+}

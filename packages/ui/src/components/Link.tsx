@@ -8,13 +8,30 @@ import "./primitives.css";
 
 import styles from "./link.module.css";
 
-export type LinkVariant = "inline" | "action";
+/**
+ * `sentence` is a link inside a running sentence or a row of smaller text: it takes that text's
+ * size and keeps the 44px target without stretching the line (`03-components/link.md`, "A link
+ * inside a sentence"). `title` is the name a list row is led by: an ink title in `--tx-strong` at
+ * `--weight-semibold`, underlined only on hover, with the 44px target kept (`03-components/link.md`,
+ * "A name in a list row"). The Campaigns list and Home's two lists both draw a campaign's name
+ * with it.
+ */
+export type LinkVariant = "inline" | "action" | "sentence" | "title";
+
+/**
+ * `sm` is the secondary step, with the 44px target kept. On the `action` link it is the small
+ * secondary button's twin (`--space-3` of inline padding at the shared weight, `Button size="sm"`);
+ * on the plain `inline` link it is the same 14px as the text it stands under. `sentence` takes its
+ * size from its text, and `title` is always the body step, so `size` changes nothing on either.
+ */
+export type LinkSize = "md" | "sm";
 
 export type LinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "rel" | "target"> &
   Readonly<{
     children: ReactNode;
     external?: boolean | undefined;
     newTabLabel?: string | undefined;
+    size?: LinkSize | undefined;
     variant?: LinkVariant | undefined;
   }>;
 
@@ -40,6 +57,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
     className,
     external = false,
     newTabLabel = "opens in a new tab",
+    size = "md",
     variant = "inline",
     ...anchorProps
   },
@@ -52,6 +70,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
       {...anchorProps}
       ref={ref}
       className={joinClassNames(styles.link, styles[variant], className)}
+      data-size={size}
       data-variant={variant}
       rel={safety.rel}
       target={safety.target}

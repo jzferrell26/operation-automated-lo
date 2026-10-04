@@ -39,3 +39,13 @@ peerDependencyRules:
     typescript: 7.0.2
 saveExact: true
 strictPeerDependencies: true
+# Accepted 2026-10-03 by the owner (PRD-009 security close-out, SEC-009-01): braces 3.0.3
+# (GHSA-vfj7-8cjw-p6xm, high) reaches this repository only through the trigger.dev CLI, a
+# devDependency of apps/tasks; `pnpm audit --prod` is clean, and no fixed braces (3.0.4) is
+# published. Remove this entry as soon as a fixed braces ships and the lockfile takes it.
+# Revisit 2026-11-03: look for a fixed braces and remove the entry, or record a new owner decision.
+# tooling/tests/unit/dependencies/accepted-advisories.test.ts holds everything under auditConfig
+# (ignoreGhsas and ignoreCves, blank lines and comments included) to this one entry.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-vfj7-8cjw-p6xm

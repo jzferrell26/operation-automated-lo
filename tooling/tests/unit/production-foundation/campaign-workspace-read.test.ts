@@ -3,18 +3,23 @@ import { describe, expect, it } from "vitest";
 import {
   CampaignResourceNotAccessibleError,
   campaignMayBeApprovedBy,
+  campaignVersionHref,
   deriveCampaignNextActions,
+  deriveCampaignStanding,
+  deriveOlderVersionStanding,
   freezeAuthenticatedPrincipal,
   principalHasCampaignApprovalRole,
+  projectCampaignVersions,
   projectCampaignWorkspace,
   type AuthenticatedPrincipal,
   type CampaignWorkspaceReadRecord,
+  type CampaignWorkspaceVersionRecord,
 } from "@oalo/application";
 import {
-  CampaignManifestSchema,
+  OpenHouseCampaignManifestSchema,
   type ApprovalDecision,
   type CampaignInputVersions,
-  type CampaignManifest,
+  type OpenHouseCampaignManifest,
   type CampaignState,
   type CampaignVersion,
   type PreflightResult,
@@ -32,7 +37,7 @@ const inputVersions: CampaignInputVersions = {
   rulesetVersionRef: "ruleset_01Policy",
 };
 
-const manifest: CampaignManifest = CampaignManifestSchema.parse({
+const manifest: OpenHouseCampaignManifest = OpenHouseCampaignManifestSchema.parse({
   schemaVersion: 1,
   blueprintId: "open-house-boost",
   property: {
@@ -202,8 +207,17 @@ describe("campaign workspace read projection", () => {
     );
 
     expect(projected.headline).toBe("Tour 123 Main Street");
-    expect(projected.propertyAddress).toBe("123 Main Street");
-    expect(projected.realtorDisplayName).toBe("Taylor Reed");
+    // PRD-009e D4 and 009E-AC-008. A campaign saved before PRD-009 says which flow made it, and
+    // none of its property, open house time, or Realtor fields is projected at all.
+    expect(projected.blueprint).toBe("open-house-boost");
+    for (const key of [
+      "propertyAddress",
+      "openHouseStartsAt",
+      "openHouseEndsAt",
+      "realtorDisplayName",
+    ]) {
+      expect(projected, key).not.toHaveProperty(key);
+    }
     expect(projected.targetingRegions).toEqual(["Texas"]);
     expect(projected.persistenceKind).toBe("postgres");
     expect(projected.providerPublicationAuthorized).toBe(false);
@@ -385,5 +399,246 @@ describe("campaign workspace read projection", () => {
         }
       }
     }
+  });
+});
+
+/**
+ * PRD-009e D2 and 009E-AC-004. The name the decider's own session recorded travels with the
+ * approval projection, and a decision recorded without one (every decision made before PRD-009)
+ * carries no name key at all, so a screen can only say the role.
+ */
+describe("the decider's own name on the approval projection", () => {
+  const passing = { ...preflight, blocking: false, findings: [], resultHash: sha("7") };
+
+  it("carries the recorded name beside the role", () => {
+    const projected = projectCampaignWorkspace(
+      record({
+        state: "approved",
+        preflight: passing,
+        approval: {
+          ...approval,
+          snapshot: { ...approval.snapshot, approverDisplayName: "Casey Rivera" },
+        },
+      }),
+      approver,
+      "postgres",
+    );
+
+    expect(projected.approval).toEqual({
+      decision: "approved",
+      decidedAt: approval.decidedAt,
+      actorRole: "approver",
+      approverDisplayName: "Casey Rivera",
+    });
+  });
+
+  it("carries no name key for a decision recorded without one", () => {
+    const projected = projectCampaignWorkspace(
+      record({ state: "approved", preflight: passing, approval }),
+      approver,
+      "postgres",
+    );
+
+    expect(projected.approval).not.toHaveProperty("approverDisplayName");
+  });
+});
+
+/**
+ * PRD-009e 009E-AC-010. Where a campaign stands is the recorded decision first (a send-back keeps
+ * the stored state), then the library's verdict on its ad, then the stored state itself.
+ *
+ * QA-11. The library's verdict is the approval command's own, `libraryAdRefusalFor`, with all four of
+ * its reasons: the standing used to know only "retired", so a replaced, art-changed, or missing ad's
+ * version kept the standing "awaiting approval" and was called "Ready for approval" beside a page that
+ * said it could not be approved.
+ */
+describe("a campaign's standing", () => {
+  const UNAPPROVED = ["draft", "generated", "preflight_failed", "awaiting_approval"] as const;
+  const STANDING_OF_REFUSAL = {
+    retired: "ad_retired",
+    replaced: "ad_newer_version",
+    art_changed: "ad_art_changed",
+    missing: "ad_missing",
+  } as const;
+  const REASONS = ["retired", "replaced", "art_changed", "missing"] as const;
+
+  it("is the library's standing for a version nobody has decided on whose ad the approval rule refuses", () => {
+    for (const reason of REASONS) {
+      for (const state of UNAPPROVED) {
+        expect(
+          deriveCampaignStanding({ state, decision: undefined, adRefusal: reason }),
+          `${state} / ${reason}`,
+        ).toBe(STANDING_OF_REFUSAL[reason]);
+      }
+    }
+  });
+
+  it("is the stored state when the approval rule has no objection", () => {
+    for (const state of UNAPPROVED) {
+      expect(
+        deriveCampaignStanding({ state, decision: undefined, adRefusal: undefined }),
+        state,
+      ).toBe(state);
+    }
+  });
+
+  it("lets a recorded decision win over every reason the library gives", () => {
+    for (const reason of REASONS) {
+      expect(
+        deriveCampaignStanding({
+          state: "awaiting_approval",
+          decision: "rejected",
+          adRefusal: reason,
+        }),
+        reason,
+      ).toBe("awaiting_approval");
+      expect(
+        deriveCampaignStanding({ state: "approved", decision: "approved", adRefusal: reason }),
+        reason,
+      ).toBe("approved");
+    }
+  });
+
+  it("keeps a state a version nobody could still approve is not in", () => {
+    for (const reason of REASONS) {
+      for (const state of ["publishing", "live", "paused", "completed", "archived"] as const) {
+        expect(
+          deriveCampaignStanding({ state, decision: undefined, adRefusal: reason }),
+          `${state} / ${reason}`,
+        ).toBe(state);
+      }
+    }
+  });
+
+  it("reads an older version from its decision and its last check", () => {
+    const failed = { ...preflight, blocking: true };
+    const passed = { ...preflight, blocking: false, findings: [], resultHash: sha("6") };
+
+    expect(deriveOlderVersionStanding({ approval })).toBe("approved");
+    expect(deriveOlderVersionStanding({ approval: { ...approval, decision: "rejected" } })).toBe(
+      "awaiting_approval",
+    );
+    expect(deriveOlderVersionStanding({})).toBe("generated");
+    expect(deriveOlderVersionStanding({ preflight: failed })).toBe("preflight_failed");
+    expect(deriveOlderVersionStanding({ preflight: passed })).toBe("replaced");
+  });
+});
+
+/** PRD-009e D2, D3 and 009E-AC-005. Every version of a campaign, newest first. */
+describe("a campaign's versions", () => {
+  const passed = { ...preflight, blocking: false, findings: [], resultHash: sha("5") };
+  const failed = { ...preflight, blocking: true };
+
+  function versionRecord(
+    versionNo: number,
+    extra: Partial<CampaignWorkspaceVersionRecord> = {},
+    createdBy = "user_01Creator",
+  ): CampaignWorkspaceVersionRecord {
+    return {
+      version: {
+        ...version,
+        versionNo,
+        campaignVersionRef: `version_01Campaign${String(versionNo)}`,
+        createdBy,
+        createdAt: `2026-07-2${String(versionNo)}T16:00:00.000Z`,
+      },
+      ...extra,
+    };
+  }
+
+  it("lists them newest first, the newest by the campaign's state and the rest by their own", () => {
+    const summaries = projectCampaignVersions(
+      [
+        versionRecord(1, { preflight: passed, approval: { ...approval, decision: "rejected" } }),
+        versionRecord(3, { preflight: passed }, approver.actorRef),
+        versionRecord(2, { preflight: passed }),
+      ],
+      approver,
+      { state: "awaiting_approval", adRefusal: undefined },
+    );
+
+    expect(summaries.map((entry) => entry.versionNo)).toEqual([3, 2, 1]);
+    expect(summaries.map((entry) => entry.isLatest)).toEqual([true, false, false]);
+    expect(summaries.map((entry) => entry.standing)).toEqual([
+      "awaiting_approval",
+      "replaced",
+      "awaiting_approval",
+    ]);
+    expect(summaries.map((entry) => entry.decision?.decision)).toEqual([
+      undefined,
+      undefined,
+      "rejected",
+    ]);
+    expect(summaries.map((entry) => entry.savedByViewer)).toEqual([true, false, false]);
+    expect(summaries.map((entry) => entry.href)).toEqual([
+      "/marketing/campaigns/campaign_01OpenHouse",
+      campaignVersionHref("campaign_01OpenHouse", 2),
+      "/marketing/campaigns/campaign_01OpenHouse/versions/1",
+    ]);
+    expect(summaries.map((entry) => entry.savedAt)).toEqual([
+      "2026-07-23T16:00:00.000Z",
+      "2026-07-22T16:00:00.000Z",
+      "2026-07-21T16:00:00.000Z",
+    ]);
+  });
+
+  it("applies the library's verdict on the ad to the newest version only", () => {
+    for (const [reason, standing] of [
+      ["retired", "ad_retired"],
+      ["replaced", "ad_newer_version"],
+      ["art_changed", "ad_art_changed"],
+      ["missing", "ad_missing"],
+    ] as const) {
+      const summaries = projectCampaignVersions(
+        [versionRecord(2, { preflight: passed }), versionRecord(1, { preflight: failed })],
+        approver,
+        { state: "awaiting_approval", adRefusal: reason },
+      );
+
+      expect(
+        summaries.map((entry) => entry.standing),
+        reason,
+      ).toEqual([standing, "preflight_failed"]);
+    }
+  });
+
+  it("carries the name a decision recorded, and only that", () => {
+    const [summary] = projectCampaignVersions(
+      [
+        versionRecord(1, {
+          preflight: passed,
+          approval: {
+            ...approval,
+            snapshot: { ...approval.snapshot, approverDisplayName: "Casey Rivera" },
+          },
+        }),
+      ],
+      approver,
+      { state: "approved", adRefusal: undefined },
+    );
+
+    expect(summary?.decision).toEqual({
+      decision: "approved",
+      decidedAt: approval.decidedAt,
+      actorRole: "approver",
+      approverDisplayName: "Casey Rivera",
+    });
+    expect(JSON.stringify(summary)).not.toContain(approval.ipAuditHash);
+  });
+
+  it("refuses a version in another location, as an unknown campaign is refused", () => {
+    expect(() =>
+      projectCampaignVersions(
+        [versionRecord(1, { preflight: passed })],
+        principal({ locationRef: "location_otherTenant001" }),
+        { state: "awaiting_approval", adRefusal: undefined },
+      ),
+    ).toThrow(CampaignResourceNotAccessibleError);
+  });
+
+  it("answers an empty list for a campaign with no versions", () => {
+    expect(projectCampaignVersions([], approver, { state: "draft", adRefusal: undefined })).toEqual(
+      [],
+    );
   });
 });

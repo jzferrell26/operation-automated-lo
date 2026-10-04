@@ -11,4 +11,4 @@ Customer-facing documentation. Everything here is currently **Draft**: it is the
 
 A customer-facing sentence may describe only demonstrated behavior. Capabilities behind a blocked external gate (Meta ad publishing under G3, lead routing under G5, billing under G6) must not appear as available, and no document here may carry a performance, ROI, or volume claim. The claim-by-claim audit lives in the internal [Marketplace listing copy pack](../private/product/marketplace-listing-copy-pack.md).
 
-Authored under [PRD-004e](../../requirements/in-work/prd-004-reviewable-go-live/prd-004e-reviewable-go-live-listing-content-and-demo-script.md).
+Authored under [PRD-004e](../../requirements/in-work/prd-004-reviewable-go-live/prd-004e-reviewable-go-live-listing-content-and-demo-script.md) and rewritten for the marketing toolkit under [PRD-009](../../requirements/completed/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md) (009F-AC-011).

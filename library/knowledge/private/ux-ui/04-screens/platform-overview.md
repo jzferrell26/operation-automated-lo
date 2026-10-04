@@ -1,5 +1,7 @@
 # Platform Overview
 
+> **Superseded on 2026-10-01 by PRD-009** (S-62; OD-F, OD-H): this whole file. Home is the first-run page of design `00-direction.md` section 4 and PRD-009b. The specification below is kept as history.
+
 ## Purpose
 
 Provide a cross-system operating view for the loan officer. This is the root application screen and must remain useful when no ad campaign is active.

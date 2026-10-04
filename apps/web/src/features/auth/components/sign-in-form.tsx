@@ -4,7 +4,7 @@ import { Button, Link, PasswordField, TextField } from "@oalo/ui";
 import type { FormEvent, ReactNode } from "react";
 
 import { SIGN_IN } from "../strings.js";
-import { AuthProblem } from "./auth-feedback.js";
+import { AuthNotice, AuthProblem } from "./auth-feedback.js";
 import styles from "./auth-form.module.css";
 import { useAuthSubmit } from "./use-auth-submit.js";
 import { useWorkspaceChoice, type WorkspaceChoiceResponse } from "./workspace-choice-form.js";
@@ -57,7 +57,9 @@ export function SignInForm({ signUpEnabled, signedOut }: SignInFormProps): React
 
   return (
     <form className={styles.form} onSubmit={handleSignIn}>
-      {signedOut ? <p className={styles.notice}>{SIGN_IN.signedOutNotice}</p> : null}
+      {/* PRD-009 scored review R4-05 and R4-06: the one way an account screen confirms
+          something, so the notice keeps the form's gap and its siblings' colours. */}
+      {signedOut ? <AuthNotice>{SIGN_IN.signedOutNotice}</AuthNotice> : null}
       {problem === null ? null : <AuthProblem>{problem}</AuthProblem>}
       <TextField
         autoComplete="email"

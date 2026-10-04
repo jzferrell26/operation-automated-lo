@@ -87,6 +87,13 @@ export {
 } from "./campaign-foundation.js";
 
 export {
+  libraryAdCopyRef,
+  libraryAdCreativeRef,
+  libraryAdDisclosureRef,
+  libraryAdImageRef,
+} from "./library-ad-references.js";
+
+export {
   CAMPAIGN_APPROVAL_ROLES,
   CAMPAIGN_MUTATION_ROLES,
   CampaignCommandForbiddenError,
@@ -106,7 +113,14 @@ export {
 export {
   CampaignApprovalNotReadyError,
   CampaignApprovalStaleError,
+  CampaignLibraryAdRefusedError,
   executeHumanCampaignApproval,
+  libraryAdRefusalFor,
+  recordedLibraryAdOf,
+  type LibraryAdCatalogPort,
+  type LibraryAdCatalogStanding,
+  type LibraryAdRefusalReason,
+  type RecordedLibraryAd,
   type CampaignApprovalCommitInput,
   type CampaignApprovalCommitResult,
   type CampaignApprovalEvidence,
@@ -118,18 +132,41 @@ export {
 
 export {
   campaignMayBeApprovedBy,
+  campaignVersionHref,
   deriveCampaignNextActions,
+  deriveCampaignStanding,
+  deriveOlderVersionStanding,
   principalHasCampaignApprovalRole,
+  projectCampaignVersions,
   projectCampaignWorkspace,
   type CampaignNextActionId,
   type CampaignPersistenceKind,
+  type CampaignStanding,
+  type CampaignVersionSummary,
   type CampaignWorkspaceApprovalProjection,
   type CampaignWorkspaceNextAction,
   type CampaignWorkspacePreflightProjection,
   type CampaignWorkspaceProjection,
   type CampaignWorkspaceReadRecord,
   type CampaignWorkspaceReadRepository,
+  type CampaignWorkspaceVersionRecord,
 } from "./campaign-workspace-read.js";
+
+/**
+ * PRD-009d D5 and 009D-AC-014. The ruleset registry and the library-ad rule codes, for the web
+ * application, which reads the domain only through this package. Step 3 counts the checks a saved
+ * version ran from the registry entry for its stored ruleset reference.
+ */
+export {
+  LIBRARY_AD_RULESET_REF,
+  OPEN_HOUSE_RULESET_REF,
+  PREFLIGHT_RULESET_REGISTRY,
+  evaluateLibraryAdWords,
+  rulesetRuleCodes,
+  type LibraryAdRuleCode,
+  type LibraryAdTexts,
+  type PreflightRuleCode,
+} from "@oalo/domain";
 
 export {
   LeadSubmissionRejectedError,

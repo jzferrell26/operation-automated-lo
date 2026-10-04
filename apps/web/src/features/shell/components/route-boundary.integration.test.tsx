@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { RouteError } from "./route-boundary.js";
+import { RouteError, RouteLoading } from "./route-boundary.js";
 
 describe("route error boundary projection", () => {
   it("preserves the safe state and invokes only the supplied idempotent reset", async () => {
@@ -32,5 +32,24 @@ describe("route error boundary projection", () => {
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(reset).toHaveBeenCalledOnce();
     expect(network).not.toHaveBeenCalled();
+  });
+
+  /**
+   * PRD-009 scored baseline review R4-10. A route boundary stands on the canvas, and in Light the
+   * sunken fill equals the canvas, so the boundary drew as an outline with no fill while Dark drew a
+   * panel. Both boundaries ask the state primitive for the card surface.
+   */
+  it("draws both boundaries on the card surface, because they stand on the page", () => {
+    const { container, unmount } = render(
+      <RouteError error={new Error("fixture")} reset={vi.fn()} routeName="Overview" />,
+    );
+    expect(container.querySelector("[data-state='error']")).toHaveAttribute("data-surface", "card");
+    unmount();
+
+    const loading = render(<RouteLoading routeName="Overview" />);
+    expect(loading.container.querySelector("[data-state='loading']")).toHaveAttribute(
+      "data-surface",
+      "card",
+    );
   });
 });

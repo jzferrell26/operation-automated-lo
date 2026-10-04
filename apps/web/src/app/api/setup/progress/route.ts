@@ -1,10 +1,18 @@
-import { handleSetupProgress } from "../../../../server/setup-preferences.js";
-
 /**
- * PRD-006c D4. The thin edge: it reads `process.env`, which is what it reads in production, and
- * hands the request to the exported handler. `GET` is not exposed; the authenticated layout reads
- * progress server-side and passes it to the provider.
+ * PRD-009b D4. `/api/setup/progress` is gone, and says so.
+ *
+ * This route stored the floating walkthrough's progress. The walkthrough is retired and nothing
+ * writes progress, so there is no handler to run. What stays is the answer: without this file the
+ * workspace's catch-all page takes the request and answers 200 with its not-found page, because the
+ * response has begun streaming before it can say otherwise, and a removed write route that answers
+ * 200 reads as one that still works. The answer is a 404 with no body, no session read, no database,
+ * and no cache.
+ *
+ * A stored `guided_setup.v1` row is left in the database and is never read again (D4).
  */
-export async function POST(request: Request) {
-  return handleSetupProgress(request);
+
+function gone(_request: Request): Response {
+  return new Response(null, { status: 404, headers: { "cache-control": "no-store" } });
 }
+
+export { gone as DELETE, gone as GET, gone as PATCH, gone as POST, gone as PUT };

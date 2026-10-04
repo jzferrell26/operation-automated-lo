@@ -1,3 +1,10 @@
+import { libraryAdPlacesProblem } from "./library-ad-places.js";
+import {
+  evaluateLibraryAdRules,
+  type LibraryAdRuleContext,
+  type LibraryAdRuleInput,
+} from "./library-ad-ruleset.js";
+
 type CampaignState =
   | "draft"
   | "generated"
@@ -10,12 +17,12 @@ type CampaignState =
   | "completed"
   | "archived";
 
-interface CampaignManifest {
-  readonly property: {
-    readonly openHouseStartsAt: string;
-    readonly openHouseEndsAt: string;
-    readonly permissionConfirmed: boolean;
-  };
+/**
+ * The fields every blueprint shares. PRD-009c D5 makes the manifest a union on `blueprintId`; the
+ * rules that read only these fields run for both blueprints, and the rules that read a property or
+ * a partner run only for `open-house-boost`.
+ */
+interface CampaignManifestCommon {
   readonly content: {
     readonly headline: string;
     readonly body: string;
@@ -30,7 +37,6 @@ interface CampaignManifest {
     readonly width: number;
     readonly height: number;
   }[];
-  readonly partner: { readonly permissionConfirmed: boolean };
   readonly meta: {
     readonly enabled: boolean;
     readonly specialAdCategory: "HOUSING" | "NONE";
@@ -46,6 +52,30 @@ interface CampaignManifest {
   readonly routing: { readonly validationStatus: "valid" | "missing" | "stale" };
 }
 
+interface OpenHouseCampaignManifest extends CampaignManifestCommon {
+  readonly blueprintId: "open-house-boost";
+  readonly property: {
+    readonly openHouseStartsAt: string;
+    readonly openHouseEndsAt: string;
+    readonly permissionConfirmed: boolean;
+  };
+  readonly partner: { readonly permissionConfirmed: boolean };
+}
+
+interface LibraryAdCampaignManifest extends CampaignManifestCommon {
+  readonly blueprintId: "library-ad";
+  readonly advertiser: LibraryAdRuleInput["advertiser"];
+  readonly schedule: LibraryAdRuleInput["schedule"];
+  readonly meta: CampaignManifestCommon["meta"] & {
+    readonly targeting: CampaignManifestCommon["meta"]["targeting"] & {
+      readonly regions: readonly string[];
+      readonly cities: readonly string[];
+    };
+  };
+}
+
+type CampaignManifest = OpenHouseCampaignManifest | LibraryAdCampaignManifest;
+
 interface PreflightFinding {
   readonly severity: "blocking" | "warning";
   readonly ruleCode: string;
@@ -55,6 +85,7 @@ interface PreflightFinding {
 }
 
 interface PreflightRules {
+  readonly evaluatedAt: string;
   readonly minimumImageWidth: number;
   readonly minimumImageHeight: number;
   readonly earliestStartAt: string;
@@ -66,6 +97,8 @@ interface PreflightRules {
   readonly maximumDailyBudgetMinor: number;
   readonly maximumTotalBudgetMinor: number;
   readonly warnings: readonly Omit<PreflightFinding, "severity">[];
+  /** PRD-009d D5. Present exactly when the rules are the library-ad ruleset's. */
+  readonly libraryAd?: LibraryAdRuleContext | undefined;
 }
 
 interface CampaignVersion {
@@ -188,10 +221,53 @@ function finding(
   return { severity: "blocking", ruleCode, description, affected, remediation };
 }
 
+/**
+ * PRD-009d D5. A library ad's disclosure and lead form wording come from the person's own Brand, so
+ * the shared rules' fixes say where to make the change. An open house version keeps its sentences.
+ */
+const LIBRARY_AD_SHARED_FIXES = Object.freeze({
+  DISCLOSURE_REQUIRED: "Add your disclosure line in Brand.",
+  CONSENT_REQUIRED: "Add your lead form wording in Brand.",
+  TARGETING_NOT_ALLOWED: "Choose one or more cities or states, and nothing else.",
+  /*
+   * Writing review pass 2 (MTK-008, W-16). A library ad's picture, category and routing are the
+   * catalog's and the app's, not the person's: the product has no upload and no category control, and
+   * "Choose another ad" is where "Fix it" already sends these three rules (`FIX_TARGETS`). The
+   * open house sentences, which told a person to upload and to approve, stay for open house versions.
+   */
+  IMAGE_NOT_APPROVED: "This ad's picture isn't approved. Choose another ad.",
+  IMAGE_QUALITY_LOW: "This ad's picture is too small to use. Choose another ad.",
+  META_HOUSING_CATEGORY_REQUIRED: "This ad isn't set up as a housing ad. Choose another ad.",
+  GHL_ROUTING_INCOMPLETE: "New leads need somewhere to go in HighLevel.",
+  BRAND_BANNED_PHRASE: (phrase: string) =>
+    `Take '${phrase}' out of the headline or ad text. Ads can't make promises like that.`,
+  MERGE_TOKEN_NOT_ALLOWED: (token: string) =>
+    `Take the fill-in placeholder ${token} out of the ad.`,
+});
+
+/** "$1,000", for a limit a fix sentence states. The limits come from the ruleset that ran. */
+function budgetDollars(minor: number): string {
+  return `$${(minor / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+}
+
+/** A library ad's budget fix names the limits, as step 2's own budget sentences do. */
+function libraryAdBudgetFix(rules: PreflightRules): string {
+  return `Choose a daily budget from ${budgetDollars(rules.minimumDailyBudgetMinor)} to ${budgetDollars(rules.maximumDailyBudgetMinor)} and a total budget from ${budgetDollars(rules.minimumDailyBudgetMinor)} to ${budgetDollars(rules.maximumTotalBudgetMinor)}.`;
+}
+
+function libraryAdContext(manifest: CampaignManifest, rules: PreflightRules) {
+  if (manifest.blueprintId !== "library-ad") return undefined;
+  if (rules.libraryAd === undefined) {
+    throw new CampaignPolicyError("A library ad is checked only with the library-ad ruleset");
+  }
+  return rules.libraryAd;
+}
+
 export function evaluateCampaignPreflight(
   manifest: CampaignManifest,
   rules: PreflightRules,
 ): readonly PreflightFinding[] {
+  const libraryAd = libraryAdContext(manifest, rules);
   const findings: PreflightFinding[] = [];
 
   if (manifest.content.disclosureText.length === 0) {
@@ -200,7 +276,9 @@ export function evaluateCampaignPreflight(
         "DISCLOSURE_REQUIRED",
         "The campaign has no approved disclosure text.",
         "content.disclosureText",
-        "Select an approved disclosure profile version.",
+        libraryAd === undefined
+          ? "Select an approved disclosure profile version."
+          : LIBRARY_AD_SHARED_FIXES.DISCLOSURE_REQUIRED,
       ),
     );
   }
@@ -210,7 +288,9 @@ export function evaluateCampaignPreflight(
         "CONSENT_REQUIRED",
         "The lead experience has no consent disclosure.",
         "content.consentText",
-        "Select an approved consent disclosure version.",
+        libraryAd === undefined
+          ? "Select an approved consent disclosure version."
+          : LIBRARY_AD_SHARED_FIXES.CONSENT_REQUIRED,
       ),
     );
   }
@@ -220,7 +300,9 @@ export function evaluateCampaignPreflight(
         "IMAGE_NOT_APPROVED",
         "Every source image must be approved before campaign approval.",
         "images",
-        "Remove or approve pending, rejected, and quarantined images.",
+        libraryAd === undefined
+          ? "Remove or approve pending, rejected, and quarantined images."
+          : LIBRARY_AD_SHARED_FIXES.IMAGE_NOT_APPROVED,
       ),
     );
   }
@@ -234,21 +316,25 @@ export function evaluateCampaignPreflight(
         "IMAGE_QUALITY_LOW",
         "A source image is below the minimum pixel dimensions.",
         "images",
-        "Upload an image that meets the active ruleset dimensions.",
+        libraryAd === undefined
+          ? "Upload an image that meets the active ruleset dimensions."
+          : LIBRARY_AD_SHARED_FIXES.IMAGE_QUALITY_LOW,
       ),
     );
   }
-  const startsAt = new Date(manifest.property.openHouseStartsAt).getTime();
-  const endsAt = new Date(manifest.property.openHouseEndsAt).getTime();
-  if (endsAt <= startsAt || startsAt < new Date(rules.earliestStartAt).getTime()) {
-    findings.push(
-      finding(
-        "OPEN_HOUSE_DATES_INVALID",
-        "The open-house dates are expired or out of order.",
-        "property.openHouseStartsAt",
-        "Choose a future start time and an end time after the start.",
-      ),
-    );
+  if (manifest.blueprintId === "open-house-boost") {
+    const startsAt = new Date(manifest.property.openHouseStartsAt).getTime();
+    const endsAt = new Date(manifest.property.openHouseEndsAt).getTime();
+    if (endsAt <= startsAt || startsAt < new Date(rules.earliestStartAt).getTime()) {
+      findings.push(
+        finding(
+          "OPEN_HOUSE_DATES_INVALID",
+          "The open-house dates are expired or out of order.",
+          "property.openHouseStartsAt",
+          "Choose a future start time and an end time after the start.",
+        ),
+      );
+    }
   }
   const campaignText = `${manifest.content.headline}\n${manifest.content.body}`.toLocaleLowerCase(
     "en",
@@ -262,7 +348,9 @@ export function evaluateCampaignPreflight(
         "BRAND_BANNED_PHRASE",
         "Campaign copy contains language prohibited by the confirmed brand rules.",
         "content",
-        `Remove the prohibited phrase: ${bannedPhrase}`,
+        libraryAd === undefined
+          ? `Remove the prohibited phrase: ${bannedPhrase}`
+          : LIBRARY_AD_SHARED_FIXES.BRAND_BANNED_PHRASE(bannedPhrase),
       ),
     );
   }
@@ -275,7 +363,9 @@ export function evaluateCampaignPreflight(
         "MERGE_TOKEN_NOT_ALLOWED",
         "Campaign copy contains a merge token outside the allowlist.",
         "content.mergeTokens",
-        `Remove or approve the merge token: ${disallowedToken}`,
+        libraryAd === undefined
+          ? `Remove or approve the merge token: ${disallowedToken}`
+          : LIBRARY_AD_SHARED_FIXES.MERGE_TOKEN_NOT_ALLOWED(disallowedToken),
       ),
     );
   }
@@ -288,7 +378,7 @@ export function evaluateCampaignPreflight(
         "CLAIM_POLICY_BLOCKED",
         "Campaign copy contains a claim outside the approved claim policy.",
         "content.claims",
-        "Remove the claim or obtain an explicit tenant policy approval.",
+        "Take the claim out of the ad. Only reviewed claims are allowed.",
       ),
     );
   }
@@ -298,11 +388,11 @@ export function evaluateCampaignPreflight(
         "FINANCING_TERMS_BLOCKED",
         "The initial blueprint does not permit rate, APR, payment, or program terms.",
         "content.financingTerms",
-        "Remove financing terms or activate an explicitly approved tenant rule.",
+        "Take the rate, payment or loan terms out of the ad. Ads can't state them.",
       ),
     );
   }
-  if (!manifest.partner.permissionConfirmed) {
+  if (manifest.blueprintId === "open-house-boost" && !manifest.partner.permissionConfirmed) {
     findings.push(
       finding(
         "PARTNER_PERMISSION_REQUIRED",
@@ -312,7 +402,7 @@ export function evaluateCampaignPreflight(
       ),
     );
   }
-  if (!manifest.property.permissionConfirmed) {
+  if (manifest.blueprintId === "open-house-boost" && !manifest.property.permissionConfirmed) {
     findings.push(
       finding(
         "PROPERTY_PERMISSION_REQUIRED",
@@ -328,7 +418,9 @@ export function evaluateCampaignPreflight(
         "META_HOUSING_CATEGORY_REQUIRED",
         "Housing promotion must use the Meta Housing Special Ad Category.",
         "meta.specialAdCategory",
-        "Set the approved Housing category before launch.",
+        libraryAd === undefined
+          ? "Set the approved Housing category before launch."
+          : LIBRARY_AD_SHARED_FIXES.META_HOUSING_CATEGORY_REQUIRED,
       ),
     );
   }
@@ -336,14 +428,23 @@ export function evaluateCampaignPreflight(
     manifest.meta.platform !== "meta" ||
     manifest.meta.targeting.zipCodes.length > 0 ||
     manifest.meta.targeting.customAudienceRefs.length > 0 ||
-    manifest.meta.targeting.protectedDimensions.length > 0
+    manifest.meta.targeting.protectedDimensions.length > 0 ||
+    // PRD-009d D4: a library ad's stored states and cities must be ones the request schema would
+    // have produced, so a ZIP code, a radius, or a demographic never reaches a saved version.
+    (manifest.blueprintId === "library-ad" &&
+      libraryAdPlacesProblem({
+        states: manifest.meta.targeting.regions,
+        cities: manifest.meta.targeting.cities,
+      }) !== undefined)
   ) {
     findings.push(
       finding(
         "TARGETING_NOT_ALLOWED",
-        "The first blueprint allows Meta country and region targeting only.",
+        "Ads can be aimed at cities and states only.",
         "meta.targeting",
-        "Remove ZIP, custom-audience, protected-dimension, Google, and LinkedIn targeting.",
+        libraryAd === undefined
+          ? "Remove ZIP, custom-audience, protected-dimension, Google, and LinkedIn targeting."
+          : LIBRARY_AD_SHARED_FIXES.TARGETING_NOT_ALLOWED,
       ),
     );
   }
@@ -355,9 +456,11 @@ export function evaluateCampaignPreflight(
     findings.push(
       finding(
         "BUDGET_OUT_OF_BOUNDS",
-        "Campaign budget is outside the approved tenant bounds.",
+        "The budget is outside the allowed limits.",
         "meta.dailyBudgetMinor",
-        "Choose a daily and total budget within the active ruleset.",
+        libraryAd === undefined
+          ? "Choose a daily and total budget within the active ruleset."
+          : libraryAdBudgetFix(rules),
       ),
     );
   }
@@ -367,9 +470,14 @@ export function evaluateCampaignPreflight(
         "GHL_ROUTING_INCOMPLETE",
         "HighLevel routing mappings are missing or stale.",
         "routing.mappingVersionRef",
-        "Reconnect and revalidate the selected routing objects.",
+        libraryAd === undefined
+          ? "Reconnect and revalidate the selected routing objects."
+          : LIBRARY_AD_SHARED_FIXES.GHL_ROUTING_INCOMPLETE,
       ),
     );
+  }
+  if (manifest.blueprintId === "library-ad" && libraryAd !== undefined) {
+    findings.push(...evaluateLibraryAdRules(manifest, libraryAd, rules.evaluatedAt));
   }
   findings.push(...rules.warnings.map((warning) => ({ ...warning, severity: "warning" as const })));
   return Object.freeze(findings);
@@ -438,7 +546,7 @@ export function evaluatePaidAdBrandBoundary(
           "PAID_AD_REALTOR_IDENTITY",
           "Paid-ad presentation contains Realtor, brokerage, contact, or co-brand language.",
           affected,
-          "Remove Realtor and brokerage identity from the lender-branded paid-ad projection.",
+          "Take the Realtor and brokerage names out of the ad. Paid ads show only you.",
         ),
       );
     }
@@ -486,7 +594,7 @@ export function evaluatePaidAdBrandBoundary(
           "PAID_AD_IDENTITY_ASSET_NOT_APPROVED",
           "Paid-ad creative contains an identity asset that is not approved for the lender-branded ad.",
           affected,
-          "Use only identity assets approved for the loan officer or lender paid-ad projection.",
+          "Use only a logo or picture approved for your own ads.",
         ),
       );
     }
@@ -499,7 +607,7 @@ export function evaluatePaidAdBrandBoundary(
         "PAID_AD_PROPERTY_ASSET_NOT_APPROVED",
         "Paid-ad creative contains a property image that is not approved for this campaign.",
         "paidAd.creative.propertyImageAssetRefs",
-        "Use only approved property images from the immutable campaign version.",
+        "Use only the approved property pictures saved with this version.",
       ),
     );
   }

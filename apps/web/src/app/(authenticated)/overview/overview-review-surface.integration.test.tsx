@@ -1,7 +1,13 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import {
+  connectionStatementsOutsideTheSetupCard,
+  repeatedConnectionStatements,
+} from "../../../features/overview/components/connection-statements.test-support.js";
 import { OverviewScreen } from "../../../features/overview/components/overview-screen.js";
+import { buildHomeChecklist } from "../../../features/overview/model/home-checklist.js";
+import type { HomeData } from "../../../features/overview/model/home-view.js";
 import { loadSyntheticUiFixture } from "../../../features/ui-foundation/data/load-synthetic-ui.js";
 import { loadAuthenticatedWorkspace } from "../../../server/authenticated-workspace-data.js";
 import AuthenticatedLayout from "../layout.js";
@@ -35,15 +41,10 @@ const renderedAllowances: readonly ReviewSurfaceAllowance[] = [
   { path: "navigation.items[*].id", because: "Route slug, rendered only inside its own href." },
   { path: "navigation.items[*].label", because: "Name of a route in this product." },
   { path: "navigation.items[*].href", because: "Route path the review reviewer navigates with." },
-  { path: "navigation.marketingItems[*].id", because: "Route slug of a marketing subroute." },
-  { path: "navigation.marketingItems[*].label", because: "Name of a marketing subroute." },
-  { path: "navigation.marketingItems[*].href", because: "Marketing subroute path." },
+  // PRD-009a (009A-AC-014, 2026-10-01): the Marketing Suite sub-items left the fixture with the
+  // six-item menu, so their four allowances went with them.
   {
     path: "navigation.items[*].state",
-    because: "Closed navigationStateSchema enum; the visible label is component-authored.",
-  },
-  {
-    path: "navigation.marketingItems[*].state",
     because: "Closed navigationStateSchema enum; the visible label is component-authored.",
   },
 
@@ -143,23 +144,30 @@ const projectionAllowances: readonly ReviewSurfaceAllowance[] = [
 useReviewModeEnvironment();
 
 /**
+ * A signed-in owner of a brand-new account, as the page reads it: nothing saved, nothing connected,
+ * no campaign, and an empty library (the real catalog ships empty, 009C-AC-012).
+ */
+const BRAND_NEW_ACCOUNT: HomeData = {
+  checklist: buildHomeChecklist({ installationStatuses: ["pending"], brand: undefined }),
+  topics: [],
+  running: { rows: [], total: 0 },
+  approval: { rows: [], total: 0 },
+};
+
+/**
  * The layout is an async server component since PRD-005a, and in review mode it resolves the shell
  * session from the request rather than from the fixture. No session is presented here, so the shell
  * renders its explicit not-signed-in identity. That is the state a review visitor actually reaches,
  * so it is the state this honesty sweep should cover.
+ *
+ * Amended on 2026-10-01 by PRD-009b: the page is Home, which reads its own data and takes nothing
+ * from the fixture, so the sweep's job is now to prove that nothing from the fixture reaches it.
  */
-async function renderReviewOverview() {
+async function renderReviewOverview(home: HomeData = BRAND_NEW_ACCOUNT) {
   const workspace = loadAuthenticatedWorkspace();
   const { container } = render(
     await AuthenticatedLayout({
-      children: (
-        <OverviewScreen
-          overview={workspace.ui.overview}
-          session={workspace.ui.session}
-          workspaceCampaigns={[]}
-          workspaceMode="review"
-        />
-      ),
+      children: <OverviewScreen firstName="Alex" home={home} />,
     }),
   );
   return { container, workspace };
@@ -169,7 +177,9 @@ describe("review surface honesty invariant", () => {
   it("sweeps the whole fixture rather than a curated list of narrative keys", () => {
     const fixture = loadSyntheticUiFixture();
 
-    expect(collectFixtureStrings(fixture).length).toBeGreaterThan(400);
+    // PRD-009a: the six-item menu replaced 15 navigation entries, so the fixture holds fewer
+    // strings (382 on 2026-10-01); the floor still proves the sweep reads the whole fixture.
+    expect(collectFixtureStrings(fixture).length).toBeGreaterThan(350);
     expect(forbiddenReviewStrings(fixture, renderedAllowances).length).toBeGreaterThan(200);
     expect(staleAllowances(fixture, projectionAllowances)).toEqual([]);
   });
@@ -208,7 +218,15 @@ describe("review surface honesty invariant", () => {
     expect(workspace.ui.navigation.items.every((item) => item.requiredRole === undefined)).toBe(
       true,
     );
-    expect(container.textContent).toContain("Available once your accounts are connected.");
+    /**
+     * Amended on 2026-10-01 by PRD-009 (009A-AC-014): every item of the six-item menu is
+     * available, so no navigation item carries state detail to replace, and the locked-item
+     * sentence "Available once your accounts are connected." no longer renders in the shell.
+     */
+    expect(workspace.ui.navigation.items.every((item) => item.stateDetail === undefined)).toBe(
+      true,
+    );
+    expect(container.textContent).not.toContain("Available once your accounts are connected.");
     /**
      * Since PRD-005a the shell states the session it actually has. Without a real sign-in that is
      * "You're signed out", not the fixture's demo persona, so the fixture provenance string must be
@@ -218,59 +236,63 @@ describe("review surface honesty invariant", () => {
     expect(container.textContent).not.toContain("Demo reviewer");
     expect(container.textContent).toContain("You're signed out");
     expect(container.textContent).toContain("Sign in to see your workspace");
-    expect(screen.getAllByText("Not connected yet").length).toBeGreaterThan(0);
   });
+});
 
-  it("renders no numeric demo value in any review metric", async () => {
+/**
+ * 009B-AC-013. On the review URL, Home shows honest empty and not-connected states and no
+ * unlabelled sample data. `RGL-002` (ledger `GGL-001`) and `004A-AC-003` (ledger `GGL-002`) are
+ * re-proved here, on the new Home: nothing on the page is a figure with no live source, and every
+ * not-connected fact is one the saved records support.
+ */
+describe("Home on the review surface (009B-AC-013)", () => {
+  it("is the start card, the checklist, the two lists, and the footer, and nothing a CRM shows", async () => {
     const { container } = await renderReviewOverview();
-    const values = [...container.querySelectorAll(".oalo-metric__value")].map(
-      (element) => element.textContent ?? "",
-    );
 
-    expect(values.length).toBeGreaterThan(0);
-    expect(values.every((value) => value === "Not connected")).toBe(true);
-    expect(values.join(" ")).not.toMatch(/\d/u);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Launch an ad");
+    for (const heading of ["Get set up", "Running now", "Needs your approval"]) {
+      expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
+    }
+    for (const gone of ["Your numbers", "Quick actions", "Coming later", "Your workspace"]) {
+      expect(screen.queryByText(gone)).toBeNull();
+    }
+    expect(container.querySelector(".oalo-metric")).toBeNull();
+    expect(container.querySelector("[data-demo-label]")).toBeNull();
+    expect(container.querySelector("[data-overview-state]")).toBeNull();
   });
 
-  it("reaches an honest not-connected representation for spend and leads", async () => {
-    await renderReviewOverview();
+  it("shows no figure that has no live source: no money and no metric value", async () => {
+    const { container } = await renderReviewOverview();
+    const text = container.textContent ?? "";
 
-    for (const label of ["Ad spend", "New leads"]) {
-      const metric = screen.getByRole("article", { name: label });
-      expect(within(metric).getByText("Not connected", { selector: ".oalo-state-label" }));
-      expect(metric.textContent).toContain(
-        "Not live yet. Connect Meta and HighLevel to see spend and leads here.",
-      );
+    expect(text).not.toMatch(/\$\s?\d/u);
+    expect(container.querySelector(".oalo-metric__value")).toBeNull();
+    for (const metric of ["Ad spend", "Appointments", "Opportunities", "Applications"]) {
+      expect(text).not.toContain(metric);
     }
   });
 
-  it("replaces the persona header and the verification claim in review mode", async () => {
-    const { container } = await renderReviewOverview();
-
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Overview");
-    expect(container.textContent).toContain("your workspace");
-    expect(container.textContent).toContain("HighLevel, Meta, and Stripe aren't connected.");
-    expect(container.textContent).toContain(
-      "Connect HighLevel, Meta, and Stripe when you're ready. Nothing here changes until you do.",
-    );
-  });
-
-  it("shows honest empty regions instead of fixture operational state", async () => {
+  it("shows honest empty states: nothing running, nothing to approve, an empty library", async () => {
     await renderReviewOverview();
 
-    for (const title of [
-      "Nothing needs your attention",
-      "Nothing to show yet",
-      "No campaigns yet",
-    ]) {
-      expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
+    for (const title of ["No ads running", "Nothing to approve"]) {
+      expect(screen.getByText(title)).toBeInTheDocument();
     }
+    expect(
+      screen.getByText(
+        "No ads in the library yet. New ads are added after they're reviewed, so there's nothing to set up until then.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Sample ad")).toBeNull();
   });
 
-  it("labels the illustrative edge-state matrix as demo rather than tenant data", async () => {
+  it("states what is not connected once, in the Get set up card, and nowhere else (009B-AC-008)", async () => {
     const { container } = await renderReviewOverview();
-    const label = container.querySelector("[data-demo-label='overview-edge-state-matrix']");
 
-    expect(label?.textContent).toContain("Examples only");
+    expect(screen.getAllByText("Not connected yet")).toHaveLength(2);
+    expect(connectionStatementsOutsideTheSetupCard(container)).toEqual([]);
+    expect(repeatedConnectionStatements(container)).toEqual([]);
+    expect(container.textContent).not.toContain("HighLevel and Meta aren't connected.");
+    expect(container.textContent).not.toMatch(/Not connected\b(?! yet)/u);
   });
 });

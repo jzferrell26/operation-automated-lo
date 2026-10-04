@@ -39,6 +39,7 @@ export {
 export type {
   AsyncStateKind,
   AsyncStateProps,
+  AsyncStateSurface,
   DegradedStateProps,
   EmptyStateProps,
   ErrorStateProps,
@@ -78,7 +79,7 @@ export type {
 } from "./components/text-inputs.js";
 
 export { Link, resolveExternalLinkSafety } from "./components/Link.js";
-export type { ExternalLinkSafety, LinkProps, LinkVariant } from "./components/Link.js";
+export type { ExternalLinkSafety, LinkProps, LinkSize, LinkVariant } from "./components/Link.js";
 
 export {
   Dialog,

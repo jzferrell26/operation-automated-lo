@@ -292,8 +292,8 @@ function ScopeSurface() {
       </div>
       <div className={styles.policyGrid}>
         <p>
-          <strong>Included:</strong> GHL connection, assisted profile, one Open House Boost
-          blueprint, page/PDF/creative, campaign text, launch flow, routing, and reporting.
+          <strong>Included:</strong> GHL connection, assisted profile, ready-made library ads,
+          campaign text, launch flow, routing, and reporting.
         </p>
         <p>
           <strong>Not included:</strong> {foundingOffer.exclusions.join(", ")}.

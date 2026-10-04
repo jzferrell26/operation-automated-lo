@@ -18,10 +18,10 @@ import {
   type CampaignVersionTransaction,
 } from "@oalo/application";
 import {
-  CampaignManifestSchema,
+  OpenHouseCampaignManifestSchema,
   type CampaignEvent,
   type CampaignInputVersions,
-  type CampaignManifest,
+  type OpenHouseCampaignManifest,
   type CampaignVersion,
   type PreflightRules,
 } from "@oalo/contracts";
@@ -46,7 +46,7 @@ const inputVersions: CampaignInputVersions = {
   rulesetVersionRef: "ruleset_01Policy",
 };
 
-const manifest: CampaignManifest = CampaignManifestSchema.parse({
+const manifest: OpenHouseCampaignManifest = OpenHouseCampaignManifestSchema.parse({
   schemaVersion: 1,
   blueprintId: "open-house-boost",
   property: {
@@ -125,7 +125,7 @@ const rules: PreflightRules = {
 
 function versionInput(
   campaignVersionRef = "version_01Campaign",
-  nextManifest: CampaignManifest = manifest,
+  nextManifest: OpenHouseCampaignManifest = manifest,
 ) {
   return {
     schemaVersion: 1 as const,
@@ -207,7 +207,7 @@ describe("immutable campaign versions", () => {
       {
         version: versionInput(
           "version_03Campaign",
-          CampaignManifestSchema.parse({
+          OpenHouseCampaignManifestSchema.parse({
             ...manifest,
             content: { ...manifest.content, headline: "A material edit" },
           }),
@@ -247,7 +247,7 @@ describe("immutable campaign versions", () => {
         {
           version: versionInput(
             "version_01Campaign",
-            CampaignManifestSchema.parse({
+            OpenHouseCampaignManifestSchema.parse({
               ...manifest,
               content: { ...manifest.content, headline: "A conflicting retry" },
             }),
@@ -350,7 +350,7 @@ describe("deterministic preflight and approval", () => {
 
   it("covers every blocking rule family and cannot accept a model waiver", async () => {
     const version = await approvedVersion();
-    const badManifest = CampaignManifestSchema.parse({
+    const badManifest = OpenHouseCampaignManifestSchema.parse({
       ...manifest,
       property: {
         ...manifest.property,
@@ -445,6 +445,7 @@ describe("deterministic preflight and approval", () => {
           decidedAt: now,
           ipAuditHash: sha("a"),
           decision: "approved",
+          approverDisplayName: undefined,
         },
         authority,
       ),
@@ -461,6 +462,7 @@ describe("deterministic preflight and approval", () => {
           decidedAt: now,
           ipAuditHash: sha("a"),
           decision: "approved",
+          approverDisplayName: undefined,
         },
         authority,
       ),
@@ -486,6 +488,7 @@ describe("deterministic preflight and approval", () => {
             decidedAt: now,
             ipAuditHash: sha("a"),
             decision: "approved",
+            approverDisplayName: undefined,
           },
           deniedAuthority,
         ),
@@ -504,6 +507,7 @@ describe("deterministic preflight and approval", () => {
           decidedAt: now,
           ipAuditHash: sha("a"),
           decision: "approved",
+          approverDisplayName: undefined,
         },
         deniedAuthority,
       ),
@@ -520,6 +524,7 @@ describe("deterministic preflight and approval", () => {
         decidedAt: now,
         ipAuditHash: sha("a"),
         decision: "approved",
+        approverDisplayName: undefined,
       },
       authority,
     );
@@ -534,6 +539,7 @@ describe("deterministic preflight and approval", () => {
         decidedAt: now,
         ipAuditHash: sha("b"),
         decision: "approved",
+        approverDisplayName: undefined,
       },
       authority,
     );

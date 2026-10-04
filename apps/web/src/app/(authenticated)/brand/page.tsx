@@ -1,9 +1,15 @@
-import { BrandProfileScreen } from "../../../features/brand/components/brand-profile-screen.js";
+import type { Metadata } from "next";
+
+import { PAGE_TITLES } from "../../../copy/page-titles.js";
 import { loadAuthenticatedWorkspace } from "../../../server/authenticated-workspace-data.js";
 import { canRenderDashboardPreview } from "../../../server/dashboard-preview.js";
 import { DashboardPreviewScreen } from "../../../features/dashboard-preview/dashboard-screen.js";
+import { syntheticBrandPageData } from "../../../features/workspace/synthetic-brand-page.js";
 import { WorkspaceScreen } from "../../../features/workspace/workspace-screen.js";
 import { workspacePageData } from "../../../server/workspace-page-data.js";
+
+/** Writing review W-13: the tab says which page this is. */
+export const metadata: Metadata = { title: PAGE_TITLES.brand };
 
 export default async function BrandProfilePage() {
   if (canRenderDashboardPreview()) return <DashboardPreviewScreen view="brand" />;
@@ -16,5 +22,9 @@ export default async function BrandProfilePage() {
    */
   if (workspace.mode === "review")
     return <WorkspaceScreen data={await workspacePageData("profile")} />;
-  return <BrandProfileScreen profile={workspace.brand} />;
+  /*
+   * The scored review's F-13. The local demo shows the same Brand page, from its own sample
+   * identity, and not the pre-PRD-009 "Brand and compliance details" page it used to keep.
+   */
+  return <WorkspaceScreen data={syntheticBrandPageData(workspace.brand)} />;
 }

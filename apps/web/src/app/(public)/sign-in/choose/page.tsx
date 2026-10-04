@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 import { assertAuthPageIsServed } from "../../../../features/auth/auth-page-gate.js";
 import { AuthPanel } from "../../../../features/auth/components/auth-panel.js";
+import styles from "../../../../features/auth/components/auth-form.module.css";
 import { CHOOSE_WORKSPACE, SIGN_IN } from "../../../../features/auth/strings.js";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +27,9 @@ export default async function ChooseWorkspacePage() {
   assertAuthPageIsServed();
   return (
     <AuthPanel lead="Sign in again and we'll ask you which one." title={CHOOSE_WORKSPACE.title}>
-      <p>
+      {/* The panel's gap places the action; the paragraph adds no margin of its own (PRD-009
+          scored review R4-07: the browser's 1em margins put it 40px under the lead). */}
+      <p className={styles.body}>
         <Link href="/sign-in" variant="action">
           {SIGN_IN.title}
         </Link>

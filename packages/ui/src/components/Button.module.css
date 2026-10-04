@@ -1,6 +1,6 @@
 .button {
-  min-block-size: 44px;
-  min-inline-size: 44px;
+  min-block-size: var(--target-min-size);
+  min-inline-size: var(--target-min-size);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -20,8 +20,24 @@
   transition-timing-function: var(--ease-standard);
 }
 
+/* PRD-009 scored baseline review, R3 F-03 (High). `Icon` is `display: block`, so a glyph passed
+ * as a child of a plain inline span broke the line after itself: "Add Realtor partner" drew its
+ * plus above the words, 58px tall. The label is a row of its own, centred, at the button's gap, so
+ * every `<Button><Icon /> words</Button>` reads as one line, as the mockups draw "+ Launch an ad". */
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+/* PRD-009 scored review pass 2, R4-12. The compact button is the secondary step, 14px, as the
+ * mockups' `.btn--sm` (`home-first-run.html:212`), so "Resend the link." and Home's own "Connect"
+ * and "Add" are one rendering. The weight is the shared `--weight-medium` of `.button`: the
+ * 2026-10-03 ruling keeps every button at 500, so the size is the only thing `.sm` changes. */
 .sm {
   padding-inline: var(--space-3);
+  font-size: var(--text-secondary-size);
 }
 
 .md {
@@ -39,10 +55,16 @@
   outline-offset: var(--focus-offset);
 }
 
+/* Design `00-direction.md` section 2.3, "A disabled primary turns grey, so the screen's single
+ * enabled primary is the one blue button", and the mockups' `.btn[disabled]`
+ * (`campaign-detail.html:213`): the neutral fill on a hairline edge. PRD-009 scored review R1-14
+ * and R2 F-5 measured the old rule, `--sf-sunken` on the `--bd-input` edge: `--sf-sunken` equals
+ * the canvas and `--bd-input` is the enabled secondary's edge since 009a, so a disabled primary
+ * read as an enabled outline button beside "Make a new version". */
 .button:disabled {
   color: var(--tx-body);
-  background: var(--sf-sunken);
-  border-color: var(--bd-input);
+  background: var(--st-neutral-bg);
+  border-color: var(--bd-hairline);
   box-shadow: none;
   cursor: not-allowed;
 }
@@ -123,7 +145,8 @@
 }
 
 .dataText {
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 

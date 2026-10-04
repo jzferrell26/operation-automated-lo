@@ -1,19 +1,21 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { createLocalSyntheticPrincipal } from "../../../server/authenticated-principal.js";
-import { GUIDED_SETUP_ANCHORS } from "../../guided-setup/anchor-registry.js";
+import { HAND_OFF } from "../../../copy/launch-messages.js";
+import { glyphBeforeWords, glyphMarkup } from "../../../testing/glyph-markup.js";
 import {
   APPROVER,
-  approvedProjection,
-  awaitingApprovalProjection,
-  needsChangesProjection,
-  sentBackProjection,
-} from "./campaign-decision.test-support.js";
+  CREATOR,
+  libraryCampaign,
+  pageOf,
+  type LibraryCampaignOptions,
+} from "../../../server/campaign-page.test-support.js";
 import { PersistedCampaignScreen } from "./persisted-campaign-screen.js";
 
 /**
- * PRD-008b 008B-AC-010, the approver hand-off card.
+ * PRD-008b 008B-AC-010 and 008B-AC-011, the approver hand-off card, on the campaign page of
+ * PRD-009e.
  *
  * The card tells somebody who cannot approve to copy the campaign's link and send it to an
  * approver. That is a step on a version nobody has decided on. On a version that was approved, or
@@ -23,63 +25,73 @@ import { PersistedCampaignScreen } from "./persisted-campaign-screen.js";
  * rule also needs the campaign to be waiting.
  */
 
-vi.mock("next/navigation.js", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock("next/navigation.js", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 
-const CREATOR = createLocalSyntheticPrincipal();
-
+/** PRD-009d D8: the hand-off card says this, on the campaign page and on step 3 alike. */
 const HAND_OFF_WORDS =
-  "Only an approver or your workspace owner can approve. Copy this link and send it to them.";
+  "You can't approve campaigns in this workspace. Send this link to an approver.";
 
-function renderCampaign(campaign: Awaited<ReturnType<typeof awaitingApprovalProjection>>) {
-  return render(<PersistedCampaignScreen campaign={campaign} />);
+async function renderCampaign(
+  options: LibraryCampaignOptions,
+  principal: typeof CREATOR | typeof APPROVER,
+) {
+  const page = await pageOf(await libraryCampaign(options), { principal });
+  return render(<PersistedCampaignScreen page={page} />);
 }
 
 function handOffAnchors(container: HTMLElement): number {
-  return container.querySelectorAll(`[data-tour="${GUIDED_SETUP_ANCHORS.campaignHandoffLink}"]`)
-    .length;
+  return container.querySelectorAll("[data-hand-off]").length;
 }
 
 describe("the approver hand-off card on a version nobody has decided on", () => {
   it("is offered to a creator, who cannot approve", async () => {
-    const { container } = renderCampaign(await awaitingApprovalProjection(CREATOR));
+    const { container } = await renderCampaign({}, CREATOR);
 
     expect(screen.getByText(HAND_OFF_WORDS)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: HAND_OFF.copyLinkLabel })).toBeInTheDocument();
     expect(handOffAnchors(container)).toBe(1);
   });
 
-  it("is not offered to an approver, who can approve it themselves", async () => {
-    const { container } = renderCampaign(await awaitingApprovalProjection(APPROVER));
+  /** Review pass 2, R2 N-2: the mockup's "Copy the link" carries the copy glyph before its words. */
+  it("draws the copy glyph before the words of its one primary", async () => {
+    await renderCampaign({}, CREATOR);
 
-    expect(screen.queryByText(/Copy this link and send it to them/u)).toBeNull();
-    expect(screen.queryByRole("button", { name: "Copy link" })).toBeNull();
+    expect(glyphBeforeWords(screen.getByRole("button", { name: HAND_OFF.copyLinkLabel }))).toBe(
+      glyphMarkup("copy"),
+    );
+  });
+
+  it("is not offered to an approver, who can approve it themselves", async () => {
+    const { container } = await renderCampaign({}, APPROVER);
+
+    expect(screen.queryByText(/Send this link to an approver/u)).toBeNull();
+    expect(screen.queryByRole("button", { name: HAND_OFF.copyLinkLabel })).toBeNull();
     expect(handOffAnchors(container)).toBe(0);
   });
 });
 
 describe.each([
-  ["approved", approvedProjection],
-  ["sent back", sentBackProjection],
-] as const)("the approver hand-off card on a version that was %s", (_outcome, project) => {
+  ["approved", { decision: "approved" as const }],
+  ["sent back", { decision: "rejected" as const }],
+] as const)("the approver hand-off card on a version that was %s", (_outcome, options) => {
   it.each([
     ["a creator", CREATOR],
     ["an approver", APPROVER],
   ])("is not offered to %s, because there is nothing left to hand off", async (_who, principal) => {
-    const { container } = renderCampaign(await project(principal));
+    const { container } = await renderCampaign(options, principal);
 
-    expect(screen.queryByText(/Copy this link and send it to them/u)).toBeNull();
-    expect(screen.queryByText(/Only an approver or your workspace owner can approve/u)).toBeNull();
-    expect(screen.queryByRole("button", { name: "Copy link" })).toBeNull();
+    expect(screen.queryByText(/Send this link to an approver/u)).toBeNull();
+    expect(screen.queryByText(/You can't approve campaigns in this workspace/u)).toBeNull();
+    expect(screen.queryByRole("button", { name: HAND_OFF.copyLinkLabel })).toBeNull();
     expect(handOffAnchors(container)).toBe(0);
   });
 
-  it("leaves the control that says what was recorded, with its walkthrough anchor", async () => {
-    const { container } = renderCampaign(await project(CREATOR));
+  it("leaves no approve card at all, because the Approval section says what was recorded", async () => {
+    const { container } = await renderCampaign(options, CREATOR);
 
-    expect(screen.getByRole("button", { name: "Approve this version" })).toBeDisabled();
-    expect(
-      container.querySelectorAll(`[data-tour="${GUIDED_SETUP_ANCHORS.campaignApproveControl}"]`),
-    ).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Approve this version" })).toBeNull();
+    expect(container.querySelectorAll("[data-approval-card]")).toHaveLength(0);
+    expect(screen.getByRole("region", { name: "Approval" })).toBeInTheDocument();
   });
 });
 
@@ -96,14 +108,62 @@ describe("the approver hand-off card on a version whose checks need changes", ()
   ])(
     "is not offered to %s, because nothing about it can be approved yet",
     async (_who, principal) => {
-      const { container } = renderCampaign(await needsChangesProjection(principal));
+      const { container } = await renderCampaign({ needsChanges: true }, principal);
 
-      expect(screen.queryByText(/Copy this link and send it to them/u)).toBeNull();
-      expect(screen.queryByRole("button", { name: "Copy link" })).toBeNull();
+      expect(screen.queryByText(/Send this link to an approver/u)).toBeNull();
+      expect(screen.queryByRole("button", { name: HAND_OFF.copyLinkLabel })).toBeNull();
       expect(handOffAnchors(container)).toBe(0);
       // The page still says plainly where it stands, and the approve control stays blocked.
-      expect(screen.getByRole("heading", { name: "Needs changes" })).toBeInTheDocument();
+      expect(container.querySelector("[data-campaign-standing]")).toHaveTextContent(
+        "Needs changes",
+      );
       expect(screen.getByRole("button", { name: "Approve this version" })).toBeDisabled();
     },
   );
+});
+
+/**
+ * The scored baseline review of 2026-10-03, pass 1 (009G-AC-006), R1-13. The mockup draws the
+ * cannot-approve state as the sentence and then one primary action, "Copy the link"
+ * (`launch-step-3-review-and-launch.html`), so a person who cannot approve has exactly one thing to
+ * press and it is the blue button. The card is the same on the campaign page and on step 3.
+ */
+describe("the approver hand-off card's order and its one action (review R1-13)", () => {
+  async function handOff(): Promise<HTMLElement> {
+    const { container } = await renderCampaign({}, CREATOR);
+    return container.querySelector("[data-hand-off]") as HTMLElement;
+  }
+
+  it("says its sentence before the button", async () => {
+    const card = await handOff();
+
+    expect([...card.children].map((child) => child.tagName.toLowerCase())).toEqual(["p", "button"]);
+    expect(card.firstElementChild).toHaveTextContent(HAND_OFF_WORDS);
+    expect(card.lastElementChild).toHaveTextContent(HAND_OFF.copyLinkLabel);
+  });
+
+  it("makes Copy the link the card's one primary", async () => {
+    const card = await handOff();
+
+    const button = screen.getByRole("button", { name: HAND_OFF.copyLinkLabel });
+    expect(card).toContainElement(button);
+    expect(button).toHaveAttribute("data-variant", "primary");
+    expect(card.querySelectorAll("button")).toHaveLength(1);
+  });
+
+  it("confirms the copy in a row with its glyph, where the sentence was", async () => {
+    const card = await handOff();
+
+    // `userEvent.setup()` gives the page a clipboard of its own, which the copy is read back from.
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: HAND_OFF.copyLinkLabel }));
+
+    await waitFor(() => expect(card.firstElementChild).toHaveTextContent(HAND_OFF.copiedNotice));
+    await expect(navigator.clipboard.readText()).resolves.toMatch(
+      /\/marketing\/campaigns\/campaign_01LibraryPage$/u,
+    );
+    // The glyph is a block, so it shares a row with its words instead of standing alone above them.
+    const row = card.querySelector("p > span") as HTMLElement;
+    expect([...row.children].map((child) => child.tagName.toLowerCase())).toEqual(["svg", "span"]);
+  });
 });

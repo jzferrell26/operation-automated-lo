@@ -52,7 +52,7 @@ Set these as server-only environment variables on `operation-automated-lo-web` (
 
 **Rows:** `GGL-B02`, `GGL-B03` · **Owner:** operator
 
-Work through the smoke checklist in [`reviewable-preview-smoke.md`](../../../../docs/operations/evidence-packs/reviewable-preview-smoke.md). The load-bearing sequence is: open `/overview` and `/reports`, confirm honest not-connected states, then create an Open House Boost, reload, and approve it.
+Work through the smoke checklist in [`reviewable-preview-smoke.md`](../../../../docs/operations/evidence-packs/reviewable-preview-smoke.md). The load-bearing sequence is: open `/overview` and `/reports`, confirm honest not-connected states, then create an Open House Boost, reload, and approve it. _(Re-scoped on 2026-10-01 by PRD-009 (S-94; OD-H, OD-D): open `/overview` and a campaign page (`/reports` redirects to Campaigns), then launch a library ad, reload, and approve it. The real library is empty until the owner supplies ads (checklist step 11).)_
 
 **Send back:** pass or fail per checklist line, plus a non-PII campaign reference for the campaign you created and approved. Retain the full smoke log outside git.
 

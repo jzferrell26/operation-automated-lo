@@ -21,6 +21,11 @@ test("Light, Dark, and System leave local approval evidence byte-identical", asy
   });
 
   await page.goto("/overview");
+  // PRD-009a (009A-AC-009): the theme choice lives in the top bar's account control.
+  await page
+    .getByRole("banner")
+    .getByRole("button", { name: /^Your account: / })
+    .click();
   await expect(page.getByRole("radiogroup", { name: "Appearance theme" })).toBeVisible();
   await page.waitForLoadState("networkidle");
 

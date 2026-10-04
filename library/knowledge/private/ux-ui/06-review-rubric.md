@@ -34,9 +34,9 @@ recorded, owned, dated entry in section 5, never by agreement that it is fine.
    weight" (brief section 4).
 2. **Spacing rhythm.** Every gap, padding, and margin is a `--space-*` token.
    Vertical rhythm is consistent within a screen and across sibling screens.
-3. **Typography.** `var(--font-interface)` and `var(--font-data)`. The six steps
+3. **Typography.** `var(--font-interface)`, with tabular numerals for numbers and dates; `var(--font-data)` only inside "Details for support". The six steps
    and the weights come from the tokens. Data, identifiers, versions, hashes,
-   and timestamps use the data font. No ad-hoc size.
+   and timestamps use the interface font with tabular numerals. No ad-hoc size. _(Amended on 2026-10-01 by PRD-009 (OD-E, 009A-AC-007): was the data font, `var(--font-data)`.)_
 4. **Color and contrast.** Semantic tokens only. The color roles of brief
    section 9. WCAG AA measured, not eyeballed, in both themes. Status never by
    color alone.
@@ -54,10 +54,10 @@ recorded, owned, dated entry in section 5, never by agreement that it is fine.
    element that only works in one theme.
 9. **Empty and error states.** `AsyncState` variants, not hand-built views.
    Honest not-connected states. The error says what happened and what to do next.
-10. **Consistency with the canvases.** Where a canvas exists, the screen reads as
+10. **Consistency with the canvases.** Where a canvas exists, the screen reads as _(Superseded on 2026-10-01 by PRD-009 (S-68; OD-E): a sibling of the PRD-009 mockups; the canvases are history.)_
     its production sibling. Where none exists (sign-in, reset, walkthrough,
     settings, reports), the screen reads as a sibling of the nearest canvas and
-    the review names the specs it follows.
+    the review names the specs it follows. _(PRD-009 (S-68): the end of the superseded axis wording.)_
 
 ## 3. The only accepted finding form
 
@@ -74,6 +74,8 @@ finding.
 
 ## 4. Screens in scope
 
+> **Superseded in part on 2026-10-01 by PRD-009** (S-71, as S-37): the rail, collapsed rail, tablet rail, mobile drawer, not-connected banner, "Finish setup" chip, reports, onboarding, the open house create states, and the seven guided-setup steps leave the list; the top bar, the Menu sheet, Home, the Ads library, the three launch steps, the campaign page, and the empty-account states join it (009G-AC-001, 002, 006).
+
 Scored at 1440, 1180, 768, and 390, in Light and Dark, in every named state:
 
 - **Authentication.** Sign in, choose workspace, sign up, forgot password, reset
@@ -89,7 +91,7 @@ Scored at 1440, 1180, 768, and 390, in Light and Dark, in every named state:
   unverified-email notice.
 - **Boundaries.** The route error boundary and the route loading boundary.
 - **Email.** Both transactional emails rendered at 600px in a mail-client
-  preview, scored on hierarchy, typography, contrast, and copy only.
+  preview, scored on hierarchy, typography, contrast, and copy only. _(PRD-009 (S-71): the end of the list it supersedes in part.)_
 
 ## 5. Open deltas carried out of PRD-006d
 
@@ -173,6 +175,8 @@ is the intended effect of the ruling, not a regression.
 
 #### D-002, ruled: confirmed, and the invariant that holds it is now named
 
+> **Superseded on 2026-10-01 by PRD-009** (S-69; OD-E): visible field edges. `--bd-input` is `#718399` in Light (3.88 on a card, 3.65 on sunken) and `#6b7385` in Dark (3.51, 3.19), and `token-contrast.unit.test.ts` holds both at 3.0. The ruling below is history.
+
 Both measurements reproduce: `--bd-input` on `--sf-card` is 1.27:1 in Light and
 1.94:1 in Dark. The reading in the entry is correct. SC 1.4.11 asks for 3.0 on
 the visual information *required to identify* a component, and where a control
@@ -195,7 +199,7 @@ rest, which brief section 8's crisp operational workspace and section 4's "calm
 under pressure" both argue against, and it would move every committed
 screenshot to fix a ratio that is not the one a person relies on. If either
 invariant above is ever weakened, this entry reopens as a defect, not as a
-discussion.
+discussion. _(PRD-009 (S-69): the end of the superseded D-002 ruling.)_
 
 #### D-004, ruled: the deferral stands, with an end condition and an interim contract
 
@@ -226,6 +230,8 @@ The deferral now ends on a condition rather than on someone remembering it:
 
 #### D-008, ruled: the tablet rail is collapsible, and section 14 now says so
 
+> **Superseded on 2026-10-01 by PRD-009** (S-70; D-2): no rail exists, so this ruling has nothing to govern. The top bar's frames are in brief section 14's PRD-009 note and `03-components/application-shell-and-navigation.md`.
+
 Brief section 14 and `03-components/application-shell-and-navigation.md:26` both
 say the tablet uses a collapsible rail, and since F-19 the stylesheet agrees:
 there is no tablet rule at all between 768 and 1180, so those frames inherit the
@@ -252,7 +258,7 @@ re-litigate them:
   require it to. A rail that reopens the way every other person's rail opens is
   predictable, and persistence would need a storage decision this system has not
   made. If a future screen makes the re-collapse tedious, that is a new
-  requirement with an owner, not a defect against this ruling.
+  requirement with an owner, not a defect against this ruling. _(PRD-009 (S-70): the end of the superseded D-008 ruling.)_
 
 ### The rulings of 2026-10-01
 
@@ -468,6 +474,30 @@ covers all of them.
 
 **Closes when** the fix and the redraw land, the three gates pass, and the
 review of the redrawn 1440 and 1180 pictures scores 3 on axes 2, 7, and 10.
+
+### Amended 2026-10-03 by the PRD-009 scored review (R2 F-14)
+
+Ruled by the orchestrator of the PRD-009 Gauntlet run on the scored baseline
+review's finding R2 F-14
+(`library/requirements/completed/prd-009-marketing-toolkit/qa/2026-10-03-scored-baseline-review.md`,
+part R2).
+
+**The screen.** The synthetic demo campaign,
+`/marketing/campaigns/synthetic-open-house-001`
+(`apps/web/src/app/(authenticated)/marketing/campaigns/synthetic-open-house-001/`),
+drawn by the reporting feature's `CampaignDetailScreen` in synthetic mode and by
+`ExampleCampaign` in dashboard-preview mode. Its pictures are the eight
+`chromium/campaign-detail--default--*`.
+
+**The ruling.** The screen stays unchanged under 009f D1: PRD-009 keeps it as the
+open house demo, and no PRD-009 screen links to it. It is therefore **exempt from
+axis 10** (consistency with the PRD-009 mockups): a reviewer does not score it
+against `campaign-detail.html`, and its open house fields, Instagram placement,
+and version identifiers are not deltas. **Axes 1 to 9 still apply** to it at every
+frame in both themes, as they do to every screen in section 4.
+
+**Ends when** a PRD retires the route or links a PRD-009 screen to it; either one
+puts it back under axis 10.
 
 ## 6. What the automated gates already prove, so a reviewer does not re-check it
 

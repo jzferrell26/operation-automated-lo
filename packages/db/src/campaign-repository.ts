@@ -6,6 +6,7 @@ import {
   type CampaignVersionTransaction,
   type CampaignWorkspaceReadRecord,
   type CampaignWorkspaceReadRepository,
+  type CampaignWorkspaceVersionRecord,
 } from "@oalo/application";
 import {
   ApprovalDecisionSchema,
@@ -392,6 +393,16 @@ limit 1`,
   decode: decodeCampaignVersionRow,
 });
 
+/** PRD-009e D3, 009E-AC-005. Every version of one campaign, newest first, under the session's location. */
+const selectCampaignVersionsContract = defineSqlContract<CampaignVersion>({
+  name: "campaign.select-campaign-versions.v1",
+  access: "read",
+  text: `${campaignVersionSelect}
+  and version.campaign_ref = $1::text
+order by version.version_no desc`,
+  decode: decodeCampaignVersionRow,
+});
+
 const selectLatestPreflightContract = defineSqlContract<PreflightResult>({
   name: "campaign.select-latest-preflight.v1",
   access: "read",
@@ -685,6 +696,34 @@ export class PostgresCampaignReadRepository implements CampaignWorkspaceReadRepo
       const aggregate = await readOptional(transaction, selectReadAggregateContract, [campaignRef]);
       if (aggregate === undefined) return undefined;
       return loadWorkspaceReadRecord(transaction, aggregate);
+    });
+  }
+
+  /**
+   * Every version of a campaign with its own latest check and decision. Row-level security keeps
+   * the read inside the session's location, so a campaign in another location has no rows at all
+   * and answers `[]`, as an unknown reference does.
+   */
+  async listVersionsOf(campaignRef: string): Promise<readonly CampaignWorkspaceVersionRecord[]> {
+    return withTenantTransaction(this.#pool, this.#authority, async (transaction) => {
+      const versions = await transaction.read(selectCampaignVersionsContract, [campaignRef]);
+      const records: CampaignWorkspaceVersionRecord[] = [];
+      for (const version of versions) {
+        const preflight = await readOptional(transaction, selectLatestPreflightContract, [
+          version.campaignVersionRef,
+        ]);
+        const approval = await readOptional(transaction, selectLatestApprovalContract, [
+          version.campaignVersionRef,
+        ]);
+        records.push(
+          Object.freeze({
+            version,
+            ...(preflight === undefined ? {} : { preflight }),
+            ...(approval === undefined ? {} : { approval }),
+          }),
+        );
+      }
+      return Object.freeze(records);
     });
   }
 }

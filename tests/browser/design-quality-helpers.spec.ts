@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-import { expectTargetsAreLargeEnough } from "./helpers/design-quality.js";
+import {
+  TEXT_OFF_THE_TYPE_STEPS,
+  expectTargetsAreLargeEnough,
+  measureTextAtTheTypeSteps,
+} from "./helpers/design-quality.js";
 
 /**
  * Wave 7n. The helpers' own probe: a measurement never runs before the page is styled.
@@ -75,4 +79,39 @@ test("the target-size check waits for a stylesheet that arrives after the first 
 
   // No wait of its own here: waiting is the helper's job, which is the whole point of the case.
   await expectTargetsAreLargeEnough(page);
+});
+
+/**
+ * The orchestrator's ruling of 2026-10-02: a picture of the ad (`data-ad-preview`) is the ad as
+ * Facebook shows it, so the brief's type steps do not govern text inside it. The exemption is that
+ * one selector and nothing else: text off a step beside the picture, or in an element that merely
+ * looks like one, is still measured and still reported.
+ */
+const TEXT_BESIDE_A_PICTURE_OF_THE_AD = `<!doctype html>
+<html lang="en">
+  <head>
+    <title>Text beside a picture of the ad</title>
+    <style>html, body { font-size: 16px; margin: 0; } p { margin: 0; }</style>
+  </head>
+  <body>
+    <p id="outside" style="font-size: 15px">Interface text off the steps</p>
+    <div data-ad-feed-preview=""><p style="font-size: 13px">Only looks like a preview</p></div>
+    <article data-ad-preview="">
+      <p style="font-size: 15px">The feed's own type</p>
+      <p style="font-size: 11.454px">The band, sized to the art</p>
+    </article>
+    <p style="font-size: 14px">Interface text at a step</p>
+  </body>
+</html>`;
+
+test("the type-step check skips a picture of the ad and nothing else", async ({ page }) => {
+  expect(TEXT_OFF_THE_TYPE_STEPS.map((exception) => exception.selector)).toEqual([
+    "[data-ad-preview]",
+  ]);
+  await page.setContent(TEXT_BESIDE_A_PICTURE_OF_THE_AD);
+  const measured = await measureTextAtTheTypeSteps(page);
+  expect([...measured.offStep].sort()).toEqual([
+    'p "Interface text off the steps" at 15px',
+    'p "Only looks like a preview" at 13px',
+  ]);
 });

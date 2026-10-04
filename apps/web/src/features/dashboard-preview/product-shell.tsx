@@ -2,42 +2,21 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation.js";
-import { Button, Dialog, Icon, IconButton, Link, TextField, type IconName } from "@oalo/ui";
+import { Button, Dialog, Icon, IconButton, Link, TextField } from "@oalo/ui";
 import { ThemeControl } from "../../theme/ThemeControl.js";
+import { MAIN_MENU } from "../shell/model/navigation.js";
 import { useRequiredDashboardPreview } from "./preview-provider.js";
 import styles from "./product-shell.module.css";
 import "@oalo/ui/product-tokens.css";
-import { SetupWelcome } from "./setup-wizard.js";
 import { ProductHelp } from "./product-help.js";
-import { ProductWalkthrough } from "./product-walkthrough.js";
 
-const navigation: readonly { label: string; href: string; icon: IconName; section: string }[] = [
-  { label: "Overview", href: "/overview", icon: "home", section: "Workspace" },
-  { label: "Campaigns", href: "/marketing/campaigns", icon: "megaphone", section: "Workspace" },
-  { label: "Partners", href: "/partners", icon: "users", section: "Workspace" },
-  { label: "Leads & pipeline", href: "/leads", icon: "layers", section: "Workspace" },
-  { label: "Reports", href: "/reports", icon: "chart", section: "Workspace" },
-  { label: "Homeowner reports", href: "/homeowners", icon: "home", section: "Workspace" },
-  { label: "Marketing studio", href: "/marketing", icon: "sparkles", section: "Create & grow" },
-  {
-    label: "Property sites",
-    href: "/marketing/property-sites",
-    icon: "globe",
-    section: "Create & grow",
-  },
-  {
-    label: "Creative library",
-    href: "/marketing/creative",
-    icon: "image",
-    section: "Create & grow",
-  },
-  { label: "Brand kit", href: "/brand", icon: "building", section: "Create & grow" },
-  { label: "Automations", href: "/automations", icon: "bolt", section: "Create & grow" },
-];
-const utility = [
-  { label: "Settings", href: "/settings", icon: "settings" as const },
-  { label: "Getting started", href: "/onboarding", icon: "help" as const },
-];
+/**
+ * PRD-009a D2 and 009A-AC-014. The local preview reads the one menu. It keeps its own navy rail and
+ * screen compositions (009a Non-Goals, D5); only what the rail lists changes. Leads and pipeline,
+ * Reports, Automations, the Marketing studio and its sub-pages, and Getting started are gone, and
+ * the preview's walkthrough and setup welcome retire with the product's (D-15).
+ */
+const navigation = MAIN_MENU;
 export const initials = (name: string) =>
   name
     .split(/\s+/u)
@@ -78,7 +57,7 @@ export function ProductShell({ children }: { children: ReactNode }) {
     };
   }, []);
   const title =
-    [...navigation, ...utility]
+    [...navigation]
       .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
       .sort((a, b) => b.href.length - a.href.length)[0]?.label ?? "Workspace";
   const displayName = state.profile.name === "Preview owner" ? "Alex Morgan" : state.profile.name;
@@ -99,9 +78,7 @@ export function ProductShell({ children }: { children: ReactNode }) {
     if (search) searchRef.current?.focus();
   }, [search]);
   function selected(href: string) {
-    return href === "/marketing"
-      ? pathname === href
-      : pathname === href || pathname.startsWith(`${href}/`);
+    return pathname === href || pathname.startsWith(`${href}/`);
   }
   function rail(compact: boolean) {
     return (
@@ -118,34 +95,29 @@ export function ProductShell({ children }: { children: ReactNode }) {
           ) : null}
         </Link>
         <nav aria-label="Main navigation" className={styles.navigation}>
-          {["Workspace", "Create & grow"].map((section) => (
-            <div key={section} className={styles.navGroup}>
-              {!compact ? <span className={styles.groupLabel}>{section}</span> : null}
-              {navigation
-                .filter((item) => item.section === section)
-                .map((item) => (
-                  <Link
-                    key={item.href}
-                    className={styles.navLink}
-                    href={item.href}
-                    aria-current={selected(item.href) ? "page" : undefined}
-                    aria-label={item.label}
-                    title={compact ? item.label : undefined}
-                    onClick={() => setDrawer(false)}
-                  >
-                    <Icon name={item.icon} decorative />
-                    {!compact ? (
-                      <>
-                        <span>{item.label}</span>
-                        {item.href === "/marketing/campaigns" && pending > 0 ? (
-                          <span className={styles.count}>{pending}</span>
-                        ) : null}
-                      </>
+          <div className={styles.navGroup}>
+            {navigation.map((item) => (
+              <Link
+                key={item.href}
+                className={styles.navLink}
+                href={item.href}
+                aria-current={selected(item.href) ? "page" : undefined}
+                aria-label={item.label}
+                title={compact ? item.label : undefined}
+                onClick={() => setDrawer(false)}
+              >
+                <Icon name={item.icon} decorative />
+                {!compact ? (
+                  <>
+                    <span>{item.label}</span>
+                    {item.href === "/marketing/campaigns" && pending > 0 ? (
+                      <span className={styles.count}>{pending}</span>
                     ) : null}
-                  </Link>
-                ))}
-            </div>
-          ))}
+                  </>
+                ) : null}
+              </Link>
+            ))}
+          </div>
         </nav>
         {!compact ? (
           <div className={styles.railFeature}>
@@ -163,22 +135,6 @@ export function ProductShell({ children }: { children: ReactNode }) {
             </Link>
           </div>
         ) : null}
-        <div className={styles.utilities}>
-          {utility.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={styles.navLink}
-              aria-label={item.label}
-              aria-current={selected(item.href) ? "page" : undefined}
-              onClick={() => setDrawer(false)}
-              title={compact ? item.label : undefined}
-            >
-              <Icon name={item.icon} decorative />
-              {!compact ? <span>{item.label}</span> : null}
-            </Link>
-          ))}
-        </div>
         <Link href="/settings/account" className={styles.identity} aria-label="Your profile">
           <span className={styles.avatar}>{initials(displayName)}</span>
           {!compact ? (
@@ -193,9 +149,8 @@ export function ProductShell({ children }: { children: ReactNode }) {
   }
   const searchItems = [
     ...navigation.map((item) => ({ ...item, detail: "Page" })),
-    ...utility.map((item) => ({ ...item, detail: "Page" })),
     {
-      label: "New campaign",
+      label: "Launch an ad",
       href: "/marketing/campaigns/new",
       icon: "plus" as const,
       detail: "Action",
@@ -256,7 +211,7 @@ export function ProductShell({ children }: { children: ReactNode }) {
               Demo workspace
             </Button>
             <IconButton icon="sun" label="Appearance" onClick={() => setAppearance(true)} />
-            <IconButton icon="help" label="Help & setup" onClick={() => setHelp(true)} />
+            <IconButton icon="help" label="Help" onClick={() => setHelp(true)} />
             <Link
               href="/settings/account"
               className={styles.headerAvatar}
@@ -267,21 +222,6 @@ export function ProductShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className={styles.content} id="main-content">
-          {pathname !== "/onboarding" ? <SetupWelcome /> : null}
-          {pathname !== "/onboarding" &&
-          state.setup.welcomeSeen &&
-          state.setup.status !== "completed" ? (
-            <div className={styles.setupStrip}>
-              <Link href="/onboarding">
-                Continue workspace setup <Icon name="arrow-right" decorative size="sm" />
-              </Link>
-              {state.setup.guide?.paused ? (
-                <Button variant="ghost" onClick={() => setHelp(true)}>
-                  Resume walkthrough
-                </Button>
-              ) : null}
-            </div>
-          ) : null}
           {children}
         </main>
         <footer className={styles.footer}>
@@ -340,9 +280,6 @@ export function ProductShell({ children }: { children: ReactNode }) {
             Nothing is sent, published, or charged here. Connecting accounts and inviting a team
             will be available in the live product.
           </p>
-          <Link href="/onboarding" variant="action" onClick={() => setAbout(false)}>
-            Show me around
-          </Link>
         </div>
       </Dialog>
       <Dialog
@@ -354,7 +291,6 @@ export function ProductShell({ children }: { children: ReactNode }) {
         <ThemeControl />
       </Dialog>
       <ProductHelp open={help} onClose={closeHelp} />
-      <ProductWalkthrough suspended={drawer || search || about || appearance || help} />
     </div>
   );
 }

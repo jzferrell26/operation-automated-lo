@@ -143,16 +143,28 @@
   border-radius: var(--radius-panel);
 }
 
-.sheet[data-anchor="inline-end"] {
-  inset-block-start: 0;
-  inset-inline-start: 100%;
-  margin-inline-start: var(--space-3);
-}
+/* Wide frames: the sheet is anchored beside the control that opened it. The anchored placements
+ * apply only here, at the exact complement of the mobile frame below (`not all and
+ * (max-width: 767.98px)` is every width the mobile rule does not match, so no fractional width
+ * falls between the two).
+ *
+ * They used to be unconditional. A `[data-anchor]` rule is (0,2,0) and the mobile `.sheet` rule is
+ * (0,1,0), so on a phone the anchored `inset-block-start: 100%` beat the mobile `inset: auto 0 0`
+ * and left a fixed panel below the frame (measured 2026-10-01 at 390x844: the panel's top at
+ * 856px). Scoping the anchors to the frames that want them leaves the two sets of rules with
+ * nothing to disagree about, rather than winning a specificity contest by adding selectors. */
+@media not all and (max-width: 767.98px) {
+  .sheet[data-anchor="inline-end"] {
+    inset-block-start: 0;
+    inset-inline-start: 100%;
+    margin-inline-start: var(--space-3);
+  }
 
-.sheet[data-anchor="block-end"] {
-  inset-block-start: 100%;
-  inset-inline-start: 0;
-  margin-block-start: var(--space-3);
+  .sheet[data-anchor="block-end"] {
+    inset-block-start: 100%;
+    inset-inline-start: 0;
+    margin-block-start: var(--space-3);
+  }
 }
 
 .sheetAnchor {
@@ -164,8 +176,8 @@
  * sticky surface never covers a field, an error, or the safe-area inset.
  *
  * The boundary is 767.98px, not 768px. 768 is the tablet frame the brief names
- * in section 14, and `model/panel-placement.ts`'s `SIDE_ANCHOR_MIN_WIDTH` treats
- * it as wide (`viewport.width < 768` is the mobile branch). At exactly 768 a
+ * in section 14, and the walkthrough's placement model, since removed, treated
+ * it as wide (`viewport.width < 768` was the mobile branch). At exactly 768 a
  * `max-width: 768px` rule made this a bottom sheet while the model anchored the
  * panel beside the element, so the two disagreed on the one frame the rubric
  * scores tablet at. `app-shell.module.css` already draws its mobile boundary at

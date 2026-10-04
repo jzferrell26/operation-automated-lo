@@ -5,6 +5,7 @@ import {
   type PreflightResult,
 } from "@oalo/contracts";
 
+import type { LibraryAdRefusalReason } from "./campaign-approval-command.js";
 import {
   CAMPAIGN_APPROVAL_ROLES,
   assertCampaignAccessible,
@@ -56,6 +57,14 @@ export interface CampaignWorkspaceApprovalProjection {
   readonly decision: ApprovalDecision["decision"];
   readonly decidedAt: string;
   readonly actorRole: ApprovalDecision["actorRole"];
+  /**
+   * PRD-009e D2, 009E-AC-004. The decider's own session display name, recorded in the decision's
+   * evidence when they decided. It is absent for every decision made before PRD-009 and whenever
+   * the session read yielded nothing but the fallback, and then a screen says the role instead. It
+   * is whatever the person typed at sign-up, so a screen shows it as text and always beside the
+   * role; `actorRole` is the authoritative record.
+   */
+  readonly approverDisplayName?: string;
 }
 
 export interface CampaignWorkspaceReadRecord {
@@ -67,9 +76,26 @@ export interface CampaignWorkspaceReadRecord {
   readonly approval?: ApprovalDecision;
 }
 
+/**
+ * PRD-009e D3, 009E-AC-005. One version of a campaign as the versions list and an older version's
+ * own page read it: the version, the latest check run on it, and the latest decision recorded on
+ * it. A version nobody has checked yet has no check. The campaign's stored state belongs to the
+ * newest version alone, so it is not part of this record.
+ */
+export interface CampaignWorkspaceVersionRecord {
+  readonly version: CampaignVersion;
+  readonly preflight?: PreflightResult;
+  readonly approval?: ApprovalDecision;
+}
+
 export interface CampaignWorkspaceReadRepository {
   listForLocation(): Promise<readonly CampaignWorkspaceReadRecord[]>;
   getByCampaignRef(campaignRef: string): Promise<CampaignWorkspaceReadRecord | undefined>;
+  /**
+   * Every version of one campaign, newest first, under the session's own location. A campaign in
+   * another location answers `[]`, exactly as an unknown reference does (009E-AC-005).
+   */
+  listVersionsOf(campaignRef: string): Promise<readonly CampaignWorkspaceVersionRecord[]>;
 }
 
 export interface CampaignWorkspaceProjection {
@@ -80,11 +106,12 @@ export interface CampaignWorkspaceProjection {
   readonly state: CampaignState;
   readonly rowVersion: number;
   readonly updatedAt: string;
+  /**
+   * PRD-009e D4. Which flow made this version. A campaign saved before PRD-009 is an open house
+   * version: it opens read-only, and none of its property fields is projected here at all.
+   */
+  readonly blueprint: CampaignVersion["manifest"]["blueprintId"];
   readonly headline: string;
-  readonly propertyAddress: string;
-  readonly openHouseStartsAt: string;
-  readonly openHouseEndsAt: string;
-  readonly realtorDisplayName: string;
   readonly disclosureText: string;
   readonly dailyBudgetMinor: number;
   readonly totalBudgetMinor: number;
@@ -196,6 +223,157 @@ export function deriveCampaignNextActions(
   }
 }
 
+/**
+ * PRD-009e D3 and 009E-AC-005, 009E-AC-010. Where one version of a campaign stands, in a single
+ * vocabulary every screen shares: the stored state, plus the standings the state cannot say.
+ *
+ * Four of them are the library's verdict on the ad, one for each reason the approval rule refuses a
+ * library-ad version (`libraryAdRefusalFor`, 009c D4) and so one for each reason a version nobody has
+ * approved is not "ready for approval": the ad was taken out of the library (`ad_retired`), a newer
+ * version of the ad replaced the one this version was made from (`ad_newer_version`), the ad's pictures
+ * changed after the version was saved (`ad_art_changed`), or the library no longer holds the ad
+ * (`ad_missing`). `replaced` is something else: a standing of an older version of the campaign that
+ * nobody decided on.
+ */
+export type CampaignStanding =
+  CampaignState | "ad_retired" | "ad_newer_version" | "ad_art_changed" | "ad_missing" | "replaced";
+
+/**
+ * The standing each reason the approval rule gives takes. The map is exhaustive over the reasons, so a
+ * fifth reason is a typecheck failure here until a screen has a standing and words for it.
+ */
+const AD_REFUSAL_STANDINGS: Readonly<Record<LibraryAdRefusalReason, CampaignStanding>> =
+  Object.freeze({
+    retired: "ad_retired",
+    replaced: "ad_newer_version",
+    art_changed: "ad_art_changed",
+    missing: "ad_missing",
+  });
+
+/** The states a version nobody has decided on can still be in, and so the ones the library's verdict changes. */
+const UNAPPROVED_STATES: ReadonlySet<CampaignState> = new Set([
+  "draft",
+  "generated",
+  "preflight_failed",
+  "awaiting_approval",
+]);
+
+/**
+ * The standing of the newest version, which is the only one the campaign's stored state describes.
+ *
+ * The recorded decision comes first, as PRD-008b requires of every surface (008B-AC-004): a send-back
+ * leaves the state at `awaiting_approval`, so a rejected version keeps that state and the label
+ * function reads the decision. Then the library's verdict on the ad, which beats the checks, because
+ * a version whose ad is gone, replaced, or changed cannot be approved however its checks came out
+ * (009d D8). Then the state itself.
+ *
+ * `adRefusal` is the approval rule's own answer (`libraryAdRefusalFor`), so a screen's chip and the
+ * approval command cannot disagree (QA-11): "ready for approval" is said only where the rule allows
+ * an approval.
+ */
+export function deriveCampaignStanding(
+  input: Readonly<{
+    state: CampaignState;
+    decision: ApprovalDecision["decision"] | undefined;
+    adRefusal: LibraryAdRefusalReason | undefined;
+  }>,
+): CampaignStanding {
+  if (
+    input.decision === undefined &&
+    input.adRefusal !== undefined &&
+    UNAPPROVED_STATES.has(input.state)
+  ) {
+    return AD_REFUSAL_STANDINGS[input.adRefusal];
+  }
+  return input.state;
+}
+
+/**
+ * The standing of an older version, which has no stored state of its own. What is known about it is
+ * its decision and its last check: a decision wins, then a check that found something, and a
+ * version that passed its check and was never decided on was simply replaced by a newer one.
+ */
+export function deriveOlderVersionStanding(
+  record: Readonly<Pick<CampaignWorkspaceVersionRecord, "preflight" | "approval">>,
+): CampaignStanding {
+  if (record.approval?.decision === "approved") return "approved";
+  if (record.approval?.decision === "rejected") return "awaiting_approval";
+  if (record.preflight === undefined) return "generated";
+  return record.preflight.blocking ? "preflight_failed" : "replaced";
+}
+
+export function campaignVersionHref(campaignRef: string, versionNo: number): string {
+  return `/marketing/campaigns/${campaignRef}/versions/${String(versionNo)}`;
+}
+
+/** One row of a campaign's versions list (009E-AC-005). */
+export interface CampaignVersionSummary {
+  readonly versionNo: number;
+  readonly campaignVersionRef: string;
+  readonly savedAt: string;
+  /** True when the viewer saved it: a saver's name is not recorded, so "by you" is all that is known. */
+  readonly savedByViewer: boolean;
+  readonly isLatest: boolean;
+  readonly standing: CampaignStanding;
+  readonly decision?: CampaignWorkspaceApprovalProjection;
+  readonly href: string;
+}
+
+function approvalProjectionOf(approval: ApprovalDecision): CampaignWorkspaceApprovalProjection {
+  return Object.freeze({
+    decision: approval.decision,
+    decidedAt: approval.decidedAt,
+    actorRole: approval.actorRole,
+    ...(approval.snapshot.approverDisplayName === undefined
+      ? {}
+      : { approverDisplayName: approval.snapshot.approverDisplayName }),
+  });
+}
+
+/**
+ * Every version of a campaign as a versions-list row, newest first. A version in another location
+ * is refused with the same error as everywhere else, so a list can never mix locations. The newest
+ * version takes the campaign's stored state and the library's verdict on its ad (the approval rule's
+ * answer, `adRefusal`); every older one is read from its own decision and check.
+ */
+export function projectCampaignVersions(
+  records: readonly CampaignWorkspaceVersionRecord[],
+  principal: Readonly<AuthenticatedPrincipal>,
+  latest: Readonly<{ state: CampaignState; adRefusal: LibraryAdRefusalReason | undefined }>,
+): readonly CampaignVersionSummary[] {
+  const frozen = freezeAuthenticatedPrincipal(principal);
+  const ordered = [...records].sort(
+    (left, right) => right.version.versionNo - left.version.versionNo,
+  );
+  const newest = ordered[0]?.version.versionNo;
+  return Object.freeze(
+    ordered.map((record) => {
+      assertCampaignAccessible(frozen, record.version);
+      const isLatest = record.version.versionNo === newest;
+      return Object.freeze({
+        versionNo: record.version.versionNo,
+        campaignVersionRef: record.version.campaignVersionRef,
+        savedAt: record.version.createdAt,
+        savedByViewer: record.version.createdBy === frozen.actorRef,
+        isLatest,
+        standing: isLatest
+          ? deriveCampaignStanding({
+              state: latest.state,
+              decision: record.approval?.decision,
+              adRefusal: latest.adRefusal,
+            })
+          : deriveOlderVersionStanding(record),
+        ...(record.approval === undefined
+          ? {}
+          : { decision: approvalProjectionOf(record.approval) }),
+        href: isLatest
+          ? `/marketing/campaigns/${record.version.campaignRef}`
+          : campaignVersionHref(record.version.campaignRef, record.version.versionNo),
+      });
+    }),
+  );
+}
+
 export function projectCampaignWorkspace(
   record: CampaignWorkspaceReadRecord,
   principal: Readonly<AuthenticatedPrincipal>,
@@ -213,11 +391,8 @@ export function projectCampaignWorkspace(
     state: record.state,
     rowVersion: record.rowVersion,
     updatedAt: record.updatedAt,
+    blueprint: manifest.blueprintId,
     headline: manifest.content.headline,
-    propertyAddress: manifest.property.address,
-    openHouseStartsAt: manifest.property.openHouseStartsAt,
-    openHouseEndsAt: manifest.property.openHouseEndsAt,
-    realtorDisplayName: manifest.partner.realtorDisplayName,
     disclosureText: manifest.content.disclosureText,
     dailyBudgetMinor: manifest.meta.dailyBudgetMinor,
     totalBudgetMinor: manifest.meta.totalBudgetMinor,
@@ -240,15 +415,7 @@ export function projectCampaignWorkspace(
         ),
       ),
     }),
-    ...(record.approval === undefined
-      ? {}
-      : {
-          approval: Object.freeze({
-            decision: record.approval.decision,
-            decidedAt: record.approval.decidedAt,
-            actorRole: record.approval.actorRole,
-          }),
-        }),
+    ...(record.approval === undefined ? {} : { approval: approvalProjectionOf(record.approval) }),
     nextActions: deriveCampaignNextActions(record.state, canApprove, record.approval?.decision),
     canApprove,
     persistenceKind,

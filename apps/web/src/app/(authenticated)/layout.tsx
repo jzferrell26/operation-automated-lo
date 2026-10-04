@@ -1,19 +1,12 @@
-import { CAMPAIGN_APPROVAL_ROLES, CAMPAIGN_MUTATION_ROLES } from "@oalo/application";
 import { Button, Link } from "@oalo/ui";
 import { headers } from "next/headers.js";
 import type { ReactNode } from "react";
 
-import {
-  ROLE_LABELS,
-  SIGN_OUT_LABEL,
-  SIGNED_OUT_HEADING,
-  SIGNED_OUT_PROMPT,
-} from "../../copy/user-language.js";
+import { SIGN_OUT_LABEL, SIGNED_OUT_HEADING, SIGNED_OUT_PROMPT } from "../../copy/user-language.js";
 import { UnverifiedEmailNotice } from "../../features/auth/components/unverified-email-notice.js";
-import { GuidedSetupProvider } from "../../features/guided-setup/guided-setup-provider.js";
-import { GuidedSetupShellControls } from "../../features/guided-setup/guided-setup-progress.js";
 import { AppShell } from "../../features/shell/components/app-shell.js";
 import {
+  mainMenuNavigation,
   projectNavigationForSession,
   type WorkspaceSessionView,
 } from "../../features/shell/model/navigation.js";
@@ -27,11 +20,9 @@ import {
   SIGN_OUT_PATH,
   resolveRuntimeShellSession,
 } from "../../server/runtime-authentication.js";
-import { readSetupPreferencesForRequest } from "../../server/setup-preferences.js";
 import { canRenderDashboardPreview } from "../../server/dashboard-preview.js";
 import { DashboardPreviewProvider } from "../../features/dashboard-preview/preview-provider.js";
 import { ProductShell } from "../../features/dashboard-preview/product-shell.js";
-import { reportWorkspaceNavigation } from "../../features/workspace/navigation.js";
 
 export const dynamic = "force-dynamic";
 
@@ -58,28 +49,6 @@ const SIGNED_OUT_SESSION: WorkspaceSessionView = Object.freeze({
 });
 
 /**
- * PRD-006c D5 step 6. Which branch of the approve step this person sees.
- *
- * The shell projects a role into the label a user reads, and the label is what the layout has, so
- * the comparison is made in label space. The set is built from the same `CAMPAIGN_APPROVAL_ROLES`
- * the approval command enforces rather than typed out again, so the step can never offer to
- * approve to somebody the command would refuse. A self-serve account from PRD-006a is a
- * `location_admin` and reaches the approve branch; a seeded creator reaches the hand-off branch.
- */
-const APPROVER_CAPABLE_ROLE_LABELS: ReadonlySet<string> = new Set(
-  CAMPAIGN_APPROVAL_ROLES.map((role) => ROLE_LABELS[role]),
-);
-
-/**
- * PRD-008b 008B-AC-010. Who can create a campaign, in the same label space and from the same roles
- * the create command enforces. An approver who cannot is not sent to the walkthrough's step 4,
- * "Create the Open House Boost", which their role cannot complete.
- */
-const CREATOR_CAPABLE_ROLE_LABELS: ReadonlySet<string> = new Set(
-  CAMPAIGN_MUTATION_ROLES.map((role) => ROLE_LABELS[role]),
-);
-
-/**
  * PRD-005a 005A-AC-011 and 005A-AC-012.
  *
  * In synthetic mode nothing changes: the shell renders the fixture session exactly as before.
@@ -92,9 +61,8 @@ const CREATOR_CAPABLE_ROLE_LABELS: ReadonlySet<string> = new Set(
  * The CSRF element carries `createSessionBoundCsrfToken` output, an HMAC of the session reference
  * under the server secret. The `__Host-oalo_session` cookie value never reaches the document.
  *
- * PRD-006c D5 adds the guided setup. Progress and the profile are read here, on the server, before
- * anything renders, and handed to the provider as props. That is what makes the welcome step part
- * of the first HTML the browser receives rather than something that appears a moment later.
+ * PRD-009b D4 retired the guided setup that PRD-006c D5 had added here: there is no provider, no
+ * floating panel, and no setup read before the shell paints. The shell's Help is its own.
  */
 export default async function AuthenticatedLayout({ children }: Readonly<{ children: ReactNode }>) {
   const workspace = loadAuthenticatedWorkspace();
@@ -111,7 +79,7 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
     const fixture = workspace.ui;
     return (
       <AppShell
-        navigation={projectNavigationForSession(fixture.navigation, fixture.session)}
+        navigation={projectNavigationForSession(mainMenuNavigation(), fixture.session)}
         session={fixture.session}
         workspaceMode={workspace.mode}
       >
@@ -124,16 +92,13 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
   const request = new Request("https://oalo.local/", { headers: incoming });
   const shell = await resolveRuntimeShellSession(request, process.env);
   const session = shell.session ?? SIGNED_OUT_SESSION;
-  const preferences = shell.authenticated
-    ? await readSetupPreferencesForRequest(request, process.env)
-    : undefined;
 
   /**
    * PRD-006d's named-state review, F-21. The sign-out control belongs to the shell's account area,
    * not to the page.
    *
-   * `03-components/application-shell-and-navigation.md` puts identity and its controls in the rail
-   * and the topbar's account control, and rubric axis 1 asks that the eye land on the page's own
+   * `03-components/application-shell-and-navigation.md` puts identity and its controls in the top
+   * bar's account control (PRD-009a), and rubric axis 1 asks that the eye land on the page's own
    * title. Until 2026-09-20 this form was the first child of `<main>`, so every workspace page
    * opened with a button above its own heading. It is the same plain form post it always was: a
    * hidden field, no client script, the label from the copy module, and the 44px target the
@@ -154,28 +119,17 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
     </form>
   );
 
+  /**
+   * PRD-009a D2, 009A-AC-010, and 009A-AC-014. The one menu, for every account: Homeowner reports
+   * is listed whether or not the homeowner report flag is set (the owner's answer to D-4), and the
+   * role projection still decides whether this person can open it (`reports:read`). Until
+   * 2026-10-01 this read the fixture's nine items, relabelled some of them for the report
+   * workspace, and appended Homeowner reports only when that flag was `enabled`.
+   */
   const shellBody = (
     <AppShell
       accountControls={shell.authenticated ? signOutControl : undefined}
-      headerControls={shell.authenticated ? <GuidedSetupShellControls /> : undefined}
-      navigation={projectNavigationForSession(
-        process.env.OALO_HOMEOWNER_REPORTS === "enabled" && shell.authenticated
-          ? {
-              ...reportWorkspaceNavigation(workspace.ui.navigation),
-              items: [
-                ...reportWorkspaceNavigation(workspace.ui.navigation).items,
-                {
-                  id: "homeowner-reports",
-                  label: "Homeowner reports",
-                  href: "/homeowners",
-                  state: "available",
-                  requiredCapability: "reports:read",
-                },
-              ],
-            }
-          : workspace.ui.navigation,
-        session,
-      )}
+      navigation={projectNavigationForSession(mainMenuNavigation(), session)}
       session={session}
       workspaceMode={workspace.mode}
     >
@@ -204,25 +158,7 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
       {shell.csrfToken === undefined ? null : (
         <meta content={shell.csrfToken} name={CSRF_META_NAME} />
       )}
-      {preferences === undefined ? (
-        shellBody
-      ) : (
-        <GuidedSetupProvider
-          campaignAwaitingDecision={preferences.awaitingDecision}
-          campaignAwaitingDecisionFailed={preferences.awaitingDecisionFailed}
-          canApprove={APPROVER_CAPABLE_ROLE_LABELS.has(session.user.roleLabel)}
-          canCreate={CREATOR_CAPABLE_ROLE_LABELS.has(session.user.roleLabel)}
-          enabled
-          initialProfile={preferences.profile}
-          initialProgress={preferences.progress}
-          savedCampaign={preferences.campaign}
-          serverNowIso={new Date().toISOString()}
-          sessionDisplayName={session.user.displayName}
-          sessionWorkspaceName={session.location.displayName}
-        >
-          {shellBody}
-        </GuidedSetupProvider>
-      )}
+      {shellBody}
     </>
   );
 }

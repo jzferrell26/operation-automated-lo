@@ -78,10 +78,15 @@ const navigationItemSchema = z
   })
   .strict();
 
+/**
+ * PRD-009a D2 and 009A-AC-014. The menu is the six items of `MAIN_MENU`
+ * (`features/shell/model/navigation.ts`), which the fixture derives its navigation from. The
+ * nine-item navigation and the six Marketing Suite sub-items it replaced are gone, so a fixture
+ * carrying `marketingItems` is refused by the strict shape.
+ */
 export const navigationSchema = z
   .object({
-    items: z.array(navigationItemSchema).length(9),
-    marketingItems: z.array(navigationItemSchema).length(6),
+    items: z.array(navigationItemSchema).length(6),
   })
   .strict();
 
@@ -273,6 +278,12 @@ const exactPermissionGroup = (category: "required" | "granted" | "missing" | "op
     .object({
       category: z.literal(category),
       label: z.string().min(1),
+      /**
+       * The words of the chip beside the group's heading, when the workspace is not connected and
+       * the stock words ("Confirmed", "Missing") would claim a check that was never made. Left out
+       * in the demo, which keeps the stock words (writing review delta check, D-2).
+       */
+      stateLabel: z.string().min(1).optional(),
       description: z.string().min(1),
       capabilities: z.array(permissionCapabilitySchema).min(1),
     })

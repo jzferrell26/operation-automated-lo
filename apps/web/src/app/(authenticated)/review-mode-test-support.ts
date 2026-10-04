@@ -1,6 +1,8 @@
+import { createElement } from "react";
 import { afterEach, beforeEach, vi } from "vitest";
 
 import { OALO_REVIEW_SURFACE_AUTHORIZED } from "../../server/authenticated-workspace-data.js";
+import type { RuntimeShellSession } from "../../server/runtime-authentication.js";
 
 /**
  * The four environment values that put `authenticatedWorkspaceMode` into `review`.
@@ -23,4 +25,31 @@ export function useReviewModeEnvironment(): void {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
+}
+
+/*
+ * Stubs for the modules the authenticated layout reaches that the two suites do not test. Each is
+ * the body of a `vi.mock` factory. The factory runs when `./layout.js` is first imported, after the
+ * suite's own imports have finished, so it can call these directly.
+ */
+
+/** The theme control: a labelled element, so the layout renders without the real theme provider. */
+export function themeModuleStub(controlLabel: string) {
+  return {
+    ThemeControl: () => createElement("div", { "aria-label": controlLabel }, "Theme control"),
+  };
+}
+
+/**
+ * Everything except the session resolution is the real module, including the path constants the
+ * shell's forms post to, so a rename on either side fails in the suite rather than shipping a
+ * control that posts nowhere. `currentShell` is read on every call, so a test can change the
+ * session between renders.
+ */
+export async function runtimeAuthenticationModuleStub(
+  importOriginal: <Module>() => Promise<Module>,
+  currentShell: () => RuntimeShellSession,
+) {
+  const actual = await importOriginal<typeof import("../../server/runtime-authentication.js")>();
+  return { ...actual, resolveRuntimeShellSession: () => Promise.resolve(currentShell()) };
 }

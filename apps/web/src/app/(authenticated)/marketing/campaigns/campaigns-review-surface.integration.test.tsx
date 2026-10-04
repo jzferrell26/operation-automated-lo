@@ -65,28 +65,20 @@ const reportingAllowances: readonly ReviewSurfaceAllowance[] = [
 
 /** The synthetic UI fixture must not reach these routes either; the same tokens collide. */
 const uiAllowances: readonly ReviewSurfaceAllowance[] = [
+  // PRD-009a (009A-AC-014, 2026-10-01): Campaigns moved from the Marketing Suite sub-items into
+  // the six-item menu, and the "/marketing" hub item left it, so these allowances follow.
   {
-    path: "navigation.marketingItems[*].href",
+    path: "navigation.items[*].href",
     value: "/marketing/campaigns",
     because: "Substring of the create route's '/marketing/campaigns/new' quick action.",
   },
   {
-    path: "navigation.items[*].href",
-    value: "/marketing",
-    because: "Substring of the same route path; navigation does not render on these routes.",
-  },
-  {
-    path: "navigation.marketingItems[*].id",
+    path: "navigation.items[*].id",
     value: "campaigns",
     because: "Substring of the same route path; navigation does not render on these routes.",
   },
   {
-    path: "navigation.items[*].id",
-    value: "marketing",
-    because: "Substring of the same route path; navigation does not render on these routes.",
-  },
-  {
-    path: "navigation.marketingItems[*].label",
+    path: "navigation.items[*].label",
     value: "Campaigns",
     because: "Substring of the list route's own heading, 'Campaigns in this location'.",
   },
@@ -164,7 +156,8 @@ describe("authenticated marketing campaign routes", () => {
     const ui = loadSyntheticUiFixture();
 
     expect(collectFixtureStrings(reporting).length).toBeGreaterThan(100);
-    expect(collectFixtureStrings(ui).length).toBeGreaterThan(400);
+    // PRD-009a: the six-item menu leaves the fixture with 382 strings (2026-10-01).
+    expect(collectFixtureStrings(ui).length).toBeGreaterThan(350);
     expect(forbiddenReviewStrings(reporting, reportingAllowances).length).toBeGreaterThan(80);
     expect(forbiddenReviewStrings(ui, uiAllowances).length).toBeGreaterThan(200);
     expect(staleAllowances(reporting, reportingAllowances)).toEqual([]);
@@ -183,10 +176,17 @@ describe("authenticated marketing campaign routes", () => {
     });
   });
 
-  it("keeps every unallowed fixture string off the review campaign create route", () => {
-    const { container } = render(<NewCampaignPage />);
+  /**
+   * PRD-009d D3. "Launch an ad" shows the signed-in person's own Brand on every ad, so in review
+   * mode it is a page for a session: a visitor with none is sent to sign in, as the list is, rather
+   * than shown a library with a band that belongs to nobody.
+   */
+  it("redirects an unauthenticated review visitor away from the create route", async () => {
+    await expect(NewCampaignPage({ searchParams: Promise.resolve({}) })).rejects.toMatchObject({
+      digest: expect.any(String),
+    });
 
-    expect(sweepSurface(container)).toEqual([]);
+    expect(redirectCalls).toEqual(["/sign-in"]);
   });
 
   /**
@@ -203,7 +203,8 @@ describe("authenticated marketing campaign routes", () => {
   /**
    * Rubric axis 9 and `03-components/async-empty-error-permission-state.md`: an empty list is the
    * shared `empty` state with its one creation action, not a card assembled on the page. PRD-008d's
-   * baseline review of 2026-10-01 found the hand-built card when it photographed the state.
+   * baseline review of 2026-10-01 found the hand-built card when it photographed the state. PRD-009e
+   * 009E-AC-011 renames the state's words and its action; it stays the shared state.
    */
   it("says a workspace with no campaigns is empty through the shared empty state", async () => {
     stubWorkspaceEnvironment("local", undefined);
@@ -215,9 +216,9 @@ describe("authenticated marketing campaign routes", () => {
     const { container } = render(await CampaignListPage());
 
     const empty = container.querySelector(".oalo-async-state[data-state='empty']");
-    expect(empty?.querySelector("h2")?.textContent).toBe("No campaigns yet.");
+    expect(empty?.querySelector("h2")?.textContent).toBe("No campaigns yet");
     expect(empty?.querySelector("a[href='/marketing/campaigns/new']")?.textContent).toBe(
-      "Create an Open House Boost",
+      "Launch an ad",
     );
     expect(container.querySelectorAll("article")).toHaveLength(0);
   });

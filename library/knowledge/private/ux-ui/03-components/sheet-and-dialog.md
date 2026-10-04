@@ -73,6 +73,8 @@ at 390 from reappearing over a tablet layout after a resize.
 
 ## The bottom-sheet boundary is 767.98px
 
+> **Amended on 2026-10-03 by PRD-009** (S-107; D-15): the guided setup panel and its placement model, `apps/web/src/features/guided-setup/model/panel-placement.ts`, were deleted with the guided setup (009b), so the file named here no longer exists. This section and the next two keep the panel as the worked example. The `Sheet` rules they record stand for the `Sheet`, and the 2026-09-20 measurements are history.
+
 `Sheet`'s mobile rule and the guided setup's 40vh cap both break at 767.98px,
 not at 768px. 768 is the tablet frame design brief section 14 names, and
 `apps/web/src/features/guided-setup/model/panel-placement.ts` treats it as wide:

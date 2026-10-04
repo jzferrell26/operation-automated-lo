@@ -1,26 +1,62 @@
 @import "@oalo/ui/tokens.css";
 
-/* Design brief section 10. The interface and data families come from the token
- * layer, never from a local stack, so one edit in `tokens.css` moves the whole
- * product. The font pipeline ruling for this batch is recorded in
- * `apps/web/public/fonts/README.md`: no font file is fetched at runtime, so the
- * declared families resolve through the token stack to the system sans and
- * system monospace faces until a licensed Geist build is vendored.
+/* PRD-009a, 009A-AC-007, and design `00-direction.md` section 2.2. Inter is the interface font:
+ * the unmodified upstream variable file, vendored with its licence in `apps/web/public/fonts/` and
+ * served from the application origin, so nothing is fetched from a third party. The provenance and
+ * the hashes are in `apps/web/public/fonts/README.md`. One face covers every weight: the variable
+ * file carries the whole 100 to 900 range, and `swap` draws the system face until it arrives.
  */
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Design brief section 10. The interface and data families come from the token layer, never from
+ * a local stack, so one edit in `tokens.css` moves the whole product. */
 :root {
   font-family: var(--font-interface);
   background: var(--sf-canvas);
   color: var(--tx-strong);
 }
 
-/* `time` joins the data elements because the brief puts timestamps in the data font, wherever a
- * screen shows one (rubric axis 3). */
+/* 009G-AC-010. The top bar is sticky, so the page reserves its height as scroll padding: a control
+ * scrolled into view by focus or by an anchor lands below the bar, never under it. The shell
+ * publishes the bar's real height as `--topbar-reserved` (`app-shell.tsx`), because the bar is two
+ * rows at 768 and carries a sample-data line in the local demo; the token is what the server
+ * renders until it does. `--topbar-offset` is that height plus a gap, for anything else that has to
+ * sit clear of the bar. */
+:root {
+  --topbar-offset: calc(var(--topbar-reserved, var(--topbar-height)) + var(--space-4));
+}
+
+html {
+  scroll-padding-block-start: var(--topbar-offset);
+}
+
+/* Superseded on 2026-10-01 by PRD-009 (OD-E, design section 2.2): brief section 10 put timestamps
+ * and data in the monospace face (rubric axis 3). Numbers and dates now use Inter with tabular
+ * figures, so columns of money and dates still line up. */
+time,
+[data-text-tone="data"] {
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
+}
+
 code,
 kbd,
 samp,
-pre,
-time,
-[data-text-tone="data"] {
+pre {
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
+}
+
+/* User-language contract section 6: version references, fingerprints, rule codes, and support
+ * references live only in "Details for support", with plain labels and monospace values. This is
+ * the one place the data font is used. */
+[data-support-details] :is(dd, code, kbd, samp, pre) {
   font-family: var(--font-data);
 }
 
@@ -47,12 +83,20 @@ html[data-tenant-accent][data-theme="dark"] {
 }
 
 /* Design brief section 10 and rubric delta D-009, ruled 2026-10-01. The body step goes on `body`,
- * the root of inheritance, so text no module sizes reads at 13px instead of the browser's 16px.
- * It never goes on `:root` or `html`: every step is a `rem` token, so the root stays the browser's
- * 16px and the six steps keep their values. */
+ * the root of inheritance, so text no module sizes reads at the body step. It never goes on `:root`
+ * or `html`: every step is a `rem` token, so the root stays the browser's 16px and the steps keep
+ * their values. Since PRD-009a the body step is itself 16px (design section 2.4).
+ *
+ * The base leading goes on `body` with it. All seven approved PRD-009 canvases
+ * (`library/requirements/completed/prd-009-marketing-toolkit/design/mockups/*.html`) set family,
+ * size, and `line-height: var(--leading-normal)` together on `body`, and `--leading-normal` is 1.5
+ * in both token files. Without it, text no module sizes reads at the browser's `normal`, about 1.2
+ * in Inter, and every such block draws shorter than its canvas. The family is not repeated here:
+ * `:root` above already sets it and `body` inherits it. */
 body {
   margin: 0;
   font-size: var(--text-body-size);
+  line-height: var(--leading-normal);
 }
 
 /* Each heading level's step, as a floor rather than a role. An element selector loses to any
@@ -73,8 +117,44 @@ h6 {
   font-size: var(--text-card-size);
 }
 
+/* The page and section titles keep the tight leading, so the body's 1.5 does not reach them. The
+ * canvases give `.page-title` and `.section-title` `line-height: var(--leading-tight)`, and every
+ * `h1` and all but one `h2` in the seven canvases is one of the two. A title no module sets takes it
+ * here: left to inherit, a 19px section title draws 28.5px tall against its canvas's 23.75px.
+ * `h3` to `h6` are left alone on purpose. A card or item title the canvases set tight carries
+ * `.card-title`, which a module reproduces with its own class, and a bare `h3` in a canvas inherits
+ * the body's 1.5 (the Home setup steps, 24px at the 16px step). Same floor rule as the sizes above,
+ * so a module class still wins. */
+h1,
+h2 {
+  line-height: var(--leading-tight);
+}
+
+/* Design `00-direction.md` section 2.3: "page title 28px bold, section title 19px semibold, card
+ * title 16px semibold", and brief section 10's page title at "negative 0.02em tracking", which is
+ * `--tracking-page`. The canvases' `.page-title` carries both the weight and the tracking, and their
+ * `.section-title` and `.card-title` carry `--weight-semibold`.
+ *
+ * The PRD-009 scored baseline review found headings no module weighs drawn at the browser's `bold`
+ * (R1-02 and R4-09: "Your brand on the ad", every sample card title, the email preview's and the
+ * route boundaries' card titles) and page titles with no tracking (R2 F-12: the campaign page and
+ * the Campaigns list). Same floor rule as the sizes above: an element selector loses to any module
+ * class, so a module that states its own weight or tracking keeps it. */
+h1 {
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-page);
+}
+
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: var(--weight-semibold);
+}
+
 /* The browser draws `small` one keyword smaller than its parent, which lands between the steps at
- * any parent size (10.83px under the 13px body step). A `small` is a source, a freshness line, or
+ * any parent size (13.33px under the 16px body step). A `small` is a source, a freshness line, or
  * a side note, so its floor is the caption step, as on the overview and in the canvases. */
 small {
   font-size: var(--text-caption-size);
@@ -90,22 +170,8 @@ main {
   padding: var(--space-6);
 }
 
+/* Text in the action colour fails AA on the Dark card (3.19:1); text takes the link colour of
+ * design section 2.6, `--st-info-fg`, which holds in both themes. */
 code {
-  color: var(--ac-primary);
-}
-
-/* PRD-006c D6. The guided setup's highlight.
- *
- * It is the focus ring the brief already defines (2 px, 3 px offset), drawn
- * around the element the current step points at, plus the panel's own words.
- * It is deliberately not a dimming overlay: a scrim over the rest of the page
- * changes the contrast of every word on it, which is how a walkthrough turns an
- * accessible screen into an inaccessible one. The provider sets the attribute
- * on exactly one element at a time and removes it when the step closes.
- */
-[data-guided-setup-highlight="true"] {
-  outline: var(--focus-width) solid var(--focus-color);
-  outline-offset: var(--focus-offset);
-  border-radius: var(--radius-control);
-  scroll-margin-block: var(--space-8);
+  color: var(--st-info-fg);
 }

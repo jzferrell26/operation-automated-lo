@@ -1,0 +1,573 @@
+/*
+ * PRD-009e. The campaign page, after design mockup campaign-detail.html and design direction
+ * section 7: the header with its two actions and the one sentence under them, the results across the
+ * whole width, then the ad beside the approval, the versions, the library notices, and the support
+ * details. At 1180 and below the second column stacks under the first.
+ */
+
+.page {
+  display: grid;
+  min-inline-size: 0;
+  max-inline-size: var(--content-max);
+  gap: var(--space-6);
+  color: var(--tx-strong);
+}
+
+/* A day is never broken inside itself, so a date that wraps leaves "Oct" and "20" together, and a
+   mask painted over it covers the one day and not the sentence round it (review pass 1, H-3). */
+.page time {
+  white-space: nowrap;
+}
+
+/* R2 F-4. "Campaigns" is a link inside 14px text, so it is the link primitive's `sentence` variant:
+   the crumb's own size and a 44px target whose block margins give the line back. The row keeps the
+   44px target's height, so the crumb row does not shrink to one line of 14px text. */
+.crumbs {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--target-min-size);
+}
+
+.crumbs [aria-current="page"] {
+  color: var(--tx-strong);
+  font-weight: var(--weight-medium);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+}
+
+/* The words take the room the actions leave. The actions are a block of their own (never wider than
+   32rem), so the head is one row from the tablet frame up and the words give way, instead of the
+   block dropping under them at a width where it would then float in the middle of the column. */
+.headText {
+  display: grid;
+  flex: 1 1 20rem;
+  min-inline-size: 0;
+  gap: var(--space-2);
+}
+
+.headText > * {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+}
+
+.title {
+  color: var(--tx-strong);
+  font-size: var(--text-page-size);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
+}
+
+.lead {
+  max-inline-size: 60ch;
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+}
+
+/* The actions and their one sentence share the end edge of the column, beside the words or, if the
+   head ever has to wrap, under them (never an edge of their own; review pass 1, F-1). */
+.headActions {
+  display: grid;
+  max-inline-size: 32rem;
+  margin-inline-start: auto;
+  gap: var(--space-2);
+  justify-items: end;
+  text-align: end;
+}
+
+.headActions > * {
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.reason {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+}
+
+/* A link that leads somewhere and is the page's one primary action, drawn as a primary button, so at the
+   shared medium weight every button keeps (the 2026-10-03 ruling; the pass 3 review, R1 P3-02). */
+a.primaryLink.primaryLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: var(--target-min-size);
+  padding-inline: var(--space-5);
+  border-radius: var(--radius-button);
+  background: var(--ac-primary);
+  color: var(--tx-on-action);
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+a.primaryLink.primaryLink:hover {
+  background: var(--ac-primary-hover);
+  color: var(--tx-on-action);
+}
+
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.cardHead h2,
+.cardTitle {
+  margin: 0;
+  color: var(--tx-strong);
+  font-size: var(--text-section-size);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+.cardTitle {
+  font-size: var(--text-card-size);
+}
+
+.caption {
+  color: var(--tx-faint);
+  font-size: var(--text-caption-size);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.body > * {
+  margin: 0;
+}
+
+.small {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+/* The Approval card's first sentence ("Approved by ...", "Sent back for changes by ...", "Nobody has
+   approved this version yet.") is the card's lead: the mockup's plain `.small`, in the body text's
+   `--tx-strong` (`campaign-detail.html:553`), where the sentence under it is `.small muted` and stays
+   `.small`. Pass 4, R2 F4-1. Its own class, not `.small` plus a colour, so the two cannot be won by
+   whichever rule loads last. */
+.decisionLine {
+  color: var(--tx-strong);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+/* The results card, across the whole content width (009E-AC-002). */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.metric {
+  display: grid;
+  gap: var(--space-1);
+  align-content: start;
+  padding: var(--space-5);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-control);
+  background: var(--sf-sunken);
+}
+
+.metricLabel {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-medium);
+}
+
+.metricValue {
+  color: var(--tx-body);
+  font-size: var(--text-section-size);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.metric[data-has-value="true"] .metricValue {
+  color: var(--tx-strong);
+}
+
+.metricMeta {
+  color: var(--tx-faint);
+  font-size: var(--text-caption-size);
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24rem;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.stack {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--space-6);
+}
+
+/* The Facebook-style frame holds the ad at its real width and never grows past it. */
+.feedFrame {
+  display: grid;
+  justify-items: center;
+}
+
+.feedFrame > * {
+  inline-size: 100%;
+  max-inline-size: 31.25rem;
+}
+
+.missingPicture {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 1px dashed var(--bd-input);
+  border-radius: var(--radius-control);
+  background: var(--sf-sunken);
+}
+
+.missingPicture p {
+  margin: 0;
+}
+
+.facts {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.facts > div {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: var(--space-3);
+  font-size: var(--text-secondary-size);
+}
+
+.facts dt {
+  color: var(--tx-body);
+}
+
+.facts dd {
+  margin: 0;
+  color: var(--tx-strong);
+  font-weight: var(--weight-medium);
+}
+
+.factList {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The versions list (009E-AC-005). */
+.versions {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.versions > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  padding-block: var(--space-3);
+  border-block-start: 1px solid var(--bd-hairline);
+  font-size: var(--text-secondary-size);
+}
+
+.versions > li:first-child {
+  padding-block-start: 0;
+  border-block-start: 0;
+}
+
+.versions strong {
+  color: var(--tx-strong);
+  font-size: var(--text-body-size);
+}
+
+.versions p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--tx-body);
+}
+
+.versions a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min-size);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+}
+
+/* The row for the version on screen: the words "Viewing now" in place of the "Open" link. */
+.viewingNow {
+  color: var(--tx-strong);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+}
+
+/* One-line library notices (009E-AC-006), each with at most one action. */
+.notices {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The card itself (its fill, edge, radius, shadow and inset, including the phone inset) is `Surface`'s;
+   this is only what the notice puts inside it. */
+.notice {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.notice p {
+  margin: 0;
+  color: var(--tx-strong);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+/* The glyph and its sentence are one row, the glyph centred on the sentence's first line, as the
+   badge draws its glyph. `Icon` is a block, so left in running text it takes a line of its own
+   (review pass 1, F-3). */
+.noticeText {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.noticeText > svg {
+  margin-block-start: calc(
+    (var(--text-secondary-size) * var(--leading-normal) - var(--space-4)) / 2
+  );
+}
+
+.noticeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* Each fix keeps --space-3 before the next, the rubric's rule for a finding and what follows it
+   (PRD-008d R-18, held by design-quality.spec.ts). */
+.fixes {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  color: var(--tx-strong);
+  font-size: var(--text-secondary-size);
+}
+
+/* "Details for support" sits in the stack as a quiet card, collapsed until opened. P3-04. It is the
+   mockup's `details.card.support` (`--space-1` above and below the card's own inline inset) with the
+   disclosure summary's look (`--text-secondary-size` at the semibold weight): a 52px card with 14px
+   words, not a 70px card with 16px ones. The card is a block and not a grid with a row gap: a closed
+   `details` still has its hidden content box, and a gap before it drew 8px of dead space under the
+   summary. The rows take their own `--space-2` from the summary (the mockup's `.support dl`), and,
+   opened, a little room at the foot so the last row does not sit `--space-1` from the edge. */
+.support details {
+  padding: var(--space-1) var(--space-6);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  background: var(--sf-card);
+  box-shadow: var(--shadow-card);
+}
+
+.support details[open] {
+  padding-block-end: var(--space-3);
+}
+
+.support summary {
+  display: flex;
+  align-items: center;
+  min-block-size: var(--target-min-size);
+  color: var(--st-info-fg);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.support dl {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-block-start: var(--space-2);
+  font-size: var(--text-secondary-size);
+}
+
+.support dl > div {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.support dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.older {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.older p {
+  margin: 0;
+}
+
+/* The hand-off control for a user who cannot approve (PRD-006c D3 step 6). */
+/* The approve card's children are --space-4 apart, as the mockup's `.card > * + *` spaces them. Its
+   live region says nothing until there is an outcome, and until then the component draws it out of the
+   flow (the visually-hidden box), so it takes no row and the card has no dead space at its foot
+   (R1-13r). Step 3 of "Launch an ad" draws the same card the same way. */
+.stack [data-approval-card] {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: start;
+}
+
+.stack [data-approval-card] > * {
+  margin: 0;
+}
+
+/* The sentence, then the card's one primary at the card's width, --space-4 apart, as the mockup's
+   `.card > * + *` spaces every child (R1-13). */
+.handOff {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: stretch;
+  justify-self: stretch;
+}
+
+/* The sentence above "Copy the link" is the mockup's `.small`: the secondary step. P3-03. Like the
+   other sentences in the decision cards (approved, sent back, retired, "What to fix") it is in the
+   strong ink the mockup draws, so the four cards of step 3 use one ink; only the approve line, the
+   mockup's `.muted`, is the body ink (`campaign-and-artifact-workflow.md`, "Captions"). */
+.hint {
+  margin: 0;
+  color: var(--tx-strong);
+  font-size: var(--text-secondary-size);
+  line-height: var(--leading-normal);
+}
+
+/* "Link copied." keeps its glyph on its own line's row: `Icon` is a block, so left in running text it
+   would take a line of its own. */
+.copied {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+@media (max-width: 73.74rem) {
+  .detailGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Below the desktop frame the head stacks: the actions sit under the words and start where the
+   words start, as they do on a phone, so they never float between the two edges (F-1). */
+@media (max-width: 63.99rem) {
+  .headText {
+    flex-basis: 100%;
+  }
+
+  .headActions {
+    margin-inline-start: 0;
+    justify-items: start;
+    text-align: start;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .head {
+    gap: var(--space-4);
+  }
+
+  .headActions {
+    max-inline-size: none;
+    inline-size: 100%;
+    justify-items: stretch;
+    text-align: start;
+  }
+
+  .actions {
+    justify-content: stretch;
+  }
+
+  .actions > * {
+    flex: 1 1 auto;
+  }
+
+  .facts > div,
+  .support dl > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
+
+/* The phone rules of the mockup's `.page` and `.card` (`campaign-detail.html`, below 720px): the page's
+   blocks sit --space-5 apart, and a card's inset is --space-5, as Home draws them (scored review pass 2,
+   R2 N-1). Every card here that is a `Surface` takes its inset from the primitive, so only the one that
+   is not (the support details, which is a `details` element) restates the value. */
+@media (max-width: 719.98px) {
+  .page {
+    gap: var(--space-5);
+  }
+
+  .support details {
+    padding-inline: var(--space-5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .page * {
+    animation: none;
+    transition-duration: 0ms;
+  }
+}

@@ -59,6 +59,7 @@ export const uiTokens = Object.freeze({
     captionSize: "var(--text-caption-size)",
     regularWeight: "var(--weight-regular)",
     mediumWeight: "var(--weight-medium)",
+    semiboldWeight: "var(--weight-semibold)",
     boldWeight: "var(--weight-bold)",
     pageTracking: "var(--tracking-page)",
     tightLeading: "var(--leading-tight)",
@@ -71,7 +72,14 @@ export const uiTokens = Object.freeze({
     4: "var(--space-4)",
     5: "var(--space-5)",
     6: "var(--space-6)",
+    7: "var(--space-7)",
     8: "var(--space-8)",
+    12: "var(--space-12)",
+  }),
+  layout: Object.freeze({
+    topbarHeight: "var(--topbar-height)",
+    contentMax: "var(--content-max)",
+    targetMinSize: "var(--target-min-size)",
   }),
   radius: Object.freeze({
     control: "var(--radius-control)",

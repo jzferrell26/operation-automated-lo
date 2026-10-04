@@ -31,6 +31,11 @@ const SKIPPED_PREFIXES: readonly Readonly<{ path: string; because: string }>[] =
     path: "apps/web/src/fixtures",
     because: "Synthetic demo data, which is where the placeholder asset is allowed to live.",
   },
+  {
+    path: "apps/web/src/features/ads-library/server",
+    because:
+      "PRD-009c server code. It reads an ads library entry's art files and builds a version's two library images; it renders no screen and summarises no images. A screen that shows them lives outside this folder and is still guarded.",
+  },
 ];
 
 const READS_A_VERSIONS_IMAGES = /\.images\b|\bimageCount\b|\bpropertyImage\w*|\bimages\s*[:=[]/u;

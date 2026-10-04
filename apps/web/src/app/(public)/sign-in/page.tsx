@@ -8,7 +8,8 @@ import { SIGN_IN } from "../../../features/auth/strings.js";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Sign in to Automated LO",
+  // Already carries the product's name, so the root layout's template must not add it again (W-13).
+  title: { absolute: "Sign in to Automated LO" },
   description: "Sign in to your Automated LO workspace with your email and password.",
 };
 

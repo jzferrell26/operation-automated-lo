@@ -44,6 +44,12 @@ const repositoryRoot = resolve(import.meta.dirname, "../../../..");
  * `apps/web/src/server/homeowners` widened in on 2026-09-30 (PRD-008c, 008C-AC-001): its refusals
  * reach the screen through `homeError` in `http.ts`, and the `HomeownerError` messages in it were
  * exempt as thrown errors until `USER_FACING_ERRORS` below named that class as one a person reads.
+ *
+ * `packages/domain/src` widened in on 2026-10-02 (PRD-009 writing review pass 2, MTK-008, guard gap
+ * 2): every preflight rule's `remediation` and `description` is written there, a library ad's fix
+ * sentence is drawn on step 3 and the campaign page, and a word banned in the component that renders
+ * it was still legal one layer down. Seven strings in `campaign-foundation.ts` held "tenant",
+ * "region", "projection" or "immutable"; they were rewritten, not excluded.
  */
 const SCANNED_ROOTS: readonly string[] = [
   "apps/web/src/app",
@@ -52,6 +58,7 @@ const SCANNED_ROOTS: readonly string[] = [
   "apps/web/src/server/email",
   "apps/web/src/server/homeowners",
   "packages/application/src",
+  "packages/domain/src",
   "packages/ui/src/components",
 ];
 
@@ -59,6 +66,10 @@ const SCANNED_ROOTS: readonly string[] = [
 const SCANNED_FILES: readonly string[] = [
   "apps/web/src/server/authenticated-workspace-data.ts",
   "apps/web/src/server/runtime-authentication.ts",
+  // `adPlaceLabel` writes the sentence 009d D4 and E2 fix ("<City, ST> and everything within 15
+  // miles") and no root above reads it. The rest of `packages/contracts/src` is validation messages
+  // and an event name that no screen shows, so only this file is added.
+  "packages/contracts/src/ad-places.ts",
 ];
 
 /**
@@ -90,7 +101,7 @@ const EXCLUDED: readonly Readonly<{ path: string; because: string }>[] = [
   {
     path: "apps/web/src/features/reporting/model",
     because:
-      "Demo fixture data for the reporting screens, out of scope by the same Non-Goals carve-out, with one exception fixed 2026-09-20: `synthetic-reporting.ts`'s approved artifact `previewSummary` reached the product's one unauthenticated page, `apps/web/src/app/public/synthetic-open-house-v3/page.tsx`, and has been rewritten to the D1 register. The rest of this directory (reporting-acceptance.ts and the superseded artifacts) has no path to a rendered screen today.",
+      "Demo fixture data for the reporting screens, out of scope by the same Non-Goals carve-out, with one exception fixed 2026-09-20: `synthetic-reporting.ts`'s approved artifact `previewSummary` reached the product's one unauthenticated page, `apps/web/src/app/public/synthetic-open-house-v3/page.tsx`, and has been rewritten to the D1 register. The rest of this directory (the superseded artifacts) has no path to a rendered screen today. PRD-009f deleted reporting-acceptance.ts with the Reports page.",
   },
   {
     path: "apps/web/src/features/ui-foundation/evidence",
@@ -368,6 +379,10 @@ describe("user-language guard, source level", () => {
     expect(files.has("apps/web/src/server/authenticated-workspace-data.ts")).toBe(true);
     expect(files.has("apps/web/src/features/shell/components/app-shell.tsx")).toBe(true);
     expect(files.has("packages/ui/src/components/metric.tsx")).toBe(true);
+    // Guard gap 2 (writing review pass 2): the preflight rules' fix sentences are written here.
+    expect(files.has("packages/domain/src/library-ad-words.ts")).toBe(true);
+    expect(files.has("packages/domain/src/campaign-foundation.ts")).toBe(true);
+    expect(files.has("packages/contracts/src/ad-places.ts")).toBe(true);
     expect(files.has("apps/web/src/copy/auth-messages.ts")).toBe(true);
     /**
      * The unauthenticated page under `apps/web/src/app/public`. D6's exclusion list does not

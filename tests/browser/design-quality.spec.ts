@@ -1,7 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
-  FULL_PAGE_SCREENSHOT_TIMEOUT_MS,
   REVIEW_FRAMES,
   captureNamedState,
   expectAxeClean,
@@ -10,13 +9,13 @@ import {
   expectTargetsAreLargeEnough,
   expectThePageFillsTheContentColumn,
   expectThePageOpensAtTheTopOfItsContent,
+  expectThePictureMatches,
   expectThemeResolved,
   expectTypographyOnBrief,
   expectZeroMotionUnderReducedMotion,
   screenshotName,
   settleForScreenshot,
   useStoredTheme,
-  warmFullPageCapture,
   type ReviewTheme,
 } from "./helpers/design-quality.js";
 import { withAnEmptyCampaignWorkspace } from "./helpers/empty-campaign-workspace.js";
@@ -25,10 +24,12 @@ import {
   withAPopulatedCampaignWorkspace,
 } from "./helpers/populated-campaign-workspace.js";
 import {
-  FINISHED_OPEN_HOUSE,
-  READY_OPEN_HOUSE,
-  fillTheOpenHouseDraft,
-} from "./helpers/open-house-draft.js";
+  RATE_CLAIM_HEADLINE,
+  SAMPLE_ADS,
+  saveACampaign,
+  stepTwoPath,
+  verdictOnStepThree,
+} from "./helpers/launch-an-ad.js";
 
 /**
  * PRD-006d 006D-AC-007 through 006D-AC-014, for the screens synthetic mode serves.
@@ -39,8 +40,8 @@ import {
  * check is checked here, at all four frames in both themes, so a reviewer's eye is spent on
  * hierarchy and consistency rather than on re-counting pixels.
  *
- * The account screens and the seven guided-setup steps are not here. They need a session and a
- * real database, so they run in the `review` project inside `pnpm test:db`
+ * The account screens are not here (the seven guided-setup steps are gone with the walkthrough,
+ * PRD-009b D4). They need a session and a real database, so they run in the `review` project inside `pnpm test:db`
  * (`tests/browser/review/design-quality.spec.ts`), against the same helpers.
  *
  * Every screen carries synthetic data only. No baseline in `tests/visual/screens/` contains a real
@@ -53,10 +54,7 @@ const applicationOrigin = "http://127.0.0.1:3100";
 const SYNTHETIC_SCREENS = Object.freeze([
   { screen: "overview", path: "/overview" },
   { screen: "campaigns", path: "/marketing/campaigns" },
-  { screen: "campaign-create", path: "/marketing/campaigns/new" },
   { screen: "campaign-detail", path: "/marketing/campaigns/synthetic-open-house-001" },
-  { screen: "reports", path: "/reports" },
-  { screen: "onboarding", path: "/onboarding" },
   { screen: "settings-connections", path: "/settings/connections" },
   { screen: "brand", path: "/brand" },
   { screen: "email-preview", path: "/email-preview" },
@@ -140,11 +138,9 @@ for (const { screen, path } of SYNTHETIC_SCREENS.filter(
         await expectTypographyOnBrief(page);
         // Axes 1, 2, 3, 8 and 10, as far as a machine can hold them: the whole composition is
         // compared against a committed baseline, so any of them moving is a failure with a picture.
-        await warmFullPageCapture(page);
-        await expect(page).toHaveScreenshot(screenshotName(screen, frame.name, theme), {
-          fullPage: true,
-          timeout: FULL_PAGE_SCREENSHOT_TIMEOUT_MS,
-        });
+        // The shared helper warms the capture and masks every date (scored review H-2), so a day
+        // that moved with the clock never fails a picture.
+        await expectThePictureMatches(page, screenshotName(screen, frame.name, theme));
 
         expect(externalRequests).toEqual([]);
       });
@@ -191,11 +187,10 @@ for (const { screen, path } of SYNTHETIC_SCREENS) {
  * fourteen fields, unconnected to any of them and announced to nobody, which is three of the four
  * things 006D-AC-011 asks for missing at once.
  *
- * So the failure is produced, from the real server, and then measured. A two-letter state is the
- * shortest honest way in: the control's `maxLength` caps it at two characters and the browser's
- * own required check passes on one, so the refusal comes from the draft schema
- * (`apps/web/src/server/open-house-draft.ts:18-24`) rather than from a stubbed answer, and it
- * comes back naming the control it is about.
+ * So the failure is produced and then measured. PRD-009d replaced the create screen with step 2 of
+ * "Launch an ad", where a daily budget under the ruleset's floor is refused before anything is
+ * sent: the message is said once at the top of the form, focus moves to it, and the budget field
+ * carries its own sentence.
  *
  * Four claims, the four the criterion makes: the message announces, it is above the first field,
  * it is on screen at 390 without scrolling, and the control the refusal named carries it through
@@ -207,23 +202,24 @@ test("a failed save on the create screen is announced, connected, and on screen 
   await blockAnythingOffOrigin(page);
   await useStoredTheme(page, "light");
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/marketing/campaigns/new");
+  // PRD-009d: the create screen is step 2 of "Launch an ad". A daily budget under the ruleset's
+  // floor is a refusal the page makes before anything is sent.
+  await page.goto(stepTwoPath(SAMPLE_ADS.firstHome));
   await settleForScreenshot(page);
 
-  await fillTheOpenHouseDraft(page, READY_OPEN_HOUSE);
-  const state = page.getByLabel("State", { exact: true });
-  await state.fill("T");
-  await page.getByRole("button", { name: "Save and run the checks" }).click();
+  const state = page.getByLabel("Daily budget", { exact: false });
+  await state.fill("1");
+  await page.getByRole("button", { name: "Save and check" }).click();
 
-  // Scoped to the form: Next renders its own route announcer as an empty `role="alert"` at the end
+  // Scoped to step 2: Next renders its own route announcer as an empty `role="alert"` at the end
   // of the body, and an unscoped query finds that instead of the message.
-  const problem = page.locator("form").getByRole("alert");
+  const problem = page.locator("[data-launch-step='2']").getByRole("alert");
   await expect(problem).toBeVisible();
   await expect(problem).toHaveAttribute("aria-live", "assertive");
   await expect(problem).toContainText("Look over the fields marked below and try again.");
 
   const problemBox = await problem.boundingBox();
-  const firstFieldBox = await page.getByLabel("Property address").boundingBox();
+  const firstFieldBox = await page.getByLabel("Headline", { exact: false }).boundingBox();
   expect(problemBox?.y ?? -1, "the message is on screen at 390").toBeGreaterThanOrEqual(0);
   expect(
     (problemBox?.y ?? 0) + (problemBox?.height ?? 0),
@@ -249,8 +245,8 @@ test("a failed save on the create screen is announced, connected, and on screen 
       .map((id) => document.getElementById(id)?.textContent?.trim() ?? "")
       .join(" | "),
   );
-  expect(describedText, "the state control is described by its inline error").toContain(
-    "This one needs another look.",
+  expect(describedText, "the daily budget is described by its inline error").toContain(
+    "Choose a daily budget from $5 to $1,000.",
   );
 
   await expectNoHorizontalOverflow(page);
@@ -270,9 +266,19 @@ test("the email preview renders both account emails at the mail-client width", a
 
   const frames = page.locator("iframe[data-email-preview]");
   await expect(frames).toHaveCount(2);
+  /**
+   * Polled, because this page holds no control for `expectStylesHaveApplied` to look at: its only
+   * links are inside the frames. A frame photographed before the page's own sheet applies is the
+   * browser's bare 300px frame and its 2px border, which is the 304 a full run measured once on
+   * 2026-10-01 (113 other tests passed, and six runs of this test alone all read 600). The
+   * assertion is unchanged: each frame is 600px wide once the page is styled.
+   */
   for (const frame of await frames.all()) {
-    const box = await frame.boundingBox();
-    expect(box?.width).toBe(600);
+    await expect
+      .poll(async () => (await frame.boundingBox())?.width, {
+        message: "the email frame was still arriving at its width",
+      })
+      .toBe(600);
   }
   await expect(
     page.getByRole("heading", { name: "Reset your Automated LO password" }),
@@ -315,6 +321,60 @@ test("the boundary page renders the error state, the loading state, and the unve
   await expect(page.getByRole("button", { name: "Resend the link." })).toBeVisible();
 });
 
+/**
+ * PRD-009g, 009G-AC-001. The first-run Home under the unverified-email notice, photographed at 1440
+ * and 390 in Light.
+ *
+ * A brand-new account has not confirmed its address, so on a deployment with a sending domain the
+ * first page it lands on is Home with the notice above it. The review run configures no email
+ * (`tooling/tests/database/review-browser-run.test.ts` pins that), so the real layout never renders
+ * the notice there and no review picture can show the two together. The design surface renders both
+ * inside the real shell with placeholder values, in the order the layout and the Home route give
+ * them, and this is where the pair is held in place.
+ *
+ * The picture is compared only on the runner that drew it, so the claims a baseline cannot make on
+ * every machine are asserted here: the notice is in the page, it comes before Home's own heading,
+ * and Home is the first-run Home and not the gallery.
+ */
+test("the first-run Home under the unverified-email notice meets the bar at 1440 and 390 in Light", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const externalRequests = await blockAnythingOffOrigin(page);
+  await useStoredTheme(page, "light");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/design-surfaces?state=home-under-notice");
+  await expectThemeResolved(page, "light");
+  await settleForScreenshot(page);
+
+  const main = page.getByRole("main");
+  const notice = main.getByText("Confirm your email so you can reset your password later.");
+  await expect(notice).toBeVisible();
+  await expect(main.getByRole("button", { name: "Resend the link." })).toBeVisible();
+  await expect(main.getByRole("heading", { level: 1, name: "Launch an ad" })).toBeVisible();
+  await expect(main.getByRole("region", { name: "Get set up" })).toBeVisible();
+  // The gallery's three states are the other state of this page and are not on this one.
+  await expect(page.getByRole("heading", { name: "We couldn't load your workspace" })).toHaveCount(
+    0,
+  );
+  const [noticeBox, homeBox] = await Promise.all([
+    notice.boundingBox(),
+    main.getByRole("heading", { level: 1, name: "Launch an ad" }).boundingBox(),
+  ]);
+  expect(
+    noticeBox?.y ?? Number.POSITIVE_INFINITY,
+    "the notice is above Home's own heading",
+  ).toBeLessThan(homeBox?.y ?? 0);
+
+  await captureNamedState(page, {
+    screen: "design-surfaces",
+    state: "home-under-notice",
+    theme: "light",
+    frames: REVIEW_FRAMES.filter((frame) => frame.name === "1440" || frame.name === "390"),
+  });
+  expect(externalRequests).toEqual([]);
+});
+
 /** 006D-AC-018. Nothing a person can reach in the product links to the demo route. */
 test("no screen links to the demo route", async ({ page }) => {
   await blockAnythingOffOrigin(page);
@@ -334,8 +394,9 @@ test("no screen links to the demo route", async ({ page }) => {
 });
 
 /**
- * Brief section 9, "blue means informational", and the notice pattern `onboarding.module.css`
- * pinned: every "nothing goes out" notice title carries the informational tone, on every screen.
+ * Brief section 9, "blue means informational", and the notice pattern `permission-screen.module.css`
+ * carries over from the setup page's styles: every "nothing goes out" notice title carries the
+ * informational tone, on every screen.
  *
  * PRD-008d, the scored baseline review of 2026-10-01. The title's colour was decided by the order
  * the bundle loaded two equally specific rules in, so it was blue on some screens and dark on
@@ -347,11 +408,11 @@ test("every notice title carries the informational tone, whatever order the styl
 }) => {
   await blockAnythingOffOrigin(page);
   await page.setViewportSize({ width: 1180, height: 900 });
+  // PRD-009d: "Launch an ad" replaced the create screen and carries no notice card of its own.
+  // PRD-009f D4: the Brand Engine page and its "Suggestions only" notice are gone, so the one
+  // notice left is Connections', drawn as the `Surface` primitive's info variant.
   const notices = [
-    { path: "/marketing/campaigns/new", title: "Nothing goes out from this page" },
-    { path: "/reports", title: "Sample data, nothing live" },
-    { path: "/brand", title: "Suggestions only. You decide what's saved." },
-    { path: "/onboarding", title: "We only mark a step done after we've checked it." },
+    { path: "/settings/connections", title: "Nothing is connected from this page" },
   ] as const;
   for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
     await useStoredTheme(page, theme);
@@ -461,8 +522,23 @@ test("the overview's action links keep their own height at every frame", async (
             const style = getComputedStyle(link);
             const text = document.createRange();
             text.selectNodeContents(link);
+            /**
+             * The link's natural height is its lines times its line height, not the height of the
+             * glyphs' box. With Inter the glyph box of a 16px line is 20px while the line is 24px,
+             * so measuring the glyph box called an unstretched link 4px per line too short. One
+             * rect comes back per line of text; where `line-height` is `normal` and so not a
+             * length, the glyph box per line is the best the page can say.
+             */
+            const lines = Math.max(
+              new Set([...text.getClientRects()].map((rect) => Math.round(rect.top))).size,
+              1,
+            );
+            const lineHeight = Number.parseFloat(style.lineHeight);
             const natural =
-              text.getBoundingClientRect().height +
+              lines *
+                (Number.isFinite(lineHeight)
+                  ? lineHeight
+                  : text.getBoundingClientRect().height / lines) +
               Number.parseFloat(style.paddingTop) +
               Number.parseFloat(style.paddingBottom) +
               Number.parseFloat(style.borderTopWidth) +
@@ -477,177 +553,14 @@ test("the overview's action links keep their own height at every frame", async (
 });
 
 /**
- * Rubric axis 1 in the rail. PRD-008d, the second redraw of 2026-10-01, finding R-19: the product's
- * name at the top of the rail and the workspace's name at its foot carried no size of their own,
- * so once D-009 put the body step on `body` they were drawn at the same size as every navigation
- * link between them. Each is a title, at the card step, above the links' body step.
- */
-test("the rail's titles are drawn above its navigation links", async ({ page }) => {
-  await blockAnythingOffOrigin(page);
-  await useStoredTheme(page, "light");
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/overview");
-  await settleForScreenshot(page);
-  const sizes = await page.evaluate(() => {
-    const size = (selector: string): number => {
-      const element = document.querySelector(selector);
-      return element === null ? Number.NaN : Number.parseFloat(getComputedStyle(element).fontSize);
-    };
-    return {
-      brand: size("[class*='__brand'] strong"),
-      identity: size("[class*='__identity'] strong"),
-      link: size("[class*='__navigationLink']"),
-    };
-  });
-  expect(sizes.brand, "the product's name").toBeGreaterThan(sizes.link);
-  expect(sizes.identity, "the workspace's name").toBeGreaterThan(sizes.link);
-
-  /**
-   * R-21. At the card step the runner's face wrapped the product's name as "Operation Automated"
-   * over a lone "LO" (screen-baselines run 36841695906). Wherever it wraps, its last line is at
-   * least half as long as its longest, and the rule that keeps it so is in place, because a
-   * workstation's narrower face may not wrap it at all.
-   */
-  const lines = await page.locator("[class*='__brand'] strong").evaluate((title) => {
-    const text = document.createRange();
-    text.selectNodeContents(title);
-    const rows = new Map<number, number>();
-    for (const rect of text.getClientRects()) {
-      const row = Math.round(rect.top);
-      rows.set(row, Math.max(rows.get(row) ?? 0, rect.right));
-    }
-    const left = title.getBoundingClientRect().left;
-    const widths = [...rows.entries()].sort(([a], [b]) => a - b).map(([, right]) => right - left);
-    return { widths, wrap: getComputedStyle(title).getPropertyValue("text-wrap-style") };
-  });
-  expect(lines.wrap, "the product's name balances its lines").toBe("balance");
-  const longest = Math.max(...lines.widths);
-  expect(
-    lines.widths.at(-1) ?? longest,
-    `the product's name ends on a line ${lines.widths.map(Math.round).join(" and ")}px long`,
-  ).toBeGreaterThanOrEqual(longest / 2);
-});
-
-/**
- * Rubric axes 1, 2, and 10 on the reports screen.
+ * PRD-006d D3's named states on a campaign a person has actually saved.
  *
- * PRD-008d, the second redraw of 2026-10-01. R-15: each group of actions laid its items out with
- * `space-between`, so once D-010 gave the sections the whole column, "Open Public page v3" and
- * "Open Feed creative v3", or "Open the campaign" and "See what went wrong", sat at opposite edges
- * of their card instead of together. R-16: a campaign card's parts had no space between them, so
- * its metric cards touched the line above and the details below, at every frame.
- */
-test("the reports screen keeps its actions together and its campaign cards on the spacing scale", async ({
-  page,
-}) => {
-  await blockAnythingOffOrigin(page);
-  await useStoredTheme(page, "light");
-  await page.goto("/reports");
-  for (const frame of REVIEW_FRAMES) {
-    await page.setViewportSize({ width: frame.width, height: frame.height });
-    await settleForScreenshot(page);
-    const measured = await page.evaluate(() => {
-      const probe = document.createElement("span");
-      probe.style.display = "none";
-      probe.style.width = "var(--space-4)";
-      document.body.append(probe);
-      const space4 = Number.parseFloat(getComputedStyle(probe).width);
-      probe.remove();
-
-      const spread = [...document.querySelectorAll("main [class*='__inlineLinks']")].flatMap(
-        (group) => {
-          const gap = Number.parseFloat(getComputedStyle(group).columnGap) || 0;
-          const items = [...group.children].map((child) => child.getBoundingClientRect());
-          return items.slice(1).flatMap((item, index) => {
-            const before = items[index];
-            if (before === undefined || Math.abs(item.top - before.top) > 2) return [];
-            const between = item.left - before.right;
-            return between > gap + 1
-              ? [`${String(Math.round(between))}px between two actions`]
-              : [];
-          });
-        },
-      );
-
-      const cramped = [...document.querySelectorAll("main [data-campaign-id]")].flatMap((card) => {
-        const parts = [...card.children].map((child) => child.getBoundingClientRect());
-        return parts.slice(1).flatMap((part, index) => {
-          const before = parts[index];
-          if (before === undefined) return [];
-          const between = part.top - before.bottom;
-          return Math.abs(between - space4) > 1
-            ? [
-                `${card.getAttribute("data-campaign-id") ?? "a card"}: ${String(Math.round(between))}px`,
-              ]
-            : [];
-        });
-      });
-      return { spread, cramped };
-    });
-    expect.soft(measured.spread, `at ${frame.name} actions are pushed apart`).toEqual([]);
-    expect
-      .soft(measured.cramped, `at ${frame.name} a campaign card's parts are not --space-4 apart`)
-      .toEqual([]);
-  }
-});
-
-/**
- * PRD-006d D3's named states on the create screen and on a campaign a person has actually saved.
- *
- * The draft itself, and the two open-house windows that separate a ready campaign from one that
- * needs changes, live in `helpers/open-house-draft.ts`, so the review suite reaches the same
- * campaign by the same route.
+ * PRD-009d: each campaign is saved through "Launch an ad" (`helpers/launch-an-ad.ts`), so the
+ * review suite reaches the same campaign by the same route. Words that claim a rate are what
+ * separate a campaign that needs changes from one that is ready.
  */
 
 for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[]) {
-  /**
-   * The saving state is the one state a person only ever sees while a request is still travelling,
-   * so it is held by slowing the request rather than by pretending to make one: the real route is
-   * called, its answer is simply not delivered until the pictures are taken. The button carries the
-   * label change the brief asks for, which is why the label is asserted before anything is captured.
-   */
-  test(`the create screen's saving state meets the bar at every frame in ${theme}`, async ({
-    page,
-  }) => {
-    test.setTimeout(240_000);
-    const externalRequests = await blockAnythingOffOrigin(page);
-    await useStoredTheme(page, theme);
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/marketing/campaigns/new");
-    await expectThemeResolved(page, theme);
-    await settleForScreenshot(page);
-    await fillTheOpenHouseDraft(page, READY_OPEN_HOUSE);
-
-    let deliverTheAnswer: () => void = () => undefined;
-    const held = new Promise<void>((resolve) => {
-      deliverTheAnswer = resolve;
-    });
-    await page.route("**/api/campaigns/preflight", async (route) => {
-      await held;
-      await route.continue();
-    });
-
-    await page.getByRole("button", { name: "Save and run the checks" }).click();
-    const saving = page.getByRole("button", { name: "Running the checks" });
-    await expect(saving).toBeVisible();
-    await expect(saving).toBeDisabled();
-
-    try {
-      await captureNamedState(page, {
-        screen: "campaign-create",
-        state: "saving",
-        theme,
-        // The request in flight is the state, so there is no idle network to wait for.
-        idleNetwork: false,
-      });
-    } finally {
-      deliverTheAnswer();
-    }
-    await expect(page.getByRole("heading", { name: "Ready for approval" })).toBeVisible();
-
-    expect(externalRequests).toEqual([]);
-  });
-
   /**
    * The ready result, and then the campaign's own page as the person who wrote it sees it.
    *
@@ -664,21 +577,12 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
     const externalRequests = await blockAnythingOffOrigin(page);
     await useStoredTheme(page, theme);
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/marketing/campaigns/new");
+    const ref = await saveACampaign(page, { ad: SAMPLE_ADS.firstHome, place: "Austin, TX" });
     await expectThemeResolved(page, theme);
-    await settleForScreenshot(page);
-    await fillTheOpenHouseDraft(page, READY_OPEN_HOUSE);
-    await page.getByRole("button", { name: "Save and run the checks" }).click();
-    await expect(page.getByRole("heading", { name: "Ready for approval" })).toBeVisible();
-
-    await captureNamedState(page, {
-      screen: "campaign-create",
-      state: "ready-for-approval",
-      theme,
-    });
+    await expect(verdictOnStepThree(page)).toContainText("Checks passed");
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.getByRole("link", { name: "Open campaign" }).click();
+    await page.goto(`/marketing/campaigns/${ref}`);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await settleForScreenshot(page);
     await expect(page.getByRole("button", { name: "Approve this version" })).toBeDisabled();
@@ -703,45 +607,56 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
     const externalRequests = await blockAnythingOffOrigin(page);
     await useStoredTheme(page, theme);
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/marketing/campaigns/new");
+    const ref = await saveACampaign(page, {
+      ad: SAMPLE_ADS.firstHome,
+      place: "Austin, TX",
+      headline: RATE_CLAIM_HEADLINE,
+    });
     await expectThemeResolved(page, theme);
-    await settleForScreenshot(page);
-    await fillTheOpenHouseDraft(page, FINISHED_OPEN_HOUSE);
-    await page.getByRole("button", { name: "Save and run the checks" }).click();
-    await expect(page.getByRole("heading", { name: "Needs changes" })).toBeVisible();
+    await expect(verdictOnStepThree(page)).toContainText("Needs changes");
+    /**
+     * PRD-009e direction section 6.5: the campaign page's needs-changes state has no heading of its
+     * own. It is the "Needs changes" chip, the plain fix in a "What to fix" region, and "Make a new
+     * version" (lane 009e's ruling of 2026-10-02).
+     */
+    await page.goto(`/marketing/campaigns/${ref}`);
+    const main = page.getByRole("main");
+    await expect(main.locator("[data-campaign-standing='preflight_failed']")).toHaveText(
+      "Needs changes",
+    );
+    await expect(page.getByRole("region", { name: "What to fix" })).toContainText(
+      "Ads can't state rate claims.",
+    );
+    await expect(main.getByRole("link", { name: "Make a new version" })).toBeVisible();
 
     /**
-     * Rubric axis 2. PRD-008d, the second redraw of 2026-10-01, finding R-18: a finding's note
-     * ("Fix this before approving") ran inline and touched the support details under it. It keeps
-     * `--space-3` between itself and what follows, at every frame.
+     * Rubric axis 2. PRD-008d, the second redraw of 2026-10-01, finding R-18: a finding's note ran
+     * into what followed it. The page's findings are now the "What to fix" list, so the rule is held
+     * there: each fix keeps `--space-3` between itself and the next, at every frame. The fixture's
+     * headline trips two rules, so there is a pair to measure.
      */
     for (const frame of REVIEW_FRAMES) {
       await page.setViewportSize({ width: frame.width, height: frame.height });
       await settleForScreenshot(page);
-      const tight = await page.locator("main [class*='__findings'] article").evaluateAll((cards) =>
-        cards.flatMap((card) => {
-          const note = card.querySelector(":scope > small");
-          const next = note?.nextElementSibling;
-          if (note === null || note === undefined || next === null || next === undefined) return [];
+      const fixes = page.locator("[data-fixes] li");
+      expect(await fixes.count(), "the fixes to measure").toBeGreaterThan(1);
+      const tight = await fixes.evaluateAll((items) =>
+        items.flatMap((item) => {
+          const next = item.nextElementSibling;
+          if (next === null) return [];
           const probe = document.createElement("span");
           probe.style.display = "none";
           probe.style.width = "var(--space-3)";
-          card.append(probe);
+          item.append(probe);
           const space3 = Number.parseFloat(getComputedStyle(probe).width);
           probe.remove();
-          const between = next.getBoundingClientRect().top - note.getBoundingClientRect().bottom;
+          const between = next.getBoundingClientRect().top - item.getBoundingClientRect().bottom;
           return between < space3 - 0.5 ? [`${String(Math.round(between))}px`] : [];
         }),
       );
-      expect(tight, `at ${frame.name} a finding's note touches what follows it`).toEqual([]);
+      expect(tight, `at ${frame.name} a fix runs into the next one`).toEqual([]);
     }
     await page.setViewportSize({ width: 1440, height: 900 });
-
-    await captureNamedState(page, {
-      screen: "campaign-create",
-      state: "needs-changes",
-      theme,
-    });
 
     await page.setViewportSize({ width: 1180, height: 900 });
     await settleForScreenshot(page);
@@ -761,8 +676,8 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
    * in the suite changes.
    *
    * The state's words and its way onward are asserted before anything is photographed: "No
-   * campaigns yet." is a claim about the workspace, and the one control on the card is the thing
-   * the state exists to offer.
+   * campaigns yet" is a claim about the workspace, and the one control on the card is the thing
+   * the state exists to offer. PRD-009e 009E-AC-011: it is also the page's one primary action.
    */
   test(`the campaigns list's empty state meets the bar at every frame in ${theme}`, async ({
     page,
@@ -777,19 +692,25 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
       await settleForScreenshot(page);
 
       const main = page.getByRole("main");
-      await expect(main.getByRole("heading", { level: 1, name: "Your campaigns" })).toBeVisible();
-      await expect(main.getByText("No campaigns yet.")).toBeVisible();
+      await expect(main.getByRole("heading", { level: 1, name: "Campaigns" })).toBeVisible();
+      await expect(main.getByText("No campaigns yet", { exact: true })).toBeVisible();
+      await expect(
+        main.getByText("Pick an ad from the library to set up your first one."),
+      ).toBeVisible();
       // Rubric axis 9: the shared `empty` state, not a card assembled on the page.
       await expect(main.locator(".oalo-async-state[data-state='empty']")).toContainText(
-        "No campaigns yet.",
+        "No campaigns yet",
       );
-      await expect(main.getByRole("link", { name: "Open campaign" })).toHaveCount(0);
+      await expect(main.locator("[data-campaign-row]")).toHaveCount(0);
       await expectThePageOpensAtTheTopOfItsContent(page);
       await expectThePageFillsTheContentColumn(page);
-      await expect(main.getByRole("link", { name: "Create an Open House Boost" })).toHaveAttribute(
-        "href",
-        "/marketing/campaigns/new",
-      );
+      // 009E-AC-011: exactly one "Launch an ad", and it is inside the empty state.
+      await expect(main.getByRole("link", { name: "Launch an ad" })).toHaveCount(1);
+      await expect(
+        main
+          .locator(".oalo-async-state[data-state='empty']")
+          .getByRole("link", { name: "Launch an ad" }),
+      ).toHaveAttribute("href", "/marketing/campaigns/new");
 
       await captureNamedState(page, { screen: "campaigns", state: "empty", theme });
 
@@ -805,11 +726,11 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
    * PRD-008d 008D-AC-010, the sign-off's "Campaigns list, populated" row.
    *
    * Taken from a fixture workspace holding exactly the two campaigns
-   * `helpers/populated-campaign-workspace.ts` saves through the create screen, one ready for
+   * `helpers/populated-campaign-workspace.ts` saves through "Launch an ad", one ready for
    * approval and one that needs changes, so the picture is the same list on every run and on
-   * every machine. The list's contents are asserted before anything is photographed: both cards,
-   * in the order they were saved, each with its headline, address, and badge and its way onward,
-   * and no empty-state card.
+   * every machine. The list's contents are asserted before anything is photographed: both rows,
+   * newest change first (PRD-009e 009E-AC-009), each with its ad's name as the link, its status
+   * chip, and no empty state.
    */
   test(`the campaigns list's populated state meets the bar at every frame in ${theme}`, async ({
     page,
@@ -824,33 +745,26 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
       await settleForScreenshot(page);
 
       const main = page.getByRole("main");
-      await expect(main.getByRole("heading", { level: 1, name: "Your campaigns" })).toBeVisible();
-      await expect(main.getByText("No campaigns yet.")).toHaveCount(0);
-      await expect(main.getByRole("link", { name: "Open campaign" })).toHaveCount(
-        POPULATED_CAMPAIGNS.length,
-      );
-      // Each campaign is one `Card`, which renders an `article`.
-      const cards = main.getByRole("article");
-      await expect(cards).toHaveCount(POPULATED_CAMPAIGNS.length);
-      for (const [index, campaign] of POPULATED_CAMPAIGNS.entries()) {
-        await expect(cards.nth(index).getByRole("heading", { level: 2 })).toHaveText(
-          campaign.headline,
-        );
-        await expect(cards.nth(index)).toContainText(campaign.address);
-        await expect(cards.nth(index)).toContainText(campaign.verdict);
+      await expect(main.getByRole("heading", { level: 1, name: "Campaigns" })).toBeVisible();
+      await expect(main.getByText("No campaigns yet", { exact: true })).toHaveCount(0);
+      // One table row for each campaign, the last one saved first.
+      const rows = main.locator("[data-campaign-table] [data-campaign-row]");
+      await expect(rows).toHaveCount(POPULATED_CAMPAIGNS.length);
+      for (const [index, campaign] of [...POPULATED_CAMPAIGNS].reverse().entries()) {
+        await expect(rows.nth(index).getByRole("link", { name: campaign.ad.name })).toBeVisible();
+        await expect(rows.nth(index)).toContainText(campaign.verdict);
       }
+      await expect(main.getByRole("link", { name: "Launch an ad" })).toHaveCount(1);
       await expectThePageOpensAtTheTopOfItsContent(page);
       await expectThePageFillsTheContentColumn(page);
-      // Rubric axis 1: a card's title is never drawn larger than the page's own title.
-      const [pageTitle, cardTitle] = await Promise.all(
-        [main.getByRole("heading", { level: 1 }), cards.first().getByRole("heading")].map(
-          async (heading) =>
-            heading.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize)),
+      // Rubric axis 1: a row's link is never drawn larger than the page's own title.
+      const [pageTitle, rowLink] = await Promise.all(
+        [main.getByRole("heading", { level: 1 }), rows.first().getByRole("link")].map(
+          async (element) =>
+            element.evaluate((node) => Number.parseFloat(getComputedStyle(node).fontSize)),
         ),
       );
-      expect(cardTitle, "the card title is smaller than the page title").toBeLessThan(
-        pageTitle ?? 0,
-      );
+      expect(rowLink, "the row link is smaller than the page title").toBeLessThan(pageTitle ?? 0);
 
       await captureNamedState(page, { screen: "campaigns", state: "populated", theme });
 

@@ -26,6 +26,21 @@
   background: transparent;
 }
 
+/* An informational notice: "Nothing is connected from this page", "Suggestions only". The mockups'
+ * `.notice` (`ads-library.html:508`): the information tint on the control radius, no edge, the text
+ * in the strong ink, and the glyph in `--st-info-fg` (the page passes `Icon tone="info"`).
+ *
+ * PRD-009 scored review R3 F-10. Pages drew this as a `Card` plus a module class carrying
+ * `--st-info-bg`, and `.oalo-surface[data-variant="card"]` (two classes' worth of specificity)
+ * always painted the white card over it, whatever order the bundle loaded the two sheets in. A
+ * status surface is a variant of the primitive, so the cascade has nothing to decide. */
+.oalo-surface[data-variant="info"] {
+  background: var(--st-info-bg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  color: var(--tx-strong);
+}
+
 .oalo-surface[data-padding="sm"] {
   padding: var(--space-2);
 }
@@ -36,6 +51,18 @@
 
 .oalo-surface[data-padding="lg"] {
   padding: var(--space-6);
+}
+
+/* PRD-009 scored review pass 2, R1 P2-06(b) and R2 N-1. The mockups' `.card` is `--space-6`, and
+ * below 720px it drops to `--space-5` (`campaign-detail.html:426`; the spec is
+ * `03-components/card-and-surface.md`). The `lg` step had no phone value, so every large card drew
+ * 24px at 390 while Home and the account card drew 20px. The 719.98px edge is the shell's own phone
+ * edge (`app-shell.module.css`), so a page's column padding, its gap and its cards step down
+ * together. The `md` and `sm` steps are unchanged. */
+@media (max-width: 719.98px) {
+  .oalo-surface[data-padding="lg"] {
+    padding: var(--space-5);
+  }
 }
 
 .oalo-stack {
@@ -117,18 +144,23 @@
   justify-content: space-between;
 }
 
+/* Card-step titles. Design `00-direction.md` section 2.3, "card title 16px semibold", and the
+ * mockups' `.card-title` at `--weight-semibold`. They were `--weight-bold` from before 009a defined
+ * the semibold token; the PRD-009 scored review (R4-09) saw "We couldn't load your workspace" and
+ * "Loading your workspace" visibly heavier than Home's card titles. */
 .oalo-metric__label,
 .oalo-checklist-item__heading h3,
 .oalo-checklist__heading h2,
 .oalo-async-state__title {
   font-size: var(--text-card-size);
-  font-weight: var(--weight-bold);
+  font-weight: var(--weight-semibold);
   line-height: var(--leading-tight);
   margin: 0;
 }
 
 .oalo-metric__value {
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
   font-size: var(--text-page-size);
   font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
@@ -304,7 +336,8 @@
 }
 
 .oalo-data-text {
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 
@@ -317,6 +350,16 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-5);
+}
+
+/* A state that stands on the page rather than inside a card: a route's error or loading boundary.
+ * Sunken is a well inside a card (brief section 8), and in Light `--sf-sunken` equals `--sf-canvas`
+ * (design section 2.4), so a sunken state on the canvas is an outline with no fill while Dark
+ * draws it as a panel. PRD-009 scored review R4-10. On the canvas a surface is the white bordered
+ * card (design section 2.3), so `surface="card"` draws it there in both themes. */
+.oalo-async-state[data-surface="card"] {
+  background: var(--sf-card);
+  box-shadow: var(--shadow-card);
 }
 
 .oalo-state-actions {
@@ -362,7 +405,8 @@
 
 .oalo-checklist__progress {
   color: var(--tx-body);
-  font-family: var(--font-data);
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
   font-size: var(--text-caption-size);
   margin: 0;
 }

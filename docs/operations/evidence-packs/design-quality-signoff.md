@@ -7,11 +7,11 @@ it on 2026-09-21. On 2026-10-01 `ux-ui-guardian` re-signed every row against the
 On 2026-10-03 `ux-ui-guardian` re-signed the whole table against the PRD-009 tree, from the
 baselines the `ubuntu-24.04` runner drew for it (see "How this was filled").
 
-- Commit reviewed: the commit that installs the baselines drawn by screen-baselines run 37163215460
-  from `ee03945a`
-  - Nothing rendered changed between `ee03945a` and that commit: `git diff --name-only ee03945a
-    4511100d` lists documentation, `EXECUTION_LEDGER.md`, and `apps/web/src/app/globals.css`, whose
-    only change is a path inside a comment.
+- Commit reviewed: the commit that installs the baselines drawn by screen-baselines run 37204940622
+  from `9f55b1d4`
+  - Nothing rendered changed between `9f55b1d4` and that commit: `git diff --name-only 9f55b1d4`
+    against it lists only documentation, QA reports, `NEXT_BATCH_LEDGER.md`, and the pictures
+    themselves.
 - Date: 2026-10-04 (first signed 2026-09-21 against `74999a8`; re-signed against `d7af15a` and
   `cad9bf6` on 2026-10-01, and against run 37157590605's pictures on 2026-10-03)
 - Signed by: `ux-ui-guardian`, Gauntlet PRD-009 Wave 4, for the orchestrator
@@ -344,7 +344,7 @@ PRD-008d's cells. Of the 376 pictures PRD-008d left, 144 belonged to screens PRD
 deleted, 232 belong to screens it kept and were redrawn, and 244 are new (the first dispatch's 236,
 and the eight of Home with campaigns that the fifth redraw added), which is the 476 installed.
 
-**The five redraws.** Each is a dispatch of `screen-baselines.yml`.
+**The six redraws.** Each is a dispatch of `screen-baselines.yml`.
 
 - Run 37059676544 on `de69e09e`: the single dispatch 009G-AC-004 allows. It drew all 468 pictures
   (74 synthetic, 394 review), 232 changed and 236 new.
@@ -358,7 +358,14 @@ and the eight of Home with campaigns that the fifth redraw added), which is the 
   grey ring on step 3's links, the Approval card's first sentence, "Request a new link" on the
   expired reset link, single words left alone on a line, a relative time that wrapped) and added the
   capture of Home with campaigns. It drew 476 pictures; 201 differ from run 37157590605's, the eight
-  of Home with campaigns among them. **Its pictures are the ones installed and named above.**
+  of Home with campaigns among them.
+- Run 37204940622 on `9f55b1d4`, under 009G-AC-011: fix lane 5 (`338f6559`) fixed pass 5's two
+  findings on Home with campaigns (a row's date kept on one line; a campaign's name drawn as the
+  Campaigns list's ink title, through one shared `Link` variant). 90 pictures differ from run
+  37163215460's: the eight of Home with campaigns, 68 by at most 2 of 255 per channel (sub-pixel
+  noise), and 14 only around a masked date drawn on a later day. All 90 are installed, so the
+  installed set is byte-identical to this run's. **Its pictures are the ones installed and named
+  above.**
 
 **The scored review passes and the stopping rule.** Four `ux-ui-guardian` reviewers on opus each
 took a set of the 468 pictures and scored every one on the ten axes against the rubric, the PRD-009
@@ -378,6 +385,12 @@ surfaces (146). The report is
   4 confirms that each of the 23 is resolved on the final pictures. Anything new that pass 4 sees is
   recorded as a dated follow-up and does not reopen the review. Pass 4's result is in the report under
   its own heading, and it is part of what this sign-off rests on.
+- Pass 4 found five details missed in every earlier pass; one micro-round fixed them all rather than
+  leave them as follow-ups. Pass 5 (two reviewers, opus), on run 37163215460: every micro-round fix
+  confirmed on every picture it applies to, 0 regressions, and 193 of the 201 changed pictures at 3
+  on every axis. The other eight, the new pictures of Home with campaigns, carried two Low findings
+  (FU-1, FU-2), fixed by fix lane 5.
+- Pass 6 (one reviewer, opus), on run 37204940622: FU-1 and FU-2 resolved at every frame and theme; all 90 pictures that moved score 3 on every axis, the Campaigns list's names did not move, and there is no regression and no follow-up. Every installed picture now scores 3 on every axis (the demo route exempt from axis 10 only).
 
 **Rulings that shape how the rows were read.** Chips are 12px everywhere (the component spec over the
 mockups' 14px). Buttons keep the shared weight 500 (the brief over the mockups' 600). A large Card's
@@ -391,11 +404,12 @@ zero for each capture), 009G-AC-010 (the keyboard, the 2 px focus ring with its 
 sticky bar), and 009G-AC-012 (reduced motion). This file does not restate their results.
 
 **Signed.** Every row of the table names pictures that exist on disk, or names a frame the state does
-not have and says why, and no cell reads "not photographed" or "asserted". One state has no picture
-at any frame, Home with campaigns, and is recorded under "Frames a state does not have" rather than
-signed on a picture. The scores that make a row signed are the report's: pass 3's for the 270 of 468
-pictures it found at 3 on every axis, and pass 4's confirmation for the rest, whose pass 3 findings
-round 3 fixed.
+not have and says why, and no cell reads "not photographed" or "asserted". Every state has a
+picture at every frame it has, Home with campaigns included. The scores that make a row signed are
+the report's: pass 3's for the pictures it found at 3 on every axis and that did not move after it,
+pass 4's confirmation for those whose pass 3 findings round 3 fixed, pass 5's for the 193 pictures the
+micro-round moved, and pass 6's for the eight pictures of Home with campaigns and the 82 others that
+moved only by noise or a masked date.
 
 **The earlier sections stay as history.** Everything from "The second re-sign of 2026-10-01" down is
 the record of PRD-008d and PRD-006d, kept as written. The findings, fixes, and numbers in it describe

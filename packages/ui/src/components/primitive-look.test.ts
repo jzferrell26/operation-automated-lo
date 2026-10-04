@@ -302,6 +302,56 @@ describe("a link inside a sentence (R2 F-4, R1-15; link.md)", () => {
   });
 });
 
+describe("a name in a list row is an ink title (final scored review FU-2; link.md)", () => {
+  it("takes the ink, the semibold weight, and the body step, with no underline at rest", () => {
+    expect(rule(linkCss, ".title")).toMatchObject({
+      color: "var(--tx-strong)",
+      "font-weight": "var(--weight-semibold)",
+      "font-size": "var(--text-body-size)",
+      "text-decoration": "none",
+    });
+  });
+
+  it("keeps the 44px target of the inline link it replaces", () => {
+    expect(rule(linkCss, ".title")).toMatchObject({
+      display: "inline-flex",
+      "align-items": "center",
+      "min-block-size": rule(linkCss, ".inline")["min-block-size"],
+      "min-inline-size": rule(linkCss, ".inline")["min-inline-size"],
+    });
+    expect(rule(linkCss, ".title")["min-block-size"]).toBe("var(--target-min-size)");
+  });
+
+  it("underlines on hover and keeps the ink, and leaves the focus ring to the base link", () => {
+    expect(rule(linkCss, ".title:hover")).toMatchObject({
+      color: "var(--tx-strong)",
+      "text-decoration": "underline",
+    });
+    expect(linkCss).not.toMatch(/\.title:focus/u);
+    expect(rule(linkCss, ".link:focus-visible")["outline"]).toBe(
+      "var(--focus-width) solid var(--focus-color)",
+    );
+  });
+
+  it("is written after the base link rule at one class of weight, so file order decides it", () => {
+    expect(linkCss.indexOf(".title {")).toBeGreaterThan(linkCss.indexOf(".link {"));
+    expect(linkCss).not.toMatch(/\.title\.title/u);
+  });
+
+  it("renders on the anchor as the title variant, and takes the body step whatever its size", () => {
+    const markup = renderToStaticMarkup(
+      createElement(Link, { href: "/x", size: "sm", variant: "title" }, "First home, start here"),
+    );
+
+    // A CSS-module class is drawn as `_<name>_<hash>`, so the variant's class is found by its name.
+    expect(markup).toContain('data-variant="title"');
+    expect(markup).toMatch(/class="[^"]*\b_title_/u);
+    // The compact rule is `.inline[data-size="sm"]`, so a `title` link, which does not carry `inline`,
+    // stays at the body step with `size="sm"`.
+    expect(markup).not.toMatch(/class="[^"]*\b_inline_/u);
+  });
+});
+
 describe("card-step titles are semibold (R4-09; design section 2.3)", () => {
   it("weighs the metric, checklist, and state titles at the semibold token", () => {
     expect(

@@ -457,6 +457,15 @@
   margin-block-start: var(--space-1);
 }
 
+/* A date is one unit and never breaks across two lines: a date that does not fit moves whole to the
+   next line, so "Oct 20" and "2026" are never read on two (campaign-and-artifact-workflow.md,
+   "Dates"; final scored review, FU-1). The Campaigns list and the Launch screens carry the same rule
+   on their own `time`, and Home's rows are drawn with `TextWithDays`, so each of its days is a
+   `time`. */
+.rows time {
+  white-space: nowrap;
+}
+
 .rowTitle {
   font-size: var(--text-body-size);
   font-weight: var(--weight-semibold);

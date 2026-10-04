@@ -99,6 +99,9 @@ describe("the Campaigns list (009E-AC-009)", () => {
     const table = screen.getByRole("table");
     const first = within(table).getByRole("link", { name: "Sample: First home, start here" });
     expect(first).toHaveAttribute("href", "/marketing/campaigns/campaign_01First");
+    // The ink title the Home lists draw too: one `Link` variant, not a rule of this list's own
+    // (`link.md`, "A name in a list row"; final scored review, FU-2).
+    expect(first).toHaveAttribute("data-variant", "title");
     const row = first.closest("tr") as HTMLElement;
     const thumb = row.querySelector("img") as HTMLImageElement;
     expect(thumb.getAttribute("alt")).toBe("");
@@ -159,9 +162,11 @@ describe("the Campaigns list (009E-AC-009)", () => {
     expect(items[0]).toHaveTextContent("Approved");
     expect(items[0]).toHaveTextContent("Last change: Oct 1");
     expect(items[1]).toHaveTextContent("Dates: Until Oct 22.");
-    expect(
-      within(items[0] as HTMLElement).getByRole("link", { name: "Sample: First home, start here" }),
-    ).toHaveAttribute("href", "/marketing/campaigns/campaign_01First");
+    const cardName = within(items[0] as HTMLElement).getByRole("link", {
+      name: "Sample: First home, start here",
+    });
+    expect(cardName).toHaveAttribute("href", "/marketing/campaigns/campaign_01First");
+    expect(cardName).toHaveAttribute("data-variant", "title");
   });
 
   it("has no results column, no search, and no filters", async () => {

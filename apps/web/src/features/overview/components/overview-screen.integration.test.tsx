@@ -598,6 +598,23 @@ describe("Running now (009B-AC-009)", () => {
     expect(within(running).getByText(/Oct 17, 2026/u)).toBeInTheDocument();
   });
 
+  it("draws a campaign's name as the ink title the Campaigns list draws, not the blue inline link (final scored review, FU-2)", () => {
+    renderHome(
+      homeData({
+        running: { rows: [row()], total: 1 },
+        approval: { rows: [row({ statusLabel: "Ready for approval" })], total: 1 },
+      }),
+    );
+
+    // The shared `title` variant (`link.md`, "A name in a list row"; the Campaigns table and cards
+    // use the same one): `home-polish.unit.test.ts` pins its colour, weight and underline.
+    for (const title of ["Running now", "Needs your approval"]) {
+      const name = within(card(title)).getByRole("link", { name: "First home, start here" });
+
+      expect(name, `${title}'s campaign name`).toHaveAttribute("data-variant", "title");
+    }
+  });
+
   it("says when a campaign starts as soon as it is launched", () => {
     renderHome(homeData({ running: { rows: [row({ startsAt: undefined })], total: 1 } }));
 

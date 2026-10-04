@@ -123,20 +123,10 @@
   object-fit: cover;
 }
 
-a.rowLink.rowLink {
-  display: inline-flex;
-  align-items: center;
-  min-block-size: var(--target-min-size);
-  color: var(--tx-strong);
-  font-size: var(--text-body-size);
-  font-weight: var(--weight-semibold);
-  text-decoration: none;
-}
-
-a.rowLink.rowLink:hover {
-  color: var(--tx-strong);
-  text-decoration: underline;
-}
+/* The ad's name, in the table and in a phone card, is `<Link variant="title">`: an ink title that
+   Home's two lists draw too, so there is one definition (`link.module.css`, `.title`; `link.md`, "A
+   name in a list row"; final scored review, FU-2). It used to be a doubled `a.rowLink.rowLink` rule
+   here, which Home had no way to share. */
 
 .muted {
   color: var(--tx-body);

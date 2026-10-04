@@ -88,7 +88,7 @@ html[data-tenant-accent][data-theme="dark"] {
  * their values. Since PRD-009a the body step is itself 16px (design section 2.4).
  *
  * The base leading goes on `body` with it. All seven approved PRD-009 canvases
- * (`library/requirements/in-work/prd-009-marketing-toolkit/design/mockups/*.html`) set family,
+ * (`library/requirements/completed/prd-009-marketing-toolkit/design/mockups/*.html`) set family,
  * size, and `line-height: var(--leading-normal)` together on `body`, and `--leading-normal` is 1.5
  * in both token files. Without it, text no module sizes reads at the browser's `normal`, about 1.2
  * in Inter, and every such block draws shorter than its canvas. The family is not repeated here:

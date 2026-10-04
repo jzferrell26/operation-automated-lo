@@ -28,11 +28,8 @@ Current in-work PRDs:
 - PRD-007 Homeowner reports (the authorized homeowner-intelligence slice of PRD-002e)
   - implementation merged in PRs #69, #71, and #72; live valuation and HighLevel delivery wait on operator configuration (finish-line operator checklist steps 6a and 6b)
   - its evidence lives in `reports/` rather than `qa/`
-- [PRD-009 Marketing Toolkit](./prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md) (the product owner's direction and OD-H of 2026-10-01)
-  - moved from `backlog/` to `in-work/` on 2026-10-01 when the Gauntlet run started on branch `claude/prd-009-marketing-toolkit`; the orchestrator writes its `MKR-` ledger section in [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md)
-  - 009a light look and top menu, 009b Home for a new account, 009c Ads library, 009d Launch an ad, 009e campaign page and list, 009f removals and records, 009g verification
-  - in draft pull request #75, not merged; its human-only items are steps 10 to 13 of the [finish-line operator checklist](../../knowledge/private/operations/finish-line-operator-checklist.md)
 
 Moved out of `in-work/`:
 
 - PRD-008 Finish-Line Hardening moved to [`completed/`](../completed/prd-008-finish-line-hardening/prd-008-finish-line-hardening-index.md) on 2026-10-01, at the end of the Gauntlet run on branch `claude/gauntlet-prd-008`. It is complete and merged as pull request #74 on 2026-10-01 (`e89058e`).
+- PRD-009 Marketing Toolkit moved to [`completed/`](../completed/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md) on 2026-10-03, at the end of the Gauntlet run on branch `claude/prd-009-marketing-toolkit`. It is complete in pull request #75 (open, not merged); its human-only items are steps 10 to 13 of the [finish-line operator checklist](../../knowledge/private/operations/finish-line-operator-checklist.md).

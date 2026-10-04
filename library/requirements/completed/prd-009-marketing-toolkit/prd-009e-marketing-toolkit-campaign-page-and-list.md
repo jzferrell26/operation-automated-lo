@@ -1,7 +1,7 @@
 # PRD-009e: Marketing Toolkit - The Campaign Page and the Campaigns List
 
 > **Parent:** [PRD-009](./prd-009-marketing-toolkit-index.md)
-> **Status:** In Work (Gauntlet run started 2026-10-01). Authored 2026-10-01; revised the same day for OD-H (no property fields; campaigns are library ads).
+> **Status:** Completed. Moved to `completed/` with PRD-009 on 2026-10-03 at ship (009F-AC-015); the Gauntlet run started 2026-10-01. Authored 2026-10-01; revised the same day for OD-H (no property fields; campaigns are library ads).
 > **Priority:** P1. Results move here from the removed Reports page (OD-D).
 > **Schema changes:** None
 > **Owner Guardians:** `react-guardian` (both pages and their reads)

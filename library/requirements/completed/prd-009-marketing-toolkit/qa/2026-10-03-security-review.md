@@ -490,3 +490,130 @@ Zero Critical, zero unresolved High (SEC-009-01 accepted), one **Medium**: SEC-0
 ### Owner decision on SEC-009-13 (2026-10-03)
 
 The owner was asked in plain English and chose to record SEC-009-13 and fix it later: the finding is accepted with this dated record, operator checklist step 12 carries an item to settle which languages an ad's words may be in and to cover each one before any live launch, and the PRD-009 index lists it under "Follow-ups after PRD-009". Launch is disabled in PRD-009, so nothing is exposed. With SEC-009-01 and SEC-009-13 both accepted by the owner, no Critical, High, or Medium finding is unresolved, and MTK-003 is met.
+
+---
+
+## 4. Final delta at `4511100d` (round 3 and the micro-round)
+
+**Reviewer:** `security-guardian` (paired weapon: `security-weapon`), Opus, read-only pass, 2026-10-04.
+**Range:** `git diff e8aae2b5 4511100d`, 34 commits, read for code: `apps`, `packages`, `tooling`, `supabase`, `.github`, `package.json`, `pnpm-workspace.yaml`, and `tests/browser/review/empty-account.spec.ts` (the `75ba3d51` capture lives outside those folders). Pictures were ignored. The code commits are the quality close-out lane QA-11 to QA-13 (`8b961f67`, `3429c57e`, `76a01b51`, merged in `74892792`), round 3 lanes X and Y (`d6eccf8f` to `d8ba39ef`, merged in `e12e186e` and `963630c9`), and the micro-round (`efe066ab`, `20a4fa08`, `b47a7090`, `75ba3d51`). The rest of the range is documents and the move of PRD-009 to `completed/`.
+**Head moved during this pass.** The branch is now at `66a9ab38`, two commits past `4511100d`: `9a38a556` (baseline pictures and the re-signed design sign-off) and `66a9ab38` (status lines). Checked: 476 pictures under `tests/visual/screens/` and seven documents (`.cursor/rules/core/the-map.mdc`, `README.md`, `NEXT_BATCH_LEDGER.md`, the project map, the completed index, the sign-off, the scored review). No code, no configuration, no hidden characters, no samples flag, no secret shapes. They do not change this verdict.
+**Verdict: MTK-003 at `4511100d`: met.** Critical 0, High 0 unresolved (SEC-009-01 accepted), Medium 0 unresolved (SEC-009-13 accepted by the owner, 2026-10-03), Low 0 new, Info 1 new (SEC-009-I14, a test hygiene item for `quality-guardian`). The QA-11 and QA-12 lane that the `e8aae2b5` section asked to see is in this range and passes.
+
+### Pre-flight
+
+- **Ordering.** This pass changes no code, so a quality result on this head stays valid. Nothing here needs a quality re-check.
+- **Intelligence freshness.** `research/cve-watchlist.md` still says `Last refreshed: 2026-04-24` (163 days, past 120). SEC-009-I2 stands; advisories were checked live.
+- **Stack.** Next.js 16.3.6, React 19.3.0, TypeScript, Node 24.18.0 (fnm), pnpm 11.15.1: full coverage.
+
+### Files reviewed (66)
+
+- **Server and application (2):** `apps/web/src/server/campaign-page-data.ts`, `packages/application/src/campaign-workspace-read.ts`.
+- **Sign-in and password reset (3):** `apps/web/src/app/(public)/reset-password/page.tsx`, `apps/web/src/features/auth/components/auth-feedback.tsx`, `apps/web/src/copy/auth-messages.ts`.
+- **Copy (2):** `apps/web/src/copy/launch-messages.ts`, `apps/web/src/copy/user-language.ts`.
+- **Campaign and ad screens (9):** `features/ads-library/components/use-new-version.tsx`; in `features/campaigns/components/`: `ad-library-cards.tsx`, `campaign-approval-section.tsx`, `campaign-library-notices.tsx`, `campaign-list.tsx`, `launch-flow.tsx`, `launch-review.tsx`, `persisted-campaign-screen.tsx`; `features/reporting/components/campaign-launch-review.tsx`.
+- **Home, Connections, workspace pages (5):** `features/overview/components/home-campaign-lists.tsx`, `features/onboarding/components/permission-screen.tsx`, `features/onboarding/components/relative-time-text.tsx` (new), `features/workspace/preference-editors.tsx`, `features/workspace/workspace-screen.tsx`.
+- **Shared primitives (2):** `packages/ui/src/components/Icon.tsx`, `packages/ui/src/components/Link.tsx`.
+- **Styles (12):** `app/globals.css` (a comment path), `ad-library-cards.module.css`, `campaign-list.module.css`, `campaign-page.module.css`, `launch.module.css`, `dashboard-preview/workspace.module.css`, `homeowners.module.css`, `permission-screen.module.css`, `overview.module.css`, `reporting.module.css`, `workspace.module.css`, `packages/ui/src/components/link.module.css`.
+- **Tests and test helpers (31):** 26 test files under `apps/web/src`, `packages/ui/src/components/primitive-look.test.ts`, the helper `apps/web/src/server/campaign-page.test-support.ts`, `tooling/tests/unit/library-ad-checks/word-checks.test.ts`, `tooling/tests/unit/production-foundation/campaign-workspace-read.test.ts`, and `tests/browser/review/empty-account.spec.ts`.
+- **Unchanged, checked with `git diff --quiet`:** `next.config.ts`, `src/proxy.ts`, `vercel.json`, `apps/web/vercel.json`, `apps/web/src/app/api`, `apps/web/src/features/http`, `packages/db`, `packages/ghl`, `packages/domain`, `packages/contracts`, `supabase`, `.github`, `tooling/scripts`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, every `package.json`; the approval command `packages/application/src/campaign-approval-command.ts`, the approve handler `campaign-approval-handler.ts`, `library-ad-save.ts`, `launch-an-ad.ts`, `home-reads.ts`, `home-campaigns.ts`, and every file under `features/ads-library/server` or with "sample" in its path (the samples guard, the catalog loader, the sample art route).
+
+### Commands run (Node 24.18.0, pnpm 11.15.1)
+
+| Command | Result |
+|---|---|
+| `pnpm audit --prod --audit-level=low` | "No known vulnerabilities found", exit 0 |
+| `pnpm audit:dependencies` (`pnpm audit --audit-level=high`) | Exit 0. "1 vulnerabilities found. Severity: 1 high (1 ignored)" |
+| `pnpm audit --audit-level=low` | Exit 0, the same single ignored high, nothing else at any level |
+| `pnpm audit:secrets` | "Secret audit passed across 6 source roots and the public environment boundary." |
+| `gh api advisories/GHSA-vfj7-8cjw-p6xm` | updated 2026-10-02T22:36:34Z, not withdrawn, `<= 3.0.3`, `first_patched_version: null` |
+| `gh api "advisories?ecosystem=npm&updated=>2026-10-03T20:36:00Z"` at 2026-10-04T13:06Z | Zero npm advisories updated since the last check |
+| `gh api "advisories?ecosystem=npm&affects=next"`, `react`, `react-dom`, `react-server-dom-webpack` | Next.js 16.3.6 and React 19.3.0 are outside every listed range (see the framework line below) |
+| `vitest run --project contracts tests/security` | 6 files, 40 tests pass (includes MTK-005, `provider-side-effect-default-off.test.ts`) |
+| `vitest run --project unit` on `library-ad-approval-command.test.ts`, `campaign-page-data.unit.test.ts`, `launch-an-ad.unit.test.ts`, `campaign-workspace-read.test.ts`, `accepted-advisories.test.ts`, `library-ad-checks/` | 8 files, 834 tests pass |
+| `vitest run --project unit` on `sample-guard.test.ts`, `sample-flag-scan.test.ts`, `sample-catalog.test.ts` | 3 files, 16 tests pass |
+| `vitest run --project integration` on `auth-forms`, `reset-password/`, `campaign-list-decisions`, `persisted-campaign-screen`, `launch-review` | 5 files, 193 tests pass |
+| Added-line sweep (2,253 added code lines, then the `4511100d` to `66a9ab38` documents) | No key, token, private key, connection string, email, or phone shape; no `dangerouslySetInnerHTML`, `innerHTML` write, `srcDoc`, `eval`, `new Function`, `fetch`, URL string, `process.env`, `NEXT_PUBLIC_`, cookie, or header read; no `url(`, `@import`, or `content:` in CSS; no bidi or zero-width character; two U+0008 characters in tests (SEC-009-I14) |
+
+Not run, as instructed: browser suites, database suites, `pnpm build`, and anything against Vercel, hosted Supabase, Resend, RentCast, HighLevel, Meta, or Stripe.
+
+### Scorecard at `4511100d`
+
+| Category | Status | Findings |
+|---|---|---|
+| Financial / payment security | OK | 0 (no payment, budget, or provider code changed) |
+| PII exposure | OK | 0; the new chips and notices carry fixed words and a standing name only |
+| Authentication and authorization | OK | 0; the reset page's new link leaks nothing (below); no route, handler, session, or role code changed |
+| Cross-workspace and cross-account data | OK | 0; the version list still refuses another location; list rows read the same catalog as before |
+| Approval rule | OK | 0; command unchanged; screens now follow the rule for all four refusals (stricter) |
+| Injection (SQL, XSS, path, ReDoS) | OK | 0; text-only rendering; one new pattern, linear |
+| Ad compliance controls (word checks, places) | OK (accepted) | Word modules unchanged; SEC-009-13 accepted, SEC-009-14 and 15 open as Low |
+| Sample-ads guard and catalog integrity | OK | 0; guard files unchanged; flag set only by local test runners |
+| Provider side effects (MTK-005) | OK | 0; test passes |
+| Dependency security | OK (accepted) | SEC-009-01 accepted; lockfile unchanged |
+| Configuration and headers | OK | 0; `next.config.ts`, `src/proxy.ts`, CI, Vercel files unchanged |
+| Public repository hygiene | OK | Info: SEC-009-I14 |
+
+### The approval rule and its callers (QA-11, QA-12)
+
+- **The command is unchanged.** `libraryAdRefusalFor` (`campaign-approval-command.ts:127`), `recordedLibraryAdOf` (`:107`), and the command's own check (`assertLibraryAdApprovable`, `:149`, run at `:364` after the role check and before the idempotent retry) are the code the `e8aae2b5` section verified. The approve route and handler, the save route, and its mutation role check (`library-ad-save.ts:121`) are unchanged.
+- **One new server caller, display only.** `adRefusalOf` (`campaign-page-data.ts:57`) asks the rule with the server's catalog standing. Its answer now drives the newest version's chip (`:225`), the list row's chip (`:401`), the retired flag (`:74`), and the page's approval block (`:284`). `deriveCampaignStanding` (`campaign-workspace-read.ts:274`) maps each refusal reason to a standing through a frozen table that the type system holds exhaustive (`:245`), and only for a version nobody decided on in an unapproved state (`:286`). A standing is a word drawn as a chip; no route reads it back, and the browser receives only that word.
+- **Stricter than before.** The list used to say "Ready for approval" for a version whose ad was replaced, whose picture changed, or that the library no longer holds; it now names the reason, as the command would. An approved version still says "Approved", because the approval covers that version.
+- **No new coupling.** `campaign-workspace-read.ts:8` imports the reason as a type only.
+- **QA-12.** Step 3's refused card offers "Choose another ad" or "Make a new version" only when `canMakeNewVersion` is true (`launch-review.tsx:380-381`, used at `:395`, `:401`, `:407`, `:413`); the campaign page's newer-version notice passes the fixed sentence `USE_NEW_VERSION_ASK` (`campaign-library-notices.tsx:105`), which names roles ("the campaign creator or your workspace owner"), not people. Both decide only what is drawn; the save route still enforces the role.
+- **Workspaces.** `projectCampaignVersions` still freezes the principal and refuses a version from another location (`campaign-workspace-read.ts:344`, `:351`, unchanged lines). The list row already called `library.standingOf` before this range (through `libraryStandingOf`), so no new read and no new data.
+
+### The reset-password micro-round (`20a4fa08`)
+
+- **No token echo.** With no token, the page draws `ResetLinkMissing` (`page.tsx:37`, `auth-feedback.tsx:82`): a fixed sentence and a link. That branch runs only when the token is empty. With a token, `ResetPasswordForm` is unchanged.
+- **No account-existence oracle.** On a refused submit, `authProblemFor` adds the link only for `AUTH_RESET_LINK_EXPIRED` (`auth-feedback.tsx:92`, `:108`). The route answers that one code for every dead link, unknown, expired, or used (`password-authentication-handler.ts:1324-1343`, unchanged), so the link tells a caller nothing the code did not. Nothing on the reset page asks for or shows an email address.
+- **No open redirect.** The destination is the literal `/forgot-password` (`auth-feedback.tsx:73`) through the shared `Link`, whose props still omit `rel` and `target` (`Link.tsx:26`). No query value, no `next` or `returnTo`. `/forgot-password` itself is unchanged.
+- **No token in a Referer.** `src/proxy.ts:20` and `:51-53` (unchanged) set `Referrer-Policy: no-referrer` and `Cache-Control: no-store` on `/reset-password`, so following the new link, or Next.js prefetching it, does not send the token anywhere.
+
+### Sample ads, sample art, and the `75ba3d51` capture
+
+- **Fail-closed guard unchanged.** No file under `features/ads-library/server` or with "sample" in its path changed. `OALO_ADS_LIBRARY_SAMPLES` is set only in `playwright.config.ts:123` and `tooling/scripts/database/review-browser-run.mjs:98`, both local test runners; `vercel.json`, `apps/web/vercel.json`, and `.github` are unchanged. The three sample guard tests pass. Nothing in this range sets the flag or tells anyone to.
+- **New sample-library helpers are test-only.** `AD_SCENARIOS`, `libraryWith`, `scenarioLibrary`, and `ruleAnswerFor` in `apps/web/src/server/campaign-page.test-support.ts` are imported by eight files, every one a `*.test.ts` or `*.test.tsx`.
+- **The capture is test code only.** `75ba3d51` adds one Playwright test, `tests/browser/review/empty-account.spec.ts:539-573`, that photographs Home in the file's existing account after the file's existing seeding. It adds no route, page, seed script, fixture, environment variable, or production import. `8b961f67` adds two assertions to the same file (`:386`, `:437`).
+
+### Rendering, external requests, secrets, headers
+
+- **No new HTML sink.** The only `innerHTML` and `outerHTML` in added lines are reads in `launch-review.integration.test.tsx`.
+- **Links.** New: `/forgot-password`, `/homeowners/new` (now drawn only when reports are on), `/settings/connections`, all literals. The other link changes add `size="sm"` to hrefs whose sources did not change (`launchHref`, the step 3 `hrefs`, Home's empty action).
+- **One new pattern.** `RelativeTimeText` (`relative-time-text.tsx:6`) matches `\b\d+ (?:second|minute|hour|day|week|month|year)s? ago\b` with no nested repetition, so it runs in linear time; it splits a string into text and spans, with no markup. Its one caller is the Connections page, fed by the synthetic fixture (`settings/connections/page.tsx:15`).
+- **Primitives.** `Icon` gains one static path (`chevron-right`); `Link` changes a comment and one CSS rule. `AdCard` becomes the shared `Card` with the same attributes.
+- **No new external request, secret, or header change.** No `fetch`, URL, environment read, or third-party asset; `next.config.ts` and `src/proxy.ts` (CSP and headers) unchanged.
+
+### QA-13: the linear-time guards' new clock
+
+- `word-checks.test.ts` now measures the SEC-009-02 and SEC-009-07 guards in processor time (`process.cpuUsage`) rather than wall-clock time, with the same inputs and the same 1.5 s bound per text, and a 60 s test timeout. A pattern that backtracks catastrophically still fails, by the bound or by the timeout. Vitest 4's default `forks` pool (no override in `vitest.config.ts`) runs one file at a time in a process, so the count is the file's own. The guard is not weakened. This closes the guard half of SEC-009-I11; the sample scans' timeouts are unchanged.
+
+### New findings
+
+- **Critical:** none.
+- **High:** none.
+- **Medium:** none.
+- **Low:** none.
+- **Info: SEC-009-I14. Two layout tests hold a raw backspace (U+0008) where `\b` was meant, so their negative assertions can never fail.**
+  - **Location:** `apps/web/src/features/campaigns/components/campaign-list-layout.unit.test.ts:69` (`/\.thumb` plus U+0008 plus `/u`, from `ee1bc608`) and `apps/web/src/features/campaigns/components/launch-look.unit.test.ts:267` (`/\.cardAction` plus U+0008 plus `/u`, from `c812b68d`).
+  - **Scenario:** a CSS source never contains a backspace, so `not.toMatch` passes whatever the CSS says; a returning `.thumb` rule in the tablet block, or a returning `.cardAction` class, would not be caught. Neither guards a security control, and nearby assertions cover part of the intent (`display: none` in the tablet block, the `.cardFoot` rules).
+  - **Fix:** in each regex, replace the control character with the two characters `\b`, and run both files. A one-line change each; it belongs to `quality-guardian`'s hand-off, not this gate.
+- **Carried:** SEC-009-I2 (watchlist 163 days old), I10, I11 (guard half closed by QA-13, above), I12, I13, and I3 to I7 (no server read path, database, or homeowner gate changed in this range). Open Lows SEC-009-14 and 15 are unchanged (the word modules did not change).
+
+### Dependency audit at `4511100d`
+
+| Package | Severity | Advisory | Path | Fix available | Status |
+|---|---|---|---|---|---|
+| braces 3.0.3 | High (CVSS 7.5) | GHSA-vfj7-8cjw-p6xm | `apps/tasks > trigger.dev 4.6.4` (dev only) | No (`first_patched_version: null`) | Accepted by the owner, 2026-10-03; revisit 2026-11-03 (`pnpm-workspace.yaml`, test-held) |
+
+No other advisory at any level; `pnpm audit --prod` is clean; `pnpm-lock.yaml`, `pnpm-workspace.yaml`, and every `package.json` are unchanged since `e8aae2b5`.
+
+**Framework versions.** Next.js 16.3.6 is the first fixed version for GHSA-vcvr-r3jv-pc5j (critical, published 2026-09-30, `>= 16.2.0, < 16.3.6`) and is past GHSA-2xp9-vwfh-vxw4 and GHSA-p293-qw3h-jr36 (both `< 16.3.3`). React 19.3.0 is outside every React Server Components range, the newest being GHSA-wx67-qw84-cm4g (`< 19.2.8` on the 19.2 line).
+
+### Files changed by this pass
+
+- Modified, uncommitted: this file (this section appended). Nothing else in the worktree was edited, staged, or committed; probe files stayed in the session scratchpad.
+
+### MTK-003 at `4511100d`
+
+**MTK-003 at `4511100d`: met.** Zero Critical, zero unresolved High (SEC-009-01 accepted), zero unresolved Medium (SEC-009-13 accepted), no new Low; the approval rule, the reset-password change, the samples guard, and the `75ba3d51` capture all pass, and the two later commits on `66a9ab38` are documents and pictures only.

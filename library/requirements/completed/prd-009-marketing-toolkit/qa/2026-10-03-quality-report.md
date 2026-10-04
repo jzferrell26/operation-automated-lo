@@ -449,3 +449,184 @@ Only the criteria this pass touched; every other row stands as in section 8.
 | `library/knowledge` | 16 (1 added) | QA-04 notes (S-104 to S-108), checklist v1.7 and v1.8, ux-ui component notes for round 2 |
 | `library/requirements` | 8 (2 added) | The early report, the writing delta check, 009f Appendix A and S-104 to S-108, dated notes on 009b, 009c, 009d (D5, D8), 009e, the index's follow-ups |
 | `EXECUTION_LEDGER.md` | 1 | MKR-004, MKR-008, MKR-104 evidence, two raid-log lines |
+
+---
+
+## Final delta pass (2026-10-04) at `9f55b1d4`
+
+> **Auditor:** `quality-guardian` (paired weapon `quality-weapon`), opus, read-only; the release gate for PR #75 (MTK-004).
+> **Tree:** `claude/prd-009-marketing-toolkit` at `9f55b1d4` (pushed, the head of PR #75; working tree clean). Range `8178126b..9f55b1d4`: 41 commits, 121 files outside `tests/visual/screens/` (5 code and test files added), and 493 pictures (244 added, 232 modified, 17 renamed). Node v24.18.0, pnpm 11.15.1.
+> **Scope:** the quality close-out lane QA-11 to QA-13 (`8b961f67`, `3429c57e`, `76a01b51`, notes `63275272`); round 3 lanes X and Y (`d6eccf8f` to `d8ba39ef`); the micro-round (`efe066ab`, `20a4fa08`, `b47a7090`, `75ba3d51`); fix lane 5 (`338f6559`, merged in `9f55b1d4`); SEC-009-I14 (`9392c667`); the move to `completed/` (`e0f93b10`, `4511100d`); the fifth redraw's install and the re-signed sign-off (`9a38a556`); the doc wording commit `66a9ab38`; the scored review's passes 4 and 5; the security review's sections after my delta pass.
+> **Order:** `security-guardian`'s final delta ran at `4511100d` (MTK-003 met there), after my delta pass and before this one. The only code after it is `9392c667` (security's own SEC-009-I14: three test regexes) and `338f6559` (Home's list rows). I read both for security surface and found none (QA-I15). This is not an ordering violation, and the audit was not halted.
+> **Writes:** this section only, appended, uncommitted. Probe output stayed in the session scratchpad (`qa-final/`).
+> **Not run, as instructed:** the database suites and Playwright. Nothing was written to Vercel, hosted Supabase, Resend, RentCast, HighLevel, Meta, or Stripe; `gh` was used read-only.
+
+### F1. Summary
+
+**Verdict: DO NOT SHIP at `9f55b1d4`; SHIP after the gates in F8.** The code is sound. QA-11, QA-12 and QA-13 are closed with tests and dated plan notes, every round 3, micro-round and fix lane 5 change carries a test, the merge adds nothing but fix lane 5, and nothing in the code regresses a VERIFIED criterion. But this head cannot pass a required check: `Application verification` fails on `9f55b1d4`, as it did on `66a9ab38`, at its first step, `pnpm format:check`, because `66a9ab38` left `NEXT_BATCH_LEDGER.md` unformatted (QA-14, Critical). So the 8 Home pictures are not the only red CI will show, and no part of `pnpm verify:offline` after the format check has run in CI on any head that installs baselines. Two records items also stand between this head and "every criterion passing": two user-visible strings that no writing check has read (QA-15, MTK-008), and a sign-off that says SIGNED while one of its rows fails its own bar (QA-16, 009G-AC-007, which is re-signed at the end anyway).
+
+| Severity | Open after this pass | IDs |
+|---|---|---|
+| Critical | 1 | QA-14 |
+| High | 2 | QA-01, QA-02 (open gates, narrowed in F4 and F8) |
+| Medium | 3 | QA-15, QA-16, QA-17 |
+| Low | 1 | QA-18 (QA-07's residual, carried and widened) |
+| Info | 4 new | QA-I13 to QA-I16; carried items in F7 |
+
+QA-11, QA-12 and QA-13 (all Low) are closed.
+
+### F2. Checks run (each alone, Node 24.18.0, `bash -lc 'cd <worktree> && ...'`)
+
+| Command | Result |
+|---|---|
+| `pnpm exec turbo run typecheck --force`, then `tsc -p tsconfig.tooling.json` | Pass, 16 of 16 packages, 0 cached |
+| `pnpm lint` | Pass (oxlint) |
+| `pnpm format:check` | **Fail**: `[warn] NEXT_BATCH_LEDGER.md` (QA-14) |
+| `vitest run --project unit` | 175 files, 2691 of 2691 pass |
+| `pnpm test:unit` (with coverage, as CI runs it) | 175 files, 2691 pass; coverage thresholds met |
+| `vitest run --project components` | 5 files, 77 pass |
+| `vitest run --project integration --maxWorkers=3` | 54 files, 818 pass, 1 skipped (the same skip as before) |
+| `vitest run --project contracts` | 13 files, 112 pass |
+| `pnpm jscpd` | 0 clones in 588 files |
+| `pnpm audit:boundaries`, `audit:product-types`, `audit:secrets` | Pass |
+| Dash scan, MTK-007 | 0 U+2013 or U+2014 in lines added in `8178126b..9f55b1d4` (pattern proven on a planted dash) |
+| Backspace scan | 0 U+0008 under `apps`, `packages`, `tooling`, `tests`, `library`, `docs` |
+| The sign-off's own table check | 476 named, 0 missing; 476 installed; no installed picture unnamed; no table cell reads "not photographed" or "asserted" |
+| Relative-link check over every tracked `.md` and `.mdc` link that names PRD-009, `completed/` or `in-work/` | 355 links; 0 broken to PRD-009 (3 broken are illustrative paths in `.cursor/skills/library-weapon/examples/`, not PRD-009) |
+| Merge check | `git diff 70ff5cd1 9f55b1d4` equals `git diff 4511100d 338f6559`: the merge adds fix lane 5 and nothing else |
+| `gh` (read-only, 13:27Z) | PR #75: draft, `MERGEABLE`, `BLOCKED`, 0 behind `main` (`e89058e0`). CI on `66a9ab38` (run 37204566159): `Application verification` failed at `pnpm format:check` (log: `[warn] NEXT_BATCH_LEDGER.md`), the rest cancelled. CI on `9f55b1d4` (run 37204949619): `Application verification` failed, its gate step lasting 14 s (13:16:22Z to 13:16:36Z), the format check's length; `Release and recovery contract` success; `Real PostgreSQL migrations and pgTAP` in progress. Screen-baselines run 37204940622: synthetic job success, review job in progress |
+
+### F3. The changes since `8178126b`, against their plans
+
+- **QA-11: closed.** `deriveCampaignStanding` takes the rule's answer (`adRefusal: LibraryAdRefusalReason | undefined`) and maps it through a frozen table the type system holds exhaustive (`packages/application/src/campaign-workspace-read.ts:245-251`, `:274-289`); a recorded decision still wins, and only unapproved states take an ad standing. The page (`apps/web/src/server/campaign-page-data.ts:57`, `:225`, `:284`) and the list (`:401`) ask `adRefusalOf`, which is the command's own `libraryAdRefusalFor(recordedLibraryAdOf(...), standingOf(...))`; the earlier-flow row passes `undefined` (`:378`). `campaignStateLabel` is the one source of the four words (`apps/web/src/copy/user-language.ts:330-350`), and step 3's chips are now those constants (`launch-messages.ts:246`, `:268`, `:271`, `:274`), pinned equal in `user-language.unit.test.ts:144-147`. Every screen that draws a standing (`campaign-list.tsx:89`, `campaign-versions-card.tsx:43`, `persisted-campaign-screen.tsx:73`, through `standingTone`) gives the new standings the neutral tone step 3 uses (`launch-review.tsx:472`, `:490`). Tests: the list and the page for each reason and three viewers (`campaign-list-decisions.integration.test.tsx`, `persisted-campaign-screen.integration.test.tsx`), `campaign-page-data.unit.test.ts:573-577`, `campaign-workspace-read.test.ts:458-461`, `:587-590`. Plan: 009E-AC-010 and 009e D4 carry dated notes, and 009d D8's rows now name the chip on every screen (`63275272`). Pass 4 R2 saw "Newer ad version" where pass 3 read "Ready for approval".
+- **QA-12: closed.** The campaign page passes `askWhenCannot={USE_NEW_VERSION_ASK}` (`campaign-library-notices.tsx:105`); step 3 draws "Choose another ad" or "Make a new version" only when `canMakeNewVersion` (`launch-review.tsx:380-381`, `:494-498`). 009d D8's amendment rules that a viewer who cannot save a version gets the reason and nothing to press on both screens, except the newer-version notice, which names who can; the code matches it. Tests: `launch-review.integration.test.tsx` (each refused card, with and without the right) and `persisted-campaign-screen.integration.test.tsx` (approver, owner, decided version).
+- **QA-13: closed.** The list's first test has a 30 s limit with its measured reason; the linear-time guards count processor time against the same 1.5 s bound, with a 60 s test limit (`word-checks.test.ts`). Security confirmed the guard is not weakened. Both passed here inside the full runs.
+- **Round 3 (lanes X and Y) and the micro-round.** Every commit carries a test that reads the source or renders the screen (F11). Pass 4 found every pass 3 finding resolved with 0 regressions; pass 5 confirmed every micro-round fix with 0 regressions. What I checked in the code: the reset page's no-token branch and the refused form both offer `/forgot-password` through the shared `Link` (`auth-feedback.tsx:70-90`, `:108`; `reset-password/page.tsx:37`), pinned in `reset-password-page.integration.test.tsx` and `auth-forms.integration.test.tsx`; `RelativeTimeText` changes no words and only wraps what its one linear pattern matches (`relative-time-text.tsx:6`, `:17-30`); the Brand card offers "Create a homeowner report" only when reports are on (`preference-editors.tsx:201-213`); the Approval card's lead is `.decisionLine` (`campaign-approval-section.tsx:52`, `:74`). The words the reset link and the Brand card add are QA-15.
+- **Fix lane 5 (`338f6559`): the Campaigns list renders as before.** I compared the cascade rule by rule. Before, the name was `.link` plus `.inline` plus `a.rowLink.rowLink`; after, it is `.link` plus `.title`, written after `.link` in the same file at the same specificity (`packages/ui/src/components/link.module.css:5-19`, `:123-138`). Every property resolves to the same value at rest (`display: inline-flex`, centred alignment and justification, both 44px minimums, `--tx-strong`, `--text-body-size`, `--weight-semibold`, `text-decoration: none`, and the shared gap, radius, leading and underline offset), on hover (`--tx-strong`, underline) and on focus (the `.link:focus-visible` ring). No other rule in `campaign-list.module.css` or `globals.css` reaches the anchor (`.adName > span` stops at the cell's own spans), and no stylesheet selects `data-variant="inline"`. The commit's claim holds by reading; its "502 computed properties" comparison left no committed artifact, so the redraw is the pixel check (F8, step 3). Home's FU-1 rule is local (`overview.module.css:465-467`), and FU-2 uses the variant with no local restyle (`home-campaign-lists.tsx:88`); `home-polish.unit.test.ts` pins both, `primitive-look.test.ts` pins the variant, and the integration tests pin `data-variant="title"` on the rendered names (`campaigns-list.integration.test.tsx:104`, `:169`).
+- **SEC-009-I14: closed.** The two regexes security named, and a third in `launch-model.unit.test.ts`, now hold `\b` (`9392c667`); no U+0008 remains in the tree.
+
+### F4. The D6 gates of my delta pass, one by one
+
+QA-01 (009G-AC-006, 009G-AC-011, MTK-011):
+
+1. Run 37149916536 finished with both jobs successful, and three dispatches followed: 37157590605 (`963630c9`) and 37163215460 (`ee03945a`), both successful, and 37204940622 (`9f55b1d4`), in progress. **Done; MKR-119 names none of them** (QA-I14).
+2. `9a38a556` installs run 37163215460's 476 pictures with the "Baseline change:" note. **Done, except the 8 `review/home--with-campaigns--*`**, which `338f6559` re-opens.
+3. Pass 3 (the last full scan), pass 4 (confirmation: 0 regressions, three dated follow-ups) and pass 5 (the micro-round: 0 regressions) leave every installed picture at 3 on every axis (the demo route exempt on axis 10 only) **except the 8 Home pictures, at 2 (FU-1, FU-2); pass 6 is not yet written.** Open.
+4. MKR-114 and MKR-011: open until pass 6.
+
+QA-02 (MTK-001 to MTK-004, 009G-AC-005, 009G-AC-007, 009F-AC-015):
+
+1. MTK-003 on the final tree: **closed** at `4511100d`; the two later code commits add no security surface (QA-I15).
+2. 009G-AC-005: the note is in `9a38a556`, but **CI has not passed on any head that installs baselines** (QA-14). Open.
+3. MTK-002: `MERGEABLE` and 0 behind, but **the checks are red (QA-14) and the PR is still a draft (QA-I16).** Open.
+4. 009G-AC-007: re-signed in `9a38a556`, **but not satisfiable at this head** (F5, QA-16). Open.
+5. 009F-AC-015: **closed.** The folder is in `completed/`, no `in-work/prd-009` link remains (the four text mentions left are history inside QA reports), and the link check finds no broken PRD-009 link (F2). MKR-108 can go to VERIFIED citing this pass.
+6. Ledger: MKR-006 can go to VERIFIED now (in this range only MKR-003 changed status, DONE to VERIFIED, and no pre-PRD-009 status cell changed); MKR-003 is VERIFIED; the rest wait on F8.
+
+### F5. The sign-off, 009G-AC-007
+
+At `9f55b1d4` the record checks hold: rows for removed screens read "Removed by PRD-009 on 2026-10-03" and stay as history (`design-quality-signoff.md:204-235`); every installed picture is named, Home with campaigns has its row (`:115`) and each empty-account state has one (476 named, 0 missing); no table cell reads "not photographed" or "asserted"; the statement that screenshots are retained outside git and hold only synthetic or seeded review data stays (`:19-30`). The criterion is still not met, for two reasons: `338f6559` moves the 8 Home pictures, so the sign-off is re-signed against the commit that installs their redraw (009G-AC-011); and the file is not internally true today (QA-16).
+
+### F6. Scope contract
+
+No change in the range to `pnpm-lock.yaml`, any `package.json`, `pnpm-workspace.yaml`, `supabase/` or any migration, `vercel.json`, `apps/web/vercel.json`, `apps/web/next.config.ts`, the proxy, `.github/`, `tests/security/`, `packages/contracts`, `packages/ghl`, `packages/db`, `packages/domain`, `apps/web/src/app/api/`, or `tooling/scripts`. No added `process.env`, `NEXT_PUBLIC_` or `import.meta.env` read; no added `.only`, `.skip` or `.todo`. Every added mention of `OALO_ADS_LIBRARY_SAMPLES` says it must never be set on a deployment (checklist steps 0 and 10). This pass wrote nothing to a provider or a deployment.
+
+### F7. Findings
+
+#### QA-14 (Critical). `Application verification` fails on the head at `pnpm format:check`
+
+- **Files:** `NEXT_BATCH_LEDGER.md:5-11` (from `66a9ab38`); `package.json:35` (`verify:offline` starts with `pnpm format:check &&`); `.github/workflows/ci.yml:65` (the job runs `pnpm verify:offline`).
+- **Evidence:** `66a9ab38` shortened the table's "Branch" cell (it removed "open, not merged; ") without re-padding the table, so Prettier would rewrite lines 5 to 11. Locally `pnpm format:check` exits 1 naming that one file. In CI, run 37204566159 on `66a9ab38` logs `[warn] NEXT_BATCH_LEDGER.md` and exits 1 at 13:09:42Z, and run 37204949619 on `9f55b1d4` fails the same step after 14 s. Because the format check comes first, nothing after it in `verify:offline` (unit, integration, contracts, components, the synthetic pictures, the preview e2e, the browser suites, jscpd, the audits, `pnpm build`, `audit:sample-ads`) has run in CI on either head. `Application verification` fails before it reaches any picture, and `Preview smoke contract` cannot start until it passes. This blocks MTK-002 and 009G-AC-005.
+- **Fix:** `pnpm exec prettier --write NEXT_BATCH_LEDGER.md`, then `pnpm format:check` (expect a pass), and commit it in or before the commit that installs the redraw, so the final head runs the whole gate. It is a docs-only change: no picture moves and no code re-check is due.
+
+#### QA-15 (Medium; a gate for MTK-008, so for MTK-004). Two user-visible strings were added after the last writing check
+
+- **Files:** `apps/web/src/copy/auth-messages.ts:75` (`requestNewLinkLabel: "Request a new link"`, drawn at `auth-feedback.tsx:73`, from `20a4fa08`); `apps/web/src/features/workspace/preference-editors.tsx:208` ("Homeowner reports aren't turned on in this workspace yet.", from `51a42d72`), beside the reused label "Workspace connections" (`:211`).
+- **Evidence:** MTK-008 requires `technical-writing-craft-guardian` to review every new or changed user-visible string. The last writing check covers `301f24f7..823f3539` (`qa/2026-10-03-writing-review-delta.md`); `git grep` at `8178126b` finds neither string, and no writing record in this range mentions them, while MKR-008 is VERIFIED on the earlier range. The pass 4 fix for R4 F4-01 asked for the existing label "Reset your password" "so no copy changes" (`qa/2026-10-03-scored-baseline-review.md:2545`); the lane wrote a new label instead. The Brand sentence is R3's proposed wording (`:1949`), from a design reviewer, not the writing reviewer. Both pass the source guard (the unit run). The QA-11 chips in their new places (the list's Status column and the page header) reuse words the delta check settled (D-5), so they need no new review.
+- **Fix:** a `technical-writing-craft-guardian` delta on these two strings, appended to the writing delta file, with MKR-008's evidence naming it. Run it now, beside the redraw: if it changes either string, `review/reset-password--link-expired--*` (8) or the Brand pictures (`review/brand--empty-account--*` and `chromium/brand--default--*`, 16) move, and one more redraw follows under 009G-AC-011.
+
+#### QA-16 (Medium; closes with the re-sign). The sign-off says SIGNED while one of its rows fails its own bar, and its "Signed." paragraph contradicts its table
+
+- **File:** `docs/operations/evidence-packs/design-quality-signoff.md:4`, `:10-16`, `:74-75`, `:115`, `:363-381`, `:393-398`.
+- **Evidence:** the table's rule is that a row is signed when every picture it names scores 3 on every axis (`:74-75`). The Home with campaigns row (`:115`) names 8 pictures that pass 5 scored 2 on axis 10 (4 of them also 2 on axis 3), yet the header says "Status: SIGNED." (`:4`). The "Signed." paragraph says Home with campaigns has no picture and is recorded under "Frames a state does not have" (`:394-396`), but the table names its 8 pictures and that section does not list it (`:306-314`). The paragraph rests the scores on "pass 3's ... and pass 4's confirmation" (`:396-398`); pass 5, which scored the 201 pictures this commit installed, is not mentioned anywhere, and the passes list (`:363-381`) ends at pass 4.
+- **Fix, at the re-sign on the final commit:** "Commit reviewed" names the commit that installs run 37204940622's pictures; the redraw list gains that sixth run; the passes list gains pass 5 and pass 6; the "Signed." paragraph drops the "no picture" sentence and says the Home with campaigns row is signed on pass 6's scores; and the header says SIGNED only once pass 6 puts the 8 at 3.
+
+#### QA-17 (Medium). The review pictures depend on the day they are drawn, so a required check can turn red on another day with no code change
+
+- **Files:** `apps/web/src/features/campaigns/launch-model.ts:126`, `:152` (the end date defaults to today plus 14 days) and `:187-195` (`readableDay`, with a short weekday); `apps/web/src/server/launch-an-ad.ts:294`, `:370` (`now = new Date()`); `tests/browser/helpers/design-quality.ts:928-931`, `:953` (a mask paints over a date, but the date's width and line breaks still follow its text); `playwright.config.ts:98` (`maxDiffPixelRatio: 0.001`); `tooling/scripts/database/run-real-database-tests.mjs:32-34` (the review browser run is a step of `test:db`, so of `Real PostgreSQL migrations and pgTAP`).
+- **Evidence:** pass 5 part fa recorded about 30 pictures that changed only because their dates were drawn a day later, and some reflowed: step 3 at 1440 is 21px taller, and the campaign page header and the Versions card at 390 break differently (`qa/2026-10-03-scored-baseline-review.md:2650-2668`). A different height fails the comparison outright. So a CI run on a different UTC day from the one the installed review pictures were drawn on can fail with nothing changed. That bears on MTK-002 now (a re-run, or an update from `main`, after midnight UTC) and on `main` after the merge. Pass 5 recorded it only as a dated follow-up, and no follow-up list carries it.
+- **Fix now:** when installing run 37204940622, compare every review picture with the installed one, not only the 8; any other that differs is date drift or noise, goes to pass 6 to confirm, and is installed with the 8. Then run the final head's CI on the same UTC day as that redraw (2026-10-04), or redraw again. **Fix after the merge (follow-up):** make the captures clock-independent, either by filling a fixed end date in the review specs' step 2, or by having the capture helper set every masked date to one fixed string before the shot; list the item in the index's "Follow-ups after PRD-009".
+
+#### QA-18 (Low). QA-07's residual is still open, and the follow-up list misses more
+
+- **File:** `library/requirements/completed/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md:287`, and the list at `:278-293`.
+- **Evidence:** the bullet "The approval rule is written in four places ... QA-06's code lane narrows them to one exported predicate" still describes finished work as work to come. QA-I2, QA-I3 and QA-I7 are still absent, and so are QA-17's clock dependence and pass 5's notes N-1 and N-2 (one-word last lines).
+- **Fix:** `library-guardian` rewrites `:287` as done (one exported rule, `libraryAdRefusalFor`, which since QA-11 also decides every chip) and adds QA-I2, QA-I3, QA-I7 and QA-17 as bullets, each with where it is recorded. No criterion changes.
+
+#### Info
+
+- **QA-I13. An interim commit installed 8 pictures below 3.** 009G-AC-006 says a picture below 3 is fixed "before the baselines are committed"; `9a38a556` committed the 8 Home pictures at 2, and `338f6559` fixed them afterwards. The criterion is met once the commit that installs their redraw lands with pass 6 at 3. Pass 5's summary line "Both are fixed, with tests, before the baselines are committed" (`scored-baseline-review.md:2606`) should read "before the final baselines commit", and pass 6 should record the order.
+- **QA-I14. The ledger's evidence lags.** MKR-003's evidence stops at the `e8aae2b5` final delta and does not cite the `4511100d` section; MKR-119 names no dispatch after 37136898883, though four followed (37149916536, 37157590605, 37163215460, 37204940622). Both are one-line evidence updates at close-out.
+- **QA-I15. The code after security's final delta adds no security surface.** `9392c667` is three test regexes. `338f6559` adds a `Link` variant, which is a class and a `data-variant` value only: `rel` and `target` are still omitted from `LinkProps` (`Link.tsx:29`) and set by the unchanged `resolveExternalLinkSafety` (`:48`), no `href` changed, and the CSS has no `url(`, `@import` or `content:`; the rest is tests and two spec notes. MTK-003 holds on the final code in substance; MKR-003 can say so in one line, or `security-guardian` can confirm it if the orchestrator wants a security-owned line.
+- **QA-I16. PR #75 is a draft.** Today's `BLOCKED` is the draft state plus the checks; it must be marked ready before the merge.
+- **Carried.** QA-I10: `ux-ui-supersession.unit.test.ts:180` still accepts `2026-10-\d{2}`. QA-I11: fixed in part (the checklist header reads v1.10); `finish-line-operator-checklist.md:14` still names no D-9. QA-I12: unchanged (`preference-editors.tsx:323`). QA-I1, QA-I2, QA-I3, QA-I5 and QA-I7 stand as in D5.
+
+### F8. The gates that remain, exactly
+
+In this order, because each depends on the one before:
+
+1. **QA-14.** Format `NEXT_BATCH_LEDGER.md` and commit it (no picture moves).
+2. **QA-15.** The writing delta on the two strings, run now. If it changes words, apply them with tests, and the affected pictures join the redraw (009G-AC-011).
+3. **The redraw and pass 6 (009G-AC-011, 009G-AC-006, MTK-011).** Run 37204940622 finishes with both jobs successful. Install the 8 `review/home--with-campaigns--*` pictures and any other picture that differs (QA-17), and confirm that no `campaigns--*` picture differs beyond noise or date drift, which proves fix lane 5's no-change claim in pixels. Pass 6 (`ux-ui-guardian`) scores the 8 at 3 on every axis, Light first, confirms any others, and is recorded under its own heading in the scored review.
+4. **The install commit (009G-AC-005, 009G-AC-007).** One commit with the "Baseline change:" note, the pass 6 record, and the sign-off re-signed with QA-16's corrections, so the commit the sign-off names is the final commit.
+5. **CI on that head (MTK-002, 009G-AC-005).** `Application verification`, `Real PostgreSQL migrations and pgTAP`, `Release and recovery contract`, then `Preview smoke contract`, all green, run on 2026-10-04 UTC (QA-17). That run is the final tree's `pnpm verify:offline` and `pnpm test:db`.
+6. **Merge state.** Mark PR #75 ready for review; `gh pr view 75 --json mergeable,mergeStateStatus` reports `MERGEABLE` against current `origin/main` (0 behind `e89058e0` today; if `main` moves, update the branch and repeat step 5, minding QA-17).
+7. **Ledger.** MKR-108 and MKR-006 to VERIFIED now (F4); MKR-003 and MKR-119 evidence updated (QA-I14); MKR-008's evidence names the QA-15 check; MKR-113, 114, 115 and 011, and the DONE rows MKR-109 to 112 and 116 to 120, VERIFIED once step 5 is green, by a pass other than the lane that did them; MKR-004 to VERIFIED citing this report once steps 1 to 5 hold; then MKR-001 and MKR-002.
+
+A change in steps 1 to 4 to anything other than the ledger's formatting, a QA-15 wording fix with its tests, pictures, and records needs a quality re-check of the files it touches before MKR-004 flips.
+
+### F9. Verdict
+
+**DO NOT SHIP at `9f55b1d4`. SHIP after the gates in F8.** The code and its tests are ready: no Critical or High finding in code, the three QA Lows closed, every fix pinned by a test, and the scope contract kept. The one must-fix is QA-14 (one command and a commit), because without it no head can be green. QA-15 and QA-16 must close before MTK-004 can report every criterion passing. QA-17 needs care during the install and a follow-up after the merge. QA-18 and the Info items are records work that blocks nothing.
+
+### F10. Plan item traceability, delta
+
+Only the criteria this pass touched; every other row stands as in section 8 and D8.
+
+| Criterion | Ledger status | This pass | Evidence or note |
+|---|---|---|---|
+| MTK-002 | OPEN | Open | QA-14: `Application verification` red on `66a9ab38` and `9f55b1d4` at the format check; `MERGEABLE`, 0 behind, draft (QA-I16). |
+| MTK-003 | VERIFIED | Checked | Met at `4511100d`; the two later code commits add no security surface (QA-I15). |
+| MTK-004 | IN PROGRESS | Checked | This pass; closes after F8 steps 1 to 5. |
+| MTK-005 | VERIFIED | Checked | `tests/security/` unchanged; contracts 112 pass. |
+| MTK-006 | OPEN | Verified here | In this range only MKR-003 changed status (DONE to VERIFIED); no pre-PRD-009 status cell changed. |
+| MTK-007 | VERIFIED | Checked | 0 em or en dashes in added lines. |
+| MTK-008 | VERIFIED | Gap | QA-15: two strings not yet reviewed. |
+| MTK-010 | VERIFIED | Checked | Lockfile, every `package.json`, and `pnpm-workspace.yaml` unchanged. |
+| MTK-011 | OPEN | Open | Guard files unchanged and the sample tests pass; pass 6 pending for the 8 Home pictures. |
+| 009B-AC-009, 009B-AC-010 | VERIFIED | Checked | Home's row name is the `title` link to the campaign (`home-campaign-lists.tsx:88`); dates stay whole (`overview.module.css:465-467`); `overview-screen.integration.test.tsx`. |
+| 009C-AC-009 | VERIFIED | Checked | The notice is unchanged for a viewer who can save a version; one who can't is told who can (009d D8 amendment). |
+| 009d D8 (amended 2026-10-03, QA-11 and QA-12) | n/a | Checked | The code matches every row (F3). |
+| 009E-AC-009 | VERIFIED | Checked | The row link's cascade is unchanged by `338f6559` (F3); the redraw confirms it in pixels (F8, step 3). |
+| 009E-AC-010 | VERIFIED | Checked | Amended; each reason is covered on the list and on the page. |
+| 009F-AC-015 | IN PROGRESS | Verified here | In `completed/`; 355 links checked, 0 broken to PRD-009. |
+| 009G-AC-005 | OPEN | Open | The note is in `9a38a556`; CI has never been green on a head that installs baselines (QA-14). |
+| 009G-AC-006 | IN PROGRESS | Open | Every installed picture at 3 except the 8 Home pictures, at 2 until pass 6 (QA-I13). |
+| 009G-AC-007 | OPEN | Open | The record checks hold; re-sign on the final commit with QA-16's corrections. |
+| 009G-AC-011 | DONE | Checked | Six dispatches in all; MKR-119 records one (QA-I14). |
+
+### F11. Files changed, `8178126b..9f55b1d4`
+
+121 files outside `tests/visual/screens/` and 493 pictures (244 added, 232 modified, 17 renamed), in 41 commits.
+
+| Area | Files | What changed |
+|---|---|---|
+| `apps/web` | 59 (5 added) | QA-11 (standings and chips), QA-12 (who is told what), QA-13 (two test limits); round 3 X and Y CSS and markup (step 3's disclosure, link actions and support card, the ad card, step 2's note, the list at 768 and on a phone, Home's empty states, the workspace pages, Connections, the Homeowner reports header, the demo page); the micro-round (the link primaries' edge, the Approval card's lead, the reset link, wrapping, `RelativeTimeText`); fix lane 5 (Home's rows); the SEC-009-I14 regexes; a comment path in `globals.css` |
+| `packages/application` | 1 | `deriveCampaignStanding` and `projectCampaignVersions` take the rule's answer |
+| `packages/ui` | 5 | `chevron-right`; `Link` `size="sm"` on `inline`, and the `title` variant; their tests |
+| `tests/browser` | 1 | `empty-account.spec.ts`: the QA-11 chips and the Home with campaigns capture |
+| `tooling/tests` | 2 | The word checks' processor-time clock; the standing table |
+| `library/requirements` | 39 | The move to `completed/` (renames); the 009d D8, 009e and 009E-AC-010 notes; the quality, security and scored review records |
+| `library/knowledge`, `library/README.md` | 9 | ux-ui component notes (link, campaign workflow, Approval card), checklist versions, lifecycle labels, the project map |
+| `docs/operations` | 1 | The re-signed sign-off |
+| Root records | 4 | `EXECUTION_LEDGER.md`, `NEXT_BATCH_LEDGER.md` (QA-14), `README.md`, `.cursor/rules/core/the-map.mdc` |

@@ -3,6 +3,30 @@
   max-inline-size: 64rem;
 }
 
+.outputLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+}
+
+.qrPreview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.qrPreview img {
+  max-inline-size: 100%;
+  block-size: auto;
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-control);
+}
+
+.qrPreview p {
+  flex: 1 1 15rem;
+}
+
 .fieldset {
   display: grid;
   gap: var(--space-6);

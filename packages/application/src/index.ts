@@ -68,6 +68,7 @@ export {
   completeRegeneration,
   createApprovalDecision,
   createCampaignVersion,
+  CampaignVersionConflictError,
   createCampaignProjections,
   createProjectionApprovalDecision,
   duplicateCampaign,

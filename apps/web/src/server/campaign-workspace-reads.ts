@@ -24,6 +24,8 @@ import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime
 import { activeLibraryCards } from "./launch-an-ad.js";
 import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
 import { WorkspacePreferenceError } from "./workspace-preferences.js";
+import { createPropertyPackageStore } from "./property-package-store.js";
+import { packageSummary, readVerifiedPropertyPackage } from "./property-package-service.js";
 
 export async function listWorkspaceCampaigns(
   principal: Readonly<AuthenticatedPrincipal>,
@@ -237,6 +239,31 @@ export async function loadCampaignPage(
       ...(versionNo === undefined ? {} : { versionNo }),
       brand,
     });
+    if (page?.kind === "property-preparation") {
+      const source = versions.find(
+        (item) => item.version.campaignVersionRef === page.campaignVersionRef,
+      )?.version;
+      if (source === undefined) return undefined;
+      try {
+        const bundle = await readVerifiedPropertyPackage(
+          source,
+          createPropertyPackageStore(principal, environment),
+        );
+        return {
+          kind: "page",
+          page: {
+            ...page,
+            packageState:
+              bundle === undefined
+                ? { kind: "not_generated" }
+                : { kind: "ready", summary: packageSummary(bundle) },
+          },
+        };
+      } catch {
+        // A missing migration/outage must not erase the saved campaign or pretend no package exists.
+        return { kind: "page", page: { ...page, packageState: { kind: "unavailable" } } };
+      }
+    }
     return page === undefined ? undefined : Object.freeze({ kind: "page" as const, page });
   } catch (error) {
     if (error instanceof CampaignResourceNotAccessibleError) return undefined;

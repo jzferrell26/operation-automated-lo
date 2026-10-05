@@ -235,6 +235,13 @@ export interface CampaignVersionRepository {
   run<T>(work: (transaction: CampaignVersionTransaction) => Promise<T>): Promise<T>;
 }
 
+export class CampaignVersionConflictError extends Error {
+  constructor() {
+    super("Campaign version reference already exists with different immutable content");
+    this.name = "CampaignVersionConflictError";
+  }
+}
+
 export async function createCampaignVersion(
   input: Readonly<{ version: unknown; createdAt: Date }>,
   repository: CampaignVersionRepository,
@@ -242,6 +249,13 @@ export async function createCampaignVersion(
   const versionInput = CampaignVersionInputSchema.parse(input.version);
   return repository.run(async (transaction) => {
     const manifestHash = hash(versionInput.manifest);
+    // PostgreSQL locks the campaign aggregate while allocating its next version. Resolve a retry
+    // only AFTER that lock, so two first writes cannot both miss the version and return different
+    // version numbers for the same stored reference (PRD-010 PKG-006).
+    const latestVersionNo = await transaction.getLatestVersionNo(
+      versionInput.locationRef,
+      versionInput.campaignRef,
+    );
     const existing = await transaction.getByCampaignVersionRef(
       versionInput.locationRef,
       versionInput.campaignVersionRef,
@@ -252,17 +266,13 @@ export async function createCampaignVersion(
         existing.campaignRef !== versionInput.campaignRef ||
         existing.locationRef !== versionInput.locationRef
       ) {
-        throw new Error(
-          "Campaign version reference already exists with different immutable content",
-        );
+        throw new CampaignVersionConflictError();
       }
       return deepFreeze(existing);
     }
     const version = CampaignVersionSchema.parse({
       ...versionInput,
-      versionNo:
-        (await transaction.getLatestVersionNo(versionInput.locationRef, versionInput.campaignRef)) +
-        1,
+      versionNo: latestVersionNo + 1,
       manifestHash,
       createdAt: input.createdAt.toISOString(),
     });

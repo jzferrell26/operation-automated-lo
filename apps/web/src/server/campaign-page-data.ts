@@ -262,6 +262,10 @@ export function buildCampaignPage(input: CampaignPageInput): CampaignPageData | 
       return Object.freeze({
         ...common,
         kind: "property-preparation" as const,
+        sourceManifestHash: shownRecord.version.manifestHash,
+        canGeneratePackage:
+          isLatest &&
+          (principal.role === "location_admin" || principal.role === "campaign_creator"),
         address: shownManifest.property.address,
         description: shownManifest.property.description,
         startsAt: shownManifest.property.openHouseStartsAt,

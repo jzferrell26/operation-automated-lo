@@ -151,6 +151,9 @@ importers:
       '@oalo/ghl':
         specifier: workspace:*
         version: link:../../packages/ghl
+      '@oalo/rendering':
+        specifier: workspace:*
+        version: link:../../packages/rendering
       '@oalo/storage':
         specifier: workspace:*
         version: link:../../packages/storage

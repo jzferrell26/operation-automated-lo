@@ -9,6 +9,10 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
+### October 5, 2026: private campaign packages (PRD-010 Batch B)
+
+Jonathan merged PR #76 as `0b47805e`. The continuation branch `chief/campaign-package-2026-10-05` adds actual private page/PDF/QR/copy outputs and real-PostgreSQL qualification, including a fix for concurrent preparation retries. Follow [Batch B](../../../library/requirements/in-work/prd-010-campaign-recovery/batch-b-campaign-package.md) and its [deployment notes](../../../library/requirements/in-work/prd-010-campaign-recovery/deployment.md). The new package migration is required before hosted generation; only isolated local application is verified. Draft generation is not public approval, publication, live routing, or provider activation. The earlier entry below is the Batch A starting point, not current merge status.
+
 ### October 5, 2026: campaign recovery (PRD-010, in work)
 
 The recovery branch `chief/campaign-recovery-2026-10-05` starts from `origin/main` at `adeed9e0`, which includes merged PR #75. [PRD-010](../../../library/requirements/in-work/prd-010-campaign-recovery/prd-010-campaign-recovery-index.md) is the current brief: restore a complete property-and-partner campaign, retaining the curated-ad path and the lighter six-section interface. This is a new owner direction, not a claim that Claude ignored October 1 OD-H. Batch A is property preparation and truthful campaign status, not generated collateral or a live campaign. Do not reopen G1/G4/G8, erase the historical entries below, or imply deployment from branch work.

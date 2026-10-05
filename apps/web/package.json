@@ -16,6 +16,7 @@
     "@oalo/contracts": "workspace:*",
     "@oalo/db": "workspace:*",
     "@oalo/ghl": "workspace:*",
+    "@oalo/rendering": "workspace:*",
     "@oalo/storage": "workspace:*",
     "@oalo/ui": "workspace:*",
     "next": "16.3.6",

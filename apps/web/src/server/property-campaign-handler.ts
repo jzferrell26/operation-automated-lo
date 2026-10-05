@@ -1,4 +1,4 @@
-import { assertMayExecuteCampaignMutation } from "@oalo/application";
+import { assertMayExecuteCampaignMutation, CampaignVersionConflictError } from "@oalo/application";
 import { ZodError } from "zod";
 
 import {
@@ -11,6 +11,7 @@ import { correlationReferenceForRequest, withCorrelationHeaders } from "./correl
 import { HomeownerError, readBoundedJson } from "./homeowners/errors.js";
 import { PropertyCampaignSaveError, savePropertyCampaign } from "./property-campaign-save.js";
 import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
+import { LocalCampaignVersionConflictError } from "./local-campaign-store.js";
 
 export const PROPERTY_CAMPAIGN_MAX_BYTES = 16_000;
 
@@ -42,13 +43,19 @@ export async function handlePropertyCampaignSave(
       versionRepository: adapter.versionRepository,
       readRepository: adapter.readRepository,
     });
-    await adapter.persistDraft(saved.version, saved.preflight);
+    const persisted = await adapter.persistDraft(saved.version, saved.preflight);
     return json({
-      campaignRef: saved.version.campaignRef,
-      versionNo: saved.version.versionNo,
+      campaignRef: persisted.version.campaignRef,
+      versionNo: persisted.version.versionNo,
       providerPublicationAuthorized: false,
     });
   } catch (error) {
+    if (
+      error instanceof LocalCampaignVersionConflictError ||
+      error instanceof CampaignVersionConflictError
+    ) {
+      return json({ error: "PROPERTY_CAMPAIGN_SAVE_CONFLICT" }, 409);
+    }
     if (error instanceof PropertyCampaignSaveError)
       return json({ error: error.code }, error.status);
     if (error instanceof ZodError) return json({ error: "INVALID_CAMPAIGN_DRAFT" }, 400);

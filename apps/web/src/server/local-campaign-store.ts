@@ -18,6 +18,8 @@ import {
   CampaignStateSchema,
   CampaignVersionSchema,
   PreflightResultSchema,
+  PropertyCampaignPackageSchema,
+  type PropertyCampaignPackage,
   type ApprovalDecision,
   type CampaignEvent,
   type CampaignState,
@@ -44,6 +46,7 @@ const LocalCampaignStoreSchema = z
   .object({
     schemaVersion: z.literal(1),
     campaigns: z.record(z.string(), LocalCampaignRecordSchema),
+    packages: z.record(z.string(), PropertyCampaignPackageSchema).optional(),
   })
   .strict();
 
@@ -86,6 +89,13 @@ function resolveStorePath(environment: unknown): string {
 
 let writeChain: Promise<void> = Promise.resolve();
 
+export class LocalCampaignVersionConflictError extends Error {
+  constructor() {
+    super("The campaign version was already saved with different content.");
+    this.name = "LocalCampaignVersionConflictError";
+  }
+}
+
 async function readStore(storePath: string) {
   try {
     const raw = await readFile(storePath, "utf8");
@@ -93,7 +103,7 @@ async function readStore(storePath: string) {
   } catch (error) {
     const nodeError = error as NodeJS.ErrnoException;
     if (nodeError.code === "ENOENT") {
-      return { schemaVersion: 1 as const, campaigns: {} };
+      return LocalCampaignStoreSchema.parse({ schemaVersion: 1, campaigns: {} });
     }
     throw error;
   }
@@ -139,6 +149,12 @@ export async function persistLocalCampaign(
       existing !== undefined &&
       existing.version.campaignVersionRef === version.campaignVersionRef
     ) {
+      if (
+        existing.version.manifestHash !== version.manifestHash ||
+        existing.version.locationRef !== version.locationRef
+      ) {
+        throw new LocalCampaignVersionConflictError();
+      }
       persisted = freezeLocalCampaign(existing);
       return;
     }
@@ -313,6 +329,59 @@ export function createFilesystemCampaignReadRepository(
       );
     },
   };
+}
+
+/** PKG-005: the same atomic local-store write queue owns whole draft packages. */
+export async function readLocalPropertyPackage(
+  locationRef: string,
+  campaignVersionRef: string,
+  environment: unknown,
+): Promise<PropertyCampaignPackage | undefined> {
+  if (authenticatedWorkspaceMode(environment) !== "synthetic")
+    throw new CampaignResourceNotAccessibleError();
+  const store = await readStore(resolveStorePath(environment));
+  const found = store.packages?.[campaignVersionRef];
+  return found?.locationRef === locationRef ? found : undefined;
+}
+
+export async function persistLocalPropertyPackage(
+  raw: PropertyCampaignPackage,
+  environment: unknown,
+): Promise<PropertyCampaignPackage> {
+  if (authenticatedWorkspaceMode(environment) !== "synthetic")
+    throw new CampaignResourceNotAccessibleError();
+  const bundle = PropertyCampaignPackageSchema.parse(raw);
+  let saved: PropertyCampaignPackage | undefined;
+  await queueWrite(async () => {
+    const path = resolveStorePath(environment);
+    const store = await readStore(path);
+    const version = store.campaigns[bundle.campaignRef]?.version;
+    if (
+      version === undefined ||
+      version.locationRef !== bundle.locationRef ||
+      version.campaignVersionRef !== bundle.campaignVersionRef ||
+      version.manifestHash !== bundle.sourceManifestHash
+    ) {
+      throw new CampaignResourceNotAccessibleError();
+    }
+    const existing = store.packages?.[bundle.campaignVersionRef];
+    if (existing !== undefined) {
+      if (
+        existing.locationRef !== bundle.locationRef ||
+        existing.sourceManifestHash !== bundle.sourceManifestHash
+      ) {
+        throw new LocalCampaignVersionConflictError();
+      }
+      saved = existing;
+      return;
+    }
+    store.packages ??= {};
+    store.packages[bundle.campaignVersionRef] = bundle;
+    await writeStore(path, store);
+    saved = bundle;
+  });
+  if (saved === undefined) throw new Error("Property package commit did not return a record");
+  return saved;
 }
 
 export function createLocalCampaignApprovalRepository(

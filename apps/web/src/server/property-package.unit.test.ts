@@ -36,7 +36,11 @@ describe("real private package generation and readback", () => {
   it("renders four complete outputs from the saved source, including a real PDF and QR", async () => {
     await temporary.enter();
     const environment = temporary.env();
-    const { request, version, principal } = await savedPropertyFixture(environment);
+    // Reproduce the CI false positive: a valid opaque hash can contain the street-number digits.
+    const { request, version, principal } = await savedPropertyFixture(environment, {
+      requestId: "00000000-0000-4000-8000-000000000018",
+    });
+    expect(request.campaignRef).toContain("615");
     const network = vi.spyOn(globalThis, "fetch");
     const response = await handlePropertyPackageGeneration(
       packagePostRequest(request),
@@ -66,7 +70,16 @@ describe("real private package generation and readback", () => {
     expect(result.qrDestination).toBe(
       `http://127.0.0.1:3100/api/campaigns/property/package/${request.campaignRef}/${request.campaignVersionRef}/page`,
     );
-    expect(result.qrDestination).not.toMatch(/615|Jordan|token|secret/iu);
+    // Privacy is the URL's structure, not the absence of a short substring inside random hex.
+    // There is no free-text path segment, bearer credential, query parameter, or fragment.
+    const destination = new URL(result.qrDestination);
+    expect(destination.pathname).toMatch(
+      /^\/api\/campaigns\/property\/package\/campaign_[a-f0-9]{32}\/campaignversion_[a-f0-9]{32}\/page$/u,
+    );
+    expect(destination.username).toBe("");
+    expect(destination.password).toBe("");
+    expect(destination.search).toBe("");
+    expect(destination.hash).toBe("");
     const pdf = Buffer.from(result.outputs.flyer.base64, "base64");
     expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
     expect((await PDFDocument.load(pdf)).getPageCount()).toBe(result.outputs.flyer.pageCount);

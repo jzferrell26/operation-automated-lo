@@ -57,6 +57,13 @@ export class NodeQrEncoderAdapter implements ProductionQrEncoderPort {
   encodeSvg(
     input: Readonly<{ payload: string; errorCorrection: "M"; quietZoneModules: 4 }>,
   ): string {
+    return this.encodeSymbol(input).svg;
+  }
+
+  /** The same modules serve the SVG preview and a vector PDF, without rasterizing or re-encoding. */
+  encodeSymbol(
+    input: Readonly<{ payload: string; errorCorrection: "M"; quietZoneModules: 4 }>,
+  ): Readonly<{ svg: string; path: string; viewBoxSize: number }> {
     const encoded = QRCode.create(input.payload, { errorCorrectionLevel: input.errorCorrection });
     const size = encoded.modules.size;
     const viewBoxSize = size + input.quietZoneModules * 2;
@@ -70,7 +77,9 @@ export class NodeQrEncoderAdapter implements ProductionQrEncoderPort {
         }
       }
     }
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${String(viewBoxSize)} ${String(viewBoxSize)}" shape-rendering="crispEdges" role="img" aria-label="QR code"><rect width="100%" height="100%" fill="#fff"/><path fill="#000" d="${darkModules.join("")}"/></svg>`;
+    const path = darkModules.join("");
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${String(viewBoxSize)} ${String(viewBoxSize)}" shape-rendering="crispEdges" role="img" aria-label="QR code"><rect width="100%" height="100%" fill="#fff"/><path fill="#000" d="${path}"/></svg>`;
+    return Object.freeze({ svg, path, viewBoxSize });
   }
 }
 

@@ -2,6 +2,8 @@
 
 ## Current direction: campaign recovery, October 5, 2026
 
+PR #76 is merged at `0b47805e`. The next recovery slice, [Batch B](library/requirements/in-work/prd-010-campaign-recovery/batch-b-campaign-package.md), generates private property-page previews, PDF flyers, QR codes, and campaign copy from the same saved campaign version. These are internal-review drafts, not approved or public campaigns. **Hosted package generation requires the additive `20261005160000_property_campaign_packages.sql` migration before deployment.** See the [deployment notes](library/requirements/in-work/prd-010-campaign-recovery/deployment.md). The migration has only been exercised on an isolated local test database in this work.
+
 Jonathan has delegated recovery to Chief. The product goal is a complete property-and-partner campaign connected to HighLevel, not only an ad catalog. [PRD-010](library/requirements/in-work/prd-010-campaign-recovery/prd-010-campaign-recovery-index.md) is the current recovery brief and records the delivery sequence, preserved decisions, and evidence required. PR #75 is merged at `adeed9e0`; its library workflow and light interface are retained. The sections below describe the existing release and its provider restrictions, not proof that the recovery is complete.
 
 The first recovery batch restores property-campaign preparation without inventing generated assets, working lead routing, or launch readiness. Co-branded collateral and lender-only paid ads remain separate. No live provider, spend, billing, or customer messaging is authorized by this recovery.

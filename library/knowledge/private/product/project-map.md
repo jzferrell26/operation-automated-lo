@@ -1,8 +1,10 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.20 | Date: October 5, 2026 | Status: Active
+> Category: Product Operations | Version: 1.21 | Date: October 5, 2026 | Status: Active
 
 ## Current recovery direction
+
+PR #76 merged as `0b47805e`. [Batch B](../../../requirements/in-work/prd-010-campaign-recovery/batch-b-campaign-package.md) implements private property-page, PDF flyer, preview QR and social/email/SMS copy outputs from the saved campaign. The continuation branch is `chief/campaign-package-2026-10-05`. Its additive package migration has been tested only on a dedicated local PostgreSQL database; [deployment notes](../../../requirements/in-work/prd-010-campaign-recovery/deployment.md) govern hosted release. Exact-output approval, public lead capture, HighLevel follow-up and live campaign results remain later work. Do not reinterpret a complete private draft package as a complete live campaign.
 
 [PRD-010 campaign recovery](../../../requirements/in-work/prd-010-campaign-recovery/prd-010-campaign-recovery-index.md) is in work under Chief following Jonathan's October 5 delegation. The recovery starts at `adeed9e0`, merged PR #75. Restore one property-and-partner campaign with connected materials, separate paid promotion, approvals, and verified HighLevel outcomes. Retain the library-ad flow, current light interface, no-CRM boundary, and existing provider restrictions. Batch A restores preparation only; generated outputs and provider execution remain subsequent work. The implementation entries below are historical snapshots unless updated with new verification evidence.
 

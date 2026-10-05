@@ -1,10 +1,16 @@
+"use client";
+
 import { Badge, Link, Surface } from "@oalo/ui";
+import { useState } from "react";
+import type { PropertyPackagePanelState } from "./package-model.js";
 
 import { PROPERTY_CAMPAIGN_COPY as COPY } from "../../copy/property-campaign-messages.js";
 import type { PropertyPreparationCampaignPage } from "../campaigns/campaign-page-model.js";
 import { CampaignVersionsCard } from "../campaigns/components/campaign-versions-card.js";
 import layout from "../campaigns/components/launch.module.css";
 import styles from "./property-campaign.module.css";
+import { PropertyPackagePanel } from "./property-package-panel.js";
+import { PROPERTY_PACKAGE_COPY } from "../../copy/property-package-messages.js";
 
 function readableInstant(value: string): string {
   return (
@@ -16,10 +22,13 @@ function readableInstant(value: string): string {
   );
 }
 
-/** Only frozen preparation data reaches this view. It offers no approval, download, or launch action. */
+/** Exact saved preparation and private package evidence. No approval or public launch action. */
 export function PropertyCampaignScreen({
   page,
 }: Readonly<{ page: PropertyPreparationCampaignPage }>) {
+  const [packageState, setPackageState] = useState<PropertyPackagePanelState>(
+    page.packageState ?? { kind: "unavailable" },
+  );
   return (
     <div className={`${layout.page} ${styles.page}`} data-campaign-page="property-preparation">
       <header className={layout.header}>
@@ -35,6 +44,15 @@ export function PropertyCampaignScreen({
           </p>
         </div>
       </header>
+      <PropertyPackagePanel
+        key={page.campaignVersionRef}
+        campaignRef={page.campaignRef}
+        campaignVersionRef={page.campaignVersionRef}
+        sourceManifestHash={page.sourceManifestHash}
+        canGenerate={page.canGeneratePackage}
+        state={packageState}
+        onGenerated={(summary) => setPackageState({ kind: "ready", summary })}
+      />
       <Surface padding="lg">
         <div className={layout.form}>
           <h2 className={layout.cardTitle}>{COPY.propertyTitle}</h2>
@@ -95,13 +113,24 @@ export function PropertyCampaignScreen({
             <p>{COPY.materialsIntro}</p>
           </div>
           <ol className={styles.package}>
-            {COPY.stages.map((stage) => (
-              <li key={stage.title}>
+            {COPY.stages.map((stage, index) => (
+              <li
+                key={stage.title}
+                data-property-package-stage={index === 1 ? "materials" : undefined}
+              >
                 <div>
                   <strong>{stage.title}</strong>
-                  <Badge tone="neutral">{stage.status}</Badge>
+                  <Badge tone="neutral">
+                    {index === 1 && packageState.kind === "ready"
+                      ? PROPERTY_PACKAGE_COPY.materialsStage
+                      : stage.status}
+                  </Badge>
                 </div>
-                <p className={layout.note}>{stage.detail}</p>
+                <p className={layout.note}>
+                  {index === 1 && packageState.kind === "ready"
+                    ? PROPERTY_PACKAGE_COPY.materialsDetail
+                    : stage.detail}
+                </p>
               </li>
             ))}
           </ol>

@@ -4,7 +4,9 @@ Status: In work. Owner: Jonathan Ferrell. Implementation lead: Chief.
 Decision date: October 5, 2026. Base: `adeed9e0`, PR #75, fetched from `origin/main`.
 Branch: `chief/campaign-recovery-2026-10-05`.
 
-Batch A implementation is complete locally and `pnpm verify:offline` passed on October 5. The work remains in review, not merged or deployed. [QA evidence and release holds](qa/2026-10-05-qa-report.md) distinguish that local result from the outstanding real-database and release qualification. Later recovery batches remain unimplemented.
+Batch A passed `pnpm verify:offline` and Jonathan merged PR #76 on October 5 at 15:04:43 UTC, main commit `0b47805e`. Merge is verified; hosted deployment is not implied. [Batch B](batch-b-campaign-package.md) now connects private page, flyer, QR and copy outputs to the saved campaign. The earlier [QA record](qa/2026-10-05-qa-report.md) remains a historical snapshot of Batch A's verification and release holds.
+
+Batch B's implementation and configured offline gate are complete, with additional real-PostgreSQL and rendered-file evidence in the [package QA report](qa/2026-10-05-package-qa-report.md). The continuation branch is `chief/campaign-package-2026-10-05`. [Deployment notes](deployment.md) require the new additive migration before hosted generation. Batches C through F remain subsequent product work; a private draft package is not a public campaign.
 
 ## Outcome
 
@@ -30,8 +32,8 @@ Work directly and sequentially in the isolated recovery worktree. Do not spawn a
 
 | Batch | Deliverable | Proof required |
 | --- | --- | --- |
-| A, current | Authenticated property-campaign preparation, saved branding and partner selection, immutable draft persistence, and a revisitable campaign record with honest missing-output states | Successful save and reload through the actual handlers; validation, permissions, replay protection, and UI tests; no invented routing or rendered assets |
-| B | Connect the existing page, PDF, QR, and copy generation components to that same campaign record | One representative property produces inspectable outputs from the same frozen inputs; failures are recoverable and never labelled complete |
+| A, merged | Authenticated property-campaign preparation, saved branding and partner selection, immutable draft persistence, and a revisitable campaign record with honest missing-output states | Successful save and reload through the actual handlers; validation, permissions, replay protection, and UI tests; no invented routing or rendered assets |
+| B, current | Connect the existing page, PDF, QR, and copy generation components to that same campaign record | One representative property produces inspectable outputs from the same frozen inputs; failures are recoverable and never labelled complete |
 | C | Exact-output review and separate collateral/paid-ad approvals | A material change invalidates the relevant approval; no generated reference is mistaken for an approved artifact |
 | D | Verified HighLevel installation, lead handoff, and campaign attribution | Authorized test lead, tenant-correct contact/opportunity/workflow evidence, no duplicate writes, and actual campaign-linked outcome reads |
 | E | Explicit Meta draft, read-back, publish, and results | Authorized provider contract tests, current lender/provider review, separate launch confirmation, bounded spend, and recorded results |

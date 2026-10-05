@@ -13,6 +13,7 @@ import type {
 import type { NewerVersionOffer } from "../ads-library/newer-version.js";
 import type { CampaignApprovalControlsProps } from "./components/campaign-approval-controls.js";
 import type { LaunchBand } from "./launch-model.js";
+import type { PropertyPackagePanelState } from "../property-campaigns/package-model.js";
 
 /**
  * PRD-009e. What the two Campaigns pages are handed: plain data, already read under the session's
@@ -140,6 +141,9 @@ export interface EarlierFlowCampaignPage extends CampaignPageCommon {
 /** PRD-010 preparation restores property context without exposing CRM records or implying launch. */
 export interface PropertyPreparationCampaignPage extends CampaignPageCommon {
   readonly kind: "property-preparation";
+  readonly sourceManifestHash: string;
+  readonly canGeneratePackage: boolean;
+  readonly packageState?: PropertyPackagePanelState;
   readonly address: string;
   readonly description: string;
   readonly startsAt: string;

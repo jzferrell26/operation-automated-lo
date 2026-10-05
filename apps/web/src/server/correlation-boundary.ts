@@ -22,6 +22,7 @@ export type CorrelationRouteName =
   | "approve"
   | "preflight"
   | "propertyDraft"
+  | "propertyPackage"
   | "session"
   | "signOut"
   | "signIn"

@@ -29,6 +29,34 @@ export type UserMessage = Readonly<{
  * pair.
  */
 export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Object.freeze({
+  PROPERTY_PACKAGE_INVALID_SOURCE: {
+    what: "These campaign details cannot be used for new materials.",
+    whatToDo: "Open the saved property campaign and try again.",
+  },
+  PROPERTY_PACKAGE_STALE: {
+    what: "The saved campaign has changed.",
+    whatToDo: "Reload the campaign before preparing materials for the latest version.",
+  },
+  PROPERTY_PACKAGE_NOT_FOUND: {
+    what: "These draft materials are not available.",
+    whatToDo: "Open the saved campaign to check its materials.",
+  },
+  PROPERTY_PACKAGE_UNAVAILABLE: {
+    what: "Your campaign materials could not be confirmed.",
+    whatToDo: "Your campaign is unchanged. Try again or contact support.",
+  },
+  PROPERTY_PACKAGE_BUSY: {
+    what: "Other campaign materials are being prepared.",
+    whatToDo: "Wait a moment, then try again.",
+  },
+  PROPERTY_PACKAGE_FONT_UNSUPPORTED: {
+    what: "Some text uses characters the flyer font cannot display.",
+    whatToDo: "No partial package was saved. Keep your original details and contact support.",
+  },
+  PROPERTY_PACKAGE_INTEGRITY_FAILED: {
+    what: "The saved materials could not be verified.",
+    whatToDo: "Do not share them. Contact support so we can check the saved package.",
+  },
   PROPERTY_CAMPAIGN_SAVE_FAILED: {
     what: "Your campaign save could not be confirmed.",
     whatToDo: "Keep your details and retry, or check your campaigns before starting another draft.",

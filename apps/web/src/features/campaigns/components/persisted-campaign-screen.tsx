@@ -48,7 +48,8 @@ import styles from "./campaign-page.module.css";
  * and links to none of them (009E-AC-008): the data it is handed has no place to carry one.
  */
 export function PersistedCampaignScreen({ page }: Readonly<{ page: CampaignPageData }>) {
-  if (page.kind === "property-preparation") return <PropertyCampaignScreen page={page} />;
+  if (page.kind === "property-preparation")
+    return <PropertyCampaignScreen key={page.campaignVersionRef} page={page} />;
   return page.kind === "library-ad" ? (
     <LibraryAdScreen page={page} />
   ) : (

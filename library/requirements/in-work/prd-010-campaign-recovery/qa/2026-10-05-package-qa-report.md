@@ -88,3 +88,16 @@ Final logs are retained in ignored `tmp/package-closeout-verify.log`, `tmp/packa
 ## Release disposition
 
 The finished Batch B code is intended for a review PR, with [deployment notes](../deployment.md) explicitly requiring the new migration before hosted generation. Keep public/provider activation off. The next product milestone is approval bound to the actual output package, not another ad-library redesign or a claim that the private QR is ready for customer lead capture.
+
+## PR #78 check repair
+
+GitHub run `37347399492` failed in both Application verification and Real PostgreSQL migrations and pgTAP. These failures were not covered by the earlier Windows offline result and selected database tests. The Linux image comparisons and the full pgTAP scaffold assertion exposed two separate harness defects:
+
+1. `supabase/tests/phase0_scaffold.pgtap.sql` still expected 25 tenant tables after Batch B introduced the 26th. The exact expected count is now 26, and a new assertion requires that the added table is `campaign.property_campaign_packages`. All ownership, forced-RLS, privilege, and index assertions remain. The test plan increases from 20 to 21, rather than dropping a check or using an open-ended minimum.
+2. The date mask hid schedule glyphs, but a rolling weekday still changed their width. The CI artifact showed 1,586 changed pixels around the 390px header: `Mon, Oct 19, 2026` pushed the unmasked word `in` onto the next line compared with the baseline's `Fri, Oct 16, 2026`. The shared screenshot helper now temporarily uses that canonical display label only for the already-masked library-campaign header dates. It restores the actual text after the capture, including failure paths. Source data, datetime attributes, application clocks, and surrounding words are untouched. Accessibility, target-size, typography and overflow checks continue to run on the actual date before screenshot normalization.
+
+The fix adds three real-browser regression cases: changed weekdays/months/years yield the same captured fixture, a real typography change still changes the image, and success/failure restore the original label. Unexpected nested header markup is refused rather than erased. The existing Linux baselines, 0.001 pixel-ratio threshold, retries, timeouts, and production application code are unchanged.
+
+Direct sequential security review of this test-only delta found no new production access path, credential, schema mutation, dependency change, or relaxed permission boundary. Quality review then verified the two original failure logs against the repair and added regression checks. Local evidence: all 21 scaffold pgTAP assertions pass after all 14 migrations on a newly created, network-isolated PostgreSQL container; all five focused browser cases pass; type checking, lint (zero warnings/errors), and the three shared-date-mask source guards pass. These local browser results are not represented as Linux baseline proof. The replacement GitHub run remains the final confirmation for the full application and database jobs.
+
+Ephemeral evidence: `tmp/pr78-failed-checks.log`, `tmp/pr78-ci-artifacts/`, `tmp/pr78-fix-browser.log`, `tmp/pr78-fix-types.log`, `tmp/pr78-fix-unit.log`, and `tmp/pr78-pgtap-proof.log`. No hosted database or shared local stack was modified.

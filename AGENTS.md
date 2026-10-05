@@ -6,6 +6,8 @@
 
 **Current product direction, October 5, 2026:** read [PRD-010 campaign recovery](library/requirements/in-work/prd-010-campaign-recovery/prd-010-campaign-recovery-index.md) before extending PRD-009. Jonathan delegated implementation to Chief to restore the complete property-and-partner campaign outcome. Preserve the curated ad capability, existing light interface, HighLevel-as-CRM boundary, lender-only paid ads, and unresolved live-provider gates. Work directly and sequentially; do not spawn agents for this recovery or present self-review as independent review.
 
+**Primary experience:** [Five finished funnels, not a funnel builder](library/requirements/in-work/prd-010-campaign-recovery/turnkey-five-funnel-product.md). Build the user's ready-made marketing, not a prompt library or an editor they must learn. Reuse saved branding, guide domain setup and deliver complete visitor/lead journeys. The payment report, flyer and co-branded site are the flagship immediate build. The named five-funnel roster and conversion proof remain open; do not invent them or mark the documented product as implemented.
+
 If you are Codex (or any agent that does not auto-load skills by description), follow this routing procedure before doing domain work. Cursor and Claude Code do this automatically through their skill systems; Codex does it by reading files.
 
 ### Canonical Neeson skill overlay

@@ -1,5 +1,7 @@
 # Product Definition
 
+> Primary product contract, October 5, 2026: [Five finished funnels, not a funnel builder](../../../requirements/in-work/prd-010-campaign-recovery/turnkey-five-funnel-product.md). Customers receive complete platform-maintained marketing journeys in their saved branding, with guided domain connection and verified lead paths. No creative skill, prompt-writing, separate site builder or developer hire should be required. The [payment report/flyer/co-branded site](../../../requirements/in-work/prd-010-campaign-recovery/payment-flyers-and-co-branded-sites.md) is the flagship immediate build. This is the owner's product requirement and sales thesis, not implementation or conversion evidence; the exact five-funnel roster is not yet locked. Historical definitions below remain contextual, not competing authority.
+
 > Current direction, October 5, 2026: [PRD-010 campaign recovery](../../../requirements/in-work/prd-010-campaign-recovery/prd-010-campaign-recovery-index.md) restores the property-and-partner campaign outcome while retaining the curated ad capability, light interface, and no-CRM boundary. The October 1 supersession notes below remain as history. Recovery is incremental, not a wholesale rollback or authorization for live providers.
 
 **Related:**

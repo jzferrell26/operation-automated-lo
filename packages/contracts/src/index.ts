@@ -96,6 +96,7 @@ export {
   LibraryAdCampaignManifestSchema,
   OpenHouseApprovalSnapshotSchema,
   OpenHouseCampaignManifestSchema,
+  PropertyCampaignPreparationSchema,
   CollateralProjectionInputSchema,
   CollateralProjectionSchema,
   GenerationRecordSchema,

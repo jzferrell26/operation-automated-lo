@@ -19,9 +19,9 @@ import type { LaunchBand } from "./launch-model.js";
  * workspace and already decided about (which standing, which notices, which actions), so the
  * components that draw it make no decision of their own and are easy to test with a literal.
  *
- * No type here carries an address, an open house time, a Realtor, a contact, a lead, or a pipeline
- * (009E-AC-008): the projection these are built from has none of them, and the earlier open house
- * flow's property fields are never read at all (D4).
+ * PRD-010 adds an explicit property-preparation variant with saved property and partner context.
+ * Library-ad and legacy projections remain unchanged. No variant carries a contact list, lead
+ * table, or pipeline; HighLevel remains the CRM (009E-AC-008, as amended by REC-005/007).
  */
 
 /** The three figures the results card shows, in the shape of a campaign's reporting record (D1). */
@@ -137,7 +137,25 @@ export interface EarlierFlowCampaignPage extends CampaignPageCommon {
   readonly disclosureText: string;
 }
 
-export type CampaignPageData = LibraryAdCampaignPage | EarlierFlowCampaignPage;
+/** PRD-010 preparation restores property context without exposing CRM records or implying launch. */
+export interface PropertyPreparationCampaignPage extends CampaignPageCommon {
+  readonly kind: "property-preparation";
+  readonly address: string;
+  readonly description: string;
+  readonly startsAt: string;
+  readonly endsAt: string;
+  readonly partnerName: string;
+  readonly partnerCompany: string;
+  readonly brandName: string;
+  readonly brandCompany: string;
+  readonly nmls: string;
+  readonly companyNmls: string;
+  readonly propertyPermissionConfirmed: boolean;
+  readonly realtorPermissionConfirmed: boolean;
+}
+
+export type CampaignPageData =
+  LibraryAdCampaignPage | EarlierFlowCampaignPage | PropertyPreparationCampaignPage;
 
 /** One row of the Campaigns list (009E-AC-009, 009E-AC-012). */
 export interface CampaignListRow {

@@ -1,6 +1,10 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.19 | Date: October 4, 2026 | Status: Active
+> Category: Product Operations | Version: 1.20 | Date: October 5, 2026 | Status: Active
+
+## Current recovery direction
+
+[PRD-010 campaign recovery](../../../requirements/in-work/prd-010-campaign-recovery/prd-010-campaign-recovery-index.md) is in work under Chief following Jonathan's October 5 delegation. The recovery starts at `adeed9e0`, merged PR #75. Restore one property-and-partner campaign with connected materials, separate paid promotion, approvals, and verified HighLevel outcomes. Retain the library-ad flow, current light interface, no-CRM boundary, and existing provider restrictions. Batch A restores preparation only; generated outputs and provider execution remain subsequent work. The implementation entries below are historical snapshots unless updated with new verification evidence.
 
 The canonical internal map of the product boundary, system flow, implementation status, external gates, and next work for Operation Automated LO.
 

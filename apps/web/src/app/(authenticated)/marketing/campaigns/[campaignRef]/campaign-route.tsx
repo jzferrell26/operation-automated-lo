@@ -34,7 +34,14 @@ export async function campaignRouteMetadata(
     const loaded = (await readCampaignOnce(campaignRef, versionNo)).campaign;
     if (loaded?.kind === "page") {
       const { page } = loaded;
-      return { title: page.kind === "library-ad" ? page.name : page.headline };
+      return {
+        title:
+          page.kind === "library-ad"
+            ? page.name
+            : page.kind === "property-preparation"
+              ? page.address
+              : page.headline,
+      };
     }
   } catch {
     // The page's own read, which is the same cached read, throws the same error and answers it, so

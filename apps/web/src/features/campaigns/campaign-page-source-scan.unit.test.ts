@@ -4,9 +4,9 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * PRD-009e 009E-AC-008. A source scan of both pages' components: the Campaigns list and the campaign
- * page render no address, open house time, Realtor partner, contact list, lead table, pipeline,
- * appointment, application, or funded figure, and link nowhere near /leads.
+ * PRD-009e 009E-AC-008, narrowly superseded by PRD-010 REC-005/007 on October 5.
+ * Library-ad views still have no property fields. The explicit property preparation projection
+ * restores property and partner context. Every view still excludes CRM pages and invented outcomes.
  *
  * The scan reads code with its comments removed, so a comment saying why a figure is absent does not
  * count as the figure. Strings are read too, because a heading is code that says a word.
@@ -37,7 +37,22 @@ const PAGE_SOURCES = [
   "apps/web/src/features/campaigns/campaign-page-model.ts",
   "apps/web/src/server/campaign-page-data.ts",
   "apps/web/src/copy/campaign-page-messages.ts",
+  "apps/web/src/features/property-campaigns/property-campaign-screen.tsx",
 ] as const;
+
+/** Only the new preparation view and its shared projection/routing need property context. */
+const PROPERTY_CONTEXT_SOURCES: ReadonlySet<string> = new Set([
+  `${PAGES}/[campaignRef]/campaign-route.tsx`,
+  "apps/web/src/features/campaigns/campaign-page-model.ts",
+  "apps/web/src/server/campaign-page-data.ts",
+  "apps/web/src/features/property-campaigns/property-campaign-screen.tsx",
+]);
+
+const PROPERTY_CONTEXT_RULES: ReadonlySet<string> = new Set([
+  "a property address",
+  "an open house time",
+  "a Realtor partner",
+]);
 
 /** A property, an open house, a Realtor, a CRM list, or an outcome that belongs to HighLevel. */
 const FORBIDDEN: readonly Readonly<{ name: string; pattern: RegExp }>[] = [
@@ -72,12 +87,21 @@ async function code(path: string): Promise<string> {
   return ALLOWED_LINES.reduce((text, line) => text.replaceAll(line, ""), source);
 }
 
-describe("the two Campaigns pages' components render nothing that belongs to a CRM or a property (009E-AC-008)", () => {
+describe("campaign views exclude CRM data and keep property context isolated (009E-AC-008, REC-005/007)", () => {
   it.each(PAGE_SOURCES)("%s has none of it", async (path) => {
     const source = await code(path);
     for (const { name, pattern } of FORBIDDEN) {
+      if (PROPERTY_CONTEXT_SOURCES.has(path) && PROPERTY_CONTEXT_RULES.has(name)) continue;
       expect(pattern.exec(source)?.[0], `${path} has ${name}`).toBeUndefined();
     }
+  });
+
+  it("does not exempt a library ad component or a CRM rule from the property amendment", () => {
+    expect(PROPERTY_CONTEXT_SOURCES.has(`${COMPONENTS}/campaign-ad-card.tsx`)).toBe(false);
+    expect(PROPERTY_CONTEXT_SOURCES.has(`${COMPONENTS}/campaign-results-card.tsx`)).toBe(false);
+    expect(PROPERTY_CONTEXT_RULES.has("a contact list")).toBe(false);
+    expect(PROPERTY_CONTEXT_RULES.has("a pipeline")).toBe(false);
+    expect(PROPERTY_CONTEXT_RULES.has("a funded or closed outcome")).toBe(false);
   });
 
   it("detects each forbidden shape when it appears", () => {

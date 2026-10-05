@@ -237,10 +237,35 @@ export const CampaignInputVersionsSchema = z
   .strict();
 export type CampaignInputVersions = z.infer<typeof CampaignInputVersionsSchema>;
 
+/**
+ * PRD-010, REC-002/004/006. Frozen preparation evidence, not proof of rendered artifacts or launch.
+ * Optional only on the enclosing legacy manifest so saved pre-recovery versions remain unchanged.
+ */
+export const PropertyCampaignPreparationSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    status: z.literal("draft"),
+    requestHash: Sha256Schema,
+    brand: z
+      .object({
+        name: z.string().trim().min(1).max(120),
+        title: z.string().trim().max(60),
+        company: z.string().trim().min(1).max(160),
+        nmls: z.string().regex(/^\d{4,12}$/u),
+        companyNmls: z.string().regex(/^\d{4,12}$/u),
+        colorPresetId: z.string().regex(/^[a-z][a-z0-9-]{1,31}$/u),
+      })
+      .strict(),
+    partnerRecordId: z.uuid(),
+    partnerCompany: z.string().trim().min(2).max(160),
+  })
+  .strict();
+
 export const OpenHouseCampaignManifestSchema = z
   .object({
     schemaVersion: z.literal(1),
     blueprintId: z.literal("open-house-boost"),
+    preparation: PropertyCampaignPreparationSchema.optional(),
     property: z
       .object({
         address: z.string().trim().min(1).max(1_000),

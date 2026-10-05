@@ -21,6 +21,7 @@ export const TRACING_ID_HEADER = "x-correlation-id";
 export type CorrelationRouteName =
   | "approve"
   | "preflight"
+  | "propertyDraft"
   | "session"
   | "signOut"
   | "signIn"

@@ -9,6 +9,10 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
+### October 5, 2026: campaign recovery (PRD-010, in work)
+
+The recovery branch `chief/campaign-recovery-2026-10-05` starts from `origin/main` at `adeed9e0`, which includes merged PR #75. [PRD-010](../../../library/requirements/in-work/prd-010-campaign-recovery/prd-010-campaign-recovery-index.md) is the current brief: restore a complete property-and-partner campaign, retaining the curated-ad path and the lighter six-section interface. This is a new owner direction, not a claim that Claude ignored October 1 OD-H. Batch A is property preparation and truthful campaign status, not generated collateral or a live campaign. Do not reopen G1/G4/G8, erase the historical entries below, or imply deployment from branch work.
+
 ### October 3, 2026: PRD-009 marketing toolkit (complete in PR #75)
 
 - A Gauntlet run turned the product into a marketing toolkit, not a CRM, on branch `claude/prd-009-marketing-toolkit`, in **pull request #75** (120 acceptance criteria). Its folder is [PRD-009 Marketing Toolkit](../../../library/requirements/completed/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md) in `library/requirements/completed/`, moved there from `in-work/` on 2026-10-03. Per-criterion status is in the "Gauntlet raid: marketing toolkit (PRD-009)" section of [`EXECUTION_LEDGER.md`](../../../EXECUTION_LEDGER.md), which only the orchestrator writes. The owner approved merging it to `main`, which deploys it to the hosted app.

@@ -1,0 +1,78 @@
+/* PRD-010 uses the existing light campaign form and semantic tokens, not a new visual system. */
+.page {
+  max-inline-size: 64rem;
+}
+
+.fieldset {
+  display: grid;
+  gap: var(--space-6);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.permission {
+  display: grid;
+  grid-template-columns: var(--space-5) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+  min-block-size: var(--target-min-size);
+  cursor: pointer;
+}
+
+.permission > span {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.permission label {
+  min-block-size: var(--target-min-size);
+  cursor: pointer;
+}
+
+.permission input {
+  grid-column: 1;
+  grid-row: 1;
+  inline-size: var(--space-5);
+  block-size: var(--space-5);
+  margin-block-start: var(--space-1);
+  accent-color: var(--ac-primary);
+}
+
+.permission input:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+
+.package {
+  display: grid;
+  gap: var(--space-5);
+  margin: 0;
+  padding-inline-start: var(--space-5);
+}
+
+.package li > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.facts {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}

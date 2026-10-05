@@ -1,5 +1,11 @@
 # Operation Automated LO
 
+## Current direction: campaign recovery, October 5, 2026
+
+Jonathan has delegated recovery to Chief. The product goal is a complete property-and-partner campaign connected to HighLevel, not only an ad catalog. [PRD-010](library/requirements/in-work/prd-010-campaign-recovery/prd-010-campaign-recovery-index.md) is the current recovery brief and records the delivery sequence, preserved decisions, and evidence required. PR #75 is merged at `adeed9e0`; its library workflow and light interface are retained. The sections below describe the existing release and its provider restrictions, not proof that the recovery is complete.
+
+The first recovery batch restores property-campaign preparation without inventing generated assets, working lead routing, or launch readiness. Co-branded collateral and lender-only paid ads remain separate. No live provider, spend, billing, or customer messaging is authorized by this recovery.
+
 Operation Automated LO is a private HighLevel Marketplace product and research monorepo for a mortgage loan officer marketing toolkit. Phase 0 contains the platform scaffold, synthetic founding-offer demo, fixture-only task runner, isolated local Supabase contract, verification harnesses, and the research and requirements package.
 
 The product is a **marketing toolkit** for mortgage loan officers, not a CRM ([PRD-009](library/requirements/completed/prd-009-marketing-toolkit/prd-009-marketing-toolkit-index.md), complete in pull request #75). A loan officer chooses a curated ad from the Ads library, changes only its words, sets the budget, dates, and places, reviews the actual ad, and needs a named human approval of that exact version. HighLevel stays the CRM: contacts, pipelines, automations, and the attribution of leads and pipeline outcomes live there. Paid ads never carry Realtor, brokerage, or dual-brand identity.

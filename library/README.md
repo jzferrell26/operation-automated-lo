@@ -4,6 +4,8 @@ This directory is the product and engineering source of truth for Operation Auto
 
 Start with the [canonical project map](knowledge/private/product/project-map.md) for the current product boundary, system flow, module status, external gates, and prioritized next steps.
 
+Current work: [PRD-010 campaign recovery](requirements/in-work/prd-010-campaign-recovery/prd-010-campaign-recovery-index.md), delegated to Chief on October 5, 2026. The complete property-and-partner campaign is the product goal; the curated ad library remains a capability within it. No live-provider authorization follows from local recovery work.
+
 ## Structure
 
 - `knowledge/public/`: future customer-facing documentation.

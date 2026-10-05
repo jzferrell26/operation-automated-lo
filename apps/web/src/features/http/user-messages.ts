@@ -29,6 +29,26 @@ export type UserMessage = Readonly<{
  * pair.
  */
 export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Object.freeze({
+  PROPERTY_CAMPAIGN_SAVE_FAILED: {
+    what: "Your campaign save could not be confirmed.",
+    whatToDo: "Keep your details and retry, or check your campaigns before starting another draft.",
+  },
+  PROPERTY_CAMPAIGN_BRAND_REQUIRED: {
+    what: "Your saved brand is not ready for a property campaign.",
+    whatToDo: "Add your name, company, and both NMLS numbers in Brand, then try again.",
+  },
+  PROPERTY_CAMPAIGN_PARTNER_NOT_FOUND: {
+    what: "The selected Realtor is no longer in your saved partners.",
+    whatToDo: "Check Realtor partners, then select the partner again.",
+  },
+  PROPERTY_CAMPAIGN_SAVE_CONFLICT: {
+    what: "This save already belongs to different campaign details.",
+    whatToDo: "Check your campaigns before starting another draft.",
+  },
+  PROPERTY_CAMPAIGN_EVENT_IN_PAST: {
+    what: "The open house start time has already passed.",
+    whatToDo: "Choose a future start time and a later end time.",
+  },
   WORKSPACE_ACCESS_DENIED: {
     what: "This account cannot change the requested workspace settings.",
     whatToDo: "Sign in to the correct account or ask the workspace owner to review your role.",

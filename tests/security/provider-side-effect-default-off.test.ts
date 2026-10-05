@@ -533,14 +533,15 @@ describe("provider side effects stay disabled by default", () => {
     );
   }, 30_000);
 
-  it("keeps the campaign API to approve and preflight, the Meta adapter on its fixture plan, and publication unauthorized in every state (009D-AC-017)", async () => {
+  it("allows only approval and preparation APIs, keeps Meta on its fixture plan, and never authorizes publication (009D-AC-017, REC-006)", async () => {
     const campaignRoutes = (
       await readdir(resolve("apps/web/src/app/api/campaigns"), { withFileTypes: true })
     )
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort();
-    expect(campaignRoutes).toEqual(["approve", "preflight"]);
+    // PRD-010 adds property draft persistence, not a provider command or another launch endpoint.
+    expect(campaignRoutes).toEqual(["approve", "preflight", "property"]);
 
     expect(META_ADAPTER_MODE).toBe("fixture-plan");
     expect(await productionSourcesMatching(PUBLICATION_AUTHORIZED_MARKER)).toEqual([]);

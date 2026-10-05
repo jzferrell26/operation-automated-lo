@@ -257,6 +257,25 @@ export function buildCampaignPage(input: CampaignPageInput): CampaignPageData | 
 
   const shownManifest = shownRecord.version.manifest;
   if (shownManifest.blueprintId !== "library-ad") {
+    if (shownManifest.preparation !== undefined) {
+      const { brand, partnerCompany } = shownManifest.preparation;
+      return Object.freeze({
+        ...common,
+        kind: "property-preparation" as const,
+        address: shownManifest.property.address,
+        description: shownManifest.property.description,
+        startsAt: shownManifest.property.openHouseStartsAt,
+        endsAt: shownManifest.property.openHouseEndsAt,
+        partnerName: shownManifest.partner.realtorDisplayName,
+        partnerCompany,
+        brandName: brand.name,
+        brandCompany: brand.company,
+        nmls: brand.nmls,
+        companyNmls: brand.companyNmls,
+        propertyPermissionConfirmed: shownManifest.property.permissionConfirmed,
+        realtorPermissionConfirmed: shownManifest.partner.permissionConfirmed,
+      });
+    }
     return Object.freeze({
       ...common,
       kind: "earlier-flow" as const,
@@ -365,7 +384,7 @@ export function buildCampaignListRow(
       href: projection.detailHref,
       name: manifest.content.headline,
       topic: undefined,
-      earlierFlow: true,
+      earlierFlow: manifest.preparation === undefined,
       thumbnail: undefined,
       alt: "",
       sample: false,

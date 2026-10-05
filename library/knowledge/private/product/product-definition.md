@@ -1,5 +1,7 @@
 # Product Definition
 
+> Current direction, October 5, 2026: [PRD-010 campaign recovery](../../../requirements/in-work/prd-010-campaign-recovery/prd-010-campaign-recovery-index.md) restores the property-and-partner campaign outcome while retaining the curated ad capability, light interface, and no-CRM boundary. The October 1 supersession notes below remain as history. Recovery is incremental, not a wholesale rollback or authorization for live providers.
+
 **Related:**
 
 - [Canonical project map](project-map.md)

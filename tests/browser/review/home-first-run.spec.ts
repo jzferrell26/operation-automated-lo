@@ -70,7 +70,12 @@ test.describe.serial("Home for a brand-new account", () => {
    * setup" chip, or a highlighted element is the walkthrough this PRD retired.
    */
   test("the first render has no dialog, no floating panel, and no walkthrough control (009B-AC-011)", async () => {
-    await expect(page.getByRole("heading", { level: 1, name: "Launch an ad" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "One property. One partner. A stronger first impression.",
+      }),
+    ).toBeVisible();
 
     await expect(page.locator("[role='dialog']")).toHaveCount(0);
     await expect(page.locator("[data-guided-setup-highlight], [data-tour]")).toHaveCount(0);
@@ -138,10 +143,10 @@ test.describe.serial("Home for a brand-new account", () => {
    *
    * A brand-new account has an unconfirmed email, and PRD-006a (006A-AC-021) puts its notice above
    * the page's own content in every workspace screen, so its "Send it again" button is the first
-   * control inside `main`. The criterion is read as the first of Home's own controls: nothing but
-   * that notice may stand between the top bar and "Choose an ad".
+   * control inside `main`. UX-001 supersedes the ad-only ordering: after any verification notice,
+   * property creation and the campaign list lead, followed by the original ad controls.
    */
-  test("Choose an ad is the first of Home's controls, then the topic buttons (009B-AC-003)", async () => {
+  test("property creation leads Home, followed by campaigns and the topic controls (UX-001)", async () => {
     await page.goto("/overview");
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
 
@@ -158,14 +163,16 @@ test.describe.serial("Home for a brand-new account", () => {
     }
 
     expect(walked[0], "the skip link is first").toBe("Skip to content");
-    const primary = walked.indexOf("Choose an ad");
-    expect(primary, "Choose an ad is reached").toBeGreaterThan(0);
+    const primary = walked.indexOf("Create a property campaign");
+    expect(primary, "The implemented property flow is reached first (UX-001)").toBeGreaterThan(0);
     // What sits between the top bar and the primary button is the verification notice, at most.
     const topBarEnd = walked.findIndex((name) => name.startsWith("Your account: "));
     expect(topBarEnd).toBeGreaterThan(0);
     const between = walked.slice(topBarEnd + 1, primary);
     expect(between.filter((name) => !/send it again|resend/iu.test(name))).toEqual([]);
-    expect(walked.slice(primary, primary + 6)).toEqual([
+    expect(walked.slice(primary, primary + 8)).toEqual([
+      "Create a property campaign",
+      "View your campaigns",
       "Choose an ad",
       ...TOPICS.map(([label]) => label),
     ]);

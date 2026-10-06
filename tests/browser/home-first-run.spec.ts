@@ -35,12 +35,22 @@ test("Home has the same composition in the local demo, in order (009B-AC-001, 01
   await page.goto("/overview");
   await settleForScreenshot(page);
 
-  await expect(page.getByRole("heading", { level: 1, name: "Launch an ad" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "One property. One partner. A stronger first impression.",
+    }),
+  ).toBeVisible();
   const headings = await page
     .getByRole("main")
     .getByRole("heading", { level: 2 })
     .allTextContents();
-  expect(headings).toEqual(["Get set up", "Running now"]);
+  expect(headings).toEqual([
+    "Keep your marketing moving",
+    "Launch an ad",
+    "Get set up",
+    "Running now",
+  ]);
   await expect(
     page.getByText("HighLevel stays your CRM. Your contacts, pipelines and follow-up live there."),
   ).toBeVisible();
@@ -113,7 +123,7 @@ test("the checklist says what is not connected once, and the brand is not starte
   await expect(page.getByText(/Not connected$/u)).toHaveCount(0);
 });
 
-test("Choose an ad is the first of Home's controls after the top bar, then the topics (009B-AC-003)", async ({
+test("the property action leads Home, followed by campaigns and the preserved ad controls (UX-001)", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -133,11 +143,13 @@ test("Choose an ad is the first of Home's controls after the top bar, then the t
   }
 
   expect(walked[0]).toBe("Skip to content");
-  const primary = walked.indexOf("Choose an ad");
+  const primary = walked.indexOf("Create a property campaign");
   const topBarEnd = walked.findIndex((name) => name.startsWith("Your account: "));
   expect(topBarEnd).toBeGreaterThan(0);
-  expect(primary, "nothing but the top bar stands before Choose an ad").toBe(topBarEnd + 1);
-  expect(walked.slice(primary, primary + 6)).toEqual([
+  expect(primary, "the property entry is first after the top bar (UX-001)").toBe(topBarEnd + 1);
+  expect(walked.slice(primary, primary + 8)).toEqual([
+    "Create a property campaign",
+    "View your campaigns",
     "Choose an ad",
     "First-time buyers",
     "Refinance",

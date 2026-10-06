@@ -351,7 +351,12 @@ test("the first-run Home under the unverified-email notice meets the bar at 1440
   const notice = main.getByText("Confirm your email so you can reset your password later.");
   await expect(notice).toBeVisible();
   await expect(main.getByRole("button", { name: "Resend the link." })).toBeVisible();
-  await expect(main.getByRole("heading", { level: 1, name: "Launch an ad" })).toBeVisible();
+  await expect(
+    main.getByRole("heading", {
+      level: 1,
+      name: "One property. One partner. A stronger first impression.",
+    }),
+  ).toBeVisible();
   await expect(main.getByRole("region", { name: "Get set up" })).toBeVisible();
   // The gallery's three states are the other state of this page and are not on this one.
   await expect(page.getByRole("heading", { name: "We couldn't load your workspace" })).toHaveCount(
@@ -359,7 +364,12 @@ test("the first-run Home under the unverified-email notice meets the bar at 1440
   );
   const [noticeBox, homeBox] = await Promise.all([
     notice.boundingBox(),
-    main.getByRole("heading", { level: 1, name: "Launch an ad" }).boundingBox(),
+    main
+      .getByRole("heading", {
+        level: 1,
+        name: "One property. One partner. A stronger first impression.",
+      })
+      .boundingBox(),
   ]);
   expect(
     noticeBox?.y ?? Number.POSITIVE_INFINITY,

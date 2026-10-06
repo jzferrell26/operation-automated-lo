@@ -115,3 +115,19 @@ test("the type-step check skips a picture of the ad and nothing else", async ({ 
     'p "Only looks like a preview" at 13px',
   ]);
 });
+
+test("the display step belongs only to the studio h1, not other marked text or descendants", async ({
+  page,
+}) => {
+  await page.setContent(`<!doctype html><html><head><style>html, body { font-size: 16px; }</style></head><body>
+    <h1 data-studio-title style="font-size:40px">Studio heading</h1>
+    <p data-studio-title style="font-size:40px">Wrong element</p>
+    <h1 data-studio-title style="font-size:41px">Wrong size</h1>
+    <section data-studio-title><p style="font-size:40px">Wrong descendant</p></section>
+  </body></html>`);
+  expect([...(await measureTextAtTheTypeSteps(page)).offStep].sort()).toEqual([
+    'h1 "Wrong size" at 41px',
+    'p "Wrong descendant" at 40px',
+    'p "Wrong element" at 40px',
+  ]);
+});

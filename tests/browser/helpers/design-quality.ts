@@ -305,6 +305,9 @@ export async function measureTextAtTheTypeSteps(
         if (exempt(element)) return;
         const pixels = size(element);
         if (steps.some((step) => Math.abs(step - pixels) < 0.01)) return;
+        // October 6 campaign-studio amendment: only the marked h1 has a 40px display step.
+        // Not a subtree exemption: descendants, wrong tags and other sizes remain checked.
+        if (element.matches("h1[data-studio-title]") && Math.abs(pixels - 40) < 0.01) return;
         offStep.add(`${describe(element, text)} at ${String(pixels)}px`);
       };
 
@@ -914,14 +917,21 @@ export const DATE_SELECTOR = "time, input[type='date']";
  * header date. All accessibility/layout checks run first on the real date; datetime, stored
  * campaign data, clocks, and adjacent text stay untouched. Restore the original even on failure.
  *
- * Scope is deliberately narrow: the library-ad campaign header, whose saved/seeded schedules
- * originate in the rolling browser fixture. Other dates, controls, and property pages are unchanged.
+ * Scope is deliberately narrow: the library-ad header and campaign-list dates, whose schedules
+ * and save timestamps originate in the rolling browser fixture. October 6's Linux comparison
+ * found that masking the list's date text still allowed its width to shift the adjacent Topic
+ * column. Normalize only those existing date nodes during capture; other dates, controls,
+ * property pages, stored values and clocks are unchanged. Tests exercise restoration and scope.
  */
 export async function withStableCampaignScheduleDates<T>(
   page: Page,
   capture: () => Promise<T>,
 ): Promise<T> {
-  const selector = "[data-campaign-page='library-ad'] > header time";
+  const selector = [
+    "[data-campaign-page='library-ad'] > header time",
+    "[data-campaigns-page] [data-campaign-table] tbody time",
+    "[data-campaigns-page] [data-campaign-cards] time",
+  ].join(", ");
   const originalAttribute = "data-review-original-schedule-label";
   try {
     await page.locator(selector).evaluateAll((elements, attribute) => {
@@ -930,16 +940,26 @@ export async function withStableCampaignScheduleDates<T>(
           element.hasAttribute(attribute) ||
           element.childNodes.length !== 1 ||
           element.firstChild?.nodeType !== Node.TEXT_NODE ||
-          !/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [A-Z][a-z]{2} \d{1,2}, \d{4}$/u.test(
-            element.textContent ?? "",
-          )
+          !(
+            element.closest("[data-campaigns-page]") === null
+              ? /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [A-Z][a-z]{2} \d{1,2}, \d{4}$/u
+              : /^[A-Z][a-z]{2} \d{1,2}(?:, \d{4})?$/u
+          ).test(element.textContent ?? "")
         ) {
           throw new Error("Campaign schedule screenshot expects a single readable date label");
         }
       }
       for (const element of elements) {
         element.setAttribute(attribute, element.textContent ?? "");
-        if (element.firstChild !== null) element.firstChild.nodeValue = "Fri, Oct 16, 2026";
+        if (element.firstChild !== null) {
+          const isList = element.closest("[data-campaigns-page]") !== null;
+          const isTimestamp = element.getAttribute("datetime")?.includes("T") === true;
+          element.firstChild.nodeValue = isList
+            ? isTimestamp
+              ? "Oct 2"
+              : "Oct 16"
+            : "Fri, Oct 16, 2026";
+        }
       }
     }, originalAttribute);
     return await capture();

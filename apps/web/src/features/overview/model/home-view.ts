@@ -11,6 +11,8 @@ import type { HomeChecklist } from "./home-checklist.js";
  * no rule about what a state means.
  */
 export type HomeData = Readonly<{
+  /** Server-derived presentation capability; never authorizes a mutation. */
+  canCreateCampaigns?: boolean;
   checklist: HomeChecklist;
   /** The topics that have an active ad, in the library\x27s own order. Empty means an empty library. */
   topics: readonly AdsLibraryTopic[];

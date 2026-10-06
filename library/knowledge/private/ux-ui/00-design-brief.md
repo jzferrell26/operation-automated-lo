@@ -1,5 +1,15 @@
 # Operation Automated LO Design Brief
 
+## Current amendment: campaign-first polish, October 6, 2026
+
+The owner requested stronger UX/UI and a product that feels finished. [Campaign studio](04-screens/campaign-studio.md) governs this first screen-level improvement. It replaces Home's ad-only hierarchy with an output-led property-campaign entry, while retaining the working ad flow and the six-section light shell. Private property packages are implemented; financing reports and the five finished public funnels are not represented as available by this amendment.
+
+Keep the existing AutomatedLO palette, Inter, token-based surfaces and both themes. Add one named display type step (`--text-display-size`, 40px) for Home's single studio heading at desktop widths; it returns to the existing 28px page step on mobile. Other text retains the existing scale. A contained, static composition of abstract documents may use the existing raised shadow to explain a package; ordinary cards retain their existing border and shallow shadow. No floating animation, generic photo, payment number, success metric or invented customer preview is introduced.
+
+UX state and focus order must match the visible reading order. The private property flow becomes discoverable, but saving, generating, approval and publishing remain distinct. This is not owner visual sign-off on an unseen implementation; screenshots and real interaction checks remain required.
+
+Security closeout may include the minimal `source-map-js` patch required by the fresh audit; it is not a new design dependency or authorization to upgrade the framework. See the [scoped security self-review](../../../requirements/in-work/prd-010-campaign-recovery/qa/2026-10-06-studio-security-self-review.md).
+
 ## 1. Product identity
 
 Operation Automated LO is an operating layer for mortgage loan officers inside HighLevel. It connects brand management, Realtor partnerships, property marketing, campaign distribution, lead routing, automation, reporting, and future add-ons without attempting to replace HighLevel as the CRM system of record. _(Superseded on 2026-10-01 by PRD-009 (S-45; OD-A, OD-B, OD-H): Automated LO is a marketing toolkit whose core is launching ready-made Facebook ads from one curated, platform-wide ads library; HighLevel stays the system of record for contacts, pipelines, and automations. This sentence is kept as history.)_

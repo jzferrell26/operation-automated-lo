@@ -249,7 +249,10 @@ describe("Home on the review surface (009B-AC-013)", () => {
   it("is the start card, the checklist, the two lists, and the footer, and nothing a CRM shows", async () => {
     const { container } = await renderReviewOverview();
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Launch an ad");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "One property. One partner. A stronger first impression.",
+    );
+    expect(screen.getByRole("heading", { level: 2, name: "Launch an ad" })).toBeInTheDocument();
     for (const heading of ["Get set up", "Running now", "Needs your approval"]) {
       expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
     }

@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import { HOME_START } from "../../../../apps/web/src/copy/home-messages.js";
+import { CAMPAIGN_STUDIO } from "../../../../apps/web/src/copy/campaign-studio-messages.js";
 import {
   EMPTY_LIBRARY,
   EMPTY_LIBRARY_REASON,
@@ -86,7 +87,10 @@ const PAGES: readonly EmptyCatalogPage[] = Object.freeze([
     state: "real-catalog",
     path: "/overview",
     assertEmpty: async (page) => {
-      await expect(page.getByRole("heading", { level: 1, name: HOME_START.heading })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { level: 1, name: CAMPAIGN_STUDIO.title }),
+      ).toBeVisible();
+      await expect(page.getByRole("heading", { level: 2, name: HOME_START.heading })).toBeVisible();
       await expectTheEmptyLibrarySentenceOnce(page);
       await expectNoTopicsAndNoAds(page);
       // "Choose an ad" still opens step 1, which says the same sentence (009B-AC-002, 009C-AC-012).

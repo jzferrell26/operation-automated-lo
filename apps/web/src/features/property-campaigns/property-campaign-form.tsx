@@ -16,6 +16,9 @@ import {
   type PropertyCampaignRequest,
 } from "./model.js";
 import styles from "./property-campaign.module.css";
+import composer from "./property-composer.module.css";
+import { PROPERTY_SUMMARY } from "../../copy/campaign-studio-messages.js";
+import { PropertyFormSummary } from "./property-form-summary.js";
 
 type PropertyDraftFields = Omit<PropertyCampaignRequest, "requestId">;
 
@@ -107,9 +110,9 @@ export function PropertyCampaignForm({ data }: Readonly<{ data: PropertyCampaign
 
   const errorFor = (name: string) => (invalid.has(name) ? COPY.invalid : undefined);
   return (
-    <div className={`${layout.page} ${styles.page}`} data-property-preparation="">
+    <div className={`${layout.page} ${composer.page}`} data-property-preparation="">
       <header className={layout.header}>
-        <Link href="/marketing/campaigns" variant="sentence">
+        <Link className={composer.crumb} href="/marketing/campaigns" variant="sentence">
           {COPY.campaigns}
         </Link>
         <div className={layout.headText}>
@@ -118,148 +121,175 @@ export function PropertyCampaignForm({ data }: Readonly<{ data: PropertyCampaign
           <p className={layout.lead}>{COPY.intro}</p>
         </div>
       </header>
+      <ol className={composer.sequence} aria-label={PROPERTY_SUMMARY.sequenceLabel}>
+        {PROPERTY_SUMMARY.sequence.map((step, index) => (
+          <li key={step} aria-current={index === 0 ? "step" : undefined}>
+            <span className={composer.step} aria-hidden="true">
+              {index + 1}
+            </span>
+            {step}
+          </li>
+        ))}
+      </ol>
       {data.synthetic ? <p className={layout.locked}>{COPY.synthetic}</p> : null}
-      <Card padding="lg">
-        <form className={layout.form} noValidate onSubmit={(event) => void submit(event)}>
-          <p className={layout.note}>{COPY.boundary}</p>
-          {!data.canSave ? <p>{COPY.role}</p> : null}
-          {!data.brandReady ? (
-            <div>
-              <p>{COPY.brandMissing}</p>
-              <Link href="/brand">{COPY.brandAction}</Link>
-            </div>
-          ) : (
-            <p>
-              {COPY.brandLabel}: <strong>{data.brandName}</strong>
-            </p>
-          )}
-          {data.partners.length === 0 ? (
-            <div>
-              <p>{COPY.partnersMissing}</p>
-              <Link href="/partners">{COPY.partnersAction}</Link>
-            </div>
-          ) : null}
-          {problem === null ? null : (
-            <div ref={problemRef} className={layout.problem} role="alert" tabIndex={-1}>
-              {problem}
-            </div>
-          )}
-          <fieldset
-            aria-label={COPY.title}
-            className={styles.fieldset}
-            disabled={!enabled || busy || saved}
-          >
-            <section className={layout.section} aria-labelledby="property-details-title">
-              <h2 id="property-details-title">{COPY.propertyTitle}</h2>
-              <TextField
-                label={COPY.addressLabel}
-                name="address"
-                value={fields.address}
-                requirement="required"
-                maxLength={300}
-                error={errorFor("address")}
-                onChange={(event) => change("address", event.currentTarget.value)}
-              />
-              <Select
-                label={COPY.stateLabel}
-                name="stateCode"
-                value={fields.stateCode}
-                requirement="required"
-                placeholder={COPY.statePlaceholder}
-                error={errorFor("stateCode")}
-                options={Object.entries(US_STATES).map(([value, label]) => ({ value, label }))}
-                disabled={!enabled || busy || saved}
-                onValueChange={(value) => change("stateCode", value)}
-              />
-              <TextArea
-                label={COPY.descriptionLabel}
-                name="description"
-                value={fields.description}
-                requirement="required"
-                maxLength={3000}
-                rows={4}
-                error={errorFor("description")}
-                onChange={(event) => change("description", event.currentTarget.value)}
-              />
-              <Select
-                label={COPY.partnerLabel}
-                name="partnerId"
-                value={fields.partnerId}
-                requirement="required"
-                placeholder={COPY.partnerPlaceholder}
-                error={errorFor("partnerId")}
-                options={data.partners.map((partner) => ({
-                  value: partner.id,
-                  label: `${partner.name}, ${partner.company}`,
-                }))}
-                disabled={!enabled || busy || saved}
-                onValueChange={(value) => {
-                  change("partnerId", value);
-                  change("realtorPermissionConfirmed", false);
-                }}
-              />
-            </section>
-            <section className={layout.section} aria-labelledby="property-event-title">
-              <h2 id="property-event-title">{COPY.eventTitle}</h2>
-              <p className={layout.note}>{COPY.timeNote}</p>
-              <div className={layout.pair}>
-                <TextField
-                  label={COPY.startsLabel}
-                  name="startsAt"
-                  type="datetime-local"
-                  requirement="required"
-                  value={fields.startsAt}
-                  error={errorFor("startsAt")}
-                  onChange={(event) => change("startsAt", event.currentTarget.value)}
-                />
-                <TextField
-                  label={COPY.endsLabel}
-                  name="endsAt"
-                  type="datetime-local"
-                  requirement="required"
-                  value={fields.endsAt}
-                  error={errorFor("endsAt")}
-                  onChange={(event) => change("endsAt", event.currentTarget.value)}
-                />
+      <div className={composer.composer}>
+        <Card padding="lg" className={composer.formCard}>
+          <form className={layout.form} noValidate onSubmit={(event) => void submit(event)}>
+            <p className={layout.note}>{COPY.boundary}</p>
+            {!data.canSave ? <p>{COPY.role}</p> : null}
+            {!data.brandReady ? (
+              <div>
+                <p>{COPY.brandMissing}</p>
+                <Link href="/brand">{COPY.brandAction}</Link>
               </div>
-            </section>
-            <section className={layout.section} aria-labelledby="property-permission-title">
-              <h2 id="property-permission-title">{COPY.permissionTitle}</h2>
-              <FormField className={styles.permission} label={COPY.propertyPermission}>
-                {(control) => (
-                  <input
-                    {...control}
-                    type="checkbox"
-                    checked={fields.propertyPermissionConfirmed}
-                    onChange={(event) =>
-                      change("propertyPermissionConfirmed", event.currentTarget.checked)
-                    }
+            ) : (
+              <p>
+                {COPY.brandLabel}: <strong>{data.brandName}</strong>
+              </p>
+            )}
+            {data.partners.length === 0 ? (
+              <div>
+                <p>{COPY.partnersMissing}</p>
+                <Link href="/partners">{COPY.partnersAction}</Link>
+              </div>
+            ) : null}
+            {problem === null ? null : (
+              <div ref={problemRef} className={layout.problem} role="alert" tabIndex={-1}>
+                {problem}
+              </div>
+            )}
+            <fieldset
+              aria-label={COPY.title}
+              className={styles.fieldset}
+              disabled={!enabled || busy || saved}
+            >
+              <section className={layout.section} aria-labelledby="property-details-title">
+                <div className={composer.sectionHeading}>
+                  <span aria-hidden="true">01</span>
+                  <h2 id="property-details-title">{COPY.propertyTitle}</h2>
+                </div>
+                <TextField
+                  label={COPY.addressLabel}
+                  name="address"
+                  value={fields.address}
+                  requirement="required"
+                  maxLength={300}
+                  error={errorFor("address")}
+                  onChange={(event) => change("address", event.currentTarget.value)}
+                />
+                <Select
+                  label={COPY.stateLabel}
+                  name="stateCode"
+                  value={fields.stateCode}
+                  requirement="required"
+                  placeholder={COPY.statePlaceholder}
+                  error={errorFor("stateCode")}
+                  options={Object.entries(US_STATES).map(([value, label]) => ({ value, label }))}
+                  disabled={!enabled || busy || saved}
+                  onValueChange={(value) => change("stateCode", value)}
+                />
+                <TextArea
+                  label={COPY.descriptionLabel}
+                  name="description"
+                  value={fields.description}
+                  requirement="required"
+                  maxLength={3000}
+                  rows={4}
+                  error={errorFor("description")}
+                  onChange={(event) => change("description", event.currentTarget.value)}
+                />
+                <Select
+                  label={COPY.partnerLabel}
+                  name="partnerId"
+                  value={fields.partnerId}
+                  requirement="required"
+                  placeholder={COPY.partnerPlaceholder}
+                  error={errorFor("partnerId")}
+                  options={data.partners.map((partner) => ({
+                    value: partner.id,
+                    label: `${partner.name}, ${partner.company}`,
+                  }))}
+                  disabled={!enabled || busy || saved}
+                  onValueChange={(value) => {
+                    change("partnerId", value);
+                    change("realtorPermissionConfirmed", false);
+                  }}
+                />
+              </section>
+              <section className={layout.section} aria-labelledby="property-event-title">
+                <div className={composer.sectionHeading}>
+                  <span aria-hidden="true">02</span>
+                  <h2 id="property-event-title">{COPY.eventTitle}</h2>
+                </div>
+                <p className={layout.note}>{COPY.timeNote}</p>
+                <div className={layout.pair}>
+                  <TextField
+                    label={COPY.startsLabel}
+                    name="startsAt"
+                    type="datetime-local"
+                    requirement="required"
+                    value={fields.startsAt}
+                    error={errorFor("startsAt")}
+                    onChange={(event) => change("startsAt", event.currentTarget.value)}
                   />
-                )}
-              </FormField>
-              <FormField className={styles.permission} label={COPY.partnerPermission}>
-                {(control) => (
-                  <input
-                    {...control}
-                    type="checkbox"
-                    checked={fields.realtorPermissionConfirmed}
-                    onChange={(event) =>
-                      change("realtorPermissionConfirmed", event.currentTarget.checked)
-                    }
+                  <TextField
+                    label={COPY.endsLabel}
+                    name="endsAt"
+                    type="datetime-local"
+                    requirement="required"
+                    value={fields.endsAt}
+                    error={errorFor("endsAt")}
+                    onChange={(event) => change("endsAt", event.currentTarget.value)}
                   />
-                )}
-              </FormField>
-              <p className={layout.note}>{COPY.permissionNote}</p>
-            </section>
-          </fieldset>
-          <div className={layout.actions}>
-            <Link href="/marketing/campaigns">{COPY.campaigns}</Link>
-            <Button type="submit" disabled={!enabled || busy || saved}>
-              {saved ? COPY.saved : busy ? COPY.saving : COPY.save}
-            </Button>
-          </div>
-        </form>
-      </Card>
+                </div>
+              </section>
+              <section className={layout.section} aria-labelledby="property-permission-title">
+                <div className={composer.sectionHeading}>
+                  <span aria-hidden="true">03</span>
+                  <h2 id="property-permission-title">{COPY.permissionTitle}</h2>
+                </div>
+                <FormField className={styles.permission} label={COPY.propertyPermission}>
+                  {(control) => (
+                    <input
+                      {...control}
+                      type="checkbox"
+                      checked={fields.propertyPermissionConfirmed}
+                      onChange={(event) =>
+                        change("propertyPermissionConfirmed", event.currentTarget.checked)
+                      }
+                    />
+                  )}
+                </FormField>
+                <FormField className={styles.permission} label={COPY.partnerPermission}>
+                  {(control) => (
+                    <input
+                      {...control}
+                      type="checkbox"
+                      checked={fields.realtorPermissionConfirmed}
+                      onChange={(event) =>
+                        change("realtorPermissionConfirmed", event.currentTarget.checked)
+                      }
+                    />
+                  )}
+                </FormField>
+                <p className={layout.note}>{COPY.permissionNote}</p>
+              </section>
+            </fieldset>
+            <div className={`${layout.actions} ${composer.saveActions}`}>
+              <Link href="/marketing/campaigns">{COPY.campaigns}</Link>
+              <Button type="submit" disabled={!enabled || busy || saved}>
+                {saved ? COPY.saved : busy ? COPY.saving : COPY.save}
+              </Button>
+            </div>
+          </form>
+        </Card>
+        <PropertyFormSummary
+          address={fields.address}
+          description={fields.description}
+          brandName={data.brandReady ? data.brandName : ""}
+          partner={data.partners.find((partner) => partner.id === fields.partnerId)}
+        />
+      </div>
     </div>
   );
 }

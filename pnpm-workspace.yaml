@@ -34,6 +34,11 @@ overrides:
   ws: 8.21.0
   nanoid@<3.3.17: ^3.3.17
   postcss@<=8.5.22: ^8.5.23
+  # Security review 2026-10-06: GHSA-68fv-2mgg-jv7q affects the inherited Next/PostCSS chain.
+  # Pin the published patch, not an advisory suppression or a framework upgrade.
+  source-map-js@<1.2.2: 1.2.2
+  # The full audit also found GHSA-jqcg-44mw-7w3h in the inherited Trigger CLI tree.
+  proxy-addr@<2.0.8: 2.0.8
 peerDependencyRules:
   allowedVersions:
     typescript: 7.0.2

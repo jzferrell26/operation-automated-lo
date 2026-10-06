@@ -1,0 +1,235 @@
+/* Design brief current amendment and 04-screens/campaign-studio.md sections 1 and 3. */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-12);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-panel);
+  background: var(--sf-card);
+  box-shadow: var(--shadow-card);
+}
+
+.content {
+  display: grid;
+  gap: var(--space-5);
+  min-inline-size: 0;
+}
+.content :where(h1, p) {
+  margin: 0;
+}
+.eyebrow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--st-info-fg);
+  font-size: var(--text-secondary-size);
+  font-weight: var(--weight-semibold);
+}
+.title {
+  max-inline-size: 17ch;
+  color: var(--tx-strong);
+  font-size: var(--text-display-size);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-page);
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+}
+.description {
+  max-inline-size: 46ch;
+  color: var(--tx-body);
+  font-size: var(--text-body-size);
+  line-height: var(--leading-normal);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+}
+.hero .primary {
+  min-block-size: 3.25rem;
+  padding-inline: var(--space-5);
+  background: var(--ac-primary);
+  border-color: var(--ac-primary);
+  color: var(--tx-on-action);
+}
+.hero .primary:hover {
+  background: var(--ac-primary-hover);
+  border-color: var(--ac-primary-hover);
+  color: var(--tx-on-action);
+}
+.hero .primary:active {
+  background: var(--ac-primary-active);
+}
+.visual {
+  display: grid;
+  position: relative;
+  min-inline-size: 0;
+  padding: var(--space-8) var(--space-6) var(--space-5);
+  isolation: isolate;
+  background: var(--st-info-bg);
+  border-radius: var(--radius-panel);
+}
+.backSheet {
+  position: absolute;
+  inset: var(--space-8) var(--space-12) 5.5rem;
+  transform: rotate(5deg);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  background: var(--sf-card);
+  z-index: -1;
+}
+.paper {
+  margin: 0 var(--space-3);
+  background: var(--sf-card);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-raised);
+  overflow: hidden;
+}
+.paperTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-block-end: 1px solid var(--bd-hairline);
+  color: var(--tx-body);
+  font-size: var(--text-caption-size);
+}
+.paperBody {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+.documentMark {
+  display: grid;
+  place-items: center;
+  inline-size: var(--space-12);
+  block-size: var(--space-12);
+  border-radius: var(--radius-control);
+  background: var(--st-info-bg);
+  color: var(--st-info-fg);
+}
+.paperTitle {
+  color: var(--tx-strong);
+  font-size: var(--text-card-size);
+  font-weight: var(--weight-semibold);
+}
+.paperSubtitle {
+  margin: 0;
+  color: var(--tx-body);
+  font-size: var(--text-caption-size);
+}
+.lines {
+  display: grid;
+  gap: var(--space-2);
+  padding-block: var(--space-1);
+}
+.lines span {
+  height: var(--space-1);
+  background: var(--bd-hairline);
+  border-radius: var(--radius-pill);
+}
+.lines span:last-child {
+  inline-size: 65%;
+}
+.team {
+  display: grid;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--bd-hairline);
+  color: var(--tx-body);
+  font-size: var(--text-caption-size);
+}
+.team span {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.outputRail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-1);
+  position: relative;
+  padding: var(--space-3) var(--space-2);
+  margin-block-start: calc(-1 * var(--space-2));
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-control);
+  background: var(--sf-card);
+  box-shadow: var(--shadow-rest);
+}
+.outputRail span {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  color: var(--st-info-fg);
+  font-size: var(--text-caption-size);
+}
+.visualCaption {
+  margin: var(--space-4) 0 0;
+  text-align: center;
+  color: var(--tx-body);
+  font-size: var(--text-caption-size);
+}
+
+@media (max-width: 63.99rem) {
+  .hero {
+    padding: var(--space-8);
+    gap: var(--space-6);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+  }
+  .visual {
+    padding-inline: var(--space-3);
+  }
+  .paper {
+    margin-inline: var(--space-2);
+  }
+  .paperBody {
+    padding: var(--space-4);
+  }
+}
+@media (max-width: 47.99rem) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--space-5);
+    gap: var(--space-6);
+  }
+  .title {
+    font-size: var(--text-page-size);
+    max-inline-size: 22ch;
+  }
+  .visual {
+    padding: var(--space-4);
+  }
+  /* On a phone, the compact output strip explains the package without a screen of decoration. */
+  .paper,
+  .backSheet {
+    display: none;
+  }
+  .outputRail {
+    margin-block-start: 0;
+    box-shadow: none;
+  }
+  .paperBody {
+    padding: var(--space-5);
+  }
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .hero .primary {
+    justify-content: space-between;
+  }
+  .actions > a:not(.primary) {
+    align-self: start;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero * {
+    animation: none;
+    transition: none;
+  }
+}

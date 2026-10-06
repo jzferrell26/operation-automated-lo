@@ -177,6 +177,7 @@
   --font-interface: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-data: ui-monospace, SFMono-Regular, Consolas, monospace;
   --text-page-size: 1.75rem;
+  --text-display-size: 2.5rem;
   --text-section-size: 1.1875rem;
   --text-card-size: 1rem;
   --text-body-size: 1rem;

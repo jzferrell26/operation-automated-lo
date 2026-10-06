@@ -9,6 +9,10 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
+### October 6, 2026: campaign-studio UX/UI increment
+
+Branch `chief/ux-campaign-studio-2026-10-06` starts from merged PR #79 at `0d2187a5`. [The screen spec](../../../library/knowledge/private/ux-ui/04-screens/campaign-studio.md) restores a property-package entry on Home and adds a live unsaved form summary while preserving the existing palette, six-section shell, ad capability and backend rules. This is isolated from the financing implementation worktree. Follow the scoped security and QA evidence for verification; no production deployment, public financial output or completed five-funnel pack is implied by the UI. Two inherited dependency advisories have narrow version patches, not new audit exceptions.
+
 ### October 5, 2026: five finished funnels (primary product contract, not implemented)
 
 Follow [the turnkey five-funnel requirement](../../../library/requirements/in-work/prd-010-campaign-recovery/turnkey-five-funnel-product.md). The owner requires AutomatedLO to include its own five finished marketing journeys with automatic saved branding and guided domain setup, not prompts, a blank designer, Lovable instructions or paid web-development work for clients. The payment/report/co-branded-site experience remains the flagship next build. Do not invent the final five from the historical roadmap or label unmeasured templates proven winners. Preserve source rights, pricing, the working ad library and live-provider gates. The authoring branch `chief/payment-flyer-brief-2026-10-05` contains requirements only, not implemented funnel/domain functionality.

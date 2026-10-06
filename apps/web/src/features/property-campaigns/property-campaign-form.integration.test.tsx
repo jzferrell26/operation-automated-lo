@@ -1,10 +1,11 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PROPERTY_CAMPAIGN_COPY as COPY } from "../../copy/property-campaign-messages.js";
 import { type PropertyCampaignFormData, PropertyCampaignRequestSchema } from "./model.js";
 import { PropertyCampaignForm } from "./property-campaign-form.js";
+import { PROPERTY_SUMMARY } from "../../copy/campaign-studio-messages.js";
 
 const mocked = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation.js", () => ({ useRouter: () => ({ push: mocked.push }) }));
@@ -87,6 +88,31 @@ async function fill() {
 }
 
 describe("property preparation interactions", () => {
+  it("mirrors actual entered facts and the selected partner without saving while typing", async () => {
+    const fetch = stubSave();
+    render(<PropertyCampaignForm data={DATA} />);
+    const summary = screen.getByRole("complementary", { name: PROPERTY_SUMMARY.title });
+    expect(within(summary).getByText(PROPERTY_SUMMARY.notice)).toBeInTheDocument();
+    await fill();
+    expect(within(summary).getByText("123 Example Street, Dallas")).toBeInTheDocument();
+    expect(within(summary).getByText("Jordan Sample, Example Realty")).toBeInTheDocument();
+    expect(within(summary).getByText("Alex Morgan")).toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
+    const injection = '<img src=x onerror="alert(1)">';
+    fireEvent.change(screen.getByLabelText(COPY.descriptionLabel), {
+      target: { value: injection },
+    });
+    expect(within(summary).getByText(injection)).toBeInTheDocument();
+    expect(summary.querySelector("img")).toBeNull();
+    await userEvent.setup().click(screen.getByRole("combobox", { name: COPY.partnerLabel }));
+    await userEvent
+      .setup()
+      .click(screen.getByRole("option", { name: "Taylor Sample, Example Homes" }));
+    expect(within(summary).getByText("Taylor Sample, Example Homes")).toBeInTheDocument();
+    expect(within(summary).queryByText("Jordan Sample, Example Realty")).toBeNull();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("starts with no selected partner, no consent, and a clear no-publication boundary", () => {
     render(<PropertyCampaignForm data={DATA} />);
     expect(screen.getByRole("heading", { level: 1, name: COPY.title })).toBeInTheDocument();

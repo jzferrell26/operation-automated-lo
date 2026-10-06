@@ -209,7 +209,7 @@ test("1180 and 390 layouts keep Home's cards in their order", async ({ page }) =
   const setup = page.getByRole("region", { name: "Get set up" });
   const running = page.getByRole("region", { name: "Running now" });
 
-  // One primary action, "Choose an ad", leads the page; the checklist's three actions are secondary.
+  // UX-001: one property-campaign primary leads the page; the checklist actions remain secondary.
   await expect(page.locator("main [data-home-primary]")).toHaveCount(1);
   await expect(setup.getByRole("link")).toHaveCount(3);
   const verticalOrder = await Promise.all(
@@ -628,12 +628,17 @@ test("the 768 tablet frame uses the two-row top bar and single-column content", 
     // page into a single column. A picture of the ad (`data-ad-preview`, the Brand page's band
     // preview among them) is the ad as Facebook shows it, laid out in its own proportions and not
     // part of the page's columns: the same ruling the type-step check holds (`design-quality.ts`).
+    // UX-002 additionally allows the explicitly decorative studio document's four-output strip.
+    // The exemption requires its exact marker and aria-hidden state, never a whole page region.
     await expectNoHorizontalScroll(page, "768");
     const multiColumn = await page
       .locator("main :where(section, form, article, div)")
       .evaluateAll((elements) =>
         elements
           .filter((element) => element.closest("[data-ad-preview]") === null)
+          .filter(
+            (element) => element.closest("[data-studio-illustration][aria-hidden='true']") === null,
+          )
           .filter((element) => {
             const columns = getComputedStyle(element).gridTemplateColumns;
             return columns.split(" ").filter((track) => track.endsWith("px")).length > 2;

@@ -10,7 +10,9 @@ import {
 import styles from "./overview.module.css";
 
 /**
- * PRD-009b D1 and 009B-AC-002. The start card: "Launch an ad" is the page's h1, then the lead, the
+ * PRD-009b, as amended by UX-001 on October 6. "Launch an ad" is a supporting h2 below the studio.
+ * The ad flow retains its lead, topic choices, and steps. Its link is secondary to property creation.
+ * Historically this card held the page's h1, then the lead, the
  * question, one secondary button per topic that has an active ad, the one primary button, and the
  * three step labels. With no active ad the sentence of 009C-AC-012 stands in place of the question
  * and the topic buttons, and "Choose an ad" still opens step 1, which says the same.
@@ -24,19 +26,14 @@ export function HomeStartCard({ topics }: Readonly<{ topics: readonly AdsLibrary
   return (
     <section aria-labelledby="home-start-title" className={styles.start} data-home="start">
       <p className={styles.eyebrow}>{HOME_START.eyebrow}</p>
-      <h1 className={styles.startTitle} id="home-start-title">
+      <h2 className={styles.startTitle} id="home-start-title">
         {HOME_START.heading}
-      </h1>
+      </h2>
       <p className={styles.lead}>{HOME_START.lead}</p>
 
       <div className={styles.startActions}>
         <div className={styles.primaryRow}>
-          <Link
-            className={styles.primaryLink}
-            data-home-primary=""
-            href={HOME_PATHS.launch}
-            variant="action"
-          >
+          <Link className={styles.adChoice} href={HOME_PATHS.launch} variant="action">
             {HOME_START.primaryAction}
           </Link>
         </div>

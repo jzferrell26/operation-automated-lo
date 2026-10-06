@@ -194,7 +194,7 @@ describe("Home's buttons keep the shared weight 500 (scored review pass 2, R4-12
    * looks. The ruling of 2026-10-03: buttons keep 500 everywhere, Home included. A button of
    * Home's sets no weight, so it takes the primitive's.
    */
-  it.each([".itemAction", ".start .chip", ".start .primaryLink"])(
+  it.each([".itemAction", ".start .chip", ".start .adChoice"])(
     "%s sets no font weight of its own",
     (selector) => {
       expect(rule(selector)).not.toHaveProperty("font-weight");
@@ -212,7 +212,7 @@ describe("Home's buttons keep the shared weight 500 (scored review pass 2, R4-12
 
   it("sets no weight on any rule that styles a button, so none is 600 while the primitive is 500", () => {
     const buttons = blocks.filter((block) =>
-      /\.(?:itemAction|chip|primaryLink)\b/u.test(block.selector),
+      /\.(?:itemAction|chip|adChoice)\b/u.test(block.selector),
     );
 
     expect(buttons.length).toBeGreaterThan(0);
@@ -316,7 +316,7 @@ describe("the topic question is the secondary step, 20px above its chips (coordi
 describe("the title and the primary button stay on the project's type steps", () => {
   it("keeps the 28px page title and the 16px button, where the mockup draws 34px and 17px", () => {
     expect(rule(".startTitle")["font-size"]).toBe("var(--text-page-size)");
-    expect(rule(".start .primaryLink")["font-size"]).toBe("var(--text-body-size)");
+    expect(rule(".start .adChoice")["font-size"]).toBe("var(--text-body-size)");
   });
 });
 

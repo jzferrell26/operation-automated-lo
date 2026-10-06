@@ -8,6 +8,8 @@ Keep the existing AutomatedLO palette, Inter, token-based surfaces and both them
 
 UX state and focus order must match the visible reading order. The private property flow becomes discoverable, but saving, generating, approval and publishing remain distinct. This is not owner visual sign-off on an unseen implementation; screenshots and real interaction checks remain required.
 
+Security closeout may include the minimal `source-map-js` patch required by the fresh audit; it is not a new design dependency or authorization to upgrade the framework. See the [scoped security self-review](../../../requirements/in-work/prd-010-campaign-recovery/qa/2026-10-06-studio-security-self-review.md).
+
 ## 1. Product identity
 
 Operation Automated LO is an operating layer for mortgage loan officers inside HighLevel. It connects brand management, Realtor partnerships, property marketing, campaign distribution, lead routing, automation, reporting, and future add-ons without attempting to replace HighLevel as the CRM system of record. _(Superseded on 2026-10-01 by PRD-009 (S-45; OD-A, OD-B, OD-H): Automated LO is a marketing toolkit whose core is launching ready-made Facebook ads from one curated, platform-wide ads library; HighLevel stays the system of record for contacts, pipelines, and automations. This sentence is kept as history.)_

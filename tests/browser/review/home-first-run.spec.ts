@@ -143,10 +143,10 @@ test.describe.serial("Home for a brand-new account", () => {
    *
    * A brand-new account has an unconfirmed email, and PRD-006a (006A-AC-021) puts its notice above
    * the page's own content in every workspace screen, so its "Send it again" button is the first
-   * control inside `main`. The criterion is read as the first of Home's own controls: nothing but
-   * that notice may stand between the top bar and "Choose an ad".
+   * control inside `main`. UX-001 supersedes the ad-only ordering: after any verification notice,
+   * property creation and the campaign list lead, followed by the original ad controls.
    */
-  test("Choose an ad is the first of Home's controls, then the topic buttons (009B-AC-003)", async () => {
+  test("property creation leads Home, followed by campaigns and the topic controls (UX-001)", async () => {
     await page.goto("/overview");
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
 

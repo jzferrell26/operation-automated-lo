@@ -92,8 +92,10 @@ async function measureAt(page: Page, frame: Frame) {
       ),
     // Edge to edge, from the greeting to the first card: the page gap.
     page.getByText(/^Welcome/u).evaluate((greeting) => {
-      const card = document.querySelector("[data-home='start']");
-      if (card === null) throw new Error("Home has no start card");
+      // UX-001 places the studio first. Preserve the page-gap check against that first card,
+      // while keeping every original supporting-card measurement unchanged.
+      const card = document.querySelector("[data-home='studio']");
+      if (card === null) throw new Error("Home has no studio card");
       return card.getBoundingClientRect().top - greeting.getBoundingClientRect().bottom;
     }),
   ]);
@@ -115,7 +117,7 @@ async function measureAt(page: Page, frame: Frame) {
 }
 
 for (const theme of ["light", "dark"] as const) {
-  test(`Home keeps the mockup's spacing, measure, glyphs and card widths at every frame in ${theme}`, async ({
+  test(`Home keeps its supporting-card geometry and studio spacing at every frame in ${theme}`, async ({
     page,
   }) => {
     test.setTimeout(120_000);

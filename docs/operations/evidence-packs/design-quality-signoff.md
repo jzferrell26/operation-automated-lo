@@ -1,5 +1,9 @@
 # Design quality sign-off
 
+## Current increment: campaign studio, October 6, 2026
+
+The owner requested stronger visual and interaction quality. The new Home and property-preparation screens are governed by [the current screen specification](../../../library/knowledge/private/ux-ui/04-screens/campaign-studio.md) and the design brief's current amendment. The inherited signed table below describes earlier screens, not approval of this new increment. Final scoped scores, captures and release status will be recorded in the campaign-studio QA closeout. No owner visual approval or completed financing/five-funnel experience is implied.
+
 PRD-006d D9 and acceptance criterion 006D-AC-015, re-signed for PRD-008d (008D-AC-010 and
 008D-AC-011) and again for PRD-009g (009G-AC-007). **Status: SIGNED.** `ux-ui-guardian` prepared the
 skeleton; the orchestrator filled it in from real screenshots of the running application and signed

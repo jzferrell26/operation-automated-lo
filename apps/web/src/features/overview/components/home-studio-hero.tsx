@@ -6,7 +6,7 @@ import styles from "./home-studio.module.css";
 /** Original decorative composition, not a fake campaign preview or image-upload promise. */
 function PackageIllustration() {
   return (
-    <div className={styles.visual} aria-hidden="true">
+    <div className={styles.visual} aria-hidden="true" data-studio-illustration="">
       <div className={styles.backSheet} />
       <div className={styles.paper}>
         <div className={styles.paperTop}>

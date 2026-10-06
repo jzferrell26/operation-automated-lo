@@ -169,7 +169,7 @@ describe("the composition (009B-AC-001)", () => {
 });
 
 describe("the start card (009B-AC-002)", () => {
-  it("has the page's one h1, the corrected lead, and the question", () => {
+  it("has one studio h1 and retains the ad card's lead and question (UX-001)", () => {
     renderHome();
 
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
@@ -244,7 +244,7 @@ describe("the start card (009B-AC-002)", () => {
     );
   });
 
-  it("puts 'Choose an ad' first in the focus order, then the topics (009B-AC-003)", () => {
+  it("puts the studio actions first, followed by the existing ad controls (UX-001)", () => {
     const { container } = renderHome();
     const order = [...container.querySelectorAll("a[href]")].map((anchor) => anchor.textContent);
 

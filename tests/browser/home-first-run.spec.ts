@@ -123,7 +123,7 @@ test("the checklist says what is not connected once, and the brand is not starte
   await expect(page.getByText(/Not connected$/u)).toHaveCount(0);
 });
 
-test("Choose an ad is the first of Home's controls after the top bar, then the topics (009B-AC-003)", async ({
+test("the property action leads Home, followed by campaigns and the preserved ad controls (UX-001)", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });

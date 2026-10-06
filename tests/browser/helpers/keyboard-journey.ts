@@ -66,9 +66,15 @@ export async function launchAnAdFromHomeByKeyboard(
 ): Promise<Readonly<Record<string, number>>> {
   const tabs: Record<string, number> = {};
 
-  // Home: "Choose an ad" is the first of Home's controls after the top bar (009B-AC-003).
+  // UX-001 places property creation first; the existing ad journey remains fully keyboard reachable.
   await page.goto("/overview");
-  await expect(page.getByRole("heading", { level: 1, name: "Launch an ad" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "One property. One partner. A stronger first impression.",
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Launch an ad" })).toBeVisible();
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   tabs["Home to Choose an ad"] = await tabTo(page, /^Choose an ad$/u);
   await pressEnterOn(page, /^Choose an ad$/u);

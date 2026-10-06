@@ -33,6 +33,11 @@ for (const theme of ["light", "dark"] as const) {
         "One property. One partner. A stronger first impression.",
       );
       await expect(page.locator("main [data-home-primary]")).toHaveCount(1);
+      const illustration = page.locator("[data-studio-illustration]");
+      await expect(illustration).toHaveAttribute("aria-hidden", "true");
+      await expect(
+        illustration.locator("a, button, input, select, textarea, [tabindex]"),
+      ).toHaveCount(0);
       await expect(page.locator("main [data-home-primary]")).toHaveAttribute(
         "href",
         "/marketing/campaigns/property",

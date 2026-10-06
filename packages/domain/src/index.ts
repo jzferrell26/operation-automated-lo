@@ -76,3 +76,8 @@ export {
   US_STATE_CODES,
   libraryAdPlacesProblem,
 } from "./library-ad-places.js";
+export {
+  calculateFinancingComparison,
+  downPaymentMinor,
+  FinancingCalculationError,
+} from "./financing-comparison.js";

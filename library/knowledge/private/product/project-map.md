@@ -1,10 +1,12 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.23 | Date: October 5, 2026 | Status: Active
+> Category: Product Operations | Version: 1.24 | Date: October 6, 2026 | Status: Active
 
 ## Current recovery direction
 
-UX/UI improvement is running as an isolated increment on `chief/ux-campaign-studio-2026-10-06`, from merged PR #79 (`0d2187a5`). [Campaign studio](../ux-ui/04-screens/campaign-studio.md) makes the private property package discoverable and improves the preparation form with clear hierarchy and a live unsaved summary. Financial/report/site functionality remains the separate flagship work, not a capability created by this visual increment. Check the associated review evidence for branch and release status; a screenshot is not proof of public launch or five implemented funnels.
+The UX/UI improvement merged in PR #80 as `4afdda8a`. [Campaign studio](../ux-ui/04-screens/campaign-studio.md) makes the private property package discoverable and improves the preparation form with clear hierarchy and a live unsaved summary. The PR #81 financing branch is rebased onto it, preserving both the UI and financing work. Financial/report/site functionality is not a capability created by the visual increment alone. Check the associated review evidence for release status; a screenshot is not proof of public launch or five implemented funnels.
+
+The [financing-report increment](../../../requirements/in-work/prd-010-campaign-recovery/financing-report-increment.md) is implemented on `chief/financing-report-2026-10-06`, originally from PR #79 (`0d2187a5`) and now rebased onto merged PR #80 (`4afdda8a`). It delivers saved fixed-rate comparisons, explicit monthly/cash accounting, reused own settings and matching private report/PDF/site views using saved text/contact identity. It is not the finished photo-led marketing package: media, reviewed preset administration, exact-output public approval, domain setup and HighLevel handoff remain open. The associated QA report records the implemented scope and local verification; no hosted release follows merely from this branch entry.
 
 The primary owner-directed product contract is [five finished marketing funnels](../../../requirements/in-work/prd-010-campaign-recovery/turnkey-five-funnel-product.md), automatically using saved branding and served through guided domain setup. Clients should not need creative skills, prompt-writing, another builder or a web developer. The payment report/flyer/site is the flagship immediate build. Catalog choices, conversion evidence, domain provisioning and the complete visitor/HighLevel journey remain work to deliver, not capabilities implied by the draft-package implementation. FUN-001 through FUN-012 define the required completion evidence.
 

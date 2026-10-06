@@ -29,6 +29,51 @@ export type UserMessage = Readonly<{
  * pair.
  */
 export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Object.freeze({
+  FINANCING_INVALID: {
+    what: "Some financing inputs need attention.",
+    whatToDo: "Check the scenario amounts, dates, and cost classifications before saving again.",
+  },
+  FINANCING_UNAVAILABLE: {
+    what: "Your financing report could not be confirmed.",
+    whatToDo:
+      "Keep your details and retry, or check your campaigns before starting another report.",
+  },
+  FINANCING_BRAND_REQUIRED: {
+    what: "Your saved brand is not complete.",
+    whatToDo: "Add your name, company, and both NMLS numbers in Brand, then try again.",
+  },
+  FINANCING_PARTNER_MISSING: {
+    what: "The selected Realtor is not in your saved partners.",
+    whatToDo: "Choose the saved Realtor again or add them in Realtor partners.",
+  },
+  FINANCING_SAVE_CONFLICT: {
+    what: "This save belongs to different financing details.",
+    whatToDo: "Check your campaigns before starting another report.",
+  },
+  FINANCING_QUOTE_IN_FUTURE: {
+    what: "A quote's issue date is in the future.",
+    whatToDo: "Enter the date shown on the quote you received.",
+  },
+  FINANCING_NOT_FOUND: {
+    what: "This financing report is not available to this account.",
+    whatToDo: "Open your own saved campaign or ask the workspace owner for access.",
+  },
+  FINANCING_INTEGRITY_FAILED: {
+    what: "The saved report values could not be verified.",
+    whatToDo: "Do not share the report. Contact support to check the saved version.",
+  },
+  FINANCING_FONT_UNSUPPORTED: {
+    what: "Some text uses characters the PDF font cannot display.",
+    whatToDo: "Your report is unchanged. Use the report screen and contact support.",
+  },
+  FINANCING_OUTPUT_TOO_LARGE: {
+    what: "This report exceeds the supported print length.",
+    whatToDo: "Use the report screen and shorten long descriptions in a new version.",
+  },
+  FINANCING_BUSY: {
+    what: "Other reports are being prepared.",
+    whatToDo: "Wait a moment, then try the download again.",
+  },
   PROPERTY_PACKAGE_INVALID_SOURCE: {
     what: "These campaign details cannot be used for new materials.",
     whatToDo: "Open the saved property campaign and try again.",

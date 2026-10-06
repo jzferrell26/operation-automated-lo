@@ -209,6 +209,12 @@ function escapeForPattern(term: string): string {
 export function forbiddenTermPattern(term: string): RegExp {
   const escaped = escapeForPattern(term);
 
+  // PRD-010 financing reports use the ordinary mortgage label. The security identity noun,
+  // plural and compounds remain prohibited, including when another occurrence follows this label.
+  if (term === "principal") {
+    return /(?<!\w)principal(?:ers|ing|ed|es|er|s)?(?!\w)(?!\s+and\s+interest\b)/iu;
+  }
+
   if (EXACT_FORM_ONLY.includes(term)) {
     return new RegExp(`(?<!\\w)${escaped}(?:es|s)?(?!\\w)`, "iu");
   }

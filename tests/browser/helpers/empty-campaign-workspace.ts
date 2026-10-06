@@ -1,5 +1,6 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { test } from "@playwright/test";
 
 import playwrightConfig from "../../../playwright.config.js";
 
@@ -29,6 +30,15 @@ import playwrightConfig from "../../../playwright.config.js";
 const EMPTY_CAMPAIGN_STORE = `${JSON.stringify({ schemaVersion: 1, campaigns: {} }, null, 2)}\n`;
 
 function syntheticCampaignStorePath(): string {
+  // An isolated runner may use a different local store. Never swap the default runner's file
+  // when its app is not the one under test. Overrides stay inside this checkout's test-results.
+  const override = test.info().project.metadata["syntheticCampaignStore"];
+  if (typeof override === "string") {
+    const fromResults = relative(resolve("test-results"), resolve(override));
+    if (!fromResults || fromResults.startsWith("..") || isAbsolute(fromResults))
+      throw new Error("The isolated synthetic campaign store must stay within test-results.");
+    return resolve(override);
+  }
   const servers = [playwrightConfig.webServer ?? []].flat();
   const path = servers
     .map((server) => server.env?.["OALO_LOCAL_CAMPAIGN_STORE"])

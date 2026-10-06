@@ -48,8 +48,6 @@ import {
  * address, a real name, or anything a person typed.
  */
 
-const applicationOrigin = "http://127.0.0.1:3100";
-
 /** The rubric's section 4, restricted to what a synthetic deployment actually serves. */
 const SYNTHETIC_SCREENS = Object.freeze([
   { screen: "overview", path: "/overview" },
@@ -85,6 +83,7 @@ function axeOptionsFor(screen: string): Readonly<{ exclude?: readonly string[] }
 
 /** The brief forbids an external request from any screen; the suite proves it on every one. */
 async function blockAnythingOffOrigin(page: Page): Promise<readonly string[]> {
+  const applicationOrigin = configuredApplicationOrigin();
   const externalRequests: string[] = [];
   await page.route("**/*", async (route) => {
     const url = route.request().url();
@@ -786,3 +785,4 @@ for (const theme of ["light", "dark"] as const satisfies readonly ReviewTheme[])
     expect(externalRequests).toEqual([]);
   });
 }
+import { configuredApplicationOrigin } from "./helpers/application-origin.js";

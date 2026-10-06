@@ -256,6 +256,23 @@ export function buildCampaignPage(input: CampaignPageInput): CampaignPageData | 
   };
 
   const shownManifest = shownRecord.version.manifest;
+  if (shownManifest.blueprintId === "financing-comparison") {
+    const manifest = verifyFinancingVersion(shownRecord.version);
+    return {
+      ...common,
+      kind: "financing-comparison",
+      canReuse:
+        shownRecord.version.createdBy === principal.actorRef &&
+        (principal.role === "location_admin" || principal.role === "campaign_creator"),
+      report: {
+        campaignRef: common.campaignRef,
+        campaignVersionRef: common.campaignVersionRef,
+        versionNo: common.versionNo,
+        createdAt: shownRecord.version.createdAt,
+        manifest,
+      },
+    };
+  }
   if (shownManifest.blueprintId !== "library-ad") {
     if (shownManifest.preparation !== undefined) {
       const { brand, partnerCompany } = shownManifest.preparation;
@@ -438,3 +455,4 @@ export function sortCampaignListRows(rows: readonly CampaignListRow[]): readonly
     ),
   );
 }
+import { verifyFinancingVersion } from "./financing-save.js";

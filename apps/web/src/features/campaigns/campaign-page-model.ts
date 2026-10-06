@@ -14,6 +14,7 @@ import type { NewerVersionOffer } from "../ads-library/newer-version.js";
 import type { CampaignApprovalControlsProps } from "./components/campaign-approval-controls.js";
 import type { LaunchBand } from "./launch-model.js";
 import type { PropertyPackagePanelState } from "../property-campaigns/package-model.js";
+import type { FinancingReportView } from "../financing/model.js";
 
 /**
  * PRD-009e. What the two Campaigns pages are handed: plain data, already read under the session's
@@ -158,8 +159,16 @@ export interface PropertyPreparationCampaignPage extends CampaignPageCommon {
   readonly realtorPermissionConfirmed: boolean;
 }
 
+export interface FinancingCampaignPage extends CampaignPageCommon {
+  readonly kind: "financing-comparison";
+  readonly report: FinancingReportView;
+  readonly canReuse: boolean;
+}
 export type CampaignPageData =
-  LibraryAdCampaignPage | EarlierFlowCampaignPage | PropertyPreparationCampaignPage;
+  | LibraryAdCampaignPage
+  | EarlierFlowCampaignPage
+  | PropertyPreparationCampaignPage
+  | FinancingCampaignPage;
 
 /** One row of the Campaigns list (009E-AC-009, 009E-AC-012). */
 export interface CampaignListRow {

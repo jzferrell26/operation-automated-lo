@@ -3,7 +3,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { evidencePath, writeEvidenceSummary } from "./helpers/ui-foundation-evidence.js";
 
-const applicationOrigin = "http://127.0.0.1:3100";
+import { configuredApplicationOrigin } from "./helpers/application-origin.js";
 const regenerateEvidence = process.env["OALO_REGENERATE_UI_EVIDENCE"] === "true";
 const screenshots: string[] = [];
 
@@ -20,7 +20,7 @@ async function guardSyntheticLocalPage(page: Page) {
 
   await page.route("**/*", async (route) => {
     const url = route.request().url();
-    if (new URL(url).origin !== applicationOrigin) {
+    if (new URL(url).origin !== configuredApplicationOrigin()) {
       externalRequests.push(url);
       await route.abort();
       return;
@@ -540,7 +540,7 @@ test("Inter loads from the application origin on a signed-in page", async ({ pag
   );
   await page.goto("/overview");
   const response = await fontResponse;
-  expect(new URL(response.url()).origin).toBe(applicationOrigin);
+  expect(new URL(response.url()).origin).toBe(configuredApplicationOrigin());
   expect(response.status()).toBe(200);
 
   const fonts = await page.evaluate(async () => {

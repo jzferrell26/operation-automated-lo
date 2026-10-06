@@ -11,7 +11,11 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ### October 6, 2026: campaign-studio UX/UI increment
 
-Branch `chief/ux-campaign-studio-2026-10-06` starts from merged PR #79 at `0d2187a5`. [The screen spec](../../../library/knowledge/private/ux-ui/04-screens/campaign-studio.md) restores a property-package entry on Home and adds a live unsaved form summary while preserving the existing palette, six-section shell, ad capability and backend rules. This is isolated from the financing implementation worktree. Follow the scoped security and QA evidence for verification; no production deployment, public financial output or completed five-funnel pack is implied by the UI. Two inherited dependency advisories have narrow version patches, not new audit exceptions.
+PR #80 merged into `main` as `4afdda8a`. [The screen spec](../../../library/knowledge/private/ux-ui/04-screens/campaign-studio.md) restores a property-package entry on Home and adds a live unsaved form summary while preserving the existing palette, six-section shell, ad capability and backend rules. PR #81 is rebased onto this UI increment, retaining both experiences. Follow the scoped security and QA evidence for verification; no production deployment, public financial output or completed five-funnel pack is implied by the UI. Two inherited dependency advisories have narrow version patches, not new audit exceptions.
+
+### October 6, 2026: saved financing report increment (branch implementation, not public release)
+
+The continuation branch `chief/financing-report-2026-10-06` implements the [financing report increment](../../../library/requirements/in-work/prd-010-campaign-recovery/financing-report-increment.md): a standalone financing blueprint, one-to-five supplied quote scenarios, deterministic cent-level accounting, saved co-brand text/contact identity, previous-comparison reuse, a responsive private report/site and a deterministic print report. It started from merged PR #79 (`0d2187a5`) and now includes merged PR #80 (`4afdda8a`) after the PR #81 conflict resolution. Read its security/QA evidence before claiming release. No new migration, photos, headshots/logos, approved preset catalog, public QR/domain, live lead handoff or five-funnel completion is claimed. The dependency patches already on `main` and the financing test-runner isolation changes are preserved. Keep the current owner-directed product outcome below.
 
 ### October 5, 2026: five finished funnels (primary product contract, not implemented)
 

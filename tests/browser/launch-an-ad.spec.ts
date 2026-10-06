@@ -42,7 +42,7 @@ import {
  *   the whole path from Home through approval.
  */
 
-const applicationOrigin = "http://127.0.0.1:3100";
+import { configuredApplicationOrigin } from "./helpers/application-origin.js";
 
 /** The four ratios the criterion names, width over height, and the tolerance it allows. */
 const TALL = 4 / 5;
@@ -53,7 +53,7 @@ async function blockAnythingOffOrigin(page: Page): Promise<readonly string[]> {
   const external: string[] = [];
   await page.route("**/*", async (route) => {
     const url = route.request().url();
-    if (new URL(url).origin !== applicationOrigin) {
+    if (new URL(url).origin !== configuredApplicationOrigin()) {
       external.push(url);
       await route.abort();
       return;
@@ -122,7 +122,7 @@ test.describe("Launch an ad in a browser", () => {
       await expect(cancel, odd).toHaveAttribute("href", "/marketing/campaigns");
     }
     await page.getByRole("link", { name: "Cancel" }).click();
-    await page.waitForURL(`${applicationOrigin}/marketing/campaigns`);
+    await page.waitForURL(`${configuredApplicationOrigin()}/marketing/campaigns`);
     expect(external).toEqual([]);
   });
 

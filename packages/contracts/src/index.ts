@@ -97,6 +97,8 @@ export {
   LibraryAdCampaignManifestSchema,
   OpenHouseApprovalSnapshotSchema,
   OpenHouseCampaignManifestSchema,
+  FinancingCampaignManifestSchema,
+  type FinancingCampaignManifest,
   PropertyCampaignPreparationSchema,
   CollateralProjectionInputSchema,
   CollateralProjectionSchema,
@@ -275,3 +277,4 @@ export {
   type CanonicalReferenceCodec,
   type CanonicalReferenceKind,
 } from "./canonical-reference.js";
+export * from "./financing-comparison.js";

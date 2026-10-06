@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  FinancingIdentitySchema,
+  FinancingInputSchema,
+  FinancingResultsSchema,
+} from "./financing-comparison.js";
 
 import {
   AdsLibraryAdIdSchema,
@@ -451,9 +456,42 @@ export type LibraryAdCampaignManifest = z.infer<typeof LibraryAdCampaignManifest
  * stored version parses to the same value and keeps its hash; the database stores any JSON object
  * (`20260915180000_campaign_activation.sql`, `jsonb_typeof(manifest) = 'object'`), so no migration.
  */
+/** Private fixed-purchase comparison: no fictitious event times or paid-ad configuration. */
+export const FinancingCampaignManifestSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    blueprintId: z.literal("financing-comparison"),
+    templateVersion: z.literal("1.0.0"),
+    preparation: PropertyCampaignPreparationSchema,
+    property: OpenHouseCampaignManifestSchema.shape.property.omit({
+      openHouseStartsAt: true,
+      openHouseEndsAt: true,
+    }),
+    partner: OpenHouseCampaignManifestSchema.shape.partner,
+    identities: z
+      .object({ lender: FinancingIdentitySchema, realtor: FinancingIdentitySchema })
+      .strict(),
+    financing: FinancingInputSchema,
+    calculated: FinancingResultsSchema,
+    reviewOnly: z.literal(true),
+    content: OpenHouseCampaignManifestSchema.shape.content,
+    images: OpenHouseCampaignManifestSchema.shape.images.max(0),
+    meta: OpenHouseCampaignManifestSchema.shape.meta.extend({
+      enabled: z.literal(false),
+      dailyBudgetMinor: z.literal(0),
+      totalBudgetMinor: z.literal(0),
+    }),
+    routing: OpenHouseCampaignManifestSchema.shape.routing.extend({
+      validationStatus: z.literal("missing"),
+    }),
+  })
+  .strict();
+export type FinancingCampaignManifest = z.infer<typeof FinancingCampaignManifestSchema>;
+
 export const CampaignManifestSchema = z.discriminatedUnion("blueprintId", [
   OpenHouseCampaignManifestSchema,
   LibraryAdCampaignManifestSchema,
+  FinancingCampaignManifestSchema,
 ]);
 export type CampaignManifest = z.infer<typeof CampaignManifestSchema>;
 

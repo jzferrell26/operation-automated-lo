@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation.js";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { PROPERTY_CAMPAIGN_COPY as COPY } from "../../copy/property-campaign-messages.js";
+import { FINANCING_CREATE_PATH } from "../financing/model.js";
+import { FINANCING_COPY } from "../../copy/financing-messages.js";
 import layout from "../campaigns/components/launch.module.css";
 import { postInternalJson } from "../http/internal-api.js";
 import {
@@ -119,6 +121,9 @@ export function PropertyCampaignForm({ data }: Readonly<{ data: PropertyCampaign
           <p className={layout.note}>{COPY.eyebrow}</p>
           <h1>{COPY.title}</h1>
           <p className={layout.lead}>{COPY.intro}</p>
+          <Link href={FINANCING_CREATE_PATH} variant="sentence">
+            {FINANCING_COPY.title}
+          </Link>
         </div>
       </header>
       <ol className={composer.sequence} aria-label={PROPERTY_SUMMARY.sequenceLabel}>

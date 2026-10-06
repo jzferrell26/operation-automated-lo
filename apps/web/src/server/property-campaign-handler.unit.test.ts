@@ -6,7 +6,6 @@ import {
 } from "./authenticated-principal.js";
 import {
   createTemporaryCampaignStore,
-  embeddedSessionFixture,
   LOCAL_SYNTHETIC_ENV,
 } from "./campaign-command-test-support.js";
 import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
@@ -17,6 +16,7 @@ import { savePropertyCampaign } from "./property-campaign-save.js";
 import { PropertyCampaignSavedSchema } from "../features/property-campaigns/model.js";
 import { buildCampaignPage } from "./campaign-page-data.js";
 import { readPropertyCampaignPage } from "./property-campaign-page.js";
+import { singleActorSessionFixture } from "./signed-session.test-support.js";
 
 function signedSession(role: "campaign_creator" | "campaign_approver" | "viewer") {
   const principal = createLocalSyntheticPrincipal({
@@ -27,17 +27,7 @@ function signedSession(role: "campaign_creator" | "campaign_approver" | "viewer"
   });
   return {
     principal,
-    fixture: embeddedSessionFixture({
-      locationRef: principal.locationRef,
-      locationId: principal.locationId,
-      installationRef: principal.installationRef,
-      actors: [{ actorRef: principal.actorRef, actorId: principal.actorId, role }],
-      mutation: {
-        expectedHost: "app.operation-automated-lo.test",
-        allowedBrowserOrigins: ["https://app.operation-automated-lo.test"],
-        csrfServerSecret: new Uint8Array(32).fill(7),
-      },
-    }),
+    fixture: singleActorSessionFixture(principal),
   };
 }
 

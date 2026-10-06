@@ -330,6 +330,11 @@ function approvalSnapshotFor(
   manifest: CampaignVersion["manifest"],
   approverDisplayName: string | undefined,
 ): ApprovalSnapshot {
+  if (manifest.blueprintId === "financing-comparison") {
+    throw new Error(
+      "Financing illustrations require exact-output review; campaign-ad approval is not supported.",
+    );
+  }
   // PRD-009e D2. The decider's own session display name, when the server's session read yielded
   // one. Both snapshot variants may carry it; neither carries a key for it when there is none.
   const approver = approverDisplayName === undefined ? {} : { approverDisplayName };

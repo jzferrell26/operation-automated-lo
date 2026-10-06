@@ -36,11 +36,13 @@ export async function campaignRouteMetadata(
       const { page } = loaded;
       return {
         title:
-          page.kind === "library-ad"
-            ? page.name
-            : page.kind === "property-preparation"
-              ? page.address
-              : page.headline,
+          page.kind === "financing-comparison"
+            ? page.report.manifest.property.address
+            : page.kind === "library-ad"
+              ? page.name
+              : page.kind === "property-preparation"
+                ? page.address
+                : page.headline,
       };
     }
   } catch {

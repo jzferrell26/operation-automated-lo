@@ -48,6 +48,8 @@ import styles from "./campaign-page.module.css";
  * and links to none of them (009E-AC-008): the data it is handed has no place to carry one.
  */
 export function PersistedCampaignScreen({ page }: Readonly<{ page: CampaignPageData }>) {
+  if (page.kind === "financing-comparison")
+    return <FinancingReport report={page.report} canReuse={page.canReuse} />;
   if (page.kind === "property-preparation")
     return <PropertyCampaignScreen key={page.campaignVersionRef} page={page} />;
   return page.kind === "library-ad" ? (
@@ -261,3 +263,4 @@ function EarlierFlowScreen({ page }: Readonly<{ page: EarlierFlowCampaignPage }>
     </div>
   );
 }
+import { FinancingReport } from "../../financing/report.js";

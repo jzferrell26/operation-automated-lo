@@ -74,7 +74,11 @@ interface LibraryAdCampaignManifest extends CampaignManifestCommon {
   };
 }
 
-type CampaignManifest = OpenHouseCampaignManifest | LibraryAdCampaignManifest;
+interface FinancingCampaignManifest extends CampaignManifestCommon {
+  readonly blueprintId: "financing-comparison";
+}
+type CampaignManifest =
+  OpenHouseCampaignManifest | LibraryAdCampaignManifest | FinancingCampaignManifest;
 
 interface PreflightFinding {
   readonly severity: "blocking" | "warning";
@@ -269,6 +273,16 @@ export function evaluateCampaignPreflight(
 ): readonly PreflightFinding[] {
   const libraryAd = libraryAdContext(manifest, rules);
   const findings: PreflightFinding[] = [];
+  if (manifest.blueprintId === "financing-comparison") {
+    findings.push(
+      finding(
+        "FINANCING_REVIEW_REQUIRED",
+        "This financing comparison is a private illustration, not an approved offer.",
+        "financing",
+        "Review the financial inputs and finished materials before public release. Public release is not available yet.",
+      ),
+    );
+  }
 
   if (manifest.content.disclosureText.length === 0) {
     findings.push(

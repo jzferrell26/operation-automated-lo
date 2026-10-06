@@ -1,6 +1,6 @@
 # Payment flyers, financing reports, and co-branded property sites
 
-Status: Owner-approved product direction; implementation not started.
+Status: Implementation in progress. The [text-only financing-report increment](financing-report-increment.md) implements the saved comparison and private report/PDF/site subset on a feature branch. The full photo-led, few-click public package remains unfinished.
 Priority: Next campaign-product increment, before unrelated ad-library expansion.
 Decision date: October 5, 2026. Owner: Jonathan Ferrell. Delivery lead: Chief.
 Authoring base: `d5ef89b0`, merged PR #78. This document adds no runtime functionality.
@@ -117,7 +117,7 @@ Implement directly on an isolated branch from current main. No subagents. Use ex
 
 ## Acceptance criteria
 
-All rows are pending implementation. A document, attractive mockup, generated reference, or passing inherited test does not satisfy a product criterion.
+The rows below define the full product proof. The [current increment's scope table](financing-report-increment.md#scope-traceability) distinguishes delivered subsets from pending photo, preset, approval, domain and provider work. A document, attractive mockup, generated reference, or passing inherited test does not satisfy a product criterion.
 
 | ID | Required proof |
 | --- | --- |
@@ -144,6 +144,6 @@ Inspect and extend, rather than overwrite: `packages/domain/src/homeowner-financ
 
 Still to resolve before corresponding public release: authoritative rate/APR and MI/fee sources, permitted loan structures and assumptions, default preset owners/expiry, approved disclosure versions, original template visual sign-off, media permissions and storage setup, public origin/routing, and verified HighLevel installation/consent requirements. These do not prevent local synthetic development, but must not be invented by the implementation.
 
-## Current authoring result
+## Historical authoring result (PR #79)
 
 This brief records the approved user outcome and proposed engineering specification. No payment calculator, report UI, flyer, public site, upload capability, live rate source, or provider integration was added by this authoring change. The previous PR #78 package remains the text/vector internal-review implementation until the increments above are delivered.

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { readApprovalEvidenceSnapshot } from "./helpers/approval-evidence.js";
 
-const applicationOrigin = "http://127.0.0.1:3100";
+import { configuredApplicationOrigin } from "./helpers/application-origin.js";
 
 test("Light, Dark, and System leave local approval evidence byte-identical", async ({ page }) => {
   const baseline = readApprovalEvidenceSnapshot();
@@ -11,7 +11,7 @@ test("Light, Dark, and System leave local approval evidence byte-identical", asy
 
   await page.route("**/*", async (route) => {
     const requestUrl = route.request().url();
-    if (new URL(requestUrl).origin !== applicationOrigin) {
+    if (new URL(requestUrl).origin !== configuredApplicationOrigin()) {
       externalRequests.push(requestUrl);
       await route.abort();
       return;

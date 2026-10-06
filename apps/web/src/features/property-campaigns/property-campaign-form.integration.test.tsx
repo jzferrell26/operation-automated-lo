@@ -33,26 +33,7 @@ const SAVED = {
 
 beforeEach(() => {
   mocked.push.mockReset();
-  // jsdom has no layout. Give the real portalled Select an in-viewport trigger rectangle.
-  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
-    x: 20,
-    y: 20,
-    top: 20,
-    bottom: 64,
-    left: 20,
-    right: 420,
-    width: 400,
-    height: 44,
-    toJSON: () => ({}),
-  });
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      disconnect() {}
-      unobserve() {}
-    },
-  );
+  installSelectLayoutForTest();
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -220,3 +201,4 @@ describe("property preparation interactions", () => {
     expect(mocked.push).not.toHaveBeenCalled();
   });
 });
+import { installSelectLayoutForTest } from "../../testing/select-layout.test-support.js";

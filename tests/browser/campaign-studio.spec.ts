@@ -93,6 +93,13 @@ for (const theme of ["light", "dark"] as const) {
         path: testInfo.outputPath(`composer-${frame.name}-${theme}.png`),
         fullPage: true,
       });
+      // PR #81 rebase regression: retain #80's summary and the financing entry together.
+      await page.getByRole("link", { name: "Create a financing report", exact: true }).click();
+      await expect(page).toHaveURL(/\/marketing\/campaigns\/financing$/u);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Create a financing report" }),
+      ).toBeVisible();
+      expect(writes).toEqual([]);
       expect(errors).toEqual([]);
     });
   }

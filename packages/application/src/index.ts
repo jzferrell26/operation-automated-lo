@@ -251,3 +251,8 @@ export {
   type ReportingMetricKey,
   type ReportingTargetAuthorization,
 } from "./reporting.js";
+export {
+  calculateFinancingComparison,
+  downPaymentMinor,
+  FinancingCalculationError,
+} from "@oalo/domain";

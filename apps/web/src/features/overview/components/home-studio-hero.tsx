@@ -2,6 +2,7 @@ import { Icon, Link } from "@oalo/ui";
 
 import { CAMPAIGN_STUDIO as COPY } from "../../../copy/campaign-studio-messages.js";
 import styles from "./home-studio.module.css";
+import notice from "../../../components/campaign-draft-notice.module.css";
 
 /** Original decorative composition, not a fake campaign preview or image-upload promise. */
 function PackageIllustration() {
@@ -77,7 +78,7 @@ export function HomeStudioHero({ canCreate }: Readonly<{ canCreate: boolean }>) 
             </Link>
           ) : null}
         </div>
-        <p className={styles.boundary}>
+        <p className={notice.boundary}>
           <Icon decorative name="lock" size="sm" />
           {canCreate ? COPY.boundary : COPY.roles}
         </p>

@@ -476,7 +476,13 @@ test("the boundary review page is not served in review mode", async ({ page }) =
   await page.goto("/design-surfaces?state=home-under-notice");
   await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Resend the link." })).toHaveCount(0);
-  await expect(page.getByRole("heading", { level: 1, name: "Launch an ad" })).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "One property. One partner. A stronger first impression.",
+    }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 2, name: "Launch an ad" })).toHaveCount(0);
 });
 
 /**

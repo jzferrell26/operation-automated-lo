@@ -3,6 +3,7 @@ import { Icon } from "@oalo/ui";
 import { CAMPAIGN_STUDIO, PROPERTY_SUMMARY as COPY } from "../../copy/campaign-studio-messages.js";
 import { PROPERTY_CAMPAIGN_COPY } from "../../copy/property-campaign-messages.js";
 import styles from "./property-composer.module.css";
+import notice from "../../components/campaign-draft-notice.module.css";
 
 /** Read-only mirror of local form state. No persistence, fabricated property image or calculated figure. */
 export function PropertyFormSummary({
@@ -70,7 +71,7 @@ export function PropertyFormSummary({
         </ul>
         <p>{COPY.outputNote}</p>
       </div>
-      <p className={styles.boundary}>
+      <p className={notice.boundary}>
         <Icon decorative name="lock" size="sm" />
         {COPY.boundary}
       </p>

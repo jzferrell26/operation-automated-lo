@@ -77,6 +77,17 @@ for (const theme of ["light", "dark"] as const) {
       await expectTypographyOnBrief(page);
       await expectNoHorizontalOverflow(page);
       await expectTargetsAreLargeEnough(page);
+      if (frame.width < 768) {
+        const back = page.locator("form").getByRole("link", { name: "Back to campaigns" });
+        const save = page.getByRole("button", { name: "Save campaign draft" });
+        await back.focus();
+        await page.keyboard.press("Tab");
+        await expect(save).toBeFocused();
+        const backBox = await back.boundingBox();
+        const saveBox = await save.boundingBox();
+        if (backBox === null || saveBox === null) throw new Error("Missing property actions");
+        expect(backBox.y + backBox.height).toBeLessThanOrEqual(saveBox.y);
+      }
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.screenshot({
         path: testInfo.outputPath(`composer-${frame.name}-${theme}.png`),

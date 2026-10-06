@@ -275,7 +275,7 @@ export function PropertyCampaignForm({ data }: Readonly<{ data: PropertyCampaign
                 <p className={layout.note}>{COPY.permissionNote}</p>
               </section>
             </fieldset>
-            <div className={layout.actions}>
+            <div className={`${layout.actions} ${composer.saveActions}`}>
               <Link href="/marketing/campaigns">{COPY.campaigns}</Link>
               <Button type="submit" disabled={!enabled || busy || saved}>
                 {saved ? COPY.saved : busy ? COPY.saving : COPY.save}

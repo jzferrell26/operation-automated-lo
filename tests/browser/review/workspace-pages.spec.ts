@@ -6,6 +6,7 @@ import {
   freshEmail,
 } from "./helpers/guided-setup-journey.js";
 import { chooseThemeFromTheHeader } from "./helpers/review-session.js";
+import { saveBrandDetails } from "./helpers/saved-brand.js";
 
 let context: BrowserContext, page: Page;
 let guard: Awaited<ReturnType<typeof guardLocalOrigin>>;
@@ -64,6 +65,37 @@ test.describe.serial("signed-in workspace pages", () => {
     expectNoExternalRequests(guard);
     expect(faults).toEqual([]);
     await context?.close();
+  });
+
+  // Reuse this suite's one signed-up account; do not consume another sign-up rate-limit slot.
+  test("the five-funnel studio saves the signed-in brand and reopens every private design", async () => {
+    test.setTimeout(120000);
+    await saveBrandDetails(page);
+    await page.goto("/marketing/campaigns/funnels");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Five funnels. Already designed." }),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "Edit funnel", exact: true })).toHaveCount(5);
+    for (const kind of ["live-webinar", "on-demand", "buyer", "refinance", "lead-magnet"]) {
+      await page.goto(`/marketing/campaigns/funnels/${kind}`);
+      const message = `A clear next step from your ${kind} team`;
+      await page.getByLabel("Main headline", { exact: true }).fill(message);
+      const response = page.waitForResponse(
+        (result) => result.url().endsWith("/api/funnels") && result.request().method() === "POST",
+      );
+      await page.getByRole("button", { name: "Save changes", exact: true }).click();
+      const saved = await response;
+      expect(saved.status()).toBe(200);
+      const body = await saved.json();
+      expect(body.draft.publicationAuthorized).toBe(false);
+      expect(body.draft.brand.nmls).toBe("1234567");
+      await page.reload();
+      await expect(page.getByLabel("Main headline", { exact: true })).toHaveValue(message);
+      await page.goto(`/marketing/campaigns/funnels/${kind}/preview`);
+      await expect(page.locator("[data-funnel-surface] h2").first()).toHaveText(message);
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    }
+    expectNoExternalRequests(guard);
   });
 
   /**

@@ -1,0 +1,445 @@
+/* Application controls use the existing studio tokens; visitor design is scoped separately. */
+.catalog,
+.editor {
+  display: grid;
+  gap: var(--space-6);
+  max-inline-size: var(--content-max);
+  margin: auto;
+  inline-size: 100%;
+}
+.catalog :where(h1, h2, p),
+.editor :where(h1, p) {
+  margin: 0;
+}
+.catalogHead,
+.editorHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+}
+.eyebrow {
+  font-size: var(--text-caption-size);
+  color: var(--st-info-fg);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-3) !important;
+}
+.catalogHead h1,
+.editorHead h1 {
+  font-size: var(--text-page-size);
+  color: var(--tx-strong);
+  margin-block: var(--space-2);
+}
+.lead {
+  font-size: var(--text-body-size);
+  color: var(--tx-body);
+}
+.designed {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--tx-body);
+  font-size: var(--text-caption-size);
+  padding: var(--space-3);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-control);
+  background: var(--sf-card);
+}
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+}
+.notice svg {
+  flex: none;
+}
+.catalogGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-6);
+}
+.catalogCard {
+  overflow: hidden;
+  min-inline-size: 0;
+  background: var(--sf-card);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--motion-fast) ease;
+}
+.catalogCard:hover {
+  border-color: var(--ac-primary);
+}
+.catalogCard:last-child {
+  grid-column: 1/-1;
+  max-inline-size: calc(50% - 12px);
+}
+.thumbnail {
+  position: relative;
+  height: 245px;
+  overflow: hidden;
+  background: var(--sf-sunken);
+  border-bottom: 1px solid var(--bd-hairline);
+}
+.miniature {
+  width: 1400px;
+  transform: scale(0.4);
+  transform-origin: top left;
+  pointer-events: none;
+}
+.cardNumber {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  background: var(--sf-card);
+  color: var(--tx-strong);
+  border-radius: var(--radius-control);
+  font-size: var(--text-caption-size);
+  border: 1px solid var(--bd-hairline);
+}
+.cardBody {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+.cardHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.cardHeading h2 {
+  font-size: var(--text-section-size);
+}
+.cardHeading span {
+  font-size: var(--text-caption-size);
+  color: var(--tx-body);
+}
+.cardBody > p {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+  min-block-size: 3em;
+}
+.journey {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  color: var(--tx-body);
+  font-size: var(--text-caption-size);
+}
+.journey span {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--bd-hairline);
+}
+.cardFooter > span {
+  font-size: var(--text-caption-size);
+  color: var(--tx-body);
+}
+.bottomNote {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
+  color: var(--tx-body);
+  font-size: var(--text-caption-size);
+}
+.editorHead > div:first-child {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+}
+.editorHead p {
+  font-size: var(--text-secondary-size);
+  color: var(--tx-body);
+}
+.saveBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+}
+.saveBar > span {
+  font-size: var(--text-caption-size);
+  color: var(--tx-body);
+}
+.editorGrid {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+.controls {
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  background: var(--sf-card);
+  overflow: hidden;
+}
+.sectionPicker {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--bd-hairline);
+}
+.sectionPicker label {
+  font-size: var(--text-caption-size);
+  color: var(--tx-body);
+}
+.sectionPicker select {
+  font: inherit;
+  width: 100%;
+  min-height: 48px;
+  background: var(--sf-card);
+  border: 1px solid var(--bd-input);
+  border-radius: var(--radius-control);
+  color: var(--tx-strong);
+  padding: var(--space-2);
+}
+.sectionPicker select:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+.controlFields {
+  padding: var(--space-5);
+}
+.fieldset {
+  display: grid;
+  gap: var(--space-5);
+  min-inline-size: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.fieldset legend {
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-3);
+  font-size: var(--text-card-size);
+}
+.fieldNote,
+.fieldset > p {
+  font-size: var(--text-caption-size);
+  color: var(--tx-body);
+  line-height: 1.6;
+}
+.photoField {
+  display: grid;
+  gap: var(--space-3);
+}
+.photoField img,
+.photoEmpty {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: var(--radius-control);
+  background: var(--sf-sunken);
+}
+.photoEmpty {
+  display: grid;
+  place-items: center;
+  color: var(--tx-body);
+}
+.photoField input[type="file"] {
+  width: 100%;
+  min-height: 48px;
+  font-size: var(--text-caption-size);
+  color: var(--tx-body);
+}
+.photoField input::file-selector-button {
+  font: inherit;
+  border: 1px solid var(--bd-input);
+  padding: var(--space-3);
+  background: var(--sf-card);
+  color: var(--tx-strong);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.fieldset input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+}
+.controlFooter {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-top: 1px solid var(--bd-hairline);
+}
+.controlFooter p,
+.controlFooter small {
+  color: var(--tx-body);
+  font-size: var(--text-caption-size);
+}
+.controlFooter a {
+  justify-self: start;
+}
+.previewArea {
+  min-inline-size: 0;
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-card);
+  background: var(--sf-sunken);
+  overflow: hidden;
+}
+.previewToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--bd-hairline);
+  background: var(--sf-card);
+}
+.previewToolbar nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.previewToolbar button {
+  font: inherit;
+  font-size: var(--text-caption-size);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--tx-body);
+  cursor: pointer;
+}
+.previewToolbar button[aria-current],
+.previewToolbar button[aria-pressed="true"] {
+  background: var(--st-info-bg);
+  color: var(--st-info-fg);
+  font-weight: var(--weight-semibold);
+}
+.previewToolbar button:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+.sizes {
+  display: flex;
+}
+.sizes button {
+  min-width: 44px;
+  display: grid;
+  place-items: center;
+}
+.previewScroll {
+  scroll-margin-block-start: 130px;
+  max-height: calc(100vh - 190px);
+  min-height: 450px;
+  overflow: auto;
+  padding: var(--space-4);
+}
+.previewFrame {
+  width: 100%;
+  margin: 0 auto;
+  box-shadow: var(--shadow-raised);
+}
+.previewFrame[data-size="mobile"] {
+  max-width: 390px;
+}
+.error {
+  padding: var(--space-4);
+  border: 1px solid var(--bd-hairline);
+  background: var(--sf-card);
+  color: var(--tx-strong);
+  border-radius: var(--radius-control);
+}
+.error a {
+  display: block;
+  margin-top: var(--space-3);
+}
+.full .editorGrid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.full .previewScroll {
+  max-height: none;
+  padding: 0;
+}
+.full .previewFrame {
+  box-shadow: none;
+}
+@media (max-width: 74rem) {
+  .editorGrid {
+    grid-template-columns: 285px minmax(0, 1fr);
+  }
+  .controlFields,
+  .sectionPicker,
+  .controlFooter {
+    padding: var(--space-4);
+  }
+}
+@media (max-width: 63.99rem) {
+  .editorGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .previewScroll {
+    max-height: none;
+    min-height: 0;
+  }
+  .controls {
+    max-height: none;
+  }
+  .catalogHead {
+    align-items: start;
+  }
+  .designed {
+    display: none;
+  }
+  .miniature {
+    transform: scale(0.32);
+  }
+}
+@media (max-width: 47.99rem) {
+  .catalogGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .catalogCard:last-child {
+    grid-column: auto;
+    max-inline-size: none;
+  }
+  .catalogHead,
+  .editorHead {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cardBody {
+    padding: var(--space-5);
+  }
+  .saveBar {
+    justify-content: space-between;
+  }
+  .thumbnail {
+    height: 220px;
+  }
+  .miniature {
+    transform: scale(0.28);
+  }
+  .previewScroll {
+    padding: 0;
+  }
+  .previewToolbar {
+    padding: var(--space-2);
+  }
+  .editor {
+    gap: var(--space-4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .catalogCard {
+    transition: none;
+  }
+}

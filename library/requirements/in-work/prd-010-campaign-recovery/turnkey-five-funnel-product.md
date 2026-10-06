@@ -1,6 +1,6 @@
 # Five finished funnels, not a funnel builder
 
-Status: Owner-directed product requirement; not implemented.
+Status: Owner-directed product requirement; saved design/editor increment implemented on the October 6 branch, full public-domain/lead-delivery outcome still open.
 Priority: Primary product experience and commercial promise, not an optional design-tool add-on.
 Decision date: October 5, 2026. Owner: Jonathan Ferrell. Delivery lead: Chief.
 Authoring base: `d5ef89b0`, merged PR #78. No runtime or deployment change accompanies this brief.
@@ -40,7 +40,11 @@ Five refers to funnel journeys, not the number of payment-scenario columns. The 
 
 A completed domain connection does not authorize ad spend, billing, lender approval, or unsolicited customer messages. It also does not create traffic. The promise is that the marketing destination and permitted lead path are ready without creative or developer work, not that merely owning a domain guarantees leads.
 
-## Five is decided; the exact roster is still open
+## October 6 decision: the exact roster is now locked
+
+Jonathan selected **live webinar, on-demand webinar, buyer, refinance and lead magnet**, and supplied three Cuantico examples as inspiration. All five must have high-end prebuilt layouts edited by labelled fields and photo replacements only. Live: registration -> confirmation/calendar. On-demand: access -> webinar -> book a call. Lead magnet: resource -> book a call -> thank you. Buyer/refinance use purpose-specific landing, booking and thank-you defaults. Follow [the scoped studio design and delivery contract](../../../knowledge/private/ux-ui/04-screens/five-funnel-studio.md). The financing report remains a separate capability; the catalog is not a collection of five loan-scenario columns. The historical open-roster discussion below is superseded by this explicit decision, not erased.
+
+### Historical roster discussion
 
 No source reviewed for this authoring pass establishes an approved list of five winning funnel assets. Do not silently substitute an arbitrary mortgage-product list or tell the owner that five funnels already exist.
 
@@ -98,6 +102,6 @@ All rows below are pending implementation and qualification. They are product te
 | FUN-011 | Setup tests distinguish hands-on time, user actions and external propagation time. Repeat-use tests record creative decisions required, support interventions and successful end-to-end completion, not only page-load speed. |
 | FUN-012 | No label, marketing claim or rollout checklist treats these five as built, live or proven winners until the corresponding implementation, hosted qualification and performance evidence exists. |
 
-## Current authoring result
+## Current implementation boundary
 
-This document locks the owner-directed product experience, not the final catalog choices or a delivery date. Existing draft generation is reusable groundwork. The remaining catalog, public funnel, domain onboarding and full payment-comparison work is not implemented by this documentation change. Execute directly with no subagents, preserve pricing and live-provider boundaries, and use sequential security then quality review at each implementation increment.
+The owner-selected roster is locked. [The October 6 studio increment](five-funnel-studio-increment.md) delivers the five original designs, fourteen private page views, field/photo editing and private saving. It does not finish domain onboarding, public registration or HighLevel handoff, and it does not establish measured conversion results. Execute directly with no subagents, preserve pricing and live-provider boundaries, and use sequential security then quality review at each implementation increment. The full-product acceptance criteria above remain the target, not an automatic completed checklist.

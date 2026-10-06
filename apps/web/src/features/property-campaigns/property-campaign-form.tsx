@@ -8,6 +8,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { PROPERTY_CAMPAIGN_COPY as COPY } from "../../copy/property-campaign-messages.js";
 import { FINANCING_CREATE_PATH } from "../financing/model.js";
 import { FINANCING_COPY } from "../../copy/financing-messages.js";
+import { FUNNEL_ROOT } from "../funnels/model.js";
 import layout from "../campaigns/components/launch.module.css";
 import { postInternalJson } from "../http/internal-api.js";
 import {
@@ -123,6 +124,9 @@ export function PropertyCampaignForm({ data }: Readonly<{ data: PropertyCampaign
           <p className={layout.lead}>{COPY.intro}</p>
           <Link href={FINANCING_CREATE_PATH} variant="sentence">
             {FINANCING_COPY.title}
+          </Link>
+          <Link href={FUNNEL_ROOT} variant="sentence">
+            Explore your five funnels
           </Link>
         </div>
       </header>

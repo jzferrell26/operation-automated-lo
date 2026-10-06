@@ -9,6 +9,68 @@
  */
 
 :root {
+  /* Controlled visitor-funnel palettes, independent of editor Light/Dark. */
+  --funnel-paper: #fbfcfe;
+  --funnel-white: #ffffff;
+  --funnel-ink: #13283f;
+  --funnel-body: #516578;
+  --funnel-line: #dce4ed;
+  --funnel-live-hero: #101e38;
+  --funnel-live-muted: #c4d3e7;
+  --funnel-live-action: #b3f0d1;
+  --funnel-live-action-ink: #102c28;
+  --funnel-live-soft: #ecf2f9;
+  --funnel-watch-hero: #15172f;
+  --funnel-watch-muted: #d3d4ee;
+  --funnel-watch-action: #ded7ff;
+  --funnel-watch-action-ink: #242040;
+  --funnel-watch-soft: #efedf8;
+  --funnel-buyer-paper: #fcfaf5;
+  --funnel-buyer-hero: #f3eee3;
+  --funnel-buyer-ink: #163c38;
+  --funnel-buyer-muted: #4e6660;
+  --funnel-buyer-action: #174c43;
+  --funnel-buyer-soft: #e8efe8;
+  --funnel-refinance-hero: #103735;
+  --funnel-refinance-muted: #c2dad4;
+  --funnel-refinance-action: #ccec9b;
+  --funnel-refinance-action-ink: #17372c;
+  --funnel-refinance-soft: #e8f1ed;
+  --funnel-guide-paper: #fffaf4;
+  --funnel-guide-hero: #f2e9dc;
+  --funnel-guide-ink: #40293d;
+  --funnel-guide-muted: #6a5362;
+  --funnel-guide-action: #613d61;
+  --funnel-guide-soft: #f0e6ed;
+  --funnel-focus: #317cec;
+  --funnel-shadow-soft: #0002;
+  --funnel-art-sky-start: #455d7b;
+  --funnel-art-sky-end: #acbdc8;
+  --funnel-art-sun: #e6ddc5;
+  --funnel-art-arch: #e3dfd4;
+  --funnel-art-shadow: #172c3633;
+  --funnel-art-depth-start: #7d9caa;
+  --funnel-art-depth-end: #152e41;
+  --funnel-art-stone: #c2c4bb;
+  --funnel-art-door: #253d48;
+  --funnel-art-step: #e4e2d9;
+  --funnel-art-step-middle: #bfc9c6;
+  --funnel-art-step-bottom: #84999a;
+  --funnel-shadow-text: #0008;
+  --funnel-art-portrait-line: #eef5f6;
+  --funnel-art-portrait-start: #405770;
+  --funnel-art-portrait-end: #223d43;
+  --funnel-art-book-start: #c9bda9;
+  --funnel-art-book-end: #f0e7d8;
+  --funnel-art-book-cover: #47394d;
+  --funnel-art-book-type: #fff3df;
+  --funnel-art-book-spine: #302838;
+  --funnel-art-book-shadow: #372c3940;
+  --funnel-white-faint: #fff7;
+  --funnel-white-half: #fff8;
+  --funnel-shadow-card: #142b4010;
+  --funnel-video-type: #e2e5f2;
+
   color-scheme: light;
 
   /* Canvas and surfaces. The navigation is a light top bar on the card colour. */

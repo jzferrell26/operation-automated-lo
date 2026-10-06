@@ -7,6 +7,7 @@
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "noEmit": true,
     "paths": {
+      "@oalo/rendering/funnel-photo": ["./packages/rendering/src/funnel-photo.ts"],
       "@oalo/*": ["./packages/*/src/index.ts"]
     },
     "types": ["node"]

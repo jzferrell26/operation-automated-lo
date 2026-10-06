@@ -180,6 +180,10 @@
     transform 120ms ease;
 }
 .surface .cta:not(:disabled):hover {
+  /* Marketing previews keep their own light reading palette inside a Dark editor shell. */
+  background: var(--f-accent);
+  border-color: transparent;
+  color: var(--f-action-ink);
   filter: brightness(0.94);
   transform: translateY(-1px);
 }
@@ -225,6 +229,11 @@
   font-size: 12px !important;
   cursor: pointer;
   box-shadow: 0 4px 20px var(--funnel-shadow-soft);
+}
+.surface :is(.photoEdit, .outline, .textAction):hover:not(:disabled) {
+  background: var(--f-soft);
+  border-color: var(--f-line);
+  color: var(--f-ink);
 }
 .art {
   position: absolute;

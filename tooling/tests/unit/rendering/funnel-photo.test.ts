@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { normalizeFunnelPhoto } from "@oalo/rendering";
+import { normalizeFunnelPhoto } from "@oalo/rendering/funnel-photo";
 
 describe("funnel photos contain validated pixels, not metadata or executable formats", () => {
   it("strips metadata, orients and bounds a real raster", async () => {

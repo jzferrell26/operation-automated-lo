@@ -38,6 +38,13 @@ for (const width of [1440, 390]) {
           .getByRole("button", { name: step.label, exact: true })
           .click();
         await expect(page.locator("[data-funnel-surface]")).toHaveAttribute("data-step", step.id);
+        if (step.id === "landing") {
+          await page
+            .locator("[data-funnel-surface]")
+            .getByRole("button", { name: funnel.defaults.cta, exact: true })
+            .first()
+            .hover();
+        }
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
           true,
         );

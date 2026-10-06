@@ -34,6 +34,10 @@ The public-funnel promise is explicitly unfinished: the form dialog is a designe
 
 **QA-FUN-004, delivery scope:** schema-valid HTTPS links are not proof of reliable playback, an accessible caption track, an available guide or an appointment handoff. This increment does not activate or verify those external resources. Do not turn its successful preview navigation into a claim of successful customer delivery.
 
+**QA-FUN-005, Dark-editor hover contrast:** clicking the real cover-edit button exposed inherited secondary-button hover paint from the Dark application shell inside a fixed-light marketing preview. The scoped template now supplies foreground/background/border values for CTA and photo/outline/text-action hover states. The actual failing axe check is retained and landing-page cases also hover their CTA before the accessibility scan. No contrast rule, theme, interaction or test was disabled.
+
+**QA-FUN-006, serverless preview import:** the first actual Vercel read returned 500 because the rendering barrel loaded Playwright's test entry and its missing browser-manifest file. A dedicated raster-only export removes that request-time browser/test import; the boundary has two regression cases. This is a release-blocking availability defect until the corrected hosted read is verified, not a successful preview because its build check said Ready.
+
 ## Suggestions
 
 The next public-activation increment should keep these fixed templates and explicit editable fields. Attach the existing domain/approved-public-version, consent and HighLevel handoff work to this saved content rather than introducing a second builder or silently activating the preview form. Reusable brand/media libraries can subsequently replace repeat photo selection without changing the layout contract.

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { assertMayExecuteCampaignMutation, type AuthenticatedPrincipal } from "@oalo/application";
-import { normalizeFunnelPhoto } from "@oalo/rendering";
+import { normalizeFunnelPhoto } from "@oalo/rendering/funnel-photo";
 import { z, ZodError } from "zod";
 import {
   FunnelDraftSchema,

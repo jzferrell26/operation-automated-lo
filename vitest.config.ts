@@ -15,6 +15,7 @@ const workspaceResolve = {
     "@oalo/ghl": resolve("packages/ghl/src/index.ts"),
     "@oalo/observability": resolve("packages/observability/src/index.ts"),
     "@oalo/rendering/qr": resolve("packages/rendering/src/render-evidence.ts"),
+    "@oalo/rendering/funnel-photo": resolve("packages/rendering/src/funnel-photo.ts"),
     "@oalo/rendering": resolve("packages/rendering/src/index.ts"),
     "@oalo/storage": resolve("packages/storage/src/index.ts"),
     "@oalo/test-support": resolve("packages/test-support/src/index.ts"),

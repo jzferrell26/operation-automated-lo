@@ -47,7 +47,13 @@ export const NEW_ACCOUNT_PAGES: readonly NewAccountPage[] = Object.freeze([
     state: "first-run",
     path: "/overview",
     ready: async (page) => {
-      await expect(page.getByRole("heading", { level: 1, name: "Launch an ad" })).toBeVisible();
+      await expect(
+        page.getByRole("heading", {
+          level: 1,
+          name: "One property. One partner. A stronger first impression.",
+        }),
+      ).toBeVisible();
+      await expect(page.getByRole("heading", { level: 2, name: "Launch an ad" })).toBeVisible();
     },
   },
   {

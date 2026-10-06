@@ -6,7 +6,7 @@ Scope: [five-funnel increment](../five-funnel-studio-increment.md) and [screen s
 
 ## Summary
 
-All five owner-selected funnel designs, their fourteen page surfaces, field-only editing, photo replacements and private draft persistence are implemented. The resume preserved the existing build, repaired its test-location dependency issue and completed a visual cleanup rather than generating a duplicate branch or starting over. Final aggregate and canonical CI results will be recorded at closeout; this review does not describe private page previews as live lead-generation funnels.
+All five owner-selected funnel designs, their fourteen page surfaces, field-only editing, photo replacements and private draft persistence are implemented. The resume preserved the existing build rather than generating a duplicate branch or starting over. The complete local offline gate and canonical Linux generation/real-database qualification passed on `5e895cf3`, and the corrected Vercel gallery plus all five preview routes returned HTTP 200. The final no-update screenshot comparison is being closed out separately below; this review does not describe private page previews as live lead-generation funnels.
 
 ## Scorecard
 
@@ -36,7 +36,7 @@ The public-funnel promise is explicitly unfinished: the form dialog is a designe
 
 **QA-FUN-005, Dark-editor hover contrast:** clicking the real cover-edit button exposed inherited secondary-button hover paint from the Dark application shell inside a fixed-light marketing preview. The scoped template now supplies foreground/background/border values for CTA and photo/outline/text-action hover states. The actual failing axe check is retained and landing-page cases also hover their CTA before the accessibility scan. No contrast rule, theme, interaction or test was disabled.
 
-**QA-FUN-006, serverless preview import:** the first actual Vercel read returned 500 because the rendering barrel loaded Playwright's test entry and its missing browser-manifest file. A dedicated raster-only export removes that request-time browser/test import; the boundary has two regression cases. This is a release-blocking availability defect until the corrected hosted read is verified, not a successful preview because its build check said Ready.
+**QA-FUN-006, serverless preview import, resolved:** the first actual Vercel read returned 500 because the rendering barrel loaded Playwright's test entry and its missing browser-manifest file. A dedicated raster-only export removes that request-time browser/test import; the boundary has two regression cases. Authorized reads of the corrected deployment now return HTTP 200 and the expected component at the gallery and all five preview routes. This is actual render evidence, not only a Ready build status. Hosted saving is not tested or enabled by those read-only requests.
 
 ## Suggestions
 
@@ -67,9 +67,17 @@ The source-review screenshots remain private local inputs. Demonstration capture
 
 Before the resumed final gate, the interrupted aggregate passed 2,847 unit, 857 integration (one existing skip), 112 contract/security, 77 component, eight visual-contract and one preview-contract tests, plus 247 synthetic browser and 16 preview-browser tests. It then failed the boundary issue described above; that run is **not** reported as a passing aggregate.
 
-After the repair, the boundary audit and all three relocated photo tests passed. All six PostgreSQL route cases passed again. The recorded clean migration/pgTAP run contains 759 assertions across sixteen files with no failure. The full current offline gate is running in `tmp/funnel-verify-resumed.log`; its final result and canonical CI result will be appended after completion, not inferred from those component results.
+After the repair, the boundary audit and all three relocated photo tests passed. All six PostgreSQL route cases passed again. The recorded clean migration/pgTAP run contains 759 assertions across sixteen files with no failure.
 
-No committed screenshot baseline, comparator, tolerance or skip was changed. New-gallery screenshots are review illustrations, not substituted Linux golden files. The final CI must still compare the inherited application screens and run the newly extended authenticated workspace test against real seeded PostgreSQL.
+**Complete local gate: `pnpm verify:offline`, exit 0, on `5e895cf3`.** The actual retained log is `tmp/funnel-final-qualified.log`. It records 2,849 unit tests, 857 integration tests with one existing skip, 112 contract/security, 77 component, eight visual-contract and one preview-contract test, 247 synthetic browser cases with 22 existing skips, and all 16 dashboard-preview browser cases. Formatting, lint, types, duplication, boundary/product-type/secret/dependency audits, builds and the sample-ad build scan also passed. The final application implementation is not being changed merely to refresh that evidence.
+
+Canonical run `37466661841` identified inherited stale visual references: populated campaign-list columns differ from their pre-normalization references, and the authenticated `home--with-campaigns` reference still predates the merged Home studio. The current branch changes neither Home's rendered layout nor campaign-list typography. The retained trace confirms capture labels normalize to `Oct 16`/`Oct 2` as intended. These are not failures of the new funnel save/preview paths, but they still prevent the complete gate from passing until the references agree with their intended implemented states.
+
+**Both jobs of canonical Linux run [37469858775](https://github.com/jzferrell26/operation-automated-lo/actions/runs/37469858775) passed on the unchanged application implementation `5e895cf3`.** This includes the synthetic screenshot suite, clean migration/pgTAP qualification, 287 web/PostgreSQL cases, 150 authenticated sample-catalog browser cases, and four real-catalog browser cases. It is generation and functional qualification, not the final comparison against refreshed references.
+
+Exactly **18 existing Linux reference images** are refreshed after inspecting decoded pixel differences: eight `chromium/campaigns--populated` references for the already-implemented capture-only normalized date widths; eight `review/home--with-campaigns` references for the merged Home hero; and two `review/shell--menu-sheet-open--390` references for that same Home visible behind the unchanged menu. The synthetic failure's actual 1180-Light image is pixel-identical to the newly generated reference; 1440-Dark differs only in a few antialiased border pixels outside the repaired text geometry.
+
+No screenshot comparator, tolerance, date mask, application layout, test assertion or skip changes in this closeout. Unrelated settings/account-button rasterization and campaign-detail date differences are not accepted. The final PR comparison must now pass with no snapshot update flag; its run/result will be recorded after it completes. New-gallery captures remain illustrations of the actual private designs, separate from these pre-existing golden files.
 
 ## Change inventory
 

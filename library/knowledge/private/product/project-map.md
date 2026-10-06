@@ -1,8 +1,12 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.21 | Date: October 5, 2026 | Status: Active
+> Category: Product Operations | Version: 1.23 | Date: October 5, 2026 | Status: Active
 
 ## Current recovery direction
+
+The primary owner-directed product contract is [five finished marketing funnels](../../../requirements/in-work/prd-010-campaign-recovery/turnkey-five-funnel-product.md), automatically using saved branding and served through guided domain setup. Clients should not need creative skills, prompt-writing, another builder or a web developer. The payment report/flyer/site is the flagship immediate build. Catalog choices, conversion evidence, domain provisioning and the complete visitor/HighLevel journey remain work to deliver, not capabilities implied by the draft-package implementation. FUN-001 through FUN-012 define the required completion evidence.
+
+PR #78 is merged as `d5ef89b0`. The next owner-approved outcome is [payment flyers, financing reports and co-branded property sites](../../../requirements/in-work/prd-010-campaign-recovery/payment-flyers-and-co-branded-sites.md): retain the historical comparison structure, modernize the original visual presentation, and reuse one saved property/brand/scenario result across report, PDF and responsive site. The three-action repeat workflow depends on completed saved setup and valid quote inputs. This new brief is not implementation evidence. Do not publish source-client templates or private reference correspondence into the generic catalog. The entries below retain their historical Batch B context; their local-only verification wording is not a fresh hosted-status inspection.
 
 PR #76 merged as `0b47805e`. [Batch B](../../../requirements/in-work/prd-010-campaign-recovery/batch-b-campaign-package.md) implements private property-page, PDF flyer, preview QR and social/email/SMS copy outputs from the saved campaign. The continuation branch is `chief/campaign-package-2026-10-05`. Its additive package migration has been tested only on a dedicated local PostgreSQL database; [deployment notes](../../../requirements/in-work/prd-010-campaign-recovery/deployment.md) govern hosted release. Exact-output approval, public lead capture, HighLevel follow-up and live campaign results remain later work. Do not reinterpret a complete private draft package as a complete live campaign.
 

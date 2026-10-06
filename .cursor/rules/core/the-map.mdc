@@ -9,6 +9,14 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
+### October 5, 2026: five finished funnels (primary product contract, not implemented)
+
+Follow [the turnkey five-funnel requirement](../../../library/requirements/in-work/prd-010-campaign-recovery/turnkey-five-funnel-product.md). The owner requires AutomatedLO to include its own five finished marketing journeys with automatic saved branding and guided domain setup, not prompts, a blank designer, Lovable instructions or paid web-development work for clients. The payment/report/co-branded-site experience remains the flagship next build. Do not invent the final five from the historical roadmap or label unmeasured templates proven winners. Preserve source rights, pricing, the working ad library and live-provider gates. The authoring branch `chief/payment-flyer-brief-2026-10-05` contains requirements only, not implemented funnel/domain functionality.
+
+### October 5, 2026: payment flyers and co-branded sites (direction approved, not implemented)
+
+PR #78 is merged as `d5ef89b0`. The owner clarified that the next useful campaign outcome is a clean financing comparison, not just a text-based open-house PDF. Follow [the payment/report/site brief](../../../library/requirements/in-work/prd-010-campaign-recovery/payment-flyers-and-co-branded-sites.md): a few-click workflow after saved setup; photos and both brands; financing assumptions, cash to close and housing expense; and one saved comparison rendered as a report, flyer and responsive site. Restricted client templates must not enter the generic catalog or this public repository. The brief is authored only. Do not claim payment calculations, image uploads, public QR or HighLevel handoff are delivered by PR #78. Earlier entries below are historical implementation notes.
+
 ### October 5, 2026: private campaign packages (PRD-010 Batch B)
 
 Jonathan merged PR #76 as `0b47805e`. The continuation branch `chief/campaign-package-2026-10-05` adds actual private page/PDF/QR/copy outputs and real-PostgreSQL qualification, including a fix for concurrent preparation retries. Follow [Batch B](../../../library/requirements/in-work/prd-010-campaign-recovery/batch-b-campaign-package.md) and its [deployment notes](../../../library/requirements/in-work/prd-010-campaign-recovery/deployment.md). The new package migration is required before hosted generation; only isolated local application is verified. Draft generation is not public approval, publication, live routing, or provider activation. The earlier entry below is the Batch A starting point, not current merge status.

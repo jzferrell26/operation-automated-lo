@@ -9,6 +9,10 @@ Canonical **product** status lives in [`library/knowledge/private/product/projec
 
 ## Current tip
 
+### October 6, 2026: five saved field-only funnel designs
+
+PR #81 merged as `37fc0566`. Branch `chief/five-funnel-studio-2026-10-06` adds [the five-funnel studio](../../../library/requirements/in-work/prd-010-campaign-recovery/five-funnel-studio-increment.md): exact roster Live webinar, On-demand webinar, Buyer, Refinance, Lead magnet; fourteen private page views; labelled copy/photo/link edits; calendar preview; click-to-load video; and author/workspace-bound optimistic saves. Read the [screen spec](../../../library/knowledge/private/ux-ui/04-screens/five-funnel-studio.md) and reviews. `20261006120000_funnel_studio.sql` is required before hosted saving and has not been applied to the host in this work. No source-client assets, public lead collection, domain changes, approval, ads, billing or customer messages are authorized by a private draft save. Do not reopen the five-roster decision or claim conversion proof from an attractive preview.
+
 ### October 6, 2026: campaign-studio UX/UI increment
 
 PR #80 merged into `main` as `4afdda8a`. [The screen spec](../../../library/knowledge/private/ux-ui/04-screens/campaign-studio.md) restores a property-package entry on Home and adds a live unsaved form summary while preserving the existing palette, six-section shell, ad capability and backend rules. PR #81 is rebased onto this UI increment, retaining both experiences. Follow the scoped security and QA evidence for verification; no production deployment, public financial output or completed five-funnel pack is implied by the UI. Two inherited dependency advisories have narrow version patches, not new audit exceptions.

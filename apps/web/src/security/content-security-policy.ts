@@ -17,7 +17,7 @@ export function createRequestNonce(): string {
   return btoa(binary);
 }
 
-export function buildContentSecurityPolicy(nonce: string): string {
+export function buildContentSecurityPolicy(nonce: string, funnelMedia = false): string {
   if (!/^[A-Za-z0-9+/=]+$/.test(nonce) || nonce.length < 16) {
     throw new Error("CSP nonce must be a server-generated base64 value.");
   }
@@ -32,6 +32,9 @@ export function buildContentSecurityPolicy(nonce: string): string {
     "img-src 'self' data: blob:",
     "font-src 'self'",
     "connect-src 'self'",
+    ...(funnelMedia
+      ? ["frame-src https://www.youtube-nocookie.com https://player.vimeo.com", "media-src https:"]
+      : []),
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

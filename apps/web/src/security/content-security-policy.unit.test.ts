@@ -8,6 +8,16 @@ import {
 } from "./content-security-policy.js";
 
 describe("content-security-policy", () => {
+  it("allows known webinar players only when the funnel media path opts in", () => {
+    const nonce = createRequestNonce();
+    const ordinary = buildContentSecurityPolicy(nonce);
+    const funnel = buildContentSecurityPolicy(nonce, true);
+    expect(ordinary).not.toContain("youtube-nocookie");
+    expect(ordinary).not.toContain("media-src https:");
+    expect(funnel).toContain("frame-src https://www.youtube-nocookie.com https://player.vimeo.com");
+    expect(funnel).toContain("connect-src 'self'");
+    expect(funnel).not.toContain("frame-src *");
+  });
   it("creates opaque base64 nonces that differ per call", () => {
     const first = createRequestNonce();
     const second = createRequestNonce();

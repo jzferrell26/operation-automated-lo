@@ -1,5 +1,7 @@
 import { contractVersion } from "@oalo/contracts";
 
+export { normalizeFunnelPhoto } from "./funnel-photo.js";
+
 export const renderingPackage = Object.freeze({
   contractVersion,
   implementation: "deterministic-rendering-contract",

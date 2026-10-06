@@ -1,6 +1,6 @@
 begin;
 
-select plan(21);
+select plan(22);
 
 create function pg_temp.assert_is(actual anyelement, expected anyelement, description text)
 returns text
@@ -91,8 +91,8 @@ select is(
         )
       )
   ),
-  26,
-  'the expected twenty-six tenant tables, including private campaign packages, are present'
+  27,
+  'the expected twenty-seven tenant tables, including private funnel drafts, are present'
 );
 
 select has_table(
@@ -100,6 +100,8 @@ select has_table(
   'property_campaign_packages',
   'the additional tenant table is the PRD-010 private campaign package store'
 );
+
+select has_table('campaign','funnel_drafts','the field-only funnel draft store is present');
 
 select is(
   (

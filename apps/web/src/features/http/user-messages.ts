@@ -29,6 +29,26 @@ export type UserMessage = Readonly<{
  * pair.
  */
 export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Object.freeze({
+  FUNNEL_CONFLICT: {
+    what: "Another version of this funnel was saved.",
+    whatToDo: "Keep your edits and open the saved version in another tab before replacing it.",
+  },
+  FUNNEL_INVALID: {
+    what: "Some funnel details need your attention.",
+    whatToDo: "Check the fields, photo permission and HTTPS links, then try again.",
+  },
+  FUNNEL_UNAVAILABLE: {
+    what: "Your funnel could not be confirmed.",
+    whatToDo: "Keep your edits and try again. Contact support if this continues.",
+  },
+  FUNNEL_BRAND_REQUIRED: {
+    what: "Your saved brand needs more details.",
+    whatToDo: "Complete your name, company and both NMLS numbers in Brand.",
+  },
+  FUNNEL_PHOTO_INVALID: {
+    what: "That photo could not be processed.",
+    whatToDo: "Use a JPEG, PNG or WebP under 3 MB and try again.",
+  },
   FINANCING_INVALID: {
     what: "Some financing inputs need attention.",
     whatToDo: "Check the scenario amounts, dates, and cost classifications before saving again.",

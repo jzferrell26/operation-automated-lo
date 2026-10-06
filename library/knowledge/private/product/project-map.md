@@ -1,8 +1,10 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.24 | Date: October 6, 2026 | Status: Active
+> Category: Product Operations | Version: 1.25 | Date: October 6, 2026 | Status: Active
 
 ## Current recovery direction
+
+PR #81 is merged at `37fc0566`. The new [five-funnel studio increment](../../../requirements/in-work/prd-010-campaign-recovery/five-funnel-studio-increment.md) on `chief/five-funnel-studio-2026-10-06` implements the owner-selected Live webinar, On-demand webinar, Buyer, Refinance and Lead magnet designs, their fourteen private page views, fixed-layout field/photo editing and private optimistic saving. The new studio migration must precede hosted saving. Final verification lives in its scoped reviews; public registration, DNS/HTTPS, live booking confirmation and HighLevel lead delivery remain separate, unactivated work. The historical branch statements below predate the PR #81 merge.
 
 The UX/UI improvement merged in PR #80 as `4afdda8a`. [Campaign studio](../ux-ui/04-screens/campaign-studio.md) makes the private property package discoverable and improves the preparation form with clear hierarchy and a live unsaved summary. The PR #81 financing branch is rebased onto it, preserving both the UI and financing work. Financial/report/site functionality is not a capability created by the visual increment alone. Check the associated review evidence for release status; a screenshot is not proof of public launch or five implemented funnels.
 

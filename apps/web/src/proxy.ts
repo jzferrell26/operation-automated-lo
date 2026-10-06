@@ -29,7 +29,12 @@ function isTokenBearingPath(pathname: string): boolean {
  */
 export function proxy(request: NextRequest): NextResponse {
   const nonce = createRequestNonce();
-  const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
+  // Media is click-to-load and isolated to the authenticated, finite funnel studio path.
+  const funnelMedia =
+    /^\/marketing\/campaigns\/funnels(?:\/(?:live-webinar|on-demand|buyer|refinance|lead-magnet)(?:\/preview)?)?\/?$/u.test(
+      request.nextUrl.pathname,
+    );
+  const contentSecurityPolicy = buildContentSecurityPolicy(nonce, funnelMedia);
   const cspHeaderName = contentSecurityPolicyHeaderName("enforce");
 
   const requestHeaders = new Headers(request.headers);

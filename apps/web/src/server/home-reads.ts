@@ -256,6 +256,8 @@ export async function readHome(
   });
   return Object.freeze({
     checklist: buildHomeChecklist(facts),
+    canCreateCampaigns:
+      principal.role === "location_admin" || principal.role === "campaign_creator",
     topics: activeTopics(library),
     running: buildRunningList(campaignFacts),
     approval: buildApprovalList(campaignFacts, principalHasCampaignApprovalRole(principal)),

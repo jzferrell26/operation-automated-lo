@@ -45,6 +45,19 @@
   font-weight: var(--weight-medium);
 }
 
+.studioSectionHead {
+  display: grid;
+  gap: var(--space-1);
+}
+.studioSectionHead :where(h2, p) {
+  margin: 0;
+}
+.start .adChoice {
+  min-block-size: 3.25rem;
+  padding-inline: var(--space-6);
+  font-size: var(--text-body-size);
+}
+
 .grid {
   display: grid;
   align-items: start;
@@ -229,27 +242,6 @@
   border-radius: var(--radius-pill);
   box-shadow: none;
   font-size: var(--text-secondary-size);
-}
-
-/* The one primary button on the page, drawn as a link because it goes to another page. */
-.start .primaryLink {
-  min-block-size: 3.25rem;
-  padding-inline: var(--space-8);
-  border-color: var(--ac-primary);
-  background: var(--ac-primary);
-  box-shadow: none;
-  color: var(--tx-on-action);
-  font-size: var(--text-body-size);
-}
-
-.start .primaryLink:hover {
-  border-color: var(--ac-primary-hover);
-  background: var(--ac-primary-hover);
-  color: var(--tx-on-action);
-}
-
-.start .primaryLink:active {
-  background: var(--ac-primary-active);
 }
 
 .steps {

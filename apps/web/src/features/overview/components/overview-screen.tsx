@@ -5,6 +5,8 @@ import type { HomeData } from "../model/home-view.js";
 import { HomeNeedsApproval, HomeRunningNow } from "./home-campaign-lists.js";
 import { HomeSetupCard } from "./home-setup-card.js";
 import { HomeStartCard } from "./home-start-card.js";
+import { HomeStudioHero } from "./home-studio-hero.js";
+import { CAMPAIGN_STUDIO } from "../../../copy/campaign-studio-messages.js";
 import styles from "./overview.module.css";
 
 type OverviewScreenProps = Readonly<{
@@ -23,7 +25,9 @@ type OverviewScreenProps = Readonly<{
 }>;
 
 /**
- * PRD-009b D1 and 009B-AC-001. Home: a greeting, the start card that leads to "Launch an ad", the
+ * UX-001/002 (October 6) places the implemented property package ahead of the existing ad workflow.
+ * The studio is a real entry point, not proof that financing or five public funnels are built.
+ * PRD-009b's supporting regions remain: the ad card, the
  * "Get set up" card, "Running now", "Needs your approval" (for people who can approve), and one
  * sentence that says HighLevel stays the CRM.
  *
@@ -51,6 +55,11 @@ export function OverviewScreen({
     <div className={styles.home}>
       {notice}
       <p className={styles.welcome}>{homeGreeting(firstName)}</p>
+      <HomeStudioHero canCreate={home.canCreateCampaigns === true} />
+      <div className={styles.studioSectionHead}>
+        <h2 className={styles.sectionTitle}>{CAMPAIGN_STUDIO.supportingTitle}</h2>
+        <p className={styles.secondary}>{CAMPAIGN_STUDIO.supportingDescription}</p>
+      </div>
       <div className={styles.grid}>
         <HomeStartCard topics={home.topics} />
         <HomeSetupCard

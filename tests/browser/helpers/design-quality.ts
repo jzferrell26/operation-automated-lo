@@ -305,6 +305,9 @@ export async function measureTextAtTheTypeSteps(
         if (exempt(element)) return;
         const pixels = size(element);
         if (steps.some((step) => Math.abs(step - pixels) < 0.01)) return;
+        // October 6 campaign-studio amendment: only the marked h1 has a 40px display step.
+        // Not a subtree exemption: descendants, wrong tags and other sizes remain checked.
+        if (element.matches("h1[data-studio-title]") && Math.abs(pixels - 40) < 0.01) return;
         offStep.add(`${describe(element, text)} at ${String(pixels)}px`);
       };
 

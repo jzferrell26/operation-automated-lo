@@ -36,6 +36,28 @@ const APPROVER: AuthenticatedPrincipal = createLocalSyntheticPrincipal({
 });
 const CREATOR: AuthenticatedPrincipal = createLocalSyntheticPrincipal();
 
+describe("studio creation capability (UX-001)", () => {
+  it.each([
+    ["location_admin", true],
+    ["campaign_creator", true],
+    ["campaign_approver", false],
+    ["viewer", false],
+  ] as const)(
+    "derives %s capability from the principal, not the checklist",
+    async (role, expected) => {
+      await store.enter();
+      const principal = createLocalSyntheticPrincipal({ role });
+      const home = await readHome(
+        principal,
+        environment(),
+        ports({ readCampaigns: recordsFor(principal) }),
+      );
+      expect(home.canCreateCampaigns).toBe(expected);
+      expect(home.checklist.doneCount).toBe(0);
+    },
+  );
+});
+
 function environment() {
   return { ...store.env(), [ADS_LIBRARY_SAMPLES_FLAG]: "enabled" };
 }

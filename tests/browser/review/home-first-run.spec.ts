@@ -70,7 +70,12 @@ test.describe.serial("Home for a brand-new account", () => {
    * setup" chip, or a highlighted element is the walkthrough this PRD retired.
    */
   test("the first render has no dialog, no floating panel, and no walkthrough control (009B-AC-011)", async () => {
-    await expect(page.getByRole("heading", { level: 1, name: "Launch an ad" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "One property. One partner. A stronger first impression.",
+      }),
+    ).toBeVisible();
 
     await expect(page.locator("[role='dialog']")).toHaveCount(0);
     await expect(page.locator("[data-guided-setup-highlight], [data-tour]")).toHaveCount(0);
@@ -158,14 +163,16 @@ test.describe.serial("Home for a brand-new account", () => {
     }
 
     expect(walked[0], "the skip link is first").toBe("Skip to content");
-    const primary = walked.indexOf("Choose an ad");
-    expect(primary, "Choose an ad is reached").toBeGreaterThan(0);
+    const primary = walked.indexOf("Create a property campaign");
+    expect(primary, "The implemented property flow is reached first (UX-001)").toBeGreaterThan(0);
     // What sits between the top bar and the primary button is the verification notice, at most.
     const topBarEnd = walked.findIndex((name) => name.startsWith("Your account: "));
     expect(topBarEnd).toBeGreaterThan(0);
     const between = walked.slice(topBarEnd + 1, primary);
     expect(between.filter((name) => !/send it again|resend/iu.test(name))).toEqual([]);
-    expect(walked.slice(primary, primary + 6)).toEqual([
+    expect(walked.slice(primary, primary + 8)).toEqual([
+      "Create a property campaign",
+      "View your campaigns",
       "Choose an ad",
       ...TOPICS.map(([label]) => label),
     ]);

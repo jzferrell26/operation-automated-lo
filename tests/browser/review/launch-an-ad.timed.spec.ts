@@ -89,7 +89,12 @@ test("a first-time loan officer reaches an approved ad inside five minutes", asy
   const signUpSeconds = clock.mark("0. Create your account");
 
   // Step 1. Home is the first page, and it asks for one thing first: the brand.
-  await expect(page.getByRole("heading", { level: 1, name: "Launch an ad" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "One property. One partner. A stronger first impression.",
+    }),
+  ).toBeVisible();
   await readLikeAPerson(page);
   await page
     .getByRole("region", { name: "Get set up" })

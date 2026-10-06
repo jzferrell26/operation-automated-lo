@@ -14,6 +14,7 @@ import {
 } from "./connection-statements.test-support.js";
 import { OverviewScreen } from "./overview-screen.js";
 import styles from "./overview.module.css";
+import { CAMPAIGN_STUDIO } from "../../../copy/campaign-studio-messages.js";
 
 /**
  * PRD-009b 009B-AC-001, 002, 004, 006, 007, 008, 009, 010, and 014, at the screen.
@@ -44,6 +45,7 @@ function homeData(
   }> = {},
 ): HomeData {
   return {
+    canCreateCampaigns: true,
     checklist: buildHomeChecklist({
       installationStatuses: overrides.installationStatuses ?? [],
       brand: overrides.brand,
@@ -138,7 +140,8 @@ describe("the composition (009B-AC-001)", () => {
     expect(container.querySelector(".oalo-metric")).toBeNull();
     expect(container.querySelector("[data-overview-state]")).toBeNull();
     expect(container.querySelector("[data-demo-label]")).toBeNull();
-    expect(screen.queryByText(/Realtor partner/iu)).toBeNull();
+    // UX-002 restores a property/partner entry, not CRM data or a partner-management page.
+    expect(container.querySelector("[data-home='studio']")).toBeInTheDocument();
   });
 
   it("links to no section the product removed", () => {
@@ -170,7 +173,10 @@ describe("the start card (009B-AC-002)", () => {
     renderHome();
 
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
-    expect(screen.getByRole("heading", { level: 1, name: "Launch an ad" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: CAMPAIGN_STUDIO.title }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Launch an ad" })).toBeInTheDocument();
     expect(
       screen.getByText(
         "Pick a ready-made Facebook ad for loan officers. Your name and NMLS number go on it for you. You set the budget, dates and area, then approve it.",
@@ -197,8 +203,13 @@ describe("the start card (009B-AC-002)", () => {
   it("has the one primary action, which opens step 1 with every ad", () => {
     const { container } = renderHome();
 
-    const primary = within(card("Launch an ad")).getByRole("link", { name: "Choose an ad" });
-    expect(primary).toHaveAttribute("href", "/marketing/campaigns/new");
+    const primary = within(card(CAMPAIGN_STUDIO.title)).getByRole("link", {
+      name: CAMPAIGN_STUDIO.create,
+    });
+    expect(primary).toHaveAttribute("href", CAMPAIGN_STUDIO.propertyPath);
+    expect(
+      within(card("Launch an ad")).getByRole("link", { name: "Choose an ad" }),
+    ).toHaveAttribute("href", "/marketing/campaigns/new");
     // One primary per screen: the page carries exactly one control drawn as the primary action.
     expect(container.querySelectorAll("[data-home-primary]")).toHaveLength(1);
     expect(container.querySelectorAll("button")).toHaveLength(0);
@@ -237,7 +248,9 @@ describe("the start card (009B-AC-002)", () => {
     const { container } = renderHome();
     const order = [...container.querySelectorAll("a[href]")].map((anchor) => anchor.textContent);
 
-    expect(order.slice(0, 6)).toEqual([
+    expect(order.slice(0, 8)).toEqual([
+      CAMPAIGN_STUDIO.create,
+      CAMPAIGN_STUDIO.browse,
       "Choose an ad",
       "First-time buyers",
       "Refinance",
@@ -245,6 +258,17 @@ describe("the start card (009B-AC-002)", () => {
       "Pre-approval",
       "Down payment help",
     ]);
+  });
+
+  it("gives a non-creator a campaign-review action, never a misleading create action", () => {
+    renderHome({ ...homeData(), canCreateCampaigns: false });
+    const studio = card(CAMPAIGN_STUDIO.title);
+    expect(within(studio).queryByRole("link", { name: CAMPAIGN_STUDIO.create })).toBeNull();
+    expect(within(studio).getByRole("link", { name: CAMPAIGN_STUDIO.browse })).toHaveAttribute(
+      "href",
+      CAMPAIGN_STUDIO.campaignPath,
+    );
+    expect(studio.querySelectorAll("[data-home-primary]")).toHaveLength(1);
   });
 });
 

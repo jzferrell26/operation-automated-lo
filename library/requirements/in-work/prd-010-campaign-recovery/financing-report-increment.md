@@ -2,6 +2,7 @@
 
 Date: October 6, 2026. Owner: Jonathan Ferrell. Implementation and direct self-review: Chief.
 Base: `0d2187a5`, merged PR #79. Branch: `chief/financing-report-2026-10-06`.
+Rebase update, October 6: PR #81 now includes `main` at `4afdda8a` (merged PR #80). The studio UI and financing implementation are both retained. The dependency lockfile and version-scoped security overrides are unchanged from that new base; duplicate feature-branch overrides were unnecessary and removed.
 Status: Implemented on the branch; verification and review are recorded in the associated QA report. Not merged, deployed or approved for public use.
 
 ## What this increment delivers

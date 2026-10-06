@@ -3,6 +3,16 @@
 Date: October 6, 2026. Reviewer: Chief, direct sequential self-review after the [security review](2026-10-06-financing-security-self-review.md). This is not independent-agent review.
 Base: `0d2187a5`. Branch: `chief/financing-report-2026-10-06`.
 
+## PR #81 conflict-resolution addendum
+
+After PR #80 merged, PR #81 was rebased from `72aa7fd7` onto `main` at `4afdda8a`. The original feature commit is preserved at `backup/pr81-before-rebase-20261006-0543`. All three explicit conflicts were additive documentation sections; both the studio and financing entries were retained and their merge status corrected. The property form and tests combine the live summary with the financing entry rather than replacing either. Main's exact lockfile, scoped dependency patches, Home source, design tokens and committed screenshot references are retained.
+
+Validation after the scoped security review: frozen installation, full workspace type checks, lint, zero-duplication and package-boundary/product-type/secret audits passed. All **30 selected browser tests passed**, covering the studio and local summary, financing save/PDF/reuse, property-package generation, and screenshot-date helpers. The new cross-feature regression follows Home to property preparation and then to financing at all four widths in both themes without an unintended save. The resulting mobile form capture was inspected.
+
+Two combined six-project test runs each reported 3,859 passing tests, one existing skip and one 5-second timeout in an existing source-scan guard. The failing guards were different between runs. Both then passed in isolated one-worker reruns with their original timeouts unchanged: six transport/security tests and seven client-import boundary tests. No assertion, test timeout, screenshot tolerance, skip policy or source-scan scope was weakened. This is not represented as a single fully green aggregate run; the fresh PR CI must qualify the rebased tree independently.
+
+The financing implementation itself is byte-identical to the original feature commit. No formula, database schema, authentication boundary, provider setting or hosted data changed. This addendum records the conflict repair, not new public-product or production-release approval; the original implementation review and restrictions follow.
+
 ## Outcome
 
 The implemented slice is a working private financing report, not a finished consumer flyer product. A saved comparison contains one-to-five scenarios and both professional identities. Monthly housing and cash-to-close values are calculated on the server, persisted in the campaign version and reused across the report, private HTML site and PDF. The author can reopen the campaign and reuse its prior settings without designing a layout or reconstructing cost items.

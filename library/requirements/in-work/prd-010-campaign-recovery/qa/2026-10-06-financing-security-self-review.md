@@ -3,6 +3,12 @@
 Date: October 6, 2026. Reviewer: Chief, direct sequential self-review. Base: `0d2187a5`.
 This is not independent security certification. Scope is the financing comparison branch, not the entire inherited product.
 
+## PR #81 rebase-only review
+
+The October 6 conflict repair rebases the original `72aa7fd7` onto `main` at `4afdda8a` (merged PR #80). Three additive documentation conflicts retain both product directions. A direct source diff confirms the financing form, arithmetic, schemas, saved-context handling, authentication/output handlers and verification code are identical to the original feature commit. Home, design tokens, screenshots and the dependency lockfile match the new main base. Existing scoped patch overrides are retained without adding a new ignore rule or dependency version.
+
+No database, financial formula, credential, deployment setting, publication permission or live-provider change is introduced by this resolution. The added browser regression verifies that the studio summary and financing entry coexist. This scoped review precedes the rebase QA addendum and does not replace or broaden the original security assessment and release restrictions below.
+
 ## Executive summary
 
 No new Critical or High exploit was detected in the reviewed financing diff. The new save and read routes reuse the verified authentication, role, request-origin and tenant repository boundaries. Browser input cannot supply branding, tenant authority, saved calculations, approvals or a publication command. Financial outputs remain private, and the existing ad-approval operation independently refuses financing manifests.

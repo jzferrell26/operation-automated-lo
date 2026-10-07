@@ -201,6 +201,14 @@ describe("actual public funnel publication, consent and delivery boundary", () =
     expect(exportResponse.status).toBe(200);
     expect(exportResponse.headers.get("cache-control")).toContain("no-store");
     expect(await exportResponse.text()).toContain("visitor@example.org");
+    const pausedExport = await downloadFunnelInquiries(
+      new Request(`${environment.OALO_APP_URL}/api/funnels/submissions?publication=${id}`, {
+        headers: { cookie: owner.cookieHeader },
+      }),
+      { ...environment, OALO_FUNNEL_PUBLICATION: "disabled" },
+    );
+    expect(pausedExport.status).toBe(200);
+    expect(await pausedExport.text()).toContain("visitor@example.org");
   });
   it("parallel retries reuse a single request and altered retries cannot overwrite it", async () => {
     const id = fixtures[1]!.id,

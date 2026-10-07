@@ -21,7 +21,8 @@ allowBuilds:
   "@depot/cli@0.0.1-cli.2.80.0": true
   esbuild: set this to true or false
   esbuild@0.25.0: true
-  sharp@0.35.4: true
+  sharp: set this to true or false
+  sharp@0.35.5: true
 overrides:
   "@opentelemetry/core": 2.8.0
   deepmerge-ts: ">=8.0.0"
@@ -29,7 +30,7 @@ overrides:
   esbuild: 0.25.0
   postcss: 8.5.23
   qs: 6.16.0
-  sharp: 0.35.4
+  sharp: 0.35.5
   tar: 7.5.21
   ws: 8.21.0
   nanoid@<3.3.17: ^3.3.17
@@ -39,6 +40,8 @@ overrides:
   source-map-js@<1.2.2: 1.2.2
   # The full audit also found GHSA-jqcg-44mw-7w3h in the inherited Trigger CLI tree.
   proxy-addr@<2.0.8: 2.0.8
+  # October 7 security closeout: patched OAuth issuer binding in the inherited Trigger CLI tree.
+  "@modelcontextprotocol/sdk@>=1.12.0 <1.31.0": 1.31.0
 peerDependencyRules:
   allowedVersions:
     typescript: 7.0.2

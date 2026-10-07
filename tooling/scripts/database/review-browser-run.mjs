@@ -61,9 +61,16 @@ const REVIEW_BUILD_ID = "review-browser-run";
  * `catalog` is `samples` (the default) for the labelled sample ads, or `real` for the catalog the
  * repository ships, which is empty (PRD-009g).
  */
-export function reviewServerEnvironment(databaseUrl, catalog = "samples") {
+export function reviewServerEnvironment(
+  databaseUrl,
+  catalog = "samples",
+  funnelDataKey = randomBytes(32).toString("base64url"),
+) {
   if (catalog !== "samples" && catalog !== "real") {
     throw new Error(`The review run has no catalog named ${String(catalog)}`);
+  }
+  if (!/^[A-Za-z0-9_-]{43}$/u.test(funnelDataKey)) {
+    throw new Error("The disposable funnel data key must encode 32 random bytes");
   }
   const identity = Object.fromEntries(
     [
@@ -93,7 +100,7 @@ export function reviewServerEnvironment(databaseUrl, catalog = "samples") {
     OALO_SELF_SERVE_SIGNUP: "enabled",
     // Disposable review database only: exercise actual reviewed publication and receipt flows.
     OALO_FUNNEL_PUBLICATION: "enabled",
-    OALO_FUNNEL_DATA_KEY: randomBytes(32).toString("base64url"),
+    OALO_FUNNEL_DATA_KEY: funnelDataKey,
     // PRD-009c D3, 009C-AC-004. The first pass shows the labelled sample ads. The guard also needs
     // `OALO_ENVIRONMENT` to be exactly `local`, set above, and refuses on any deployment signal,
     // none of which this run sets. PRD-009g: the second pass leaves the flag out, so the guard
@@ -270,6 +277,9 @@ export async function runReviewBrowserSuite(options) {
   const nextCli = resolve(repositoryRoot, "apps/web/node_modules/next/dist/bin/next");
   const proxyScript = resolve(repositoryRoot, "tooling/scripts/browser/https-proxy.mjs");
   const certificateDirectory = await mkdtemp(join(tmpdir(), "oalo-review-tls-"));
+  // Both servers use one disposable database. Keep its encryption key for the whole run,
+  // not just one server process, so a restart never strands already accepted inquiries.
+  const funnelDataKey = randomBytes(32).toString("base64url");
 
   let server;
   let terminator;
@@ -327,7 +337,7 @@ export async function runReviewBrowserSuite(options) {
           [nextCli, "start", "--hostname", HOST, "--port", String(REVIEW_HTTP_PORT)],
           {
             cwd: resolve(repositoryRoot, "apps/web"),
-            env: reviewServerEnvironment(options.databaseUrl, pass.catalog),
+            env: reviewServerEnvironment(options.databaseUrl, pass.catalog, funnelDataKey),
           },
         );
         await waitForApplication(`http://${HOST}:${String(REVIEW_HTTP_PORT)}/sign-in`);

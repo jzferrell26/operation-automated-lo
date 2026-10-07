@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { randomBytes } from "node:crypto";
 
 import {
   REVIEW_APP_URL,
@@ -48,8 +49,9 @@ describe("review browser run", () => {
    * photograph something no deployment shows, or refuse the database's plain-TCP connection.
    */
   it("starts the second server without the samples flag, and changes nothing else about it", () => {
-    const samples = reviewServerEnvironment(DISPOSABLE_URL, "samples");
-    const real = reviewServerEnvironment(DISPOSABLE_URL, "real");
+    const dataKey = randomBytes(32).toString("base64url");
+    const samples = reviewServerEnvironment(DISPOSABLE_URL, "samples", dataKey);
+    const real = reviewServerEnvironment(DISPOSABLE_URL, "real", dataKey);
 
     expect(real["OALO_ADS_LIBRARY_SAMPLES"]).toBeUndefined();
     expect("OALO_ADS_LIBRARY_SAMPLES" in real).toBe(false);
@@ -69,6 +71,7 @@ describe("review browser run", () => {
     } = samples;
     const { OALO_CSRF_SERVER_SECRET: _second, ...realRest } = real;
     expect(realRest).toEqual(samplesRest);
+    expect(real["OALO_FUNNEL_DATA_KEY"]).toBe(dataKey);
     // The default is the sample pass, which is what every other spec in the run was written against.
     expect(reviewServerEnvironment(DISPOSABLE_URL)["OALO_ADS_LIBRARY_SAMPLES"]).toBe("enabled");
   });
@@ -119,6 +122,16 @@ describe("review browser run", () => {
     const second = reviewServerEnvironment(DISPOSABLE_URL)["OALO_CSRF_SERVER_SECRET"];
     expect(first).not.toBe(second);
     expect(first).toMatch(/^[A-Za-z0-9_-]{43,512}$/u);
+  });
+
+  it("never substitutes a fixed or malformed funnel data key", () => {
+    const first = reviewServerEnvironment(DISPOSABLE_URL)["OALO_FUNNEL_DATA_KEY"];
+    const second = reviewServerEnvironment(DISPOSABLE_URL)["OALO_FUNNEL_DATA_KEY"];
+    expect(first).not.toBe(second);
+    expect(first).toMatch(/^[A-Za-z0-9_-]{43}$/u);
+    expect(() => reviewServerEnvironment(DISPOSABLE_URL, "samples", "invalid")).toThrow(
+      "32 random bytes",
+    );
   });
 
   it("asks openssl for a short-lived certificate that covers the loopback address", () => {

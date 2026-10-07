@@ -8,7 +8,7 @@ import {
   PublishedFunnelSchema,
   publicationBlockers,
 } from "./publication-model.js";
-import { postInternalJson } from "../http/internal-api.js";
+import { getInternalJson, postInternalJson } from "../http/internal-api.js";
 import styles from "./studio.module.css";
 
 export function FunnelPublishPanel({
@@ -33,14 +33,12 @@ export function FunnelPublishPanel({
   const blockers = publicationBlockers(kind, fields);
   async function load() {
     setOpen(true);
+    // A new review session cannot inherit consent from an earlier saved revision.
+    setReviewed(false);
     setBusy(true);
     setProblem("");
     try {
-      const response = await fetch("/api/funnels/publication", {
-        credentials: "same-origin",
-        cache: "no-store",
-        redirect: "error",
-      });
+      const response = await getInternalJson("/api/funnels/publication");
       if (!response.ok) throw new Error("Read failed");
       setState(FunnelPublicationStateSchema.parse(await response.json()));
     } catch {

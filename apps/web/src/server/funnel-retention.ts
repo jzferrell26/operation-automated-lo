@@ -1,7 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { campaignDatabasePool } from "./campaign-persistence-runtime.js";
-import { publicFunnelConfig } from "./funnel-public-store.js";
 
 export async function runFunnelRetention(
   request: Request,
@@ -19,12 +18,12 @@ export async function runFunnelRetention(
     .digest();
   const expected = createHash("sha256").update(`Bearer ${env.data.CRON_SECRET}`).digest();
   if (!timingSafeEqual(actual, expected)) return json({ error: "UNAUTHENTICATED" }, 401);
-  try {
-    publicFunnelConfig(environment);
-  } catch {
-    return json({ error: "RETENTION_NOT_CONFIGURED" }, 503);
-  }
-  const connection = await campaignDatabasePool(environment).connect();
+  // Expiration must keep running even when public collection is disabled. The scheduler
+  // deletes already-expired ciphertext and neither needs nor uses the contact decryption key.
+  const connection = await Promise.resolve()
+    .then(() => campaignDatabasePool(environment).connect())
+    .catch(() => null);
+  if (connection === null) return json({ error: "RETENTION_UNAVAILABLE" }, 503);
   const execute = (name: string, text: string) =>
     connection.execute({
       statementName: `funnel-retention.${name}`,
@@ -50,7 +49,7 @@ export async function runFunnelRetention(
     await execute("commit", "commit");
     return json({ removed });
   } catch {
-    await execute("rollback", "rollback");
+    await execute("rollback", "rollback").catch(() => undefined);
     return json({ error: "RETENTION_UNAVAILABLE" }, 503);
   } finally {
     await connection.release();

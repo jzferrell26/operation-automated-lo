@@ -5,6 +5,7 @@ import { funnelDefinition } from "./catalog.js";
 import type { FunnelSnapshot } from "./publication-model.js";
 import type { FunnelStep } from "./model.js";
 import styles from "./published.module.css";
+import { postInternalJson } from "../http/internal-api.js";
 
 /** Published pages have no editor shell. Form completion waits for the durable server receipt. */
 export function PublishedFunnelSurface({
@@ -27,14 +28,7 @@ export function PublishedFunnelSurface({
         onStep={go}
         published
         capture={async (visitor) => {
-          const response = await fetch(`/api/funnel-public/${id}`, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(visitor),
-            credentials: "same-origin",
-            redirect: "error",
-            cache: "no-store",
-          });
+          const response = await postInternalJson(`/api/funnel-public/${id}`, visitor);
           if (!response.ok) throw new Error("Request not confirmed");
           const body: unknown = await response.json();
           if (!body || typeof body !== "object" || !("accepted" in body) || body.accepted !== true)

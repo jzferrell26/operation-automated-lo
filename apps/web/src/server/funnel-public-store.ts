@@ -38,13 +38,14 @@ const EnvironmentSchema = z
   .object({
     OALO_ENVIRONMENT: z.string().optional(),
     OALO_APP_URL: z.url(),
-    OALO_FUNNEL_PUBLICATION: z.literal("enabled"),
+    OALO_FUNNEL_PUBLICATION: z.string().optional(),
     OALO_FUNNEL_DATA_KEY: z.string().regex(/^[A-Za-z0-9_-]{43}$/u),
     OALO_FUNNEL_GHL_CONNECTIONS_JSON: z.string().optional(),
     OALO_FUNNEL_GHL_DELIVERY: z.literal("enabled").optional(),
   })
   .passthrough();
-export function publicFunnelConfig(environment: unknown) {
+/** Existing private records remain exportable when new public collection is switched off. */
+export function funnelDataConfig(environment: unknown) {
   const parsed = EnvironmentSchema.safeParse(environment);
   if (!parsed.success) throw new FunnelPublicError(503);
   const url = new URL(parsed.data.OALO_APP_URL);
@@ -72,6 +73,13 @@ export function publicFunnelConfig(environment: unknown) {
         ? parsed.data.OALO_FUNNEL_GHL_CONNECTIONS_JSON
         : undefined,
   };
+}
+export function publicFunnelConfig(environment: unknown) {
+  const parsed = EnvironmentSchema.safeParse(environment);
+  if (!parsed.success || parsed.data.OALO_FUNNEL_PUBLICATION !== "enabled") {
+    throw new FunnelPublicError(503);
+  }
+  return funnelDataConfig(environment);
 }
 export type PublicFunnelConfig = ReturnType<typeof publicFunnelConfig>;
 export const receiptHash = (value: string) => createHash("sha256").update(value).digest("hex");

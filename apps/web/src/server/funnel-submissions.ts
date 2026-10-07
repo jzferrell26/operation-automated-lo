@@ -10,7 +10,7 @@ import {
   campaignDatabasePool,
   workspaceCorrelationReferenceFor,
 } from "./campaign-persistence-runtime.js";
-import { decryptVisitor, publicFunnelConfig } from "./funnel-public-store.js";
+import { decryptVisitor, funnelDataConfig } from "./funnel-public-store.js";
 import { campaignCommandAuthErrorResponse } from "./campaign-command-http.js";
 
 const csvCell = (value: string) =>
@@ -28,7 +28,7 @@ export async function downloadFunnelInquiries(
     if (principal.authenticationMode === "local_synthetic" || principal.role === "platform_support")
       return new Response(null, { status: 403 });
     const id = z.uuid().parse(new URL(request.url).searchParams.get("publication"));
-    const config = publicFunnelConfig(environment),
+    const config = funnelDataConfig(environment),
       pool = campaignDatabasePool(environment);
     const authority = createPrincipalBoundTenantContextAuthority(
       principal,

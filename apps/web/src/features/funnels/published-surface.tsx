@@ -6,6 +6,7 @@ import type { FunnelSnapshot } from "./publication-model.js";
 import type { FunnelStep } from "./model.js";
 import styles from "./published.module.css";
 import { postInternalJson } from "../http/internal-api.js";
+import { FunnelCaptureError } from "./visitor-model.js";
 
 /** Published pages have no editor shell. Form completion waits for the durable server receipt. */
 export function PublishedFunnelSurface({
@@ -29,7 +30,16 @@ export function PublishedFunnelSurface({
         published
         capture={async (visitor) => {
           const response = await postInternalJson(`/api/funnel-public/${id}`, visitor);
-          if (!response.ok) throw new Error("Request not confirmed");
+          if (!response.ok)
+            throw new FunnelCaptureError(
+              response.status === 409
+                ? "conflict"
+                : response.status === 410
+                  ? "closed"
+                  : response.status === 429
+                    ? "limited"
+                    : "unavailable",
+            );
           const body: unknown = await response.json();
           if (!body || typeof body !== "object" || !("accepted" in body) || body.accepted !== true)
             throw new Error("Invalid confirmation");

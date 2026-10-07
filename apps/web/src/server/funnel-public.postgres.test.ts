@@ -12,6 +12,7 @@ import { handlePublication, handleVisitor, publicSnapshot } from "./funnel-publi
 import { PUBLIC_COOKIE } from "./funnel-public-delivery.js";
 import { downloadFunnelInquiries } from "./funnel-submissions.js";
 import { readWorkspacePreferences } from "./workspace-preferences.js";
+import { createFunnelStore } from "./funnel-store.js";
 import { SAVED_TEST_BRAND } from "./campaign-command-test-support.js";
 import { resetCampaignDatabasePoolForTests } from "./campaign-persistence-runtime.js";
 import {
@@ -55,7 +56,7 @@ const visitor = () => ({
   consent: true,
   website: "",
 });
-async function publish(kind: FunnelKind = "live-webinar") {
+async function publish(kind: FunnelKind = "live-webinar", expectedRevision: string | null = null) {
   const fields = structuredClone(FUNNELS.find((item) => item.kind === kind)!.defaults);
   fields.sales = {
     ...salesDefaults(kind),
@@ -76,7 +77,7 @@ async function publish(kind: FunnelKind = "live-webinar") {
         kind,
         templateVersion: "1.0.0",
         fields,
-        expectedRevision: null,
+        expectedRevision,
         requestId: randomUUID(),
       },
     }),
@@ -318,5 +319,29 @@ describe("actual public funnel publication, consent and delivery boundary", () =
         })
       ).status,
     ).toBe(503);
+  });
+  it("keeps owner inquiry links and revocation usable while new public collection is paused", async () => {
+    const principal = await principalForSession(owner, environment);
+    const previous = (await createFunnelStore(principal, environment).list()).find(
+      (draft) => draft.kind === "lead-magnet",
+    );
+    if (!previous) throw new Error("Missing test draft");
+    const { id } = await publish("lead-magnet", previous.revision);
+    const paused = { ...environment, OALO_FUNNEL_PUBLICATION: "disabled" };
+    const listed = await handlePublication(
+      new Request(`${environment.OALO_APP_URL}/api/funnels/publication`, {
+        headers: { cookie: owner.cookieHeader },
+      }),
+      paused,
+    );
+    expect(listed.status).toBe(200);
+    const value = await listed.json();
+    expect(value.available).toBe(false);
+    expect(value.publications.some((item: { id: string }) => item.id === id)).toBe(true);
+    expect((await handlePublication(privateRequest({ action: "revoke", id }), paused)).status).toBe(
+      200,
+    );
+    expect(await publicSnapshot(id, "", environment)).toBeNull();
+    expect((await handleVisitor(publicRequest(visitor()), id, environment)).status).toBe(404);
   });
 });

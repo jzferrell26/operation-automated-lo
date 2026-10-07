@@ -59,12 +59,14 @@ export function FunnelVideo({
   url,
   edit,
   invitation = false,
+  published = false,
 }: Readonly<{
   fields: FunnelFields;
   kind: FunnelKind;
   url: string;
   edit?: (slot: PhotoSlot) => void;
   invitation?: boolean;
+  published?: boolean;
 }>) {
   const [playing, setPlaying] = useState(false);
   const safe = url !== "" && safeDestination(url);
@@ -111,9 +113,13 @@ export function FunnelVideo({
               )
             ) : (
               <span className={styles.mediaNote}>
-                {invitation
-                  ? "Your invitation video or event cover goes here."
-                  : "Add the webinar recording to enable playback."}
+                {published
+                  ? invitation
+                    ? "Practical information for your next move."
+                    : "The recording is currently unavailable. Please contact the presenter."
+                  : invitation
+                    ? "Your invitation video or event cover goes here."
+                    : "Add the webinar recording to enable playback."}
               </span>
             )}
           </div>

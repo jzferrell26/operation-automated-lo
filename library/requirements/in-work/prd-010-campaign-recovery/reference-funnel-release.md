@@ -14,8 +14,8 @@ Published versions are separate reviewed snapshots with their own URLs. Actual v
 
 1. Apply `20261006230000_funnel_publication.sql` and `20261006233000_funnel_inquiry_retention.sql` to the intended application database. Do not replay previous migrations or reset a hosted database.
 2. Set `OALO_FUNNEL_DATA_KEY` to a new random 32-byte base64url secret, server-only. Keep it for retained requests. Rotate only with a decrypt/re-encrypt plan; simply replacing it loses access to inquiries.
-3. Set `CRON_SECRET` to an independent random secret of at least 32 characters. The daily retention endpoint runs at 12:15 UTC and deletes up to 25,000 expired inquiries per invocation in bounded batches. Access expires after 30 days; deletion is performed by that job, not by the timestamp alone.
-4. Confirm canonical `OALO_APP_URL`, account/session configuration and the owner's actual privacy policy. Set `OALO_FUNNEL_PUBLICATION=enabled` only in an environment authorized to collect these contact requests. Do not seed fictional customer accounts into production.
+3. Confirm the existing `CRON_SECRET`; preserve it if already configured. Only create an independent random secret of at least 32 characters when none exists. The daily retention endpoint runs at 12:15 UTC and deletes up to 25,000 expired inquiries per invocation in bounded batches. Access expires after 30 days; deletion is performed by that job, not by the timestamp alone. The job continues when new public collection is paused and does not require the contact decryption key.
+4. Confirm canonical `OALO_APP_URL`, account/session configuration and the owner's actual privacy policy. Set `OALO_FUNNEL_PUBLICATION=enabled` only in an environment authorized to collect these contact requests. Do not seed fictional customer accounts into production. A clearly labelled isolated release-QA workspace may be created through the normal signup flow for approved smoke testing; do not replace a real user's credentials or bypass their session policy.
 5. Deploy and prove signed-in save, review, publication, approved test capture, inquiry download and taking the page offline. Retain the additive tables when rolling back the application.
 
 Optional HighLevel delivery is separate. `OALO_FUNNEL_GHL_DELIVERY=enabled` and `OALO_FUNNEL_GHL_CONNECTIONS_JSON` are both required. The latter maps internal location UUIDs to the matching HighLevel location ID and a server-only token. A connection must match the platform's saved `ghl_location_id`. Contact upsert does not install workflows, modify DND, activate auto-texting, create appointments or send bulk messages. Uncertain external requests are recorded and not automatically replayed. Without a verified connection, inquiries remain securely exportable and the publisher sees that delivery is not connected.
@@ -25,6 +25,14 @@ Optional HighLevel delivery is separate. `OALO_FUNNEL_GHL_DELIVERY=enabled` and 
 This provides a platform-hosted `/f/<id>` URL, not guided custom-domain connection. Video, webinar, guide and booking destinations are owner-supplied links. A registered inquiry does not automatically create a Zoom attendee. A video link is not caption or uptime verification. A clicked booking link is not a booked appointment.
 
 CSV exports include the latest 1,000 unexpired requests for a publication, escape spreadsheet-formula prefixes and require the owning signed-in user. Contact requests are encrypted at rest in this table; consent wording is tied to the published brand and hashed. No raw IP is persisted. The public endpoint is same-origin, bounded and database-rate-limited, not unlimited bot protection.
+
+Pausing `OALO_FUNNEL_PUBLICATION` disables new publishing and anonymous collection but does not hide the owner's existing page list, revocation or exports. Keep the data key to read retained inquiries. Explicit `OALO_FUNNEL_GHL_DELIVERY=disabled` disables only that optional handoff, not native inquiry capture. Rollback and configuration changes must not strand already accepted requests.
+
+## October 7 release preparation
+
+The intended hosted database is `vonesqpyfsrhasuxfiiz`. The two reviewed additive migrations have been applied without replaying earlier migrations or changing existing customer records. Their connector receipts were aligned to the exact canonical versions after checking the receipt/name and absence of a duplicate. Verification confirmed `migration_owner`, enabled and forced RLS on both tables, runtime revocation but no snapshot update, no anonymous/support inquiry reads, and scheduler-only purge permission. The existing `oalo_web` login already has the required scheduler role membership.
+
+At this checkpoint, the previous application remains on production `main` and new collection has not been enabled. The [current security review](qa/2026-10-07-reference-security-review.md) and [quality review](qa/2026-10-07-reference-qa-review.md) record qualification; the final merge, environment activation and hosted walkthrough must be evidenced separately, not inferred from applied migrations.
 
 ## Evidence
 

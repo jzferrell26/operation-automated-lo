@@ -71,32 +71,26 @@ export async function handlePublication(request: Request, environment: unknown =
         });
       throw new FunnelPublicError(403);
     }
-    let config;
-    try {
-      config = publicFunnelConfig(environment);
-    } catch {
-      if (!mutation)
-        return json({
-          available: false,
-          publications: [],
-          message:
-            "Publishing needs to be enabled for this workspace. Your saved designs are safe.",
-          handoffConfigured: false,
-        });
-      throw new FunnelPublicError(503);
-    }
     const store = publicationStore(principal, environment);
-    if (!mutation)
+    if (!mutation) {
+      let available = true;
+      try {
+        publicFunnelConfig(environment);
+      } catch {
+        available = false;
+      }
       return json({
-        available: true,
+        available,
         publications: (await store.list()).map(({ snapshot, ...item }) => ({
           ...item,
           kind: snapshot.kind,
         })),
-        message:
-          "Publish a reviewed version to receive real inquiries. Saving edits does not change a published page.",
+        message: available
+          ? "Publish a reviewed version to receive real inquiries. Saving edits does not change a published page."
+          : "Publishing is not enabled. You can still take existing pages offline and download their saved inquiries.",
         handoffConfigured: funnelHandoffConfigured(environment, principal.locationId),
       });
+    }
     if (request.headers.get("content-type")?.split(";")[0] !== "application/json")
       throw new FunnelPublicError(415);
     const raw = await readBoundedJson(request, 2000);
@@ -108,6 +102,9 @@ export async function handlePublication(request: Request, environment: unknown =
       await store.revoke(input.id);
       return json({ revoked: true });
     }
+    // Pausing new public traffic never disables owner review, export or revocation.
+    // Publishing a new snapshot still requires the explicit environment authority.
+    const config = publicFunnelConfig(environment);
     const command = PublishFunnelCommandSchema.parse(raw),
       draft = (await createFunnelStore(principal, environment).list()).find(
         (item) => item.kind === command.kind,

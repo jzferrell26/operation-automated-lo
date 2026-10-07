@@ -41,7 +41,7 @@ const EnvironmentSchema = z
     OALO_FUNNEL_PUBLICATION: z.string().optional(),
     OALO_FUNNEL_DATA_KEY: z.string().regex(/^[A-Za-z0-9_-]{43}$/u),
     OALO_FUNNEL_GHL_CONNECTIONS_JSON: z.string().optional(),
-    OALO_FUNNEL_GHL_DELIVERY: z.literal("enabled").optional(),
+    OALO_FUNNEL_GHL_DELIVERY: z.enum(["enabled", "disabled"]).optional(),
   })
   .passthrough();
 /** Existing private records remain exportable when new public collection is switched off. */

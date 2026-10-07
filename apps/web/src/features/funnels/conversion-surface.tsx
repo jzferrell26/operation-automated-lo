@@ -9,7 +9,12 @@ import { funnelDefinition } from "./catalog.js";
 import { eventLabel, googleCalendarLink, previewCalendar } from "./calendar.js";
 import { FunnelImage, FunnelVideo, type PhotoSlot } from "./conversion-media.js";
 import { salesContent } from "./sales-content.js";
-import { FunnelVisitorSchema, type FunnelCapture, type FunnelVisitor } from "./visitor-model.js";
+import {
+  FunnelCaptureError,
+  FunnelVisitorSchema,
+  type FunnelCapture,
+  type FunnelVisitor,
+} from "./visitor-model.js";
 import styles from "./conversion.module.css";
 
 export interface SurfaceProps {
@@ -69,11 +74,14 @@ export function FunnelSurface({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [conflictingRequest, setConflictingRequest] = useState(false);
   const requestId = useRef<string | null>(null);
   const pending = useRef(false);
   const Header = compact ? "h3" : published ? "h1" : "h2";
   const name = brand.name || "Your mortgage adviser";
   const next = definition.steps[1]?.id ?? "book";
+  const registrationClosed =
+    published && kind === "live-webinar" && Date.parse(fields.eventStartsAt) <= Date.now();
   const openForm = () => {
     setError("");
     setFormOpen(true);
@@ -84,8 +92,9 @@ export function FunnelSurface({
       variant="secondary"
       className={`${styles.cta} ${className}`}
       onClick={openForm}
+      disabled={registrationClosed}
     >
-      {label}
+      {registrationClosed ? "Registration is closed" : label}
       <Icon decorative name="arrow-right" size="sm" />
     </Button>
   );
@@ -138,14 +147,23 @@ export function FunnelSurface({
     pending.current = true;
     setBusy(true);
     setError("");
+    setConflictingRequest(false);
     try {
       const result = await capture(parsed.data);
       if (result.accepted !== true) throw new Error("Not accepted");
       setFormOpen(false);
       onStep(next);
-    } catch {
+    } catch (failure) {
+      const reason = failure instanceof FunnelCaptureError ? failure.reason : "unavailable";
+      setConflictingRequest(reason === "conflict");
       setError(
-        "Your request could not be confirmed. Your details are still here. Please try again; the same request will not be submitted twice.",
+        reason === "closed"
+          ? "Registration for this session has closed. Please contact the presenter about the next session."
+          : reason === "limited"
+            ? "Too many requests have been received recently. Your details are still here. Please wait a few minutes before trying again."
+            : reason === "conflict"
+              ? "An earlier request was saved with different details. It has not been overwritten. You can submit a separate request below."
+              : "Your request could not be confirmed. Your details are still here. Retry with the same details to recover the confirmation without submitting twice.",
       );
     } finally {
       pending.current = false;
@@ -158,6 +176,21 @@ export function FunnelSurface({
         <p role="alert" className={styles.formError}>
           {error}
         </p>
+      ) : null}
+      {conflictingRequest ? (
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            requestId.current = null;
+            setConflictingRequest(false);
+            setError(
+              "Your earlier request remains saved. Review the details, then submit a new request.",
+            );
+          }}
+        >
+          Start a separate request
+        </Button>
       ) : null}
       <fieldset disabled={busy || !capture}>
         <TextField
@@ -423,6 +456,7 @@ export function FunnelSurface({
                     kind={kind}
                     url={sales.invitationVideoUrl}
                     invitation
+                    published={published}
                     {...(onPhoto ? { edit: onPhoto } : {})}
                   />
                   <div className={styles.mediaFooter}>
@@ -458,6 +492,7 @@ export function FunnelSurface({
                     kind={kind}
                     url={sales.invitationVideoUrl}
                     invitation
+                    published={published}
                     {...(onPhoto ? { edit: onPhoto } : {})}
                   />
                   <div className={styles.recordingLabel}>
@@ -809,7 +844,12 @@ export function FunnelSurface({
             ) : null}
             {step === "watch" ? (
               <>
-                <FunnelVideo fields={fields} kind={kind} url={fields.videoUrl} />
+                <FunnelVideo
+                  fields={fields}
+                  kind={kind}
+                  url={fields.videoUrl}
+                  published={published}
+                />
                 <div className={styles.watchNext}>
                   <div>
                     <p className={styles.eyebrow}>TURN WHAT YOU LEARN INTO YOUR NEXT STEP</p>

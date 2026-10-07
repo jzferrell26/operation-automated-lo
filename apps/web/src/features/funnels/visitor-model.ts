@@ -39,3 +39,11 @@ export interface FunnelCaptureResult {
   readonly accepted: true;
 }
 export type FunnelCapture = (visitor: FunnelVisitor) => Promise<FunnelCaptureResult>;
+
+/** Public form recovery uses status classes, never provider errors or server configuration. */
+export class FunnelCaptureError extends Error {
+  constructor(readonly reason: "conflict" | "closed" | "limited" | "unavailable") {
+    super(reason);
+    this.name = "FunnelCaptureError";
+  }
+}

@@ -60,6 +60,9 @@ describe("public request boundary", () => {
     expect(readPublicCookie(`${PUBLIC_COOKIE}=${secret}; ${PUBLIC_COOKIE}=${secret}`)).toBeNull();
   });
   it("requires explicit feature enablement, a separate data key, and a safe canonical origin", () => {
+    expect(
+      publicFunnelConfig({ ...environment, OALO_FUNNEL_GHL_DELIVERY: "disabled" }).ghl,
+    ).toBeUndefined();
     for (const overrides of [
       { OALO_FUNNEL_PUBLICATION: "disabled" },
       { OALO_FUNNEL_DATA_KEY: "" },

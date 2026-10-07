@@ -29,6 +29,40 @@ export type UserMessage = Readonly<{
  * pair.
  */
 export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Object.freeze({
+  RETENTION_NOT_CONFIGURED: {
+    what: "Inquiry retention is not configured.",
+    whatToDo:
+      "Ask your administrator to complete the retention job setup before enabling public collection.",
+  },
+  RETENTION_UNAVAILABLE: {
+    what: "The retention job could not finish.",
+    whatToDo:
+      "Retry the job and check the server-side configuration; do not share stored request details.",
+  },
+  FUNNEL_PUBLIC_UNAVAILABLE: {
+    what: "This published funnel could not be reached.",
+    whatToDo: "Retry in a moment, or contact the page owner.",
+  },
+  FUNNEL_PUBLIC_INVALID: {
+    what: "Some request details need attention.",
+    whatToDo: "Check your name, email and permission to respond, then try again.",
+  },
+  FUNNEL_PUBLIC_STALE: {
+    what: "The saved funnel changed before publication.",
+    whatToDo: "Open the latest saved version and review it before publishing.",
+  },
+  FUNNEL_PUBLIC_INCOMPLETE: {
+    what: "Some publication details are missing.",
+    whatToDo: "Add your policy, destination and event details, then review the saved page.",
+  },
+  FUNNEL_RETIRED_VERSION: {
+    what: "This version was taken offline.",
+    whatToDo: "Save and review a new version before publishing again.",
+  },
+  FUNNEL_EVENT_ENDED: {
+    what: "Registration for this event has closed.",
+    whatToDo: "Contact the presenter for another session.",
+  },
   FUNNEL_CONFLICT: {
     what: "Another version of this funnel was saved.",
     whatToDo: "Keep your edits and open the saved version in another tab before replacing it.",

@@ -181,7 +181,7 @@ for (const theme of ["light", "dark"] as const) {
       });
       await page
         .locator("[data-funnel-surface]")
-        .getByRole("button", { name: "Reserve my spot", exact: true })
+        .getByRole("button", { name: "Save my seat", exact: true })
         .first()
         .click();
       const dialog = page.getByRole("dialog");

@@ -147,9 +147,10 @@ test("the property action leads Home, followed by campaigns and the preserved ad
   const topBarEnd = walked.findIndex((name) => name.startsWith("Your account: "));
   expect(topBarEnd).toBeGreaterThan(0);
   expect(primary, "the property entry is first after the top bar (UX-001)").toBe(topBarEnd + 1);
-  expect(walked.slice(primary, primary + 8)).toEqual([
+  expect(walked.slice(primary, primary + 9)).toEqual([
     "Create a property campaign",
     "View your campaigns",
+    "Open your five funnels",
     "Choose an ad",
     "First-time buyers",
     "Refinance",

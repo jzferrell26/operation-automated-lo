@@ -91,8 +91,8 @@ select is(
         )
       )
   ),
-  27,
-  'the expected twenty-seven tenant tables, including private funnel drafts, are present'
+  29,
+  'the expected twenty-nine tenant tables, including approved funnel publications and encrypted inquiries, are present'
 );
 
 select has_table(

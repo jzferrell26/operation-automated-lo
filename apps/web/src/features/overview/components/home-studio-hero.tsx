@@ -78,6 +78,11 @@ export function HomeStudioHero({ canCreate }: Readonly<{ canCreate: boolean }>) 
             </Link>
           ) : null}
         </div>
+        <Link variant="action" href="/marketing/campaigns/funnels" data-home-funnels="">
+          <Icon decorative name="globe" size="sm" />
+          Open your five funnels
+          <Icon decorative name="arrow-right" size="sm" />
+        </Link>
         <p className={notice.boundary}>
           <Icon decorative name="lock" size="sm" />
           {canCreate ? COPY.boundary : COPY.roles}

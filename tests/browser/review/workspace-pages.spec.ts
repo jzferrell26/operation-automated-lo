@@ -98,6 +98,81 @@ test.describe.serial("signed-in workspace pages", () => {
     expectNoExternalRequests(guard);
   });
 
+  test("a reviewed webinar publishes and an actual visitor registration unlocks its joining details", async ({
+    browser,
+  }) => {
+    test.setTimeout(120000);
+    await page.goto("/marketing/campaigns/funnels/live-webinar");
+    await page.getByLabel("Edit section").selectOption("sales-media");
+    await page.getByLabel("Privacy Policy link (HTTPS)").fill("https://example.org/privacy");
+    await page.getByLabel("Edit section").selectOption("details");
+    await page
+      .getByLabel("Live webinar join link (HTTPS)")
+      .fill("https://example.org/webinar-join");
+    await page.getByLabel("Event starts (your device time zone)").fill("2030-10-12T15:00");
+    await page.getByRole("button", { name: "Save changes", exact: true }).click();
+    await expect(page.getByRole("status")).toHaveText("Changes saved");
+    await page.getByRole("button", { name: "Review and publish", exact: true }).click();
+    const publishing = page.getByRole("dialog");
+    await publishing.getByRole("checkbox").check();
+    const published = page.waitForResponse(
+      (result) =>
+        result.url().endsWith("/api/funnels/publication") && result.request().method() === "POST",
+    );
+    await publishing.getByRole("button", { name: /Publish reviewed version/ }).click();
+    const response = await published;
+    expect(response.status()).toBe(200);
+    const { publication } = await response.json();
+    const visitorContext = await browser.newContext({ ignoreHTTPSErrors: true });
+    const visitor = await visitorContext.newPage();
+    const visitorGuard = await guardLocalOrigin(visitor);
+    try {
+      await visitor.goto(`/f/${publication.id}/confirmation`);
+      await expect(visitor).toHaveURL(new RegExp(`/f/${publication.id}$`));
+      await expect(visitor.locator("[data-funnel-surface]")).toBeVisible();
+      expect(await visitor.content()).not.toContain("https://example.org/webinar-join");
+      await visitor
+        .locator("[data-funnel-surface]")
+        .getByRole("button", { name: "Save my seat", exact: true })
+        .first()
+        .click();
+      const form = visitor.getByRole("dialog");
+      await form.getByLabel("First name", { exact: true }).fill("Visitor Example");
+      await form.getByLabel("Email address", { exact: true }).fill("funnel-visitor@example.org");
+      await form.getByRole("checkbox").check();
+      const accepted = visitor.waitForResponse(
+        (result) =>
+          result.url().includes(`/api/funnel-public/${publication.id}`) &&
+          result.request().method() === "POST",
+      );
+      await form.locator('button[type="submit"]').click();
+      expect((await accepted).status()).toBe(200);
+      await expect(visitor).toHaveURL(new RegExp(`/f/${publication.id}/confirmation$`));
+      await expect(visitor.getByRole("link", { name: /Open webinar join link/ })).toHaveAttribute(
+        "href",
+        "https://example.org/webinar-join",
+      );
+      expect((await new AxeBuilder({ page: visitor }).analyze()).violations).toEqual([]);
+      const cookie = (await visitorContext.cookies()).find(
+        (item) => item.name === "oalo_funnel_receipt",
+      );
+      expect(cookie?.httpOnly).toBe(true);
+      const report = await page.request.get(
+        `/api/funnels/submissions?publication=${publication.id}`,
+      );
+      expect(report.status()).toBe(200);
+      expect(await report.text()).toContain("funnel-visitor@example.org");
+      await publishing.getByRole("button", { name: "Take offline", exact: true }).click();
+      await expect(publishing.getByText("Offline", { exact: true })).toBeVisible();
+      await visitor.goto(`/f/${publication.id}`);
+      await expect(visitor.locator("[data-funnel-surface]")).toHaveCount(0);
+      expectNoExternalRequests(visitorGuard);
+    } finally {
+      await visitorContext.close();
+    }
+    await publishing.getByRole("button", { name: /Close/ }).click();
+  });
+
   /**
    * PRD-009f 009F-AC-001 and 009F-AC-002, with a real session.
    *

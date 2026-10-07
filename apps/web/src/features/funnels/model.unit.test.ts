@@ -27,8 +27,21 @@ describe("five fixed, field-only funnel journeys", () => {
       expect(funnel.defaults.heroPhoto).toBeNull();
       expect(funnel.defaults.hostPhoto).toBeNull();
       expect(funnel.defaults.mediaPermissionConfirmed).toBe(false);
-      for (const value of Object.values(funnel.defaults))
-        if (typeof value === "string") expect(findVocabularyHits(value)).toEqual([]);
+      for (const [key, value] of Object.entries(funnel.defaults))
+        if (typeof value === "string") {
+          // REF-001: the owner's explicit webinar "Save my seat" means event attendance,
+          // not the SaaS-license jargon this application-language rule otherwise forbids.
+          const hits = findVocabularyHits(value).filter(
+            (hit) =>
+              !(
+                hit.kind === "term" &&
+                hit.detail === "seat" &&
+                funnel.kind === "live-webinar" &&
+                (key === "cta" || key === "finalText")
+              ),
+          );
+          expect(hits).toEqual([]);
+        }
       expect(JSON.stringify(funnel.defaults)).not.toMatch(
         /lorem ipsum|testimonials|five.star|guaranteed savings/iu,
       );

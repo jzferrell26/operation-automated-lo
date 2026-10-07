@@ -170,9 +170,10 @@ test.describe.serial("Home for a brand-new account", () => {
     expect(topBarEnd).toBeGreaterThan(0);
     const between = walked.slice(topBarEnd + 1, primary);
     expect(between.filter((name) => !/send it again|resend/iu.test(name))).toEqual([]);
-    expect(walked.slice(primary, primary + 8)).toEqual([
+    expect(walked.slice(primary, primary + 9)).toEqual([
       "Create a property campaign",
       "View your campaigns",
+      "Open your five funnels",
       "Choose an ad",
       ...TOPICS.map(([label]) => label),
     ]);

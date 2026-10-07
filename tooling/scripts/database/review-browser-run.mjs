@@ -91,6 +91,9 @@ export function reviewServerEnvironment(databaseUrl, catalog = "samples") {
     // 2026-09-19): sign-up's duplicate-email disclosure is acceptable only while sign-up is off by
     // default, and turning it on by default requires moving to the emailed path first.
     OALO_SELF_SERVE_SIGNUP: "enabled",
+    // Disposable review database only: exercise actual reviewed publication and receipt flows.
+    OALO_FUNNEL_PUBLICATION: "enabled",
+    OALO_FUNNEL_DATA_KEY: randomBytes(32).toString("base64url"),
     // PRD-009c D3, 009C-AC-004. The first pass shows the labelled sample ads. The guard also needs
     // `OALO_ENVIRONMENT` to be exactly `local`, set above, and refuses on any deployment signal,
     // none of which this run sets. PRD-009g: the second pass leaves the flag out, so the guard

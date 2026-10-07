@@ -358,10 +358,24 @@ async function collectAllCopyStrings(): Promise<readonly CopyString[]> {
 
 function report(strings: readonly CopyString[]): readonly string[] {
   return strings.flatMap((entry) =>
-    findVocabularyHits(entry.text).map(
-      (hit) =>
-        `${entry.file}:${entry.line} ${hit.kind} "${hit.detail}" in ${JSON.stringify(entry.text)}`,
-    ),
+    findVocabularyHits(entry.text)
+      .filter((hit) => {
+        // REF-001: the owner requires event-registration language from the source funnel.
+        // Exact path+sentence exception, never an exemption for a directory or licensing jargon.
+        const approved =
+          (entry.file === "apps/web/src/features/funnels/catalog.ts" &&
+            [
+              "Save my seat",
+              "Reserve your seat, bring your questions, and leave with a clearer plan for your first home.",
+            ].includes(entry.text)) ||
+          (entry.file === "apps/web/src/features/funnels/sales-content.ts" &&
+            entry.text === "Save your seat");
+        return !(approved && hit.kind === "term" && hit.detail === "seat");
+      })
+      .map(
+        (hit) =>
+          `${entry.file}:${entry.line} ${hit.kind} "${hit.detail}" in ${JSON.stringify(entry.text)}`,
+      ),
   );
 }
 

@@ -45,6 +45,38 @@ export const FunnelPhotoSchema = z
     alt: z.string().trim().min(1).max(180),
   })
   .strict();
+/** Additive content contract. Older saved v1 fields remain readable and are never overwritten. */
+export const FunnelSalesSchema = z
+  .object({
+    headlineAccent: short.default(""),
+    invitationVideoUrl: DestinationSchema.default(""),
+    storyTitle: short.default(""),
+    storyText: paragraph.default(""),
+    problemTitle: short.default(""),
+    problemOneTitle: short.default(""),
+    problemOneText: paragraph.default(""),
+    problemTwoTitle: short.default(""),
+    problemTwoText: paragraph.default(""),
+    problemThreeTitle: short.default(""),
+    problemThreeText: paragraph.default(""),
+    problemFourTitle: short.default(""),
+    problemFourText: paragraph.default(""),
+    solutionTitle: short.default(""),
+    solutionText: paragraph.default(""),
+    presenterRole: short.default(""),
+    presenterCredentials: paragraph.default(""),
+    formTitle: short.default(""),
+    formNote: paragraph.default(""),
+    quoteText: paragraph.default(""),
+    quoteName: short.default(""),
+    quoteContext: short.default(""),
+    proofPermissionConfirmed: z.boolean().default(false),
+    privacyUrl: DestinationSchema.default(""),
+    termsUrl: DestinationSchema.default(""),
+  })
+  .strict();
+export type FunnelSales = z.infer<typeof FunnelSalesSchema>;
+export type FunnelSalesTextKey = Exclude<keyof FunnelSales, "proofPermissionConfirmed">;
 export const FunnelFieldsSchema = z
   .object({
     eyebrow: short,
@@ -94,12 +126,14 @@ export const FunnelFieldsSchema = z
     heroPhoto: FunnelPhotoSchema.nullable(),
     hostPhoto: FunnelPhotoSchema.nullable(),
     mediaPermissionConfirmed: z.boolean(),
+    sales: FunnelSalesSchema.optional(),
   })
   .strict();
 export type FunnelFields = z.infer<typeof FunnelFieldsSchema>;
 export type FunnelTextKey = {
   [K in keyof FunnelFields]: FunnelFields[K] extends string ? K : never;
-}[keyof FunnelFields];
+}[keyof FunnelFields] &
+  string;
 export const FunnelBrandSchema = z
   .object({
     name: z.string().max(120),

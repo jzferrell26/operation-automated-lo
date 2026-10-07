@@ -1,5 +1,9 @@
 # Five-funnel studio: designed journeys, field-only editing
 
+## Superseded visitor design, October 6 night
+
+The owner rejected this design despite the passing editor/tests. The [reference-led rebuild](../../../requirements/in-work/prd-010-campaign-recovery/reference-funnel-rebuild.md) replaces the generic arches and brochure sections with the supplied offer/media/objection/action structure. Editor and safety contracts below remain useful, not approval of the rejected design. See the [release contract](../../../requirements/in-work/prd-010-campaign-recovery/reference-funnel-release.md) before enabling public collection.
+
 Owner decision: October 6, 2026. Base `37fc0566`, merged PR #81. Implement directly, with no subagents. The roster is now fixed: Live webinar, On-demand webinar, Buyer, Refinance, Lead magnet. The property financing report remains a separate campaign capability, not a sixth core funnel or a substitute for one of these five.
 
 ## Source review and original design

@@ -21,10 +21,14 @@ import {
 } from "./model.js";
 import { FunnelSurface } from "./surface.js";
 import styles from "./studio.module.css";
+import { FunnelSalesFields, SALES_GROUPS } from "./sales-fields.js";
+import { FunnelPublishPanel } from "./publish-panel.js";
+import { CampaignsTabs } from "../campaigns/components/campaigns-tabs.js";
 
 export function FunnelCatalog({ context }: Readonly<{ context: FunnelStudioContext }>) {
   return (
     <div className={styles.catalog}>
+      <CampaignsTabs current="funnels" />
       <header className={styles.catalogHead}>
         <div>
           <p className={styles.eyebrow}>{COPY.eyebrow}</p>
@@ -219,7 +223,7 @@ export function FunnelEditor({
       const key = String(parsed.error.issues[0]?.path[1] ?? "headline");
       const affected = FIELD_GROUPS.find((item) => item.fields.some((field) => field.key === key));
       setSection(
-        affected?.id ??
+        (key === "sales" ? "sales-media" : affected?.id) ??
           (key.startsWith("event") ? "details" : key.includes("Photo") ? "photos" : "message"),
       );
       setProblem(COPY.invalid);
@@ -282,6 +286,13 @@ export function FunnelEditor({
               >
                 {busy ? COPY.saving : COPY.save}
               </Button>
+              <FunnelPublishPanel
+                kind={kind}
+                fields={fields}
+                revision={revision}
+                dirty={dirty}
+                canSave={context.canSave && !busy && !photoBusy}
+              />
             </>
           ) : (
             <Link variant="action" href={`${FUNNEL_ROOT}/${kind}`}>
@@ -330,14 +341,30 @@ export function FunnelEditor({
                       </option>
                     ))}
                     <option value="photos">Photos</option>
+                    {SALES_GROUPS.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
                   </select>
                 )}
               </FormField>
             </div>
             <div className={styles.controlFields}>
               <fieldset disabled={disabled} className={styles.fieldset}>
-                <legend>{section === "photos" ? COPY.permissions : group?.label}</legend>
-                {section === "photos" ? (
+                <legend>
+                  {section === "photos"
+                    ? COPY.permissions
+                    : (SALES_GROUPS.find((item) => item.id === section)?.label ?? group?.label)}
+                </legend>
+                {section.startsWith("sales-") ? (
+                  <FunnelSalesFields
+                    kind={kind}
+                    fields={fields}
+                    section={section}
+                    onChange={(sales) => change("sales", sales)}
+                  />
+                ) : section === "photos" ? (
                   <>
                     <p>{COPY.photoNote}</p>
                     {(["heroPhoto", "hostPhoto"] as const).map((slot) => (

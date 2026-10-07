@@ -6,7 +6,7 @@ import styles from "./campaigns-tabs.module.css";
 export const CAMPAIGNS_LIST_PATH = "/marketing/campaigns";
 export const ADS_LIBRARY_PATH = "/marketing/campaigns/library";
 
-export type CampaignsTab = "campaigns" | "library";
+export type CampaignsTab = "campaigns" | "library" | "funnels";
 
 type CampaignsTabsProps = Readonly<{ current: CampaignsTab }>;
 
@@ -23,6 +23,13 @@ type CampaignsTabsProps = Readonly<{ current: CampaignsTab }>;
 export function CampaignsTabs({ current }: CampaignsTabsProps) {
   return (
     <nav aria-label={CAMPAIGNS_TABS.label} className={styles.tabs}>
+      <Link
+        aria-current={current === "funnels" ? "page" : undefined}
+        className={styles.tab}
+        href="/marketing/campaigns/funnels"
+      >
+        Funnels
+      </Link>
       <Link
         aria-current={current === "campaigns" ? "page" : undefined}
         className={styles.tab}

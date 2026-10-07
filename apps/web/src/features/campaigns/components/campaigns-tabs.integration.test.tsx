@@ -11,12 +11,13 @@ import { ADS_LIBRARY_PATH, CAMPAIGNS_LIST_PATH, CampaignsTabs } from "./campaign
  */
 
 describe("the Campaigns tab strip", () => {
-  it("is a labelled navigation of two links to the two tabs' addresses", () => {
+  it("makes the five funnels discoverable alongside the existing campaign and ad paths", () => {
     render(<CampaignsTabs current="campaigns" />);
 
     const nav = screen.getByRole("navigation", { name: "Campaigns sections" });
     const links = within(nav).getAllByRole("link");
     expect(links.map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["Funnels", "/marketing/campaigns/funnels"],
       ["Your campaigns", "/marketing/campaigns"],
       ["Ads library", "/marketing/campaigns/library"],
     ]);
@@ -27,6 +28,7 @@ describe("the Campaigns tab strip", () => {
   it.each([
     ["campaigns", "Your campaigns", "Ads library"],
     ["library", "Ads library", "Your campaigns"],
+    ["funnels", "Funnels", "Your campaigns"],
   ] as const)("marks only the %s tab as the current page", (current, marked, other) => {
     render(<CampaignsTabs current={current} />);
 

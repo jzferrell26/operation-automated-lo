@@ -37,35 +37,41 @@ function fold(line: string) {
   }
   return result + current;
 }
-export function previewCalendar(fields: FunnelFields, now = Date.now()): string | null {
+export function previewCalendar(
+  fields: FunnelFields,
+  now = Date.now(),
+  confirmed = false,
+): string | null {
   const times = calendarTimes(fields, now);
   if (!times) return null;
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//AutomatedLO//Funnel Preview//EN",
+    `PRODID:-//AutomatedLO//${confirmed ? "Registered Webinar" : "Funnel Preview"}//EN`,
     "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
-    `UID:preview-${times.start}@automatedlo.invalid`,
+    `UID:${confirmed ? "webinar" : "preview"}-${times.start}@automatedlo.invalid`,
     `DTSTAMP:${times.start}`,
     `DTSTART:${times.start}`,
     `DTEND:${times.end}`,
-    `SUMMARY:${escapeIcs(`[PREVIEW] ${fields.offerTitle}`)}`,
-    `DESCRIPTION:${escapeIcs("Preview event only. This does not register you for a webinar.")}`,
+    `SUMMARY:${escapeIcs(`${confirmed ? "" : "[PREVIEW] "}${fields.offerTitle}`)}`,
+    `DESCRIPTION:${escapeIcs(confirmed ? "Your webinar registration was received. Use the joining link at the scheduled time." : "Preview event only. This does not register you for a webinar.")}`,
     `LOCATION:${escapeIcs(fields.webinarUrl || "Online")}`,
     "END:VEVENT",
     "END:VCALENDAR",
   ];
   return lines.map(fold).join("\r\n") + "\r\n";
 }
-export function googleCalendarLink(fields: FunnelFields, now = Date.now()) {
+export function googleCalendarLink(fields: FunnelFields, now = Date.now(), confirmed = false) {
   const times = calendarTimes(fields, now);
   if (!times) return null;
   const query = new URLSearchParams({
     action: "TEMPLATE",
-    text: `[PREVIEW] ${fields.offerTitle}`,
+    text: `${confirmed ? "" : "[PREVIEW] "}${fields.offerTitle}`,
     dates: `${times.start}/${times.end}`,
-    details: "Preview event only. This does not register you for a webinar.",
+    details: confirmed
+      ? "Your webinar registration was received. Use the joining link at the scheduled time."
+      : "Preview event only. This does not register you for a webinar.",
     location: fields.webinarUrl || "Online",
     ctz: fields.eventTimeZone,
   });

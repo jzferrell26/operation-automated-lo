@@ -1,6 +1,6 @@
 # Five-funnel studio: actual screen gallery
 
-October 6, 2026. These are browser captures of the implemented templates in a fresh local workspace, not design-tool mockups or images from the supplied examples. The account identity is fictional test data. Abstract cover artwork is original CSS; the host-photo slot intentionally shows where the user's photo belongs.
+October 7, 2026. These are captures of the reference-led replacement, not the rejected PR #82 arch designs and not design-tool mockups. The account identity is fictional test data. Lifestyle photography is locally hosted with its source/license recorded in `apps/web/public/funnel-media/README.md`; it is not presented as a customer or presenter. Supplied presenter photos replace the honest initials treatment.
 
 | Design | Desktop | Mobile |
 | --- | --- | --- |
@@ -14,4 +14,4 @@ October 6, 2026. These are browser captures of the implemented templates in a fr
 
 All fourteen page surfaces, including confirmation, watch, booking and thank-you designs, are exercised in the browser tests. These images show default content without a fabricated event date, host portrait, external destination or testimonial. Photo replacement, supplied URLs and copy fields are real implemented controls.
 
-**Private review only.** Images are not proof of live registration, a booked appointment, a working custom domain or HighLevel delivery. The [implementation brief](../../../library/requirements/in-work/prd-010-campaign-recovery/five-funnel-studio-increment.md) and [QA report](../../../library/requirements/in-work/prd-010-campaign-recovery/qa/2026-10-06-funnel-qa-self-review.md) separate designed/saved functionality from remaining public activation work.
+These specific images are private-review captures. The replacement also implements separately reviewed public publication and real consented inquiry acceptance; the screenshots alone do not prove it or a completed booking. See [the reference-led brief](../../../library/requirements/in-work/prd-010-campaign-recovery/reference-funnel-rebuild.md), [release sequence](../../../library/requirements/in-work/prd-010-campaign-recovery/reference-funnel-release.md), and [current QA review](../../../library/requirements/in-work/prd-010-campaign-recovery/qa/2026-10-07-reference-qa-review.md) for actual implementation, tests and release boundaries.

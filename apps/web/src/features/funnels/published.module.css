@@ -1,0 +1,10 @@
+/* Override the app's centered scaffold main: container-query pages need a real containing width. */
+.page {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  padding: 0;
+  justify-items: stretch;
+  align-items: stretch;
+}

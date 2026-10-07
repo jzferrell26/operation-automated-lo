@@ -248,9 +248,10 @@ describe("the start card (009B-AC-002)", () => {
     const { container } = renderHome();
     const order = [...container.querySelectorAll("a[href]")].map((anchor) => anchor.textContent);
 
-    expect(order.slice(0, 8)).toEqual([
+    expect(order.slice(0, 9)).toEqual([
       CAMPAIGN_STUDIO.create,
       CAMPAIGN_STUDIO.browse,
+      "Open your five funnels",
       "Choose an ad",
       "First-time buyers",
       "Refinance",

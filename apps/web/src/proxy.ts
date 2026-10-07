@@ -17,7 +17,12 @@ import {
  * `default-src 'self'`, which would intersect with the nonce policy and block the theme bootstrap
  * script, so only these two headers are applied here.
  */
-const TOKEN_BEARING_PATHS = Object.freeze(["/reset-password", "/verify-email", "/home-report"]);
+const TOKEN_BEARING_PATHS = Object.freeze([
+  "/reset-password",
+  "/verify-email",
+  "/home-report",
+  "/f",
+]);
 
 function isTokenBearingPath(pathname: string): boolean {
   return TOKEN_BEARING_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
@@ -32,6 +37,9 @@ export function proxy(request: NextRequest): NextResponse {
   // Media is click-to-load and isolated to the authenticated, finite funnel studio path.
   const funnelMedia =
     /^\/marketing\/campaigns\/funnels(?:\/(?:live-webinar|on-demand|buyer|refinance|lead-magnet)(?:\/preview)?)?\/?$/u.test(
+      request.nextUrl.pathname,
+    ) ||
+    /^\/f\/[a-f0-9-]{36}(?:\/(?:landing|confirmation|watch|book|thanks))?\/?$/u.test(
       request.nextUrl.pathname,
     );
   const contentSecurityPolicy = buildContentSecurityPolicy(nonce, funnelMedia);

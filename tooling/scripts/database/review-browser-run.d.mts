@@ -38,6 +38,7 @@ export const REVIEW_PASSES: readonly ReviewPass[];
 export function reviewServerEnvironment(
   databaseUrl: string,
   catalog?: ReviewCatalog,
+  funnelDataKey?: string,
 ): Readonly<Record<string, string>>;
 export function playwrightReviewArguments(
   playwrightCli: string,

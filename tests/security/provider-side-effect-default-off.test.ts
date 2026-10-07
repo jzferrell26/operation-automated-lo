@@ -612,6 +612,10 @@ describe("provider side effects stay disabled by default", () => {
       "apps/web/src/server/homeowners/highlevel.ts":
         /\(path: string\) => `https:\/\/services\.leadconnectorhq\.com\$\{path\}`/u,
       "apps/web/src/server/homeowners/rentcast.ts": /new URL\("https:\/\/api\.rentcast\.io\//u,
+      // Reference-funnel release: the independently opt-in, tenant-matched contact upsert.
+      // Its destination is not accepted from a form or client configuration.
+      "apps/web/src/server/funnel-public-delivery.ts":
+        /fetcher\("https:\/\/services\.leadconnectorhq\.com\/contacts\/upsert"/u,
     };
     expect(await productionSourcesMatching(OUTBOUND_REQUEST_MARKER, webRoots)).toEqual(
       Object.keys(fixedHosts).sort(),

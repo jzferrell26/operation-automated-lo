@@ -58,6 +58,10 @@ export default defineConfig({
         test: {
           name: "integration",
           environment: "jsdom",
+          // Bound concurrent DOM environments on high-core workstations. The full suite otherwise
+          // starves interactive form cases while allocating dozens of independent jsdom runtimes.
+          // Assertions and the existing per-test timeouts are unchanged.
+          maxWorkers: 2,
           include: [
             "tooling/tests/integration/**/*.test.ts",
             "apps/web/src/**/*.integration.test.tsx",

@@ -60,12 +60,15 @@ export const FUNNELS: readonly FunnelDefinition[] = [
     steps: [steps.landing, steps.confirmation],
     defaults: {
       ...COMMON,
-      eyebrow: "Live online masterclass",
-      headline: "Your first home starts with a clear plan.",
+      eyebrow: "The first-time homebuyer webinar",
+      headline: "Your first home starts here. Get a plan to stop renting.",
       description:
-        "Trade the endless searching for a practical conversation. Learn what to prepare, what to ask, and how the homebuying process fits together.",
-      cta: "Reserve my spot",
-      offerTitle: "The homebuyer clarity session",
+        "Understand your down payment, get your credit questions answered, and see what happens from preapproval to closing. A straightforward live workshop for first-time buyers.",
+      cta: "Save my seat",
+      offerTitle: "The First-Time Homebuyer Webinar",
+      finalTitle: "Ready to make this the year you stop renting?",
+      finalText:
+        "Reserve your seat, bring your questions, and leave with a clearer plan for your first home.",
       sectionTitle: "Leave with a plan. Not a bigger list of questions.",
       benefitOneTitle: "Start with the right numbers",
       benefitOneText:
@@ -92,12 +95,15 @@ export const FUNNELS: readonly FunnelDefinition[] = [
     steps: [steps.landing, steps.watch, steps.book],
     defaults: {
       ...COMMON,
-      eyebrow: "The on-demand homebuyer session",
-      headline: "A smarter starting point. On your schedule.",
+      eyebrow: "First-time homebuyer training · On demand",
+      headline: "Understand the homebuying process. Before you make your first move.",
       description:
         "Press pause on the conflicting advice. Watch a practical walkthrough of the homebuying journey, then get personal guidance when you are ready.",
-      cta: "Get instant access",
-      offerTitle: "Homebuying, clearly explained",
+      cta: "Get access to the webinar",
+      offerTitle: "Your First Home: The On-Demand Workshop",
+      finalTitle: "Get the homebuyer answers. Then take your next step.",
+      finalText:
+        "Watch the full session on your schedule. Book a personal conversation when you are ready to put what you learned into a plan.",
       sectionTitle: "The answers you need. The pace you choose.",
       benefitOneTitle: "Watch the big picture",
       benefitOneText:
@@ -124,12 +130,15 @@ export const FUNNELS: readonly FunnelDefinition[] = [
     steps: [steps.landing, steps.book, steps.thanks],
     defaults: {
       ...COMMON,
-      eyebrow: "Home starts with a plan",
-      headline: "Find your way home. Start with clarity.",
+      eyebrow: "Home purchase financing",
+      headline: "Find the right mortgage. Before you find the house.",
       description:
         "Before the listings, the open houses and the big decisions, get a mortgage conversation built around you. Your priorities. Your questions. Your next chapter.",
-      cta: "Start my homebuying plan",
-      offerTitle: "Your homebuying plan",
+      cta: "Explore my home loan options",
+      offerTitle: "Your Home Purchase Plan",
+      finalTitle: "Start with your mortgage options. Then shop with a plan.",
+      finalText:
+        "Tell us where you are in your home search. Get a personal starting point for your mortgage conversation, without an obligation to apply.",
       sectionTitle: "Less second-guessing. More direction.",
       benefitOneTitle: "Know where you stand",
       benefitOneText:
@@ -154,12 +163,15 @@ export const FUNNELS: readonly FunnelDefinition[] = [
     steps: [steps.landing, steps.book, steps.thanks],
     defaults: {
       ...COMMON,
-      eyebrow: "Your mortgage. Your next move.",
-      headline: "Your life has changed. Does your mortgage still fit?",
+      eyebrow: "Your personal mortgage review",
+      headline: "Compare your refinance options. Make your next mortgage work for you.",
       description:
         "A refinance should support a goal, not just a headline rate. Explore the trade-offs with someone who will look at the full picture with you.",
-      cta: "Explore my options",
-      offerTitle: "The mortgage fit review",
+      cta: "Get my refinance review",
+      offerTitle: "Your Refinance Comparison",
+      finalTitle: "Make your next mortgage decision with the full picture.",
+      finalText:
+        "Request a review of your goals, current loan and potential trade-offs. A lower payment is not the whole story.",
       sectionTitle: "Start with your goal. Then look at the numbers.",
       benefitOneTitle: "Review your payment",
       benefitOneText:
@@ -186,12 +198,15 @@ export const FUNNELS: readonly FunnelDefinition[] = [
     steps: [steps.landing, steps.book, steps.thanks],
     defaults: {
       ...COMMON,
-      eyebrow: "Your next move, made clearer",
-      headline: "The questions to ask before you make your next move.",
+      eyebrow: "The first-time homebuyer's field guide",
+      headline: "Get the homebuyer checklist you will wish you had sooner.",
       description:
         "A practical guide for a decision that deserves more than guesswork. Keep the important questions close, and take the next step with more confidence.",
       cta: "Get the guide",
       offerTitle: "The Homebuyer Field Guide",
+      finalTitle: "The right questions can change your next conversation.",
+      finalText:
+        "Get the guide. Keep it handy. Use it to make a more informed start on your homebuying journey.",
       sectionTitle: "A useful resource. Not another sales pitch.",
       benefitOneTitle: "Get organized",
       benefitOneText:

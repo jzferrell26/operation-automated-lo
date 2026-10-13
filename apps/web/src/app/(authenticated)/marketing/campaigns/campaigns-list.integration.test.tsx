@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { CampaignList } from "../../../../features/campaigns/components/campaign-list.js";
@@ -56,6 +57,51 @@ async function rows(): Promise<readonly CampaignListRow[]> {
  * still checks everything it checked, and a broken page still fails on its assertions.
  */
 const FIRST_RENDER_TIMEOUT = 30_000;
+
+describe("property and financing tool discovery", () => {
+  it.each(["empty", "saved"] as const)(
+    "links to existing private tools on the %s campaign list and retains ads and funnels",
+    async (state) => {
+      render(<CampaignList now={NOW} rows={state === "saved" ? await rows() : []} />);
+      const tools = screen.getByRole("navigation", { name: "Property and financing tools" });
+      const property = within(tools).getByRole("link", { name: "Create a property campaign" });
+      expect(property).toHaveAttribute("href", "/marketing/campaigns/property");
+      expect(property).toHaveAttribute("data-variant", "action");
+      expect(property).toHaveAccessibleDescription(
+        "Prepare a private property page, flyer, QR code and campaign copy.",
+      );
+      const financing = within(tools).getByRole("link", { name: "Create a financing report" });
+      expect(financing).toHaveAttribute("href", "/marketing/campaigns/financing");
+      expect(financing).toHaveAccessibleDescription(
+        "Compare supplied financing scenarios in a saved private report, PDF and site preview.",
+      );
+      expect(screen.getAllByRole("link", { name: "Funnels" })).toHaveLength(1);
+      expect(screen.getByRole("link", { name: "Funnels" })).toHaveAttribute(
+        "href",
+        "/marketing/campaigns/funnels",
+      );
+      expect(screen.getAllByRole("link", { name: "Launch an ad" })).toHaveLength(1);
+      expect(screen.getByRole("link", { name: "Launch an ad" })).toHaveAttribute(
+        "href",
+        "/marketing/campaigns/new",
+      );
+    },
+    FIRST_RENDER_TIMEOUT,
+  );
+
+  it("puts the tool links in native keyboard order without replacing the ad action", async () => {
+    const user = userEvent.setup();
+    render(<CampaignList now={NOW} rows={[]} />);
+    const property = screen.getByRole("link", { name: "Create a property campaign" });
+    for (let count = 0; count < 10 && document.activeElement !== property; count += 1)
+      await user.tab();
+    expect(property).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Create a financing report" })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Launch an ad" })).toHaveFocus();
+  });
+});
 
 describe("the Campaigns list (009E-AC-009)", () => {
   it(

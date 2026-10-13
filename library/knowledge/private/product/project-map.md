@@ -1,8 +1,18 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.25 | Date: October 6, 2026 | Status: Active
+> Category: Product Operations | Version: 1.26 | Date: October 13, 2026 | Status: Active
 
-## Current recovery direction
+## October 13 completion takeover
+
+The owner requested librarian reconciliation followed by Gauntlet execution, prioritizing fifteen webinar ads, listing marketing reports and usable homeowner reports. The [completion review](completion-review-2026-10-13.md) inventories all ten PRDs and records their remaining customer outcomes. The [new completion ledger](../../../../COMPLETION_LEDGER.md) owns this execution batch without replacing historical criterion evidence.
+
+The inspected source base is `origin/main` at `728d5f0`, merged PR #85. It includes the reference-led funnel rebuild and native visitor capture, as well as the earlier studio and financing increments. These are merged source facts. Hosted release, enabled providers and customer-domain functionality are separate evidence questions. Draft PR #87 contains the initial domain boundary, has a failed application check and remains unfinished.
+
+The first batch prepares fifteen original webinar creatives in a separate pending-review pack and exposes the existing private property and financing tools from Campaigns. Approval-bound webinar destinations, approved catalog promotion, photo-led listing outputs, homeowner live-data qualification, data lifecycle and customer-domain completion remain open in the ledger. The supplied hosted Campaigns URL redirected this browser to sign-in; authenticated walkthrough evidence is pending account access. Local fixture interaction is recorded separately.
+
+The older recovery entries below retain their dated implementation history. Where they call merged work branch-only or public funnels unimplemented, use the current source review above and the exact release records rather than assuming those historical statements describe today's deployment.
+
+## October 6 recovery direction
 
 PR #81 is merged at `37fc0566`. The new [five-funnel studio increment](../../../requirements/in-work/prd-010-campaign-recovery/five-funnel-studio-increment.md) on `chief/five-funnel-studio-2026-10-06` implements the owner-selected Live webinar, On-demand webinar, Buyer, Refinance and Lead magnet designs, their fourteen private page views, fixed-layout field/photo editing and private optimistic saving. The new studio migration must precede hosted saving. Final verification lives in its scoped reviews; public registration, DNS/HTTPS, live booking confirmation and HighLevel lead delivery remain separate, unactivated work. The historical branch statements below predate the PR #81 merge.
 

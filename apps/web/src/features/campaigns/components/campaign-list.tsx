@@ -1,4 +1,4 @@
-import { Badge, EmptyState, Icon, Link, Surface } from "@oalo/ui";
+import { Badge, EmptyState, Icon, Link, Stack, Surface } from "@oalo/ui";
 
 import {
   CAMPAIGNS_PAGE,
@@ -125,6 +125,38 @@ export function CampaignList({
         )}
       </header>
       <CampaignsTabs current="campaigns" />
+      <nav aria-label="Property and financing tools" className={styles.tools}>
+        <Surface padding="lg">
+          <Stack gap="4">
+            <h2 className={styles.toolTitle}>Property campaign</h2>
+            <p className={styles.toolDescription} id="property-campaign-description">
+              Prepare a private property page, flyer, QR code and campaign copy.
+            </p>
+            <Link
+              aria-describedby="property-campaign-description"
+              href="/marketing/campaigns/property"
+              variant="action"
+            >
+              Create a property campaign
+            </Link>
+          </Stack>
+        </Surface>
+        <Surface padding="lg">
+          <Stack gap="4">
+            <h2 className={styles.toolTitle}>Financing report</h2>
+            <p className={styles.toolDescription} id="financing-report-description">
+              Compare supplied financing scenarios in a saved private report, PDF and site preview.
+            </p>
+            <Link
+              aria-describedby="financing-report-description"
+              href="/marketing/campaigns/financing"
+              variant="action"
+            >
+              Create a financing report
+            </Link>
+          </Stack>
+        </Surface>
+      </nav>
       {rows.length === 0 ? (
         <EmptyState
           description={

@@ -26,6 +26,25 @@
   line-height: var(--leading-normal);
 }
 
+.tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.toolTitle {
+  font-size: var(--text-card-size);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+.toolDescription {
+  color: var(--tx-body);
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+
 .tableWrap {
   overflow: hidden;
 }

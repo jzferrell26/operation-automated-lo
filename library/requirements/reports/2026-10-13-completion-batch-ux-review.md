@@ -6,11 +6,11 @@
 
 **Scope:** Campaigns property/financing discovery and the pending-review webinar creative pack.
 
-**Method:** Read-only source review, full-size inspection of ten original raster art panels, final eight-frame production-build browser-log review, and direct inspection of six actual screenshot files. Hosted authenticated review and owner pixel approval remain pending.
+**Method:** Read-only source review, full-size inspection of ten original raster art panels, eight-frame production-build browser-log review, canonical Linux screenshot inspection and precisely scoped baseline replacement. All corrected synthetic/account Campaigns frames were opened directly; library screenshots were inspected representatively with the documented full-page display limits. Hosted authenticated review and owner pixel approval remain pending.
 
 ## Verdict
 
-The webinar preparation slice is approved for scoped PR review: its six source findings are closed, and the local production-build browser run passes all eight width/theme combinations. **The CampaignList discovery baseline review found a required spacing correction, F-07. It is now fixed in source, but the combined batch is not yet approved for baseline replacement until corrected canonical captures are inspected.** The report entry points describe private outputs accurately.
+Approve the scoped webinar-preparation/report-discovery increment for PR review. F-01 through F-07 are closed. The eight-frame production-build browser run passes, and both corrected canonical Linux capture jobs passed at `3004b5d`. **Exactly 64 authorized baselines are approved and copied: 56 intentional feature captures and eight separately attributed approved-detail date-mask refreshes.** The report entry points describe private outputs accurately. This does not claim full hosted-product or owner visual approval.
 
 This is not a full-product 10/10 or owner pixel-sign-off verdict. The complete manual keyboard/reduced-motion/zoom and authenticated hosted checks are still outstanding. The initial review and its remediation trail remain below.
 
@@ -184,13 +184,13 @@ The final run supersedes the earlier uncertainty about asset loading, tested flo
 1. Complete manual visual state scoring, including hover/focus/disabled states and readable mobile viewport screenshots. Clipboard failure is covered in focused integration tests reported by the implementation owner, not the browser matrix.
 2. Keyboard Tab/Shift+Tab across the entire flow, focus not obscured, screen-reader speech, every target size, reduced motion and 200% zoom. Programmatic heading focus and the live-region DOM content are verified.
 3. Complete measured focus-ring/non-text contrast across every relevant surface and state. Zero axe violations in the exercised states and the sampled mathematical text pairs are verified.
-4. Actual authenticated CampaignList discovery links, including role-restricted paths; demo fixtures are not substitutes for changed-source coverage.
+4. Hosted authenticated deployment behavior and owner approval. The corrected canonical account captures now qualify local persisted/all-state and empty-account CampaignList discovery; synthetic screenshots are not its only evidence.
 5. Full art sample expansion, small-card text legibility and long saved brand identity in both preview shapes.
 6. Approved-baseline screenshot comparison and separate owner visual approval. No screenshot baseline was updated by this review.
 
 ## Tokens and code ownership
 
-No tokens, utilities, source code or design-system files were changed by this reviewer. Only this report is owned/written by ux-ui-guardian. Findings were sent to root and the implementation owner before report completion. Security then Quality closeout remains the orchestrator's responsibility.
+No tokens, utilities, source code or design-system files were changed by this reviewer. This report and the specifically authorized 64 PNG baselines were written by ux-ui-guardian: sixteen synthetic Campaigns, forty account feature captures, and eight approved-detail historical date refreshes. Other agents' files were untouched. Findings were sent to root and the implementation owner before report completion. Security then Quality closeout remains the orchestrator's responsibility.
 
 ## Canonical Linux Campaigns baseline review, run 38458217895
 
@@ -206,7 +206,7 @@ The canonical synthetic screenshot artifact is available under `test-results/can
 
 **Delta:** Add `margin: 0` to `.toolTitle` and `.toolDescription`, preserving their named typography and `Stack gap="4"`. The implementation owner owns that code. Capture corrected canonical images before accepting any of the sixteen intentional Campaigns baseline replacements. No baseline file was changed at this failed checkpoint.
 
-**Source correction observed:** the implementation owner added `margin: 0` to both classes. The defect is closed in source; acceptance of the corrected Linux images is still pending. The previous oversized-margin images remain rejected for replacement.
+**Source correction observed:** the implementation owner added `margin: 0` to both classes. The defect is now closed in source and all sixteen corrected Linux images inspected below. The previous oversized-margin images remain rejected for replacement.
 
 ### Attribution of other screenshot differences
 
@@ -216,4 +216,85 @@ The canonical synthetic screenshot artifact is available under `test-results/can
 
 The downloaded initial failure-trace artifact contains only the later real-catalog library failure; the first-pass approved-detail captures were cleared by the test harness's second pass. It cannot prove the approved-detail mismatch. If the failure recurs, preserve its first-pass actual/expected/diff and trace before pass two. A narrow diagnostic is to verify the normalized header text immediately after screenshot warmup and before comparison; if a rerender demonstrably replaces it, reapply screenshot-only normalization after warmup with a regression test. This is a proposed diagnosis path, not a finding that such a rerender has occurred.
 
-**Current baseline change list:** none. The sixteen Campaigns changes are held for F-07 correction and a new canonical capture. Permission-restricted/default detail and unrelated overview/settings images remain untouched. No owner visual approval is implied.
+**Historical initial checkpoint:** no baseline changes were made from the first capture. The sixteen Campaigns changes were held for F-07 correction and a new canonical capture. Permission-restricted/default detail and unrelated overview/settings images remain untouched. The corrected sixteen-file acceptance appears below. No owner visual approval is implied.
+
+## Account-artifact attribution, initial run follow-up
+
+The initial account capture completed successfully and was downloaded to `test-results/canonical-review-initial/`. It predates the corrected margin capture, so no images from it were copied into baselines by this reviewer.
+
+### Approved campaign detail is a historical date-geometry mismatch
+
+Inspected all eight `campaign-detail--approved` frames directly. Read-only raw PNG comparison proves the 1440 Light difference is confined to schedule text/mask at y239-280, approval date mask at y677-693, and saved/approved version date masks at y896-937. Its entire ad preview, including the brand-band disclosure, is pixel-identical. The 390 Dark differences are likewise confined to schedule/approval/version dates. The remaining approved captures have the same date attribution, plus small account-control edge raster differences at 768px.
+
+Root verified the relevant Git history: the approved 1440 Light baseline last changed at `adeed9e` (October 4, PR #75); schedule-label normalization entered at `d5ef89b` (October 5, PR #78); campaign-list date normalization expanded at `4afdda8` (October 6, PR #80). The expected image therefore predates the screenshot helper's stable-date behavior. This evidence supports a necessary **historical screenshot-harness date refresh**, not a disclosure/UI change or a helper-selector bug. The real CI failure named approved 1440 Light, so the complete eight-frame approved state set is an eligible separate refresh after the corrected artifact is checked.
+
+Sample raw comparisons of `campaign-detail--ready`, `campaign-page--approved`, `--ad-retired`, `--sent-back`, `--newer-version`, and `--library-notice` show date geometry only, with small account-control raster noise on one sampled ready Dark frame. `launch-an-ad--step-3-approved--1440--light.png` differs only in its approval date at y1073-1089. These changes must not be described as consequences of `.band .disclosure`: the actual disclosure pixels did not change. Do not refresh these other sets solely because their digests differ; consider a specific historical date refresh only if the canonical comparison actually fails.
+
+### Exact proposed baseline scope
+
+Every pattern below expands to the Cartesian product of widths `1440`, `1180`, `768`, `390` and themes `light`, `dark`. The patterns are exact state sets, not permission to copy every PNG from the artifact.
+
+| Directory                        | Exact filename pattern                            | Count | Change reason                                                                                                                     |
+| -------------------------------- | ------------------------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/visual/screens/chromium/` | `campaigns--empty--<width>--<theme>.png`          | 8     | Intentional property/financing discovery cards, after F-07 margin correction.                                                     |
+| `tests/visual/screens/chromium/` | `campaigns--populated--<width>--<theme>.png`      | 8     | Same intentional discovery cards above existing campaign rows.                                                                    |
+| `tests/visual/screens/review/`   | `ads-library--all--<width>--<theme>.png`          | 8     | Pending webinar pack and approved-catalog context.                                                                                |
+| `tests/visual/screens/review/`   | `ads-library--one-topic--<width>--<theme>.png`    | 8     | Same pack below the filtered approved catalog.                                                                                    |
+| `tests/visual/screens/review/`   | `ads-library--real-catalog--<width>--<theme>.png` | 8     | Pending pack available when no approved launch ads exist.                                                                         |
+| `tests/visual/screens/review/`   | `campaigns--all-states--<width>--<theme>.png`     | 8     | Discovery cards in the persisted campaign-list state.                                                                             |
+| `tests/visual/screens/review/`   | `campaigns--empty-account--<width>--<theme>.png`  | 8     | Discovery cards in the real empty-account state.                                                                                  |
+| `tests/visual/screens/review/`   | `campaign-detail--approved--<width>--<theme>.png` | 8     | Separate historical screenshot-harness refresh: old baseline predates stable masked-date geometry; required by actual CI failure. |
+
+This is 56 intentional feature baselines plus eight separately attributed historical date-refresh candidates, 64 total candidates. Final copying/acceptance awaits the corrected canonical run `38462525903` at `3004b5d`. Other date-state sets and unrelated raster/hover differences remain outside the proposed list. No files have been copied at this checkpoint, and no owner approval is invented.
+
+## Corrected synthetic Campaigns acceptance
+
+Root reported the synthetic job of canonical Linux run `38462525903` successful at `3004b5d`; its artifact was downloaded to `test-results/canonical-chromium-corrected/`. This reviewer directly opened **all sixteen** corrected `campaigns--empty` and `campaigns--populated` images: four widths and both themes for each state.
+
+The F-07 fix restores the named `--space-4` card-child rhythm at every frame. The card headings and descriptions no longer carry extra browser margins. At 1440/1180px, two subordinate discovery cards sit below the tabs and above existing results; at 768px they remain contained side by side; at 390px they form a readable single column. Light and Dark preserve the existing semantic surfaces, Inter type steps, borders and action hierarchy. The lone blue launch action stays in its original header or empty-state position. Description wrapping names only implemented private outputs. No clipped card text/control or new horizontal overflow is visible in these sixteen images.
+
+For the **new discovery cards in the captured default empty/populated states**, hierarchy, spacing, typography, color roles, responsive composition and consistency with the existing Card/Link system score 3 at all eight width/theme cells. This is a scoped screenshot assessment of the actual addition; it does not score unseen hover, focus, permission or live-hosted states or replace the manual qualification limits above.
+
+Exactly these sixteen existing files were replaced with the approved canonical bytes:
+
+| State           | Approved baseline paths under `tests/visual/screens/chromium/`                  |
+| --------------- | ------------------------------------------------------------------------------- |
+| Empty, 1440     | `campaigns--empty--1440--light.png`, `campaigns--empty--1440--dark.png`         |
+| Empty, 1180     | `campaigns--empty--1180--light.png`, `campaigns--empty--1180--dark.png`         |
+| Empty, 768      | `campaigns--empty--768--light.png`, `campaigns--empty--768--dark.png`           |
+| Empty, 390      | `campaigns--empty--390--light.png`, `campaigns--empty--390--dark.png`           |
+| Populated, 1440 | `campaigns--populated--1440--light.png`, `campaigns--populated--1440--dark.png` |
+| Populated, 1180 | `campaigns--populated--1180--light.png`, `campaigns--populated--1180--dark.png` |
+| Populated, 768  | `campaigns--populated--768--light.png`, `campaigns--populated--768--dark.png`   |
+| Populated, 390  | `campaigns--populated--390--light.png`, `campaigns--populated--390--dark.png`   |
+
+Source and destination SHA-256 hashes match for all sixteen files. No other PNG was changed by this reviewer. The corrected account job and any actual comparison rerun remain root-owned follow-ups. Review/account candidate sets in the previous table are not yet copied or accepted by this step.
+
+Suggested PR evidence line: `Baseline change: sixteen synthetic Campaigns empty/populated captures from canonical Linux run 38462525903 at 3004b5d add private property/financing discovery cards and verify the corrected token spacing; other screenshots remain unchanged.`
+
+## Final corrected account acceptance
+
+Root reported the account job of canonical Linux run `38462525903` successful at the same head `3004b5d`. Its artifact is `test-results/canonical-review-corrected/`. This is an actual complete local account/database capture pass, not a hosted-customer or provider pass. The successful job retains the existing accessibility, target-size and typography checks in the capture helper.
+
+Directly inspected all sixteen corrected account Campaigns images, `all-states` and `empty-account`, at four widths in Light and Dark. F-07's zero-margin correction is visible in every frame; the new discovery cards have the same controlled spacing as the accepted synthetic set. Existing status rows, the historical campaign, the primary launch action and phone-card layout remain present and contained.
+
+Directly opened eight representative corrected library images covering all/one-topic/real-catalog, Light/Dark, desktop/tablet/mobile: all 1440 Light and 390 Dark; one-topic 1180 Dark and 390 Light; real-catalog 1440 Dark, 1180 Light, 768 Dark and 390 Light. All 24 corrected library PNGs are byte-identical to the initial account artifact, so the correction introduced no new library-rendering difference. The pending pack remains available beneath the filtered/sample catalog or real empty catalog. It uses three/two/one columns as specified and has visibly separate pending-review preparation controls. Full-page mobile images still downscale too far for exact small-text pixel certification; the passing automated frame/contrast/target checks and explicit earlier evidence limits remain authoritative. No full owner visual sign-off is inferred from this baseline acceptance.
+
+The complete eight-frame initial approved-detail set had been inspected. Four corrected approved-detail PNGs are byte-identical to that set. The remaining four differ by only 51-106 pixels at y10-53 around the existing account control; dimensions and all content below that header are identical to the inspected initial set. Re-opened corrected approved 1440 Light and 768 Dark directly. The historical masked-date refresh therefore retains the approved attribution: it updates stale capture geometry, not ad disclosure, financial data, campaign approval semantics or provider behavior.
+
+Copied exactly these 48 account baselines under `tests/visual/screens/review/`, for every width `1440`, `1180`, `768`, `390` and theme `light`, `dark`:
+
+| Exact filename pattern                            | Count | Accepted reason                                                              |
+| ------------------------------------------------- | ----- | ---------------------------------------------------------------------------- |
+| `ads-library--all--<width>--<theme>.png`          | 8     | Pending webinar pack/context in the complete catalog.                        |
+| `ads-library--one-topic--<width>--<theme>.png`    | 8     | Pending pack/context below the filtered catalog.                             |
+| `ads-library--real-catalog--<width>--<theme>.png` | 8     | Pending pack when the approved catalog is empty.                             |
+| `campaigns--all-states--<width>--<theme>.png`     | 8     | Private report/property discovery with saved campaign states.                |
+| `campaigns--empty-account--<width>--<theme>.png`  | 8     | Same discovery in the real empty-account state.                              |
+| `campaign-detail--approved--<width>--<theme>.png` | 8     | Separate historical stable-date screenshot-harness refresh, as proved above. |
+
+All 48 copied source/destination SHA-256 hashes match. The review directory has exactly those 48 changed PNGs and no out-of-scope PNG. Combined with the sixteen synthetic replacements, the final baseline change list is exactly 64 files. The ready/already-decided detail sets, campaign-page states, approved launch-step set, permission-restricted synthetic detail and unrelated settings/overview/account raster differences were left untouched.
+
+Root separately reported source-fix DB CI job `115521019142` failed against the old Campaigns/library/approved-detail baselines and also hit a `/partners` login `waitForURL` timeout. The corrected canonical account job at the identical source head passed all tests, including that path. Record the timeout as a potential existing flake; no authentication source change is justified or made by this review. The final comparison run after committing accepted baselines remains root-owned, under the stated one-retry discipline. Canonical write-mode capture success is not described as a passing post-update comparison run.
+
+Final PR evidence line: `Baseline change: 56 intentional Campaigns discovery/webinar-library captures from canonical Linux run 38462525903 at 3004b5d, plus eight approved-detail captures refreshed solely because their expected masked-date geometry predates the existing normalization helper. No other screenshots were replaced.`

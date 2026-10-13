@@ -113,6 +113,18 @@ None detected. The two CSS declarations introduce no dynamic input or security c
 
 `git diff --check` passed on this delta. The parent reports 30 Campaigns interaction tests, 56 design/control tests and the targeted browser test passing; those results are attributed to the parent and were not redundantly rerun by this reviewer for two margin declarations and one locator correction. Zero unresolved Medium-or-higher security findings remain. This clearance applies to these source corrections; subsequent baseline changes or other runtime changes require their own applicable review. Proceed to fresh Quality for this correction cycle.
 
+### Final baseline and planning-document recheck
+
+Security reopened in the primary checkout before fresh Quality for the final PR #90 baseline/docs-only delta. No runtime, browser-test source, dependency or configuration edits occurred after the source-correction clearance. Excluded generated agent instruction files and the isolated homeowner/financing worktrees; this reviewer still owns only this primary report.
+
+Independently confirmed exactly 64 modified PNGs in eight sets of eight: synthetic Campaigns empty/populated, account Ads library all/one-topic/real-catalog, account Campaigns all-states/empty-account, and approved campaign detail. All 64 destination SHA-256 hashes match their respective files in `test-results/canonical-chromium-corrected/` or `test-results/canonical-review-corrected/`. All decode as PNG; none has EXIF, XMP, IPTC or comment metadata. No other baseline set or runtime file is in this delta. A read-only GitHub run query independently confirms canonical run `38462525903` concluded successfully on `codex/completion-reconciliation` at full head `3004b5dc7e31931ba4a49c1cc896ed78cd87c828`.
+
+Reviewed the UX acceptance/provenance notes and directly opened representative approved-detail desktop and synthetic Campaigns mobile images. The inspected images show fixture/sample identities, sample campaign content and masked dates, with no customer record, credential or session token visible. Existing capture source identifies the account/database as disposable seeded review data; the displayed NMLS values match its explicit test-brand literals. The 56 feature-image replacements and eight separately attributed historical date-mask refreshes change no runtime approval or launch control. This security pass verifies byte provenance, metadata, fixture source and representative visible content; it does not claim independent exhaustive visual inspection or customer visual acceptance of every frame.
+
+Reviewed the complete new Draft next-wave plan and ledger/UX-report delta. No secrets or client PII detected. Key-name-only environment metadata remains distinct from deployed values or live lookup evidence. The documents preserve initial CI failures, identify successful canonical write-mode capture separately from the still-pending post-update comparison, and leave actual launch, hosted access, provider delivery and isolated next waves incomplete. The new unnumbered plan grants no fabricated lender approval, credentials or migration number.
+
+`git diff --check` passed. No new or unresolved Medium-or-higher security findings. Cleared for fresh Quality on this exact baseline/docs delta; final comparison CI, PR mergeability and hosted/customer/provider qualification remain separate parent-owned evidence.
+
 ## Next step
 
 Invoke Quality against this reviewed batch, then the orchestrator's code/repository review and required CI/build/browser checks before any ship claim. Do not infer approval, provider launch, hosted access or completed listing/homeowner reports from this security clearance. The authenticated hosted walkthrough still needs the user's sign-in.

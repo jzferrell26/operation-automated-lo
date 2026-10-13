@@ -126,6 +126,36 @@ Independent verification after Security clearance: 30 Campaigns interaction test
 
 The ledger's new Vercel evidence is variable-name metadata only. It records that two names are absent from that inspected inventory, without exposing values or proving deployed flag values, permitted lookup usage or a successful homeowner valuation. Existing hosted/operator limits remain open. The previous build and eight-case preparation matrix remain historical evidence for the preceding source snapshot; this recheck does not relabel them as a full post-margin CI run. Screenshot-baseline changes, corrected canonical rendering acceptance, full CI/mergeability, hosted qualification and owner visual approval still require their own evidence.
 
+### Final post-security baseline and planning-document recheck
+
+The final baseline/docs-only delta passes scoped Quality with no new code finding. This fresh recheck follows Security's Final baseline and planning-document recheck at `library/requirements/reports/2026-10-13-completion-batch-security-review.md:116-126`. The snapshot is `3004b5dc7e31931ba4a49c1cc896ed78cd87c828` plus the 64 accepted canonical PNG replacements, ledger/provenance notes and one unnumbered Draft next-wave plan. No runtime, browser-test source, dependency, configuration or migration change is present since the preceding source-margin/locator clearance.
+
+Independent checks confirm exactly the following eight state sets. Each expands to widths `1440`, `1180`, `768`, `390` in themes `light` and `dark`, eight files per set:
+
+| Baseline directory               | Exact filename pattern                            | Count | Acceptance attribution                                                                                   |
+| -------------------------------- | ------------------------------------------------- | ----- | -------------------------------------------------------------------------------------------------------- |
+| `tests/visual/screens/chromium/` | `campaigns--empty--<width>--<theme>.png`          | 8     | Intentional report discovery, corrected card margins.                                                    |
+| `tests/visual/screens/chromium/` | `campaigns--populated--<width>--<theme>.png`      | 8     | Same discovery above existing campaign rows.                                                             |
+| `tests/visual/screens/review/`   | `ads-library--all--<width>--<theme>.png`          | 8     | Pending pack and approved-catalog context.                                                               |
+| `tests/visual/screens/review/`   | `ads-library--one-topic--<width>--<theme>.png`    | 8     | Pending pack beneath the filtered catalog.                                                               |
+| `tests/visual/screens/review/`   | `ads-library--real-catalog--<width>--<theme>.png` | 8     | Pending pack alongside an empty approved catalog.                                                        |
+| `tests/visual/screens/review/`   | `campaigns--all-states--<width>--<theme>.png`     | 8     | Report discovery with saved campaign states.                                                             |
+| `tests/visual/screens/review/`   | `campaigns--empty-account--<width>--<theme>.png`  | 8     | Same discovery in the seeded empty account.                                                              |
+| `tests/visual/screens/review/`   | `campaign-detail--approved--<width>--<theme>.png` | 8     | Separate historical stable-date screenshot-harness refresh, not a webinar disclosure or approval change. |
+
+All 64 destination SHA-256 digests independently match the corresponding files under `test-results/canonical-chromium-corrected/` or `test-results/canonical-review-corrected/`. All 64 independently decode as PNG with the filename's expected viewport width. The exact changed-PNG set equals the Cartesian expansion above; no other PNG is in the delta. Security separately checked image metadata and fixture provenance; UX owns the actual visual acceptance in its Corrected synthetic Campaigns acceptance and Final corrected account acceptance sections. This QA pass does not claim a second exhaustive visual review or owner approval.
+
+Read-only GitHub verification confirms [canonical capture run 38462525903](https://github.com/jzferrell26/operation-automated-lo/actions/runs/38462525903) succeeded at the full source SHA above, with both Synthetic screens and Account screens and guided setup jobs successful. The baseline refresh uses these exact artifact bytes. The approved-detail 1440 Light baseline's prior Git change is `adeed9e`, corroborating the separately documented historical date-mask explanation. Other detail/page/launch-step states and unrelated raster differences remain untouched. Canonical write-mode success is not a post-update screenshot comparison pass.
+
+| Affected criterion                             | Recheck result                                                                                                                                                                                                                                                                | Completion limit                                                                                            |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| WEBINAR-PACK-VERIFICATION and REPORT-DISCOVERY | Accepted baseline bytes have exact scope and successful same-head canonical provenance. The source correction was cleared separately before capture.                                                                                                                          | Final comparison CI against the committed replacements remains pending.                                     |
+| REVIEW-INVENTORY                               | The new `library/knowledge/private/product/completion-next-waves-2026-10-13.md:1-84` is explicitly Draft, links existing criteria, names file/contract ownership and distinguishes future implementation from external qualification. All 14 relative document links resolve. | The unnumbered plan performs no implementation or approval and does not credit pending outcomes as shipped. |
+| BATCH-SECURITY and BATCH-QUALITY               | Security's final baseline/docs clearance precedes this exact-scope Quality recheck. `git diff --check` passes.                                                                                                                                                                | A subsequent runtime or baseline delta requires its applicable review.                                      |
+| BATCH-REVIEW-PR                                | Draft PR #90 already exists; the ledger preserves initial/source-fix comparison failures, the corrected capture and the separate sign-in timeout observation.                                                                                                                 | Full CI, final comparison and current-main mergeability still need actual evidence.                         |
+
+The ledger's isolated homeowner-readiness and financing-photo branches are recorded as separate unfinished work, not part of this reviewed PR or as new provider proof. QA did not inspect or modify their active worktrees. The key-name-only Vercel inventory is still not a credential, flag-value, allowed-usage or successful live-valuation result. Hosted sign-in, lender/customer visual approval, true ad destination/launch/readback, listing-report completion and homeowner live/provider qualification remain open. No additional behavioral test run is represented for this baseline/docs-only delta; existing source-test evidence and successful canonical jobs remain separately attributed.
+
 ## Files Changed
 
 Only the assigned QA report is written by this reviewer. The audited dirty-tree inventory includes tracked modifications and added feature/art files; generated `apps/web/AGENTS.md` and `apps/web/CLAUDE.md` are excluded from the assigned batch and remain untouched.
@@ -148,6 +178,7 @@ Only the assigned QA report is written by this reviewer. The audited dirty-tree 
 - `apps/web/src/features/webinar-ads/pack.module.css` (A): token-based responsive preparation and preview.
 - `apps/web/src/features/webinar-ads/pack.tsx` (A): local selection, editing, preview, review, copy and download UI.
 - `library/README.md` (M): current inventory links and reconciled lifecycle descriptions.
+- `library/knowledge/private/product/completion-next-waves-2026-10-13.md` (A, final follow-up): unnumbered Draft implementation plan tied to existing criteria and ownership, with external inputs and completion limits.
 - `library/knowledge/private/product/completion-review-2026-10-13.md` (A): source-linked librarian review.
 - `library/knowledge/private/product/project-map.md` (M): dated current-source amendment.
 - `library/requirements/reports/2026-10-13-completion-batch-dependency-review.md` (A): dependency/security-gate remediation evidence.
@@ -158,6 +189,8 @@ Only the assigned QA report is written by this reviewer. The audited dirty-tree 
 - `tests/browser/ads-library.spec.ts` (M, follow-up): existing filter status assertion scoped to the exact Ads library region, retaining its expected text and surrounding checks.
 - `tests/browser/webinar-ads.spec.ts` (A): eight-case local preparation matrix.
 - `tooling/scripts/ads-library/generate-webinar-art.mjs` (A): local original-art generator and digest authoring.
+
+The final follow-up also modifies exactly the 64 canonical baseline files enumerated by state/viewport/theme in the table above. These are 56 intentional feature screenshots and eight separately attributed historical approved-detail date-mask refreshes; no other baseline is included.
 
 Thirty added raster files are enumerated below, rather than treating untracked artwork as outside the diff:
 

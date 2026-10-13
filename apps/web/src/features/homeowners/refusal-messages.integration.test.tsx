@@ -227,16 +227,14 @@ describe("a workspace that has not turned homeowner reports on", () => {
     expect(workspace?.firstElementChild?.tagName).toBe("HEADER");
   });
 
-  it("still offers the two ways forward the empty card carries", async () => {
+  it("offers a recheck and an accurate administrator/support next step", async () => {
     network.read.mockResolvedValue(reportsNotEnabled());
 
     render(<HomeownerWorkspace />);
 
-    expect(await screen.findByRole("button", { name: "Check connection again" })).toBeEnabled();
-    expect(screen.getByRole("link", { name: "Workspace connections" })).toHaveAttribute(
-      "href",
-      "/settings/connections",
-    );
+    expect(await screen.findByRole("button", { name: "Check report availability" })).toBeEnabled();
+    expect(screen.getByText(/Ask your workspace administrator or contact support/u)).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Workspace connections" })).toBeNull();
   });
 
   /**
@@ -257,11 +255,9 @@ describe("a workspace that has not turned homeowner reports on", () => {
     expect(state).toHaveAttribute("data-surface", "card");
     const actions = state?.querySelector(".oalo-state-actions");
     expect(within(actions as HTMLElement).getByRole("button")).toHaveTextContent(
-      "Check connection again",
+      "Check report availability",
     );
-    expect(within(actions as HTMLElement).getByRole("link")).toHaveTextContent(
-      "Workspace connections",
-    );
+    expect(within(actions as HTMLElement).queryByRole("link")).toBeNull();
   });
 
   it("keeps the alert for a refusal that is a failure: reports unavailable", async () => {

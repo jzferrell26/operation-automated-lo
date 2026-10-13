@@ -150,6 +150,16 @@ describe.sequential("authenticated AVM HTTP routes", () => {
       report.id,
     );
     expect(workspace.lookupsThisMonth).toBe(1);
+    expect(workspace.readiness).toEqual({
+      storage: "ready",
+      writeAccess: "allowed",
+      valuation: "ready",
+      freshLookup: "ready",
+    });
+    expect(
+      HomeWorkspaceSchema.parse(await (await workspaceGet(read(readerSession))).json()).readiness
+        .writeAccess,
+    ).toBe("read_only");
     expect(
       HomeWorkspaceSchema.parse(await (await workspaceGet(read(otherSession))).json()).properties,
     ).toEqual([]);
@@ -179,7 +189,13 @@ describe.sequential("authenticated AVM HTTP routes", () => {
     try {
       const response = await workspaceGet(read(ownerSession));
       expect(response.status).toBe(200);
-      expect(HomeWorkspaceSchema.parse(await response.json()).properties.length).toBeGreaterThan(0);
+      const workspace = HomeWorkspaceSchema.parse(await response.json());
+      expect(workspace.properties.length).toBeGreaterThan(0);
+      expect(workspace.readiness).toMatchObject({
+        storage: "ready",
+        valuation: "setup_unavailable",
+        freshLookup: "setup_unavailable",
+      });
       const unavailable = await workspacePost(write({ action: "create", input: propertyInput() }));
       expect(unavailable.status).toBe(503);
       expect(await unavailable.json()).toMatchObject({ error: "VALUATION_NOT_CONFIGURED" });

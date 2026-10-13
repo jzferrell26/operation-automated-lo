@@ -98,6 +98,12 @@ beforeEach(() => {
     monthlyLookupLimit: 10,
     lookupsThisMonth: 1,
     properties: [property],
+    readiness: {
+      storage: "ready",
+      writeAccess: "allowed",
+      valuation: "ready",
+      freshLookup: "ready",
+    },
   };
   mocked.get.mockImplementation(async (path: string) =>
     Response.json(path.includes("/reports/") ? { delivery: null } : workspace),

@@ -13,6 +13,7 @@ import type { useHomeWorkspace } from "./use-home-workspace.js";
 import { homeAddressText, sampleHomeAddress } from "./model.js";
 import { MortgageFields, mortgageDraft, mortgageFromDraft } from "./mortgage-fields.js";
 import styles from "./homeowners.module.css";
+import { createHomeReportAvailable } from "./readiness.js";
 
 export function HomeBrandFields({
   value,
@@ -178,10 +179,11 @@ export function HomeReportBuilder({
           <p>One property. A clear view of value, equity and the next conversation.</p>
         </div>
       </header>
-      {!demo && !data.workspace.valuationConnected ? (
+      {!demo && !createHomeReportAvailable(data.workspace) ? (
         <p className={styles.note}>
-          Property valuations are not connected in this workspace yet. You can prepare the report
-          details now; your workspace owner needs to enable value estimates before you create it.
+          You can prepare the report details now. Report creation needs confirmed workspace access
+          and valuation setup. Ask your workspace administrator or contact support, then check
+          again.
         </p>
       ) : null}
       <nav className={styles.builderSteps} aria-label="Report creation progress">
@@ -419,7 +421,7 @@ export function HomeReportBuilder({
                   data.busy ||
                   (!demo &&
                     (!data.workspace.canWrite ||
-                      (step === 2 && !data.workspace.valuationConnected)))
+                      (step === 2 && !createHomeReportAvailable(data.workspace))))
                 }
               >
                 {data.busy ? "Creating report…" : step === 2 ? "Create report" : "Continue"}

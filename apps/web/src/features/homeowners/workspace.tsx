@@ -27,6 +27,7 @@ import { HomeReportView } from "./report-view.js";
 import { useHomeWorkspace, type HomeAction } from "./use-home-workspace.js";
 import "@oalo/ui/product-tokens.css";
 import styles from "./homeowners.module.css";
+import { freshHomeLookupAvailable, homeReadinessNotice } from "./readiness.js";
 
 function HomeReportList({ data }: { data: ReturnType<typeof useHomeWorkspace> }) {
   const [query, setQuery] = useState("");
@@ -53,9 +54,11 @@ function HomeReportList({ data }: { data: ReturnType<typeof useHomeWorkspace> })
         <Button variant="outline" onClick={() => setHelp(true)}>
           How it works
         </Button>
-        <ActionLink href="/homeowners/new">
-          <Icon name="plus" decorative size="sm" /> Create report
-        </ActionLink>
+        {data.workspace.canWrite ? (
+          <ActionLink href="/homeowners/new">
+            <Icon name="plus" decorative size="sm" /> Create report
+          </ActionLink>
+        ) : null}
       </PageHeader>
       <StatCards
         items={[
@@ -193,11 +196,11 @@ function HomeReportList({ data }: { data: ReturnType<typeof useHomeWorkspace> })
               >
                 Clear filters
               </Button>
-            ) : (
+            ) : data.workspace.canWrite ? (
               <ActionLink href="/homeowners/new">
                 Create your first report <Icon name="arrow-right" decorative size="sm" />
               </ActionLink>
-            )}
+            ) : null}
           </div>
         )}
       </Card>
@@ -562,7 +565,10 @@ function HomeReportDetails({
                 variant="outline"
                 disabled={
                   data.busy ||
-                  (data.workspace.mode !== "demo" && !data.workspace.valuationConnected)
+                  !freshHomeLookupAvailable(data.workspace) ||
+                  (data.workspace.mode !== "demo" &&
+                    report.input.association !== "property_only" &&
+                    !data.workspace.ghlConnected)
                 }
                 onClick={() => open("refresh")}
               >
@@ -578,6 +584,15 @@ function HomeReportDetails({
           ) : null}
         </div>
       </div>
+      {data.workspace.mode !== "demo" &&
+      report.input.association !== "property_only" &&
+      !data.workspace.ghlConnected ? (
+        <p className={`${styles.note} ${styles.screenOnly}`}>
+          This homeowner's HighLevel connection is unavailable. Ask your workspace administrator or
+          contact support before refreshing this linked report or resuming monthly updates. The
+          saved report and PDF remain available.
+        </p>
+      ) : null}
       <HomeReportView report={report} />
       {deliveryStatus ? (
         <p className={`${styles.note} ${styles.screenOnly}`}>
@@ -683,7 +698,15 @@ function HomeReportDetails({
                 value={cadence}
                 options={[
                   { value: "off", label: "On demand only" },
-                  { value: "monthly", label: "Monthly valuation refresh" },
+                  {
+                    value: "monthly",
+                    label: "Monthly valuation refresh",
+                    disabled:
+                      !freshHomeLookupAvailable(data.workspace) ||
+                      (data.workspace.mode !== "demo" &&
+                        report.input.association !== "property_only" &&
+                        !data.workspace.ghlConnected),
+                  },
                 ]}
                 onValueChange={(value) => setCadence(value === "monthly" ? "monthly" : "off")}
               />
@@ -700,7 +723,9 @@ function HomeReportDetails({
                   type="checkbox"
                   checked={deliver}
                   disabled={
-                    data.workspace.mode === "demo" || report.input.association === "property_only"
+                    data.workspace.mode === "demo" ||
+                    report.input.association === "property_only" ||
+                    (!deliver && (!data.workspace.deliveryEnabled || !data.workspace.ghlConnected))
                   }
                   onChange={(event) => setDeliver(event.target.checked)}
                 />
@@ -709,13 +734,37 @@ function HomeReportDetails({
                   source checks pass.
                 </span>
               </label>
+              {data.workspace.mode !== "demo" &&
+              report.input.association !== "property_only" &&
+              (!data.workspace.deliveryEnabled || !data.workspace.ghlConnected) ? (
+                <p className={styles.note}>
+                  HighLevel delivery is unavailable. Ask your workspace administrator or contact
+                  support to finish delivery setup. You can turn off an existing delivery
+                  preference.
+                </p>
+              ) : null}
               <p className={styles.note}>
                 {data.workspace.mode === "demo"
                   ? "This saves a demo preference only. No background job or message will run."
                   : "Each fresh valuation counts toward your monthly lookup allowance. Loan details older than 35 days are omitted from monthly reports until you confirm current balances. Delivery stops when communication is not allowed or the report cannot be verified."}
               </p>
+              {!freshHomeLookupAvailable(data.workspace) ? (
+                <p className={styles.note}>
+                  A new monthly refresh needs an available valuation connection and allowance. You
+                  can pause updates or choose On demand only now. Check availability before
+                  resuming.
+                </p>
+              ) : null}
               <Button
-                disabled={data.busy}
+                disabled={
+                  data.busy ||
+                  (cadence === "monthly" &&
+                    !paused &&
+                    (!freshHomeLookupAvailable(data.workspace) ||
+                      (data.workspace.mode !== "demo" &&
+                        report.input.association !== "property_only" &&
+                        !data.workspace.ghlConnected)))
+                }
                 onClick={() =>
                   void act({
                     action: "enrollment",
@@ -827,20 +876,18 @@ export function HomeownerWorkspace({
     tagline: brand.tagline,
   };
   const property = data.workspace.properties.find((item) => item.id === propertyId);
+  const readinessNotice = homeReadinessNotice(data.workspace);
   return (
     <div className={styles.workspace} data-product-shell="true" data-homeowner-workspace="true">
       {data.error ? <LiveRegion urgency="alert" message={data.error} visible /> : null}
-      {data.workspace.mode === "live" && !data.workspace.valuationConnected ? (
+      {data.workspace.mode !== "unconfigured" && readinessNotice ? (
         <div className={styles.notice}>
           <span>
-            <strong>Valuations need to be connected</strong>
-            <p>
-              Your report workspace is ready. A valuation connection is required before creating a
-              report; saved reports can still be opened and downloaded.
-            </p>
+            <strong>{readinessNotice.title}</strong>
+            <p>{readinessNotice.body}</p>
           </span>
           <Button variant="outline" disabled={data.busy} onClick={() => void data.reload()}>
-            Check connection
+            Check report availability
           </Button>
         </div>
       ) : null}
@@ -854,19 +901,17 @@ export function HomeownerWorkspace({
               `EmptyState` on the page's card surface), with its two actions in the two action slots,
               rather than a hand-built card with its own inset and rhythm. */}
           <EmptyState
-            description="Property valuations need an enabled account, saved-report storage and a valuation connection. HighLevel is optional for homeowner follow-up. Your workspace owner can finish these connections."
+            description={
+              readinessNotice?.body ??
+              "Ask your workspace administrator or contact support to finish report setup, then check again."
+            }
             primaryAction={
               <Button variant="outline" onClick={() => void data.reload()}>
-                Check connection again
+                Check report availability
               </Button>
             }
-            secondaryAction={
-              <ActionLink href="/settings/connections" secondary>
-                Workspace connections
-              </ActionLink>
-            }
             surface="card"
-            title="Connect the report workspace"
+            title={readinessNotice?.title ?? "Connect the report workspace"}
           />
         </>
       ) : view === "new" ? (

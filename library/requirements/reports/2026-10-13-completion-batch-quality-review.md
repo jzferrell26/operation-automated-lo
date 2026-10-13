@@ -1,10 +1,15 @@
 # QA Report: October 13 completion batch
 
-**Plan document:** `COMPLETION_LEDGER.md`, current execution batch only  
-**Audit date:** 2026-10-13  
-**Base branch:** `origin/main` at `728d5f0`  
-**Head:** `codex/completion-reconciliation`, uncommitted working-tree snapshot  
-**Auditor:** quality-guardian  
+**Plan document:** `COMPLETION_LEDGER.md`, current execution batch only
+
+**Audit date:** 2026-10-13
+
+**Base branch:** `origin/main` at `728d5f0`
+
+**Head:** `codex/completion-reconciliation`, uncommitted working-tree snapshot
+
+**Auditor:** quality-guardian
+
 **Security prerequisite:** [Final Security review](2026-10-13-completion-batch-security-review.md), including the final disclosure CSS recheck
 
 ## Summary

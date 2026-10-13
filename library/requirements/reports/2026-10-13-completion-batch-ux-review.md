@@ -298,3 +298,115 @@ All 48 copied source/destination SHA-256 hashes match. The review directory has 
 Root separately reported source-fix DB CI job `115521019142` failed against the old Campaigns/library/approved-detail baselines and also hit a `/partners` login `waitForURL` timeout. The corrected canonical account job at the identical source head passed all tests, including that path. Record the timeout as a potential existing flake; no authentication source change is justified or made by this review. The final comparison run after committing accepted baselines remains root-owned, under the stated one-retry discipline. Canonical write-mode capture success is not described as a passing post-update comparison run.
 
 Final PR evidence line: `Baseline change: 56 intentional Campaigns discovery/webinar-library captures from canonical Linux run 38462525903 at 3004b5d, plus eight approved-detail captures refreshed solely because their expected masked-date geometry predates the existing normalization helper. No other screenshots were replaced.`
+
+## Bounded synthetic schedule-mask review at 5e9ac27
+
+Reviewer: independent `ux-ui-guardian`, October 13, 2026. Source capture: canonical Linux run `38474385754`, artifact `test-results/canonical-chromium-stable-approval/`. Root reports the synthetic capture job passed. This reviewer owns this report append only; no baseline, test, application, token, commit or provider write was made.
+
+Governing rules: `00-design-brief.md` sections 10, 14, 15 and 20; `06-review-rubric.md` sections 1-3; `03-components/campaign-and-artifact-workflow.md` lines 81 and 90-98. The component rule says: "A date is one unit. It never breaks across two lines". Brief section 15 says: "Every disabled consequential action explains why it is disabled and gives the next safe action."
+
+Directly opened every old expected and new actual permission-restricted capture, all four widths in both themes, sixteen images total. Independently recomputed exact RGBA differences with Pillow in memory, without generating or changing an image. Every expected/actual pair has identical dimensions. No pair changes any pixel at y400 or below: Results, the sample creative, Approval, the permission explanation, Copy the link, Versions and support remain pixel-identical. Full-page tablet/mobile views were resized by the viewer, so small text certification relies on the exact pixel comparison and existing capture checks, not visual estimation from downscaled text.
+
+### Attribution correction
+
+These eight differences are a historical **schedule header** refresh. They are not changes caused by the new `Oct 4, 2026` approval/save label branch. The expected header mask is wider than the current fixed `Fri, Oct 16, 2026` mask. At 1440 and 768 the narrower mask moves the existing budget sentence's `$350` to the first line, retaining the same two-line header height and all downstream geometry. At 1180 and 390 the mask narrows and adjacent text shifts within the existing first line.
+
+Evidence: `tests/browser/helpers/design-quality.ts:934-940` names the header, list and timestamp selectors separately; `:971-979` preserves the header's `Fri, Oct 16, 2026` branch and uses `Oct 4, 2026` only for approval/save/decision labels. The diff from `42be9` to `5e9ac27` confirms the schedule header value and selectors were already present. `apps/web/src/features/campaigns/components/persisted-campaign-screen.tsx:126-149` renders the run sentence and its time nodes. `tests/browser/design-quality.spec.ts:574-603` explicitly captures the creator's permission-restricted detail after asserting Approve this version is disabled. The Versions saved-date mask in all eight pairs has no changed pixels.
+
+### Exact accepted scope
+
+Accept the date-header differences in these eight existing files under `tests/visual/screens/chromium/`, solely as historical capture geometry reconciliation:
+
+| Exact filename                                            | Changed content pixels | Content difference rectangle, inclusive x/y |
+| --------------------------------------------------------- | ---------------------: | ------------------------------------------- |
+| `campaign-detail--permission-restricted--1440--light.png` |                   3568 | 152,269 through 744,310                     |
+| `campaign-detail--permission-restricted--1440--dark.png`  |                   3594 | 152,269 through 744,310                     |
+| `campaign-detail--permission-restricted--1180--light.png` |                   2386 | 356,269 through 591,288                     |
+| `campaign-detail--permission-restricted--1180--dark.png`  |                   2399 | 356,269 through 591,288                     |
+| `campaign-detail--permission-restricted--768--light.png`  |                   3568 | 32,322 through 624,363                      |
+| `campaign-detail--permission-restricted--768--dark.png`   |                   3594 | 32,322 through 624,363                      |
+| `campaign-detail--permission-restricted--390--light.png`  |                    394 | 340,292 through 370,311                     |
+| `campaign-detail--permission-restricted--390--dark.png`   |                    394 | 340,292 through 370,311                     |
+
+The 1440 Dark candidate also carries 80 unrelated account-control raster pixels at y10-53. Those pixels are excluded from this approval. Root owns the concrete replacement and must preserve the existing header pixels if implementing strictly scoped acceptance. The eleven other tiny differences listed in `test-results/stable-approval-synthetic-diff.json` remain outside the replacement list and outside this approval.
+
+### Scoped rubric and qualification
+
+For the changed date-header composition only, hierarchy, spacing rhythm, typography, responsive containment, Light/Dark rendering and sibling consistency score 3 at all eight cells under rubric section 2. The unchanged approval state still visibly explains its disabled action and provides the approver handoff, consistent with brief section 15. No new token, utility, font, radius, motion or library primitive is proposed. The accepted delta is baseline schedule-mask geometry only.
+
+This is not a complete ten-axis rerating: hover, focus, loading, motion, measured contrast and real-date interactions are outside this image-only review. The current capture helper `tests/browser/helpers/design-quality.ts:893-905` performs accessibility, overflow, target-size and typography checks before capture. Root's successful canonical capture report does not establish a passing post-replacement comparison. Account candidates remain pending their separate artifact review. D9 owner visual sign-off and live/customer/provider qualification remain unverified.
+
+### Intact-capture acceptance correction
+
+Root requires intact actual browser captures so baseline SHA-256 evidence retains canonical artifact provenance. This correction supersedes the earlier instruction to exclude/preserve the 80 account-control pixels inside `campaign-detail--permission-restricted--1440--dark.png`.
+
+Approve all eight exact filenames in the preceding table as whole, unmodified actual PNGs from `test-results/canonical-chromium-stable-approval/`. The Dark1440 image includes 80 incidental account-control raster pixels inside x1210-1287, y10-53, in addition to its 3594 approved schedule-header pixels. Direct expected/actual visual inspection shows the same account label, avatar, control shape, location and size; the minute edge variation changes no visible meaning, navigation, permission or layout. Accept this bounded incidental inclusion within the otherwise accepted frame. It does not justify replacing a screenshot whose only difference is unrelated raster variation.
+
+The eleven unrelated-only files remain excluded. No mixed, cropped or synthesized image is requested or accepted. Root should copy the intact canonical bytes for these eight captures and verify source/destination SHA-256 equality. This reviewer changed only the report, and the account-artifact review and D9 owner/live qualification remain pending.
+
+## Bounded account date-mask acceptance at 5e9ac27
+
+Reviewer: independent `ux-ui-guardian`, October 13, 2026. Canonical Linux run `38474385754` at `5e9ac27`; actual artifact `test-results/canonical-review-stable-approval/`. Root reports both canonical write-capture jobs succeeded. This reviewer directly opened **all 64 expected/actual pairs**, 128 original PNGs, and independently computed full-image RGBA differences using Pillow/NumPy in memory. Every pair has identical dimensions; every recomputed pixel count matches `test-results/stable-approval-account-diff.json`. No source or image was written by this reviewer.
+
+Governing sections remain brief 10, 14, 15 and 20, rubric 1-3, and `03-components/campaign-and-artifact-workflow.md:81-98`. The date rule says: "A date is one unit. It never breaks across two lines". The approval summary says: "Material changes invalidate affected approvals and create a new campaign version. Prior decisions remain readable." The actual frames preserve named decisions, version badges, approval scope, disabled launch explanations and the appropriate next action in each state.
+
+### Exact 64 intact actual files accepted
+
+All filenames below are under `tests/visual/screens/review/`; each replacement must be the whole, unmodified same-name actual PNG from the canonical artifact, followed by source/destination SHA-256 equality verification. A successful write-capture alone is not the acceptance basis: direct image review, exact coordinate comparison and source attribution are the basis.
+
+| State                             | 1440                                                                                                      | 1180                                                                                                      | 768                                                                                                     | 390                                                                                                     |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| campaign-detail / already-decided | `campaign-detail--already-decided--1440--light.png`<br>`campaign-detail--already-decided--1440--dark.png` | `campaign-detail--already-decided--1180--light.png`<br>`campaign-detail--already-decided--1180--dark.png` | `campaign-detail--already-decided--768--light.png`<br>`campaign-detail--already-decided--768--dark.png` | `campaign-detail--already-decided--390--light.png`<br>`campaign-detail--already-decided--390--dark.png` |
+| campaign-detail / approved        | `campaign-detail--approved--1440--light.png`<br>`campaign-detail--approved--1440--dark.png`               | `campaign-detail--approved--1180--light.png`<br>`campaign-detail--approved--1180--dark.png`               | `campaign-detail--approved--768--light.png`<br>`campaign-detail--approved--768--dark.png`               | `campaign-detail--approved--390--light.png`<br>`campaign-detail--approved--390--dark.png`               |
+| campaign-detail / ready           | `campaign-detail--ready--1440--light.png`<br>`campaign-detail--ready--1440--dark.png`                     | `campaign-detail--ready--1180--light.png`<br>`campaign-detail--ready--1180--dark.png`                     | `campaign-detail--ready--768--light.png`<br>`campaign-detail--ready--768--dark.png`                     | `campaign-detail--ready--390--light.png`<br>`campaign-detail--ready--390--dark.png`                     |
+| campaign-page / ad-retired        | `campaign-page--ad-retired--1440--light.png`<br>`campaign-page--ad-retired--1440--dark.png`               | `campaign-page--ad-retired--1180--light.png`<br>`campaign-page--ad-retired--1180--dark.png`               | `campaign-page--ad-retired--768--light.png`<br>`campaign-page--ad-retired--768--dark.png`               | `campaign-page--ad-retired--390--light.png`<br>`campaign-page--ad-retired--390--dark.png`               |
+| campaign-page / approved          | `campaign-page--approved--1440--light.png`<br>`campaign-page--approved--1440--dark.png`                   | `campaign-page--approved--1180--light.png`<br>`campaign-page--approved--1180--dark.png`                   | `campaign-page--approved--768--light.png`<br>`campaign-page--approved--768--dark.png`                   | `campaign-page--approved--390--light.png`<br>`campaign-page--approved--390--dark.png`                   |
+| campaign-page / library-notice    | `campaign-page--library-notice--1440--light.png`<br>`campaign-page--library-notice--1440--dark.png`       | `campaign-page--library-notice--1180--light.png`<br>`campaign-page--library-notice--1180--dark.png`       | `campaign-page--library-notice--768--light.png`<br>`campaign-page--library-notice--768--dark.png`       | `campaign-page--library-notice--390--light.png`<br>`campaign-page--library-notice--390--dark.png`       |
+| campaign-page / newer-version     | `campaign-page--newer-version--1440--light.png`<br>`campaign-page--newer-version--1440--dark.png`         | `campaign-page--newer-version--1180--light.png`<br>`campaign-page--newer-version--1180--dark.png`         | `campaign-page--newer-version--768--light.png`<br>`campaign-page--newer-version--768--dark.png`         | `campaign-page--newer-version--390--light.png`<br>`campaign-page--newer-version--390--dark.png`         |
+| campaign-page / sent-back         | `campaign-page--sent-back--1440--light.png`<br>`campaign-page--sent-back--1440--dark.png`                 | `campaign-page--sent-back--1180--light.png`<br>`campaign-page--sent-back--1180--dark.png`                 | `campaign-page--sent-back--768--light.png`<br>`campaign-page--sent-back--768--dark.png`                 | `campaign-page--sent-back--390--light.png`<br>`campaign-page--sent-back--390--dark.png`                 |
+
+### Attribution by actual changed region
+
+- **Eight campaign-detail approved images:** header and account control are pixel-identical. Changes occur only in the Approval decision line and Versions saved/approved lines, from the newly fixed `Oct 4, 2026` timestamp labels. The expected two-digit-day masks narrow to the single-digit-day shape; adjoining punctuation and the decision attribution shift horizontally within the same sentence. There is no changed approver, role, approval scope, version, badge or card height.
+- **Sixteen campaign-detail already-decided/ready images:** historical schedule-header geometry only, plus the disclosed account-edge noise below. Approval and Versions date masks are already the correct shape and remain pixel-identical.
+- **Twenty-four campaign-page approved/library-notice/sent-back images:** historical schedule-header geometry only, plus disclosed account-edge noise. Approval, Versions and state-specific warning text remain pixel-identical. These are not timestamp-normalizer-induced approval changes.
+- **Sixteen campaign-page ad-retired/newer-version images:** historical schedule-header geometry plus the Versions saved-date mask and adjoining `by you` position. All other downstream pixels are unchanged. The ad-retired warning's own retirement-date mask remains unchanged; it is outside the new timestamp selector scope.
+
+Source attribution: `tests/browser/helpers/design-quality.ts:934-940` separately selects schedule, list, approval/version and approved launch-step date nodes; `:973-979` keeps the established header value `Fri, Oct 16, 2026` and uses `Oct 4, 2026` for timestamp labels; `:985-995` restores original text after capture. The `42be9` to `5e9ac27` source diff shows the schedule branch was already present. Product dates originate in `persisted-campaign-screen.tsx:126-149`, `campaign-approval-section.tsx:64-82` and `campaign-versions-card.tsx:46-60`, under `apps/web/src/features/campaigns/components/`. The existing `campaign-page.module.css:16-19` keeps dates unbroken. No production-date, clock, approval or saved-record change follows from this screenshot refresh.
+
+The historical schedule difference uses these inclusive rectangles: 1440, x152-744/y239-280; 1180, x356-591/y239-258; 768, x32-624/y292-333; 390, x340-370/y262-281, except sent-back uses y268-287. Mask narrowing allows `$350` onto the first line at 1440/768; two-line header height and downstream card positions are retained.
+
+Approved-detail timestamp difference bounds are: 1440, x1011-1253/y677-937, 1617 Light or 1618 Dark pixels; 1180, x871-1113/y677-937, same counts; 768, x207-460/y1931-2170, 2164 pixels in either theme; 390, x119-293/y2069-2342, 1066 Light or 1068 Dark pixels. These enclosing boxes span separate changed text lines; the unchanged space between them is not changed evidence.
+
+Ad-retired saved-line differences are exactly 641 pixels at every width/theme: x1079-1142/y1031-1047 (1440), x939-1002/y1031-1047 (1180), x207-270/y2283-2299 (768), x187-250/y2386-2402 (390). Newer-version saved-line differences are 617 Light or 618 Dark pixels: x1079-1141/y1060-1076 (1440), x939-1001/y1060-1076 (1180), x207-269/y2336-2352 (768), x187-249/y2492-2508 (390).
+
+### Disclosed incidental inclusion
+
+Approve intact actual bytes including the minute account-control edge variation in these fourteen otherwise accepted frames. It preserves labels, avatar, control position, size and meaning in direct expected/actual inspection. This bounded inclusion does not authorize replacing any unrelated-only candidate.
+
+| Exact filename                                    | Incidental pixels | Inclusive account-control rectangle |
+| ------------------------------------------------- | ----------------: | ----------------------------------- |
+| `campaign-detail--already-decided--768--dark.png` |                52 | 636,10 through 735,39               |
+| `campaign-detail--ready--768--dark.png`           |                52 | 636,10 through 735,39               |
+| `campaign-page--ad-retired--1180--dark.png`       |                80 | 1062,10 through 1147,53             |
+| `campaign-page--ad-retired--1180--light.png`      |                76 | 1062,10 through 1147,53             |
+| `campaign-page--approved--768--dark.png`          |                52 | 650,10 through 735,39               |
+| `campaign-page--approved--768--light.png`         |                51 | 650,10 through 735,40               |
+| `campaign-page--library-notice--1180--dark.png`   |                80 | 1062,10 through 1147,53             |
+| `campaign-page--library-notice--1440--dark.png`   |                80 | 1202,10 through 1287,53             |
+| `campaign-page--library-notice--768--dark.png`    |                52 | 650,10 through 735,39               |
+| `campaign-page--newer-version--1180--light.png`   |                76 | 1062,10 through 1147,53             |
+| `campaign-page--newer-version--768--dark.png`     |                52 | 650,10 through 735,39               |
+| `campaign-page--newer-version--768--light.png`    |                51 | 650,10 through 735,40               |
+| `campaign-page--sent-back--1180--light.png`       |                76 | 1062,10 through 1147,53             |
+| `campaign-page--sent-back--768--light.png`        |                51 | 650,10 through 735,40               |
+
+The ten other differences in `test-results/stable-approval-account-diff.json` are outside this acceptance and remain untouched. Independently verified all eight `launch-an-ad--step-3-approved--<width>--<theme>.png` expected/actual arrays are RGBA-identical, so no launch-step refresh is accepted or needed. No mixed, cropped or synthesized baseline is requested.
+
+### Scoped score and limits
+
+For the changed date-line compositions, hierarchy, spacing rhythm, typography, responsive containment, Light/Dark rendering and sibling consistency score **3** in every one of the 64 cells, with the same token-defined type steps, surfaces, card spacing and action hierarchy. Semantic state information remains readable and contained; changes never remove adjacent date attribution or replace permission/provider facts. This review adds no token, utility, component wrapper, library primitive or aesthetic amendment.
+
+This is a bounded image-delta review, not a full ten-axis screen certification. Full-page tablet/mobile frames were downscaled by the viewer; exact RGBA comparisons support the claimed unchanged scope but do not make downscaled small text a pixel-perfect visual audit. Hover, focus, loading, motion, measured contrast and customer/live-provider behavior are not newly certified by this append. The capture helper still runs its accessibility, overflow, target-size and typography checks before normalizing date labels (`tests/browser/helpers/design-quality.ts:893-905`). Both canonical write-capture jobs passed according to root; final post-replacement comparison remains pending. D9 owner visual sign-off, authenticated hosted-customer qualification and provider activation remain unverified.
+
+Root owns the 64 account replacements, SHA verification and ledger update. Root separately reports the eight accepted synthetic permission-restricted PNGs were copied intact with SHA equality. This append changes only the existing UX report and releases the reviewer slot for Security then Quality baseline closure.

@@ -174,6 +174,39 @@ The tests cover October 13 and future-year labels, pixel equality after normaliz
 
 Comparison run `38469092751` remains a recorded failure at the previous source head. This helper clearance permits the next reviewed source commit and canonical dispatch; it does not certify refreshed product frames, authorize broad baseline replacement, waive a screenshot failure or establish final green CI. Any new canonical images need scoped UX/provenance acceptance and actual comparison evidence. Hosted/customer/provider qualification and current-main mergeability remain open. Only this primary QA report was edited by the reviewer; homeowner and financing lanes were untouched.
 
+### Final post-security stable-date baseline and provenance closure
+
+The final primary PNG/docs-only delta passes fresh scoped Quality with no new baseline/source finding. Security's Stable-date baseline and provenance closure at 5e9ac27 precedes this review. Runtime and test source remain at `5e9ac27f0ea83b25b9680e1321338fbd15ea63e8`, with the capture helper's separate eight-test independent QA result retained above. No broad unit suite, build, provider check, local service or baseline write was performed by this reviewer for this image-only delta.
+
+Independently confirmed the exact **72 current uncommitted PNG replacements**, each state expanded over widths `1440`, `1180`, `768`, `390` and themes `light`, `dark`:
+
+| Directory                        | Exact filename pattern                                         | Count |
+| -------------------------------- | -------------------------------------------------------------- | ----- |
+| `tests/visual/screens/chromium/` | `campaign-detail--permission-restricted--<width>--<theme>.png` | 8     |
+| `tests/visual/screens/review/`   | `campaign-detail--already-decided--<width>--<theme>.png`       | 8     |
+| `tests/visual/screens/review/`   | `campaign-detail--approved--<width>--<theme>.png`              | 8     |
+| `tests/visual/screens/review/`   | `campaign-detail--ready--<width>--<theme>.png`                 | 8     |
+| `tests/visual/screens/review/`   | `campaign-page--ad-retired--<width>--<theme>.png`              | 8     |
+| `tests/visual/screens/review/`   | `campaign-page--approved--<width>--<theme>.png`                | 8     |
+| `tests/visual/screens/review/`   | `campaign-page--library-notice--<width>--<theme>.png`          | 8     |
+| `tests/visual/screens/review/`   | `campaign-page--newer-version--<width>--<theme>.png`           | 8     |
+| `tests/visual/screens/review/`   | `campaign-page--sent-back--<width>--<theme>.png`               | 8     |
+
+All 72 destination SHA-256 hashes independently match their same-name intact actual files in `test-results/canonical-chromium-stable-approval/` or `test-results/canonical-review-stable-approval/`. PNG format and filename viewport widths independently match. Security separately fully decoded each image and checked PNG chunks/metadata. The current tracked delta contains only these 72 images and the ledger/Security/UX provenance documents. Generated agent-instruction files remain excluded and untouched. No production/test source or unrelated PNG is in this checkpoint.
+
+Against the locally recorded `origin/main`, the complete branch baseline inventory is exactly **128 unique PNGs: 56 intentional feature frames plus 72 date-capture/historical schedule-header frames**. The eight approved-detail paths overlap the earlier 64-file checkpoint and are counted only once. This current total supersedes that historical checkpoint's inventory without relabeling its then-valid proof. Independently checked all eleven unrelated-only synthetic and ten unrelated-only account candidates from the two stable-approval diff manifests: all **21 remain outside the replacement inventory**. The approved launch-step eight are also outside the changed baseline set; their pixel identity is attributed to the UX review rather than claimed as an independent QA pixel comparison.
+
+Read-only GitHub inspection independently confirms [canonical run 38474385754](https://github.com/jzferrell26/operation-automated-lo/actions/runs/38474385754) succeeded at the full source SHA above, with both Synthetic screens and Account screens and guided setup successful. UX's separate final append directly reviews the expected/actual frames and full RGBA deltas, distinguishes historical schedule-header changes from newly stable timestamp labels, and accepts intact raw capture bytes. It discloses minor account-control edge variation in one synthetic and fourteen account frames, rather than crediting that noise to a runtime change or authorizing unrelated-only refreshes. Exact canonical hashes verify that the accepted replacements are not mixed, cropped or synthesized images. This report does not duplicate or broaden UX's bounded visual acceptance into full D9 or owner approval.
+
+| Affected criterion                             | Scoped recheck result                                                                                                                                                                                                                                     | Remaining qualification                                                                                                                                                        |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| WEBINAR-PACK-VERIFICATION and REPORT-DISCOVERY | Exact accepted baseline inventory, canonical-byte provenance, unique count and unchanged exclusions verified. Earlier source/tests remain separately evidenced.                                                                                           | A successful write-mode capture does not establish the required comparison against the committed replacements.                                                                 |
+| REVIEW-INVENTORY                               | Ledger and prepared PR-body provenance distinguish 56 feature images from 72 date/header refreshes, disclose incidental inclusions and preserve earlier comparison failures. Other homeowner/financing increments remain separately owned and incomplete. | Earlier 3004b5d/42be9c2 capture/comparison checkpoints are historical, not proof of current final green CI. The root owns keeping its temporary PR-body progress text current. |
+| BATCH-SECURITY and BATCH-QUALITY               | Fresh baseline Security clearance precedes this independent scope/hash/docs Quality pass; `git diff --check` passes.                                                                                                                                      | No new runtime or live-provider certification is implied by image/document review.                                                                                             |
+| BATCH-REVIEW-PR                                | Cleared for the reviewed baseline/docs commit and required final comparison run.                                                                                                                                                                          | Final full CI, current-main reconciliation and actual MERGEABLE confirmation remain parent-owned and pending.                                                                  |
+
+Only this existing primary QA report was changed by Quality. No screenshot, runtime/test file, provider/configuration setting, other author's report or independent worktree was modified. Final screenshot comparison CI, full D9/customer/owner visual acceptance, authenticated hosted access, real approval-bound ad launch and homeowner/listing/provider completion remain explicitly open. The source/baseline clearance permits the next verification step; it does not declare the branch shippable or the project complete.
+
 ## Files Changed
 
 Only the assigned QA report is written by this reviewer. The audited dirty-tree inventory includes tracked modifications and added feature/art files; generated `apps/web/AGENTS.md` and `apps/web/CLAUDE.md` are excluded from the assigned batch and remain untouched.
@@ -210,7 +243,7 @@ Only the assigned QA report is written by this reviewer. The audited dirty-tree 
 - `tests/browser/webinar-ads.spec.ts` (A): eight-case local preparation matrix.
 - `tooling/scripts/ads-library/generate-webinar-art.mjs` (A): local original-art generator and digest authoring.
 
-The final follow-up also modifies exactly the 64 canonical baseline files enumerated by state/viewport/theme in the table above. These are 56 intentional feature screenshots and eight separately attributed historical approved-detail date-mask refreshes; no other baseline is included.
+The earlier follow-up modified the 64 canonical baseline files enumerated at that checkpoint. The final stable-date closure above now accounts for the complete 128 unique branch baseline files, including 56 intentional feature screenshots and 72 separately attributed date/header refreshes. The approved-detail eight overlap the earlier checkpoint and are counted once; unrelated-only candidates remain excluded.
 
 Thirty added raster files are enumerated below, rather than treating untracked artwork as outside the diff:
 

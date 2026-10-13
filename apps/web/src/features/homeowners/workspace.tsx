@@ -615,14 +615,26 @@ function HomeReportDetails({
               ? "This is a standalone property valuation. Create a homeowner report with a verified contact to use HighLevel follow-up."
               : data.workspace.mode === "demo"
                 ? "This sample report can be downloaded or printed. Private sharing and delivery require a connected workspace."
-                : "A HighLevel handoff saves the report link to the configured contact field and starts your approved workflow."}
+                : data.workspace.readiness.storage !== "ready" ||
+                    data.workspace.readiness.writeAccess === "unknown"
+                  ? "HighLevel handoff availability could not be checked. Use Check report availability before trying again. Your saved report and PDF remain available."
+                  : !data.workspace.canWrite || data.workspace.readiness.writeAccess === "read_only"
+                    ? "You have read-only access to this report. Ask your workspace administrator if you need to hand reports to HighLevel. You can still download the PDF."
+                    : !data.workspace.ghlConnected
+                      ? "HighLevel contact access is unavailable for this workspace. Ask your workspace administrator or contact support to finish the connection, then check report availability. Your saved report and PDF remain available."
+                      : !data.workspace.deliveryEnabled
+                        ? `HighLevel report delivery is unavailable for this workspace. Ask your workspace administrator or contact support to finish delivery setup. You can pause updates or turn off an existing delivery preference using ${property.enrollment.cadence === "monthly" && !property.enrollment.paused ? "Monthly updates" : "Update schedule"}.`
+                        : "A HighLevel handoff saves the report link to the configured contact field and starts your approved workflow."}
           </p>
         </div>
         <Button
           disabled={
             data.busy ||
             !data.workspace.deliveryEnabled ||
+            !data.workspace.ghlConnected ||
             !data.workspace.canWrite ||
+            data.workspace.readiness.storage !== "ready" ||
+            data.workspace.readiness.writeAccess !== "allowed" ||
             report.input.association === "property_only"
           }
           onClick={() => open("deliver")}
@@ -881,7 +893,7 @@ export function HomeownerWorkspace({
     <div className={styles.workspace} data-product-shell="true" data-homeowner-workspace="true">
       {data.error ? <LiveRegion urgency="alert" message={data.error} visible /> : null}
       {data.workspace.mode !== "unconfigured" && readinessNotice ? (
-        <div className={styles.notice}>
+        <div className={`${styles.notice} ${styles.readinessNotice}`}>
           <span>
             <strong>{readinessNotice.title}</strong>
             <p>{readinessNotice.body}</p>

@@ -17,7 +17,10 @@ import {
   REVIEW_FRAMES,
   expectAxeClean,
   expectNoHorizontalOverflow,
+  settleForScreenshot,
+  warmFullPageCapture,
 } from "../helpers/design-quality.js";
+import { chooseThemeFromTheHeader } from "./helpers/review-session.js";
 
 // A real signed-in shell with synthetic report API answers isolates presentation. PostgreSQL route
 // tests verify the server projection; this spec never requests a valuation or makes a report write.
@@ -90,9 +93,7 @@ for (const frame of REVIEW_FRAMES) {
     });
     for (const theme of ["Light", "Dark"] as const) {
       await page.goto(`/homeowners/${property.id}`, { waitUntil: "networkidle" });
-      await page.getByRole("button", { name: "Appearance", exact: true }).click();
-      await page.getByRole("radio", { name: theme, exact: true }).click();
-      await page.keyboard.press("Escape");
+      await chooseThemeFromTheHeader(page, theme === "Light" ? "light" : "dark");
       await expect(page.getByText("New valuations need a lookup allowance")).toBeVisible();
       await expect(page.getByRole("button", { name: "Refresh value", exact: true })).toBeDisabled();
       await expect(page.getByRole("button", { name: "Share report", exact: true })).toBeEnabled();
@@ -104,6 +105,8 @@ for (const frame of REVIEW_FRAMES) {
       await expect((await download).suggestedFilename()).toMatch(/^homeowner-report-.+\.pdf$/u);
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
+      await settleForScreenshot(page);
+      await warmFullPageCapture(page);
       await page.screenshot({
         path: join(evidenceDirectory, `readiness-${width}-${theme}.png`),
         fullPage: true,
@@ -124,6 +127,8 @@ for (const frame of REVIEW_FRAMES) {
     await expect(page.locator('a[href="/settings/connections"]')).toHaveCount(0);
     await expectAxeClean(page);
     await expectNoHorizontalOverflow(page);
+    await settleForScreenshot(page);
+    await warmFullPageCapture(page);
     await page.screenshot({
       path: join(evidenceDirectory, `setup-unavailable-${width}.png`),
       fullPage: true,

@@ -2,6 +2,8 @@ import { act, cleanup, render, renderHook, screen, waitFor, within } from "@test
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type HomeWorkspace } from "@oalo/contracts";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { HomeownerWorkspace } from "./workspace.js";
 import { useHomeWorkspace } from "./use-home-workspace.js";
 import {
@@ -45,6 +47,107 @@ afterEach(() => {
 });
 
 describe("homeowner readiness without new provider authority", () => {
+  it("uses the governed body token only on the new readiness notice", async () => {
+    workspace = liveWorkspace(workspace.properties, { monthlyLookupLimit: 0 });
+    render(<HomeownerWorkspace view="detail" propertyId={property.id} />);
+    const notice = (await screen.findByText("New valuations need a lookup allowance")).closest(
+      "div",
+    );
+    expect(notice?.className).toMatch(/readinessNotice/u);
+    const css = await readFile(join(import.meta.dirname, "homeowners.module.css"), "utf8");
+    expect(css).toMatch(
+      /\.notice\.readinessNotice p\s*\{\s*font-size:\s*var\(--text-secondary-size\);\s*\}/u,
+    );
+  });
+  it.each([
+    [
+      { ghlConnected: false, deliveryEnabled: true },
+      "HighLevel contact access is unavailable for this workspace.",
+    ],
+    [
+      { ghlConnected: true, deliveryEnabled: false },
+      "HighLevel report delivery is unavailable for this workspace.",
+    ],
+    [
+      { ghlConnected: true, deliveryEnabled: true, canWrite: false },
+      "You have read-only access to this report.",
+    ],
+  ])(
+    "explains an unavailable linked-report handoff without dispatching it",
+    async (overrides, reason) => {
+      workspace = liveWorkspace([property], overrides);
+      const user = userEvent.setup();
+      render(<HomeownerWorkspace view="detail" propertyId={property.id} />);
+      await screen.findByRole("heading", { name: property.address.street, level: 1 });
+      const handoff = screen.getByRole("button", { name: "Hand off to HighLevel" });
+      expect(handoff).toBeDisabled();
+      expect(
+        screen.getByText(new RegExp(String(reason).replaceAll(".", "\\."), "u")),
+      ).toBeVisible();
+      expect(screen.getByRole("button", { name: "Download PDF" })).toBeEnabled();
+      await user.click(handoff);
+      expect(network.reports.write).not.toHaveBeenCalled();
+      expect(screen.queryByRole("dialog", { name: "Hand this report to HighLevel?" })).toBeNull();
+    },
+  );
+  it("requires a recheck before handoff when capability is unknown", async () => {
+    workspace = liveWorkspace([property], {
+      readiness: {
+        storage: "unknown",
+        writeAccess: "unknown",
+        valuation: "unknown",
+        freshLookup: "unknown",
+      },
+    });
+    render(<HomeownerWorkspace view="detail" propertyId={property.id} />);
+    await screen.findByRole("heading", { name: property.address.street, level: 1 });
+    expect(screen.getByRole("button", { name: "Hand off to HighLevel" })).toBeDisabled();
+    expect(screen.getByText(/HighLevel handoff availability could not be checked/u)).toBeVisible();
+    expect(network.reports.write).not.toHaveBeenCalled();
+  });
+  it("retains the deliberate handoff for a configured writer without dispatching on open", async () => {
+    workspace = liveWorkspace([property]);
+    const user = userEvent.setup();
+    render(<HomeownerWorkspace view="detail" propertyId={property.id} />);
+    await screen.findByRole("heading", { name: property.address.street, level: 1 });
+    const handoff = screen.getByRole("button", { name: "Hand off to HighLevel" });
+    expect(handoff).toBeEnabled();
+    await user.click(handoff);
+    expect(
+      await screen.findByRole("dialog", { name: "Hand this report to HighLevel?" }),
+    ).toBeVisible();
+    expect(network.reports.write).not.toHaveBeenCalled();
+  });
+  it("names the active monthly control and preserves turning off an existing delivery preference", async () => {
+    workspace = liveWorkspace(
+      [
+        {
+          ...property,
+          enrollment: { ...property.enrollment, cadence: "monthly", deliverUpdates: true },
+        },
+      ],
+      { deliveryEnabled: false },
+    );
+    const user = userEvent.setup();
+    render(<HomeownerWorkspace view="detail" propertyId={property.id} />);
+    await screen.findByRole("heading", { name: property.address.street, level: 1 });
+    expect(
+      screen.getByText(
+        /You can pause updates or turn off an existing delivery preference using Monthly updates\./u,
+      ),
+    ).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Monthly updates" }));
+    const delivery = screen.getByLabelText(
+      /Hand fresh reports to the configured HighLevel workflow/u,
+    );
+    expect(delivery).toBeEnabled();
+    await user.click(delivery);
+    await user.click(screen.getByRole("button", { name: "Save update preferences" }));
+    expect(network.reports.write).toHaveBeenCalledWith(
+      "/api/homeowner-reports",
+      expect.objectContaining({ action: "enrollment", deliverUpdates: false }),
+    );
+  });
   it.each([
     [0, 0, "New valuations need a lookup allowance"],
     [10, 10, "This month's valuation allowance is used"],

@@ -63,25 +63,25 @@ None detected. No remediation or policy decision was required from this reviewer
 ## Remediation summary
 
 | Severity | New findings | Fixed by reviewer | Unresolved |
-| --- | --- | --- | --- |
-| Critical | 0 | 0 | 0 |
-| High | 0 | 0 | 0 |
-| Medium | 0 | 0 | 0 |
-| Low | 0 | 0 | 0 |
+| -------- | ------------ | ----------------- | ---------- |
+| Critical | 0            | 0                 | 0          |
+| High     | 0            | 0                 | 0          |
+| Medium   | 0            | 0                 | 0          |
+| Low      | 0            | 0                 | 0          |
 
 This reviewer wrote only this assigned report in the homeowner worktree. The copied dependency patch is root-owned. Primary and financing files were untouched.
 
 ## Verification and re-evaluation
 
-| Independently executed check | Result |
-| --- | --- |
-| Readiness, settings-faults and service unit tests | 27 passed |
-| Readiness, refusal-messages and report-actions integration tests | 25 passed |
-| Weapon `scan.ts`, with scratch output outside the worktree | Completed; production registry metadata all zero; rules Unicode clean; no new scoped vulnerable-pattern hit |
-| `pnpm audit --audit-level=high` | Exit 0; existing accepted development-tool exception only |
-| `node tooling/scripts/audit-secrets.mjs` | Passed across six source roots and public environment boundary |
-| Installed Next.js query | 16.3.8 |
-| `git diff --check`, including final four-width browser spec | Passed |
+| Independently executed check                                     | Result                                                                                                      |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Readiness, settings-faults and service unit tests                | 27 passed                                                                                                   |
+| Readiness, refusal-messages and report-actions integration tests | 25 passed                                                                                                   |
+| Weapon `scan.ts`, with scratch output outside the worktree       | Completed; production registry metadata all zero; rules Unicode clean; no new scoped vulnerable-pattern hit |
+| `pnpm audit --audit-level=high`                                  | Exit 0; existing accepted development-tool exception only                                                   |
+| `node tooling/scripts/audit-secrets.mjs`                         | Passed across six source roots and public environment boundary                                              |
+| Installed Next.js query                                          | 16.3.8                                                                                                      |
+| `git diff --check`, including final four-width browser spec      | Passed                                                                                                      |
 
 The implementation owner separately reports 33 unit, 47 integration and six demo browser tests, build/type/audit checks passing. Those broader results are attributed to the owner and not represented as independently rerun here. The new signed-in readiness spec and real PostgreSQL routes require actual CI execution. Full final scope rechecked after the browser-only extension; no runtime change or Medium-or-higher remediation occurred during this audit.
 
@@ -92,6 +92,28 @@ Security reopened before fresh Quality for the final test/CI-only delta. The new
 The added database-job artifact step uses the identical pinned `actions/upload-artifact` SHA already present in this workflow. Its path is confined to `test-results/product-review-frames`, retention is seven days, absent files are ignored, and `always()` preserves available evidence after failure. No event, permission, secret, provider credential or pass/fail gate changed. Only successful assertion-point screenshots are produced by this spec; credentials and session tokens are not added to the screenshot path or metadata by these changes.
 
 No new security finding detected. Independently reviewed both final deltas and passed `git diff --check`; tooling type/format checks are parent-reported. No actual new screenshots or successful database/browser run are claimed before CI executes. The separate DevOps review and fresh Quality remain required. Security clearance remains valid for this final delta.
+
+### Readiness notice and handoff source-fix cycle
+
+Security reopened before fresh Quality for the frozen three-file delta following PR #91 head `7a434df`: `homeowners.module.css`, `workspace.tsx` and `readiness.integration.test.tsx`. Earlier Quality evidence remains historical; this source correction requires its own subsequent Quality pass.
+
+None detected. The new CSS selector adjusts only readiness-notice paragraphs to the existing `--text-secondary-size` token. The HighLevel handoff button now additionally requires connected contacts, confirmed ready storage and allowed write capability. Existing `canWrite`, delivery-enabled, busy and property-only guards remain. This strengthens presentation checks without granting authority or relaxing the existing server handoff verification. The adjacent messages render as plain text and explain unknown capability, read-only access, missing contact connection or disabled delivery. The schedule action name is chosen from existing validated enrollment state, not a supplied URL or executable value.
+
+The available-writer path still opens a deliberate confirmation dialog without dispatching a request. Unknown/read-only/disconnected paths cannot open it or send a handoff. Saved PDF access remains intact. An existing delivery preference can still be turned off through the schedule controls, and existing pause/on-demand behavior is preserved. No provider flag, quota, role, consent requirement, migration, financial data policy or L-5/L-15/L-16 decision changed. Server authority remains decisive for forged or stale client state.
+
+Independently ran the final readiness interaction test file: fourteen tests passed, including the new unavailable-role/connection/unknown cases, configured-writer dialog behavior and turning off an existing preference. `git diff --check` passed. The owner separately reports fifty-four integration tests and types/lint/format/duplication checks passing; those broader results are attributed to the owner. Parent-reported CI run `38473357552` covers the earlier head, not this final CSS/control delta. Final new CI and twelve-frame inspection remain pending and are not inferred from older captures.
+
+Zero unresolved Medium-or-higher security findings. Cleared for fresh Quality on this source-fix cycle. No production service, shared port or unrelated worktree was touched by this reviewer.
+
+### Signed-in theme-control test repair
+
+Security reopened before fresh Quality for the final browser-test-only correction. The homeowner spec replaces the nonexistent demo-shell `Appearance` locator with the existing `chooseThemeFromTheHeader` helper. That helper uses the real signed-in account control, selects Light/Dark, verifies theme resolution, closes the dialog and checks focus return. Added `settleForScreenshot` waits for applied styles/fonts/transitions and idle network; `warmFullPageCapture` takes one discarded screenshot before retaining the final frame. Neither helper authorizes a report action or changes its data.
+
+None detected. The local-origin/external-request guard, seeded fixture account and synthetic report API answers, mutation counter/abort, saved-output/control assertions, full axe/overflow checks and constant retained evidence directory/filenames remain unchanged. No runtime, CI permission, provider setting or policy delta is included in this repair. `git diff --check` passed; root reports tooling type/format checks passing. Actual repaired signed-in execution remains pending, rather than being inferred from source review.
+
+Reviewed `test-results/homeowner-readiness-first-db-ci.log`: run `38473357552` finished with failure, including four 120-second timeouts on the nonexistent `Appearance` button and two old screenshot baseline mismatches. Its twenty-two PostgreSQL route test files and 295 tests passed, as shown in the log; the parent also reports migration/pgTAP success. Those backend checks cover the unchanged backend at the prior head. The missing-control failures belong to the newly authored test, not an observed product authentication fault. The log records no retained product-review-frame artifact, so no twelve-frame evidence is credited here.
+
+Zero unresolved Medium-or-higher security findings. Cleared for subsequent fresh Quality on this test-only correction, subject to the already-recorded runtime source-fix clearance. Stacking/shared capture changes, new baseline acceptance and the repaired canonical/full-CI result require their separate evidence; this appendix certifies none of those future results.
 
 ## Next step
 

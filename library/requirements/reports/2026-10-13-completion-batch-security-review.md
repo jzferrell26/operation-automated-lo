@@ -105,6 +105,14 @@ Security reopened and reviewed the exact final shared-CSS delta and test. The we
 
 Fresh primary sources also consulted: [Next.js advisories](https://github.com/vercel/next.js/security/advisories), [React RSC follow-up advisory](https://react.dev/blog/2025/12/11/denial-of-service-and-source-code-exposure-in-react-server-components). The stale Weapon's earlier patch thresholds were not used as the sole dependency-clearance evidence.
 
+### CI correction recheck
+
+Security reopened before the follow-up source correction commit and before fresh Quality finalized. The reviewed uncommitted delta contains only `margin: 0` on the Campaigns tool title/description, an exact Ads library region scope for the existing browser status assertion, and completion-ledger notes about read-only Vercel variable-name metadata and initial failed CI. No screenshot baseline replacement was included at this checkpoint.
+
+None detected. The two CSS declarations introduce no dynamic input or security control change. The browser assertion still verifies the expected refinance status, now within its intended region. The ledger records environment key names only, including the absence of two names in the inspected inventory, without credentials, variable values or claims of successful live lookups. It preserves initial CI failures and pending canonical capture review rather than marking failed qualification accepted.
+
+`git diff --check` passed on this delta. The parent reports 30 Campaigns interaction tests, 56 design/control tests and the targeted browser test passing; those results are attributed to the parent and were not redundantly rerun by this reviewer for two margin declarations and one locator correction. Zero unresolved Medium-or-higher security findings remain. This clearance applies to these source corrections; subsequent baseline changes or other runtime changes require their own applicable review. Proceed to fresh Quality for this correction cycle.
+
 ## Next step
 
 Invoke Quality against this reviewed batch, then the orchestrator's code/repository review and required CI/build/browser checks before any ship claim. Do not infer approval, provider launch, hosted access or completed listing/homeowner reports from this security clearance. The authenticated hosted walkthrough still needs the user's sign-in.

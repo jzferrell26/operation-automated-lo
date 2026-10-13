@@ -10,7 +10,7 @@
 
 ## Verdict
 
-Approve the scoped preparation/discovery increment for PR review. All six source findings are closed in the final source, and the local production-build browser run passes all eight width/theme combinations. No current source-level UX blocker remains in this batch. The report entry points use the existing visual system and describe private outputs accurately.
+The webinar preparation slice is approved for scoped PR review: its six source findings are closed, and the local production-build browser run passes all eight width/theme combinations. **The CampaignList discovery baseline review found a required spacing correction, F-07. It is now fixed in source, but the combined batch is not yet approved for baseline replacement until corrected canonical captures are inspected.** The report entry points describe private outputs accurately.
 
 This is not a full-product 10/10 or owner pixel-sign-off verdict. The complete manual keyboard/reduced-motion/zoom and authenticated hosted checks are still outstanding. The initial review and its remediation trail remain below.
 
@@ -191,3 +191,29 @@ The final run supersedes the earlier uncertainty about asset loading, tested flo
 ## Tokens and code ownership
 
 No tokens, utilities, source code or design-system files were changed by this reviewer. Only this report is owned/written by ux-ui-guardian. Findings were sent to root and the implementation owner before report completion. Security then Quality closeout remains the orchestrator's responsibility.
+
+## Canonical Linux Campaigns baseline review, run 38458217895
+
+The canonical synthetic screenshot artifact is available under `test-results/canonical-chromium/`. Baseline ownership is limited to the sixteen `campaigns--empty--<1440|1180|768|390>--<light|dark>.png` and `campaigns--populated--<1440|1180|768|390>--<light|dark>.png` captures in `tests/visual/screens/chromium/`. Root also offered the permission-restricted detail set subject to confirming feature attribution; inspection did not confirm that attribution.
+
+### F-07: Remove browser margins inside the report discovery card stack
+
+**Severity:** Required. **Screen/frame/theme/state:** Campaigns empty and populated, all frames/themes; directly observed at 1440 Light and 390 Dark. **Axis:** 2, score 1 at the actual inspected checkpoint.
+
+**Location:** `apps/web/src/features/campaigns/components/campaign-list.module.css:37-46`; `campaign-list.tsx:128-158`. The new `h2.toolTitle` and `p.toolDescription` are children of `Stack gap="4"`, but neither class removes the browser's element margins. Shared `.oalo-stack` sets flex/gap, not child margin resets (`packages/ui/src/components/primitives.css:68-103`). Those margins add to the named 16px gap and visibly expand the title-to-description gap to roughly 50px on the unscaled 390 Dark image. The initial source review incorrectly treated Stack as sufficient; the actual canonical image revealed the omission.
+
+**Governing rule:** Card and Surface, Anatomy inside a card: children stand `--space-4` apart. Brief §11 and rubric axis 2 require named spacing rather than browser heading/paragraph defaults.
+
+**Delta:** Add `margin: 0` to `.toolTitle` and `.toolDescription`, preserving their named typography and `Stack gap="4"`. The implementation owner owns that code. Capture corrected canonical images before accepting any of the sixteen intentional Campaigns baseline replacements. No baseline file was changed at this failed checkpoint.
+
+**Source correction observed:** the implementation owner added `margin: 0` to both classes. The defect is closed in source; acceptance of the corrected Linux images is still pending. The previous oversized-margin images remain rejected for replacement.
+
+### Attribution of other screenshot differences
+
+- `campaign-detail--permission-restricted--1440--light.png`: both old and new images are the actual campaign detail with its approval permission explanation. Neither image renders CampaignList or the new report discovery cards. Read-only PNG pixel analysis measures the header date mask as 137px in the committed baseline and 126px in the canonical capture; the versions saved timestamp mask is 82px versus 90px. This is not an intentional discovery UI delta. Source tracing confirms `persisted-campaign-screen.tsx:142-149` matches the direct-header selector in `tests/browser/helpers/design-quality.ts:931`, and `readableDay()` matches its full-date regex. A selector/type miss is not proven. A read-only browser probe with vendored Inter measures the fixed `Fri, Oct 16, 2026` label around 129px and a rolling `Tue, Oct 27, 2026` label around 138px, supporting stale expected masked-date geometry as a plausible cause. The saved-version date is intentionally outside the schedule-only normalization. Do not broaden selectors or copy these eight images without an actual failure/trace proving the needed change.
+- `campaign-detail--default--1440--dark.png`: direct old/new inspection finds the same historical property-artifact composition. It has no current AdCreative brand band, so the new `.band .disclosure` selector cannot explain this image's difference. Leave the default set unchanged pending a specific attribution; a different PNG digest alone is not a visual change approval.
+- The authenticated review account's `campaign-detail--approved--1440--light.png` artifact was not yet available at this checkpoint. Attribution to the disclosure ink fix remains unverified. No additional detail baseline mutation is authorized by this report.
+
+The downloaded initial failure-trace artifact contains only the later real-catalog library failure; the first-pass approved-detail captures were cleared by the test harness's second pass. It cannot prove the approved-detail mismatch. If the failure recurs, preserve its first-pass actual/expected/diff and trace before pass two. A narrow diagnostic is to verify the normalized header text immediately after screenshot warmup and before comparison; if a rerender demonstrably replaces it, reapply screenshot-only normalization after warmup with a regression test. This is a proposed diagnosis path, not a finding that such a rerender has occurred.
+
+**Current baseline change list:** none. The sixteen Campaigns changes are held for F-07 correction and a new canonical capture. Permission-restricted/default detail and unrelated overview/settings images remain untouched. No owner visual approval is implied.

@@ -12,6 +12,8 @@
 
 **Security prerequisite:** [Final Security review](2026-10-13-completion-batch-security-review.md), including the final disclosure CSS recheck
 
+**Follow-up snapshot:** Source correction recheck after Security's CI correction addendum, on `38c81cd` plus the assigned uncommitted spacing/assertion delta. The initial snapshot below predates PR #90; the follow-up section records current CI limits without replacing that historical evidence.
+
 ## Summary
 
 The scoped local implementation passes Quality with no unresolved Critical, Warning or Suggestion findings: fifteen pending webinar creatives, thirty original raster assets, preparation controls, report discovery and the Next.js dependency remediation match the current batch criteria. The final build and eight browser cases pass after the disclosure contrast correction, with separate independent source and focused-test verification. PR creation and full CI/mergeability remain the next orchestration stage; hosted qualification, baseline comparison, owner visual approval and the broader customer outcomes remain open.
@@ -109,6 +111,21 @@ These are deferred customer outcomes in the source ledger, not missing behavior 
 
 No authenticated hosted access was supplied. Linux screenshot-baseline comparison, full repository CI/PostgreSQL qualification for this PR, complete UX rubric scoring, owner visual approval and hosted asset reads were not performed by Quality. The scoped source pass permits the next draft-PR review stage; it does not declare the branch shippable or the product complete.
 
+### Post-security CI correction recheck
+
+The exact source correction passes this scoped Quality recheck with no unresolved code finding. Security reviewed it first in the CI correction addendum. This result does not accept screenshot baselines or qualify the current PR's full CI.
+
+| Affected criterion                                  | Exact reviewed delta                                                                                                                                 | Result and evidence                                                                                                                                                                                                                                                                                                                 |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| REPORT-DISCOVERY                                    | `apps/web/src/features/campaigns/components/campaign-list.module.css:36-48`: `margin: 0` added to both `.toolTitle` and `.toolDescription`.          | Source correction passes. Removing the browser's heading/paragraph margins lets existing `Stack gap="4"` control spacing without changing typography, tokens, content, routes or action behavior. The prior canonical capture exposed the excess gap; corrected canonical captures still require review before baseline acceptance. |
+| WEBINAR-PACK-BOUNDARY and WEBINAR-PACK-VERIFICATION | `tests/browser/ads-library.spec.ts:111-113`: the existing status assertion is scoped to `getByRole("region", { name: "Ads library", exact: true })`. | Assertion correction passes. It targets the existing library filter announcement despite the separate preparation announcement region. The expected refinance text, card count, pressed state, address, no-reload and reload-persistence assertions are retained; no assertion or accessibility rule was removed.                   |
+| BATCH-SECURITY and BATCH-QUALITY                    | Security's CI correction addendum, then this fresh Quality recheck.                                                                                  | Order preserved; zero unresolved Medium+ Security findings and no new Quality code finding. Only the QA report was modified by this reviewer.                                                                                                                                                                                       |
+| BATCH-REVIEW-PR                                     | Draft PR #90 and initial CI run `38457279026`, as now recorded in the ledger.                                                                        | Remains IN PROGRESS. Initial browser/visual failures are recorded. Canonical Linux capture run `38458217895` and prospective baseline replacements are not accepted by this recheck.                                                                                                                                                |
+
+Independent verification after Security clearance: 30 Campaigns interaction tests passed; 18 CampaignList layout and shared interactive-control tests passed. A read-only exact-delta check confirms both zero-margin declarations, the precise region scope and the unchanged expected status expression. `git diff --check` passed. The implementation owners separately report 30 Campaigns plus 56 design/control tests and one targeted Playwright filter case passing in 38.7 seconds; the browser result is attributed to those owners, not claimed as an independent QA rerun.
+
+The ledger's new Vercel evidence is variable-name metadata only. It records that two names are absent from that inspected inventory, without exposing values or proving deployed flag values, permitted lookup usage or a successful homeowner valuation. Existing hosted/operator limits remain open. The previous build and eight-case preparation matrix remain historical evidence for the preceding source snapshot; this recheck does not relabel them as a full post-margin CI run. Screenshot-baseline changes, corrected canonical rendering acceptance, full CI/mergeability, hosted qualification and owner visual approval still require their own evidence.
+
 ## Files Changed
 
 Only the assigned QA report is written by this reviewer. The audited dirty-tree inventory includes tracked modifications and added feature/art files; generated `apps/web/AGENTS.md` and `apps/web/CLAUDE.md` are excluded from the assigned batch and remain untouched.
@@ -138,6 +155,7 @@ Only the assigned QA report is written by this reviewer. The audited dirty-tree 
 - `library/requirements/reports/2026-10-13-completion-batch-security-review.md` (A): scoped post-remediation clearance, including final CSS recheck.
 - `library/requirements/reports/2026-10-13-completion-batch-ux-review.md` (A): separate source/art UX review and its attributed evidence.
 - `pnpm-lock.yaml` (M): matching Next/env/SWC package family only.
+- `tests/browser/ads-library.spec.ts` (M, follow-up): existing filter status assertion scoped to the exact Ads library region, retaining its expected text and surrounding checks.
 - `tests/browser/webinar-ads.spec.ts` (A): eight-case local preparation matrix.
 - `tooling/scripts/ads-library/generate-webinar-art.mjs` (A): local original-art generator and digest authoring.
 

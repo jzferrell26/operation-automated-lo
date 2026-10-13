@@ -34,12 +34,14 @@
 }
 
 .toolTitle {
+  margin: 0;
   font-size: var(--text-card-size);
   font-weight: var(--weight-semibold);
   line-height: var(--leading-tight);
 }
 
 .toolDescription {
+  margin: 0;
   color: var(--tx-body);
   line-height: var(--leading-normal);
   overflow-wrap: anywhere;

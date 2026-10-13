@@ -26,6 +26,9 @@ import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js"
 import { WorkspacePreferenceError } from "./workspace-preferences.js";
 import { createPropertyPackageStore } from "./property-package-store.js";
 import { packageSummary, readVerifiedPropertyPackage } from "./property-package-service.js";
+import { createFinancingMediaRuntime } from "./financing-media-runtime.js";
+import { resolveFinancingMedia } from "./financing-media-service.js";
+import { financingReportIsTextOnly } from "./financing-output-media.js";
 
 export async function listWorkspaceCampaigns(
   principal: Readonly<AuthenticatedPrincipal>,
@@ -239,6 +242,16 @@ export async function loadCampaignPage(
       ...(versionNo === undefined ? {} : { versionNo }),
       brand,
     });
+    if (
+      page?.kind === "financing-comparison" &&
+      page.report.manifest.schemaVersion === 2 &&
+      !financingReportIsTextOnly(page.report)
+    ) {
+      const media = createFinancingMediaRuntime(principal, environment);
+      // Source verification precedes this projection; every saved photo must still be readable.
+      // Failures propagate to the existing sanitized route error boundary, never a partial gallery.
+      await resolveFinancingMedia(page.report, media.repository, media.bytes);
+    }
     if (page?.kind === "property-preparation") {
       const source = versions.find(
         (item) => item.version.campaignVersionRef === page.campaignVersionRef,

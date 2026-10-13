@@ -9,11 +9,43 @@ import {
 import { financingInput } from "../../server/financing.test-support.js";
 
 describe("financing form numeric inputs", () => {
+  it("requires explicit facts confirmation and represents blank facts as null without deriving them from purchase price", () => {
+    const draft = reusedFinancingDraft(financingInput());
+    expect(
+      FinancingRequestSchema.safeParse(financingFormInput(draft, crypto.randomUUID())).success,
+    ).toBe(false);
+    draft.factsConfirmed = true;
+    const submitted = FinancingRequestSchema.parse(financingFormInput(draft, crypto.randomUUID()));
+    expect(submitted).toMatchObject({
+      schemaVersion: 2,
+      propertyFacts: {
+        listPriceMinor: null,
+        bedrooms: null,
+        bathroomsHundredths: null,
+        floorAreaSqFt: null,
+        confirmed: true,
+      },
+      propertyMedia: [],
+    });
+    draft.bedrooms = "1.5";
+    expect(
+      FinancingRequestSchema.safeParse(financingFormInput(draft, crypto.randomUUID())).success,
+    ).toBe(false);
+    draft.bedrooms = "0";
+    draft.bathrooms = "2.50";
+    draft.floorArea = "1800";
+    expect(
+      FinancingRequestSchema.parse(financingFormInput(draft, crypto.randomUUID())),
+    ).toMatchObject({
+      propertyFacts: { bedrooms: 0, bathroomsHundredths: 250, floorAreaSqFt: 1800 },
+    });
+  });
   it("preserves intraday expiry and offset timestamps when reusing a quote", () => {
     const input = financingInput();
     input.financing.scenarios[0]!.quote.quotedAt = "2020-01-01T22:00:00-05:00";
     input.financing.scenarios[0]!.quote.expiresAt = "2020-01-03T10:30:00-05:00";
     const draft = reusedFinancingDraft(input);
+    draft.factsConfirmed = true;
     expect(draft.scenarios[0]?.quotedOn).toBe("2020-01-02");
     const submitted = FinancingRequestSchema.parse(financingFormInput(draft, crypto.randomUUID()));
     expect(submitted.financing.scenarios[0]?.quote.quotedAt).toBe(
@@ -71,6 +103,7 @@ describe("financing form numeric inputs", () => {
       quoteConfirmed: false,
       expiresOn: "2090-01-01",
     });
+    draft.factsConfirmed = true;
     const submitted = FinancingRequestSchema.parse(financingFormInput(draft, crypto.randomUUID()));
     expect(submitted.financing.scenarios[0]?.costs[0]?.amountMinor).toBe(400000);
     expect(submitted.financing.housing.propertyTaxMinor).toBe(45000);

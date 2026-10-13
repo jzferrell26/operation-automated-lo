@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { FinancingPropertyFactsSchema, FinancingPropertyMediaSchema } from "./financing-media.js";
 import {
   FinancingIdentitySchema,
   FinancingInputSchema,
@@ -457,7 +458,7 @@ export type LibraryAdCampaignManifest = z.infer<typeof LibraryAdCampaignManifest
  * (`20260915180000_campaign_activation.sql`, `jsonb_typeof(manifest) = 'object'`), so no migration.
  */
 /** Private fixed-purchase comparison: no fictitious event times or paid-ad configuration. */
-export const FinancingCampaignManifestSchema = z
+export const FinancingCampaignManifestV1Schema = z
   .object({
     schemaVersion: z.literal(1),
     blueprintId: z.literal("financing-comparison"),
@@ -486,11 +487,27 @@ export const FinancingCampaignManifestSchema = z
     }),
   })
   .strict();
+export const FinancingCampaignManifestV2Schema = FinancingCampaignManifestV1Schema.extend({
+  schemaVersion: z.literal(2),
+  templateVersion: z.literal("2.0.0"),
+  property: FinancingCampaignManifestV1Schema.shape.property
+    .extend({
+      facts: FinancingPropertyFactsSchema,
+      media: FinancingPropertyMediaSchema,
+    })
+    .strict(),
+}).strict();
+export const FinancingCampaignManifestSchema = z.discriminatedUnion("schemaVersion", [
+  FinancingCampaignManifestV1Schema,
+  FinancingCampaignManifestV2Schema,
+]);
 export type FinancingCampaignManifest = z.infer<typeof FinancingCampaignManifestSchema>;
 
-export const CampaignManifestSchema = z.discriminatedUnion("blueprintId", [
-  OpenHouseCampaignManifestSchema,
-  LibraryAdCampaignManifestSchema,
+export const CampaignManifestSchema = z.union([
+  z.discriminatedUnion("blueprintId", [
+    OpenHouseCampaignManifestSchema,
+    LibraryAdCampaignManifestSchema,
+  ]),
   FinancingCampaignManifestSchema,
 ]);
 export type CampaignManifest = z.infer<typeof CampaignManifestSchema>;

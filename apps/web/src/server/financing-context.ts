@@ -1,6 +1,12 @@
-import { canonicalCampaignHash, type AuthenticatedPrincipal } from "@oalo/application";
+import {
+  canonicalCampaignHash,
+  FinancingMediaError,
+  type AuthenticatedPrincipal,
+} from "@oalo/application";
 import { PropertyCampaignPreparationSchema, type FinancingCampaignManifest } from "@oalo/contracts";
-import type { FinancingFormContext, FinancingRequest } from "../features/financing/model.js";
+import type { FinancingFormContext, ReusableFinancingInput } from "../features/financing/model.js";
+import { createFinancingMediaRuntime } from "./financing-media-runtime.js";
+import { resolveFinancingMedia } from "./financing-media-service.js";
 import { DEFAULT_AD_BRAND } from "../features/workspace/ad-brand.js";
 import type { WorkspacePartner } from "../features/workspace/model.js";
 import { authenticatedWorkspaceMode } from "./authenticated-workspace-data.js";
@@ -88,8 +94,8 @@ export async function readFinancingContext(
 
 export function reusableFinancingInput(
   manifest: FinancingCampaignManifest,
-): Omit<FinancingRequest, "requestId"> {
-  return {
+): ReusableFinancingInput {
+  const base = {
     address: manifest.property.address,
     stateCode: manifest.property.stateCode,
     description: manifest.property.description,
@@ -102,9 +108,21 @@ export function reusableFinancingInput(
       scenarios: manifest.financing.scenarios.map((scenario) => ({
         ...scenario,
         quote: { ...scenario.quote, confirmed: false },
+        costsComplete: false,
       })),
     },
   };
+  return manifest.schemaVersion === 2
+    ? {
+        ...base,
+        schemaVersion: 2,
+        propertyFacts: { ...manifest.property.facts, confirmed: false },
+        propertyMedia: manifest.property.media.map(({ mediaRef, altText }) => ({
+          mediaRef,
+          altText,
+        })),
+      }
+    : base;
 }
 
 export async function readFinancingFormContext(
@@ -141,12 +159,34 @@ export async function readFinancingFormContext(
         : [],
     )
     .slice(0, 20);
+  const unavailablePrevious: { campaignRef: string; label: string }[] = [];
+  for (const record of records.filter((record) =>
+    previous.some((item) => item.campaignRef === record.version.campaignRef),
+  )) {
+    const manifest = verifyFinancingVersion(record.version);
+    if (manifest.schemaVersion === 2 && manifest.property.media.length) {
+      try {
+        const media = createFinancingMediaRuntime(principal, environment);
+        await resolveFinancingMedia({ manifest }, media.repository, media.bytes);
+      } catch (error) {
+        if (!(error instanceof FinancingMediaError)) throw error;
+        // An unavailable old photograph blocks that reuse candidate, not creation of a new report.
+        unavailablePrevious.push({
+          campaignRef: record.version.campaignRef,
+          label: manifest.property.address,
+        });
+      }
+    }
+  }
   return {
     canSave,
     brandReady: context.brand !== null && context.lender !== null,
     brandName: context.brand?.name ?? "",
     synthetic: principal.authenticationMode === "local_synthetic",
     partners: context.partners.map(({ id, name, company }) => ({ id, name, company })),
-    previous,
+    previous: previous.filter(
+      (item) => !unavailablePrevious.some((blocked) => blocked.campaignRef === item.campaignRef),
+    ),
+    unavailablePrevious,
   };
 }

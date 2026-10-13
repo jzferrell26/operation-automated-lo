@@ -59,6 +59,11 @@ for (const width of [1440, 1180, 768, 390])
       await page.getByRole("button", { name: "Confirm no credits or deposit" }).click();
       await page
         .getByRole("checkbox", {
+          name: "I have checked the supplied property facts and confirmed any blanks are unknown",
+        })
+        .check();
+      await page
+        .getByRole("checkbox", {
           name: "I have checked these inputs against the stated quote source",
         })
         .check();

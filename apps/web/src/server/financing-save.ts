@@ -15,6 +15,12 @@ import { authenticatedWorkspaceMode } from "./authenticated-workspace-data.js";
 import { UnauthenticatedPrincipalError } from "./authenticated-principal.js";
 import { readFinancingContext, type FinancingContext } from "./financing-context.js";
 import { FinancingSaveError, verifyFinancingVersion } from "./financing-verification.js";
+import { createFinancingMediaRuntime } from "./financing-media-runtime.js";
+import {
+  resolveFinancingMedia,
+  resolveFinancingMediaPlacements,
+  type FinancingMediaRuntime,
+} from "./financing-media-service.js";
 export { FinancingSaveError, verifyFinancingVersion } from "./financing-verification.js";
 
 export async function saveFinancingComparison(
@@ -26,6 +32,7 @@ export async function saveFinancingComparison(
     readonly campaigns: CampaignWorkspaceReadRepository;
     readonly context?: () => Promise<FinancingContext>;
     readonly now?: () => Date;
+    readonly media?: FinancingMediaRuntime;
   },
 ) {
   if (
@@ -46,6 +53,10 @@ export async function saveFinancingComparison(
     const manifest = verifyFinancingVersion(prior.version);
     if (manifest.preparation.requestHash !== requestHash)
       throw new FinancingSaveError("FINANCING_SAVE_CONFLICT", 409);
+    if (manifest.schemaVersion === 2 && manifest.property.media.length) {
+      const media = dependencies.media ?? createFinancingMediaRuntime(principal, environment);
+      await resolveFinancingMedia({ manifest }, media.repository, media.bytes);
+    }
     return { version: prior.version, preflight: prior.preflight };
   }
   const now = (dependencies.now ?? (() => new Date()))();
@@ -64,7 +75,7 @@ export async function saveFinancingComparison(
   const partner = context.partners.find((item) => item.id === input.partnerId);
   if (!partner) throw new FinancingSaveError("FINANCING_PARTNER_MISSING", 404);
   const rulesetVersionRef = "ruleset_financingDraft001";
-  const manifest: FinancingCampaignManifest = {
+  const legacyManifest = {
     schemaVersion: 1,
     blueprintId: "financing-comparison",
     templateVersion: "1.0.0",
@@ -125,7 +136,31 @@ export async function saveFinancingComparison(
       totalBudgetMinor: 0,
     },
     routing: { mappingVersionRef: "routingmapping_unconfigured001", validationStatus: "missing" },
-  };
+  } satisfies Extract<FinancingCampaignManifest, { schemaVersion: 1 }>;
+  let manifest: FinancingCampaignManifest = legacyManifest;
+  if ("schemaVersion" in input) {
+    const media = input.propertyMedia.length
+      ? (dependencies.media ?? createFinancingMediaRuntime(principal, environment))
+      : null;
+    manifest = {
+      ...legacyManifest,
+      schemaVersion: 2,
+      templateVersion: "2.0.0",
+      property: {
+        ...legacyManifest.property,
+        facts: input.propertyFacts,
+        media: media
+          ? [
+              ...(await resolveFinancingMediaPlacements(
+                input.propertyMedia,
+                media.repository,
+                media.bytes,
+              )),
+            ]
+          : [],
+      },
+    };
+  }
   const version = await createCampaignVersion(
     {
       createdAt: now,

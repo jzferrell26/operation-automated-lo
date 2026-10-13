@@ -7,6 +7,10 @@ Authoring base: `d5ef89b0`, merged PR #78. This document adds no runtime functio
 
 Parent product requirement: [Five finished funnels, not a funnel builder](turnkey-five-funnel-product.md). This payment report/flyer/site is the flagship immediate build within that ready-made marketing experience. Customers must not need to write prompts, choose layouts, use another builder or hire a developer. Domain connection and automatic branding belong to the product, not to a separate client implementation project.
 
+## Contract dependencies
+
+The October 13 private property-photo increment pins [CTR-001 revision 1](../../../knowledge/private/contracts/CTR-001-financing-property-media.md), Accepted for engineering implementation by the orchestrator. This pin governs its media/v2 producer-consumer boundary only. It does not mark any PAY criterion complete or approve public/lender/visual release. See [the increment ledger](../../../../FINANCING_PHOTOS_LEDGER.md) for actual implementation evidence.
+
 ## The outcome
 
 A loan officer receives a property from a Realtor, selects that partner and an approved financing preset, and creates a polished financing comparison in a few actions. That same comparison becomes a report view, a printable co-branded payment flyer, and a matching responsive property website. It answers two separate questions: estimated monthly housing cost and estimated cash needed at closing.

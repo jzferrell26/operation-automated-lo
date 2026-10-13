@@ -49,3 +49,4 @@ export {
   type R2ObjectStoreProbeResult,
   type SignedPrivateTransfer,
 } from "./r2-object-store-client.js";
+export * from "./financing-media-storage.js";

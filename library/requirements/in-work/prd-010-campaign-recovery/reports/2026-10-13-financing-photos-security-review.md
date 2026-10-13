@@ -138,3 +138,25 @@ These pins supersede earlier pins for the four changed files:
 | `apps/web/src/server/financing-output-media.ts`            | `7e2974e4497095b489eda813a7a70841934a7689e307e6c73dbe732cf5d9d9b7` |
 | `apps/web/src/server/campaign-workspace-reads.ts`          | `feb3c07a079afff8d0cbcf58d185eaec98cdd6f906b78b178f2ff6c1f1fd0aee` |
 | `apps/web/src/server/financing-output-layout.unit.test.ts` | `95f69136750c6138abac8ee28a04fc8ac595f09a5a6066b113694e4b3ad40a36` |
+
+## Reopened Security after first PostgreSQL CI failure, October 13
+
+PASS for the three-file corrective delta, with no new security findings. This is a source and focused-test clearance for fresh Quality; it is not a green PostgreSQL/CI or merge clearance. The reviewed base is PR #92 commit `bab5819c810efa1ba0c9e760985bb2e3c8e774bc`. The actual modified regression file is `apps/web/src/server/financing-v2.unit.test.ts`, not the nonexistent `financing-context.unit.test.ts` named in the initial shorthand brief.
+
+The reviewer read `test-results/financing-first-ci-pg-failure.log` from run `38483753309`. At lines 2666-2668, scaffold assertion 11 reports actual 31 versus expected 29. At lines 2895 onward, two of 300 real PostgreSQL tests fail when mixed author history triggers media runtime construction without R2 configuration. The run ends with one failed pgTAP file and one failed integration step. This actual failed CI evidence is preserved and is not counted as a pass.
+
+`apps/web/src/server/financing-context.ts:173` now accepts only the specific `R2ObjectStoreConfigurationError` in addition to the existing `FinancingMediaError` cases. The class originates from the storage client's strict configuration parser at `packages/storage/src/r2-object-store-client.ts:194`. Unknown exceptions are still rethrown. Saved sources are still verified before this catch, candidates still come from principal-bound reads and filter to the author, and creator/admin eligibility is unchanged. A candidate with unavailable photo storage is removed from usable `previous` and explicitly placed in `unavailablePrevious`; it is not converted to a text-only snapshot, reattested, marked ready or silently stripped of photographs. The immutable saved record remains unchanged. Output/save/current-rights checks are untouched by this correction.
+
+The new tests in `financing-v2.unit.test.ts:60` exercise legacy and facts-only reuse with a fail-fast media factory, mixed history with either absent configuration or corrupt photo bytes, the explicit unavailable-candidate label, an unchanged saved photo record and propagation of the exact unexpected exception. The saved-read source and private filesystem fixtures remain real; factory failure is deliberately injected to reproduce this boundary. The recorded first RED in `financing-context-ci-red.log` fails on the named configuration exception, and the subsequent owner GREEN in `financing-context-ci-green.log` records 63 passed focused tests.
+
+`supabase/tests/phase0_scaffold.pgtap.sql:94` changes only the exact inventory expectation from 29 to 31 and names the two additive financing media tables. The query, `plan(22)`, transaction rollback, exact equality assertion and all role/ownership, enabled/forced RLS, foreign-key-index and privilege assertions remain unchanged. No assertion is removed, skipped, relaxed to an inequality or suppressed. Both new tables are tenant-scoped in the reserved migration already reviewed above. Local pgTAP execution is still unavailable, so the corrected assertion remains awaiting the next real CI run.
+
+Independent verification: `pnpm exec vitest run --project unit --maxWorkers=1 apps/web/src/server/financing-v2.unit.test.ts apps/web/src/server/financing-handler.unit.test.ts apps/web/src/server/financing-output-layout.unit.test.ts apps/web/src/server/financing-media.unit.test.ts` passed all 63 tests across four files. This includes the new error classification cases and existing legacy hash, actual image, revocation, permission and resource-bound checks. `git diff --check` passed. The reviewer edited only this report; no local database, provider, source/test mutation, build, commit or push was performed.
+
+Fresh Quality must evaluate these exact source pins and the CI correction before the orchestrator sends the updated branch through required CI. Earlier full-suite and visual evidence concerns the prior base and is not silently promoted to post-fix full-run evidence.
+
+| PostgreSQL CI correction file | SHA-256 |
+| --- | --- |
+| `apps/web/src/server/financing-context.ts` | `98275cf57418a816d06f304c13c123565d3021f177ee87d6e61fa6771c9182c3` |
+| `apps/web/src/server/financing-v2.unit.test.ts` | `43925ba2d407d4e339afb93b09bb6a5df2a43d7a7f9e34f4ca51909e494c51f1` |
+| `supabase/tests/phase0_scaffold.pgtap.sql` | `45e89acf5c3a96a1aa21bf9c0d4bb2ea1ff9853ae1148a1ebc66d26216e935c1` |

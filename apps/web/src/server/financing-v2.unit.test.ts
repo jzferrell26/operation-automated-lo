@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 import sharp from "sharp";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { R2ObjectStoreConfigurationError } from "@oalo/storage";
 import { CampaignManifestSchema, FinancingCampaignManifestSchema } from "@oalo/contracts";
 import { canonicalCampaignHash } from "@oalo/application";
 import { FinancingRequestSchema, FinancingSavedSchema } from "../features/financing/model.js";
 import { createTemporaryCampaignStore } from "./campaign-command-test-support.js";
 import { createLocalSyntheticPrincipal } from "./authenticated-principal.js";
 import { createFinancingMediaRuntime } from "./financing-media-runtime.js";
+import * as mediaRuntime from "./financing-media-runtime.js";
 import { uploadFinancingMedia } from "./financing-media-service.js";
 import { financingInput, financingPorts, financingRequest } from "./financing.test-support.js";
 import { handleFinancingSave } from "./financing-http.js";
@@ -50,8 +52,65 @@ async function photograph(color = "#348cab") {
   ).record;
 }
 beforeEach(() => store.enter());
-afterEach(() => store.restore());
+afterEach(async () => {
+  vi.restoreAllMocks();
+  await store.restore();
+});
 describe("versioned financing snapshots", () => {
+  it("reuses legacy and facts-only reports without constructing photograph storage", async () => {
+    const legacy = FinancingSavedSchema.parse(await (await save(financingInput())).json());
+    const factsOnly = FinancingSavedSchema.parse(await (await save(input())).json());
+    const runtime = vi.spyOn(mediaRuntime, "createFinancingMediaRuntime").mockImplementation(() => {
+      throw new R2ObjectStoreConfigurationError();
+    });
+    const context = await readFinancingFormContext(createLocalSyntheticPrincipal(), store.env());
+    expect(context.previous.map((item) => item.campaignRef).sort()).toEqual(
+      [legacy.campaignRef, factsOnly.campaignRef].sort(),
+    );
+    expect(context.unavailablePrevious).toEqual([]);
+    expect(runtime).not.toHaveBeenCalled();
+  });
+  it.each(["unconfigured storage", "corrupt bytes"] as const)(
+    "keeps text-only creation and reuse available when an older photo has %s",
+    async (failure) => {
+      const photo = await photograph();
+      const photoBody = {
+        ...input(),
+        propertyMedia: [{ mediaRef: photo.mediaRef, altText: "Front of property" }],
+      };
+      const photoReport = FinancingSavedSchema.parse(await (await save(photoBody)).json());
+      const factsOnly = FinancingSavedSchema.parse(await (await save(input())).json());
+      const originalRuntime = createFinancingMediaRuntime(
+        createLocalSyntheticPrincipal(),
+        store.env(),
+      );
+      const originalRecord = await loadLocalCampaign(photoReport.campaignRef, store.env());
+      const runtime = vi
+        .spyOn(mediaRuntime, "createFinancingMediaRuntime")
+        .mockImplementation(() => {
+          if (failure === "unconfigured storage") throw new R2ObjectStoreConfigurationError();
+          return {
+            repository: originalRuntime.repository,
+            bytes: { ...originalRuntime.bytes, read: async () => Uint8Array.from([1, 2, 3]) },
+          };
+        });
+      const context = await readFinancingFormContext(createLocalSyntheticPrincipal(), store.env());
+      expect(context.canSave).toBe(true);
+      expect(context.previous.map((item) => item.campaignRef)).toEqual([factsOnly.campaignRef]);
+      expect(context.unavailablePrevious).toEqual([
+        { campaignRef: photoReport.campaignRef, label: photoBody.address },
+      ]);
+      expect(runtime).toHaveBeenCalledExactlyOnceWith(createLocalSyntheticPrincipal(), store.env());
+      expect(await loadLocalCampaign(photoReport.campaignRef, store.env())).toEqual(originalRecord);
+      const unexpected = new Error("Unexpected media initialization failure");
+      runtime.mockImplementation(() => {
+        throw unexpected;
+      });
+      await expect(
+        readFinancingFormContext(createLocalSyntheticPrincipal(), store.env()),
+      ).rejects.toBe(unexpected);
+    },
+  );
   it("parses legacy manifests to identical canonical values without inserting new facts", async () => {
     const legacy = financingInput();
     expect(FinancingRequestSchema.parse(legacy)).toEqual(legacy);

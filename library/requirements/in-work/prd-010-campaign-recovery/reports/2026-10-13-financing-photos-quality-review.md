@@ -239,3 +239,36 @@ Exact rechecked SHA-256 pins:
 | `apps/web/src/server/financing-output-layout.unit.test.ts` | `95f69136750c6138abac8ee28a04fc8ac595f09a5a6066b113694e4b3ad40a36` |
 
 The four changed files already appear in the original inventory; the final changes add the shared predicate, route/page empty-media branching and the connected-mode regressions. This reviewer appended only this report. All other earlier scope limits remain: actual photograph rights, live storage, hosted sign-in, production retention/erasure/quota, reviewed presets, identity portraits/logos, full D9/error/keyboard/zoom/reduced-motion qualification, owner/lender visual acceptance, public sealed QR/domain and authorized HighLevel handoff remain open.
+
+## Quality recheck after the first actual PostgreSQL CI failure, October 13
+
+**PASS WITH WARNINGS for the narrow three-file corrective delta on PR #92 base `bab5819c810efa1ba0c9e760985bb2e3c8e774bc`.** No new unresolved source finding was detected after reopened Security PASS. FP-QA-01 remains closed. FP-QA-02, FP-REGRESSION and FP-PR remain open until the corrected branch passes actual aggregate PostgreSQL/full required CI and current-main/MERGEABLE checks. This source/test clearance permits submitting the correction for those gates; it does not make the branch shippable.
+
+I independently read the preserved run `38483753309` log at `test-results/financing-first-ci-pg-failure.log`. Scaffold test 11 failed with actual 31 versus expected 29 tenant tables (`:2666-2668`), and two of 300 PostgreSQL route tests failed on the missing-R2 configuration exception when listing mixed author history (`:2895-2948`). This actual failed run supersedes earlier statements that no PostgreSQL execution had occurred. It remains failed aggregate evidence, not a pass or a waived gate.
+
+The same actual CI log provides narrower successful proof: `financing_media.pgtap.sql` passed all 18 assertions (`:2614-2619`), and `financing-media.postgres.test.ts` passed its three tests (`:2887`). Those are attributable prior-run database results. They do not prove live R2, a successful whole database gate or post-correction CI. The first route suite used byte-store substitutions as previously documented. The new complete CI run is still required.
+
+`apps/web/src/server/financing-context.ts:169-190` now classifies the concrete `R2ObjectStoreConfigurationError` alongside existing `FinancingMediaError` refusals for an older photograph-bearing reuse candidate. Source/canonical/calculation verification happens before the catch; tenant reads, author filtering and creator/admin eligibility remain unchanged. Only that candidate becomes explicitly unavailable; usable legacy and facts-only setups remain in `previous`, and `unavailablePrevious` supplies the established visible UI notice at `apps/web/src/features/financing/form.tsx:142-157`. Saved facts, photographs, rights and source hashes are not rewritten or silently stripped. Unexpected exceptions are rethrown, and output/save/media verification is untouched.
+
+`supabase/tests/phase0_scaffold.pgtap.sql:94-95` changes the exact expected count to 31 and names the two additive financing tables. The reviewed migration creates tenant-scoped `campaign.financing_media` and `campaign.financing_media_revocations` at `supabase/migrations/20261013210000_financing_media.sql:7-8`, `:29-30`, with enabled/forced RLS at `:40-43`. The count query, exact equality, `plan(22)`, every role/ownership/RLS/index/privilege assertion and rollback are unchanged. This is an inventory correction matching the actual CI count, not an inequality, skip or reduced assertion set. I did not execute PostgreSQL/pgTAP locally.
+
+After the reopened Security clearance, Quality independently ran:
+
+```text
+pnpm exec vitest run --project unit --maxWorkers=1 apps/web/src/server/financing-v2.unit.test.ts apps/web/src/server/financing-handler.unit.test.ts apps/web/src/server/financing-output-layout.unit.test.ts apps/web/src/server/financing-media.unit.test.ts
+Test Files: 4 passed
+Tests: 63 passed
+Exit: 0
+```
+
+New regressions at `apps/web/src/server/financing-v2.unit.test.ts:60-113` prove no media composition for legacy/facts-only reuse; mixed history with known missing configuration or corrupt bytes excludes only the photograph candidate; its unavailable label is explicit; the saved photo record remains identical; and the exact unexpected exception propagates. These tests use actual private filesystem saved sources and injected factory failures. They are source-boundary regression proof, not the new real-PostgreSQL run. The same independent run preserves v1 hashes, v2 facts/media, actual image embeddings, strict refusals and resource guards. `git diff --check` passed.
+
+I inspected the implementer's preserved RED in `financing-context-ci-red.log` (the named missing-configuration exception) and subsequent 63-test GREEN. Security independently passed 63 tests on the same pins. Those owner/Security executions are distinct from Quality's run and are not added to its count. Earlier full-suite/build/browser/visual evidence belongs to the prior source; this addendum claims only the focused post-correction tests. No Docker, hosted/provider effect, build, runtime/test edit, commit or push was performed by Quality.
+
+| Corrective file | SHA-256 independently matched to reopened Security |
+| --- | --- |
+| `apps/web/src/server/financing-context.ts` | `98275cf57418a816d06f304c13c123565d3021f177ee87d6e61fa6771c9182c3` |
+| `apps/web/src/server/financing-v2.unit.test.ts` | `43925ba2d407d4e339afb93b09bb6a5df2a43d7a7f9e34f4ca51909e494c51f1` |
+| `supabase/tests/phase0_scaffold.pgtap.sql` | `45e89acf5c3a96a1aa21bf9c0d4bb2ea1ff9853ae1148a1ebc66d26216e935c1` |
+
+Inventory update: context and v2 tests were already listed; `supabase/tests/phase0_scaffold.pgtap.sql` (M) adds the exact two-table inventory adjustment. Security and this Quality report gained ordered recheck addenda. Quality changed only this report. CTR reuse/source conformity remains verified at the bounded level; FP-REGRESSION/FP-PR and full PAY-016 remain partial pending successful corrected CI. All prior complete-product, public/provider, rights/storage/retention, owner/lender and full D9 limits remain open.

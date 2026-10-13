@@ -4,6 +4,7 @@ import {
   type AuthenticatedPrincipal,
 } from "@oalo/application";
 import { PropertyCampaignPreparationSchema, type FinancingCampaignManifest } from "@oalo/contracts";
+import { R2ObjectStoreConfigurationError } from "@oalo/storage";
 import type { FinancingFormContext, ReusableFinancingInput } from "../features/financing/model.js";
 import { createFinancingMediaRuntime } from "./financing-media-runtime.js";
 import { resolveFinancingMedia } from "./financing-media-service.js";
@@ -169,7 +170,11 @@ export async function readFinancingFormContext(
         const media = createFinancingMediaRuntime(principal, environment);
         await resolveFinancingMedia({ manifest }, media.repository, media.bytes);
       } catch (error) {
-        if (!(error instanceof FinancingMediaError)) throw error;
+        if (
+          !(error instanceof FinancingMediaError) &&
+          !(error instanceof R2ObjectStoreConfigurationError)
+        )
+          throw error;
         // An unavailable old photograph blocks that reuse candidate, not creation of a new report.
         unavailablePrevious.push({
           campaignRef: record.version.campaignRef,

@@ -125,6 +125,16 @@ Reviewed the complete new Draft next-wave plan and ledger/UX-report delta. No se
 
 `git diff --check` passed. No new or unresolved Medium-or-higher security findings. Cleared for fresh Quality on this exact baseline/docs delta; final comparison CI, PR mergeability and hosted/customer/provider qualification remain separate parent-owned evidence.
 
+### Capture-only approval timestamp correction
+
+Security reopened in the primary checkout before subsequent fresh Quality for the three-file delta: `tests/browser/helpers/design-quality.ts`, `tests/browser/screenshot-date-stability.spec.ts` and `COMPLETION_LEDGER.md`. No runtime, dependency, environment, CI permission or baseline image changed at this checkpoint.
+
+None detected. The helper extends its explicit selector list only to library-ad approval/version `<time>` labels and the approved launch-step-3 decision card. New timestamp labels must have a plain single text node, a readable date shape and an ISO timestamp attribute. All selected nodes are validated before any mutation; existing normalization markers are refused and preserved. During capture only, those labels use `Oct 4, 2026`. Header/list normalization is retained. `datetime`, clocks, source records, approval status, nearby words, unrelated/retired/earlier-flow content and product storage are unchanged. Cleanup restores owned labels on capture failure and no longer sweeps unrelated marked nodes.
+
+Reviewed the three new regression tests and the recorded RED/GREEN evidence. `test-results/timestamp-capture-red.log` shows all three new tests failed against the original helper; `timestamp-capture-green.log` records all eight existing/new tests passing after the fix. These are Browser Guardian execution results inspected by this reviewer, not an independent rerun. The tests exercise October 13 and future-year labels, compare resulting pixels, retain actual timestamp attributes, preserve unrelated content, reject malformed/missing timestamps before mutation, restore failures, preserve another capture's marker and still detect a surrounding font/layout change. This is bounded date-label stabilization rather than replacing the whole approval card or masking its content.
+
+The ledger preserves failed comparison run `38469092751`, separates underlying database success from account-browser comparison failure, and explicitly leaves final canonical refresh/full comparison open. Its independent homeowner/financing notes contain no secret value or false completed-release claim. `git diff --check` passed on the reviewed delta. Zero unresolved Medium-or-higher security findings; cleared for subsequent fresh Quality. No refreshed image or full-CI success is certified by this appendix.
+
 ## Next step
 
 Invoke Quality against this reviewed batch, then the orchestrator's code/repository review and required CI/build/browser checks before any ship claim. Do not infer approval, provider launch, hosted access or completed listing/homeowner reports from this security clearance. The authenticated hosted walkthrough still needs the user's sign-in.

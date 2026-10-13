@@ -56,7 +56,7 @@ flowchart TD
   H --> E
 ```
 
-Only the first batch is currently assigned for mutation. The remaining outcomes require bounded source criteria and implementation ownership before their respective waves; an open criterion never receives partial completion credit.
+The first batch and the independently owned homeowner-readiness and financing-photo increments are assigned for mutation. Their exact subset criteria live in their separate execution ledgers. Remaining outcomes require bounded source criteria and implementation ownership before their respective waves; an open criterion never receives partial completion credit.
 
 ## Live access and external evidence
 
@@ -72,3 +72,5 @@ Only the first batch is currently assigned for mutation. The remaining outcomes 
 ## Watchdog history
 
 No terminations or decompositions at initialization. All three reconnaissance agents have reported useful source findings.
+
+Comparison run 38469092751 at 42be9c2 passed Application verification and Release/recovery. Actual database steps passed, but the account browser comparison failed two additional approval timestamp mask-width baselines: launch step 3 approved at 390 Light and campaign-detail already-decided at 1440 Light. A bounded capture-only approval/save date normalization and future-date regression proof are underway. Final comparison remains open; the canonical write-mode success is not a waiver. Independent homeowner-readiness draft PR #91 is attached and running CI. Financing production upload failure was isolated to native Node environment parsing, with a separately tested cross-realm image boundary; actual repaired production/browser proof is pending.

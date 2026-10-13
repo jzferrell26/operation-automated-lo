@@ -153,3 +153,73 @@ Only this report is written by Quality. The audited working-tree inventory inclu
 - `tests/browser/review/homeowner-readiness.spec.ts` (A): signed-in four-frame readiness presentation spec, awaiting CI.
 
 Primary checkout and financing worktree were untouched. No implementation file, plan status cell, policy, generated artifact or baseline was edited by this reviewer.
+
+## Fresh Quality: mobile notice and canonical baseline correction
+
+**Plan:** `HOMEOWNER_READINESS_LEDGER.md`, HR-ACTIONS, HR-READS, HR-DESTINATION, HR-PROOF and HR-PR; PRD-007 acceptance item 10. **Base/head:** uncommitted delta from `140a3e1636194c8d56fea8d2d7575b278292bfa5`, `codex/homeowner-readiness`. **Date:** October 13, 2026. **Auditor:** fresh quality-guardian context.
+
+### Summary
+
+PASS for the bounded source correction and eight canonical baseline replacements, with final product capture and CI qualification still OPEN. This review follows the completed Mobile notice and canonical baseline Security cycle, which reports no unresolved findings and pins the exact source below. The delta is suitable for a source commit; it is not a ship verdict, fresh twelve-frame acceptance, full D9 score or hosted-provider qualification.
+
+### Scorecard
+
+| Category | Status | Notes |
+| --- | --- | --- |
+| Completeness | PASS for delta | Corrected mobile composition and exact canonical images are present; fresh product proof remains pending. |
+| Correctness | PASS for source | Text receives the content column, action follows below, and geometry assertions test rendered boxes. Fourteen independent integration cases pass. |
+| Alignment | PASS | Existing 760px breakpoint, spacing, tokens and control behavior are preserved; only the new readiness notice receives the layout override. |
+| Gaps | OPEN evidence | Old mobile detail frames were rejected; isolated diagnostic results cannot replace new twelve-frame inspection or green final CI. |
+| Detrimental | PASS for delta | No authority, provider, consent, quota, snapshot, contract, workflow, dependency or assertion relaxation. |
+
+### Critical Issues (must fix)
+
+None introduced in this frozen delta. UX-R01 is corrected in source, but its rendered status remains open until fresh product evidence is inspected.
+
+### Warnings (should fix)
+
+Existing W-01/HR-PROOF and HR-PR remain OPEN, as explicitly recorded at `HOMEOWNER_READINESS_LEDGER.md:11,14,35`. Obtain final CI and all twelve post-correction captures before changing those status cells. The older zero-allowance mobile captures and the independently reported RED4/GREEN4 isolated probe are not accepted as current product rendering. No new implementation warning was found.
+
+### Suggestions (consider improving)
+
+None within the assigned correction.
+
+### Plan Item Traceability
+
+| Item | Requirement | Result | Evidence and limit |
+| --- | --- | --- | --- |
+| PRD-007 item 10 / UX-R01 | Readable mobile layout with useful next action | Source PASS; rendering OPEN | `homeowners.module.css:744,819-830` gives only `.notice.readinessNotice` a stretched column, removes span flex compression and bounds/aligns the action. Existing legacy `.notice` wrapping remains. |
+| HR-ACTIONS / HR-DESTINATION | Preserve the availability recheck and accurate explanation | PASS for delta | No workspace or readiness-copy file changed. `homeowner-readiness.spec.ts:136,159` covers the zero-allowance notices in both themes and the setup-unavailable notice at 390px. |
+| HR-READS | Saved report outputs remain usable | PASS for focus tests | Fourteen integration cases independently passed, including refusal states, deliberate writer confirmation and disabling an existing delivery preference. Browser source retains enabled PDF/share/revision checks at `homeowner-readiness.spec.ts:124-135,155`. Actual new browser execution remains pending. |
+| HR-PROOF | Meaningful browser regression and retained evidence | Source PASS; execution OPEN | `homeowner-readiness.spec.ts:25-51` measures full content width, action below copy and shared starting edge. It does not inspect a CSS declaration or mutate the page. Existing axe, overflow, zero-write and external-request checks remain at `134-167`; four cases are discovered. |
+| Canonical acceptance | Use exact approved actual images, preserving unrelated regions | PASS | All eight files match both root and independently downloaded Security artifact copies, and the recorded SHA-256 values. Independent raw RGBA comparison reproduces every dimension, changed-pixel count and bound in the UX/Security tables. No header pixel changes. |
+| HR-SECURITY / HR-QUALITY | Security followed by fresh Quality | PASS for frozen delta | Security appendix at `2026-10-13-readiness-security-review.md:122-165` precedes this report. Both source hashes match its pins. |
+| HR-PR | Required final CI and current-main mergeability | OPEN | Neither a canonical artifact from a failed old-head run nor this source review qualifies the corrected final branch. |
+| Non-goals | Preserve live-provider, authorization and owner policy boundaries | PASS | No migration, server, contract, provider/configuration, role, allowance, delivery consent or L-5/L-15/L-16 policy change. No local account/database/provider action by Quality. |
+
+### Verification evidence
+
+- Independently executed `pnpm exec vitest run --project integration apps/web/src/features/homeowners/readiness.integration.test.tsx`: one file, fourteen tests passed. Log: ignored `test-results/homeowner-mobile-quality-integration.log`.
+- Independently verified all eight whole PNG hashes against both `test-results/homeowner-ci-diagnosis/canonical-review` and Security's separate artifact download in `test-results/homeowner-mobile-security-canonical`. Independent Sharp decode and raw comparison with `HEAD` reproduced the exact dimensions, counts and bounds already recorded. Artifact `11858817593`, canonical run `38479999828`, old head `140a3e...`, and its overall failure are independently established by Security, not represented here as a fresh download or green run.
+- CSS SHA-256: `3dd2f7b1fee53d4df95ba628fb0c17422fec8eab890f19f560f9fdd73b6d67ff`. Browser spec SHA-256: `31df42ef40a583e8fe87e3a9aa9c9c79c420280ffd6ac019191711e1bad0e455`. Both equal the completed Security pins.
+- Source Prettier check and `git diff --check` passed. Correct review-mode discovery lists four readiness cases; discovery is not execution. An initial shell command used Bash-style environment assignment in PowerShell and failed only that assignment after the hash/format checks; the corrected PowerShell discovery passed. No browser server was started.
+- Fresh full-product captures, final CI and current-main mergeability remain unverified by this reviewer. Earlier actual PostgreSQL success and the diagnostic geometry results retain their existing attributed, prior-head limits.
+
+### Files Changed
+
+This delta inventory is relative to `140a3e...`. Quality appended only this report; ignored integration output is verification evidence.
+
+- `HOMEOWNER_READINESS_LEDGER.md` (M): root-owned historical CI, rejected mobile frames and open qualification checkpoint.
+- `apps/web/src/features/homeowners/homeowners.module.css` (M): readiness-only responsive composition.
+- `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-10-13-readiness-quality-review.md` (M): this fresh scoped Quality appendix.
+- `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-10-13-readiness-security-review.md` (M): separate source and canonical provenance clearance.
+- `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-10-13-readiness-ux-review.md` (M): actual rejected detail-frame evidence, scoped source correction and eight-image acceptance.
+- `tests/browser/review/homeowner-readiness.spec.ts` (M): meaningful mobile geometry checks alongside existing safeguards.
+- `tests/visual/screens/review/homeowners--empty-account--1180--dark.png` (M): whole approved canonical frame.
+- `tests/visual/screens/review/homeowners--empty-account--1180--light.png` (M): whole approved canonical frame.
+- `tests/visual/screens/review/homeowners--empty-account--1440--dark.png` (M): whole approved canonical frame.
+- `tests/visual/screens/review/homeowners--empty-account--1440--light.png` (M): whole approved canonical frame.
+- `tests/visual/screens/review/homeowners--empty-account--390--dark.png` (M): whole approved canonical frame.
+- `tests/visual/screens/review/homeowners--empty-account--390--light.png` (M): whole approved canonical frame.
+- `tests/visual/screens/review/homeowners--empty-account--768--dark.png` (M): whole approved canonical frame.
+- `tests/visual/screens/review/homeowners--empty-account--768--light.png` (M): whole approved canonical frame.

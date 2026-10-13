@@ -118,3 +118,48 @@ Zero unresolved Medium-or-higher security findings. Cleared for subsequent fresh
 ## Next step
 
 Cleared for fresh Quality against HR-STATE through HR-PROOF and their stated evidence limits. Run the outstanding signed-in browser/PostgreSQL checks and required branch CI before claiming HR-PR complete. Reconcile current main and confirm PR mergeability separately. Licensed valuation, contact handoff, hosted configuration and owner policy decisions remain external evidence or later work, not closed by readiness presentation.
+
+## Mobile notice and canonical baseline security cycle
+
+Fresh Security runs before the requested fresh Quality pass for the uncommitted delta from `140a3e1636194c8d56fea8d2d7575b278292bfa5`. Earlier Quality results are historical and do not qualify this correction. No current-cycle Quality report existed on entry; `library/qa` is absent. Scope is the twelve changed files: readiness-only responsive CSS, its browser geometry assertions, eight canonical empty-account PNGs, the root ledger and UX appendix. No source remediation was required. This reviewer appended only this report and wrote ignored local verification evidence.
+
+**No Critical, High, Medium or Low security finding detected in this delta.** `apps/web/src/features/homeowners/homeowners.module.css:819-830` changes only layout under the existing 760px media query. It gives readiness copy a full column and places its bounded button below that copy. No `display`, visibility, disabled-state, overlay, pointer-event, permission or role rule is altered. The legacy notice rule remains intact. The unchanged rendering at `workspace.tsx:895-903` still emits plain React text and the existing availability reload button, including its busy disablement. Server authentication, tenant filtering, quota reservation, financial snapshots, delivery consent and provider gates are unchanged.
+
+`tests/browser/review/homeowner-readiness.spec.ts:25-51` measures boxes and padding in the existing local browser page, asserts a full copy column, action position and shared starting edge, and runs only for the trusted 390px frame. The helper does not mutate page content, hide controls, disable assertions, write data or grant authority. Existing local-origin guarding, synthetic responses, mutation abort/counter, axe and overflow checks, saved-output assertions and constant screenshot destinations remain. No route, database, dependency, CI permission, production setting or policy changed. The ledger and UX appendix explicitly preserve rejected original mobile detail captures and pending fresh twelve-frame qualification. No executable URL, credential or customer fixture was added.
+
+### Independent canonical provenance and binary verification
+
+Queried GitHub run `38479999828`: head is exactly `140a3e1636194c8d56fea8d2d7575b278292bfa5`, workflow is Screen baselines, and overall conclusion is failure. The actual review artifact is `screen-baselines-review`, artifact ID `11858817593`, digest `sha256:41b323fbe7bd8a5c92b1611902353119239f614d1d4708d449ccaf6fc6e8bccd`. Independently downloaded that artifact into `test-results/homeowner-mobile-security-canonical`. All eight replaced files are byte-for-byte identical both to that independent download and to the root's original downloaded canonical files. These are whole actual PNGs, with no image compositing.
+
+All eight decode successfully with Sharp, retain their original dimensions, have valid chunk CRCs, contain only IHDR/IDAT/IEND chunks, and end exactly at IEND. No EXIF, text, XMP or other ancillary metadata, malformed chunk bounds or trailing payload was found. Independent raw RGBA comparison against `HEAD` reproduced every changed-pixel count and bound in the UX table. Changes remain inside the empty-state text/action region and resulting mobile card edge/shadow; no shell-header or incidental account-control pixel changed. A directly opened 390px Light and 1440px Dark image show the synthetic seeded shell and empty-state explanation, with no property values, credentials or session data. UX owns its separate all-eight visual acceptance.
+
+| Canonical file suffix | SHA-256 |
+| --- | --- |
+| 1440--light | fdfdd2c11be4211258e9d8128ab7f6758a2a7364921e703dbcdffd65eb915c62 |
+| 1440--dark | d484b2dcc97121e05fa55890f42c51bf02fae607ac2d2614c68b0c17d9f870ec |
+| 1180--light | 410994023490bffcf19d0e7356e393e9111a2941a829e478e2d0cf460fd60ab4 |
+| 1180--dark | 0a579ae3fad21526931c723177ab5a0d85135691cf0c7d2f6082b5dbc99debdc |
+| 768--light | 0ec60d8192b81df2de4be38def0fc09f12b4f9a1ed9286336f21e6afed7d3eaf |
+| 768--dark | 4aa069d6b8f819eb22bc3c8777339f0d143aacf4c84c83690a2e2e61a1be6f90 |
+| 390--light | 86ca230618558dad3b0fc1b32065f8055740c16db251c184cdf895e517fb8f65 |
+| 390--dark | 4a872fb681fd0f515cb8f40276e0aa020f3dea68d492c0d294dea425ee666ad9 |
+
+The paths share `tests/visual/screens/review/homeowners--empty-account--` and `.png`. Machine evidence with dimensions, counts, bounds and chunk lists is retained in ignored `test-results/homeowner-mobile-security-png-verification.json`.
+
+### Independently executed checks and source pins
+
+- Readiness integration: one file, fourteen tests passed. Preserved reader/unknown/disconnected/delivery refusals, configured-writer dialog behavior and turning off an existing preference remain covered. Log: `test-results/homeowner-mobile-security-integration.log`.
+- Fresh production registry audit: zero advisories at every severity, exit zero. Installed package query from the application resolves Next.js 16.3.8 and React 19.3.0. No dependency or exception changed. The Weapon's April 24 watchlist remains stale; the preceding same-day official-advisory review and this fresh registry check supplement it without refreshing the Weapon itself.
+- Fresh repository secret audit passed across six source roots and the public environment boundary. The prior full deterministic Weapon scan remains the historical broader audit; this narrowly scoped cycle does not represent a second full application scan.
+- `git diff --check` passed. Diff confirms no new change to workspace rendering/authority, server, contract, application, database, workflow or lockfile paths.
+
+| Reviewed source | SHA-256 |
+| --- | --- |
+| homeowners.module.css | 3dd2f7b1fee53d4df95ba628fb0c17422fec8eab890f19f560f9fdd73b6d67ff |
+| homeowner-readiness.spec.ts | 31df42ef40a583e8fe87e3a9aa9c9c79c420280ffd6ac019191711e1bad0e455 |
+| HOMEOWNER_READINESS_LEDGER.md | dc6c6768812a99c884dc18f4b02d6f25d4497ea6468ac5041f69184a2fd1a6e4 |
+| readiness-ux-review.md | 23576a5b842ad04c0ed3f64f7cc251271c751bd3948435555531e3b4ac26b319 |
+
+GitHub run `38480000153` independently reports overall failure at the same old head. The parent attributes its successful migration/pgTAP, 22 PostgreSQL files and 295 route tests plus four new browser cases to that run; those component results are not independently rerun here. The original twelve detail pictures include the two UX-rejected zero-allowance mobile states. The isolated old-CSS RED4/new-CSS GREEN4 probe is diagnostic evidence only. Neither those old pictures nor the canonical empty-account images qualify fresh full-product detail rendering after this CSS change. HR-PROOF, final CI, hosted/provider behavior, customer approval and L-5/L-15/L-16 remain open as already recorded.
+
+Cleared for fresh Quality on this frozen delta, with zero unresolved Medium-or-higher security findings. The orchestrator should perform its repository-health/release checks before commit or push and retain the pending fresh browser and CI evidence limits.

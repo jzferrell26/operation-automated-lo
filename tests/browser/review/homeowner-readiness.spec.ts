@@ -1,6 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { buildHomeReport } from "../../../packages/application/src/homeowner-reports.js";
 import type { HomeWorkspace } from "@oalo/contracts";
 import {
@@ -21,6 +21,34 @@ import {
   warmFullPageCapture,
 } from "../helpers/design-quality.js";
 import { chooseThemeFromTheHeader } from "./helpers/review-session.js";
+
+async function expectReadableMobileNotice(page: Page, title: string, width: number) {
+  if (width !== 390) return;
+  const copy = page.getByText(title, { exact: true }).locator("..");
+  const notice = copy.locator("..");
+  const action = page.getByRole("button", { name: "Check report availability", exact: true });
+  const [copyBox, actionBox, contentWidth] = await Promise.all([
+    copy.boundingBox(),
+    action.boundingBox(),
+    notice.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return (
+        element.getBoundingClientRect().width -
+        parseFloat(style.paddingLeft) -
+        parseFloat(style.paddingRight) -
+        parseFloat(style.borderLeftWidth) -
+        parseFloat(style.borderRightWidth)
+      );
+    }),
+  ]);
+  expect(copyBox).not.toBeNull();
+  expect(actionBox).not.toBeNull();
+  if (!copyBox || !actionBox) throw new Error("The readiness notice is not rendered.");
+  // Long copy gets the available column; a non-overflowing sliver beside the action is still wrong.
+  expect(copyBox.width).toBeGreaterThanOrEqual(contentWidth - 1);
+  expect(actionBox.y).toBeGreaterThanOrEqual(copyBox.y + copyBox.height);
+  expect(Math.abs(actionBox.x - copyBox.x)).toBeLessThanOrEqual(1);
+}
 
 // A real signed-in shell with synthetic report API answers isolates presentation. PostgreSQL route
 // tests verify the server projection; this spec never requests a valuation or makes a report write.
@@ -105,6 +133,7 @@ for (const frame of REVIEW_FRAMES) {
       await expect((await download).suggestedFilename()).toMatch(/^homeowner-report-.+\.pdf$/u);
       await expectAxeClean(page);
       await expectNoHorizontalOverflow(page);
+      await expectReadableMobileNotice(page, "New valuations need a lookup allowance", width);
       await settleForScreenshot(page);
       await warmFullPageCapture(page);
       await page.screenshot({
@@ -127,6 +156,7 @@ for (const frame of REVIEW_FRAMES) {
     await expect(page.locator('a[href="/settings/connections"]')).toHaveCount(0);
     await expectAxeClean(page);
     await expectNoHorizontalOverflow(page);
+    await expectReadableMobileNotice(page, "Valuations are unavailable for this workspace", width);
     await settleForScreenshot(page);
     await warmFullPageCapture(page);
     await page.screenshot({

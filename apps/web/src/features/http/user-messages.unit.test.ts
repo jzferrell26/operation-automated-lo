@@ -94,6 +94,30 @@ async function collectEmittedCodes(): Promise<readonly string[]> {
 }
 
 describe("error codes become sentences", () => {
+  it.each([
+    "DESTINATION_UNAVAILABLE",
+    "WEBINAR_EVIDENCE_UNAVAILABLE",
+    "WEBINAR_INVALID",
+    "WEBINAR_UNAVAILABLE",
+    "WEBINAR_VERSION_CONFLICT",
+  ])("maps webinar refusal %s without the generic fallback or implementation terms", (code) => {
+    expect(isMappedErrorCode(code)).toBe(true);
+    const message = userMessageForCode(code);
+    expect(message).not.toBe(UNKNOWN_ERROR_MESSAGE);
+    expect(message.what.length).toBeGreaterThan(10);
+    expect(message.whatToDo.length).toBeGreaterThan(10);
+    expect(findVocabularyHits(userMessageSentence(code))).toEqual([]);
+  });
+
+  it("distinguishes retrying an uncertain save from reviewing a conflicting version", () => {
+    expect(userMessageForCode("WEBINAR_UNAVAILABLE").whatToDo).toContain("retry the same save");
+    expect(userMessageForCode("WEBINAR_VERSION_CONFLICT").whatToDo).toContain(
+      "review the latest saved version before preparing another version",
+    );
+    expect(userMessageForCode("WEBINAR_EVIDENCE_UNAVAILABLE").whatToDo).toContain(
+      "before approving",
+    );
+  });
   it("has a sentence pair for every code a route can hand the browser", async () => {
     const excluded = new Set(NOT_SHOWN_TO_A_USER.map((entry) => entry.code));
     const unmapped = (await collectEmittedCodes()).filter(

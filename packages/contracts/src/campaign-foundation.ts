@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AdPlacesInputSchema } from "./ad-places.js";
 import {
   FinancingIdentitySchema,
   FinancingInputSchema,
@@ -451,6 +452,139 @@ export const LibraryAdCampaignManifestSchema = z
   .strict();
 export type LibraryAdCampaignManifest = z.infer<typeof LibraryAdCampaignManifestSchema>;
 
+const WebinarTextSchema = (maximum: number) =>
+  z
+    .string()
+    .trim()
+    .min(3)
+    .max(maximum)
+    .refine((value) => !/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}<>]/u.test(value), "Use plain visible text.");
+export const WebinarTemplateIdSchema = z.string().regex(/^webinar-[a-z]+(?:-[a-z]+)*$/u);
+export const WebinarTemplateEvidenceSchema = z
+  .object({
+    id: WebinarTemplateIdSchema,
+    version: z.number().int().positive(),
+    goal: z.enum(["planning", "budget", "credit", "preapproval", "closing"]),
+    sourceHash: Sha256Schema,
+    tallSha256: Sha256Schema,
+    squareSha256: Sha256Schema,
+    rightsBasis: z.literal("platform-original"),
+  })
+  .strict();
+export type WebinarTemplateEvidence = z.infer<typeof WebinarTemplateEvidenceSchema>;
+
+// Only the explicit local test authority may use HTTP. Ownership and the canonical origin
+// are resolved by the server; parsing this value alone grants no publication authority.
+const WebinarPublicUrlSchema = z
+  .url()
+  .refine(
+    (value) =>
+      /^(?:https:\/\/[^/@?#]+|http:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::[0-9]+)?)\/f\/[a-f0-9-]+$/u.test(
+        value,
+      ),
+    "Use a canonical HTTPS publication URL or the explicit local test origin.",
+  );
+export const WebinarDestinationSchema = z
+  .object({
+    publicationId: z.uuid(),
+    kind: z.enum(["live-webinar", "on-demand"]),
+    sourceRevision: z.uuid(),
+    publisherActorRef: OpaqueReferenceSchema,
+    snapshotHash: Sha256Schema,
+    publicUrl: WebinarPublicUrlSchema,
+    publishedAt: z.iso.datetime({ offset: true }),
+    expiresAt: z.iso.datetime({ offset: true }),
+    eventStartsAt: z.iso.datetime({ offset: true }).nullable(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if ((value.kind === "live-webinar") !== (value.eventStartsAt !== null)) {
+      context.addIssue({
+        code: "custom",
+        path: ["eventStartsAt"],
+        message: "Only a live webinar has an event start.",
+      });
+    }
+    if (!value.publicUrl.endsWith(`/f/${value.publicationId}`)) {
+      context.addIssue({
+        code: "custom",
+        path: ["publicUrl"],
+        message: "Use the derived publication path.",
+      });
+    }
+  });
+export type WebinarDestination = z.infer<typeof WebinarDestinationSchema>;
+
+function webinarRasterSchema<Shape extends "tall" | "square">(shape: Shape) {
+  return z
+    .object({
+      shape: z.literal(shape),
+      assetRef: OpaqueReferenceSchema,
+      rendererVersion: VersionSchema,
+      contentSha256: Sha256Schema,
+      width: z.literal(1080),
+      height: z.literal(shape === "tall" ? 1350 : 1080),
+      byteLength: z
+        .number()
+        .int()
+        .positive()
+        .max(2 * 1024 * 1024),
+      altText: WebinarTextSchema(200),
+    })
+    .strict();
+}
+export const WebinarAdCampaignManifestSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    blueprintId: z.literal("webinar-ad"),
+    requestHash: Sha256Schema,
+    template: WebinarTemplateEvidenceSchema,
+    destination: WebinarDestinationSchema,
+    destinationHash: Sha256Schema,
+    content: LibraryAdCampaignManifestSchema.shape.content
+      .extend({
+        headline: WebinarTextSchema(60),
+        body: WebinarTextSchema(300),
+        callToAction: z.literal("Learn more"),
+      })
+      .strict(),
+    images: z.tuple([webinarRasterSchema("tall"), webinarRasterSchema("square")]),
+    advertiser: LibraryAdCampaignManifestSchema.shape.advertiser,
+    schedule: LibraryAdCampaignManifestSchema.shape.schedule
+      .extend({ startsAt: z.null() })
+      .strict(),
+    meta: LibraryAdCampaignManifestSchema.shape.meta.extend({ enabled: z.literal(false) }).strict(),
+  })
+  .strict();
+export type WebinarAdCampaignManifest = z.infer<typeof WebinarAdCampaignManifestSchema>;
+
+export const WebinarAdPreparationRequestSchema = z
+  .object({
+    requestId: z.uuid(),
+    templateId: WebinarTemplateIdSchema,
+    templateVersion: z.number().int().positive(),
+    publicationId: z.uuid(),
+    campaignRef: OpaqueReferenceSchema.optional(),
+    expectedCampaignVersionRef: OpaqueReferenceSchema.optional(),
+    headline: WebinarTextSchema(60),
+    primaryText: WebinarTextSchema(300),
+    endsOn: z.iso.date(),
+    dailyBudgetDollars: z.number().min(5).max(1000),
+    totalBudgetDollars: z.number().min(5).max(5000),
+    places: AdPlacesInputSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if ((value.campaignRef !== undefined) !== (value.expectedCampaignVersionRef !== undefined)) {
+      context.addIssue({
+        code: "custom",
+        path: ["expectedCampaignVersionRef"],
+        message: "Editing requires the current campaign version.",
+      });
+    }
+  });
+export type WebinarAdPreparationRequest = z.output<typeof WebinarAdPreparationRequestSchema>;
+
 /**
  * PRD-009c D5. The manifest is a union on `blueprintId`. `open-house-boost` is unchanged, so every
  * stored version parses to the same value and keeps its hash; the database stores any JSON object
@@ -492,6 +626,7 @@ export const CampaignManifestSchema = z.discriminatedUnion("blueprintId", [
   OpenHouseCampaignManifestSchema,
   LibraryAdCampaignManifestSchema,
   FinancingCampaignManifestSchema,
+  WebinarAdCampaignManifestSchema,
 ]);
 export type CampaignManifest = z.infer<typeof CampaignManifestSchema>;
 
@@ -567,9 +702,22 @@ export const LibraryAdRuleContextSchema = z
   .strict();
 export type LibraryAdRuleContext = z.infer<typeof LibraryAdRuleContextSchema>;
 
+export const WebinarAdRuleContextSchema = z
+  .object({
+    templateSourceHash: Sha256Schema,
+    destinationHash: Sha256Schema,
+    tallSha256: Sha256Schema,
+    squareSha256: Sha256Schema,
+    rendererVersion: VersionSchema,
+    partnerNames: z.array(z.string().trim().min(1).max(160)).max(50),
+  })
+  .strict();
+export type WebinarAdRuleContext = z.infer<typeof WebinarAdRuleContextSchema>;
+
 export const PreflightRulesSchema = z.union([
   SharedPreflightRulesSchema,
   SharedPreflightRulesSchema.extend({ libraryAd: LibraryAdRuleContextSchema }).strict(),
+  SharedPreflightRulesSchema.extend({ webinarAd: WebinarAdRuleContextSchema }).strict(),
 ]);
 export type PreflightRules = z.infer<typeof PreflightRulesSchema>;
 
@@ -649,9 +797,35 @@ export const LibraryAdApprovalSnapshotSchema = z
   .strict();
 export type LibraryAdApprovalSnapshot = z.infer<typeof LibraryAdApprovalSnapshotSchema>;
 
+export const WebinarAdApprovalSnapshotSchema = z
+  .object({
+    blueprintId: z.literal("webinar-ad"),
+    templateId: WebinarTemplateIdSchema,
+    templateVersion: z.number().int().positive(),
+    templateSourceHash: Sha256Schema,
+    tallSha256: Sha256Schema,
+    squareSha256: Sha256Schema,
+    destinationHash: Sha256Schema,
+    publicationId: z.uuid(),
+    sourceRevision: z.uuid(),
+    snapshotHash: Sha256Schema,
+    publicUrl: WebinarPublicUrlSchema,
+    brandHash: Sha256Schema,
+    copyHash: Sha256Schema,
+    disclosureHash: Sha256Schema,
+    endsAt: z.iso.datetime({ offset: true }),
+    targetingHash: Sha256Schema,
+    budgetHash: Sha256Schema,
+    datesHash: Sha256Schema,
+    approverDisplayName: ApproverDisplayNameSchema.optional(),
+  })
+  .strict();
+export type WebinarAdApprovalSnapshot = z.infer<typeof WebinarAdApprovalSnapshotSchema>;
+
 export const ApprovalSnapshotSchema = z.union([
   OpenHouseApprovalSnapshotSchema,
   LibraryAdApprovalSnapshotSchema,
+  WebinarAdApprovalSnapshotSchema,
 ]);
 export type ApprovalSnapshot = z.infer<typeof ApprovalSnapshotSchema>;
 

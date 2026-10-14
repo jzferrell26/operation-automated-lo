@@ -1,4 +1,10 @@
 import { contractVersion } from "@oalo/contracts";
+export * from "./webinar-ad-evidence.js";
+export {
+  WEBINAR_AD_RULESET_REF,
+  WEBINAR_AD_RULE_CODES,
+  type WebinarAdRuleCode,
+} from "@oalo/domain";
 export { calculateHomeEquity, buildHomeReport, homeReportFreshness } from "./homeowner-reports.js";
 import { foundationPhase, type FoundationStatus } from "@oalo/domain";
 

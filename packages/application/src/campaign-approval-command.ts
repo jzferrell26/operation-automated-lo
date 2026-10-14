@@ -22,6 +22,11 @@ import {
   createApprovalDecision,
   type CampaignEventPort,
 } from "./campaign-foundation.js";
+import {
+  assertWebinarAdEvidenceCurrent,
+  assertWebinarAdPreflightCurrent,
+  type WebinarAdEvidencePort,
+} from "./webinar-ad-evidence.js";
 
 export class CampaignApprovalStaleError extends Error {
   public constructor() {
@@ -320,6 +325,7 @@ export async function executeHumanCampaignApproval(
   principal: Readonly<AuthenticatedPrincipal>,
   repository: CampaignApprovalRepository,
   catalog: LibraryAdCatalogPort,
+  webinarEvidence?: WebinarAdEvidencePort,
 ): Promise<HumanCampaignApprovalResult> {
   assertLibraryAdCatalogPort(catalog);
   const frozen = freezeAuthenticatedPrincipal(principal);
@@ -362,6 +368,32 @@ export async function executeHumanCampaignApproval(
     // PRD-009c D4. After the role check, before anything else: a version whose library ad is
     // missing, retired, replaced, or whose art changed is refused for every caller alike.
     await assertLibraryAdApprovable(evidence.version.manifest, catalog);
+
+    if (evidence.version.manifest.blueprintId === "webinar-ad") {
+      if (
+        input.expectedCampaignVersionRef === undefined ||
+        input.expectedManifestHash === undefined ||
+        input.expectedPreflightResultHash === undefined ||
+        input.expectedRowVersion === undefined
+      ) {
+        throw new CampaignApprovalStaleError();
+      }
+      await assertWebinarAdEvidenceCurrent(evidence.version, input.decidedAt, webinarEvidence);
+      try {
+        assertWebinarAdPreflightCurrent(evidence.version, evidence.preflight);
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("passing preflight"))
+          throw new CampaignApprovalNotReadyError();
+        throw error;
+      }
+      if (
+        evidence.existingApproval !== undefined &&
+        (evidence.existingApproval.manifestHash !== evidence.version.manifestHash ||
+          evidence.existingApproval.preflightResultHash !== evidence.preflight.resultHash)
+      ) {
+        throw new CampaignApprovalStaleError();
+      }
+    }
 
     if (matchesExistingApproval(input, frozen, evidence)) {
       return Object.freeze({
@@ -410,6 +442,7 @@ export async function executeHumanCampaignApproval(
           approverDisplayName: input.approverDisplayName,
         },
         createSessionApprovalAuthority(frozen),
+        webinarEvidence,
       );
     } catch (error) {
       if (error instanceof Error && error.message.includes("passing preflight")) {

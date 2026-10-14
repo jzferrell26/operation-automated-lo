@@ -29,6 +29,31 @@ export type UserMessage = Readonly<{
  * pair.
  */
 export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Object.freeze({
+  DESTINATION_UNAVAILABLE: {
+    what: "This published webinar could not be confirmed.",
+    whatToDo:
+      "Open your funnels and check the published webinar before saving or approving another version.",
+  },
+  WEBINAR_EVIDENCE_UNAVAILABLE: {
+    what: "The saved creative, pictures or webinar could not be checked for approval.",
+    whatToDo:
+      "Reload the campaign and check its current availability before approving. Contact support if this continues.",
+  },
+  WEBINAR_INVALID: {
+    what: "Some webinar ad details need attention.",
+    whatToDo:
+      "Check the words, published webinar, budget, dates and city or state, then try again.",
+  },
+  WEBINAR_UNAVAILABLE: {
+    what: "Your webinar ad details could not be confirmed.",
+    whatToDo:
+      "Try again. If you were saving, keep your details and retry the same save to check whether it was recorded. Contact support if this continues.",
+  },
+  WEBINAR_VERSION_CONFLICT: {
+    what: "The saved campaign or selected creative changed before this save could be confirmed.",
+    whatToDo:
+      "Open Campaigns and review the latest saved version before preparing another version. Your current details are kept.",
+  },
   RETENTION_NOT_CONFIGURED: {
     what: "Inquiry retention is not configured.",
     whatToDo:

@@ -19,6 +19,7 @@ import {
 } from "@oalo/auth";
 
 import { authenticatedWorkspaceMode } from "./authenticated-workspace-data.js";
+import { observeRuntimeStage } from "./runtime-timing.js";
 import type { CredentialPort } from "./credential-ports.js";
 import type { TransactionalEmailPort } from "./email/transactional-email.js";
 import {
@@ -397,7 +398,9 @@ export async function resolveAuthenticatedPrincipal(
   environment: unknown,
   ports: CampaignCommandPorts,
 ): Promise<Readonly<AuthenticatedPrincipal>> {
-  return resolveAuthenticatedSession(request, environment, ports, true);
+  return observeRuntimeStage(environment, "principal", () =>
+    resolveAuthenticatedSession(request, environment, ports, true),
+  );
 }
 
 export async function resolveAuthenticatedReadPrincipal(
@@ -405,7 +408,9 @@ export async function resolveAuthenticatedReadPrincipal(
   environment: unknown,
   ports: CampaignCommandPorts,
 ): Promise<Readonly<AuthenticatedPrincipal>> {
-  return resolveAuthenticatedSession(request, environment, ports, false);
+  return observeRuntimeStage(environment, "principal", () =>
+    resolveAuthenticatedSession(request, environment, ports, false),
+  );
 }
 
 async function resolveAuthenticatedSession(

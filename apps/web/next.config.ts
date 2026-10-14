@@ -38,10 +38,40 @@ const REMOVED_ADDRESS_REDIRECTS = [
   ["/onboarding", "/overview"],
 ] as const;
 
+// The native webinar renderer reads fixed registry assets from the function filesystem.
+// Public CDN serving does not place these files in that filesystem. Preserve next.config.ts too:
+// the existing loader uses its presence to distinguish application-root and monorepo-root cwd.
+const WEBINAR_RASTER_FILES = [
+  "./next.config.ts",
+  "./public/webinar-ads/*/v1/{tall,square}.png",
+  "./public/fonts/webinar/AutomatedLOWebinarInter.ttf",
+  "./public/fonts/webinar/glyph-ranges.json",
+  "./public/fonts/LICENSE.txt",
+];
+const WEBINAR_RASTER_CONSUMERS = [
+  "/api/campaigns/webinar-ads",
+  "/api/campaigns/webinar-ads/\\[campaignRef\\]/\\[campaignVersionRef\\]",
+  "/api/campaigns/webinar-ads/\\[campaignRef\\]/\\[campaignVersionRef\\]/\\[shape\\]",
+  "/api/campaigns/approve",
+  "/marketing/campaigns",
+  "/marketing/campaigns/\\[campaignRef\\]",
+  "/marketing/campaigns/\\[campaignRef\\]/versions/\\[versionNo\\]",
+  "/overview",
+];
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   transpilePackages: ["@oalo/application", "@oalo/config", "@oalo/ui"],
+  outputFileTracingIncludes: Object.fromEntries([
+    ...WEBINAR_RASTER_CONSUMERS.map((route) => [route, WEBINAR_RASTER_FILES]),
+    ...[
+      "/p/\\[publicationId\\]",
+      "/p/\\[publicationId\\]/report.pdf",
+      "/p/\\[publicationId\\]/media/\\[assetRef\\]",
+      "/p/\\[publicationId\\]/inquiry",
+    ].map((route) => [route, ["./public/fonts/webinar/AutomatedLOWebinarInter.ttf"]]),
+  ]),
   async headers() {
     return [{ source: "/:path*", headers: [...securityHeaders] }];
   },

@@ -34,20 +34,27 @@ export async function runFunnelRetention(
   try {
     await execute("begin", "begin");
     await execute("role", "set local role scheduler_runtime");
-    let removed = 0;
-    for (let index = 0; index < 5; index++) {
-      const result = await execute(
-        "purge",
-        "select campaign.purge_expired_funnel_inquiries() as removed",
-      );
-      const count = z
-        .object({ removed: z.number().int().min(0).max(5000) })
-        .parse(result.rows[0]).removed;
-      removed += count;
-      if (count < 5000) break;
-    }
+    // The fixed SQL routine shares its five bounded batches between both families.
+    // Calling the old funnel-only loop as well would exceed the shared policy.
+    const result = await execute(
+      "purge",
+      "select campaign.purge_expired_marketing_inquiries() as counts",
+    );
+    const counts = z
+      .object({
+        counts: z
+          .object({
+            funnel: z.number().int().min(0).max(15000),
+            financing: z.number().int().min(0).max(10000),
+            total: z.number().int().min(0).max(25000),
+          })
+          .strict()
+          .refine((value) => value.total === value.funnel + value.financing),
+      })
+      .strict()
+      .parse(result.rows[0]).counts;
     await execute("commit", "commit");
-    return json({ removed });
+    return json({ removed: counts.total });
   } catch {
     await execute("rollback", "rollback").catch(() => undefined);
     return json({ error: "RETENTION_UNAVAILABLE" }, 503);

@@ -35,6 +35,41 @@ const IGNORED_DIRECTORIES = new Set([".next", ".turbo", "coverage", "dist", "nod
 /** The harness is the one sanctioned holder of these capabilities. */
 const SANCTIONED_HOLDER = "packages/db/test/campaign-integration-support.mjs";
 
+// Exact immutable read-only query AND its denied-membership assertion. This is not a path
+// exemption: only this role-name occurrence can be ignored by the test-harness inventory.
+const SCHEDULER_DENIAL_PROOF = `      const scheduler = await ownerSql(
+        f,
+        "test.finance-cleanup-schema-capability",
+        "select has_schema_privilege('scheduler_runtime','campaign','USAGE') as schema_usage,has_schema_privilege('scheduler_runtime','campaign','CREATE') as schema_create,has_table_privilege('scheduler_runtime','campaign.financing_release_inquiries','SELECT,INSERT,UPDATE,DELETE') as financing_table_access,has_table_privilege('scheduler_runtime','campaign.funnel_inquiries','SELECT,INSERT,UPDATE,DELETE') as funnel_table_access,has_function_privilege('scheduler_runtime','campaign.financing_release_export()','EXECUTE') as private_export,pg_has_role('scheduler_runtime','app_runtime','MEMBER') as native_membership,pg_has_role('scheduler_runtime','migration_owner','MEMBER') as owner_membership",
+      );
+      assert.deepEqual(scheduler.rows, [
+        {
+          schema_usage: true,
+          schema_create: false,
+          financing_table_access: false,
+          funnel_table_access: false,
+          private_export: false,
+          native_membership: false,
+          owner_membership: false,
+        },
+      ]);`;
+function harnessCapabilityNames(source: string): string[] {
+  const normalized = source.replaceAll("\r\n", "\n");
+  const deniedRolePositions = new Set<number>();
+  let start = normalized.indexOf(SCHEDULER_DENIAL_PROOF);
+  while (start !== -1) {
+    deniedRolePositions.add(start + SCHEDULER_DENIAL_PROOF.indexOf("'migration_owner'") + 1);
+    start = normalized.indexOf(SCHEDULER_DENIAL_PROOF, start + SCHEDULER_DENIAL_PROOF.length);
+  }
+  return PROHIBITED_CAPABILITIES.filter(({ name, pattern }) =>
+    name === "migration_owner role assumption"
+      ? [...normalized.matchAll(new RegExp(pattern.source, `${pattern.flags}g`))].some(
+          (match) => !deniedRolePositions.has(match.index),
+        )
+      : pattern.test(normalized),
+  ).map(({ name }) => name);
+}
+
 const workspaceRoot = resolve(".");
 
 async function sourceFiles(directory: string): Promise<string[]> {
@@ -95,12 +130,50 @@ describe("database privilege escalation boundary", () => {
     const holders = new Set<string>();
     for (const file of files) {
       const source = await readFile(file, "utf8");
-      if (PROHIBITED_CAPABILITIES.some(({ pattern }) => pattern.test(source))) {
+      if (harnessCapabilityNames(source).length > 0) {
         holders.add(repositoryPath(file));
       }
     }
 
     expect([...holders]).toEqual([SANCTIONED_HOLDER]);
+  });
+
+  it("recognizes only the exact read-only negative membership proof in the harness inventory", () => {
+    expect(harnessCapabilityNames(SCHEDULER_DENIAL_PROOF)).toEqual([]);
+    // The shipped-source prohibition stays literal and receives no recognition or masking.
+    expect(
+      PROHIBITED_CAPABILITIES.filter(({ pattern }) => pattern.test(SCHEDULER_DENIAL_PROOF)).map(
+        ({ name }) => name,
+      ),
+    ).toEqual(["migration_owner role assumption"]);
+  });
+  it.each([
+    "set local role migration_owner",
+    "grant migration_owner to scheduler_runtime",
+    "alter table campaign.audit_events disable trigger audit_events_append_only",
+    "alter table campaign.audit_events enable trigger audit_events_append_only",
+    "set session_replication_role = replica",
+  ])("still rejects an adjacent capability: %s", (capability) => {
+    expect(harnessCapabilityNames(`${SCHEDULER_DENIAL_PROOF}\n${capability}`)).not.toEqual([]);
+    expect(harnessCapabilityNames(`${capability}\n${SCHEDULER_DENIAL_PROOF}`)).not.toEqual([]);
+  });
+  it.each([
+    ["positive membership", "owner_membership: false", "owner_membership: true"],
+    ["missing negative assertion", "assert.deepEqual(scheduler.rows", "unrelated(scheduler.rows"],
+    [
+      "changed queried role",
+      "pg_has_role('scheduler_runtime','migration_owner'",
+      "pg_has_role('app_runtime','migration_owner'",
+    ],
+    [
+      "additional SQL statement",
+      'as owner_membership",',
+      'as owner_membership; set local role migration_owner",',
+    ],
+  ])("does not recognize %s", (_name, before, after) => {
+    expect(harnessCapabilityNames(SCHEDULER_DENIAL_PROOF.replace(before, after))).toContain(
+      "migration_owner role assumption",
+    );
   });
 
   it("re-enables every trigger it disables inside the same transaction", async () => {

@@ -27,6 +27,7 @@ import { HomeReportView } from "./report-view.js";
 import { useHomeWorkspace, type HomeAction } from "./use-home-workspace.js";
 import "@oalo/ui/product-tokens.css";
 import styles from "./homeowners.module.css";
+import { freshHomeLookupAvailable, homeReadinessNotice } from "./readiness.js";
 
 function HomeReportList({ data }: { data: ReturnType<typeof useHomeWorkspace> }) {
   const [query, setQuery] = useState("");
@@ -53,16 +54,18 @@ function HomeReportList({ data }: { data: ReturnType<typeof useHomeWorkspace> })
         <Button variant="outline" onClick={() => setHelp(true)}>
           How it works
         </Button>
-        <ActionLink href="/homeowners/new">
-          <Icon name="plus" decorative size="sm" /> Create report
-        </ActionLink>
+        {data.workspace.canWrite ? (
+          <ActionLink href="/homeowners/new">
+            <Icon name="plus" decorative size="sm" /> Create report
+          </ActionLink>
+        ) : null}
       </PageHeader>
       <StatCards
         items={[
           {
             label: "Tracked properties",
             value: properties.length,
-            detail: "Homes in this workspace",
+            detail: "Homes in your account",
             icon: "home",
           },
           {
@@ -193,11 +196,11 @@ function HomeReportList({ data }: { data: ReturnType<typeof useHomeWorkspace> })
               >
                 Clear filters
               </Button>
-            ) : (
+            ) : data.workspace.canWrite ? (
               <ActionLink href="/homeowners/new">
                 Create your first report <Icon name="arrow-right" decorative size="sm" />
               </ActionLink>
-            )}
+            ) : null}
           </div>
         )}
       </Card>
@@ -235,7 +238,7 @@ function HomeReportList({ data }: { data: ReturnType<typeof useHomeWorkspace> })
             <strong>Take the next step.</strong>
             <p>
               Download a PDF, create an expiring share link, or arrange a HighLevel handoff in a
-              connected workspace.
+              connected account.
             </p>
           </li>
         </ol>
@@ -435,7 +438,9 @@ function HomeReportDetails({
             Remove property
           </Button>
         ) : null}
-        <ActionLink href="/homeowners/new">Create a report</ActionLink>
+        {data.workspace.canWrite ? (
+          <ActionLink href="/homeowners/new">Create a report</ActionLink>
+        ) : null}
         <ActionLink href="/homeowners" secondary>
           Back to homeowner reports
         </ActionLink>
@@ -447,8 +452,9 @@ function HomeReportDetails({
           }}
         >
           <p>
-            This removes the property and its unfinished report requests. It does not repeat a
-            valuation, erase recorded lookup usage, or delete a HighLevel contact.
+            This removes the property and its unfinished report requests from your account, and
+            stops its scheduled updates. It does not repeat a valuation, erase recorded lookup
+            usage, or delete a HighLevel contact.
           </p>
           <label className={styles.check}>
             <input
@@ -562,7 +568,10 @@ function HomeReportDetails({
                 variant="outline"
                 disabled={
                   data.busy ||
-                  (data.workspace.mode !== "demo" && !data.workspace.valuationConnected)
+                  !freshHomeLookupAvailable(data.workspace) ||
+                  (data.workspace.mode !== "demo" &&
+                    report.input.association !== "property_only" &&
+                    !data.workspace.ghlConnected)
                 }
                 onClick={() => open("refresh")}
               >
@@ -578,6 +587,15 @@ function HomeReportDetails({
           ) : null}
         </div>
       </div>
+      {data.workspace.mode !== "demo" &&
+      report.input.association !== "property_only" &&
+      !data.workspace.ghlConnected ? (
+        <p className={`${styles.note} ${styles.screenOnly}`}>
+          Your HighLevel connection is unavailable. Check your connection before refreshing this
+          linked report or resuming monthly updates. Contact support if this continues. The saved
+          report and PDF remain available.
+        </p>
+      ) : null}
       <HomeReportView report={report} />
       {deliveryStatus ? (
         <p className={`${styles.note} ${styles.screenOnly}`}>
@@ -599,15 +617,27 @@ function HomeReportDetails({
             {report.input.association === "property_only"
               ? "This is a standalone property valuation. Create a homeowner report with a verified contact to use HighLevel follow-up."
               : data.workspace.mode === "demo"
-                ? "This sample report can be downloaded or printed. Private sharing and delivery require a connected workspace."
-                : "A HighLevel handoff saves the report link to the configured contact field and starts your approved workflow."}
+                ? "This sample report can be downloaded or printed. Private sharing and delivery require a connected account."
+                : data.workspace.readiness.storage !== "ready" ||
+                    data.workspace.readiness.writeAccess === "unknown"
+                  ? "HighLevel handoff availability could not be checked. Use Check report availability before trying again. Your saved report and PDF remain available."
+                  : !data.workspace.canWrite || data.workspace.readiness.writeAccess === "read_only"
+                    ? "HighLevel handoff is unavailable for your account. Check report availability again before trying to hand off this report. Contact support if this continues. You can still download the PDF."
+                    : !data.workspace.ghlConnected
+                      ? "HighLevel contact access is unavailable for your account. Check your HighLevel connection, then check report availability. Contact support if this continues. Your saved report and PDF remain available."
+                      : !data.workspace.deliveryEnabled
+                        ? `HighLevel report delivery is unavailable for your account. Contact support to finish delivery setup. You can pause updates or turn off an existing delivery preference using ${property.enrollment.cadence === "monthly" && !property.enrollment.paused ? "Monthly updates" : "Update schedule"}.`
+                        : "A HighLevel handoff saves the report link to the configured contact field and starts your approved workflow."}
           </p>
         </div>
         <Button
           disabled={
             data.busy ||
             !data.workspace.deliveryEnabled ||
+            !data.workspace.ghlConnected ||
             !data.workspace.canWrite ||
+            data.workspace.readiness.storage !== "ready" ||
+            data.workspace.readiness.writeAccess !== "allowed" ||
             report.input.association === "property_only"
           }
           onClick={() => open("deliver")}
@@ -683,7 +713,15 @@ function HomeReportDetails({
                 value={cadence}
                 options={[
                   { value: "off", label: "On demand only" },
-                  { value: "monthly", label: "Monthly valuation refresh" },
+                  {
+                    value: "monthly",
+                    label: "Monthly valuation refresh",
+                    disabled:
+                      !freshHomeLookupAvailable(data.workspace) ||
+                      (data.workspace.mode !== "demo" &&
+                        report.input.association !== "property_only" &&
+                        !data.workspace.ghlConnected),
+                  },
                 ]}
                 onValueChange={(value) => setCadence(value === "monthly" ? "monthly" : "off")}
               />
@@ -700,7 +738,9 @@ function HomeReportDetails({
                   type="checkbox"
                   checked={deliver}
                   disabled={
-                    data.workspace.mode === "demo" || report.input.association === "property_only"
+                    data.workspace.mode === "demo" ||
+                    report.input.association === "property_only" ||
+                    (!deliver && (!data.workspace.deliveryEnabled || !data.workspace.ghlConnected))
                   }
                   onChange={(event) => setDeliver(event.target.checked)}
                 />
@@ -709,13 +749,36 @@ function HomeReportDetails({
                   source checks pass.
                 </span>
               </label>
+              {data.workspace.mode !== "demo" &&
+              report.input.association !== "property_only" &&
+              (!data.workspace.deliveryEnabled || !data.workspace.ghlConnected) ? (
+                <p className={styles.note}>
+                  HighLevel delivery is unavailable for your account. Contact support to finish
+                  delivery setup. You can turn off an existing delivery preference.
+                </p>
+              ) : null}
               <p className={styles.note}>
                 {data.workspace.mode === "demo"
                   ? "This saves a demo preference only. No background job or message will run."
                   : "Each fresh valuation counts toward your monthly lookup allowance. Loan details older than 35 days are omitted from monthly reports until you confirm current balances. Delivery stops when communication is not allowed or the report cannot be verified."}
               </p>
+              {!freshHomeLookupAvailable(data.workspace) ? (
+                <p className={styles.note}>
+                  A new monthly refresh needs an available valuation connection and allowance. You
+                  can pause updates or choose On demand only now. Check availability before
+                  resuming.
+                </p>
+              ) : null}
               <Button
-                disabled={data.busy}
+                disabled={
+                  data.busy ||
+                  (cadence === "monthly" &&
+                    !paused &&
+                    (!freshHomeLookupAvailable(data.workspace) ||
+                      (data.workspace.mode !== "demo" &&
+                        report.input.association !== "property_only" &&
+                        !data.workspace.ghlConnected)))
+                }
                 onClick={() =>
                   void act({
                     action: "enrollment",
@@ -734,7 +797,7 @@ function HomeReportDetails({
             <div className={styles.formStack}>
               <p>
                 {dialog === "delete"
-                  ? "This removes the property, all saved report history and its share links from this workspace. It does not delete the HighLevel contact."
+                  ? "This removes the property, all saved report history and its share links from your account, and stops its scheduled updates. It does not delete the HighLevel contact, erase recorded lookup usage, or recall downloaded copies."
                   : dialog === "refresh"
                     ? "A fresh valuation may use one lookup from your allowance. Mortgage inputs keep their original date. Confirm current balances separately when needed."
                     : dialog === "deliver"
@@ -827,20 +890,18 @@ export function HomeownerWorkspace({
     tagline: brand.tagline,
   };
   const property = data.workspace.properties.find((item) => item.id === propertyId);
+  const readinessNotice = homeReadinessNotice(data.workspace);
   return (
     <div className={styles.workspace} data-product-shell="true" data-homeowner-workspace="true">
       {data.error ? <LiveRegion urgency="alert" message={data.error} visible /> : null}
-      {data.workspace.mode === "live" && !data.workspace.valuationConnected ? (
-        <div className={styles.notice}>
+      {data.workspace.mode !== "unconfigured" && readinessNotice ? (
+        <div className={`${styles.notice} ${styles.readinessNotice}`}>
           <span>
-            <strong>Valuations need to be connected</strong>
-            <p>
-              Your report workspace is ready. A valuation connection is required before creating a
-              report; saved reports can still be opened and downloaded.
-            </p>
+            <strong>{readinessNotice.title}</strong>
+            <p>{readinessNotice.body}</p>
           </span>
           <Button variant="outline" disabled={data.busy} onClick={() => void data.reload()}>
-            Check connection
+            Check report availability
           </Button>
         </div>
       ) : null}
@@ -848,25 +909,23 @@ export function HomeownerWorkspace({
         <>
           <PageHeader
             title="Homeowner reports"
-            description="Your property-value and equity workspace."
+            description="Your property-value and equity reports."
           />
           {/* The scored review pass 2, P2-07: the product's one empty state (`AsyncState`, here as
               `EmptyState` on the page's card surface), with its two actions in the two action slots,
               rather than a hand-built card with its own inset and rhythm. */}
           <EmptyState
-            description="Property valuations need an enabled account, saved-report storage and a valuation connection. HighLevel is optional for homeowner follow-up. Your workspace owner can finish these connections."
+            description={
+              readinessNotice?.body ??
+              "Contact support to finish report setup for your account, then check again."
+            }
             primaryAction={
               <Button variant="outline" onClick={() => void data.reload()}>
-                Check connection again
+                Check report availability
               </Button>
             }
-            secondaryAction={
-              <ActionLink href="/settings/connections" secondary>
-                Workspace connections
-              </ActionLink>
-            }
             surface="card"
-            title="Connect the report workspace"
+            title={readinessNotice?.title ?? "Set up homeowner reports"}
           />
         </>
       ) : view === "new" ? (
@@ -878,7 +937,7 @@ export function HomeownerWorkspace({
           <>
             <PageHeader
               title="This property report is not available."
-              description="Check the workspace or return to your saved reports."
+              description="Check your account or return to your saved reports."
             />
             <ActionLink href="/homeowners">Back to homeowner reports</ActionLink>
           </>

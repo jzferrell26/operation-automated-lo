@@ -34,6 +34,7 @@ import { CampaignVersionsCard } from "./campaign-versions-card.js";
 import { LaunchAnAdHeaderAction } from "./launch-an-ad-link.js";
 import { TextWithDays, type DayInText } from "./text-with-days.js";
 import { PropertyCampaignScreen } from "../../property-campaigns/property-campaign-screen.js";
+import { WebinarAdReviewScreen } from "../../webinar-ads/review.js";
 import styles from "./campaign-page.module.css";
 
 /**
@@ -48,6 +49,8 @@ import styles from "./campaign-page.module.css";
  * and links to none of them (009E-AC-008): the data it is handed has no place to carry one.
  */
 export function PersistedCampaignScreen({ page }: Readonly<{ page: CampaignPageData }>) {
+  if (page.kind === "webinar-ad")
+    return <WebinarAdReviewScreen key={page.campaignVersionRef} page={page} />;
   if (page.kind === "financing-comparison")
     return <FinancingReport report={page.report} canReuse={page.canReuse} />;
   if (page.kind === "property-preparation")

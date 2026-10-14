@@ -46,6 +46,7 @@ import {
   workspaceCorrelationReferenceFor,
 } from "./campaign-persistence-runtime.js";
 import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
+import { createWebinarAdEvidencePort, webinarCurrentEvidence } from "./webinar-ad-evidence.js";
 
 /**
  * PRD-009b D2 and D3. Everything Home reads, in one place, under the signed-in person's own tenant
@@ -102,6 +103,11 @@ export type HomeReadPorts = Readonly<{
     Readonly<{ kind: CampaignPersistenceKind; records: readonly CampaignWorkspaceReadRecord[] }>
   >;
   loadLibrary(environment: unknown): Promise<HomeLibrary>;
+  readWebinarCurrent?(
+    record: CampaignWorkspaceReadRecord,
+    principal: Readonly<AuthenticatedPrincipal>,
+    environment: unknown,
+  ): Promise<Readonly<{ available: boolean }>>;
 }>;
 
 const InstallationStatusRowSchema = z.object({ status: z.enum(INSTALLATION_STATUSES) });
@@ -189,6 +195,7 @@ function factsFor(
   principal: Readonly<AuthenticatedPrincipal>,
   kind: CampaignPersistenceKind,
   library: HomeLibrary,
+  webinarAvailable = false,
 ): HomeCampaignFacts | undefined {
   let projection;
   try {
@@ -206,6 +213,16 @@ function factsFor(
     updatedAt: projection.updatedAt,
     canApprove: projection.canApprove,
   };
+  if (manifest.blueprintId === "webinar-ad")
+    return Object.freeze({
+      ...common,
+      name: manifest.content.headline,
+      startsAt: undefined,
+      endsAt: manifest.schedule.endsAt,
+      adAvailable: webinarAvailable,
+      canApprove: common.canApprove && webinarAvailable,
+      sample: false,
+    });
   if (manifest.blueprintId !== "library-ad") {
     // A campaign saved before PRD-009 (R-6): no library ad, no run dates, and the approval command
     // does not ask the catalog about it.
@@ -250,10 +267,24 @@ export async function readHome(
     ports.readCampaigns(principal, environment),
     ports.loadLibrary(environment),
   ]);
-  const campaignFacts = campaigns.records.flatMap((record) => {
-    const read = factsFor(record, principal, campaigns.kind, library);
-    return read === undefined ? [] : [read];
-  });
+  const campaignFacts: HomeCampaignFacts[] = [];
+  for (const record of campaigns.records) {
+    const available =
+      record.version.manifest.blueprintId === "webinar-ad"
+        ? (
+            await (
+              ports.readWebinarCurrent ??
+              ((versionRecord, viewer, env) =>
+                webinarCurrentEvidence(
+                  versionRecord.version,
+                  createWebinarAdEvidencePort(viewer, env),
+                ))
+            )(record, principal, environment)
+          ).available
+        : false;
+    const read = factsFor(record, principal, campaigns.kind, library, available);
+    if (read !== undefined) campaignFacts.push(read);
+  }
   return Object.freeze({
     checklist: buildHomeChecklist(facts),
     canCreateCampaigns:

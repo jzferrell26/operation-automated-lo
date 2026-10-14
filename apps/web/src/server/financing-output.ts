@@ -5,8 +5,23 @@ import { propertyDraftHtmlCsp } from "./property-package-html.js";
 import { PRIVATE_PACKAGE_HEADERS } from "./property-package-http.js";
 import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
 import type { CampaignCommandPorts } from "./authenticated-principal.js";
+import type { AuthenticatedPrincipal } from "@oalo/application";
+import type { FinancingReportView } from "../features/financing/model.js";
+import { createFinancingMediaRuntime } from "./financing-media-runtime.js";
+import { resolveFinancingMedia } from "./financing-media-service.js";
+import { financingReportIsTextOnly } from "./financing-output-media.js";
 
 let activePdfRenders = 0;
+async function outputMedia(
+  report: FinancingReportView,
+  principal: AuthenticatedPrincipal,
+  environment: unknown,
+) {
+  if (report.manifest.schemaVersion === 1) return undefined;
+  if (financingReportIsTextOnly(report)) return [];
+  const runtime = createFinancingMediaRuntime(principal, environment);
+  return resolveFinancingMedia(report, runtime.repository, runtime.bytes);
+}
 /** Private authenticated render from an immutable comparison. No public asset or approval is minted. */
 export async function handleFinancingOutput(
   request: Request,
@@ -15,17 +30,20 @@ export async function handleFinancingOutput(
   ports: CampaignCommandPorts = resolveRuntimeCampaignCommandPorts(environment),
 ): Promise<Response> {
   try {
-    const { params: parsed, report } = await readFinancingOutput(
-      request,
-      params,
-      environment,
-      ports,
-    );
+    const {
+      params: parsed,
+      report,
+      principal,
+    } = await readFinancingOutput(request, params, environment, ports);
     const headers = new Headers(PRIVATE_PACKAGE_HEADERS);
     if (parsed.output === "site") {
-      const html = financingSiteHtml(report);
+      const media = await outputMedia(report, principal, environment);
+      const html = financingSiteHtml(report, Date.now(), media);
       headers.set("content-type", "text/html; charset=utf-8");
-      headers.set("content-security-policy", propertyDraftHtmlCsp(html));
+      headers.set(
+        "content-security-policy",
+        financingDraftHtmlCsp(html, report.manifest.schemaVersion),
+      );
       return new Response(html, { headers });
     }
     if (activePdfRenders >= 2) {
@@ -35,7 +53,8 @@ export async function handleFinancingOutput(
     }
     activePdfRenders++;
     try {
-      const bytes = await financingReportPdf(report);
+      const media = await outputMedia(report, principal, environment);
+      const bytes = await financingReportPdf(report, media);
       headers.set("content-type", "application/pdf");
       headers.set(
         "content-disposition",
@@ -50,4 +69,10 @@ export async function handleFinancingOutput(
     if (error instanceof FinancingRenderError) return financingResponse({ error: error.code }, 422);
     return financingFailure(error);
   }
+}
+
+/** Financing v2 alone permits embedded photos; the shared property sandbox stays unchanged. */
+export function financingDraftHtmlCsp(html: string, schemaVersion: 1 | 2): string {
+  const policy = propertyDraftHtmlCsp(html);
+  return schemaVersion === 2 ? `${policy}; img-src data:` : policy;
 }

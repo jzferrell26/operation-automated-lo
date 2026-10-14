@@ -9,6 +9,11 @@ import {
 } from "./display.js";
 import { FINANCING_CREATE_PATH, financingOutputPath, type FinancingReportView } from "./model.js";
 import styles from "./financing.module.css";
+import {
+  financingMediaReadPath,
+  financingPropertyFacts,
+  FINANCING_V1_PHOTO_NOTICE,
+} from "./property-display.js";
 
 export function FinancingReport({
   report,
@@ -19,12 +24,27 @@ export function FinancingReport({
   const groups = financingGroups(manifest);
   const scenarios = manifest.financing.scenarios;
   return (
-    <div className={styles.page} data-financing-report="">
+    <div
+      className={`${styles.page}${manifest.schemaVersion === 2 ? ` ${styles.versionTwo}` : ""}`}
+      data-financing-report=""
+    >
       <header className={styles.header}>
         <Link href="/marketing/campaigns" variant="sentence">
           {COPY.back}
         </Link>
         <p className={styles.eyebrow}>{COPY.reportTitle}</p>
+        {manifest.schemaVersion === 2 && manifest.property.media[0] ? (
+          <figure className={styles.propertyHero}>
+            {/* Authenticated GET retains the reader session; an optimizer would not. */}
+            <img
+              src={financingMediaReadPath(manifest.property.media[0].mediaRef)}
+              width={manifest.property.media[0].width}
+              height={manifest.property.media[0].height}
+              alt={manifest.property.media[0].altText}
+            />
+            <figcaption>{manifest.property.media[0].altText}</figcaption>
+          </figure>
+        ) : null}
         <h1>{manifest.property.address}</h1>
         <p className={styles.lead}>{manifest.property.description}</p>
         <div className={styles.actions}>
@@ -41,6 +61,30 @@ export function FinancingReport({
         </div>
         <p className={styles.notice}>{COPY.privateNotice}</p>
       </header>
+      {manifest.schemaVersion === 2 ? (
+        <Surface padding="lg">
+          <h2 className={styles.propertySectionTitle}>Saved property facts</h2>
+          <dl className={styles.propertyFacts}>
+            {financingPropertyFacts(manifest.property.facts).map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+            <div>
+              <dt>Illustrated purchase price</dt>
+              <dd>{financingMoney(manifest.financing.purchasePriceMinor)}</dd>
+            </div>
+          </dl>
+          <p className={styles.note}>
+            Property facts confirmed by the author. List price and illustrated purchase price are
+            separate inputs.
+          </p>
+          {!manifest.property.media.length ? (
+            <p>No property photographs selected for this private comparison.</p>
+          ) : null}
+        </Surface>
+      ) : null}
       <section className={styles.summaries} aria-label="Scenario estimates">
         {scenarios.map((scenario, index) => {
           const result = manifest.calculated.scenarios[index];
@@ -124,6 +168,25 @@ export function FinancingReport({
         <p className={styles.note}>{COPY.noteMonthly}</p>
         <p className={styles.note}>{COPY.noteCash}</p>
       </Surface>
+      {manifest.schemaVersion === 2 && manifest.property.media.length > 1 ? (
+        <Surface padding="lg">
+          <h2 className={styles.propertySectionTitle}>Property photographs</h2>
+          <div className={styles.propertyGallery}>
+            {manifest.property.media.slice(1).map((photo) => (
+              <figure key={photo.mediaRef}>
+                <img
+                  src={financingMediaReadPath(photo.mediaRef)}
+                  width={photo.width}
+                  height={photo.height}
+                  alt={photo.altText}
+                  loading="lazy"
+                />
+                <figcaption>{photo.altText}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </Surface>
+      ) : null}
       <section className={styles.team} aria-label="Your property and lending team">
         {(
           [
@@ -193,12 +256,24 @@ export function FinancingReport({
             : COPY.permissionsMissing}
         </p>
         <p>{manifest.content.disclosureText}</p>
-        <p>{COPY.photoNote}</p>
+        <p>
+          {manifest.schemaVersion === 1
+            ? FINANCING_V1_PHOTO_NOTICE
+            : manifest.property.media.length
+              ? "Uploaded property photographs. Usage rights recorded for this private comparison only."
+              : "Text-only comparison selected by the author."}
+        </p>
         <p>
           Saved {financingDate(report.createdAt)}. Version {report.versionNo}. Calculation{" "}
           {manifest.calculated.calculationVersion}.
         </p>
         <p>{COPY.privateNotice}</p>
+        {manifest.schemaVersion === 2 ? (
+          <p>
+            Property template {manifest.templateVersion}. {manifest.property.media.length} saved
+            photographs.
+          </p>
+        ) : null}
       </footer>
     </div>
   );

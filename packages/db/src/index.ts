@@ -1,5 +1,10 @@
 import { contractVersion } from "@oalo/contracts";
 export {
+  createWebinarPublicationRepository,
+  WebinarPublicationRowSchema,
+  type WebinarPublicationRow,
+} from "./webinar-publication-repository.js";
+export {
   PostgresHomeownerRepository,
   HomeownerStoreError,
   readSharedHomeReport,
@@ -63,6 +68,8 @@ export {
   createPostgresPool,
   PostgresAdapterError,
   PostgresDatabasePool,
+  type PostgresAcquisitionObservation,
+  type PostgresAcquisitionObserver,
   type DatabaseDeploymentEnvironment,
   type PostgresPoolConfiguration,
 } from "./postgres-adapter.js";
@@ -94,3 +101,10 @@ export {
   type TenantDatabaseContext,
   type TenantTransaction,
 } from "./transaction-context.js";
+export * from "./financing-media-repository.js";
+export * from "./financing-release-repository.js";
+export {
+  PostgresPublicFinancingInquiryAdmissionRepository,
+  type FinancingPublicInquiryAdmission,
+  type FinancingPublicInquiryAdmissionDecision,
+} from "./financing-public-inquiry-admission-repository.js";

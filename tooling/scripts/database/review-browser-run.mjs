@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { connect } from "node:net";
-import { mkdtemp, rm } from "node:fs/promises";
+import { chmod, cp, lstat, mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -34,6 +34,33 @@ const HOST = "127.0.0.1";
 export const REVIEW_HTTP_PORT = 3100;
 export const REVIEW_HTTPS_PORT = 3443;
 export const REVIEW_APP_URL = `https://${HOST}:${String(REVIEW_HTTPS_PORT)}`;
+
+/** Private per-invocation setup sessions never enter the browser artifact directories. */
+const ownedReviewSessionDirectories = new Set();
+export async function createReviewSessionDirectory() {
+  const directory = await mkdtemp(join(tmpdir(), "oalo-review-sessions-"));
+  await chmod(directory, 0o700);
+  const owned = await realpath(directory);
+  ownedReviewSessionDirectories.add(owned);
+  return owned;
+}
+
+export async function removeReviewSessionDirectory(directory) {
+  const target = resolve(directory);
+  const info = await lstat(target);
+  if (
+    !ownedReviewSessionDirectories.has(target) ||
+    dirname(target) !== (await realpath(tmpdir())) ||
+    !/^oalo-review-sessions-[A-Za-z0-9]+$/u.test(target.slice(dirname(target).length + 1)) ||
+    !info.isDirectory() ||
+    info.isSymbolicLink() ||
+    (await realpath(target)) !== target
+  ) {
+    throw new Error("Refuse cleanup outside the owned review session directory");
+  }
+  await rm(target, { recursive: true, force: true });
+  ownedReviewSessionDirectories.delete(target);
+}
 const SERVER_READY_TIMEOUT_MS = 180_000;
 const SERVER_POLL_INTERVAL_MS = 500;
 const REVIEW_BUILD_COMMIT = "local";
@@ -141,6 +168,56 @@ export const REVIEW_PASSES = Object.freeze([
     }),
   }),
 ]);
+
+export const REVIEW_PASS_ARTIFACT_DIRECTORY = "test-results/browser-passes";
+
+async function outputEntry(path) {
+  try {
+    const entry = await lstat(path);
+    if (entry.isSymbolicLink()) throw new Error("Review output refuses symbolic links");
+    return entry;
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
+/** Copy completed disposable-review output before the next Playwright pass clears its directory. */
+export async function preserveReviewPassOutput(repositoryRoot, catalog) {
+  if (!REVIEW_PASSES.some((pass) => pass.catalog === catalog))
+    throw new Error("Evidence requires a fixed review pass name");
+  const root = await realpath(repositoryRoot);
+  const results = join(root, "test-results");
+  const resultsEntry = await outputEntry(results);
+  if (resultsEntry === undefined) return false;
+  if (!resultsEntry.isDirectory()) throw new Error("Review output root must be a directory");
+  const source = join(results, "browser");
+  const sourceEntry = await outputEntry(source);
+  if (sourceEntry === undefined) return false;
+  if (!sourceEntry.isDirectory()) throw new Error("Review browser output must be a directory");
+  const parent = join(root, REVIEW_PASS_ARTIFACT_DIRECTORY);
+  const parentEntry = await outputEntry(parent);
+  if (parentEntry === undefined) await mkdir(parent);
+  else if (!parentEntry.isDirectory())
+    throw new Error("Review evidence parent must be a directory");
+  const destination = join(parent, catalog);
+  // A fresh per-pass destination prevents stale evidence and refuses overwriting an earlier run.
+  if ((await outputEntry(destination)) !== undefined)
+    throw new Error("Review pass evidence already exists");
+  await cp(source, destination, {
+    recursive: true,
+    dereference: false,
+    errorOnExist: true,
+    force: false,
+    filter: async (path) => {
+      const entry = await outputEntry(path);
+      if (!entry || (!entry.isDirectory() && !entry.isFile()))
+        throw new Error("Review output must contain regular files and directories");
+      return true;
+    },
+  });
+  return true;
+}
 
 /**
  * PRD-006d D8. A baseline is written only when somebody asks for it by name, on their own machine,
@@ -331,6 +408,7 @@ export async function runReviewBrowserSuite(options) {
      * still fails, naming each pass that did.
      */
     for (const pass of REVIEW_PASSES) {
+      const sessionDirectory = await createReviewSessionDirectory();
       try {
         server = spawnProcess(
           node,
@@ -349,6 +427,7 @@ export async function runReviewBrowserSuite(options) {
             env: {
               OALO_REVIEW_BROWSER_RUN: "true",
               OALO_REVIEW_APP_URL: REVIEW_APP_URL,
+              OALO_REVIEW_SESSION_CACHE_DIR: sessionDirectory,
               OALO_TEST_SEEDED_CREATOR_EMAIL: options.seededCredentials.creatorEmail,
               OALO_TEST_SEEDED_APPROVER_EMAIL: options.seededCredentials.approverEmail,
               OALO_TEST_SEEDED_PASSWORD: options.seededCredentials.password,
@@ -363,6 +442,18 @@ export async function runReviewBrowserSuite(options) {
       } catch (error) {
         failures.push(error instanceof Error ? error.message : String(error));
       } finally {
+        try {
+          await removeReviewSessionDirectory(sessionDirectory);
+        } catch {
+          failures.push("Private review session directory cleanup failed");
+        }
+        try {
+          await preserveReviewPassOutput(repositoryRoot, pass.catalog);
+        } catch (error) {
+          failures.push(
+            `preserve ${pass.catalog} browser output: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
         await stopProcess(server);
         server = undefined;
       }

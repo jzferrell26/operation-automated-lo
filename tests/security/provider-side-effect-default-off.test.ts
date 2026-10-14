@@ -540,8 +540,8 @@ describe("provider side effects stay disabled by default", () => {
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort();
-    // PRD-010 adds property draft persistence, not a provider command or another launch endpoint.
-    expect(campaignRoutes).toEqual(["approve", "preflight", "property"]);
+    // Property and webinar-ads prepare saved versions. Neither grants publication or Meta access.
+    expect(campaignRoutes).toEqual(["approve", "preflight", "property", "webinar-ads"]);
 
     expect(META_ADAPTER_MODE).toBe("fixture-plan");
     expect(await productionSourcesMatching(PUBLICATION_AUTHORIZED_MARKER)).toEqual([]);
@@ -609,6 +609,10 @@ describe("provider side effects stay disabled by default", () => {
     const fixedHosts: Readonly<Record<string, RegExp>> = {
       "apps/web/src/server/email/resend-email-adapter.ts":
         /RESEND_SEND_ENDPOINT = "https:\/\/api\.resend\.com\/emails"/u,
+      // The separately reviewed CTR-004 artifact reader pins its configured private
+      // account and object path before transport; neither comes from a public form.
+      "apps/web/src/server/financing-release-artifacts.ts":
+        /url\.hostname === `\$\{config\.accountId\}\.r2\.cloudflarestorage\.com`/u,
       "apps/web/src/server/homeowners/highlevel.ts":
         /\(path: string\) => `https:\/\/services\.leadconnectorhq\.com\$\{path\}`/u,
       "apps/web/src/server/homeowners/rentcast.ts": /new URL\("https:\/\/api\.rentcast\.io\//u,

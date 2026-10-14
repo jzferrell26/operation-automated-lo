@@ -75,3 +75,16 @@ Batch A is preparation, not a completed campaign and not a launch-ready product.
 - `apps/web/src/server/campaign-page-data.ts`: historical property campaigns currently lose their property context in the displayed projection.
 
 The three PRD-008 hosted migrations are unverified in repository records, not proven absent from the hosted database. Provider activation and hosted migration checks are separate from this local batch. No new production-ready claim follows from a passing local test.
+
+## Contract dependencies
+
+The new prepared webinar ad consumer pins [CTR-002](../../../knowledge/private/contracts/CTR-002-webinar-ad-destination.md), CTR-002 revision 2, accepted October 13, 2026. It governs tenant-owned publication binding, immutable ad evidence, branded output and actual tenant review. This contract adds engineering obligations and does not close lender, provider or owner acceptance.
+
+CTR-003 revision 1 is accepted by Jonathan Ferrell on October 14, 2026 UTC for the separate native webinar publisher. The [accepted publisher agreement][ctr003-publisher] has SHA-256 `dfc912bfa9f00892641936794ce0488adc1fdea3df6bdf7a997cb8f00a48fe23`. It requires exact spending confirmation, current evidence, native draft/readback, durable publication/reconciliation and truthful pause/resume/reporting. Preparation remains available independently of real provider qualification.
+
+CTR-004 revision 1 is accepted by Jonathan Ferrell on October 14, 2026 UTC for public financing. The [accepted public-release agreement][ctr004-public-release] has SHA-256 `59d0b203159f5c6c440621437bcd244f664f7a64901924b9a8b952a6a4d70dfa`. It requires exact evidence/output approval, separate public media permission, expiry/revocation, HighLevel-managed QR handoff and attributed consented inquiry delivery. Neither pin closes source, lender, hosted or live-provider criteria.
+
+## Accepted contract references
+
+[ctr003-publisher]: ../../../knowledge/private/contracts/CTR-003-webinar-highlevel-publisher.md
+[ctr004-public-release]: ../../../knowledge/private/contracts/CTR-004-public-financing-release.md

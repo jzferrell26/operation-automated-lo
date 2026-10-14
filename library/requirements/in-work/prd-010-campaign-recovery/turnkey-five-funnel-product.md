@@ -5,7 +5,13 @@ Priority: Primary product experience and commercial promise, not an optional des
 Decision date: October 5, 2026. Owner: Jonathan Ferrell. Delivery lead: Chief.
 Authoring base: `d5ef89b0`, merged PR #78. No runtime or deployment change accompanies this brief.
 
+## Contract dependencies
+
+CTR-004 revision 1 is accepted by Jonathan Ferrell on October 14, 2026 UTC for the separate property outcome and shared public origin/attribution boundaries. The [accepted public-release agreement][ctr004-public-release] has SHA-256 `59d0b203159f5c6c440621437bcd244f664f7a64901924b9a8b952a6a4d70dfa`. Exactly five funnel kinds remain unchanged. Custom-domain and public lead criteria still require their actual implementation and hosted proof.
+
 ## Owner direction
+
+[ctr004-public-release]: ../../../knowledge/private/contracts/CTR-004-public-financing-release.md
 
 The owner's stated customer pain is that AutomatedLO clients do not want to invent creative, write prompts, use Lovable, or hire a developer to finish their marketing. Giving them better instructions does not complete that job. His requirement is five prebuilt funnels included in AutomatedLO, with domain connection rather than web development as the customer's final setup task.
 

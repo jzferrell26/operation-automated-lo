@@ -2,3 +2,8 @@
 
 *.png binary
 *.webp binary
+
+# Frozen review receipts retain the original bytes covered by their evidence pins.
+library/requirements/reports/2026-10-14-financing-output-final-security-review.md -text
+library/requirements/reports/2026-10-14-financing-output-repair-security-review.md -text
+library/requirements/reports/2026-10-14-public-financing-output-handoff.md -text

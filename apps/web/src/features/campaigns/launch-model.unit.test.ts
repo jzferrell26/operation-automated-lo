@@ -159,12 +159,7 @@ describe("the launch sentence (D7, 009D-AC-016)", () => {
 });
 
 describe("Fix it (009D-AC-019) and See what we checked (009D-AC-014)", () => {
-  const everyCode = [
-    ...new Set([
-      ...PREFLIGHT_RULESET_REGISTRY.ruleset_libraryAd001,
-      ...PREFLIGHT_RULESET_REGISTRY.ruleset_openHouseFounding001,
-    ]),
-  ].sort();
+  const everyCode = [...new Set(Object.values(PREFLIGHT_RULESET_REGISTRY).flat())].sort();
 
   it("has a place to fix and a plain name for every rule code in the registry, and no other", () => {
     expect(Object.keys(FIX_TARGETS).sort()).toEqual(everyCode);

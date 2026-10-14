@@ -35,6 +35,13 @@ function stubSave(status = 200, body: unknown = result) {
   vi.stubGlobal("fetch", fetch);
   return fetch;
 }
+async function confirmFactsAndSave(user = userEvent.setup()) {
+  const facts = screen.getByRole("checkbox", {
+    name: "I have checked the supplied property facts and confirmed any blanks are unknown",
+  });
+  if (!(facts as HTMLInputElement).checked) await user.click(facts);
+  await user.click(screen.getByRole("button", { name: COPY.save }));
+}
 beforeEach(() => {
   mocked.push.mockReset();
   installSelectLayoutForTest();
@@ -45,6 +52,23 @@ afterEach(() => {
 });
 
 describe("financing report form interactions", () => {
+  it("reports an unavailable photo reuse source without pretending its values are loaded", () => {
+    render(
+      <FinancingForm
+        context={{
+          ...context(),
+          previous: [],
+          unavailablePrevious: [
+            { campaignRef: REF, label: "A saved property with unavailable photographs" },
+          ],
+        }}
+        source={REF}
+      />,
+    );
+    expect(screen.getByText(/the requested setup is unavailable/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Purchase price ($)")).toHaveValue("");
+    expect(screen.getByRole("button", { name: COPY.save })).not.toBeDisabled();
+  });
   it("opens a saved setup with no repeat layout work and clears confirmations", () => {
     render(<FinancingForm context={context()} source={REF} />);
     expect(screen.getByLabelText("Purchase price ($)")).toHaveValue("400000.00");
@@ -56,7 +80,7 @@ describe("financing report form interactions", () => {
   it("submits a reused draft without browser-owned branding or calculated values", async () => {
     const fetch = stubSave();
     render(<FinancingForm context={context()} source={REF} />);
-    await userEvent.setup().click(screen.getByRole("button", { name: COPY.save }));
+    await confirmFactsAndSave();
     await waitFor(() => expect(mocked.push).toHaveBeenCalledWith(`/marketing/campaigns/${REF}`));
     const [url, init] = fetch.mock.calls[0]!;
     expect(url).toBe("/api/campaigns/property/financing");
@@ -70,17 +94,34 @@ describe("financing report form interactions", () => {
     const fetch = stubSave(503, { error: "FINANCING_UNAVAILABLE" });
     render(<FinancingForm context={context()} source={REF} />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: COPY.save }));
+    await confirmFactsAndSave(user);
     expect(await screen.findByRole("alert")).toHaveTextContent(COPY.failed);
-    await user.click(screen.getByRole("button", { name: COPY.save }));
+    await confirmFactsAndSave(user);
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
     expect(fetch.mock.calls[0]?.[1]?.body).toBe(fetch.mock.calls[1]?.[1]?.body);
     expect(screen.getByLabelText("Purchase price ($)")).toHaveValue("400000.00");
   });
+  it("uses a new retry identity after edited content but preserves exact retries", async () => {
+    const fetch = stubSave(503, { error: "FINANCING_UNAVAILABLE" });
+    render(<FinancingForm context={context()} source={REF} />);
+    await confirmFactsAndSave();
+    const original = JSON.parse(String(fetch.mock.calls[0]?.[1]?.body));
+    fireEvent.change(screen.getByLabelText("List price ($)"), { target: { value: "420000" } });
+    expect(
+      screen.getByRole("checkbox", {
+        name: "I have checked the supplied property facts and confirmed any blanks are unknown",
+      }),
+    ).not.toBeChecked();
+    await confirmFactsAndSave();
+    const changed = JSON.parse(String(fetch.mock.calls[1]?.[1]?.body));
+    expect(changed.requestId).not.toBe(original.requestId);
+    expect(changed.propertyFacts.listPriceMinor).toBe(42_000_000);
+    expect(changed.financing.purchasePriceMinor).toBe(original.financing.purchasePriceMinor);
+  });
   it("rejects an arbitrary redirect in a malformed success response", async () => {
     stubSave(200, { ...result, campaignRef: "https://untrusted.example" });
     render(<FinancingForm context={context()} source={REF} />);
-    await userEvent.setup().click(screen.getByRole("button", { name: COPY.save }));
+    await confirmFactsAndSave();
     expect(await screen.findByRole("alert")).toHaveTextContent(COPY.failed);
     expect(mocked.push).not.toHaveBeenCalled();
   });
@@ -90,7 +131,7 @@ describe("financing report form interactions", () => {
     fireEvent.change(screen.getByLabelText("Purchase price ($)"), {
       target: { value: "400000.999" },
     });
-    await userEvent.setup().click(screen.getByRole("button", { name: COPY.save }));
+    await confirmFactsAndSave();
     expect(await screen.findByRole("alert")).toHaveTextContent(COPY.invalid);
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -132,6 +173,11 @@ describe("financing report form interactions", () => {
     vi.stubGlobal("fetch", fetch);
     const view = render(<FinancingForm context={context()} source={REF} />);
     const form = view.container.querySelector("form")!;
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "I have checked the supplied property facts and confirmed any blanks are unknown",
+      }),
+    );
     fireEvent.submit(form);
     fireEvent.submit(form);
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -141,7 +187,7 @@ describe("financing report form interactions", () => {
   it("offers a safe return to campaigns after a changed-key conflict", async () => {
     stubSave(409, { error: "FINANCING_SAVE_CONFLICT" });
     render(<FinancingForm context={context()} source={REF} />);
-    await userEvent.setup().click(screen.getByRole("button", { name: COPY.save }));
+    await confirmFactsAndSave();
     expect(await screen.findByRole("alert")).toHaveTextContent(COPY.conflict);
     expect(
       within(document.querySelector("header")!).getByRole("link", { name: COPY.back }),

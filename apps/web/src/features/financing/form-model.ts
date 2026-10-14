@@ -1,5 +1,5 @@
 import type { FinancingScenario } from "@oalo/contracts";
-import type { FinancingRequest } from "./model.js";
+import type { ReusableFinancingInput } from "./model.js";
 
 export interface CostDraft {
   id: string;
@@ -32,6 +32,12 @@ export interface ScenarioDraft {
   assumptions: string;
 }
 export interface FinancingFormDraft {
+  listPrice: string;
+  bedrooms: string;
+  bathrooms: string;
+  floorArea: string;
+  factsConfirmed: boolean;
+  media: { mediaRef: string; altText: string }[];
   address: string;
   stateCode: string;
   description: string;
@@ -72,6 +78,12 @@ export function newScenario(id: string): ScenarioDraft {
 /** Pure initializer avoids hydration-dependent random values. Real request and row keys are made on interaction. */
 export function emptyFinancingDraft(): FinancingFormDraft {
   return {
+    listPrice: "",
+    bedrooms: "",
+    bathrooms: "",
+    floorArea: "",
+    factsConfirmed: false,
+    media: [],
     address: "",
     stateCode: "",
     description: "",
@@ -113,6 +125,15 @@ function quoteInstant(scenario: ScenarioDraft, end = false): string {
 }
 export function financingFormInput(draft: FinancingFormDraft, requestId: string): unknown {
   return {
+    schemaVersion: 2,
+    propertyFacts: {
+      listPriceMinor: parseScaledInput(draft.listPrice, 2),
+      bedrooms: parseWholeInput(draft.bedrooms),
+      bathroomsHundredths: parseScaledInput(draft.bathrooms, 2),
+      floorAreaSqFt: parseWholeInput(draft.floorArea),
+      confirmed: draft.factsConfirmed,
+    },
+    propertyMedia: draft.media,
     requestId,
     address: draft.address,
     stateCode: draft.stateCode,
@@ -161,13 +182,22 @@ export function financingFormInput(draft: FinancingFormDraft, requestId: string)
     },
   };
 }
+function parseWholeInput(value: string): number | null {
+  const text = value.trim();
+  return text === "" ? null : /^\d{1,7}$/u.test(text) ? Number(text) : Number.NaN;
+}
 const amount = (value: number | null, places = 2) =>
   value === null ? "" : (value / 10 ** places).toFixed(places);
-export function reusedFinancingDraft(
-  input: Omit<FinancingRequest, "requestId">,
-): FinancingFormDraft {
+export function reusedFinancingDraft(input: ReusableFinancingInput): FinancingFormDraft {
   const { housing } = input.financing;
   return {
+    listPrice: "schemaVersion" in input ? amount(input.propertyFacts.listPriceMinor) : "",
+    bedrooms: "schemaVersion" in input ? (input.propertyFacts.bedrooms?.toString() ?? "") : "",
+    bathrooms: "schemaVersion" in input ? amount(input.propertyFacts.bathroomsHundredths) : "",
+    floorArea:
+      "schemaVersion" in input ? (input.propertyFacts.floorAreaSqFt?.toString() ?? "") : "",
+    factsConfirmed: false,
+    media: "schemaVersion" in input ? input.propertyMedia.map((item) => ({ ...item })) : [],
     address: input.address,
     stateCode: input.stateCode,
     description: input.description,

@@ -1,5 +1,8 @@
 import {
   FinancingInputSchema,
+  FinancingPropertyFactsSchema,
+  FinancingMediaRefSchema,
+  FinancingMediaAltTextSchema,
   OpaqueReferenceSchema,
   US_STATES,
   type FinancingCampaignManifest,
@@ -20,7 +23,7 @@ export const FinancingCorrectionSchema = z
     ]),
   })
   .passthrough();
-export const FinancingRequestSchema = z
+export const FinancingRequestV1Schema = z
   .object({
     requestId: z.uuid(),
     address: z.string().trim().min(3).max(300),
@@ -36,7 +39,31 @@ export const FinancingRequestSchema = z
     financing: FinancingInputSchema,
   })
   .strict();
+export const FinancingMediaPlacementsSchema = z
+  .array(
+    z
+      .object({
+        mediaRef: FinancingMediaRefSchema,
+        altText: FinancingMediaAltTextSchema,
+      })
+      .strict(),
+  )
+  .max(6)
+  .refine((items) => new Set(items.map((item) => item.mediaRef)).size === items.length);
+export const FinancingRequestV2Schema = FinancingRequestV1Schema.extend({
+  schemaVersion: z.literal(2),
+  propertyFacts: FinancingPropertyFactsSchema,
+  propertyMedia: FinancingMediaPlacementsSchema,
+}).strict();
+export const FinancingRequestSchema = z.union([FinancingRequestV1Schema, FinancingRequestV2Schema]);
 export type FinancingRequest = z.infer<typeof FinancingRequestSchema>;
+export type ReusableFinancingInput =
+  | Omit<z.infer<typeof FinancingRequestV1Schema>, "requestId">
+  | (Omit<z.infer<typeof FinancingRequestV2Schema>, "requestId" | "propertyFacts"> & {
+      propertyFacts: Omit<z.infer<typeof FinancingPropertyFactsSchema>, "confirmed"> & {
+        confirmed: boolean;
+      };
+    });
 export const FinancingSavedSchema = z
   .object({
     campaignRef: OpaqueReferenceSchema.regex(/^campaign_[a-f0-9]{32}$/u),
@@ -54,8 +81,9 @@ export interface FinancingFormContext {
   readonly previous: readonly Readonly<{
     campaignRef: string;
     label: string;
-    input: Omit<FinancingRequest, "requestId">;
+    input: ReusableFinancingInput;
   }>[];
+  readonly unavailablePrevious?: readonly Readonly<{ campaignRef: string; label: string }>[];
 }
 
 export interface FinancingReportView {

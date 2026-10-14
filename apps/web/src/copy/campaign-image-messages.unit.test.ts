@@ -2,6 +2,8 @@ import { readdir, readFile } from "node:fs/promises";
 import { extname, join, relative, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { WebinarAdCampaignManifestSchema } from "@oalo/contracts";
+import { webinarReviewFixture } from "../features/webinar-ads/review.test-support.js";
 
 import { NO_PROPERTY_PHOTO_ATTACHED } from "./campaign-image-messages.js";
 import { findVocabularyHits } from "./forbidden-vocabulary.js";
@@ -41,12 +43,45 @@ const SKIPPED_PREFIXES: readonly Readonly<{ path: string; because: string }>[] =
 const READS_A_VERSIONS_IMAGES = /\.images\b|\bimageCount\b|\bpropertyImage\w*|\bimages\s*[:=[]/u;
 const IMPORTS_THE_SENTENCE = /campaign-image-messages\.js/u;
 
+const WEBINAR_REVIEW = "apps/web/src/features/webinar-ads/review.tsx";
+const WEBINAR_FIXTURE = "apps/web/src/features/webinar-ads/review.test-support.ts";
+
+function possiblePropertyImageReads(file: string, source: string): string {
+  // CSS class selection is not a version's image data, on any screen.
+  let text = source.replace(/(?<![\w.])styles\.images\b/gu, "styles.pictureLayout");
+  // CTR-002's webinar variant requires exactly tall + square. Remove only this typed consumer's
+  // map expression. Any other image read in the same source, including legacy campaign data,
+  // remains guarded. The schema and mixed-consumer plants below make this distinction falsifiable.
+  if (
+    file === WEBINAR_REVIEW &&
+    /\bpage:\s*WebinarAdCampaignPage\b/u.test(text) &&
+    /const\s*\{\s*review\s*\}\s*=\s*page/u.test(text) &&
+    /const\s*\{\s*manifest\s*\}\s*=\s*review/u.test(text)
+  ) {
+    text = text.replace(/(?<![\w.])manifest\.images\.map\b/gu, "webinarPictures.map");
+  }
+  // This one helper constructs a schema-parsed webinar DTO; it renders no image summary.
+  // Remove only its first literal image field, not any later read or additional image field.
+  if (
+    file === WEBINAR_FIXTURE &&
+    /function\s+webinarReviewFixture\(\):\s*WebinarAdCampaignPage/u.test(text) &&
+    /const\s+manifest\s*=\s*WebinarAdCampaignManifestSchema\.parse\(/u.test(text)
+  ) {
+    text = text.replace(/\bimages(?=\s*:\s*\[)/u, "webinarPictures");
+  }
+  return text;
+}
+
 /** The files that read images and never import the sentence. Pure, so it can be tried on a plant. */
 function imageSummariesWithoutTheSentence(
   sources: Readonly<Record<string, string>>,
 ): readonly string[] {
   return Object.entries(sources)
-    .filter(([, text]) => READS_A_VERSIONS_IMAGES.test(text) && !IMPORTS_THE_SENTENCE.test(text))
+    .filter(
+      ([file, text]) =>
+        READS_A_VERSIONS_IMAGES.test(possiblePropertyImageReads(file, text)) &&
+        !IMPORTS_THE_SENTENCE.test(text),
+    )
     .map(([file]) => file)
     .sort();
 }
@@ -91,6 +126,57 @@ describe("signed-in screens that read the images on a campaign version", () => {
           "export const n = () => 'a screen that never mentions the subject';",
       }),
     ).toEqual(["apps/web/src/features/campaigns/components/silent.tsx"]);
+  });
+
+  it("recognizes only the strict webinar tuple and still rejects legacy reads in that same file", async () => {
+    const review = await readFile(join(repositoryRoot, WEBINAR_REVIEW), "utf8");
+    const fixture = await readFile(join(repositoryRoot, WEBINAR_FIXTURE), "utf8");
+    expect(
+      imageSummariesWithoutTheSentence({ [WEBINAR_REVIEW]: review, [WEBINAR_FIXTURE]: fixture }),
+    ).toEqual([]);
+    for (const legacyRead of [
+      "campaign.manifest.images.length",
+      "manifest.images.length",
+      "imageCount",
+      "propertyImages.length",
+    ]) {
+      expect(
+        imageSummariesWithoutTheSentence({
+          [WEBINAR_REVIEW]: `${review}\nconst silent = ${legacyRead};`,
+        }),
+      ).toEqual([WEBINAR_REVIEW]);
+    }
+    expect(
+      imageSummariesWithoutTheSentence({
+        [WEBINAR_FIXTURE]: `${fixture}\nconst silent = campaign.manifest.images.length;`,
+      }),
+    ).toEqual([WEBINAR_FIXTURE]);
+    expect(
+      imageSummariesWithoutTheSentence({
+        [WEBINAR_REVIEW]: review.replace("page: WebinarAdCampaignPage", "page: LegacyCampaignPage"),
+      }),
+    ).toEqual([WEBINAR_REVIEW]);
+    expect(imageSummariesWithoutTheSentence({ "other.tsx": review })).toEqual(["other.tsx"]);
+    expect(
+      imageSummariesWithoutTheSentence({ "layout.tsx": "const layout = styles.images;" }),
+    ).toEqual([]);
+  });
+
+  it("rejects empty or malformed webinar pictures instead of requiring a property-photo fallback", () => {
+    const manifest = webinarReviewFixture().review.manifest;
+    expect(manifest.images.map((image) => image.shape)).toEqual(["tall", "square"]);
+    const [tall, square] = manifest.images;
+    for (const images of [
+      [],
+      [tall],
+      [tall, square, square],
+      [square, tall],
+      [tall, { ...square, shape: "unknown" }],
+    ]) {
+      expect(WebinarAdCampaignManifestSchema.safeParse({ ...manifest, images }).success).toBe(
+        false,
+      );
+    }
   });
 });
 

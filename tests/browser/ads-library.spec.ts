@@ -108,7 +108,9 @@ test.describe("The Ads library tab in a browser", () => {
       await page.evaluate(() => (window as unknown as { __kept?: boolean }).__kept),
       "the page was not reloaded",
     ).toBe(true);
-    await expect(page.getByRole("status")).toHaveText(/Showing \d+ ads? about refinance\./u);
+    await expect(
+      page.getByRole("region", { name: "Ads library", exact: true }).getByRole("status"),
+    ).toHaveText(/Showing \d+ ads? about refinance\./u);
 
     // The same address, opened fresh, shows the same ads: the filter is in the address.
     await page.reload();

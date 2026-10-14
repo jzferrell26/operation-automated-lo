@@ -92,8 +92,12 @@ const TOPIC_ORDER = [
   "sample-down-payment-help",
 ] as const;
 
+function approvedLibrary() {
+  return within(screen.getByRole("region", { name: ADS_LIBRARY_HEADING }));
+}
+
 function cardIds(): string[] {
-  return screen
+  return approvedLibrary()
     .queryAllByRole("article")
     .map((card) => card.getAttribute("data-ad-card") ?? "");
 }
@@ -203,7 +207,7 @@ describe("the Ads library tab, with the sample ads on (009C-AC-010)", () => {
 
   it("says how many ads a topic shows, for a screen reader", async () => {
     await renderLibrary();
-    const status = screen.getByRole("status");
+    const status = approvedLibrary().getByRole("status");
     expect(status).toHaveTextContent("Showing all 8 ads.");
 
     await userEvent.setup().click(screen.getByRole("button", { name: "VA loans 1" }));
@@ -218,7 +222,7 @@ describe("the Ads library tab, with the sample ads on (009C-AC-010)", () => {
     expect(screen.queryByRole("combobox")).toBeNull();
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(container.querySelectorAll("input, select, textarea")).toHaveLength(0);
-    expect(screen.queryByText(/sort|search/iu)).toBeNull();
+    expect(approvedLibrary().queryByText(/sort|search/iu)).toBeNull();
   });
 });
 
@@ -307,7 +311,7 @@ describe("the Sample ad label on the library (009C-AC-005)", () => {
   it("labels every sample card, in words a screen reader reads", async () => {
     await renderLibrary();
 
-    const cards = screen.getAllByRole("article");
+    const cards = approvedLibrary().getAllByRole("article");
     expect(cards).toHaveLength(8);
     for (const card of cards) {
       const label = within(card).getByText("Sample ad");
@@ -325,7 +329,7 @@ describe("the Sample ad label on the library (009C-AC-005)", () => {
     const real = TEST_CARDS.map((card) => ({ ...card, sample: false }));
     render(<AdsLibraryScreen data={{ topic: undefined, cards: real, advertiser: PLACEHOLDER_BAND }} />);
     expect(screen.queryByText("Sample ad")).toBeNull();
-    expect(screen.getAllByRole("article")).toHaveLength(real.length);
+    expect(approvedLibrary().getAllByRole("article")).toHaveLength(real.length);
   });
 });
 
@@ -336,7 +340,7 @@ describe("a viewer with no Brand yet", () => {
         data={{ topic: undefined, cards: TEST_CARDS, advertiser: PLACEHOLDER_BAND }}
       />,
     );
-    expect(screen.getAllByText("Your name and NMLS number go here")).toHaveLength(
+    expect(approvedLibrary().getAllByText("Your name and NMLS number go here")).toHaveLength(
       TEST_CARDS.length,
     );
     expect(screen.getAllByRole("link", { name: /^Use this ad/u })).toHaveLength(TEST_CARDS.length);
@@ -359,7 +363,7 @@ describe("the empty library (009C-AC-012)", () => {
     expect(screen.queryByText(EMPTY_LIBRARY)).toBeNull();
     expect(screen.queryByRole("list", { name: "Show ads about" })).toBeNull();
     expect(container.querySelector("[data-ad-card-grid]")).toBeNull();
-    expect(screen.queryAllByRole("article")).toHaveLength(0);
+    expect(approvedLibrary().queryAllByRole("article")).toHaveLength(0);
     expect(screen.queryAllByRole("link", { name: /^Use this ad/u })).toHaveLength(0);
     // The page still says where it is, and it does not describe ads there are none of.
     expect(screen.getByRole("heading", { level: 1, name: "Campaigns" })).toBeInTheDocument();
@@ -367,9 +371,9 @@ describe("the empty library (009C-AC-012)", () => {
       screen.getByRole("heading", { level: 2, name: ADS_LIBRARY_HEADING }),
     ).toBeInTheDocument();
     expect(screen.queryByText(ADS_LIBRARY_LEAD)).toBeNull();
-    // The one status on the page is the empty state itself (scored review R1-06: an AsyncState, not
+    // The one status in the approved section is the empty state itself (scored review R1-06: an AsyncState, not
     // a hand-built paragraph), and the browser's hidden "ads shown" status is not there.
-    const status = screen.getByRole("status");
+    const status = approvedLibrary().getByRole("status");
     expect(status).toHaveAttribute("data-state", "empty");
     expect(status).toHaveAttribute("data-empty-library");
     expect(
@@ -387,7 +391,7 @@ describe("the empty library (009C-AC-012)", () => {
     vi.stubEnv("VERCEL", "1");
     await renderLibrary();
     expect(screen.getByText(EMPTY_LIBRARY_REASON)).toBeInTheDocument();
-    expect(screen.queryAllByRole("article")).toHaveLength(0);
+    expect(approvedLibrary().queryAllByRole("article")).toHaveLength(0);
   });
 
   it("is empty in the dashboard preview, which has no session", async () => {

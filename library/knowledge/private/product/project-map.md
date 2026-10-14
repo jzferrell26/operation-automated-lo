@@ -1,8 +1,26 @@
 # Operation Automated LO Project Map
 
-> Category: Product Operations | Version: 1.25 | Date: October 6, 2026 | Status: Active
+> Category: Product Operations | Version: 1.26 | Date: October 13, 2026 | Status: Active
 
-## Current recovery direction
+## October 14 active execution
+
+Jonathan accepted CTR-003 revision 1 (native webinar publication) and CTR-004 revision 1 (public financing release) through the exact response "Adopt both plans (Recommended)". These records settle the build policies: one selected Facebook-feed webinar ad with exact spending confirmation, bounded best-effort pause after destination withdrawal, expiry/revocation enforcement for public financing, HighLevel QR creation and the existing 30-day transient inquiry policy. The product remains one LO per workspace with no customer role administration.
+
+[Combined source PR #95](https://github.com/jzferrell26/operation-automated-lo/pull/95) contains the reviewed ad preparation/catalog, private financing photos/PDF, homeowner readiness and database acquisition increments. Its current source head is `82cf5a2`; full combined CI run `38517997602` is pending. Earlier failing runs remain recorded, including the measured PDF assertion correction, a reproduced preparation test focus race and an unresolved browser sign-in navigation failure. Source and independent review evidence do not imply current production behavior.
+
+The authenticated production Ads Library was directly readable on October 14 and still displayed "No ads in the library yet". The corrected catalog has not been promoted into production. Native publication commands/persistence/workers/UI, public financing storage/rendering/routes/delivery/setup, customer domains and controlled provider/hosted qualification remain active implementation work. Passing foundation fixtures do not close these outcomes. RentCast account and allowance recommendations are recorded separately; no account purchase, provider secret or lookup allowance has been activated.
+
+## October 13 completion takeover
+
+The owner requested librarian reconciliation followed by Gauntlet execution, prioritizing fifteen webinar ads, listing marketing reports and usable homeowner reports. The [completion review](completion-review-2026-10-13.md) inventories all ten PRDs and records their remaining customer outcomes. The [new completion ledger](../../../../COMPLETION_LEDGER.md) owns this execution batch without replacing historical criterion evidence.
+
+The inspected source base is `origin/main` at `728d5f0`, merged PR #85. It includes the reference-led funnel rebuild and native visitor capture, as well as the earlier studio and financing increments. These are merged source facts. Hosted release, enabled providers and customer-domain functionality are separate evidence questions. Draft PR #87 contains the initial domain boundary, has a failed application check and remains unfinished.
+
+The first batch prepares fifteen original webinar creatives in a separate pending-review pack and exposes the existing private property and financing tools from Campaigns. Approval-bound webinar destinations, approved catalog promotion, photo-led listing outputs, homeowner live-data qualification, data lifecycle and customer-domain completion remain open in the ledger. The supplied hosted Campaigns URL redirected this browser to sign-in; authenticated walkthrough evidence is pending account access. Local fixture interaction is recorded separately.
+
+The older recovery entries below retain their dated implementation history. Where they call merged work branch-only or public funnels unimplemented, use the current source review above and the exact release records rather than assuming those historical statements describe today's deployment.
+
+## October 6 recovery direction
 
 PR #81 is merged at `37fc0566`. The new [five-funnel studio increment](../../../requirements/in-work/prd-010-campaign-recovery/five-funnel-studio-increment.md) on `chief/five-funnel-studio-2026-10-06` implements the owner-selected Live webinar, On-demand webinar, Buyer, Refinance and Lead magnet designs, their fourteen private page views, fixed-layout field/photo editing and private optimistic saving. The new studio migration must precede hosted saving. Final verification lives in its scoped reviews; public registration, DNS/HTTPS, live booking confirmation and HighLevel lead delivery remain separate, unactivated work. The historical branch statements below predate the PR #81 merge.
 

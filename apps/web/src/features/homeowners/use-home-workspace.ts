@@ -3,6 +3,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   HomeReportSchema,
   HomeWorkspaceSchema,
+  HomeReadinessSchema,
+  UNKNOWN_HOME_READINESS,
+  type HomeReadiness,
   type HomeBrand,
   type HomeMortgage,
   type HomeReport,
@@ -55,6 +58,7 @@ const empty: HomeWorkspace = {
   monthlyLookupLimit: 0,
   lookupsThisMonth: 0,
   properties: [],
+  readiness: { ...UNKNOWN_HOME_READINESS },
 };
 
 /**
@@ -70,6 +74,7 @@ class ReportsApiError extends Error {
   constructor(
     message: string,
     readonly code: string | undefined,
+    readonly readiness: HomeReadiness = { ...UNKNOWN_HOME_READINESS },
   ) {
     super(message);
     this.name = "ReportsApiError";
@@ -85,11 +90,16 @@ async function api(path: string, body?: unknown): Promise<unknown> {
     // `error` is read apart from `message`, so a body that names no code, or a code that is not a
     // string, still gives the person its sentence exactly as before.
     const parsed = z
-      .object({ message: z.string(), error: z.unknown().optional() })
+      .object({
+        message: z.string(),
+        error: z.unknown().optional(),
+        readiness: HomeReadinessSchema.optional(),
+      })
       .safeParse(result);
     throw new ReportsApiError(
       parsed.success ? parsed.data.message : "The report request could not be completed.",
       parsed.success && typeof parsed.data.error === "string" ? parsed.data.error : undefined,
+      parsed.success ? parsed.data.readiness : undefined,
     );
   }
   return result;
@@ -116,9 +126,16 @@ export function useHomeWorkspace() {
         // a failure, and the page already says so honestly: "Connect the report workspace", with
         // what to do next. Raising it as an alert put a red banner above the page title and told
         // a person who had done nothing wrong that something had gone wrong.
-        setRemote(empty);
+        setRemote({ ...empty, readiness: failure.readiness });
         setError(null);
       } else {
+        // Preserve already loaded snapshots, but stop presenting stale write/lookup capability as
+        // current. This failure says nothing about whether storage was removed or a provider works.
+        setRemote((previous) => ({
+          ...previous,
+          canWrite: false,
+          readiness: { ...UNKNOWN_HOME_READINESS },
+        }));
         setError(
           failure instanceof Error ? failure.message : "The report workspace could not be opened.",
         );
@@ -131,7 +148,18 @@ export function useHomeWorkspace() {
     void reload();
   }, [reload]);
   const workspace: HomeWorkspace = demo
-    ? { ...empty, mode: "demo", canWrite: true, properties: demo.state.homeownerProperties }
+    ? {
+        ...empty,
+        mode: "demo",
+        canWrite: true,
+        properties: demo.state.homeownerProperties,
+        readiness: {
+          storage: "ready",
+          writeAccess: "allowed",
+          valuation: "unknown",
+          freshLookup: "unknown",
+        },
+      }
     : remote;
   async function command(action: HomeAction): Promise<HomeCommandResponse> {
     if (operationInProgress.current)

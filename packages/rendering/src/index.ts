@@ -59,3 +59,17 @@ export {
   type PaidAdRenderAssetAuthority,
   type PaidAdRenderSourceDocument,
 } from "./paid-ad-render-sources.js";
+
+export {
+  WEBINAR_AD_RENDERER_VERSION,
+  WEBINAR_AD_FONT_SHA256,
+  WEBINAR_AD_GLYPHS_SHA256,
+  WebinarAdRasterError,
+  renderWebinarAdRasters,
+  verifyFrozenWebinarRaster,
+  verifyWebinarPanel,
+  webinarRasterSha256,
+  type WebinarAdRasterInput,
+  type WebinarAdRasterAssets,
+  type WebinarAdRasterOutput,
+} from "./webinar-ad-raster.js";

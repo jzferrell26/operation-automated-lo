@@ -1,5 +1,9 @@
 import { calculateFinancingComparison, canonicalCampaignHash } from "@oalo/application";
-import type { CampaignVersion, FinancingCampaignManifest } from "@oalo/contracts";
+import {
+  FinancingCampaignManifestSchema,
+  type CampaignVersion,
+  type FinancingCampaignManifest,
+} from "@oalo/contracts";
 
 export class FinancingSaveError extends Error {
   constructor(
@@ -21,6 +25,8 @@ export class FinancingSaveError extends Error {
 export function verifyFinancingVersion(version: CampaignVersion): FinancingCampaignManifest {
   if (version.manifest.blueprintId !== "financing-comparison")
     throw new FinancingSaveError("FINANCING_NOT_FOUND", 404);
+  if (!FinancingCampaignManifestSchema.safeParse(version.manifest).success)
+    throw new FinancingSaveError("FINANCING_INTEGRITY_FAILED", 503);
   if (
     canonicalCampaignHash(version.manifest) !== version.manifestHash ||
     canonicalCampaignHash(calculateFinancingComparison(version.manifest.financing)) !==

@@ -147,6 +147,12 @@
   white-space: nowrap;
 }
 
+/* The artifact's band stays white in both themes. Own its disclosure ink explicitly so a host
+   preview's paragraph colour cannot apply dark-interface text to that fixed white surface. */
+.band .disclosure {
+  color: var(--ad-band-ink, var(--tx-strong));
+}
+
 .placeholder {
   margin: 0;
   font-size: max(11px, 3.4cqw);

@@ -3,6 +3,8 @@
 import { Button, Card, SafeAction, type SafeActionDecision } from "@oalo/ui";
 import { useRouter } from "next/navigation.js";
 import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
+import { webinarRefusal } from "../../webinar-ads/preparation-model.js";
 
 import {
   APPROVER_OR_OWNER,
@@ -38,6 +40,7 @@ export type CampaignApprovalControlsProps = Readonly<{
   alreadyDecided?: "approved" | "rejected" | undefined;
   blocking: boolean;
   state: string;
+  singleAccount?: boolean;
 }>;
 
 /**
@@ -74,6 +77,7 @@ export function CampaignApprovalControls({
   alreadyDecided,
   blocking,
   state,
+  singleAccount = false,
 }: CampaignApprovalControlsProps) {
   const [status, setStatus] = useState<ApprovalStatus | null>(
     alreadyDecided === undefined ? null : recorded(decisionStatus(alreadyDecided, false)),
@@ -98,7 +102,7 @@ export function CampaignApprovalControls({
     if (decided) outcomeRef.current?.focus();
   }, [decided]);
 
-  const decision: SafeActionDecision = resolveDecision({
+  const sharedDecision: SafeActionDecision = resolveDecision({
     canApprove,
     alreadyDecided,
     blocking,
@@ -106,6 +110,9 @@ export function CampaignApprovalControls({
     campaignVersionRef,
     busy,
   });
+  const decision: SafeActionDecision = singleAccount
+    ? singleAccountDecision(sharedDecision)
+    : sharedDecision;
 
   async function submit(next: "approved" | "rejected") {
     setBusy(true);
@@ -127,14 +134,25 @@ export function CampaignApprovalControls({
          * response. Without it that sentence sent somebody to support with nothing to quote.
          */
         const refusal = await refusalFrom(response);
-        setStatus({ sentence: userMessageSentence(refusal.code), refusal });
+        setStatus({
+          sentence:
+            singleAccount && refusal.code?.startsWith("WEBINAR_")
+              ? webinarRefusal(refusal.code)
+              : userMessageSentence(refusal.code),
+          refusal,
+        });
         return;
       }
-      const body = (await response.json()) as {
-        decision: "approved" | "rejected";
-        duplicate?: boolean;
-      };
-      setStatus(recorded(decisionStatus(body.decision, body.duplicate === true)));
+      const body = z
+        .object({ decision: z.enum(["approved", "rejected"]), duplicate: z.boolean().optional() })
+        .parse(await response.json());
+      setStatus(
+        recorded(
+          singleAccount && body.decision === "rejected" && body.duplicate !== true
+            ? "Sent back for changes. Edit your setup and save a new version for fresh review."
+            : decisionStatus(body.decision, body.duplicate === true),
+        ),
+      );
       setDecided(true);
       /*
        * The server-rendered regions around this card (where the campaign stands, the check result,
@@ -212,7 +230,7 @@ export function CampaignApprovalControls({
         author, so nothing about it can be approved yet and an approver has nothing to do with the
         link either.
       */}
-      {canApprove || alreadyDecided !== undefined || blocking ? null : (
+      {singleAccount || canApprove || alreadyDecided !== undefined || blocking ? null : (
         <CampaignHandOff campaignHref={campaignHref} />
       )}
       {/*
@@ -237,6 +255,32 @@ export function CampaignApprovalControls({
       <SupportReference refusal={status?.refusal} />
     </Card>
   );
+}
+
+/** The single-LO journey keeps the shared command while describing account access plainly. */
+function singleAccountDecision(decision: SafeActionDecision): SafeActionDecision {
+  if (decision.state === "ready")
+    return {
+      ...decision,
+      requiredRole: "Your loan-officer account",
+      confirmation: {
+        title: "Approve this version",
+        effect:
+          "Records your decision on these exact images, words, destination, budget and dates. This does not publish an ad or spend money.",
+        scope: "This saved campaign version",
+        result:
+          "This version records your approval. Material changes need a new version and fresh review.",
+      },
+    };
+  if (decision.state === "permission_restricted")
+    return {
+      ...decision,
+      requiredRole: "Your loan-officer account",
+      explanation: "This account cannot approve this version.",
+      responsibleParty: "Account support",
+      nextAction: "Contact support to check account access.",
+    };
+  return { ...decision, requiredRole: "Your loan-officer account" };
 }
 
 /** What a recorded decision says, once, wherever it is said. */

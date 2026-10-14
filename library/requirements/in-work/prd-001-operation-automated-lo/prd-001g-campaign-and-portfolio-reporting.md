@@ -1,6 +1,12 @@
 # PRD 001g: Campaign and Portfolio Reporting
 
+## Contract dependencies
+
+CTR-003 revision 1 is accepted by Jonathan Ferrell on October 14, 2026 UTC for truthful webinar provider standing, observation freshness and unknown metrics. The [accepted publisher agreement][ctr003-publisher] has SHA-256 `dfc912bfa9f00892641936794ce0488adc1fdea3df6bdf7a997cb8f00a48fe23`. Native acknowledgement, live delivery and CRM outcomes remain distinct. The single-LO direction adds no customer role administration. No reporting criterion is closed by this pin.
+
 ## Goal
+
+[ctr003-publisher]: ../../../knowledge/private/contracts/CTR-003-webinar-highlevel-publisher.md
 
 Give each loan officer a clear campaign-to-loan view and give Cuantico an exception-focused founding-cohort operations view without copying the customer's CRM.
 

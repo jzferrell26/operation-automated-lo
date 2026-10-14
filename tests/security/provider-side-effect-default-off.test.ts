@@ -540,8 +540,8 @@ describe("provider side effects stay disabled by default", () => {
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort();
-    // PRD-010 adds property draft persistence, not a provider command or another launch endpoint.
-    expect(campaignRoutes).toEqual(["approve", "preflight", "property"]);
+    // Property and webinar-ads prepare saved versions. Neither grants publication or Meta access.
+    expect(campaignRoutes).toEqual(["approve", "preflight", "property", "webinar-ads"]);
 
     expect(META_ADAPTER_MODE).toBe("fixture-plan");
     expect(await productionSourcesMatching(PUBLICATION_AUTHORIZED_MARKER)).toEqual([]);

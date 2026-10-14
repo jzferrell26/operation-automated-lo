@@ -13,6 +13,7 @@ import type { useHomeWorkspace } from "./use-home-workspace.js";
 import { homeAddressText, sampleHomeAddress } from "./model.js";
 import { MortgageFields, mortgageDraft, mortgageFromDraft } from "./mortgage-fields.js";
 import styles from "./homeowners.module.css";
+import { createHomeReportAvailable } from "./readiness.js";
 
 export function HomeBrandFields({
   value,
@@ -178,10 +179,11 @@ export function HomeReportBuilder({
           <p>One property. A clear view of value, equity and the next conversation.</p>
         </div>
       </header>
-      {!demo && !data.workspace.valuationConnected ? (
+      {!demo && !createHomeReportAvailable(data.workspace) ? (
         <p className={styles.note}>
-          Property valuations are not connected in this workspace yet. You can prepare the report
-          details now; your workspace owner needs to enable value estimates before you create it.
+          You can prepare the report details now. Report creation needs confirmed account access and
+          valuation setup. Check report availability again. Contact support if creation remains
+          unavailable.
         </p>
       ) : null}
       <nav className={styles.builderSteps} aria-label="Report creation progress">
@@ -208,7 +210,7 @@ export function HomeReportBuilder({
                       ? "Enter an address to retrieve its estimated value, range and comparable listings. A HighLevel connection is not required."
                       : demo
                         ? "Choose a fictional sample contact to try the complete workflow."
-                        : "Search the existing contacts in this workspace's HighLevel location."}
+                        : "Search the contacts in your connected HighLevel account."}
                   </p>
                 </div>
                 <Select
@@ -395,7 +397,7 @@ export function HomeReportBuilder({
                 <p className={styles.note}>
                   {demo
                     ? "This creates a fictional sample report on this device. No paid valuation is requested."
-                    : "Creating a report may use one valuation lookup from your workspace allowance. Viewing and downloading saved reports do not request a new valuation."}
+                    : "Creating a report may use one valuation lookup from your account allowance. Viewing and downloading saved reports do not request a new valuation."}
                 </p>
               </>
             )}
@@ -419,7 +421,7 @@ export function HomeReportBuilder({
                   data.busy ||
                   (!demo &&
                     (!data.workspace.canWrite ||
-                      (step === 2 && !data.workspace.valuationConnected)))
+                      (step === 2 && !createHomeReportAvailable(data.workspace))))
                 }
               >
                 {data.busy ? "Creating report…" : step === 2 ? "Create report" : "Continue"}
@@ -480,7 +482,7 @@ export function HomeReportBuilder({
           <small>
             {demo
               ? "Sample data is fictional and stays on this device."
-              : "Live reports stay within your authenticated workspace."}
+              : "Live reports stay within your signed-in account."}
           </small>
         </aside>
       </div>

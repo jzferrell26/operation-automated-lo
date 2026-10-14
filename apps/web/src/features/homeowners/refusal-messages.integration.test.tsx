@@ -153,7 +153,7 @@ describe("a refused homeowner report request", () => {
     expectNoMachineCodeOnScreen("REPORTS_UNAVAILABLE");
   });
 
-  it("shows the sentence for a role that cannot act and not its code, wherever it is announced", async () => {
+  it("shows the sentence for an account that cannot act and not its code, wherever it is announced", async () => {
     const user = await openReport();
     await user.click(screen.getByRole("button", { name: "Update schedule" }));
     network.write.mockResolvedValueOnce(
@@ -161,7 +161,7 @@ describe("a refused homeowner report request", () => {
         new HomeownerError(
           "REPORT_ACCESS_DENIED",
           403,
-          "Your role cannot perform this report action. Ask your workspace owner.",
+          "This report action is unavailable for your account. Check report availability again. Contact support if this continues.",
         ),
       ),
     );
@@ -173,7 +173,7 @@ describe("a refused homeowner report request", () => {
     expect(alerts.length).toBeGreaterThan(0);
     for (const alert of alerts) {
       expect(alert).toHaveTextContent(
-        "Your role cannot perform this report action. Ask your workspace owner.",
+        "This report action is unavailable for your account. Check report availability again. Contact support if this continues.",
       );
     }
     expectNoMachineCodeOnScreen("REPORT_ACCESS_DENIED");
@@ -194,7 +194,7 @@ describe("a refused homeowner report request", () => {
  * page reads is the body the server sends.
  */
 
-const NOT_ENABLED_SENTENCE = "Homeowner reports need to be enabled for this workspace.";
+const NOT_ENABLED_SENTENCE = "Homeowner reports need to be enabled for your account.";
 
 function reportsNotEnabled(): Response {
   return homeError(new HomeownerError("REPORTS_NOT_CONFIGURED", 503, NOT_ENABLED_SENTENCE));
@@ -210,7 +210,7 @@ describe("a workspace that has not turned homeowner reports on", () => {
       await screen.findByRole("heading", { level: 1, name: "Homeowner reports" }),
     ).toBeVisible();
     expect(
-      screen.getByRole("heading", { level: 2, name: "Connect the report workspace" }),
+      screen.getByRole("heading", { level: 2, name: "Set up homeowner reports" }),
     ).toBeVisible();
     await waitFor(() => expect(screen.queryByText(OPENING_SENTENCE)).not.toBeInTheDocument());
     expect(screen.queryByRole("alert")).toBeNull();
@@ -227,16 +227,14 @@ describe("a workspace that has not turned homeowner reports on", () => {
     expect(workspace?.firstElementChild?.tagName).toBe("HEADER");
   });
 
-  it("still offers the two ways forward the empty card carries", async () => {
+  it("offers a recheck and an accurate account support next step", async () => {
     network.read.mockResolvedValue(reportsNotEnabled());
 
     render(<HomeownerWorkspace />);
 
-    expect(await screen.findByRole("button", { name: "Check connection again" })).toBeEnabled();
-    expect(screen.getByRole("link", { name: "Workspace connections" })).toHaveAttribute(
-      "href",
-      "/settings/connections",
-    );
+    expect(await screen.findByRole("button", { name: "Check report availability" })).toBeEnabled();
+    expect(screen.getByText(/Contact support to finish report setup/u)).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Workspace connections" })).toBeNull();
   });
 
   /**
@@ -251,17 +249,15 @@ describe("a workspace that has not turned homeowner reports on", () => {
     render(<HomeownerWorkspace />);
 
     const state = (
-      await screen.findByRole("heading", { level: 2, name: "Connect the report workspace" })
+      await screen.findByRole("heading", { level: 2, name: "Set up homeowner reports" })
     ).closest("section");
     expect(state).toHaveAttribute("data-state", "empty");
     expect(state).toHaveAttribute("data-surface", "card");
     const actions = state?.querySelector(".oalo-state-actions");
     expect(within(actions as HTMLElement).getByRole("button")).toHaveTextContent(
-      "Check connection again",
+      "Check report availability",
     );
-    expect(within(actions as HTMLElement).getByRole("link")).toHaveTextContent(
-      "Workspace connections",
-    );
+    expect(within(actions as HTMLElement).queryByRole("link")).toBeNull();
   });
 
   it("keeps the alert for a refusal that is a failure: reports unavailable", async () => {

@@ -37,3 +37,7 @@ At this checkpoint, the previous application remains on production `main` and ne
 ## Evidence
 
 Actual isolated PostgreSQL route tests passed for all five types, encrypted capture, receipt access, export, cross-workspace denial, parallel retries, altered requests, quotas and disabled configuration. Seventeen new pgTAP assertions pass for forced RLS, ownership, fixed function boundaries and no plaintext contact columns. Actual-browser tests submit all five types at desktop/phone sizes, validate confirmation/receipt and next-step links, and refuse unregistered access to gated pages. Full legacy suites and hosted release checks are recorded separately; a new-feature test pass is not a full production-readiness claim.
+
+## Contract dependencies
+
+The new prepared webinar ad consumer pins [CTR-002](../../../knowledge/private/contracts/CTR-002-webinar-ad-destination.md), CTR-002 revision 2, accepted October 13, 2026. Existing owner publication access and public capability semantics remain in force. Narrow distinct-reviewer access is anchored to an accessible immutable campaign version and requires separate PostgreSQL verification.

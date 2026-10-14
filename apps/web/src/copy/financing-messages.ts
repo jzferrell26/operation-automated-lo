@@ -7,7 +7,7 @@ export const FINANCING_COPY = Object.freeze({
   scopeNote:
     "Fixed-rate purchase examples only. Enter lender-supplied figures; the system does not quote rates, calculate APR, or determine eligibility.",
   photoNote:
-    "This first report version is text-only. Property photography, logos, and headshots are not connected yet.",
+    "Property photographs and facts are saved with this private comparison. Logos and headshots are not connected yet.",
   save: "Create report",
   saving: "Saving your report",
   saved: "Report saved",

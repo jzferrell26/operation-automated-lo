@@ -1,4 +1,10 @@
 import { randomUUID } from "node:crypto";
+import sharp from "sharp";
+import {
+  PostgresFinancingMediaRepository,
+  createPrincipalBoundTenantContextAuthority,
+} from "@oalo/db";
+import type { FinancingMediaBytesPort } from "@oalo/application";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PDFDocument } from "pdf-lib";
 import { CSRF_REQUEST_HEADER } from "@oalo/auth";
@@ -10,6 +16,7 @@ import { SAVED_TEST_BRAND } from "./campaign-command-test-support.js";
 import {
   createCampaignPersistenceAdapter,
   resetCampaignDatabasePoolForTests,
+  workspaceCorrelationReferenceFor,
 } from "./campaign-persistence-runtime.js";
 import {
   applyRouteEnvironment,
@@ -25,7 +32,8 @@ import {
 } from "./campaign-route-postgres-support.js";
 import { readWorkspacePreferences } from "./workspace-preferences.js";
 import { readFinancingFormContext } from "./financing-context.js";
-import { verifyFinancingVersion } from "./financing-save.js";
+import { verifyFinancingVersion, saveFinancingComparison } from "./financing-save.js";
+import { uploadFinancingMedia } from "./financing-media-service.js";
 import { financingInput } from "./financing.test-support.js";
 
 const environment = routeEnvironment(),
@@ -138,6 +146,121 @@ afterAll(async () => {
 });
 
 describe("financing comparison exported routes with real PostgreSQL", () => {
+  it("freezes real normalized photo metadata from the principal-bound PostgreSQL repository", async () => {
+    const principal = await principalForSession(owner, environment);
+    const repository = new PostgresFinancingMediaRepository(
+      pool,
+      createPrincipalBoundTenantContextAuthority(
+        principal,
+        workspaceCorrelationReferenceFor(principal),
+      ),
+      principal,
+    );
+    const photoBytes = new Map<string, Uint8Array>();
+    const bytes: FinancingMediaBytesPort = {
+      putImmutable: async (record, content) => {
+        photoBytes.set(record.mediaRef, Uint8Array.from(content));
+      },
+      read: async (record) => {
+        const value = photoBytes.get(record.mediaRef);
+        if (!value) throw new Error("Test photograph missing");
+        return value;
+      },
+    };
+    const raw = await sharp({
+      create: { width: 600, height: 400, channels: 3, background: "#388976" },
+    })
+      .jpeg()
+      .toBuffer();
+    const uploaded = await uploadFinancingMedia(
+      {
+        requestId: randomUUID(),
+        declaredMimeType: "image/jpeg",
+        rightsBasis: "owned",
+        rightsConfirmed: true,
+      },
+      raw,
+      principal,
+      { repository, bytes },
+    );
+    const body = {
+      ...input(),
+      schemaVersion: 2,
+      propertyFacts: {
+        listPriceMinor: null,
+        bedrooms: 3,
+        bathroomsHundredths: null,
+        floorAreaSqFt: null,
+        confirmed: true,
+      },
+      propertyMedia: [
+        { mediaRef: uploaded.record.mediaRef, altText: "A synthetic original test image" },
+      ],
+    };
+    const adapter = createCampaignPersistenceAdapter(principal, environment);
+    const dependencies = {
+      versions: adapter.versionRepository,
+      campaigns: adapter.readRepository,
+      media: { repository, bytes },
+    };
+    const saved = await saveFinancingComparison(body, principal, environment, dependencies);
+    await adapter.persistDraft(saved.version, saved.preflight);
+    const record = await adapter.readRepository.getByCampaignRef(saved.version.campaignRef);
+    if (!record) throw new Error("Photo report missing");
+    const manifest = verifyFinancingVersion(record.version);
+    if (manifest.schemaVersion !== 2) throw new Error("Unexpected legacy manifest");
+    expect(manifest.property.media[0]).toMatchObject({
+      mediaRef: uploaded.record.mediaRef,
+      sha256: uploaded.record.sha256,
+      rights: uploaded.record.rights,
+    });
+    expect(manifest.calculated.scenarios[0]?.cashToCloseMinor).toBe(8450000);
+    expect(
+      (await saveFinancingComparison(body, principal, environment, dependencies)).version,
+    ).toEqual(saved.version);
+    await repository.revoke(uploaded.record.mediaRef);
+    await expect(
+      saveFinancingComparison(body, principal, environment, dependencies),
+    ).rejects.toMatchObject({ code: "FINANCING_MEDIA_REVOKED", status: 410 });
+  });
+  it("stores explicit v2 facts in the existing version table without changing legacy arithmetic", async () => {
+    const body = {
+      ...input(),
+      schemaVersion: 2,
+      propertyFacts: {
+        listPriceMinor: 42_000_000,
+        bedrooms: null,
+        bathroomsHundredths: 250,
+        floorAreaSqFt: 1800,
+        confirmed: true,
+      },
+      propertyMedia: [],
+    };
+    const response = await save(body);
+    expect(response.status).toBe(200);
+    const saved = FinancingSavedSchema.parse(await response.json());
+    const record = await (await repository()).getByCampaignRef(saved.campaignRef);
+    if (!record) throw new Error("No database report");
+    const manifest = verifyFinancingVersion(record.version);
+    expect(manifest).toMatchObject({
+      schemaVersion: 2,
+      templateVersion: "2.0.0",
+      images: [],
+      property: { facts: body.propertyFacts, media: [] },
+    });
+    expect(manifest.calculated.scenarios[0]?.cashToCloseMinor).toBe(8450000);
+    expect(await (await save(body)).json()).toEqual(saved);
+    expect(
+      (await save({ ...body, propertyFacts: { ...body.propertyFacts, bedrooms: 4 } })).status,
+    ).toBe(409);
+    const reused = (
+      await readFinancingFormContext(await principalForSession(owner, environment), environment)
+    ).previous.find((item) => item.campaignRef === saved.campaignRef);
+    expect(reused?.input).toMatchObject({
+      schemaVersion: 2,
+      propertyFacts: { ...body.propertyFacts, confirmed: false },
+    });
+  });
   it("saves current server identity and retrieves both outputs through the real session", async () => {
     const response = await save();
     expect(response.status).toBe(200);

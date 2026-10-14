@@ -82,6 +82,25 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+      - name: Hand back synthetic product review frames
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: synthetic-product-review-frames
+          path: test-results/product-review-frames
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # Keep local production preparation evidence even when another verification step fails.
+      - name: Retain webinar preparation review pictures
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: webinar-preparation-review-frames
+          path: test-results/product-review-frames/webinar-preparation/*.png
+          if-no-files-found: ignore
+          retention-days: 7
+
   database:
     name: Real PostgreSQL migrations and pgTAP
     runs-on: ubuntu-24.04
@@ -152,7 +171,28 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: database-failure-traces
-          path: test-results/browser
+          path: |
+            test-results/browser
+            test-results/browser-passes
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Hand back product review frames
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: product-review-frames
+          path: test-results/product-review-frames
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # The seeded review suite writes both screen pictures and exact branded PNG downloads here.
+      - name: Retain saved webinar review pictures and artwork
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: webinar-ads-review-frames
+          path: test-results/product-review-frames/webinar-ads/*.png
           if-no-files-found: ignore
           retention-days: 7
 

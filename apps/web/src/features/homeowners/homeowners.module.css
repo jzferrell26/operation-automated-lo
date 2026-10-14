@@ -375,6 +375,9 @@
   color: inherit;
   font-size: 13px;
 }
+.notice.readinessNotice p {
+  font-size: var(--text-secondary-size);
+}
 .notice > span {
   flex: 1;
 }
@@ -812,6 +815,18 @@
   }
   .notice {
     flex-wrap: wrap;
+  }
+  .notice.readinessNotice {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .notice.readinessNotice > span {
+    flex: none;
+    min-inline-size: 0;
+  }
+  .notice.readinessNotice > button {
+    align-self: flex-start;
+    max-inline-size: 100%;
   }
   .followupBar {
     padding: var(--space-5);

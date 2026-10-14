@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { expect, type Page } from "@playwright/test";
+import { captureSuccessfulReviewSignIn } from "./signin-session.js";
 
 /**
  * PRD-006c D9. The shared machinery for the review specs: the typing model, the sign-up and sign-in
@@ -221,10 +222,24 @@ export async function signInExisting(page: Page, email: string, password: string
   await page.goto("/sign-in");
   await typeIntoLabel(page, "Email", email);
   await typeIntoLabel(page, "Password", password);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  const origin = new URL(page.url()).origin;
+  const [response] = await Promise.all([
+    page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return (
+        url.origin === origin &&
+        url.pathname === "/api/auth/sign-in" &&
+        response.request().method() === "POST"
+      );
+    }),
+    page.getByRole("button", { name: "Sign in" }).click(),
+  ]);
+  // Status evidence is useful without printing credentials, cookies, query values or bodies.
+  expect(response.status(), "POST /api/auth/sign-in status").toBe(200);
   await page.waitForURL(/\/(?:overview|sign-in\/choose)/u);
   if (page.url().includes("/sign-in/choose")) {
     await page.getByRole("button").first().click();
     await page.waitForURL("**/overview");
   }
+  await captureSuccessfulReviewSignIn(page, email);
 }

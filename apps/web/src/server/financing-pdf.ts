@@ -1,8 +1,14 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import type { ResolvedFinancingMedia } from "@oalo/application";
 import { FINANCING_COPY as COPY } from "../copy/financing-messages.js";
 import { financingDate, financingGroups, financingMoney } from "../features/financing/display.js";
 import type { FinancingReportView } from "../features/financing/model.js";
 import { adBrandColorValue } from "../features/workspace/ad-brand.js";
+import {
+  financingPropertyFacts,
+  FINANCING_V1_PHOTO_NOTICE,
+} from "../features/financing/property-display.js";
+import { financingOutputMedia, FINANCING_OUTPUT_MAX_BYTES } from "./financing-output-media.js";
 
 export class FinancingRenderError extends Error {
   constructor(public readonly code: "FINANCING_FONT_UNSUPPORTED" | "FINANCING_OUTPUT_TOO_LARGE") {
@@ -12,8 +18,13 @@ export class FinancingRenderError extends Error {
 }
 
 /** A deterministic print report, not a photo flyer or a live-rate quote. All totals are saved values. */
-export async function financingReportPdf(report: FinancingReportView): Promise<Uint8Array> {
+export async function financingReportPdf(
+  report: FinancingReportView,
+  resolvedMedia?: readonly ResolvedFinancingMedia[],
+): Promise<Uint8Array> {
   const { manifest } = report;
+  const v2 = manifest.schemaVersion === 2;
+  const media = v2 ? financingOutputMedia(report, resolvedMedia) : [];
   const scenarios = manifest.financing.scenarios;
   const landscape = scenarios.length > 3;
   const width = landscape ? 792 : 612,
@@ -73,8 +84,12 @@ export async function financingReportPdf(report: FinancingReportView): Promise<U
     }
     return lines;
   }
-  function text(textValue: string, size = 9, strong = false) {
-    for (const line of wrap(textValue, width - margin * 2, size, strong)) {
+  function text(textValue: string, size = v2 ? 10 : 9, strong = false) {
+    const lines = wrap(textValue, width - margin * 2, size, strong);
+    const paragraphHeight = lines.length * size * 1.4 + 6;
+    // Keep ordinary v2 paragraphs together, while long descriptions can still continue.
+    if (v2 && paragraphHeight <= height - 114) reserve(paragraphHeight);
+    for (const line of lines) {
       reserve(size * 1.4);
       page.drawText(line, {
         x: margin,
@@ -91,12 +106,13 @@ export async function financingReportPdf(report: FinancingReportView): Promise<U
     labelWidth = landscape ? 185 : 175,
     column = (available - labelWidth) / scenarios.length;
   function tableRow(label: string, values: readonly string[], strong = false, header = false) {
-    const size = 8.5;
+    const size = v2 ? 10 : 8.5;
+    const lineHeight = v2 ? 14 : 11.5;
     const cells = [
       wrap(label, labelWidth - 12, size, strong),
       ...values.map((value) => wrap(value, column - 12, size, strong)),
     ];
-    const rowHeight = Math.max(...cells.map((cell) => cell.length)) * 11.5 + 10;
+    const rowHeight = Math.max(...cells.map((cell) => cell.length)) * lineHeight + 10;
     if (y - rowHeight < 52) {
       newPage();
       if (!header)
@@ -120,7 +136,7 @@ export async function financingReportPdf(report: FinancingReportView): Promise<U
       lines.forEach((line, lineIndex) =>
         page.drawText(line, {
           x,
-          y: y - 8 - size - lineIndex * 11.5,
+          y: y - 8 - size - lineIndex * lineHeight,
           size,
           font: strong ? bold : regular,
           color: ink,
@@ -135,16 +151,71 @@ export async function financingReportPdf(report: FinancingReportView): Promise<U
       color: rgb(0.82, 0.87, 0.91),
     });
   }
+  async function photograph(item: ResolvedFinancingMedia, maxHeight: number, followingHeight = 0) {
+    const embedded =
+      item.snapshot.mimeType === "image/jpeg"
+        ? await pdf.embedJpg(item.bytes)
+        : await pdf.embedPng(item.bytes);
+    const captionHeight = wrap(item.snapshot.altText, available, 10).length * 14 + 6;
+    const scale = Math.min(
+      available / embedded.width,
+      Math.min(maxHeight, y - 52 - captionHeight - followingHeight - 10) / embedded.height,
+    );
+    const imageWidth = embedded.width * scale,
+      imageHeight = embedded.height * scale;
+    reserve(imageHeight + 10 + captionHeight + followingHeight);
+    page.drawImage(embedded, {
+      x: margin + (available - imageWidth) / 2,
+      y: y - imageHeight,
+      width: imageWidth,
+      height: imageHeight,
+    });
+    y -= imageHeight + 10;
+    text(item.snapshot.altText, 10);
+  }
   try {
     decorate();
+    if (v2 && media[0]) await photograph(media[0], landscape ? 190 : 220);
     text(manifest.property.address, 22, true);
     text(manifest.property.description, 10);
+    if (manifest.schemaVersion === 2) {
+      for (const [label, value] of financingPropertyFacts(manifest.property.facts))
+        text(`${label}: ${value}`, 11, true);
+      text(
+        "Property facts confirmed by the author. List price is separate from illustrated purchase price.",
+        10,
+      );
+      if (!media.length) text("No property photographs selected for this private comparison.", 10);
+    }
     text(
       `Illustrated purchase price: ${financingMoney(manifest.financing.purchasePriceMinor)}`,
       11,
       true,
     );
+    if (v2 && !landscape) {
+      text("Your options at a glance", 12, true);
+      for (const [index, scenario] of scenarios.entries()) {
+        const result = manifest.calculated.scenarios[index];
+        if (!result) throw new Error("Saved financing result missing.");
+        reserve(54);
+        text(scenario.label, 11, true);
+        text(
+          `Estimated monthly housing: ${financingMoney(result.totalHousingMinor)} | Estimated cash at closing: ${financingMoney(result.cashToCloseMinor)}`,
+          10,
+        );
+      }
+    }
     text(COPY.privateNotice, 8.5);
+    if (v2) {
+      text(
+        landscape
+          ? "Extended landscape comparison: four or five scenarios."
+          : "Portrait comparison: up to three scenarios.",
+        10,
+      );
+      // A photo-led cover never squeezes the complete accounting table into its remaining space.
+      newPage();
+    }
     tableRow(
       "Your financing options",
       scenarios.map((s) => s.label),
@@ -198,9 +269,35 @@ export async function financingReportPdf(report: FinancingReportView): Promise<U
         : COPY.permissionsMissing,
     );
     text(manifest.content.disclosureText);
-    text(COPY.photoNote);
+    text(
+      v2
+        ? media.length
+          ? "Uploaded property photographs. Usage rights recorded for this private comparison only."
+          : "Text-only comparison selected by the author."
+        : FINANCING_V1_PHOTO_NOTICE,
+    );
     text(COPY.privateNotice);
-    if (pdf.getPageCount() > 16) throw new FinancingRenderError("FINANCING_OUTPUT_TOO_LARGE");
+    if (v2) {
+      text(
+        `Saved ${financingDate(report.createdAt)}. Property template ${manifest.templateVersion}.`,
+        10,
+      );
+      for (const [index, item] of media.slice(1).entries()) {
+        newPage();
+        text(`Supporting property photograph ${index + 2} of ${media.length}`, 16, true);
+        const savedPhoto = `Saved photograph ${index + 2}. Normalization ${item.snapshot.normalizationVersion}.`;
+        const tailHeight =
+          (wrap(savedPhoto, available, 10).length +
+            wrap(COPY.privateNotice, available, 10).length) *
+            14 +
+          12;
+        await photograph(item, height - 190, tailHeight);
+        text(savedPhoto, 10);
+        text(COPY.privateNotice, 10);
+      }
+    }
+    if (pdf.getPageCount() > (v2 ? 64 : 16))
+      throw new FinancingRenderError("FINANCING_OUTPUT_TOO_LARGE");
     pdf
       .getPages()
       .forEach((item, index) =>
@@ -211,10 +308,15 @@ export async function financingReportPdf(report: FinancingReportView): Promise<U
       );
     pdf.setTitle(`Private financing report: ${manifest.property.address}`);
     pdf.setSubject(COPY.privateNotice);
-    pdf.setCreator("AutomatedLO financing report 1.0.0");
+    pdf.setCreator(
+      v2 ? "AutomatedLO financing report 2.0.0" : "AutomatedLO financing report 1.0.0",
+    );
     pdf.setCreationDate(new Date(report.createdAt));
     pdf.setModificationDate(new Date(report.createdAt));
-    return await pdf.save();
+    const bytes = await pdf.save();
+    if (bytes.byteLength > FINANCING_OUTPUT_MAX_BYTES)
+      throw new FinancingRenderError("FINANCING_OUTPUT_TOO_LARGE");
+    return bytes;
   } catch (error) {
     if (error instanceof Error && /WinAnsi|cannot encode/iu.test(error.message))
       throw new FinancingRenderError("FINANCING_FONT_UNSUPPORTED");

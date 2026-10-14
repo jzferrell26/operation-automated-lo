@@ -316,6 +316,11 @@ export const RULE_PLAIN_NAMES: Readonly<Record<PreflightRuleCode, string>> = Obj
   OPEN_HOUSE_DATES_INVALID: "Open house dates are ahead",
   PARTNER_PERMISSION_REQUIRED: "Partner permission recorded",
   PROPERTY_PERMISSION_REQUIRED: "Property permission recorded",
+  WEBINAR_SOURCE_CHANGED: "The original artwork matches this version",
+  WEBINAR_RASTER_CHANGED: "Both branded images match the saved version",
+  WEBINAR_DESTINATION_CHANGED: "The webinar destination matches this version",
+  WEBINAR_DESTINATION_EXPIRED: "The published webinar is available",
+  WEBINAR_SCHEDULE_INVALID: "The ad stops before the webinar closes",
 });
 
 /** Save errors the step 2 form says in its own words. */

@@ -7,6 +7,7 @@ import { DEFAULT_AD_BRAND } from "../features/workspace/ad-brand.js";
 import { authenticatedWorkspaceMode } from "./authenticated-workspace-data.js";
 import { campaignDatabasePool } from "./campaign-persistence-runtime.js";
 import { readWorkspacePreferences } from "./workspace-preferences.js";
+import { observeRuntimeStage } from "./runtime-timing.js";
 
 /**
  * PRD-009d D3 and 009D-AC-024. The brand a library ad carries, read on the server from the
@@ -67,7 +68,9 @@ export async function readSavedAdBrand(
       partnerNames: Object.freeze([]),
     });
   }
-  const preferences = await readWorkspacePreferences(principal, campaignDatabasePool(environment));
+  const preferences = await observeRuntimeStage(environment, "saved_brand", () =>
+    readWorkspacePreferences(principal, campaignDatabasePool(environment)),
+  );
   const brand = preferences.brand?.value;
   const adBrand = preferences.adBrand?.value ?? DEFAULT_AD_BRAND;
   return Object.freeze({

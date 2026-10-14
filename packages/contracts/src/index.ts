@@ -95,9 +95,24 @@ export {
   CampaignVersionSchema,
   LibraryAdApprovalSnapshotSchema,
   LibraryAdCampaignManifestSchema,
+  WebinarAdCampaignManifestSchema,
+  WebinarAdApprovalSnapshotSchema,
+  WebinarAdPreparationRequestSchema,
+  WebinarTemplateIdSchema,
+  WebinarTemplateEvidenceSchema,
+  WebinarDestinationSchema,
+  WebinarAdRuleContextSchema,
+  type WebinarAdCampaignManifest,
+  type WebinarAdApprovalSnapshot,
+  type WebinarAdPreparationRequest,
+  type WebinarTemplateEvidence,
+  type WebinarDestination,
+  type WebinarAdRuleContext,
   OpenHouseApprovalSnapshotSchema,
   OpenHouseCampaignManifestSchema,
   FinancingCampaignManifestSchema,
+  FinancingCampaignManifestV1Schema,
+  FinancingCampaignManifestV2Schema,
   type FinancingCampaignManifest,
   PropertyCampaignPreparationSchema,
   CollateralProjectionInputSchema,
@@ -278,3 +293,6 @@ export {
   type CanonicalReferenceKind,
 } from "./canonical-reference.js";
 export * from "./financing-comparison.js";
+export * from "./financing-media.js";
+export * from "./webinar-provider-launch.js";
+export * from "./webinar-publisher-command.js";

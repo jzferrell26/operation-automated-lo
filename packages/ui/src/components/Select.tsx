@@ -88,6 +88,7 @@ export function Select({
     setActive(index);
     setPortal(
       trigger.current?.closest('[role="dialog"], [role="alertdialog"]') ??
+        trigger.current?.closest('main, [role="main"]') ??
         trigger.current?.closest('[data-product-shell="true"]') ??
         document.body,
     );

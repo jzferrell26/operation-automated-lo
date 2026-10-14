@@ -30,6 +30,8 @@ import {
 import type { CampaignApprovalControlsProps } from "../features/campaigns/components/campaign-approval-controls.js";
 import { launchHref, type LaunchBand } from "../features/campaigns/launch-model.js";
 import type { SavedAdBrand } from "./ad-brand-read.js";
+import type { WebinarAdReview } from "./webinar-ad-read.js";
+import { webinarArtLinks } from "./webinar-ad-read.js";
 
 /**
  * PRD-009e. Pure builders from what the workspace read returned to what the two Campaigns pages
@@ -135,6 +137,7 @@ export interface CampaignPageInput {
   readonly versionNo?: number;
   /** The viewer's saved Brand, or `undefined` when it could not be read. Only the saver's is used. */
   readonly brand?: SavedAdBrand | undefined;
+  readonly webinarReview?: WebinarAdReview;
 }
 
 function approvalControlsFor(
@@ -256,6 +259,39 @@ export function buildCampaignPage(input: CampaignPageInput): CampaignPageData | 
   };
 
   const shownManifest = shownRecord.version.manifest;
+  if (shownManifest.blueprintId === "webinar-ad") {
+    const review: WebinarAdReview = input.webinarReview ?? {
+      manifest: shownManifest,
+      current: { available: false, error: "WEBINAR_EVIDENCE_UNAVAILABLE" },
+      publication: null,
+      providerEnabled: false,
+      art: webinarArtLinks(shownRecord.version),
+      effectiveEndsAt: shownManifest.schedule.endsAt,
+      incompleteSave: shownRecord.preflight === undefined,
+    };
+    return {
+      ...common,
+      standing:
+        review.current.available || shown.decision !== undefined
+          ? common.standing
+          : "preflight_failed",
+      versions: versions.map((summary) =>
+        summary.isLatest && !review.current.available && summary.decision === undefined
+          ? { ...summary, standing: "preflight_failed" as const }
+          : summary,
+      ),
+      kind: "webinar-ad",
+      review,
+      canMakeNewVersion:
+        isLatest &&
+        shownRecord.version.createdBy === principal.actorRef &&
+        (CAMPAIGN_MUTATION_ROLES as readonly string[]).includes(principal.role),
+      approvalControls:
+        isLatest && review.current.available && shown.decision === undefined
+          ? approvalControlsFor(projection)
+          : undefined,
+    };
+  }
   if (shownManifest.blueprintId === "financing-comparison") {
     const manifest = verifyFinancingVersion(shownRecord.version);
     return {
@@ -395,10 +431,31 @@ export function buildCampaignListRow(
   principal: Readonly<AuthenticatedPrincipal>,
   kind: CampaignPersistenceKind,
   library: CampaignLibraryView,
+  webinarCurrent?: Readonly<{ available: boolean }>,
 ): CampaignListRow {
   const projection = projectCampaignWorkspace(record, principal, kind);
   const manifest = record.version.manifest;
   const decision = projection.approval?.decision;
+  if (manifest.blueprintId === "webinar-ad")
+    return Object.freeze({
+      campaignRef: projection.campaignRef,
+      href: projection.detailHref,
+      name: manifest.content.headline,
+      topic: undefined,
+      earlierFlow: false,
+      thumbnail: webinarArtLinks(record.version).tall,
+      alt: manifest.images[0].altText,
+      sample: false,
+      startsOn: undefined,
+      endsOn: manifest.schedule.endsAt.slice(0, 10),
+      places: placeNames(manifest.meta.targeting),
+      standing:
+        webinarCurrent?.available === true
+          ? deriveCampaignStanding({ state: projection.state, decision, adRefusal: undefined })
+          : "preflight_failed",
+      decision,
+      updatedAt: projection.updatedAt,
+    });
   if (manifest.blueprintId !== "library-ad") {
     return Object.freeze({
       campaignRef: projection.campaignRef,

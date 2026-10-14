@@ -1,0 +1,9 @@
+# Original webinar creative pack
+
+Fifteen first-time homebuyer educational creatives, three per learning goal: personal planning, housing budget, credit questions, preapproval and closing. The learning connections correspond to the live and on-demand offers in `features/funnels/catalog.ts`. They are original illustrations and copy, not copied Plai assets or lender-approved advertisements.
+
+`creative-briefs.json` is the artwork/copy source. Run `node tooling/scripts/ads-library/generate-webinar-art.mjs` to generate the two PNGs per creative and the digests in `catalog.json`. Repeat runs use no clock, randomness or remote source; byte determinism assumes the same installed Arial font and sharp runtime. Tall art is 1080 by 1080; square art is 1080 by 842. These are art panels, not final branded ads. Public files hold generic artwork only, with no customer data. Sharp strips metadata. Each image is at most 1 MiB.
+
+The strict preparation schema requires `pending-review` and accepts no approval block. These entries cannot parse as approved library entries. The authenticated Ads library exposes local choose, edit, review, copy and art-download controls. Edits are not persisted. The preview uses saved Brand; downloads intentionally contain only original art. The copied draft explicitly carries pending-review and missing-destination notes.
+
+The approved catalog remains separate and unchanged. No preparation action calls campaign save/approval, binds a webinar destination or reaches a provider. Actual use requires exact-content owner and lender review, required advertiser/disclosure composition, a selected published webinar covered by approval, and separate provider qualification and launch authorization. No production readiness, registration, spend, delivery or results are claimed by this pack.

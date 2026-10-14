@@ -845,6 +845,22 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
         exported.every((item) => item.payload.request.email === "synthetic@example.invalid"),
         true,
       );
+      const scheduler = await ownerSql(
+        f,
+        "test.finance-cleanup-schema-capability",
+        "select has_schema_privilege('scheduler_runtime','campaign','USAGE') as schema_usage,has_schema_privilege('scheduler_runtime','campaign','CREATE') as schema_create,has_table_privilege('scheduler_runtime','campaign.financing_release_inquiries','SELECT,INSERT,UPDATE,DELETE') as financing_table_access,has_table_privilege('scheduler_runtime','campaign.funnel_inquiries','SELECT,INSERT,UPDATE,DELETE') as funnel_table_access,has_function_privilege('scheduler_runtime','campaign.financing_release_export()','EXECUTE') as private_export,pg_has_role('scheduler_runtime','app_runtime','MEMBER') as native_membership,pg_has_role('scheduler_runtime','migration_owner','MEMBER') as owner_membership",
+      );
+      assert.deepEqual(scheduler.rows, [
+        {
+          schema_usage: true,
+          schema_create: false,
+          financing_table_access: false,
+          funnel_table_access: false,
+          private_export: false,
+          native_membership: false,
+          owner_membership: false,
+        },
+      ]);
       const clean = await purgeExpiredMarketingInquiries(f.pool);
       assert.ok(clean.total <= 25000 && clean.total === clean.funnel + clean.financing);
     } finally {

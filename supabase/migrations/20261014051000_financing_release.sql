@@ -562,6 +562,8 @@ do $f$ declare proc record; begin
  end loop;
 end $f$;
 revoke all on function campaign.purge_expired_financing_inquiries() from public;
+-- Resolve the already granted fixed cleanup functions. No CREATE or table access.
+grant usage on schema campaign to scheduler_runtime;
 grant execute on function campaign.purge_expired_financing_inquiries() to scheduler_runtime;
 revoke all on function campaign.purge_expired_marketing_inquiries() from public;
 grant execute on function campaign.purge_expired_marketing_inquiries() to scheduler_runtime;

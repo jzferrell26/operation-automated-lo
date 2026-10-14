@@ -9,6 +9,14 @@ import { runFinancingReleaseAdapterCases } from "../../../packages/db/test/finan
 runFinancingReleaseAdapterCases(db, app, { describe, it });
 const migrationPath = "supabase/migrations/20261014051000_financing_release.sql";
 describe("public financing migration SQL contract", () => {
+  it("lets the scheduler resolve existing cleanup entry points without granting table or schema creation access", async () => {
+    const sql = await readFile(migrationPath, "utf8");
+    expect(sql).toContain("grant usage on schema campaign to scheduler_runtime;");
+    expect(sql).not.toMatch(/grant\s+create\s+on\s+schema\s+campaign\s+to\s+scheduler_runtime/iu);
+    expect(sql).not.toMatch(
+      /grant\s+(?:select|insert|update|delete|all)\s+on\s+(?:table\s+)?campaign\.[^;]+\s+to\s+scheduler_runtime/iu,
+    );
+  });
   it("binds serialized JSON as text before PostgreSQL casts it, preventing driver double encoding", () => {
     const slots = {
       sourceSave: [1],

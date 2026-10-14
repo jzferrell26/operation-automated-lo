@@ -390,7 +390,7 @@ grant execute on function campaign.webinar_publisher_admit(uuid,uuid,uuid,jsonb)
 create function campaign.webinar_publisher_worker(identity jsonb,method text,input jsonb) returns jsonb
 language plpgsql security definer set search_path='' as $f$
 declare l campaign.webinar_publisher_launches; o campaign.webinar_publisher_operations; a campaign.webinar_publisher_attempts;
- obs campaign.webinar_publisher_admissions; next_stage text; next_state text; has_effect boolean; initial_ids jsonb; result jsonb; observed timestamptz;
+ obs campaign.webinar_publisher_admissions; next_stage text; next_state text; has_effect boolean; initial_ids jsonb; result jsonb; observed timestamptz; draft_reconcile boolean=false; parity_refusal boolean=false; preflight_refusal boolean=false;
 begin
  perform campaign.webinar_publisher_authorize(identity);
  -- Always lock lineage before operation: reservation, control and worker use the same order.
@@ -454,12 +454,33 @@ begin
     perform campaign.webinar_publisher_spend_authorize();
     result=campaign.webinar_publisher_evidence(l.campaign_ref);
     if result is null or result->'version'->>'campaignVersionRef'<>l.summary->'projection'->>'campaignVersionRef'
+     or result->'version'->>'manifestHash'<>l.summary->'projection'->>'manifestHash'
      or result->'preflight'->>'resultHash'<>l.summary->'projection'->>'preflightHash'
      or result->'approval'->>'approvalRef'<>l.summary->'projection'->>'approvalRef'
     then raise exception 'PUBLISHER_EVIDENCE_CHANGED'; end if;
    end if;
    result=campaign.webinar_publisher_proof(identity,l.projection_ref,case when o.action='pause' then 'pause' else 'qualification' end);
    if result is null then raise exception 'PUBLISHER_PROVIDER_UNQUALIFIED'; end if;
+   if o.stage in ('publish','resume') or o.action in ('publish','resume') then
+    if o.stage is distinct from o.action or o.action not in ('publish','resume')
+     or l.native_ids->>'campaignId' is null or l.native_ids->>'adsetId' is null or l.native_ids->>'adId' is null
+    then raise exception 'PUBLISHER_STAGE_INVALID'; end if;
+    -- Use the latest linked observation, including a later failure/withdrawal, not any old success.
+    select * into obs from campaign.webinar_publisher_admissions where location_id=l.location_id
+     and actor_id=l.actor_id and installation_id=l.installation_id and kind='observation'
+     and normalized->>'projectionHash'=l.projection_hash
+     order by (normalized->>'observedAt')::timestamptz desc,created_at desc,admission_ref desc limit 1 for share;
+    if not found then raise exception 'PUBLISHER_OBSERVATION_UNQUALIFIED'; end if;
+    if (obs.revoked_at is null and obs.expires_at>clock_timestamp()
+     and obs.created_at>=o.created_at
+     and obs.observed_at>greatest(o.created_at,(o.operation->>'createdAt')::timestamptz)
+     and obs.observed_at<=clock_timestamp() and obs.observed_at>=clock_timestamp()-interval '60 seconds'
+     and (obs.normalized->>'observedAt')::timestamptz=obs.observed_at
+     and obs.normalized->'nativeIds'=l.native_ids
+     and obs.normalized->>'state'=case when o.action='publish' then 'draft_ready' else 'paused' end
+     and obs.normalized->>'readBackHash' ~ '^[a-f0-9]{64}$') is not true
+    then raise exception 'PUBLISHER_OBSERVATION_UNQUALIFIED'; end if;
+   end if;
    insert into campaign.webinar_publisher_attempts(location_id,operation_ref,stage,generation,request_hash,status)
     values(o.location_id,o.operation_ref,o.stage,o.lease_generation,input->>'requestHash','dispatching');
    return jsonb_build_object('status','dispatch-recorded','generation',o.lease_generation,'cancellationGeneration',o.cancellation_generation);
@@ -470,13 +491,84 @@ begin
    update campaign.webinar_publisher_launches set state='uncertain',row_version=row_version+1 where location_id=l.location_id and projection_ref=l.projection_ref returning * into l;
   elsif method='checkpoint' then
    next_stage=input->>'stage'; next_state=input->>'state'; initial_ids=l.native_ids;
+   if o.stage in ('publish','resume') and next_stage='complete' and next_state='failed' then
+    -- Pre-effect refusal does not confirm a dispatch or imply any remote rollback/rejection.
+    if o.action is distinct from o.stage or o.action not in ('publish','resume')
+     or input->'nativeIds' is distinct from initial_ids or input->>'requestHash' is not null
+     or initial_ids->>'campaignId' is null or initial_ids->>'adsetId' is null or initial_ids->>'adId' is null
+     or exists(select 1 from campaign.webinar_publisher_attempts preflight_attempt
+       where preflight_attempt.location_id=o.location_id and preflight_attempt.operation_ref=o.operation_ref)
+    then raise exception 'PUBLISHER_PARITY_INVALID'; end if;
+    observed=(input->>'providerObservedAt')::timestamptz;
+    select * into obs from campaign.webinar_publisher_admissions where location_id=l.location_id
+     and actor_id=l.actor_id and installation_id=l.installation_id and kind='observation'
+     and normalized->>'projectionHash'=l.projection_hash
+     order by (normalized->>'observedAt')::timestamptz desc,created_at desc,admission_ref desc limit 1 for share;
+    if not found then raise exception 'PUBLISHER_OBSERVATION_UNQUALIFIED'; end if;
+    if (obs.revoked_at is null and obs.expires_at>clock_timestamp()
+     and obs.created_at>=o.created_at
+     and obs.observed_at>greatest(o.created_at,(o.operation->>'createdAt')::timestamptz)
+     and obs.observed_at<=clock_timestamp() and obs.observed_at>=clock_timestamp()-interval '60 seconds'
+     and observed=obs.observed_at and (obs.normalized->>'observedAt')::timestamptz=observed
+     and obs.normalized->'nativeIds'=initial_ids and obs.normalized->>'state'='failed'
+     and obs.normalized->>'readBackHash'=input->>'readBackHash'
+     and obs.normalized->>'readBackHash' ~ '^[a-f0-9]{64}$') is not true
+    then raise exception 'PUBLISHER_OBSERVATION_UNQUALIFIED'; end if;
+    preflight_refusal=true;
+   end if;
+   if o.stage='parity' and next_stage='complete' and next_state='failed' then
+    -- A verified mismatch ends this operation but retains every created remote identity.
+    if o.action is distinct from 'draft' or input->'nativeIds' is distinct from initial_ids
+     or initial_ids->>'campaignId' is null or initial_ids->>'adsetId' is null or initial_ids->>'adId' is null
+    then raise exception 'PUBLISHER_PARITY_INVALID'; end if;
+    select * into a from campaign.webinar_publisher_attempts where location_id=o.location_id and operation_ref=o.operation_ref
+     order by started_at desc,generation desc,stage desc limit 1 for update;
+    if not found or a.stage is distinct from 'ad' or a.status is distinct from 'confirmed'
+     or a.generation>o.lease_generation or (input->>'providerObservedAt')::timestamptz<a.provider_observed_at
+     or exists(select 1 from campaign.webinar_publisher_attempts parity_attempt
+       where parity_attempt.location_id=o.location_id and parity_attempt.operation_ref=o.operation_ref and parity_attempt.status<>'confirmed')
+    then raise exception 'PUBLISHER_PARITY_INVALID'; end if;
+    parity_refusal=true;
+   end if;
+   if o.stage='reconcile' and (next_state in ('drafting','draft_ready') or next_stage in ('campaign','adset','ad','parity')) then
+    -- Resume only after observing the exact retained creation identity. Never recover an unknown ID.
+    if o.action is distinct from 'draft' or next_state is distinct from 'drafting'
+     or input->'nativeIds' is distinct from initial_ids or initial_ids->>'campaignId' is null
+     or next_stage is distinct from (case when initial_ids->>'adsetId' is null then 'adset'
+       when initial_ids->>'adId' is null then 'ad' else 'parity' end)
+    then raise exception 'PUBLISHER_RECONCILE_INVALID'; end if;
+    select * into a from campaign.webinar_publisher_attempts where location_id=o.location_id and operation_ref=o.operation_ref
+     order by started_at desc,generation desc,stage desc limit 1 for update;
+    if not found or a.stage is distinct from (case when initial_ids->>'adsetId' is null then 'campaign'
+       when initial_ids->>'adId' is null then 'adset' else 'ad' end)
+     or a.generation>o.lease_generation or a.request_hash is distinct from input->>'requestHash'
+     or (input->>'providerObservedAt')::timestamptz<greatest(a.started_at,
+       coalesce(a.provider_observed_at,a.started_at),coalesce((o.operation->>'providerObservedAt')::timestamptz,a.started_at))
+     or exists(select 1 from campaign.webinar_publisher_attempts unresolved_attempt
+       where unresolved_attempt.location_id=o.location_id and unresolved_attempt.operation_ref=o.operation_ref
+        and unresolved_attempt.stage<>a.stage and unresolved_attempt.status<>'confirmed')
+    then raise exception 'PUBLISHER_RECONCILE_INVALID'; end if;
+    draft_reconcile=true;
+   end if;
+   if draft_reconcile or parity_refusal or preflight_refusal then
+    perform campaign.webinar_publisher_spend_authorize();
+    result=campaign.webinar_publisher_evidence(l.campaign_ref);
+    if result is null or result->'version'->>'manifestHash'<>l.summary->'projection'->>'manifestHash'
+     or result->'version'->>'campaignVersionRef'<>l.summary->'projection'->>'campaignVersionRef'
+     or result->'preflight'->>'resultHash'<>l.summary->'projection'->>'preflightHash'
+     or result->'approval'->>'approvalRef'<>l.summary->'projection'->>'approvalRef'
+    then raise exception 'PUBLISHER_EVIDENCE_CHANGED'; end if;
+    if campaign.webinar_publisher_proof(identity,l.projection_ref,'qualification') is null
+     then raise exception 'PUBLISHER_PROVIDER_UNQUALIFIED'; end if;
+   end if;
    if not ((o.stage='campaign' and next_stage='adset' and next_state='drafting')
     or (o.stage='adset' and next_stage='ad' and next_state='drafting')
     or (o.stage='ad' and next_stage='parity' and next_state='drafting')
     or (o.stage='parity' and next_stage='complete' and next_state='draft_ready')
     or (o.stage='publish' and next_stage='progress' and next_state='publish_queued')
     or (o.stage in ('pause','resume') and next_stage='progress' and next_state in ('pause_pending','resume_pending'))
-    or (o.stage in ('progress','reconcile') and next_stage in ('progress','complete') and next_state in ('in_review','live','paused','failed','uncertain')))
+    or (o.stage in ('progress','reconcile') and next_stage in ('progress','complete') and next_state in ('in_review','live','paused','failed','uncertain'))
+    or draft_reconcile or parity_refusal or preflight_refusal)
    then raise exception 'PUBLISHER_STAGE_INVALID'; end if;
    if exists(select 1 from jsonb_each_text(initial_ids) ids where ids.value is not null and input->'nativeIds'->>ids.key is distinct from ids.value)
     or (input->'nativeIds'->>'adsetId' is not null and input->'nativeIds'->>'campaignId' is null)
@@ -487,21 +579,27 @@ begin
    then raise exception 'PUBLISHER_PARENT_MISMATCH'; end if;
    observed=(input->>'providerObservedAt')::timestamptz;
    if observed is null or observed>clock_timestamp() or input->>'readBackHash' is null then raise exception 'PUBLISHER_OBSERVATION_REQUIRED'; end if;
-   if o.stage in ('campaign','adset','ad','publish','pause','resume') then
+   if o.stage in ('campaign','adset','ad','publish','pause','resume') and not preflight_refusal then
     update campaign.webinar_publisher_attempts set status='confirmed',read_back_hash=input->>'readBackHash',provider_observed_at=observed
      where location_id=o.location_id and operation_ref=o.operation_ref and stage=o.stage and generation=o.lease_generation
       and status='dispatching' and request_hash=input->>'requestHash';
     if not found then raise exception 'PUBLISHER_ATTEMPT_MISMATCH'; end if;
    end if;
-   if o.stage in ('progress','reconcile') then
+   if o.stage in ('progress','reconcile') or parity_refusal then
     select * into obs from campaign.webinar_publisher_admissions where location_id=l.location_id and actor_id=l.actor_id
      and installation_id=l.installation_id and kind='observation' and normalized->>'projectionHash'=l.projection_hash
      and normalized->'nativeIds'=input->'nativeIds' and normalized->>'state'=next_state and normalized->>'readBackHash'=input->>'readBackHash'
-     and (normalized->>'observedAt')::timestamptz=observed and revoked_at is null and expires_at>clock_timestamp() limit 1 for share;
+     and (normalized->>'observedAt')::timestamptz=observed and revoked_at is null and expires_at>clock_timestamp()
+     and (not (draft_reconcile or parity_refusal) or observed_at<=clock_timestamp()) limit 1 for share;
     if not found then raise exception 'PUBLISHER_OBSERVATION_UNQUALIFIED'; end if;
    end if;
+   if draft_reconcile then
+    update campaign.webinar_publisher_attempts set status='confirmed',read_back_hash=input->>'readBackHash',provider_observed_at=observed
+     where location_id=a.location_id and operation_ref=a.operation_ref and stage=a.stage and generation=a.generation and request_hash=a.request_hash;
+    if not found then raise exception 'PUBLISHER_ATTEMPT_MISMATCH'; end if;
+   end if;
    update campaign.webinar_publisher_operations set stage=next_stage,active=next_stage<>'complete',
-    operation=operation||jsonb_build_object('stage',next_stage,'state',next_state,'providerObservedAt',input->>'providerObservedAt','lastSafeFailure',null),
+    operation=operation||jsonb_build_object('stage',next_stage,'state',next_state,'providerObservedAt',input->>'providerObservedAt','lastSafeFailure',case when parity_refusal or preflight_refusal then 'PARITY_MISMATCH' else null end),
     lease_expires_at=case when next_stage='complete' then null else lease_expires_at end
     where location_id=o.location_id and operation_ref=o.operation_ref returning * into o;
    update campaign.webinar_publisher_launches set state=next_state,native_ids=input->'nativeIds',row_version=row_version+1 where location_id=l.location_id and projection_ref=l.projection_ref returning * into l;

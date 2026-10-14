@@ -5,6 +5,7 @@ import {
   OpaqueReferenceSchema,
   WebinarPublisherNativeIdSchema as Id,
   WebinarPublisherQualificationSchema,
+  WebinarPublisherPauseQualificationSchema,
 } from "@oalo/contracts";
 
 import {
@@ -168,7 +169,10 @@ export function createWebinarPublisherNativeTransport(
       let body: string | FormData | undefined;
       if (mutation) {
         const projection = assertWebinarPublisherProjection(request.projection);
-        const proof = WebinarPublisherQualificationSchema.parse(request.qualification);
+        const proof =
+          request.operation === "pause"
+            ? WebinarPublisherPauseQualificationSchema.parse(request.qualification)
+            : WebinarPublisherQualificationSchema.parse(request.qualification);
         if (
           proof.kind !== "app_test" ||
           request.locationRef !== projection.locationRef ||
@@ -176,17 +180,19 @@ export function createWebinarPublisherNativeTransport(
           proof.projectionHash !== projection.projectionHash ||
           proof.locationId !== token.locationId ||
           proof.adAccountId !== projection.assets.adAccountId ||
-          proof.pageId !== projection.assets.pageId ||
           proof.wireMappingHash !== projection.providerContract.wireMappingHash ||
           projection.providerContract.wireMappingHash !== WEBINAR_PUBLISHER_WIRE_MAPPING_HASH ||
-          (request.operation !== "pause" && now() >= Date.parse(proof.expiresAt)) ||
+          now() >= Date.parse(proof.expiresAt) ||
           now() < Date.parse(proof.observedAt) ||
-          proof.schedule.observedStop !== projection.schedule.endsAt ||
-          proof.schedule.requestEnd !== projection.schedule.endsAt ||
-          proof.budget.amountMajor !== projection.budget.dailyBudgetMinor / 100 ||
-          proof.timezone !== projection.assets.timezone ||
-          projection.budget.totalSemantics === "hard_cap" ||
-          (request.operation !== "pause" && now() >= Date.parse(projection.schedule.endsAt))
+          ("action" in proof
+            ? proof.campaignId !== request.parameters.campaignId
+            : proof.pageId !== projection.assets.pageId ||
+              proof.schedule.observedStop !== projection.schedule.endsAt ||
+              proof.schedule.requestEnd !== projection.schedule.endsAt ||
+              proof.budget.amountMajor !== projection.budget.dailyBudgetMinor / 100 ||
+              proof.timezone !== projection.assets.timezone ||
+              projection.budget.totalSemantics === "hard_cap" ||
+              now() >= Date.parse(projection.schedule.endsAt))
         ) {
           throw new WebinarPublisherTransportError("DEPENDENCY_BLOCKED", request.operation);
         }

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { randomUUID } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 import { canonicalCampaignHash, webinarPublisherConfirmationHash } from "@oalo/application";
 import { parseInstallationRef } from "@oalo/contracts";
 import { PostgresWebinarPublisherRepository } from "../dist/index.js";
@@ -155,12 +156,14 @@ async function fixture(sharedPool) {
       c.execute(request("test.publisher-admin", text, values)),
     );
   }
-  async function admit(kind, normalized) {
+  async function admit(kind, normalized, metadata = {}) {
     const receipt = {
       ...f.receipt,
       kind,
       admissionRef: `admission_${randomUUID().replaceAll("-", "")}`,
       normalized,
+      ...(kind === "observation" ? { observedAt: normalized.observedAt } : {}),
+      ...metadata,
     };
     await admin(
       "select campaign.webinar_publisher_admit($1::uuid,$2::uuid,$3::uuid,$4::text::jsonb)",
@@ -218,6 +221,39 @@ async function fixture(sharedPool) {
             f.principal.locationId,
           ]),
         );
+      // Retire only identities this fixture created. Immutable evidence remains until DB teardown.
+      for (const [name, text, values, expectedId] of [
+        [
+          "location",
+          "update platform.locations set status='deleted' where id=$1::uuid and ghl_location_id=$2::text returning id",
+          [f.principal.locationId, f.summary.projection.assets.locationId],
+          f.principal.locationId,
+        ],
+        [
+          "actor",
+          "update platform.app_users set status='deleted' where id=$1::uuid and safe_display_name='Publisher test' returning id",
+          [f.principal.actorId],
+          f.principal.actorId,
+        ],
+        [
+          "installation",
+          "update platform.marketplace_installations set status='revoked' where id=$1::uuid and location_id=$2::uuid returning id",
+          [installationId, f.principal.locationId],
+          installationId,
+        ],
+      ]) {
+        const retired = await c.execute(request(`test.publisher-retire-${name}`, text, values));
+        assert.equal(retired.rows.length, 1);
+        assert.equal(retired.rows[0].id, expectedId);
+      }
+      const revoked = await c.execute(
+        request(
+          "test.publisher-retire-binding",
+          "update platform.role_bindings set revoked_at=coalesce(revoked_at,clock_timestamp()) where location_id=$1::uuid and user_id=$2::uuid returning id",
+          [f.principal.locationId, f.principal.actorId],
+        ),
+      );
+      assert.equal(revoked.rows.length, 1);
       // Existing shared cleanup owns append-only trigger management, not this file.
     });
     // Disposable integration database is dropped by the canonical gate; leave original immutable
@@ -228,7 +264,855 @@ async function fixture(sharedPool) {
   await admit("qualification", f.proof);
   return { ...f, evidence, pool, repo, admin, admit, reserve, cleanup };
 }
+async function draftReconcileFixture(knownStage, uncertainAttempt = true, reconcile = true) {
+  const f = await fixture();
+  try {
+    const { operation, task } = await f.reserve();
+    const workerRef = "worker_draftReadback001";
+    const lease = await f.repo.claim(f.principal, { task, workerRef, leaseSeconds: 60 });
+    const nativeIds = { campaignId: null, adsetId: null, adId: null };
+    let nextStage, requestHash;
+    for (const [index, stage] of ["campaign", "adset", "ad"].entries()) {
+      requestHash = String(index + 1).repeat(64);
+      const dispatch = {
+        operationRef: operation.operationRef,
+        workerRef,
+        leaseGeneration: lease.operation.leaseGeneration,
+        expectedStage: stage,
+        requestHash,
+      };
+      await f.repo.beginDispatch(f.principal, dispatch);
+      nativeIds[`${stage}Id`] = `native_reconcile_${stage}001`;
+      nextStage = ["adset", "ad", "parity"][index];
+      await f.repo.checkpoint(f.principal, {
+        ...dispatch,
+        stage: nextStage,
+        state: "drafting",
+        nativeIds: { ...nativeIds },
+        providerObservedAt: new Date().toISOString(),
+        readBackHash: "b".repeat(64),
+      });
+      if (stage === knownStage) break;
+    }
+    if (reconcile)
+      await f.repo.markUncertain(f.principal, {
+        operationRef: operation.operationRef,
+        workerRef,
+        leaseGeneration: lease.operation.leaseGeneration,
+        expectedStage: nextStage,
+      });
+    if (uncertainAttempt)
+      await f.admin(
+        "update campaign.webinar_publisher_attempts set status='uncertain' where location_id=$1::uuid and operation_ref=$2::text and stage=$3::text",
+        [f.principal.locationId, operation.operationRef, knownStage],
+      );
+    const observation = {
+      projectionHash: operation.projectionHash,
+      nativeIds,
+      state: "drafting",
+      readBackHash: "c".repeat(64),
+      observedAt: new Date().toISOString(),
+      facebookIds: { campaignId: null, adsetId: null, adId: null },
+      metrics: { impressions: null, clicks: null, spendMinor: null },
+    };
+    await f.admit("observation", observation);
+    const checkpoint = {
+      operationRef: operation.operationRef,
+      workerRef,
+      leaseGeneration: lease.operation.leaseGeneration,
+      expectedStage: "reconcile",
+      stage: nextStage,
+      state: "drafting",
+      nativeIds,
+      providerObservedAt: observation.observedAt,
+      requestHash,
+      readBackHash: observation.readBackHash,
+    };
+    return { ...f, operation, task, checkpoint, observation, knownStage };
+  } catch (error) {
+    await f.cleanup();
+    throw error;
+  }
+}
+async function controlPreflightFixture(action) {
+  const f = await draftReconcileFixture("ad", false, false);
+  try {
+    let ready = await f.repo.checkpoint(f.principal, {
+      ...f.checkpoint,
+      expectedStage: "parity",
+      stage: "complete",
+      state: "draft_ready",
+    });
+    if (action === "resume") {
+      await f.admit("pause", {
+        schemaVersion: 1,
+        contractId: "CTR-003",
+        contractRevision: 1,
+        kind: "app_test",
+        action: "pause",
+        evidenceRef: "evidence_preflightStop001",
+        artifactHash: "a".repeat(64),
+        projectionHash: f.operation.projectionHash,
+        wireMappingHash: f.summary.projection.providerContract.wireMappingHash,
+        locationId: f.summary.projection.assets.locationId,
+        adAccountId: f.summary.projection.assets.adAccountId,
+        campaignId: ready.launch.nativeIds.campaignId,
+        observedAt: f.proof.observedAt,
+        expiresAt: f.proof.expiresAt,
+      });
+      const pause = await f.reserve("pause", ready.launch.rowVersion, ready.launch.state);
+      const pausedLease = await f.repo.claim(f.principal, {
+        task: pause.task,
+        workerRef: "worker_preflightStop001",
+        leaseSeconds: 60,
+      });
+      const pausedFence = {
+        operationRef: pause.operation.operationRef,
+        workerRef: "worker_preflightStop001",
+        leaseGeneration: pausedLease.operation.leaseGeneration,
+        expectedStage: "pause",
+        requestHash: "d".repeat(64),
+      };
+      await f.repo.beginDispatch(f.principal, pausedFence);
+      await f.repo.checkpoint(f.principal, {
+        ...pausedFence,
+        stage: "progress",
+        state: "pause_pending",
+        nativeIds: ready.launch.nativeIds,
+        providerObservedAt: new Date().toISOString(),
+        readBackHash: "d".repeat(64),
+      });
+      const stopped = { ...f.observation, state: "paused", observedAt: new Date().toISOString() };
+      await f.admit("observation", stopped);
+      ready = await f.repo.checkpoint(f.principal, {
+        ...pausedFence,
+        expectedStage: "progress",
+        stage: "complete",
+        state: "paused",
+        nativeIds: ready.launch.nativeIds,
+        providerObservedAt: stopped.observedAt,
+        requestHash: null,
+        readBackHash: stopped.readBackHash,
+      });
+    }
+    const control = await f.reserve(action, ready.launch.rowVersion, ready.launch.state);
+    const workerRef = "worker_controlPreflight001";
+    const lease = await f.repo.claim(f.principal, {
+      task: control.task,
+      workerRef,
+      leaseSeconds: 60,
+    });
+    await delay(5);
+    const observation = {
+      ...f.observation,
+      nativeIds: lease.launch.nativeIds,
+      state: action === "publish" ? "draft_ready" : "paused",
+      observedAt: new Date().toISOString(),
+      readBackHash: "e".repeat(64),
+    };
+    return {
+      ...f,
+      control,
+      observation,
+      lease,
+      dispatch: {
+        operationRef: control.operation.operationRef,
+        workerRef,
+        leaseGeneration: lease.operation.leaseGeneration,
+        expectedStage: action,
+        requestHash: "e".repeat(64),
+      },
+    };
+  } catch (error) {
+    await f.cleanup();
+    throw error;
+  }
+}
 describe("native webinar publisher real PostgreSQL fences", { concurrency: false }, () => {
+  for (const action of ["publish", "resume"]) {
+    for (const failure of [
+      "no-observation",
+      "stale",
+      "wrong-ids",
+      "unknown-id",
+      "wrong-state",
+      "wrong-hash",
+      "wrong-time",
+      "later-success",
+      "withdrawn-source",
+      "revoked-proof",
+      "stale-generation",
+      "wrong-action",
+      "wrong-stage",
+      "attempt-recorded",
+      "cancelled",
+    ]) {
+      it(`refuses ${action} preflight terminal failure with ${failure}`, async () => {
+        const f = await controlPreflightFixture(action);
+        try {
+          const failed = { ...f.observation, state: "failed" };
+          if (failure === "stale") failed.observedAt = f.control.operation.createdAt;
+          if (failure === "wrong-state") failed.state = "uncertain";
+          if (failure !== "no-observation") await f.admit("observation", failed);
+          const checkpoint = {
+            ...f.dispatch,
+            stage: "complete",
+            state: "failed",
+            nativeIds: { ...failed.nativeIds },
+            providerObservedAt: failed.observedAt,
+            requestHash: null,
+            readBackHash: failed.readBackHash,
+          };
+          let expected = /OBSERVATION_UNQUALIFIED/;
+          if (failure === "wrong-ids" || failure === "unknown-id") {
+            checkpoint.nativeIds.adId = failure === "unknown-id" ? null : "native_wrong001";
+            expected = /PARITY_INVALID/;
+          }
+          if (failure === "wrong-hash") checkpoint.readBackHash = "f".repeat(64);
+          if (failure === "wrong-time")
+            checkpoint.providerObservedAt = f.control.operation.createdAt;
+          if (failure === "later-success") {
+            await delay(5);
+            await f.admit("observation", {
+              ...f.observation,
+              observedAt: new Date().toISOString(),
+            });
+          }
+          if (failure === "withdrawn-source") {
+            await f.admin(
+              "update campaign.funnel_publications set active=false where id=$1::uuid",
+              [f.summary.projection.destination.publicationId],
+            );
+            expected = /EVIDENCE_CHANGED/;
+          }
+          if (failure === "revoked-proof") {
+            await f.admin(
+              "update campaign.webinar_publisher_admissions set revoked_at=clock_timestamp() where location_id=$1::uuid and kind='qualification'",
+              [f.principal.locationId],
+            );
+            expected = /PROVIDER_UNQUALIFIED/;
+          }
+          if (failure === "stale-generation") {
+            checkpoint.leaseGeneration++;
+            expected = /FENCED/;
+          }
+          if (failure === "wrong-action") {
+            await f.admit("pause", {
+              schemaVersion: 1,
+              contractId: "CTR-003",
+              contractRevision: 1,
+              kind: "app_test",
+              action: "pause",
+              evidenceRef: "evidence_wrongControl001",
+              artifactHash: "a".repeat(64),
+              projectionHash: f.control.operation.projectionHash,
+              wireMappingHash: f.summary.projection.providerContract.wireMappingHash,
+              locationId: f.summary.projection.assets.locationId,
+              adAccountId: f.summary.projection.assets.adAccountId,
+              campaignId: failed.nativeIds.campaignId,
+              observedAt: failed.observedAt,
+              expiresAt: f.proof.expiresAt,
+            });
+            const current = await f.repo.readWorker(f.principal, f.control.operation.operationRef);
+            const pause = await f.reserve("pause", current.launch.rowVersion, current.launch.state);
+            const lease = await f.repo.claim(f.principal, {
+              task: pause.task,
+              workerRef: "worker_wrongControl001",
+              leaseSeconds: 60,
+            });
+            await f.admin(
+              "update campaign.webinar_publisher_operations set stage=$3::text,operation=operation||jsonb_build_object('stage',$3::text) where location_id=$1::uuid and operation_ref=$2::text",
+              [f.principal.locationId, pause.operation.operationRef, action],
+            );
+            checkpoint.operationRef = pause.operation.operationRef;
+            checkpoint.workerRef = "worker_wrongControl001";
+            checkpoint.leaseGeneration = lease.operation.leaseGeneration;
+            expected = /PARITY_INVALID/;
+          }
+          if (failure === "wrong-stage") {
+            checkpoint.expectedStage = "progress";
+            expected = /FENCED/;
+          }
+          if (failure === "attempt-recorded") {
+            await delay(5);
+            await f.admit("observation", {
+              ...f.observation,
+              observedAt: new Date().toISOString(),
+            });
+            await f.repo.beginDispatch(f.principal, f.dispatch);
+            expected = /PARITY_INVALID/;
+          }
+          if (failure === "cancelled") {
+            const current = await f.repo.readWorker(f.principal, f.control.operation.operationRef);
+            await f.reserve("cancel", current.launch.rowVersion, current.launch.state);
+            expected = /FENCED/;
+          }
+          await assert.rejects(f.repo.checkpoint(f.principal, checkpoint), expected);
+          const retained = await f.repo.readWorker(f.principal, checkpoint.operationRef);
+          assert.deepEqual(retained.launch.nativeIds, f.observation.nativeIds);
+          assert.notEqual(retained.operation.lastSafeFailure, "PARITY_MISMATCH");
+          const outbox = await f.admin(
+            "select processed_at from integration.webinar_publisher_outbox where location_id=$1::uuid and operation_ref=$2::text",
+            [f.principal.locationId, checkpoint.operationRef],
+          );
+          assert.equal(outbox.rows[0].processed_at, null);
+        } finally {
+          await f.cleanup();
+        }
+      });
+    }
+    it(`requires a fresh linked ${action} readback before reserving its effect`, async () => {
+      const f = await controlPreflightFixture(action);
+      try {
+        await assert.rejects(
+          f.repo.beginDispatch(f.principal, f.dispatch),
+          /OBSERVATION_UNQUALIFIED/,
+        );
+        await f.admit("observation", f.observation);
+        const recorded = await f.repo.beginDispatch(f.principal, f.dispatch);
+        assert.equal(recorded.status, "dispatch-recorded");
+        assert.equal(recorded.generation, f.lease.operation.leaseGeneration);
+        const attempts = await f.admin(
+          "select stage,status,request_hash from campaign.webinar_publisher_attempts where location_id=$1::uuid and operation_ref=$2::text",
+          [f.principal.locationId, f.control.operation.operationRef],
+        );
+        assert.deepEqual(attempts.rows, [
+          { stage: action, status: "dispatching", request_hash: f.dispatch.requestHash },
+        ]);
+        await assert.rejects(f.repo.beginDispatch(f.principal, f.dispatch));
+      } finally {
+        await f.cleanup();
+      }
+    });
+    it(`persists a verified ${action} preflight mismatch before any dispatch with retained IDs`, async () => {
+      const f = await controlPreflightFixture(action);
+      try {
+        const failed = { ...f.observation, state: "failed" };
+        await f.admit("observation", failed);
+        const saved = await f.repo.checkpoint(f.principal, {
+          ...f.dispatch,
+          stage: "complete",
+          state: "failed",
+          nativeIds: failed.nativeIds,
+          providerObservedAt: failed.observedAt,
+          requestHash: null,
+          readBackHash: failed.readBackHash,
+        });
+        assert.equal(saved.operation.stage, "complete");
+        assert.equal(saved.operation.state, "failed");
+        assert.equal(saved.operation.lastSafeFailure, "PARITY_MISMATCH");
+        assert.equal(saved.leaseExpiresAt, null);
+        assert.deepEqual(saved.launch.nativeIds, failed.nativeIds);
+        const durable = await f.admin(
+          "select o.active,x.processed_at,(select count(*)::integer from campaign.webinar_publisher_attempts a where a.location_id=o.location_id and a.operation_ref=o.operation_ref) as attempts from campaign.webinar_publisher_operations o join integration.webinar_publisher_outbox x using(location_id,operation_ref) where o.location_id=$1::uuid and o.operation_ref=$2::text",
+          [f.principal.locationId, f.control.operation.operationRef],
+        );
+        assert.equal(durable.rows[0].active, false);
+        assert.ok(durable.rows[0].processed_at instanceof Date);
+        assert.equal(durable.rows[0].attempts, 0);
+        await assert.rejects(f.repo.beginDispatch(f.principal, f.dispatch), /FENCED/);
+      } finally {
+        await f.cleanup();
+      }
+    });
+    for (const failure of [
+      "stale",
+      "wrong-ids",
+      "wrong-state",
+      "bad-hash",
+      "receipt-time",
+      "revoked",
+      "expired",
+      "later-failed",
+      "withdrawn-source",
+      "revoked-proof",
+      "stale-generation",
+      "cancelled",
+    ]) {
+      it(`refuses ${action} dispatch with ${failure} linked preflight`, async () => {
+        const f = await controlPreflightFixture(action);
+        try {
+          const observation = structuredClone(f.observation);
+          if (failure === "stale") observation.observedAt = f.control.operation.createdAt;
+          if (failure === "wrong-ids") observation.nativeIds.adId = "native_wrong001";
+          if (failure === "wrong-state")
+            observation.state = action === "publish" ? "paused" : "draft_ready";
+          if (failure === "bad-hash") observation.readBackHash = "bad";
+          await f.admit(
+            "observation",
+            observation,
+            failure === "receipt-time" ? { observedAt: f.receipt.observedAt } : {},
+          );
+          let expected = /OBSERVATION_UNQUALIFIED/;
+          if (failure === "expired") await delay(5);
+          if (failure === "revoked" || failure === "expired")
+            await f.admin(
+              `update campaign.webinar_publisher_admissions set ${failure === "revoked" ? "revoked_at" : "expires_at"}=clock_timestamp()-interval '1 millisecond' where location_id=$1::uuid and kind='observation'`,
+              [f.principal.locationId],
+            );
+          if (failure === "later-failed") {
+            await delay(5);
+            await f.admit("observation", {
+              ...observation,
+              state: "failed",
+              observedAt: new Date().toISOString(),
+            });
+          }
+          if (failure === "withdrawn-source") {
+            await f.admin(
+              "update campaign.funnel_publications set active=false where id=$1::uuid",
+              [f.summary.projection.destination.publicationId],
+            );
+            expected = /EVIDENCE_CHANGED/;
+          }
+          if (failure === "revoked-proof") {
+            await f.admin(
+              "update campaign.webinar_publisher_admissions set revoked_at=clock_timestamp() where location_id=$1::uuid and kind='qualification'",
+              [f.principal.locationId],
+            );
+            expected = /PROVIDER_UNQUALIFIED/;
+          }
+          if (failure === "stale-generation") {
+            f.dispatch.leaseGeneration++;
+            expected = /FENCED/;
+          }
+          if (failure === "cancelled") {
+            const current = await f.repo.readWorker(f.principal, f.control.operation.operationRef);
+            await f.reserve("cancel", current.launch.rowVersion, current.launch.state);
+            expected = /FENCED/;
+          }
+          await assert.rejects(f.repo.beginDispatch(f.principal, f.dispatch), expected);
+          const attempts = await f.admin(
+            "select count(*)::integer as total from campaign.webinar_publisher_attempts where location_id=$1::uuid and operation_ref=$2::text",
+            [f.principal.locationId, f.control.operation.operationRef],
+          );
+          assert.equal(attempts.rows[0].total, 0);
+        } finally {
+          await f.cleanup();
+        }
+      });
+    }
+  }
+  it("retires only the exact completed fixture principals and leaves other active fixture tenants alone", async () => {
+    const pool = testPool(url);
+    const f = await fixture(pool);
+    const other = await fixture(pool);
+    try {
+      await f.cleanup();
+      const first = await f.admin(
+        "select id,status from platform.locations where id in ($1::uuid,$2::uuid) order by id",
+        [f.principal.locationId, other.principal.locationId],
+      );
+      assert.equal(first.rows.find((row) => row.id === f.principal.locationId).status, "deleted");
+      assert.equal(
+        first.rows.find((row) => row.id === other.principal.locationId).status,
+        "active",
+      );
+      await other.cleanup();
+      const stopped = await f.admin(
+        "select l.id,l.status,u.status as user_status,i.status as installation_status,r.revoked_at from platform.locations l join platform.role_bindings r on r.location_id=l.id join platform.app_users u on u.id=r.user_id join platform.marketplace_installations i on i.location_id=l.id where l.id in ($1::uuid,$2::uuid)",
+        [f.principal.locationId, other.principal.locationId],
+      );
+      assert.equal(stopped.rows.length, 2);
+      for (const row of stopped.rows) {
+        assert.equal(row.status, "deleted");
+        assert.equal(row.user_status, "deleted");
+        assert.equal(row.installation_status, "revoked");
+        assert.ok(row.revoked_at instanceof Date);
+      }
+      await assert.rejects(
+        f.repo.run(f.principal, async () => {}),
+        /AUTHORITY_WITHDRAWN|Verified actor is not active/,
+      );
+      const retained = await f.admin(
+        "select count(*)::integer as total from campaign.campaign_versions where location_id in ($1::uuid,$2::uuid)",
+        [f.principal.locationId, other.principal.locationId],
+      );
+      assert.equal(retained.rows[0].total, 2);
+    } finally {
+      await other.cleanup();
+      await f.cleanup();
+      await pool.close();
+    }
+  });
+  it("atomically persists a verified parity refusal without losing created native identities", async () => {
+    const f = await draftReconcileFixture("ad", false, false);
+    try {
+      const observation = {
+        ...f.observation,
+        state: "failed",
+        observedAt: new Date().toISOString(),
+        readBackHash: "f".repeat(64),
+      };
+      await f.admit("observation", observation);
+      const result = await f.repo.checkpoint(f.principal, {
+        ...f.checkpoint,
+        expectedStage: "parity",
+        stage: "complete",
+        state: "failed",
+        providerObservedAt: observation.observedAt,
+        readBackHash: observation.readBackHash,
+      });
+      assert.equal(result.operation.stage, "complete");
+      assert.equal(result.operation.state, "failed");
+      assert.equal(result.operation.lastSafeFailure, "PARITY_MISMATCH");
+      assert.deepEqual(result.launch.nativeIds, f.checkpoint.nativeIds);
+      assert.equal(result.leaseExpiresAt, null);
+      assert.deepEqual(await f.repo.pendingTasks(f.principal), []);
+      await assert.rejects(
+        f.repo.beginDispatch(f.principal, {
+          operationRef: f.operation.operationRef,
+          workerRef: f.checkpoint.workerRef,
+          leaseGeneration: f.checkpoint.leaseGeneration,
+          expectedStage: "parity",
+          requestHash: "a".repeat(64),
+        }),
+        /FENCED/,
+      );
+      const launch = await f.repo.run(f.principal, (tx) =>
+        tx.loadLaunch(f.operation.projectionRef),
+      );
+      await assert.rejects(
+        f.reserve("publish", launch.rowVersion, launch.state),
+        /ACTION_NOT_READY/,
+      );
+      await f.admit("pause", {
+        schemaVersion: 1,
+        contractId: "CTR-003",
+        contractRevision: 1,
+        kind: "app_test",
+        action: "pause",
+        evidenceRef: "evidence_parityStop001",
+        artifactHash: "a".repeat(64),
+        projectionHash: f.operation.projectionHash,
+        wireMappingHash: f.summary.projection.providerContract.wireMappingHash,
+        locationId: f.summary.projection.assets.locationId,
+        adAccountId: f.summary.projection.assets.adAccountId,
+        campaignId: f.checkpoint.nativeIds.campaignId,
+        observedAt: observation.observedAt,
+        expiresAt: f.proof.expiresAt,
+      });
+      const pause = await f.reserve("pause", launch.rowVersion, launch.state);
+      assert.equal(pause.operation.action, "pause");
+    } finally {
+      await f.cleanup();
+    }
+  });
+  for (const failure of [
+    "wrong-ids",
+    "no-observation",
+    "withdrawn-source",
+    "revoked-proof",
+    "stale-generation",
+    "wrong-action",
+  ])
+    it(`does not persist parity refusal for ${failure}`, async () => {
+      const f = await draftReconcileFixture("ad", false, false);
+      try {
+        const observation = {
+          ...f.observation,
+          state: "failed",
+          observedAt: new Date().toISOString(),
+          readBackHash: "f".repeat(64),
+        };
+        if (failure !== "no-observation") await f.admit("observation", observation);
+        const checkpoint = {
+          ...f.checkpoint,
+          expectedStage: "parity",
+          stage: "complete",
+          state: "failed",
+          providerObservedAt: observation.observedAt,
+          readBackHash: observation.readBackHash,
+        };
+        let expected = /PARITY_INVALID/;
+        if (failure === "wrong-ids")
+          checkpoint.nativeIds = { ...checkpoint.nativeIds, adId: "native_wrong001" };
+        if (failure === "no-observation") expected = /OBSERVATION_UNQUALIFIED/;
+        if (failure === "withdrawn-source") {
+          await f.admin("update campaign.funnel_publications set active=false where id=$1::uuid", [
+            f.summary.projection.destination.publicationId,
+          ]);
+          expected = /EVIDENCE_CHANGED/;
+        }
+        if (failure === "revoked-proof") {
+          await f.admin(
+            "update campaign.webinar_publisher_admissions set revoked_at=clock_timestamp() where location_id=$1::uuid and kind='qualification'",
+            [f.principal.locationId],
+          );
+          expected = /PROVIDER_UNQUALIFIED/;
+        }
+        if (failure === "stale-generation") {
+          checkpoint.leaseGeneration++;
+          expected = /FENCED/;
+        }
+        if (failure === "wrong-action") {
+          await f.admit("pause", {
+            schemaVersion: 1,
+            contractId: "CTR-003",
+            contractRevision: 1,
+            kind: "app_test",
+            action: "pause",
+            evidenceRef: "evidence_wrongParity001",
+            artifactHash: "a".repeat(64),
+            projectionHash: f.operation.projectionHash,
+            wireMappingHash: f.summary.projection.providerContract.wireMappingHash,
+            locationId: f.summary.projection.assets.locationId,
+            adAccountId: f.summary.projection.assets.adAccountId,
+            campaignId: f.checkpoint.nativeIds.campaignId,
+            observedAt: observation.observedAt,
+            expiresAt: f.proof.expiresAt,
+          });
+          const launch = await f.repo.run(f.principal, (tx) =>
+            tx.loadLaunch(f.operation.projectionRef),
+          );
+          const pause = await f.reserve("pause", launch.rowVersion, launch.state);
+          const lease = await f.repo.claim(f.principal, {
+            task: pause.task,
+            workerRef: "worker_wrongParity001",
+            leaseSeconds: 60,
+          });
+          // Sanctioned disposable owner seed presents an inconsistent workflow to the SQL guard.
+          await f.admin(
+            "update campaign.webinar_publisher_operations set stage='parity',operation=operation||'{\"stage\":\"parity\"}'::jsonb where location_id=$1::uuid and operation_ref=$2::text",
+            [f.principal.locationId, pause.operation.operationRef],
+          );
+          checkpoint.operationRef = pause.operation.operationRef;
+          checkpoint.workerRef = "worker_wrongParity001";
+          checkpoint.leaseGeneration = lease.operation.leaseGeneration;
+        }
+        await assert.rejects(f.repo.checkpoint(f.principal, checkpoint), expected);
+        const record = await f.repo.readWorker(f.principal, checkpoint.operationRef);
+        assert.equal(record.operation.stage, "parity");
+        assert.deepEqual(record.launch.nativeIds, f.checkpoint.nativeIds);
+        assert.notEqual(record.operation.lastSafeFailure, "PARITY_MISMATCH");
+      } finally {
+        await f.cleanup();
+      }
+    });
+  for (const stage of ["campaign", "adset", "ad"])
+    it(`continues only the remaining draft stage after verified known ${stage} reconciliation`, async () => {
+      const f = await draftReconcileFixture(stage);
+      try {
+        const result = await f.repo.checkpoint(f.principal, f.checkpoint);
+        assert.equal(result.operation.stage, f.checkpoint.stage);
+        assert.equal(result.launch.state, "drafting");
+        assert.deepEqual(result.launch.nativeIds, f.checkpoint.nativeIds);
+        assert.equal(result.operation.confirmationHash, f.operation.confirmationHash);
+        assert.equal(result.operation.requestHash, f.operation.requestHash);
+        const attempt = await f.admin(
+          "select status,request_hash,read_back_hash,provider_observed_at from campaign.webinar_publisher_attempts where location_id=$1::uuid and operation_ref=$2::text and stage=$3::text",
+          [f.principal.locationId, f.operation.operationRef, stage],
+        );
+        assert.equal(attempt.rows[0].status, "confirmed");
+        assert.equal(attempt.rows[0].request_hash, f.checkpoint.requestHash);
+        assert.equal(attempt.rows[0].read_back_hash, f.checkpoint.readBackHash);
+        assert.equal(attempt.rows[0].provider_observed_at.toISOString(), f.observation.observedAt);
+        const count = (
+          await f.admin(
+            "select count(*)::integer as total from campaign.webinar_publisher_attempts where location_id=$1::uuid and operation_ref=$2::text",
+            [f.principal.locationId, f.operation.operationRef],
+          )
+        ).rows[0].total;
+        if (stage === "ad") {
+          const ready = await f.repo.checkpoint(f.principal, {
+            ...f.checkpoint,
+            expectedStage: "parity",
+            stage: "complete",
+            state: "draft_ready",
+            providerObservedAt: new Date().toISOString(),
+          });
+          assert.equal(ready.launch.state, "draft_ready");
+        } else {
+          await f.admin(
+            "update campaign.webinar_publisher_operations set lease_expires_at=clock_timestamp()-interval '1 second' where location_id=$1::uuid and operation_ref=$2::text",
+            [f.principal.locationId, f.operation.operationRef],
+          );
+          const reclaimed = await f.repo.claim(f.principal, {
+            task: f.task,
+            workerRef: "worker_continueDraft001",
+            leaseSeconds: 60,
+          });
+          assert.equal(reclaimed.operation.stage, f.checkpoint.stage);
+          assert.equal(reclaimed.operation.state, "drafting");
+          await f.repo.beginDispatch(f.principal, {
+            operationRef: f.operation.operationRef,
+            workerRef: "worker_continueDraft001",
+            leaseGeneration: reclaimed.operation.leaseGeneration,
+            expectedStage: f.checkpoint.stage,
+            requestHash: "d".repeat(64),
+          });
+          assert.equal(
+            (
+              await f.admin(
+                "select count(*)::integer as total from campaign.webinar_publisher_attempts where location_id=$1::uuid and operation_ref=$2::text",
+                [f.principal.locationId, f.operation.operationRef],
+              )
+            ).rows[0].total,
+            count + 1,
+          );
+        }
+      } finally {
+        await f.cleanup();
+      }
+    });
+  it("accepts an admitted readback for a retained already confirmed draft attempt", async () => {
+    const f = await draftReconcileFixture("ad", false);
+    try {
+      assert.equal((await f.repo.checkpoint(f.principal, f.checkpoint)).operation.stage, "parity");
+    } finally {
+      await f.cleanup();
+    }
+  });
+  for (const failure of [
+    "wrong-stage",
+    "wrong-ids",
+    "wrong-hash",
+    "stale-observation",
+    "older-than-confirmed-readback",
+    "revoked-observation",
+    "revoked-proof",
+    "expired-observation",
+    "expired-proof",
+    "withdrawn-source",
+    "stale-generation",
+  ])
+    it(`refuses ${failure} when reconciling an interrupted draft`, async () => {
+      const f = await draftReconcileFixture("campaign");
+      try {
+        const checkpoint = { ...f.checkpoint };
+        let expected = /RECONCILE_INVALID/;
+        if (failure === "wrong-stage") checkpoint.stage = "ad";
+        if (failure === "wrong-ids")
+          checkpoint.nativeIds = { ...checkpoint.nativeIds, campaignId: "native_wrong001" };
+        if (failure === "wrong-hash") checkpoint.requestHash = "e".repeat(64);
+        if (failure === "stale-observation")
+          checkpoint.providerObservedAt = "2020-01-01T00:00:00.000Z";
+        if (failure === "older-than-confirmed-readback") {
+          const previous = await f.admin(
+            "select provider_observed_at from campaign.webinar_publisher_attempts where location_id=$1::uuid and operation_ref=$2::text and stage='campaign'",
+            [f.principal.locationId, f.operation.operationRef],
+          );
+          checkpoint.providerObservedAt = new Date(
+            previous.rows[0].provider_observed_at.getTime() - 1,
+          ).toISOString();
+        }
+        if (failure === "revoked-observation" || failure === "revoked-proof") {
+          await f.admin(
+            "update campaign.webinar_publisher_admissions set revoked_at=clock_timestamp() where location_id=$1::uuid and kind=$2::text",
+            [
+              f.principal.locationId,
+              failure === "revoked-observation" ? "observation" : "qualification",
+            ],
+          );
+          expected =
+            failure === "revoked-observation" ? /OBSERVATION_UNQUALIFIED/ : /PROVIDER_UNQUALIFIED/;
+        }
+        if (failure === "expired-proof" || failure === "expired-observation") {
+          await delay(5);
+          await f.admin(
+            "update campaign.webinar_publisher_admissions set expires_at=clock_timestamp()-interval '1 millisecond' where location_id=$1::uuid and kind=$2::text",
+            [f.principal.locationId, failure === "expired-proof" ? "qualification" : "observation"],
+          );
+          expected =
+            failure === "expired-proof" ? /PROVIDER_UNQUALIFIED/ : /OBSERVATION_UNQUALIFIED/;
+        }
+        if (failure === "withdrawn-source") {
+          await f.admin("update campaign.funnel_publications set active=false where id=$1::uuid", [
+            f.summary.projection.destination.publicationId,
+          ]);
+          expected = /EVIDENCE_CHANGED/;
+        }
+        if (failure === "stale-generation") {
+          checkpoint.leaseGeneration++;
+          expected = /FENCED/;
+        }
+        await assert.rejects(f.repo.checkpoint(f.principal, checkpoint), expected);
+        const record = await f.repo.readWorker(f.principal, f.operation.operationRef);
+        assert.equal(record.operation.stage, "reconcile");
+        assert.equal(record.operation.state, "uncertain");
+        assert.deepEqual(record.launch.nativeIds, f.checkpoint.nativeIds);
+        const retainedAttempt = await f.admin(
+          "select status from campaign.webinar_publisher_attempts where location_id=$1::uuid and operation_ref=$2::text and stage='campaign'",
+          [f.principal.locationId, f.operation.operationRef],
+        );
+        assert.equal(retainedAttempt.rows[0].status, "uncertain");
+      } finally {
+        await f.cleanup();
+      }
+    });
+  it("never repeats creation when the interrupted stage identity is still unknown", async () => {
+    const f = await draftReconcileFixture("campaign", false);
+    try {
+      await f.repo.checkpoint(f.principal, f.checkpoint);
+      await f.repo.beginDispatch(f.principal, {
+        operationRef: f.operation.operationRef,
+        workerRef: f.checkpoint.workerRef,
+        leaseGeneration: f.checkpoint.leaseGeneration,
+        expectedStage: "adset",
+        requestHash: "d".repeat(64),
+      });
+      await f.repo.markUncertain(f.principal, {
+        operationRef: f.operation.operationRef,
+        workerRef: f.checkpoint.workerRef,
+        leaseGeneration: f.checkpoint.leaseGeneration,
+        expectedStage: "adset",
+      });
+      const observation = { ...f.observation, observedAt: new Date().toISOString() };
+      await f.admit("observation", observation);
+      await assert.rejects(
+        f.repo.checkpoint(f.principal, {
+          ...f.checkpoint,
+          requestHash: "d".repeat(64),
+          providerObservedAt: observation.observedAt,
+        }),
+        /RECONCILE_INVALID/,
+      );
+      assert.equal(
+        (await f.repo.readWorker(f.principal, f.operation.operationRef)).operation.stage,
+        "reconcile",
+      );
+      const attempts = await f.admin(
+        "select stage,status from campaign.webinar_publisher_attempts where location_id=$1::uuid and operation_ref=$2::text order by stage",
+        [f.principal.locationId, f.operation.operationRef],
+      );
+      assert.deepEqual(
+        attempts.rows.map((row) => [row.stage, row.status]),
+        [
+          ["adset", "uncertain"],
+          ["campaign", "confirmed"],
+        ],
+      );
+    } finally {
+      await f.cleanup();
+    }
+  });
+  it("does not resume draft writes after cancellation or reinterpret a cancel action as draft recovery", async () => {
+    const f = await draftReconcileFixture("campaign");
+    try {
+      const launch = await f.repo.run(f.principal, (tx) =>
+        tx.loadLaunch(f.operation.projectionRef),
+      );
+      const cancel = await f.reserve("cancel", launch.rowVersion, launch.state);
+      await assert.rejects(f.repo.checkpoint(f.principal, f.checkpoint), /FENCED/);
+      const stopped = await f.repo.claim(f.principal, {
+        task: cancel.task,
+        workerRef: "worker_cancelDraft001",
+        leaseSeconds: 60,
+      });
+      assert.equal(stopped.operation.stage, "reconcile");
+      await assert.rejects(
+        f.repo.checkpoint(f.principal, {
+          ...f.checkpoint,
+          operationRef: cancel.operation.operationRef,
+          workerRef: "worker_cancelDraft001",
+          leaseGeneration: stopped.operation.leaseGeneration,
+        }),
+        /RECONCILE_INVALID/,
+      );
+    } finally {
+      await f.cleanup();
+    }
+  });
   it("discovers only owned unprocessed active tasks and removes canceled lineage from pending work", async () => {
     const f = await fixture();
     // Reuse the same pool so alternating tenant requests also exercise context restoration.

@@ -83,7 +83,15 @@ const Observation = z
   .object({
     projectionHash: Hash,
     nativeIds: WebinarPublisherNativeIdsSchema,
-    state: z.enum(["in_review", "live", "paused", "failed", "uncertain"]),
+    state: z.enum([
+      "drafting",
+      "draft_ready",
+      "in_review",
+      "live",
+      "paused",
+      "failed",
+      "uncertain",
+    ]),
     readBackHash: Hash,
     observedAt: Time,
     // Real Facebook IDs are distinct from HighLevel IDs. Unknown metrics stay null.
@@ -153,7 +161,12 @@ export const WebinarPublisherAdmissionSchema = z
       .strict(),
     z.object({ ...ReceiptBody, kind: z.literal("observation"), normalized: Observation }).strict(),
   ])
-  .refine((value) => Date.parse(value.expiresAt) > Date.parse(value.observedAt));
+  .refine((value) => Date.parse(value.expiresAt) > Date.parse(value.observedAt))
+  .refine(
+    (value) =>
+      value.kind !== "observation" ||
+      Date.parse(value.normalized.observedAt) === Date.parse(value.observedAt),
+  );
 export type WebinarPublisherAdmission = z.infer<typeof WebinarPublisherAdmissionSchema>;
 
 export class WebinarPublisherPersistenceError extends Error {

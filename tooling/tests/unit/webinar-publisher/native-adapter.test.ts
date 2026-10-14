@@ -69,7 +69,25 @@ function command(
     operation,
     locationRef: "location_test01",
     projection,
-    qualification,
+    qualification:
+      operation === "pause"
+        ? {
+            schemaVersion: 1,
+            contractId: "CTR-003",
+            contractRevision: 1,
+            kind: "app_test",
+            action: "pause",
+            evidenceRef: qualification.evidenceRef,
+            artifactHash: qualification.artifactHash,
+            projectionHash: projection.projectionHash,
+            wireMappingHash: qualification.wireMappingHash,
+            locationId: qualification.locationId,
+            adAccountId: qualification.adAccountId,
+            campaignId: "campaign123",
+            observedAt: qualification.observedAt,
+            expiresAt: qualification.expiresAt,
+          }
+        : qualification,
     mediaReceipt: media,
     ...(["publish", "pause", "resume"].includes(operation)
       ? { parameters: { campaignId: "campaign123" } }
@@ -355,7 +373,7 @@ describe("bounded native HighLevel wire", () => {
       ).rejects.toMatchObject({ classification: "UNCERTAIN_WRITE" });
     },
   );
-  it("allows safety pause with historical expired evidence but refuses expired resume", async () => {
+  it("requires fresh independent pause proof and refuses expired resume", async () => {
     const fixture = httpFixture({ success: true });
     const request = command("pause");
     request.qualification.expiresAt = "2026-10-14T00:00:01.000Z";
@@ -365,8 +383,14 @@ describe("bounded native HighLevel wire", () => {
       resolveLocationToken: fixture.resolveLocationToken,
       now: () => Date.parse("2026-10-14T00:00:02.000Z"),
     });
+    await expect(later.execute(request)).rejects.toMatchObject({
+      classification: "DEPENDENCY_BLOCKED",
+    });
+    request.qualification.expiresAt = "2026-10-14T00:01:00.000Z";
     await expect(later.execute(request)).resolves.toHaveProperty("normalized");
-    await expect(later.execute({ ...request, operation: "resume" })).rejects.toMatchObject({
+    const resume = command("resume");
+    resume.qualification.expiresAt = "2026-10-14T00:00:01.000Z";
+    await expect(later.execute(resume)).rejects.toMatchObject({
       classification: "DEPENDENCY_BLOCKED",
     });
   });

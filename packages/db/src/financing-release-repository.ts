@@ -210,6 +210,8 @@ const query = (name: string, text: string, access: "read" | "write" = "write") =
     access,
     decode: (row: unknown) => z.object({ value: z.unknown() }).strict().parse(row).value,
   });
+// Values are serialized JSON strings. Bind as text first so postgres.js does not
+// apply its JSONB serializer a second time after server parameter description.
 export const financingReleaseSqlContracts = Object.freeze({
   authorize: query(
     "authorize",
@@ -217,13 +219,16 @@ export const financingReleaseSqlContracts = Object.freeze({
   ),
   sourceSave: query(
     "source-save",
-    "select campaign.financing_release_save_source($1::jsonb,$2,$3) as value",
+    "select campaign.financing_release_save_source($1::text::jsonb,$2,$3) as value",
   ),
   sourceRead: query("source-read", "select campaign.financing_release_source($1,$2,$3) as value"),
   reserve: query("reserve", "select campaign.financing_release_reserve($1,$2::uuid,$3) as value"),
   load: query("load", "select campaign.financing_release_load($1) as value"),
-  save: query("save", "select campaign.financing_release_save($1::jsonb,$2::integer) as value"),
-  current: query("current", "select campaign.financing_release_current($1::jsonb) as value"),
+  save: query(
+    "save",
+    "select campaign.financing_release_save($1::text::jsonb,$2::integer) as value",
+  ),
+  current: query("current", "select campaign.financing_release_current($1::text::jsonb) as value"),
   complete: query(
     "complete",
     "select campaign.financing_release_complete($1,$2::uuid,$3,$4) as value",
@@ -249,7 +254,7 @@ export const financingReleaseSqlContracts = Object.freeze({
   purge: query("purge", "select campaign.purge_expired_marketing_inquiries() as value"),
   admit: query(
     "admit",
-    "select campaign.financing_release_admit_evidence($1::uuid,$2,$3::jsonb,$4::jsonb) as value",
+    "select campaign.financing_release_admit_evidence($1::uuid,$2,$3::text::jsonb,$4::text::jsonb) as value",
   ),
 });
 const rows = async (

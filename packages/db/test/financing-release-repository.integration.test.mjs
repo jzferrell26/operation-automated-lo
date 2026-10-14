@@ -202,7 +202,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
               null,
             );
             assert.equal(
-              await value("select campaign.financing_release_current($1::jsonb) as value", [
+              await value("select campaign.financing_release_current($1::text::jsonb) as value", [
                 JSON.stringify(record.snapshot),
               ]),
               false,
@@ -384,6 +384,20 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
       );
       await admitVerifiedFinancingEvidence(f.pool, input);
       await admitVerifiedFinancingEvidence(f.pool, input);
+      const persisted = await ownerSql(
+        f,
+        "test.finance-json-transport",
+        "select jsonb_typeof(evidence) as evidence_type,jsonb_typeof(provenance) as provenance_type,evidence,provenance from campaign.financing_release_evidence where location_id=$1::uuid and record_ref=$2 and revision_ref=$3",
+        [f.tenant.locationId, input.evidence.recordRef, input.evidence.revisionRef],
+      );
+      assert.deepEqual(persisted.rows, [
+        {
+          evidence_type: "object",
+          provenance_type: "object",
+          evidence: input.evidence,
+          provenance: input.provenance,
+        },
+      ]);
       await assert.rejects(
         admitVerifiedFinancingEvidence(f.pool, {
           ...input,

@@ -9,6 +9,18 @@ import { runFinancingReleaseAdapterCases } from "../../../packages/db/test/finan
 runFinancingReleaseAdapterCases(db, app, { describe, it });
 const migrationPath = "supabase/migrations/20261014051000_financing_release.sql";
 describe("public financing migration SQL contract", () => {
+  it("binds serialized JSON as text before PostgreSQL casts it, preventing driver double encoding", () => {
+    const slots = {
+      sourceSave: [1],
+      current: [1],
+      save: [1],
+      admit: [3, 4],
+    } as const;
+    for (const [name, parameters] of Object.entries(slots)) {
+      const sql = db.financingReleaseSqlContracts[name as keyof typeof slots].text;
+      for (const parameter of parameters) expect(sql).toContain(`$${parameter}::text::jsonb`);
+    }
+  });
   it("binds anonymous SQL reads to a protected backend/transaction scope, regardless of mutable GUCs", async () => {
     const sql = await readFile(migrationPath, "utf8");
     expect(sql).toContain("create table campaign.financing_release_public_scopes");

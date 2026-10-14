@@ -1,12 +1,9 @@
 import { randomUUID, createHash } from "node:crypto";
-import {
-  canonicalCampaignHash as hash,
-  calculateFinancingComparison,
-} from "../../application/dist/index.js";
+import { canonicalCampaignHash as hash, calculateFinancingComparison } from "@oalo/application";
 import {
   FinancingCampaignManifestSchema,
   FinancingReleaseResolvedSourceSchema,
-} from "../../contracts/dist/index.js";
+} from "@oalo/contracts";
 
 // Synthetic financial/permission evidence only. Never a lender or public output qualification.
 export function financingSourceFixture(principal, lifetime = 86400000) {

@@ -98,6 +98,8 @@ export {
   OpenHouseApprovalSnapshotSchema,
   OpenHouseCampaignManifestSchema,
   FinancingCampaignManifestSchema,
+  FinancingCampaignManifestV1Schema,
+  FinancingCampaignManifestV2Schema,
   type FinancingCampaignManifest,
   PropertyCampaignPreparationSchema,
   CollateralProjectionInputSchema,
@@ -278,3 +280,4 @@ export {
   type CanonicalReferenceKind,
 } from "./canonical-reference.js";
 export * from "./financing-comparison.js";
+export * from "./financing-media.js";

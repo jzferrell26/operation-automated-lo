@@ -94,3 +94,4 @@ export {
   type TenantDatabaseContext,
   type TenantTransaction,
 } from "./transaction-context.js";
+export * from "./financing-media-repository.js";

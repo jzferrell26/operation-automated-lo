@@ -2,6 +2,7 @@ import {
   assertCampaignAccessible,
   assertMayExecuteCampaignMutation,
   FinancingCalculationError,
+  FinancingMediaError,
 } from "@oalo/application";
 import { OpaqueReferenceSchema } from "@oalo/contracts";
 import { z, ZodError } from "zod";
@@ -25,6 +26,8 @@ export function financingResponse(body: unknown, status = 200) {
   return Response.json(body, { status, headers: PRIVATE_PACKAGE_HEADERS });
 }
 export function financingFailure(error: unknown): Response {
+  if (error instanceof FinancingMediaError)
+    return financingResponse({ error: error.code }, error.status);
   if (error instanceof FinancingSaveError)
     return financingResponse({ error: error.code }, error.status);
   if (error instanceof FinancingCalculationError)
@@ -95,6 +98,8 @@ export async function readFinancingOutput(
   const manifest = verifyFinancingVersion(record.version);
   return {
     params,
+    // Server composition only; the output handlers return bytes, never this principal.
+    principal,
     report: {
       campaignRef: record.version.campaignRef,
       campaignVersionRef: record.version.campaignVersionRef,

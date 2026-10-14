@@ -87,6 +87,43 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
     what: "Some financing inputs need attention.",
     whatToDo: "Check the scenario amounts, dates, and cost classifications before saving again.",
   },
+  FINANCING_MEDIA_INVALID: {
+    what: "That photograph or its permission details could not be accepted.",
+    whatToDo: "Check the photograph, its size and your usage permission, then try again.",
+  },
+  FINANCING_MEDIA_TOO_LARGE: {
+    what: "That photograph is larger than the upload limit.",
+    whatToDo: "Choose a JPEG or PNG no larger than 2 MiB, then try again.",
+  },
+  FINANCING_MEDIA_UNSUPPORTED: {
+    what: "That photograph uses an unsupported file type.",
+    whatToDo: "Choose a JPEG or PNG photograph, then try again.",
+  },
+  FINANCING_MEDIA_NOT_FOUND: {
+    what: "That photograph is not available to this account.",
+    whatToDo: "Choose an available photograph or ask your workspace owner to check access.",
+  },
+  FINANCING_MEDIA_CONFLICT: {
+    what: "This upload belongs to a different photograph or permission choice.",
+    whatToDo: "Keep your report details and select the photograph again to start a new upload.",
+  },
+  FINANCING_MEDIA_REVOKED: {
+    what: "Permission to use that photograph has been withdrawn.",
+    whatToDo: "Remove it from a new report and choose a photograph you have permission to use.",
+  },
+  FINANCING_MEDIA_INTEGRITY_FAILED: {
+    what: "The saved photograph could not be verified.",
+    whatToDo:
+      "Do not share the report. Keep your details and contact support to check the photograph.",
+  },
+  FINANCING_MEDIA_BUSY: {
+    what: "Other photographs are being processed.",
+    whatToDo: "Wait a few seconds and retry with the same photograph and permission choice.",
+  },
+  FINANCING_MEDIA_UNAVAILABLE: {
+    what: "Your photograph upload could not be confirmed.",
+    whatToDo: "Keep your file and permission choice, then retry with the same details.",
+  },
   FINANCING_UNAVAILABLE: {
     what: "Your financing report could not be confirmed.",
     whatToDo:

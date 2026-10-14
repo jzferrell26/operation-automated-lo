@@ -21,6 +21,7 @@ import {
   type FinancingFormDraft,
 } from "./form-model.js";
 import { FinancingCheck, ScenarioEditor } from "./scenario-editor.js";
+import { FinancingMediaInput } from "./media-input.js";
 import styles from "./financing.module.css";
 
 export function FinancingForm({
@@ -35,8 +36,11 @@ export function FinancingForm({
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [mediaPending, setMediaPending] = useState(false);
+  const [reuseRevision, setReuseRevision] = useState(0);
   const pending = useRef(false),
     requestId = useRef<string | null>(null),
+    requestContent = useRef<string | null>(null),
     problemRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const enabled = context.canSave && context.brandReady && context.partners.length > 0;
@@ -55,11 +59,17 @@ export function FinancingForm({
       ...current,
       [key]: value,
       propertyPermissionConfirmed: false,
+      factsConfirmed: false,
       scenarios: current.scenarios.map((scenario) => ({ ...scenario, quoteConfirmed: false })),
     }));
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (disabled || pending.current) return;
+    if (disabled || mediaPending || pending.current) return;
+    const content = JSON.stringify(
+      financingFormInput(draft, "00000000-0000-4000-8000-000000000000"),
+    );
+    if (requestContent.current !== content) requestId.current = null;
+    requestContent.current = content;
     requestId.current ??= crypto.randomUUID();
     const input = FinancingRequestSchema.safeParse(financingFormInput(draft, requestId.current));
     if (!input.success) {
@@ -129,6 +139,22 @@ export function FinancingForm({
           {COPY.missingPartner} <Link href="/partners">Realtor partners</Link>
         </p>
       ) : null}
+      {context.unavailablePrevious?.length ? (
+        <div role="status">
+          <p>
+            Some saved setups cannot be reused because their photographs could not be verified.
+            Their saved reports remain unchanged.
+          </p>
+          <ul>
+            {context.unavailablePrevious.map((item) => (
+              <li key={item.campaignRef}>
+                {item.label}
+                {item.campaignRef === source ? " (the requested setup is unavailable)" : ""}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <form className={styles.form} onSubmit={(event) => void submit(event)} noValidate>
         {problem ? (
           <div ref={problemRef} className={styles.problem} role="alert" tabIndex={-1}>
@@ -146,7 +172,7 @@ export function FinancingForm({
                 label="Reuse a saved comparison"
                 value=""
                 placeholder="Choose a previous setup"
-                disabled={disabled}
+                disabled={disabled || mediaPending}
                 options={context.previous.map((item) => ({
                   value: item.campaignRef,
                   label: item.label,
@@ -155,6 +181,10 @@ export function FinancingForm({
                   const found = context.previous.find((item) => item.campaignRef === ref);
                   if (found) {
                     setDraft(reusedFinancingDraft(found.input));
+                    requestId.current = null;
+                    requestContent.current = null;
+                    setMediaPending(false);
+                    setReuseRevision((value) => value + 1);
                     setReused(true);
                   }
                 }}
@@ -216,7 +246,45 @@ export function FinancingForm({
               rows={3}
               onChange={(event) => propertyChange("description", event.currentTarget.value)}
             />
+            <p>
+              Property facts are separate from the illustrated purchase price and do not change the
+              financing calculations. Leave unknown facts blank.
+            </p>
+            <div className={styles.fields}>
+              {(
+                [
+                  ["List price ($)", "listPrice"],
+                  ["Bedrooms", "bedrooms"],
+                  ["Bathrooms", "bathrooms"],
+                  ["Floor area (square feet)", "floorArea"],
+                ] as const
+              ).map(([label, key]) => (
+                <TextField
+                  key={key}
+                  label={label}
+                  value={draft[key]}
+                  inputMode="decimal"
+                  maxLength={16}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    setDraft((current) => ({ ...current, [key]: value, factsConfirmed: false }));
+                  }}
+                />
+              ))}
+            </div>
+            <FinancingCheck
+              label="I have checked the supplied property facts and confirmed any blanks are unknown"
+              checked={draft.factsConfirmed}
+              change={(value) => change("factsConfirmed", value)}
+            />
           </Surface>
+          <FinancingMediaInput
+            key={reuseRevision}
+            media={draft.media}
+            disabled={disabled}
+            pendingChange={setMediaPending}
+            change={(media) => change("media", media)}
+          />
           <Surface padding="lg">
             <h2>{COPY.housing}</h2>
             <p>{COPY.housingHint}</p>
@@ -316,7 +384,7 @@ export function FinancingForm({
           </Surface>
         </fieldset>
         <div className={styles.actions}>
-          <Button type="submit" disabled={disabled}>
+          <Button type="submit" disabled={disabled || mediaPending}>
             {saved ? COPY.saved : busy ? COPY.saving : COPY.save}
           </Button>
           <Link href="/marketing/campaigns">{COPY.back}</Link>

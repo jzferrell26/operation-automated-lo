@@ -230,6 +230,83 @@
   border: 1px solid var(--bd-hairline);
   border-radius: var(--radius-control);
 }
+.mediaPhoto {
+  max-inline-size: 100%;
+  inline-size: min(100%, 36rem);
+  block-size: auto;
+  object-fit: contain;
+}
+.page h2.propertySectionTitle {
+  font-size: var(--text-section-size);
+  font-weight: var(--weight-semibold);
+  margin-block-end: var(--space-4);
+}
+.versionTwo .header h1,
+.versionTwo .amount {
+  font-size: var(--text-page-size);
+}
+.versionTwo h2,
+.versionTwo .cash,
+.versionTwo .comparison caption {
+  font-size: var(--text-section-size);
+  font-weight: var(--weight-semibold);
+}
+.versionTwo .summary h2 {
+  font-size: var(--text-card-size);
+}
+.propertyHero {
+  margin: 0;
+  min-inline-size: 0;
+}
+.propertyHero img {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  max-block-size: 32rem;
+  object-fit: contain;
+  background: var(--sf-sunken);
+  border-radius: var(--radius-card);
+}
+.propertyHero figcaption,
+.propertyGallery figcaption {
+  padding-block: var(--space-2);
+  font-size: var(--text-secondary-size);
+  color: var(--tx-body);
+  overflow-wrap: anywhere;
+}
+.propertyFacts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: var(--space-4);
+  margin: 0;
+}
+.propertyFacts dt {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+}
+.propertyFacts dd {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-section-size);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.propertyGallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.propertyGallery figure {
+  margin: 0;
+  min-inline-size: 0;
+}
+.propertyGallery img {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  object-fit: contain;
+  border-radius: var(--radius-control);
+}
 @media (max-width: 800px) {
   .page {
     padding: var(--space-4);
@@ -269,6 +346,9 @@
 @media (max-width: 540px) {
   .fields,
   .team {
+    grid-template-columns: 1fr;
+  }
+  .propertyGallery {
     grid-template-columns: 1fr;
   }
 }

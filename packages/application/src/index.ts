@@ -256,3 +256,4 @@ export {
   downPaymentMinor,
   FinancingCalculationError,
 } from "@oalo/domain";
+export * from "./financing-media.js";

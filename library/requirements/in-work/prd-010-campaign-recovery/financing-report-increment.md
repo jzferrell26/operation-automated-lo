@@ -5,6 +5,10 @@ Base: `0d2187a5`, merged PR #79. Branch: `chief/financing-report-2026-10-06`.
 Rebase update, October 6: PR #81 now includes `main` at `4afdda8a` (merged PR #80). The studio UI and financing implementation are both retained. The dependency lockfile and version-scoped security overrides are unchanged from that new base; duplicate feature-branch overrides were unnecessary and removed.
 Status: Implemented on the branch; verification and review are recorded in the associated QA report. Not merged, deployed or approved for public use.
 
+## Contract dependencies
+
+The additive October 13 private property-photo increment pins [CTR-001 revision 1](../../../knowledge/private/contracts/CTR-001-financing-property-media.md), Accepted for engineering implementation by the orchestrator. Preserve this document's original text-only v1 evidence; the pin provides no v2 runtime or hosted completion claim. [The photo increment ledger](../../../../FINANCING_PHOTOS_LEDGER.md) tracks its separate proof.
+
 ## What this increment delivers
 
 The [payment/report/site requirement](payment-flyers-and-co-branded-sites.md) now has a working financing comparison, rather than an open-house document with invented event dates. The new `/marketing/campaigns/financing` screen saves one to five fixed-rate purchase scenarios, a property, the author's saved lender identity and the selected saved Realtor identity. It has no ad-budget step and requires no open-house time.

@@ -9,9 +9,20 @@ import {
 import type { FinancingReportView } from "../features/financing/model.js";
 import { adBrandColorValue } from "../features/workspace/ad-brand.js";
 import { escapePropertyPackageText as escape } from "./property-package-html.js";
+import type { ResolvedFinancingMedia } from "@oalo/application";
+import {
+  financingPropertyFacts,
+  FINANCING_V1_PHOTO_NOTICE,
+} from "../features/financing/property-display.js";
+import {
+  financingImageData,
+  financingOutputMedia,
+  FINANCING_OUTPUT_MAX_BYTES,
+} from "./financing-output-media.js";
+import { FinancingRenderError } from "./financing-pdf.js";
 
 /** Original private site preview. It reads the saved comparison and makes no external requests. */
-export function financingSiteHtml(report: FinancingReportView, now = Date.now()): string {
+function financingSiteHtmlV1(report: FinancingReportView, now: number): string {
   const { manifest } = report;
   const scenarios = manifest.financing.scenarios;
   const groups = financingGroups(manifest);
@@ -84,6 +95,58 @@ export function financingSiteHtml(report: FinancingReportView, now = Date.now())
       .join("")}</section>
     <section class="sheet"><h2>Quote inputs and cost details</h2><p>${COPY.noteQuotes}</p><p class="small">${COPY.dateNote}</p>${quoteDetails}</section>
     <p class="private-action">Private preview only. Customer inquiries, lead capture and public sharing are not enabled.</p>
-    <footer><p>${manifest.property.permissionConfirmed && manifest.partner.permissionConfirmed ? COPY.permissionsRecorded : COPY.permissionsMissing}</p><p>${escape(manifest.content.disclosureText)}</p><p>${COPY.photoNote}</p><p>Saved ${escape(financingDate(report.createdAt))}. Version ${report.versionNo}. Calculation ${manifest.calculated.calculationVersion}.</p><p>${COPY.privateNotice}</p></footer>
+    <footer><p>${manifest.property.permissionConfirmed && manifest.partner.permissionConfirmed ? COPY.permissionsRecorded : COPY.permissionsMissing}</p><p>${escape(manifest.content.disclosureText)}</p><p>${FINANCING_V1_PHOTO_NOTICE}</p><p>Saved ${escape(financingDate(report.createdAt))}. Version ${report.versionNo}. Calculation ${manifest.calculated.calculationVersion}.</p><p>${COPY.privateNotice}</p></footer>
     </main></body></html>`;
+}
+
+/** The v1 document is preserved byte-for-byte; v2 adds only saved property projection. */
+export function financingSiteHtml(
+  report: FinancingReportView,
+  now = Date.now(),
+  resolvedMedia?: readonly ResolvedFinancingMedia[],
+): string {
+  let html = financingSiteHtmlV1(report, now);
+  if (report.manifest.schemaVersion === 2) {
+    const media = financingOutputMedia(report, resolvedMedia);
+    const photo = (item: ResolvedFinancingMedia, hero = false) =>
+      `<figure class="${hero ? "property-hero" : "property-photo"}" data-media-sha256="${item.snapshot.sha256}"><img src="${financingImageData(item)}" width="${item.snapshot.width}" height="${item.snapshot.height}" alt="${escape(item.snapshot.altText)}"><figcaption>${escape(item.snapshot.altText)}</figcaption></figure>`;
+    const hero = media[0];
+    const facts = `<section class="property-facts" aria-label="Saved property facts"><dl>${financingPropertyFacts(
+      report.manifest.property.facts,
+    )
+      .map(([label, value]) => `<div><dt>${label}</dt><dd>${escape(value)}</dd></div>`)
+      .join(
+        "",
+      )}</dl><p class="small">Property facts confirmed by the author. List price and illustrated purchase price are separate inputs.</p></section>`;
+    const gallery =
+      media.length > 1
+        ? `<section class="sheet"><h2>Property photographs</h2><div class="property-gallery">${media
+            .slice(1)
+            .map((item) => photo(item))
+            .join("")}</div></section>`
+        : "";
+    html = html
+      .replace(
+        "<header>",
+        `${hero ? photo(hero, true) : '<p class="small">No property photographs selected for this private comparison.</p>'}<header>`,
+      )
+      .replace('<section class="cards"', `${facts}<section class="cards"`)
+      .replace('<section class="team"', `${gallery}<section class="team"`)
+      .replace(
+        `<p>${FINANCING_V1_PHOTO_NOTICE}</p>`,
+        `<p>${media.length ? "Uploaded property photographs. Usage rights recorded for this private comparison only." : "Text-only comparison selected by the author."}</p>`,
+      );
+    html = html
+      .replace(
+        "</style>",
+        `.property-hero,.property-photo{margin:0;min-width:0}.property-hero{margin-top:24px}.property-hero img{display:block;width:100%;height:auto;max-height:480px;object-fit:contain;background:#e8eef4;border-radius:12px}.property-photo img{display:block;width:100%;height:auto;object-fit:contain;border-radius:8px}figcaption{font-size:14px;color:#526579;padding:8px 0;overflow-wrap:anywhere}.property-facts{margin:0 0 24px}.property-facts dl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.property-facts dt{font-size:14px;color:#526579}.property-facts dd{margin:4px 0 0;font-size:20px;font-weight:700;overflow-wrap:anywhere}.property-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}@media(max-width:540px){.property-facts dl{grid-template-columns:repeat(2,minmax(0,1fr))}.property-gallery{grid-template-columns:1fr}}\n</style>`,
+      )
+      .replace(
+        "</footer>",
+        `<p>Property template ${report.manifest.templateVersion}. ${media.length} saved photograph${media.length === 1 ? "" : "s"}.</p></footer>`,
+      );
+  }
+  if (Buffer.byteLength(html, "utf8") > FINANCING_OUTPUT_MAX_BYTES)
+    throw new FinancingRenderError("FINANCING_OUTPUT_TOO_LARGE");
+  return html;
 }

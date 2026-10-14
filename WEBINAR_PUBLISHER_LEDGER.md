@@ -41,3 +41,7 @@ Root will integrate the independently reviewed parent harness correction82cf5a2,
 ## Initial publisher CI formatting correction
 
 Run38522571989 at0c4c04b passed release checks but application verification stopped at Prettier because the root-owned WEBINAR_PUBLISHER_LEDGER.md was not formatted. No source assertion failure was reached in that application job. Root formats only this ledger, preserves the frozen adapter/command reports and all source pins, and will run corrected-head CI. The failed run remains recorded; concurrent database/browser proof from that earlier head is not treated as a substitute for the corrected run.
+
+## Inherited visual-provenance note
+
+The root PR description initially omitted the required Baseline change marker for the136 already-reviewed parent PNGs. Run38522944376 passed3277 unit cases but correctly failed that one documentation guard. Root added the inherited image provenance to PR96 and independently passed allthree unchanged baseline-note tests against current origin/main and the actual PR body. No PNG, assertion, timeout or coverage threshold changed. A new push records the metadata correction so CI receives the updated event body; the prior failing application job remains in history.

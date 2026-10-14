@@ -103,3 +103,8 @@ export {
 } from "./transaction-context.js";
 export * from "./financing-media-repository.js";
 export * from "./financing-release-repository.js";
+export {
+  PostgresPublicFinancingInquiryAdmissionRepository,
+  type FinancingPublicInquiryAdmission,
+  type FinancingPublicInquiryAdmissionDecision,
+} from "./financing-public-inquiry-admission-repository.js";

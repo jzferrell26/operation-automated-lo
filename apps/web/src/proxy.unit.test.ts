@@ -56,3 +56,56 @@ describe("headers on the token-bearing pages", () => {
     }
   });
 });
+
+describe("sealed public financing response policy", () => {
+  const id = "00000000-0000-4000-8000-000000000001";
+  it.each(["", "/report.pdf", `/media/${"a".repeat(64)}`])(
+    "leaves exact read response CSP to its sealed handler: %s",
+    (suffix) => {
+      for (const method of ["GET", "HEAD"]) {
+        const response = proxy(
+          new NextRequest(
+            new Request(`https://reports.example.com/p/${id}${suffix}`, {
+              method,
+              headers: { "x-nonce": "visitor-forged", "content-security-policy": "visitor-policy" },
+            }),
+          ),
+        );
+        expect(response.headers.get(CSP_HEADER)).toBeNull();
+        expect(response.headers.get("x-middleware-request-content-security-policy")).toContain(
+          "nonce-",
+        );
+        expect(response.headers.get("x-middleware-request-x-nonce")).not.toBe("visitor-forged");
+        expect(response.headers.get("Referrer-Policy")).toBe("no-referrer");
+        expect(response.headers.get("Cache-Control")).toBe("no-store");
+      }
+    },
+  );
+  it("leaves only actual form POST response CSP to its handler", () => {
+    const response = proxy(
+      new NextRequest(
+        new Request(`https://reports.example.com/p/${id}/inquiry`, { method: "POST" }),
+      ),
+    );
+    expect(response.headers.get(CSP_HEADER)).toBeNull();
+    expect(response.headers.get("x-middleware-request-content-security-policy")).toContain(
+      "nonce-",
+    );
+  });
+  it.each([
+    "/p",
+    "/p/not-a-uuid",
+    `/p/${id}/private`,
+    `/p/${id}/media/invalid`,
+    `/p/${id}/inquiry`,
+    `/p/${id}/report.pdf/more`,
+    `/p/${id}/`,
+    "/overview",
+    "/sign-in",
+    "/marketing/campaigns",
+    "/f/00000000-0000-4000-8000-000000000001",
+    "/home-report/not-a-link",
+  ])("preserves original response nonce policy on %s", (path) => {
+    expect(respondTo(path).headers.get(CSP_HEADER)).toContain("nonce-");
+  });
+});

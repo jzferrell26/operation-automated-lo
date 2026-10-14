@@ -15,6 +15,7 @@ import {
   findPublicFinancingRelease,
   PostgresPublicFinancingReleaseRepository,
   purgeExpiredMarketingInquiries,
+  PostgresPublicFinancingInquiryAdmissionRepository,
 } from "../dist/index.js";
 import {
   requiredTestDatabaseUrl,
@@ -193,6 +194,27 @@ async function published(f) {
 async function ownerSql(f, name, text, values = []) {
   return withMigrationOwnerTransaction(f.pool, (connection) =>
     connection.execute(request(name, text, values)),
+  );
+}
+async function admittedAnonymousCapture(f, live, input, ports) {
+  const admission = new PostgresPublicFinancingInquiryAdmissionRepository(
+    f.pool,
+    Buffer.alloc(32, 41),
+  );
+  assert.deepEqual(
+    await admission.admit({
+      publicationId: live.snapshot.publicationId,
+      canonicalOrigin: live.snapshot.authority.origin.canonicalOrigin,
+      requestId: input.requestId,
+      trustedClientKey: Buffer.from("synthetic-native-public-client"),
+    }),
+    { allowed: true, retryAfterSeconds: 0 },
+  );
+  return captureFinancingInquiry(
+    live.snapshot.publicationId,
+    live.snapshot.authority.origin.canonicalOrigin,
+    input,
+    ports,
   );
 }
 async function withRawPublicSql(f, work) {
@@ -884,12 +906,16 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
           ),
         findPublication: () => repository.findPublication(),
       };
-      const receipt = await captureFinancingInquiry(
-        live.snapshot.publicationId,
-        live.snapshot.authority.origin.canonicalOrigin,
-        inquiryFixture(),
-        publicPorts,
+      const inquiry = inquiryFixture();
+      await assert.rejects(
+        captureFinancingInquiry(
+          live.snapshot.publicationId,
+          live.snapshot.authority.origin.canonicalOrigin,
+          inquiry,
+          publicPorts,
+        ),
       );
+      const receipt = await admittedAnonymousCapture(f, live, inquiry, publicPorts);
       assert.equal(receipt.deliveryState, "pending");
       assert.equal((await f.repository.exportInquiries()).length, 1);
       await assert.rejects(

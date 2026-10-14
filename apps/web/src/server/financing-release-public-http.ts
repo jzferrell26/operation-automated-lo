@@ -309,7 +309,7 @@ export function createPublicFinancingHttp(dependencies: PublicFinancingHttpDepen
       let admission: { allowed: boolean; retryAfterSeconds: number };
       try {
         admission = z
-          .object({ allowed: z.boolean(), retryAfterSeconds: z.number().int().min(1).max(900) })
+          .object({ allowed: z.boolean(), retryAfterSeconds: z.number().int().min(1).max(86400) })
           .strict()
           .parse(await dependencies.admitInquiry(request, publicationId, nonce.requestId));
       } catch {

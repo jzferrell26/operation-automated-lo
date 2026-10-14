@@ -166,14 +166,11 @@ export function createPublicFinancingOutputRenderer(
     const font =
       dependencies.fontBytes ??
       new Uint8Array(
-        await readFile(
-          resolve(
-            process.cwd(),
-            process.cwd().endsWith("web")
-              ? "public/fonts/webinar/AutomatedLOWebinarInter.ttf"
-              : "apps/web/public/fonts/webinar/AutomatedLOWebinarInter.ttf",
-          ),
-        ),
+        await (process.cwd().endsWith("web")
+          ? readFile(resolve(process.cwd(), "public/fonts/webinar/AutomatedLOWebinarInter.ttf"))
+          : readFile(
+              resolve(process.cwd(), "apps/web/public/fonts/webinar/AutomatedLOWebinarInter.ttf"),
+            )),
       );
     outputAssert(outputDigest(font) === FINANCING_PUBLIC_FONT_HASH, "INVALID");
     let total = 0;

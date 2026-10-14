@@ -392,6 +392,25 @@ describe("public financing HTTP consumer", () => {
     expect((await f.post(saved)).status).toBe(403);
     expect(f.tx.capture).not.toHaveBeenCalled();
   });
+  it("preserves the actual full-day native quota refusal", async () => {
+    const f = await fixture(),
+      saved = cookie(await f.read());
+    f.admit.mockResolvedValue({ allowed: false, retryAfterSeconds: 86400 });
+    const response = await f.post(saved);
+    expect(response.status).toBe(429);
+    expect(response.headers.get("retry-after")).toBe("86400");
+    expect(f.tx.capture).not.toHaveBeenCalled();
+  });
+  it.each([0, 86401, Number.NaN])(
+    "refuses out-of-range native retry delay %s",
+    async (retryAfterSeconds) => {
+      const f = await fixture(),
+        saved = cookie(await f.read());
+      f.admit.mockResolvedValue({ allowed: false, retryAfterSeconds });
+      expect((await f.post(saved)).status).toBe(503);
+      expect(f.tx.capture).not.toHaveBeenCalled();
+    },
+  );
   it("does not accept an unconfigured nonce key", () => {
     expect(() =>
       createPublicFinancingHttp({

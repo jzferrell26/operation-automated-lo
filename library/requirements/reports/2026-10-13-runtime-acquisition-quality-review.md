@@ -108,3 +108,67 @@ All eleven pins were recomputed after the independent checks and match the final
 - `tooling/tests/unit/postgres-acquisition.test.ts` (A): lifecycle and real-principal failure-path regression suite.
 
 Only this report was authored by Quality. Source, other reports, root ledger, hosted state and other worktrees were not modified. No commit, push or deployment was performed.
+
+## CI correction Quality re-review: explicit diagnostic returns
+
+### Summary
+
+PASS for the two-line source correction against `e6c8b10`, after independent Security re-review. Both changes explicitly return from diagnostic-only catches that previously reached the same function's end; no findings were detected. Independent verification passed 65 cases in four files and the actual product-type audit; full corrected-head CI remains open.
+
+The parent reported PR93 run `38496430954` passed actual PostgreSQL and release checks but failed the application product-type audit at the two empty catches. That earlier head's passing jobs are historical evidence. This review independently reproduced the corrected product-type audit locally, without treating the prior jobs as corrected-head or hosted verification.
+
+### Scorecard
+
+| Category | Status | Notes |
+| --- | --- | --- |
+| Completeness | ✅ | Both reported diagnostic catches now contain the explicit terminal return. |
+| Correctness | ✅ | Sink and observer isolation, deadlines, close and late release pass the selected existing regressions. |
+| Alignment | ✅ | Two lines added within the existing diagnostic scope; no policy, deadline, payload or authority change. |
+| Gaps | ✅ | The product-type gate passes without relaxing its scanner or replacing the intended isolation behavior. |
+| Detrimental | ✅ | Original operation errors still propagate, and private diagnostic exceptions remain excluded. |
+
+### Critical Issues (must fix)
+
+None.
+
+### Warnings (should fix)
+
+None.
+
+### Suggestions (consider improving)
+
+None.
+
+### Plan Item Traceability
+
+| ID | Requirement | Status | Evidence | Notes |
+| --- | --- | --- | --- | --- |
+| RT-TIMING-PRIVACY | A diagnostic sink failure cannot alter successful operations or their original errors. | ✅ | `apps/web/src/server/runtime-timing.ts:32-47`, `:58-74`; `runtime-timing.unit.test.ts:61-74` | The new return exits only `emit()`. The operation wrapper's rethrow is unchanged. |
+| RT-CLEANUP-OBSERVER | Throwing observer callbacks cannot abort acquisition or eventual cleanup. | ✅ | `packages/db/src/postgres-adapter.ts:106-118`, `:145-182`; `tooling/tests/unit/postgres-acquisition.test.ts:174-212` | The new return exits only the nested `observe` function. Timeout, reservation continuations, late release and close remain outside it. |
+| RT-DEADLINE / RT-CLEANUP | Preserve public-pool deadline, pending-close rejection and late release. | ✅ | `tooling/tests/unit/postgres-acquisition.test.ts:38-172` | Default/configured budgets, healthy execution, eventual release, all pending callers, late rejection and original driver errors passed. |
+| RT-DEADLINE-AUTH | Preserve mandatory authentication and optional neutral fallback. | ✅ | Acquisition test at `:114-149`; `runtime-authentication.unit.test.ts:421-577` | The actual principal timeout path, shell and failed-display cases passed. |
+| RT-SECURITY / RT-QUALITY | Fresh independent Quality follows Security on exact corrected pins. | ✅ | Security report's explicit-return appendix; independently recomputed pins below | This appendix covers the new delta rather than reusing the initial source pass. |
+| CI-PRODUCT-TYPES | Correct the reported gate failure without weakening the audit. | ✅ | `test-results/quality-runtime/explicit-return-product-types.log` | Actual `pnpm audit:product-types` passed. No scanner/configuration change. |
+| RT-PR / RT-LIVE | Corrected-head full CI and hosted recovery require separate evidence. | 🟦 | Root-owned ledger and live diagnosis | Still open; no deployment, diagnostic activation or live operation performed here. |
+
+### Verification and source pins
+
+Independent command: `pnpm exec vitest run --project unit tooling/tests/unit/postgres-acquisition.test.ts apps/web/src/server/runtime-timing.unit.test.ts apps/web/src/server/runtime-authentication.unit.test.ts apps/web/src/server/campaign-persistence-runtime.unit.test.ts --reporter=dot`. All four files and 65 tests passed with no unhandled rejection report. Evidence: ignored `test-results/quality-runtime/explicit-return-focused-green.log`.
+
+`pnpm audit:product-types` passed independently, reporting no explicit any, CommonJS require or swallowed catch. `git diff --check` passed. Scoped source lint and report/source formatting checks passed. No production build, broad suite or local PostgreSQL execution was performed. The source scope is precisely two added `return;` statements; both complete surrounding implementations and the parent diff were inspected.
+
+These two independently recomputed hashes match Security's corrected pins and supersede the corresponding initial entries above. The remaining original nine source/test pins still match.
+
+| File | SHA-256 |
+| --- | --- |
+| `apps/web/src/server/runtime-timing.ts` | `102f793d6c1ee6859734700d3af9f698c63d61650db7a37f06d1d4b914d3f58d` |
+| `packages/db/src/postgres-adapter.ts` | `a7461870b39157e72e3339f83d420727f1113bee45d836921b1fefa8af4e3196` |
+
+### Files Changed
+
+- `apps/web/src/server/runtime-timing.ts` (M): explicit terminal return in the diagnostic emitter catch.
+- `packages/db/src/postgres-adapter.ts` (M): explicit terminal return in the nested acquisition observer catch.
+- `library/requirements/reports/2026-10-13-runtime-acquisition-security-review.md` (M, Security-owned): prior independent review of this correction.
+- `library/requirements/reports/2026-10-13-runtime-acquisition-quality-review.md` (M): this fresh bounded review appendix.
+
+Only the Quality report append was authored here. Source and other owners' files remain untouched. Ownership is released to the root for corrected-head CI and PR verification; no commit, push or deployment occurred.

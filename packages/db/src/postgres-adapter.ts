@@ -113,6 +113,7 @@ export class PostgresDatabasePool implements DatabasePool {
         );
       } catch {
         // Diagnostics are optional and may never change authorization or reservation cleanup.
+        return;
       }
     };
     observe("started");

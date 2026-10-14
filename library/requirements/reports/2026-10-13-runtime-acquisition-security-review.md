@@ -87,3 +87,22 @@ The observed production timeouts are attributed in [read-only live diagnosis](20
 | `apps/web/src/server/campaign-persistence-runtime.unit.test.ts` | `afc0132e51dbf58640dbc628687d739e06f6428983b712b87ea2e164075b6b17` |
 | `apps/web/src/server/ad-brand-read.ts` | `2490dc198eeafc01d8b2e670e543efcc4c0357b8991f373ef1d2081213a2132b` |
 
+
+## CI correction re-review, explicit diagnostic returns
+
+Security result: PASS for a new Quality cycle. This bounded review covers only the two-line source correction against `e6c8b10`, after PR93 CI run `38496430954` reported the product-type audit failure. The earlier Quality report does not certify this new delta; fresh Quality follows this Security re-review. The managed native Security configuration, Weapon and principles were reloaded. The previously documented stale-intelligence note and hosted qualification limits still apply.
+
+`apps/web/src/server/runtime-timing.ts:46` adds a terminal `return;` inside the existing diagnostic-sink catch. `packages/db/src/postgres-adapter.ts:116` adds the same terminal return inside the local observer function's catch. Each function already returned undefined by reaching its end. The second return exits only the observation callback, not `connect()`, the reservation handlers or authentication. No deadline, settlement, cleanup, rejection, environment gate, log shape or authorization condition changed. Both full surrounding implementations and the exact diff were independently inspected.
+
+Independent verification passed 65 existing tests across four files, including throwing-sink successful and original-error paths, observer failure during timeout and late release, sanitized cleanup failure, all pending callers refused on close, mandatory authentication refusal, neutral display fallback and cache shutdown behavior. No unhandled rejection was reported. The selected files were `postgres-acquisition.test.ts`, `runtime-timing.unit.test.ts`, `runtime-authentication.unit.test.ts` and `campaign-persistence-runtime.unit.test.ts`. Evidence: ignored `test-results/security-runtime/explicit-return-security-green.log`. This is the reviewer's selected 65-case run, distinct from the implementer's reported 61-case selection.
+
+The actual `pnpm audit:product-types` command passed independently with no explicit any, CommonJS require or swallowed catch. Evidence: `explicit-return-product-types.log`. Scoped Prettier, oxlint and `git diff --check` passed; evidence: `explicit-return-security-format.log` and `explicit-return-security-lint.log`. No source mutation was made by this reviewer. The earlier CI PostgreSQL pass is historical evidence at its prior head, not a current-head rerun or hosted recovery proof.
+
+Critical, High, Medium and Low findings in this delta: None detected. Financial/PII handling, injection, dependency, transport and data-storage changes: None present. Diagnostic errors remain isolated with exact opt-in and allowlisted fields; ordinary operation errors still propagate unchanged. Report append is the only owned tracked edit. Ownership is released for fresh Quality and the root's current-head CI/PR gate.
+
+These pins supersede only the corresponding two entries in the preceding source-pin table:
+
+| File | SHA-256 |
+| --- | --- |
+| `apps/web/src/server/runtime-timing.ts` | `102f793d6c1ee6859734700d3af9f698c63d61650db7a37f06d1d4b914d3f58d` |
+| `packages/db/src/postgres-adapter.ts` | `a7461870b39157e72e3339f83d420727f1113bee45d836921b1fefa8af4e3196` |

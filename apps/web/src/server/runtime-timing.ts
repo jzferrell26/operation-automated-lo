@@ -43,6 +43,7 @@ function emit(
     console.info("oalo-runtime-timing", event.data);
   } catch {
     // A diagnostic sink failure cannot alter authentication, reads or reservation cleanup.
+    return;
   }
 }
 

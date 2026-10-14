@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WebinarAdPreparation } from "./preparation.js";
@@ -53,8 +53,16 @@ async function setUp() {
   await user.click(
     await screen.findByRole("button", { name: "Use this creative: Your first home, a clear plan" }),
   );
+  // The step transition deliberately focuses its heading on the next animation frame.
+  // Let that focus settle before opening a popup whose trigger closes it on blur.
+  await waitFor(() =>
+    expect(screen.getByRole("heading", { name: "Prepare a webinar ad" })).toHaveFocus(),
+  );
   await user.click(screen.getByRole("combobox", { name: "Published webinar" }));
   await user.click(screen.getByRole("option", { name: "Your homebuying plan (Live)" }));
+  expect(screen.getByRole("combobox", { name: "Published webinar" })).toHaveTextContent(
+    "Your homebuying plan (Live)",
+  );
   await user.type(screen.getByLabelText("Cities or states"), "Austin, TX; Texas");
   await user.clear(screen.getByLabelText("Requested end date (UTC)"));
   await user.type(screen.getByLabelText("Requested end date (UTC)"), "2030-06-19");
@@ -62,6 +70,40 @@ async function setUp() {
   return user;
 }
 describe("saved webinar preparation", () => {
+  it("settles step-heading focus before opening the webinar selection", async () => {
+    const frames = new Map<number, FrameRequestCallback>();
+    const deliver = (id: number) => {
+      const callback = frames.get(id);
+      if (!callback) return;
+      frames.delete(id);
+      window.clearTimeout(id);
+      act(() => callback(performance.now()));
+    };
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      const id = window.setTimeout(() => deliver(id), 250);
+      frames.set(id, callback);
+      return id;
+    });
+    // Deliver an outstanding frame just after the next pointer click. If setup opens the
+    // Select too soon, its actual heading-focus callback blurs and closes the real popup.
+    const finishPendingFrame = (event: Event) => {
+      if (event.target instanceof Element && event.target.closest('[role="combobox"]'))
+        queueMicrotask(() => [...frames.keys()].forEach(deliver));
+    };
+    document.addEventListener("click", finishPendingFrame);
+    try {
+      const requests = mockRequests([]);
+      const user = await setUp();
+      expect(screen.getByText("Your homebuying plan")).toBeVisible();
+      await user.click(screen.getByRole("button", { name: "Save and check" }));
+      expect(requests.bodies).toHaveLength(1);
+      expect(requests.bodies[0]).toEqual(expect.objectContaining({ publicationId }));
+    } finally {
+      document.removeEventListener("click", finishPendingFrame);
+      [...frames.keys()].forEach((id) => window.clearTimeout(id));
+      frames.clear();
+    }
+  });
   it("requires an explicit new-version choice before replacing an older retained request", async () => {
     const old = mockRequests([new Error("lost response")]),
       user = await setUp();

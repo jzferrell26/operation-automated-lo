@@ -397,3 +397,82 @@ PASS. The UX owner's appended evidence correction is accurate: retained log line
 Independently verified the corrected UX report SHA-256 `66c682425d704204fbe584a5f3c12a31a75430f8f065915811e8c76918fdd815`. Rechecked all nine source/direction pins, the CSS pin, eight tracked PNGs and twelve retained frame hashes: all remain unchanged from this Quality packet. No tests, build, browser, image download, source or baseline edits were performed during this documentation-only follow-up. `git diff --check` passed.
 
 The documentation hold above is resolved. The bounded source/PNG/review packet is cleared for the root's commit with no new finding. CI `38491869012` remains a recorded failed aggregate; required final new-head CI, current-main mergeability and hosted/provider qualification remain OPEN. This release replaces only the earlier pending-documentation condition and does not grant a ship or full-product completion verdict.
+
+## Manual-removal race test Quality review
+
+**Plan:** `prd-007-homeowner-reports-index.md`, acceptance items 5, 7, 8 and 9, plus `single-lo-owner-direction-2026-10-13.md` and the root's bounded race-test assignment.
+**Review date:** October 13, 2026, America/Chicago.
+**Base:** `2df7fe0cb7fb5611c71ca4f1da7fac8e221236a5` in `codex/homeowner-readiness`.
+**Auditor:** independent quality-guardian, after Security's manual-removal race test PASS.
+
+### Summary
+
+PASS for the bounded test and scope-document increment, with no Critical, Warning or Suggestion findings. Independently executed 36 local cases and web typechecking passed; all three frozen handoff pins match Security. The six new actual PostgreSQL cases are compiled and source-inspected, with execution still required in corrected-head CI.
+
+### Scorecard
+
+| Category | Status | Notes |
+| --- | --- | --- |
+| Completeness | ✅ | The assigned deletion, completion, retry, share, scheduler and pre-delivery races have meaningful assertions. |
+| Correctness | ✅ | Deferred boundaries prove the intended ordering; positive start/usage/share assertions prevent vacuous refusal results. |
+| Alignment | ✅ | Tests exercise existing manual removal and retained usage requirements; no production, threshold, permission or configuration change. |
+| Gaps | ✅ | Authored PostgreSQL execution, later interleavings and external-call limits are stated explicitly. |
+| Detrimental | ✅ | Disposable database guard and tenant authority remain intact; synthetic provider seams do not contact external services. |
+
+### Critical Issues (must fix)
+
+None.
+
+### Warnings (should fix)
+
+None.
+
+### Suggestions (consider improving)
+
+None.
+
+### Plan Item Traceability
+
+| ID | Requirement | Status | Evidence | Notes |
+| --- | --- | --- | --- | --- |
+| REMOVE-RESERVE | Removal before fresh reservation prevents new valuation expenditure and records. | ✅ | `apps/web/src/server/homeowners/repository.postgres.test.ts:255-293` | Two parameterized cases, missing and removed. Assertions require `NOT_FOUND`, zero estimate calls, unchanged usage, no property and zero matching request rows. Authored PostgreSQL proof, not locally executed. |
+| REMOVE-COMPLETE | An already-started valuation cannot recreate removed report history. | ✅ | `repository.postgres.test.ts:295-355`; `packages/db/src/homeowner-repository.ts:334-350` | Start and completion are controlled by separate deferred promises. Usage is shown spent before deletion; removal commits before completion. The service refuses persistence, direct late completion refuses and no report/property is recreated. Authored PostgreSQL proof. |
+| REMOVE-RETRY | Retained minimal usage prevents retry from repeating a potentially billable call. | ✅ | `repository.postgres.test.ts:329-354`; `homeowner-repository.ts:218-235` | Same request retry is refused, estimate remains called once, and spent usage remains incremented. Existing PRD acceptance item 5 and manual-removal semantics are preserved. |
+| REMOVE-SHARE-SCHEDULE | Removal invalidates shares, events, future claims and delivery reservation. | ✅ | `repository.postgres.test.ts:357-400` | Share readability is positively established before deletion. Subsequent share/event/claim/delivery and service attempts refuse; schedule advancement does not recreate a property. Authored PostgreSQL proof. |
+| REMOVE-SHARE-RACE | Removal between service read and share transaction prevents link creation. | ✅ | `repository.postgres.test.ts:402-416` | Wrapper returns the previously read report after the real removal commits; the actual bound repository share transaction must refuse. No share or report remains. |
+| REMOVE-DELIVERY-RACE | Removal during contact verification before delivery reservation prevents a new handoff. | ✅ | `repository.postgres.test.ts:418-435`; `apps/web/src/server/homeowners/service.ts:154-207` | Contact lookup executes once and commits real removal. Handoff is never called, and no delivery/share remains. This does not claim cancellation after an external handoff has begun. |
+| REMOVE-CLAIM | A claimed lease whose property disappeared spends no lookup. | ✅ | `apps/web/src/server/homeowners/scheduler.unit.test.ts:160-170`; `scheduler.ts:166-180` | Exported scheduler handler returns claimed 1, updated 0, paused 1, with no connections, generation, handoff or advancement. Independently executed locally. |
+| REMOVE-SCHEDULER-RACE | Fresh scheduler read stops delivery if removal occurs during generation. | ✅ | `scheduler.unit.test.ts:244-271`; `scheduler.ts:108-128` | Deferred generation positively starts, removal is set before resolution, and two actual repository-list calls are required. Generation stays counted as updated while no new handoff occurs. Independently executed locally. |
+| SCOPE | Preserve per-report PDF/manual removal without inventing bulk export, whole-account erasure or automatic retention policy. | ✅ | Owner-direction document's Manual removal and export scope reconciliation; PRD acceptance items 5-9 | Scope append records the current requirements and execution limits. It does not close hosted/provider qualification or impose unchosen policies. No PDF implementation changes occurred in this increment. |
+| ORDER | Independent Security precedes fresh Quality on exact source/doc bytes. | ✅ | Security's Manual-removal race test appendix; pins below | No unresolved finding or altered test assertion is waived. |
+| CI | Run new actual PostgreSQL cases on the new head. | 🟦 | Root-owned PR/CI gate | Still pending. The parent reported the base head's green CI; it cannot qualify these new tests before their current-head execution. |
+
+### Independent verification and limits
+
+`pnpm exec vitest run --project unit apps/web/src/server/homeowners/scheduler.unit.test.ts apps/web/src/server/homeowners/service.unit.test.ts apps/web/src/server/homeowners/handoff.unit.test.ts --reporter=dot` passed all three files and 36 cases. Evidence: ignored `test-results/homeowner-removal-quality/unit-green.log`. Tests use controlled synthetic contacts and providers; no external valuation or handoff occurred.
+
+`pnpm --filter @oalo/web typecheck` passed. The web configuration includes `src/**/*.ts`, so the changed PostgreSQL test is part of the actual compile check. Evidence: `test-results/homeowner-removal-quality-web-typecheck.log`. Scoped oxlint, explicit-path Prettier and `git diff --check` passed. No test/source correction, production build, broad regression or local PostgreSQL execution was performed by Quality.
+
+Read the actual repository reservation, completion, remove, share/delivery and update-only schedule seams, plus service/scheduler ordering and the existing migration's composite cascade relationships. Usage evidence has no property/report cascade and is deliberately retained. Existing cross-account/session authorization tests remain necessary and unchanged. This test-only increment identifies no production bug requiring a source change.
+
+The six new PostgreSQL cases comprise two parameterized cases and four additional cases. They execute real repository transactions only when the existing disposable localhost `oalo_test_` database guard succeeds; their contact and valuation seams remain synthetic. Compilation and source inspection do not establish a database pass. Already-started external calls, sent handoffs and downloaded PDFs cannot be recalled by local removal. These tests cover named pre-reservation/pre-completion boundaries, not every possible later interleaving or legal erasure policy.
+
+### Frozen final pins
+
+Independently recomputed all three after verification; each matches Security.
+
+| File | SHA-256 |
+| --- | --- |
+| `apps/web/src/server/homeowners/scheduler.unit.test.ts` | `dc21fe73ff2e059f63576d1df249b44b58d70dad04c7253453685afc56a8d60c` |
+| `apps/web/src/server/homeowners/repository.postgres.test.ts` | `f2d1756ada0a3de86aafa6f38d8112152ecb282aad8af03360b5896efdac1417` |
+| `library/requirements/in-work/prd-007-homeowner-reports/single-lo-owner-direction-2026-10-13.md` | `aaf06a712c8064db4667863fb4f7f9b19970531c53bc5b1d5d7c24251aeafbe2` |
+
+### Files Changed
+
+- `apps/web/src/server/homeowners/repository.postgres.test.ts` (M): six authored real-PostgreSQL removal/reservation/completion/share/delivery cases and synthetic delivery fixtures.
+- `apps/web/src/server/homeowners/scheduler.unit.test.ts` (M): two ordered removal/refresh races against the exported handler.
+- `library/requirements/in-work/prd-007-homeowner-reports/single-lo-owner-direction-2026-10-13.md` (M, root-owned): reconciled existing PDF/manual removal scope and qualified evidence limits.
+- `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-10-13-readiness-security-review.md` (M, Security-owned): preceding independent test-source review.
+- `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-10-13-readiness-quality-review.md` (M): this fresh bounded review appendix.
+
+Only this Quality report appendix was authored here. Ownership is released for the root's current-head actual PostgreSQL/CI and repository qualification. No source/test edits, commit, push, hosted configuration, provider activation or deployment occurred. Full-product and hosted recovery claims remain open.

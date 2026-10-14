@@ -9,10 +9,12 @@ import {
   type SqlScalar,
 } from "@oalo/db";
 import { buildHomeReport } from "@oalo/application/homeowner-reports";
+import type { HomeValuation } from "@oalo/contracts";
 import { homeownerInput, homeownerValuation, rentCastFixture } from "./homeowner-fixtures.js";
-import { homeHash } from "./runtime.js";
+import { homeHash, HomeEnvironmentSchema } from "./runtime.js";
 import { canonicalAddress, createRentCastValuationPort } from "./rentcast.js";
-import { generateHomeReport } from "./service.js";
+import { generateHomeReport, shareHomeReport, handoffHomeReport } from "./service.js";
+import type { HomeContactPort } from "./highlevel.js";
 import { withMigrationOwnerTransaction } from "../../../../../packages/db/test/route-seeding-bridge.js";
 const databaseUrl = process.env.OALO_TEST_DATABASE_URL;
 if (
@@ -42,6 +44,22 @@ const authority = (locationId: string, actorId: string) => ({
 });
 const repoA = new PostgresHomeownerRepository(pool, authority(locationA, actorA));
 const repoB = new PostgresHomeownerRepository(pool, authority(locationB, actorB));
+const deliveryConfig = HomeEnvironmentSchema.parse({
+  OALO_HOMEOWNER_DELIVERY_ENABLED: "enabled",
+  OALO_APP_URL: "https://app.example.test",
+});
+function contactPort(): HomeContactPort {
+  return {
+    get: vi.fn(async (id: string) => ({
+      id,
+      name: "Fixture Homeowner",
+      email: null,
+      communicationAllowed: true,
+    })),
+    search: vi.fn(async () => []),
+    handoff: vi.fn(async () => {}),
+  };
+}
 async function admin(text: string, values: readonly SqlScalar[] = []) {
   return withMigrationOwnerTransaction(
     pool,
@@ -233,6 +251,184 @@ describe.sequential("real homeowner persistence", () => {
     await expect(
       repoA.reserve({ ...options, input: { ...input, requestId: randomUUID() }, monthlyLimit: 0 }),
     ).rejects.toMatchObject({ code: "LOOKUP_LIMIT" });
+  });
+  it.each(["missing", "removed"] as const)(
+    "refuses a fresh lookup for an explicitly %s property before the valuation call",
+    async (standing) => {
+      const item = standing === "removed" ? await seed(repoA, "removed-before-reservation") : null;
+      const propertyId = item?.propertyId ?? `home_${randomUUID().replaceAll("-", "")}`;
+      if (item) await repoA.remove(propertyId);
+      const input = {
+        ...homeownerInput(),
+        requestId: randomUUID(),
+        propertyId,
+        association: "property_only" as const,
+        contactId: "property-only",
+        contactName: "Property valuation",
+      };
+      const estimate = vi.fn(async () => homeownerValuation());
+      const before = await repoA.usage();
+      await expect(
+        generateHomeReport(
+          input,
+          {
+            repository: repoA,
+            contacts: null,
+            valuation: { estimate },
+            locationId: locationA,
+            monthlyLimit: 100,
+          },
+          { refresh: true },
+        ),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      expect(estimate).not.toHaveBeenCalled();
+      expect(await repoA.usage()).toBe(before);
+      expect((await repoA.list()).some((property) => property.id === propertyId)).toBe(false);
+      expect(
+        await admin(
+          "select count(*)::int as count from homeowner.lookup_requests where location_id=$1::uuid and request_id=$2::uuid",
+          [locationA, input.requestId],
+        ),
+      ).toEqual([{ count: 0 }]);
+    },
+  );
+  it("cannot recreate removed report history when an already-started valuation finishes", async () => {
+    const item = await seed(repoA, "removed-during-valuation");
+    const input = { ...item.input, propertyId: item.propertyId, requestId: randomUUID() };
+    const started = Promise.withResolvers<void>();
+    const completed = Promise.withResolvers<HomeValuation>();
+    const estimate = vi.fn(async () => {
+      started.resolve();
+      return completed.promise;
+    });
+    const before = await repoA.usage();
+    const pending = generateHomeReport(
+      input,
+      {
+        repository: repoA,
+        contacts: contactPort(),
+        valuation: { estimate },
+        locationId: locationA,
+        monthlyLimit: 100,
+      },
+      { refresh: true },
+    );
+    const refused = expect(pending).rejects.toMatchObject({ code: "REPORT_SAVE_UNCERTAIN" });
+    await started.promise;
+    expect(await repoA.usage()).toBe(before + 1);
+    await repoA.remove(item.propertyId);
+    completed.resolve(homeownerValuation());
+    await refused;
+    expect(estimate).toHaveBeenCalledOnce();
+    expect(await repoA.getReport(item.report.id)).toBeNull();
+    expect((await repoA.list()).some((property) => property.id === item.propertyId)).toBe(false);
+    expect(
+      await admin(
+        "select count(*)::int as count from homeowner.reports where location_id=$1::uuid and property_id=$2",
+        [locationA, item.propertyId],
+      ),
+    ).toEqual([{ count: 0 }]);
+    const late = buildHomeReport(
+      input,
+      homeownerValuation(),
+      `hreport_${homeHash(`${locationA}:${input.requestId}`).slice(0, 32)}`,
+      item.propertyId,
+      new Date(),
+    );
+    await expect(repoA.complete(late)).rejects.toMatchObject({ code: "LOOKUP_NOT_PENDING" });
+    await expect(
+      generateHomeReport(
+        input,
+        {
+          repository: repoA,
+          contacts: contactPort(),
+          valuation: { estimate },
+          locationId: locationA,
+          monthlyLimit: 100,
+        },
+        { refresh: true },
+      ),
+    ).rejects.toMatchObject({ code: "LOOKUP_ALREADY_ATTEMPTED" });
+    expect(estimate).toHaveBeenCalledOnce();
+    // The request already left the service boundary. Removal prevents storage and future work,
+    // not the spent lookup; its minimal usage record remains after report history is deleted.
+    expect(await repoA.usage()).toBe(before + 1);
+  });
+  it("removes share access and scheduled work without permitting new delivery or recreation", async () => {
+    const item = await seed(repoA, "removed-before-future-work");
+    const hash = homeHash(randomUUID());
+    const due = new Date(Date.now() - 60_000).toISOString();
+    await repoA.enrollment(item.propertyId, {
+      cadence: "monthly",
+      paused: false,
+      deliverUpdates: true,
+      nextRefreshAt: due,
+    });
+    await repoA.createShare(item.report.id, hash, new Date(Date.now() + 86_400_000).toISOString());
+    expect((await readSharedHomeReport(pool, hash))?.id).toBe(item.report.id);
+    const before = await repoA.usage();
+    await repoA.remove(item.propertyId);
+    expect(await readSharedHomeReport(pool, hash)).toBeNull();
+    expect(await recordSharedHomeEvent(pool, hash, "review_requested", randomUUID())).toBe(false);
+    expect(
+      (await claimDueHomeProperties(pool)).some((entry) => entry.propertyId === item.propertyId),
+    ).toBe(false);
+    expect(await repoA.reserveDelivery(item.report.id)).toBe(false);
+    await expect(
+      repoA.createShare(
+        item.report.id,
+        homeHash(randomUUID()),
+        new Date(Date.now() + 86_400_000).toISOString(),
+      ),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(shareHomeReport(repoA, item.report.id, deliveryConfig)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    const contacts = contactPort();
+    await expect(
+      handoffHomeReport(repoA, contacts, item.report.id, deliveryConfig),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(contacts.get).not.toHaveBeenCalled();
+    expect(contacts.handoff).not.toHaveBeenCalled();
+    await repoA.advanceSchedule(
+      item.propertyId,
+      due,
+      new Date(Date.now() + 86_400_000).toISOString(),
+      null,
+    );
+    expect((await repoA.list()).some((property) => property.id === item.propertyId)).toBe(false);
+    expect(await repoA.usage()).toBe(before);
+  });
+  it("refuses link creation if removal commits after the service read but before the share transaction", async () => {
+    const item = await seed(repoA, "removed-during-share");
+    const store = {
+      async getReport(id: string) {
+        const report = await repoA.getReport(id);
+        await repoA.remove(item.propertyId);
+        return report;
+      },
+      createShare: repoA.createShare.bind(repoA),
+    };
+    await expect(shareHomeReport(store, item.report.id, deliveryConfig)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    expect(await repoA.shares(item.report.id)).toEqual([]);
+    expect(await repoA.getReport(item.report.id)).toBeNull();
+  });
+  it("refuses handoff if removal commits during the external contact check before reserving delivery", async () => {
+    const item = await seed(repoA, "removed-during-contact-check");
+    const contacts = contactPort();
+    contacts.get = vi.fn(async (id: string) => {
+      await repoA.remove(item.propertyId);
+      return { id, name: "Fixture Homeowner", email: null, communicationAllowed: true };
+    });
+    await expect(
+      handoffHomeReport(repoA, contacts, item.report.id, deliveryConfig),
+    ).rejects.toMatchObject({ code: "DELIVERY_ALREADY_ATTEMPTED" });
+    expect(contacts.get).toHaveBeenCalledOnce();
+    expect(contacts.handoff).not.toHaveBeenCalled();
+    expect(await repoA.delivery(item.report.id)).toBeNull();
+    expect(await repoA.shares(item.report.id)).toEqual([]);
   });
   it("reuses a fresh valuation without reserving another lookup", async () => {
     const before = await repoA.usage();

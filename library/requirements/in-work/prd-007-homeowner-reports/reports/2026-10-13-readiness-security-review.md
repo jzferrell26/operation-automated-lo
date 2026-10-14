@@ -256,3 +256,39 @@ Independent raw RGBA comparisons against the tracked HEAD images reproduce every
 Independently read CI run `38491869012`: overall failure at the same source head; Application verification and Release and recovery contract passed, Preview smoke was skipped, and the combined PostgreSQL/browser job failed. The parent and UX log inspection attribute the successful pgTAP/295 PostgreSQL routes and four readiness browser cases to that job and its failure to the stale empty-account comparisons. Those component executions were not rerun here, and this pre-replacement aggregate is not described as green.
 
 Machine evidence is retained in ignored `test-results/homeowner-final-security-png-verification.json` with all eight dimensions, hashes, chunks, exact pixel counts/bounds and nine source pins. Actual provider behavior, live customer data, production report setup, customer acceptance, deletion/export/retention qualification and whole-project completion remain outside this image integrity clearance. The orchestrator retains fresh Quality, current-head CI and repository-health/mergeability checks before release qualification.
+
+## Manual-removal race test Security review
+
+Review date: October 13, 2026, America/Chicago. Security result: PASS for the bounded test-source and scope-document increment based on `2df7fe0cb7fb5611c71ca4f1da7fac8e221236a5`. Fresh Quality follows. Production source, authorization policy, configuration, dependencies and migrations are unchanged. Existing earlier Quality/CI results do not certify the new test increment. This reviewer owns only this appendix and makes no source/test changes or commit/push.
+
+### Scope and authority
+
+Reviewed the exact two test-file deltas plus the root's manual-removal/export scope reconciliation in `single-lo-owner-direction-2026-10-13.md`. The accepted single-LO direction preserves connected-account contacts, account isolation, explicit removal and minimal lookup usage evidence. The appended scope paragraph does not authorize bulk export, whole-account closure or an automatic purge interval. It accurately leaves the new PostgreSQL executions and hosted qualification pending. This is source Security clearance, not a legal retention conclusion or certification of whole-account erasure.
+
+The local scheduler cases exercise the exported handler with a valid fixed synthetic cron secret, fake clock and controlled repository/provider seams. `scheduler.unit.test.ts:160` supplies a claimed lease whose property has disappeared, then verifies no connection/provider generation, handoff or schedule write occurs. `scheduler.unit.test.ts:244` uses a real deferred promise boundary to remove the property while generation is pending and verifies the handler performs a fresh list read before refusing a new handoff. The unit's completed generation remains counted as updated; it does not pretend the already-started valuation was undone.
+
+The six new actual-PostgreSQL cases comprise two parameterized missing/removed-property cases and four race/invalidation cases. They use the real repository/service, an existing disposable-local-database guard, tenant-bound authority and parameterized evidence queries. Provider contact and valuation seams use synthetic fixtures and never contact an external service.
+
+- `repository.postgres.test.ts:255`: missing or removed explicit property refuses fresh reservation before valuation; usage stays unchanged and no new lookup-request row exists.
+- `repository.postgres.test.ts:295`: a deferred valuation can finish after removal, but history cannot be recreated. Direct completion is refused, retry does not estimate again and the already-spent minimal usage record remains. The positive start/usage assertions prevent a vacuous refusal result.
+- `repository.postgres.test.ts:357`: a share is shown readable before deletion, then share read/event, future scheduler claim, delivery reservation and new share/handoff attempts are refused. A schedule advance cannot recreate a property, and usage is retained.
+- `repository.postgres.test.ts:402`: removal between the service read and share transaction prevents a new link; the wrapper preserves real repository transactions.
+- `repository.postgres.test.ts:418`: real removal commits during the controlled contact check before delivery reservation; contact lookup executes once while no handoff, delivery record or new share occurs.
+
+Immediate production neighbors were read to confirm test alignment: tenant transactions in `packages/db/src/homeowner-repository.ts:136`, location-scoped reservation/binding checks at line203, pending reservation lock at line334, scoped delete at line508, report/property-joined delivery reservation at line521 and update-only schedule advancement at line625. The existing homeowner migration's composite foreign keys cascade property report/history, lookup requests, shares, events and deliveries; the minimal usage table deliberately has no property/report foreign key. Public share reads and due claims join current records and authority. No change to those production boundaries is made or claimed by these tests.
+
+### Independent checks and limits
+
+Independently executed 36 local tests across scheduler, service and handoff unit files, all passing. Evidence: ignored `test-results/homeowner-removal-security/unit-green.log`. Scoped oxlint, explicit-path Prettier and `git diff --check` passed. Evidence: `lint.log` and `format.log`. The first PowerShell array invocation of Prettier added an unmatched combined argument; the corrected explicit-path command is the passing evidence, with no source edits. Both supplied test hashes matched independently.
+
+The six PostgreSQL cases are authored and source-inspected only in this review. No disposable PostgreSQL was available locally, and no PostgreSQL pass or production behavior is inferred from unit mocks. Current-head actual PostgreSQL CI must run after fresh Quality. Existing cross-account tests/production predicates remain unchanged; the new cases do not replace session or tenant-refusal qualification. Already-started provider calls and previously downloaded PDFs cannot be recalled by local deletion. Removal before delivery reservation is proved by the authored test; no claim is made about revoking an external handoff already sent or closing every possible post-reservation interleaving.
+
+Critical, High, Medium and Low findings in the bounded delta: None detected. Financial/PII leakage, authentication bypass, injection, new secret handling, transport and dependency changes: None detected or introduced. Fixture values and contact IDs are synthetic. The earlier dependency/CVE review and its intelligence-freshness caveat are not extended by this test-only pass. No further policy decision is required for executing the existing manual-removal tests. Root retains current-head CI, repository-health and MERGEABLE checks before branch qualification.
+
+### Frozen handoff pins
+
+| File | SHA-256 |
+| --- | --- |
+| `apps/web/src/server/homeowners/scheduler.unit.test.ts` | `dc21fe73ff2e059f63576d1df249b44b58d70dad04c7253453685afc56a8d60c` |
+| `apps/web/src/server/homeowners/repository.postgres.test.ts` | `f2d1756ada0a3de86aafa6f38d8112152ecb282aad8af03360b5896efdac1417` |
+| `library/requirements/in-work/prd-007-homeowner-reports/single-lo-owner-direction-2026-10-13.md` | `aaf06a712c8064db4667863fb4f7f9b19970531c53bc5b1d5d7c24251aeafbe2` |

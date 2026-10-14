@@ -20,3 +20,9 @@ The owner did not choose an automatic deletion interval. Preserve existing manua
 L-5's product choice is all connected-account contacts. L-16's product choice is the single loan officer's access to their own balances and reports, with no configurable user roles. L-15's removal, export and retained audit behavior still needs an implementation audit; no automatic deletion interval is authorized by this clarification.
 
 Implementation must prove authentication and cross-account refusal, permitted single-account read/add/remove actions, share revocation and scheduler behavior after removal, honest export/removal copy and absence of user-facing role setup. Existing synthetic reader/approver cases may continue testing internal security and legacy compatibility; they must not become customer onboarding options or be presented as product roles.
+
+## Manual removal and export scope reconciliation
+
+Read-only reconciliation of the current implementation confirms per-report PDF export, confirmed property removal, cascade deletion of history and share links, removal from future monthly claims and minimal lookup usage retention. PRD-007 does not require bulk export, whole-account closure or an automatic purge interval. Those additional product/legal policies must not be treated as prerequisites for the existing PDF and manual removal workflow. No new owner policy is invented here.
+
+The bounded implementation proof adds races for removal before reservation, during a valuation, before sharing and before delivery reservation. Local scheduler/service/handoff tests pass; six actual PostgreSQL cases still require CI. Removing local records cannot recall an external request or handoff that has already started. Hosted valuation and delivery qualification remain separate.

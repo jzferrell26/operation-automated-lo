@@ -263,3 +263,4 @@ export {
   FinancingCalculationError,
 } from "@oalo/domain";
 export * from "./financing-media.js";
+export * from "./webinar-publisher-command.js";

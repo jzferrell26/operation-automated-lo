@@ -102,3 +102,14 @@ export {
   type TenantTransaction,
 } from "./transaction-context.js";
 export * from "./financing-media-repository.js";
+export {
+  PostgresWebinarPublisherRepository,
+  WebinarPublisherPersistenceError,
+  WebinarPublisherAdmissionSchema,
+  WebinarPublisherResolvedSelectionSchema,
+  createWebinarPublisherAdmissionService,
+  type WebinarPublisherDatabaseAuthority,
+  type WebinarPublisherAdmissionVerifier,
+  type WebinarPublisherAdmission,
+  type WebinarPublisherWorkerRecord,
+} from "./webinar-publisher-repository.js";

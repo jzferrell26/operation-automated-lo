@@ -104,6 +104,9 @@ describe("Phase 0 security coverage and traffic boundary", () => {
         "apps/web/src/server/email/resend-email-adapter.ts",
         "packages/ai/src/anthropic-messages-provider.ts",
         "packages/ghl/src/leadconnector-v2-http-transport.ts",
+        // CTR-003 native adapter, independently reviewed with its injected-only transport
+        // and authority/refusal tests. This exact path adds no live-provider permission.
+        "packages/ghl/src/webinar-publisher-transport.ts",
         "packages/storage/src/r2-object-store-client.ts",
       ].sort(),
     );

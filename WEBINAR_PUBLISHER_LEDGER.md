@@ -45,3 +45,17 @@ Run38522571989 at0c4c04b passed release checks but application verification stop
 ## Inherited visual-provenance note
 
 The root PR description initially omitted the required Baseline change marker for the136 already-reviewed parent PNGs. Run38522944376 passed3277 unit cases but correctly failed that one documentation guard. Root added the inherited image provenance to PR96 and independently passed allthree unchanged baseline-note tests against current origin/main and the actual PR body. No PNG, assertion, timeout or coverage threshold changed. A new push records the metadata correction so CI receives the updated event body; the prior failing application job remains in history.
+
+## Concrete database and repaired lifecycle
+
+The concrete repository and five-table assigned migration persist immutable summaries, command replay/CAS, active lineage, outbox, leases, stage attempts, cancellation fences and trusted admission through a separate NOLOGIN SQL capability. Actual current principal, source, installation, entitlement and provider proof remain mandatory authorities.
+
+Initial Security passed the packet; initial Quality identified Q-PUB-DB-01: confirmed publish acknowledgements were incorrectly classified blocked/complete after expiry without observed delivery. The repaired deadline preserves uncertain/reconcile for every possible retained write/native entity, clears leases and fences repeat dispatch. An independently qualified owned pause remains available. The original blocked Quality and intermediate Security reports remain preserved.
+
+Six serialized production JSON parameters and twelve fixture parameters now cast through text before JSONB. Actual postgres.js3.4.9 wire checks reproduced four strict-object refusals before repair and passed the same four source queries afterward with canonical-hash fidelity. Isolated deadline SQL reproduced six failures before repair and passed ten cases afterward. These PostgreSQL18.6 WASM probes do not qualify the full PostgreSQL17 migration/RLS boundary.
+
+Final combined Security SHA-256:3f4fec076cb2e4dfd269c41de0232eceaa27c9353558017979af6ace98bc5743. Fresh repaired-database Quality SHA-256:2089a386d61bbb21b1ad48402c9b64f8a3958bee969703e4a79251eccffeaee1. All eleven final source/test pins match. Quality independently passed228 units,three connectionless cases,34 source-only fixture checks,four driver cases,ten deadline cases and types. Overlapping totals are not added.
+
+Earlier CI38524670910 at876aa8f passed3278 units,923 integrations plus one existing skip,317 actual PostgreSQL cases and163+four authenticated browser cases. Its application gate failed the exact outbound adapter inventory. The reviewed fifth adapter is now registered without weakening regexes, timeouts or refusal gates. The root scaffold expects exactly36 tenant tables and names all five publisher tables while retaining ownership/RLS/grant/index assertions.
+
+Twenty-one new actual PostgreSQL cases and24 publisher pgTAP assertions remain mandatory new-head CI qualification. Root owns Git and the read-only repository check: current-main ancestry, exact ownership, PR template and locked CI remain intact, with no settings changes. Worker composition, authenticated HTTP/UI, actual discovery/proof qualification and safety-pause scheduling remain open source consumers. No provider, deployment, purchase or spend action is inferred.

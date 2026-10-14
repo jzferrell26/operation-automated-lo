@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(27);
 
 create function pg_temp.assert_is(actual anyelement, expected anyelement, description text)
 returns text
@@ -91,9 +91,15 @@ select is(
         )
       )
   ),
-  31,
-  'the expected thirty-one tenant tables, including approved funnel publications, encrypted inquiries, financing media and revocations, are present'
+  36,
+  'the expected thirty-six tenant tables, including the five native webinar publisher tables, are present'
 );
+
+select has_table('campaign', 'webinar_publisher_admissions', 'verified publisher admissions are present');
+select has_table('campaign', 'webinar_publisher_launches', 'immutable publisher launch summaries are present');
+select has_table('campaign', 'webinar_publisher_operations', 'publisher operation identities are present');
+select has_table('integration', 'webinar_publisher_outbox', 'the publisher task outbox is present');
+select has_table('campaign', 'webinar_publisher_attempts', 'unique publisher stage attempts are present');
 
 select has_table(
   'campaign',

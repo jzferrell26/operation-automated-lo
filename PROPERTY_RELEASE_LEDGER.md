@@ -1,0 +1,34 @@
+# Public financing release execution
+
+Branch `codex/property-marketing-release` was created from `origin/main` at `728d5f0` before stacking reviewed completion source `26ace475`. Parent test-only correction `03dcfef` will be integrated after active source ownership is released.
+
+Jonathan adopted CTR-004 revision 1 in response to `call_a3d8e442cefc42f3bde5fa5c51d7980e`, October 14 UTC: "Adopt both plans (Recommended)". Accepted record SHA-256: `59d0b203159f5c6c440621437bcd244f664f7a64901924b9a8b952a6a4d70dfa`. Root owns this ledger, PRD pins, integration, CI and final review scheduling. No hosted, financial-provider or customer-publication effect is authorized by this ledger.
+
+## Ordered source work and ownership
+
+All Guardians use the available inherited GPT-6 route; historical matrix model names are unavailable. Gauntlet authorizes disjoint armed work.
+
+| Step | Guardian and exclusive source | Criteria and proof | State |
+| --- | --- | --- | --- |
+| Release boundary | typescript-node-guardian: new `packages/contracts/src/financing-release.ts`, new `packages/application/src/financing-release.ts`, package exports and new scoped tooling tests | Preserve private v1/v2 hashes/arithmetic; strict separately evidence-bound envelope; actual output seals; current eligibility/replay/state/permission/expiry/inquiry guards; synthetic negative tests | In work |
+| Durable storage and setup | Later assigned database owner; migration identifier `20261014051000_financing_release.sql` reserved only for this wave | Saved property/partner/identity/preset and authoritative quote/disclosure/public-media records, exact approval/publication, transactional idempotency and consented inquiry/outbox; actual PostgreSQL isolation/race/purge proof | Pending boundary handoff |
+| Actual artifacts and readers | Later assigned server/storage/output owner | Complete sealed site/PDF from the same source, public `/p` and safe assets, current expiry/revoke on every read; exact amounts/text/images/PDF/browser proof | Pending provider handoff |
+| Customer flow and delivery | Later assigned UI/GHL consumer owners | Reuse saved setup in few actions, exact artifact review and explicit publication; canonical URL and external HighLevel QR, optional separately reviewed supplement, encrypted consented name/email inquiry and attributed correct-location handoff | Pending command handoff |
+| Domains | Qualified reuse of PR #87, separate ownership assignment | Finish persistent exact-host ownership, setup UI/routing, same-origin visitor submission and owned-host/TLS proof; existing partial four-file draft is insufficient | Open source |
+| Close-out | security-guardian, then fresh quality-guardian; root repository-health and Git gate | Exact source/contract pins, full relevant gates, final actual CI and current-main MERGEABLE; public rights/lender/provider/hosted proof separately scoped | Pending implementation |
+
+## Source and release invariants
+
+Private permission `tenant-private-financing` remains private. Public usage needs a separate exact-asset/channel authorization. No guessed rate, APR, fee/MI, financial eligibility, approved preset or expiry becomes a default. The existing fixed-purchase calculator is reused, with supplied verified evidence. One LO may review/publish when actually authorized; no second human or customer role administration is required.
+
+HighLevel manages QR creation. A valid canonical URL is available without a QR. An optional QR flyer supplement follows an eligible baseline publication, preserves the same financial source/current evidence, and receives separate exact-byte/destination review without rewriting baseline approval. Dynamic provider redirects remain mutable.
+
+Consented public inquiries reuse the existing transient encrypted 30-day access/cleanup contract, bounded latest-1,000 unexpired owner export and actual daily purge. HighLevel holds the lasting contact. This does not alter homeowner report retention. No customer message, workflow subscription, appointment, paid ad or lender acceptance is inferred from native capture or a provider acknowledgement.
+
+PAY-001 through PAY-016 remain open at their unimplemented public subsets. Platform-hosted URLs do not close custom domains. Missing source is not a credential-only blocker. Actual quotes/disclosures/rights, approved origin/consent, installed HighLevel mapping and controlled hosted proof remain activation inputs after source delivery.
+
+## Frozen release foundation, October 14
+
+The six-file contracts/application foundation passed implementation verification (145 selected cases), independent Security (115 cases), then fresh independent Quality (143 selected cases). These overlapping totals are not added. Security report SHA-256: 33d4486807e4bb2d46bae8e7e45dc33ce9ef6c51edb15fde32f09cd1ed238d73. Quality report SHA-256: c5c5c2b132cf62d9d1eddb3df9b459f388ae1c9916a9a06ddc9ac2777398e90a. Both report source pins match the released six files. Existing private financial calculation and output sources remain unchanged.
+
+This implements strict source/evidence/byte-seal, state, current eligibility and inquiry policy over mandatory server ports. It does not supply concrete persistence, output rendering/storage, HTTP routes, worker delivery or customer UI. Those consumers are the next implementation step; no whole PRD or hosted publication completion is claimed. The accepted CTR-003 and CTR-004 receipts and their PRD dependency pins are recorded with this foundation. Root owns this ledger and Git handling; consumer files will be assigned separately.

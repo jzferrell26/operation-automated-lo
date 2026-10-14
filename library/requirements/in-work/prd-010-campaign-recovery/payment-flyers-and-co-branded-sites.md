@@ -11,7 +11,11 @@ Parent product requirement: [Five finished funnels, not a funnel builder](turnke
 
 The October 13 private property-photo increment pins [CTR-001 revision 1](../../../knowledge/private/contracts/CTR-001-financing-property-media.md), Accepted for engineering implementation by the orchestrator. This pin governs its media/v2 producer-consumer boundary only. It does not mark any PAY criterion complete or approve public/lender/visual release. See [the increment ledger](../../../../FINANCING_PHOTOS_LEDGER.md) for actual implementation evidence.
 
+CTR-004 revision 1 is accepted by Jonathan Ferrell on October 14, 2026 UTC for the public financing boundary. The [accepted public-release agreement][ctr004-public-release] has SHA-256 `59d0b203159f5c6c440621437bcd244f664f7a64901924b9a8b952a6a4d70dfa`. It governs independent public media rights, quote/preset/disclosure evidence, exact output approval, expiry/revocation, external HighLevel QR and attributed consented inquiry delivery. It preserves private v1/v2 sources and existing financial arithmetic. Actual public or lender release remains separately qualified.
+
 ## The outcome
+
+[ctr004-public-release]: ../../../knowledge/private/contracts/CTR-004-public-financing-release.md
 
 A loan officer receives a property from a Realtor, selects that partner and an approved financing preset, and creates a polished financing comparison in a few actions. That same comparison becomes a report view, a printable co-branded payment flyer, and a matching responsive property website. It answers two separate questions: estimated monthly housing cost and estimated cash needed at closing.
 
@@ -134,9 +138,9 @@ The rows below define the full product proof. The [current increment's scope tab
 | PAY-007 | Uploaded/imported property images use safe, tenant-correct storage, verified media types and recorded usage rights. No stock property is silently substituted. |
 | PAY-008 | Report, PDF and site display the same saved input/result values, calculation version and validity dates. Later edits do not rewrite approved artifacts. |
 | PAY-009 | Desktop and mobile layouts preserve every row without unreadable scaling or clipped disclosures. Three-scenario print output and explicit four/five-scenario variants are inspected with long names and realistic long copy. |
-| PAY-010 | Actual page, PDF and QR bytes are generated and verified; hashes bind the approved package. Failed generation leaves no partial ready state and exact/concurrent retries reuse one completed package. |
+| PAY-010 | Actual page and PDF bytes are generated and verified; hashes bind the approved package. Failed generation leaves no partial ready state and exact/concurrent retries reuse one completed package. After the approved site is published and eligible, an optional supplied HighLevel QR image may produce a separately sealed and reviewed flyer supplement. It binds the same financial source, publication, current evidence, actual normalized QR bytes/rights and recorded destination scan check, without replacing the baseline approval or rewriting its artifact hashes. |
 | PAY-011 | A material input, media, identity, template or disclosure change invalidates approval. Expiration and revocation prevent an outdated financing view from appearing current. |
-| PAY-012 | A public QR decodes to the actual approved co-branded site, without a workspace login, private data or bearer credential. Private-preview QR behavior remains distinct. |
+| PAY-012 | The currently eligible canonical public URL can be copied into HighLevel's Website QR builder. A QR used in a flyer supplement must be decoded and its observed HTTPS destination chain checked against that exact approved sign-in-free site, with the receipt bound to the supplied image and supplement. Repeat the check before distribution. Dynamic HighLevel destinations remain externally mutable; no perpetual destination guarantee or undocumented generation API is claimed. Private-preview QR behavior remains distinct. |
 | PAY-013 | The correct HighLevel location receives the authorized lead with campaign/property/partner attribution and consent. Retries do not duplicate the lead/handoff and no unapproved message is sent. |
 | PAY-014 | Knowing another workspace's campaign, template or media ID never grants access. Licensed/client-only templates cannot be previewed, copied, rendered or downloaded by an unentitled workspace. |
 | PAY-015 | No restricted reference artwork, source email, collaboration URL, identifying customer example or source-client copy is committed to this public repo or generic fixture catalog. |

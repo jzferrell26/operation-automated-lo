@@ -35,6 +35,7 @@ import {
   visitorHash,
 } from "./funnel-public-store.js";
 import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
+import { publicDomainAuthority } from "./funnel-domain-routing.js";
 
 const HEADERS = {
   "cache-control": "no-store, private",
@@ -127,8 +128,19 @@ export async function publicSnapshot(
   id: string,
   cookie: string,
   environment: unknown,
+  hostHeader?: string,
 ): Promise<{ snapshot: FunnelSnapshot; hasAccess: boolean } | null> {
-  const publication = await readPublishedFunnel(id, environment);
+  // RSC/page consumers supply the actual Host header. Existing server-only platform callers
+  // retain the canonical origin, which is never derived from browser tenant headers.
+  const config = publicFunnelConfig(environment);
+  const authority = publicDomainAuthority(
+    hostHeader === undefined
+      ? config.origin
+      : `${hostHeader === new URL(config.origin).host ? new URL(config.origin).protocol : "https:"}//${hostHeader}/f/${id}`,
+    hostHeader ?? null,
+    environment,
+  );
+  const publication = await readPublishedFunnel(id, environment, authority.domainHost);
   if (!publication) return null;
   const secret = readPublicCookie(cookie),
     valid = secret
@@ -150,11 +162,12 @@ export async function handleVisitor(
   try {
     if (!z.uuid().safeParse(id).success) throw new FunnelPublicError(404);
     const config = publicFunnelConfig(environment);
-    if (request.headers.get("origin") !== config.origin) throw new FunnelPublicError(403);
+    const authority = publicDomainAuthority(request.url, request.headers.get("host"), environment);
+    if (request.headers.get("origin") !== authority.origin) throw new FunnelPublicError(403);
     if (request.headers.get("content-type")?.split(";")[0] !== "application/json")
       throw new FunnelPublicError(415);
     const visitor = FunnelVisitorSchema.parse(await readBoundedJson(request, 5000));
-    const publication = await readPublishedFunnel(id, environment);
+    const publication = await readPublishedFunnel(id, environment, authority.domainHost);
     if (!publication) throw new FunnelPublicError(404);
     if (
       publication.snapshot.kind === "live-webinar" &&
@@ -175,15 +188,20 @@ export async function handleVisitor(
     const accepted = z
       .object({ status: z.string(), delivery: z.string().optional() })
       .parse(
-        await funnelCapability(campaignDatabasePool(environment), "accept", [
-          id,
-          visitor.requestId,
-          visitorHash(config, id, visitor),
-          hash,
-          ipHash,
-          receiptHash(consent),
-          encryptVisitor(config, id, visitor),
-        ]),
+        await funnelCapability(
+          campaignDatabasePool(environment),
+          authority.domainHost ? "domainAccept" : "accept",
+          [
+            ...(authority.domainHost ? [authority.domainHost] : []),
+            id,
+            visitor.requestId,
+            visitorHash(config, id, visitor),
+            hash,
+            ipHash,
+            receiptHash(consent),
+            encryptVisitor(config, id, visitor),
+          ],
+        ),
       );
     if (accepted.status !== "accepted")
       throw new FunnelPublicError(

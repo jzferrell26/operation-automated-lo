@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server.js";
+import { isCustomerDomainPath, publicDomainAuthority } from "./server/funnel-domain-routing.js";
 
 import {
   CSP_NONCE_HEADER,
@@ -33,6 +34,20 @@ function isTokenBearingPath(pathname: string): boolean {
  * Proxy is not an authorization boundary; it only hardens browser responses.
  */
 export function proxy(request: NextRequest): NextResponse {
+  if (process.env.OALO_APP_URL || process.env.OALO_ENVIRONMENT === "production") {
+    try {
+      const authority = publicDomainAuthority(
+        request.url,
+        request.headers.get("host"),
+        process.env,
+      );
+      if (authority.domainHost && !isCustomerDomainPath(request.nextUrl.pathname, request.method))
+        return new NextResponse(null, { status: 404, headers: { "Cache-Control": "no-store" } });
+    } catch {
+      // Configuration failure or invalid host is a refusal, never a dashboard fallback.
+      return new NextResponse(null, { status: 404, headers: { "Cache-Control": "no-store" } });
+    }
+  }
   const nonce = createRequestNonce();
   // Media is click-to-load and isolated to the authenticated, finite funnel studio path.
   const funnelMedia =
@@ -73,11 +88,7 @@ export function proxy(request: NextRequest): NextResponse {
 export const config = {
   matcher: [
     {
-      source: "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-      missing: [
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-      ],
+      source: "/:path*",
     },
   ],
 };

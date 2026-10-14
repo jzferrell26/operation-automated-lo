@@ -1,0 +1,15 @@
+begin;
+select plan(11);
+select has_table('campaign','funnel_domains','domain claims persist independently of drafts');
+select ok((select relrowsecurity and relforcerowsecurity from pg_class where oid='campaign.funnel_domains'::regclass),'domain history forces RLS');
+select ok(has_table_privilege('app_runtime','campaign.funnel_domains','SELECT'),'runtime may read its owner projection');
+select ok(not has_table_privilege('app_runtime','campaign.funnel_domains','INSERT'),'claims use the context checked command');
+select ok(not has_table_privilege('app_runtime','campaign.funnel_domains','UPDATE'),'direct SQL cannot forge ownership or readiness');
+select ok(not has_table_privilege('anon','campaign.funnel_domains','SELECT'),'browser roles cannot read challenges');
+select ok(not has_function_privilege('anon','campaign.funnel_domain_command(text,uuid,uuid,jsonb)','EXECUTE'),'browser roles cannot claim domains');
+select ok(has_function_privilege('app_runtime','campaign.funnel_domain_accept(text,uuid,uuid,text,text,text,text,text)','EXECUTE'),'server has the owner-bound capture capability');
+select ok((select bool_and(prosecdef and proconfig @> array['search_path=""']) from pg_proc where pronamespace='campaign'::regnamespace and proname in ('funnel_domain_command','funnel_domain_binding','funnel_domain_snapshot','funnel_domain_accept')),'domain capabilities use fixed empty search paths');
+select has_index('campaign','funnel_domains','funnel_domains_claim_idx','one verified current claim per hostname');
+select has_index('campaign','funnel_domains','funnel_domains_user_idx','actor FK is indexed');
+select * from finish();
+rollback;

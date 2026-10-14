@@ -130,6 +130,10 @@ export function decryptVisitor(
   );
 }
 const FUNCTION_SQL = {
+  domainBinding: "select campaign.funnel_domain_binding($1) as value",
+  domainRead: "select campaign.funnel_domain_snapshot($1,$2::uuid) as value",
+  domainAccept:
+    "select campaign.funnel_domain_accept($1,$2::uuid,$3::uuid,$4,$5,$6,$7,$8) as value",
   read: "select campaign.funnel_public_snapshot($1::uuid) as value",
   accept: "select campaign.funnel_accept_inquiry($1::uuid,$2::uuid,$3,$4,$5,$6,$7) as value",
   receipt: "select campaign.funnel_receipt_valid($1::uuid,$2) as value",
@@ -161,10 +165,15 @@ export async function funnelCapability(
 export async function readPublishedFunnel(
   id: string,
   environment: unknown,
+  domainHost: string | null = null,
 ): Promise<PublishedFunnel | null> {
   if (!z.uuid().safeParse(id).success) return null;
   publicFunnelConfig(environment);
-  const raw = await funnelCapability(campaignDatabasePool(environment), "read", [id]);
+  const raw = await funnelCapability(
+    campaignDatabasePool(environment),
+    domainHost ? "domainRead" : "read",
+    domainHost ? [domainHost, id] : [id],
+  );
   return raw === null ? null : PublishedFunnelSchema.parse(raw);
 }
 function publicationContract(name: string, access: "read" | "write", text: string) {

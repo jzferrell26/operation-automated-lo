@@ -107,6 +107,20 @@ async function collectEmittedCodes(): Promise<readonly string[]> {
 }
 
 describe("error codes become sentences", () => {
+  it.each([
+    "DOMAIN_METHOD",
+    "DOMAIN_INVALID",
+    "DOMAIN_FORBIDDEN",
+    "DOMAIN_UNAVAILABLE",
+    "DOMAIN_CONFLICT",
+    "DOMAIN_NOT_FOUND",
+  ])("maps domain refusal %s without raw provider details", (code) => {
+    expect(isMappedErrorCode(code)).toBe(true);
+    expect(userMessageForCode(code)).not.toBe(UNKNOWN_ERROR_MESSAGE);
+    expect(userMessageForCode(code).whatToDo.length).toBeGreaterThan(10);
+    expect(findVocabularyHits(userMessageSentence(code))).toEqual([]);
+    expect(userMessageSentence(code)).not.toMatch(/DOMAIN_|token|challenge|stack|projectId/u);
+  });
   it.each(Object.keys(FINANCING_MEDIA_REFUSALS))(
     "maps financing photograph refusal %s without internal details",
     (code) => {

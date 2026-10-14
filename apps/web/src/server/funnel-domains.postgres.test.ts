@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { withMigrationOwnerTransaction } from "../../../../packages/db/test/route-seeding-bridge.js";
 import { FUNNELS } from "../features/funnels/catalog.js";
 import { DomainStateSchema } from "../features/domains/model.js";
 import { SAVED_TEST_BRAND } from "./campaign-command-test-support.js";
@@ -91,6 +92,16 @@ async function disconnect(store: FunnelDomainStore) {
   const current = (await store.list()).find((row) => row.status !== "disconnected");
   if (current) await store.command("disconnect", current.id, current.revision);
 }
+afterEach(async () => {
+  // Attempt both owners' cleanup even when an assertion or the other cleanup fails.
+  // Claims are disconnected through the product command, never deleted or reassigned by SQL.
+  if (!a || !b) return;
+  const results = await Promise.allSettled([disconnect(a), disconnect(b)]);
+  const failures = results.flatMap((result) =>
+    result.status === "rejected" ? [result.reason] : [],
+  );
+  if (failures.length) throw new AggregateError(failures, "Domain fixture cleanup failed");
+});
 describe("real Postgres domain authority", () => {
   it("persists reloadable pending claims without globally reserving a hostname", async () => {
     const host = hostname(),
@@ -186,15 +197,35 @@ describe("real Postgres domain authority", () => {
     );
     const connection = await pool.connect();
     try {
-      await connection.execute({
-        statementName: "domain-test.expire",
-        text: "update campaign.funnel_domains set ownership_until=now()-interval '1 second',record=record||jsonb_build_object('readyUntil',now()-interval '1 second') where id=$1::uuid",
-        values: [ready.id],
-        preparedStatementMode: "unnamed",
-      });
+      // Preserve the permission failure as a negative proof. Runtime cannot forge freshness.
+      await expect(
+        connection.execute({
+          statementName: "domain-test.expire",
+          text: "update campaign.funnel_domains set ownership_until=now()-interval '1 second',record=record||jsonb_build_object('readyUntil',now()-interval '1 second') where id=$1::uuid",
+          values: [ready.id],
+          preparedStatementMode: "unnamed",
+        }),
+      ).rejects.toMatchObject({ code: "42501" });
     } finally {
       await connection.release();
     }
+    // Only the existing test harness may temporarily elevate this disposable fixture write.
+    const database = new URL(environment.OALO_DATABASE_URL);
+    if (
+      environment.OALO_ENVIRONMENT !== "local" ||
+      !["127.0.0.1", "localhost", "[::1]"].includes(database.hostname) ||
+      !/^\/oalo_test_[a-z0-9_]+$/u.test(database.pathname)
+    )
+      throw new Error("Artificial domain expiry requires a disposable local test database");
+    await withMigrationOwnerTransaction(pool, async (fixtureConnection) => {
+      const result = await fixtureConnection.execute({
+        statementName: "domain-test.fixture-expire",
+        text: "update campaign.funnel_domains set ownership_until=now()-interval '1 second',record=record||jsonb_build_object('readyUntil',now()-interval '1 second') where id=$1::uuid returning id",
+        values: [ready.id],
+        preparedStatementMode: "unnamed",
+      });
+      expect(result.rows).toHaveLength(1);
+    });
     expect(await readCurrentDomainBinding(host, environment)).toBeNull();
     await disconnect(a);
   });

@@ -29,6 +29,32 @@ export type UserMessage = Readonly<{
  * pair.
  */
 export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Object.freeze({
+  DOMAIN_METHOD: {
+    what: "This domain request could not be accepted.",
+    whatToDo: "Open Domains in Settings and use the controls shown there.",
+  },
+  DOMAIN_INVALID: {
+    what: "Some domain details need attention.",
+    whatToDo:
+      "Enter the hostname without a web address prefix or path, then review the connection.",
+  },
+  DOMAIN_FORBIDDEN: {
+    what: "This session cannot change domain settings.",
+    whatToDo: "Sign in again and load the latest saved state before making a change.",
+  },
+  DOMAIN_UNAVAILABLE: {
+    what: "Domain settings could not be confirmed.",
+    whatToDo:
+      "Load the latest saved state before repeating a change. Contact support if this continues.",
+  },
+  DOMAIN_CONFLICT: {
+    what: "The saved domain changed during this request.",
+    whatToDo: "Load the latest saved state before continuing. Your typed hostname is kept.",
+  },
+  DOMAIN_NOT_FOUND: {
+    what: "That saved domain could not be found.",
+    whatToDo: "Load the latest saved state before connecting or checking a domain.",
+  },
   DESTINATION_UNAVAILABLE: {
     what: "This published webinar could not be confirmed.",
     whatToDo:

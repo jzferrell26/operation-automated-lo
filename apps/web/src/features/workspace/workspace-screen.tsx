@@ -49,6 +49,14 @@ type SettingsCard = {
 };
 const settingsCards: readonly SettingsCard[] = [
   {
+    title: "Domains",
+    detail:
+      "Connect your own address for published funnels and check domain control, DNS and HTTPS.",
+    href: "/settings/domains",
+    openLabel: "Open domains",
+    icon: "layers",
+  },
+  {
     title: "Account",
     detail: "Change the password for your signed-in account, or see your plan and usage.",
     href: "/settings/account",

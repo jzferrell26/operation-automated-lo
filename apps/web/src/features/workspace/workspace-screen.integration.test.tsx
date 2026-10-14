@@ -28,6 +28,15 @@ const CONNECTED_SENTENCE =
 const NOT_CONNECTED_SENTENCE =
   "A valuation connection and an approved workspace allowance are needed before requesting live values.";
 
+it("makes guided domain setup discoverable from Settings", () => {
+  render(<WorkspaceScreen data={workspaceData("settings")} />);
+  expect(screen.getByRole("link", { name: "Open domains" })).toHaveAttribute(
+    "href",
+    "/settings/domains",
+  );
+  expect(screen.getByRole("heading", { name: "Domains" })).toBeInTheDocument();
+});
+
 describe.each(["routing"] as const)("the valuation card on the %s page", (view) => {
   it("says what is true about confirming a lookup once the connection is set up", () => {
     render(<WorkspaceScreen data={workspaceData(view)} />);

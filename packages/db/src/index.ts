@@ -63,6 +63,8 @@ export {
   createPostgresPool,
   PostgresAdapterError,
   PostgresDatabasePool,
+  type PostgresAcquisitionObservation,
+  type PostgresAcquisitionObserver,
   type DatabaseDeploymentEnvironment,
   type PostgresPoolConfiguration,
 } from "./postgres-adapter.js";

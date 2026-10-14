@@ -43,6 +43,7 @@ import {
   firstPartySessionIsActive,
 } from "./postgres-authentication-ports.js";
 import { createPostgresCredentialPort } from "./postgres-credential-ports.js";
+import { observeRuntimeStage, runtimePoolObserver } from "./runtime-timing.js";
 
 /**
  * PRD-005a D5 and D7. The server-only composition of `CampaignCommandPorts`.
@@ -332,17 +333,20 @@ function createAuthenticationPool(environment: RuntimeAuthenticationEnvironment)
     throw new RuntimeAuthenticationConfigurationError("OALO_DATABASE_URL");
   }
   try {
-    return createPostgresPool({
-      connectionString,
-      deploymentEnvironment: environment.OALO_ENVIRONMENT,
-      poolingMode: "transaction",
-      preparedStatements: false,
-      sslMode: sslModeFor(environment.OALO_ENVIRONMENT, environment.OALO_DATABASE_SSL_MODE),
-      ...(environment.OALO_DATABASE_CA_CERT_PEM === undefined
-        ? {}
-        : { caCertificatePem: environment.OALO_DATABASE_CA_CERT_PEM }),
-      applicationName: "oalo-runtime-authentication",
-    });
+    return createPostgresPool(
+      {
+        connectionString,
+        deploymentEnvironment: environment.OALO_ENVIRONMENT,
+        poolingMode: "transaction",
+        preparedStatements: false,
+        sslMode: sslModeFor(environment.OALO_ENVIRONMENT, environment.OALO_DATABASE_SSL_MODE),
+        ...(environment.OALO_DATABASE_CA_CERT_PEM === undefined
+          ? {}
+          : { caCertificatePem: environment.OALO_DATABASE_CA_CERT_PEM }),
+        applicationName: "oalo-runtime-authentication",
+      },
+      runtimePoolObserver(environment, "authentication_pool"),
+    );
   } catch {
     throw new RuntimeAuthenticationConfigurationError("OALO_DATABASE_URL");
   }
@@ -424,6 +428,7 @@ function fingerprintOf(environment: RuntimeAuthenticationEnvironment): string {
     environment.OALO_REVIEW_SURFACE ?? "",
     environment.OALO_DATABASE_SSL_MODE ?? "",
     environment.OALO_DATABASE_CA_CERT_PEM ?? "",
+    String(environment.OALO_RUNTIME_TIMING_DIAGNOSTICS === "true"),
     ...RUNTIME_AUTHENTICATION_VARIABLES.map((variable) => rawValue(environment, variable) ?? ""),
   ].join("\0");
 }
@@ -566,13 +571,16 @@ const UNAUTHENTICATED_SHELL: Readonly<Omit<RuntimeShellSession, "mode">> = Objec
 async function resolveEmailVerification(
   ports: CampaignCommandPorts,
   actorId: string,
+  environment: unknown,
 ): Promise<EmailVerificationView> {
   const email = ports.transactionalEmail;
   if (email === undefined || !email.configured) return "not_applicable";
   const credentials = ports.credentials;
   if (credentials === undefined) return "not_applicable";
   try {
-    const credential = await credentials.lookupCredentialForUser(actorId);
+    const credential = await observeRuntimeStage(environment, "shell_email_verification", () =>
+      credentials.lookupCredentialForUser(actorId),
+    );
     if (credential === undefined) return "not_applicable";
     return credential.emailVerified ? "verified" : "unverified";
   } catch {
@@ -598,12 +606,15 @@ async function resolveEmailVerification(
 async function resolveSessionDisplayNames(
   ports: CampaignCommandPorts,
   principal: Readonly<AuthenticatedPrincipal>,
+  environment: unknown,
 ): Promise<Readonly<SessionDisplayNames> | undefined> {
   try {
-    return await ports.sessionDisplay?.resolve({
-      locationRef: principal.locationRef,
-      actorRef: principal.actorRef,
-    });
+    return await observeRuntimeStage(environment, "shell_display", async () =>
+      ports.sessionDisplay?.resolve({
+        locationRef: principal.locationRef,
+        actorRef: principal.actorRef,
+      }),
+    );
   } catch {
     return undefined;
   }
@@ -633,9 +644,9 @@ export async function resolveRuntimeShellSession(
           serverSecret: gate.csrfServerSecret,
           sessionId: principal.sessionId,
         });
-  const display = await resolveSessionDisplayNames(ports, principal);
+  const display = await resolveSessionDisplayNames(ports, principal, input);
   const session: WorkspaceSessionView = Object.freeze({
-    emailVerification: await resolveEmailVerification(ports, principal.actorId),
+    emailVerification: await resolveEmailVerification(ports, principal.actorId, input),
     safety: Object.freeze({
       dataMode: "synthetic" as const,
       writesEnabled: false as const,

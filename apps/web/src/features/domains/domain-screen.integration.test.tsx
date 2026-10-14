@@ -23,6 +23,63 @@ async function loaded() {
   await screen.findByText("Latest saved domain state loaded.");
 }
 describe("guided domain setup", () => {
+  it("announces a blocked initial read through the shared loading card without offering writes", () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
+    render(<DomainScreen />);
+    const loading = screen.getByRole("status", { name: "Domain settings" });
+    expect(loading).toHaveAttribute("data-state", "loading");
+    expect(loading).toHaveAttribute("data-surface", "card");
+    expect(loading).toHaveAttribute("aria-busy", "true");
+    expect(loading).toHaveTextContent("Loading domain settings.");
+    expect(screen.getByRole("button", { name: "Load latest saved state" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Review connection" })).toBeNull();
+  });
+  it("announces a failed initial read through the shared error card and permits only safe reload", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("private network detail")));
+    render(<DomainScreen />);
+    const failure = await screen.findByRole("alert", { name: "Domain settings need attention" });
+    expect(failure).toHaveAttribute("data-state", "error");
+    expect(failure).toHaveAttribute("data-surface", "card");
+    expect(failure).toHaveAttribute("aria-live", "assertive");
+    expect(screen.queryByText("private network detail")).toBeNull();
+    expect(screen.getByRole("button", { name: "Load latest saved state" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Review connection" })).toBeNull();
+  });
+  it("explains session edit restrictions through the shared permission card without a role chooser", async () => {
+    requests(domainState(domainFixture(), { canEdit: false }));
+    render(<DomainScreen />);
+    await loaded();
+    const restricted = screen.getByRole("status", { name: "Domain settings are view-only" });
+    expect(restricted).toHaveAttribute("data-state", "permission_restricted");
+    expect(restricted).toHaveAttribute("data-surface", "card");
+    expect(restricted).toHaveTextContent(
+      "This session can view domain settings. Changes are unavailable here.",
+    );
+    expect(restricted).toHaveTextContent("Your current session cannot change domain settings.");
+    expect(restricted).toHaveTextContent(
+      "Your signed-in loan officer session with access to change these settings.",
+    );
+    expect(restricted).toHaveTextContent(
+      "Account support can help restore access for your session.",
+    );
+    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(screen.getByRole("button", { name: "Disconnect domain" })).toBeDisabled();
+  });
+  it("keeps the saved host and safe disconnect alongside the shared unavailable card", async () => {
+    requests(domainState(domainFixture(), { available: false }));
+    render(<DomainScreen />);
+    await loaded();
+    const degraded = screen.getByRole("status", { name: "Domain connection is unavailable" });
+    expect(degraded).toHaveAttribute("data-state", "degraded");
+    expect(degraded).toHaveAttribute("data-surface", "card");
+    expect(degraded).toHaveTextContent("Your saved record is shown below");
+    expect(screen.getByRole("heading", { name: "offers.loanoffice.com" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Check domain" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Disconnect domain" })).toBeEnabled();
+  });
   it("does not let a pending check race a disconnect", async () => {
     let finish: ((response: Response) => void) | undefined;
     const pending = new Promise<Response>((resolve) => {

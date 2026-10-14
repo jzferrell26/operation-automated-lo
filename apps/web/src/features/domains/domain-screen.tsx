@@ -1,5 +1,5 @@
 "use client";
-import { Badge, Button, Card, Dialog, FormField, Link, TextField } from "@oalo/ui";
+import { AsyncState, Badge, Button, Card, Dialog, FormField, Link, TextField } from "@oalo/ui";
 import { useEffect, useRef, useState } from "react";
 import { DomainClientError, domainErrorMessage, loadDomain, writeDomain } from "./client.js";
 import {
@@ -16,7 +16,7 @@ import type { InternalRefusal } from "../http/internal-api.js";
 const statuses: Record<DomainStatus, { label: string; detail: string }> = {
   ownership_needed: {
     label: "Domain control needed",
-    detail: "Add the exact TXT record below at your DNS provider, then check again.",
+    detail: "Add the exact TXT record below in your DNS settings, then check again.",
   },
   hosting_needed: {
     label: "Hosting verification needed",
@@ -26,7 +26,7 @@ const statuses: Record<DomainStatus, { label: string; detail: string }> = {
   dns_needed: {
     label: "DNS routing needed",
     detail:
-      "Add the provider's recommended records below. DNS changes can take time to appear; check again after your provider confirms them.",
+      "Add the recommended hosting records below. DNS changes can take time to appear; check again after your DNS settings have updated.",
   },
   certificate_needed: {
     label: "HTTPS pending",
@@ -46,7 +46,7 @@ const statuses: Record<DomainStatus, { label: string; detail: string }> = {
   disconnected: {
     label: "Disconnected",
     detail:
-      "This domain no longer routes your funnels. A new connection requires a new ownership record.",
+      "This domain no longer serves your funnels. A new connection requires a new ownership record.",
   },
 };
 function moment(value: string | null) {
@@ -236,36 +236,51 @@ export function DomainScreen() {
         <Button variant="outline" onClick={() => void reload()} disabled={busy}>
           Load latest saved state
         </Button>
-        {busy ? <span role="status">Loading domain settings.</span> : null}
       </div>
+      {busy ? (
+        <AsyncState
+          kind="loading"
+          surface="card"
+          title="Domain settings"
+          description="Loading domain settings."
+        />
+      ) : null}
       {error ? (
-        <p role="alert" className={styles.alert}>
-          {error}
-        </p>
+        <AsyncState
+          kind="error"
+          surface="card"
+          title="Domain settings need attention"
+          description={error}
+        />
       ) : null}
       <SupportReference refusal={refusal} />
       <p role="status" aria-live="polite">
         {notice}
       </p>
       {state && !state.canEdit ? (
-        <Card padding="lg">
-          <p>This session can view domain settings. Changes are unavailable here.</p>
-        </Card>
+        <AsyncState
+          kind="permission_restricted"
+          surface="card"
+          title="Domain settings are view-only"
+          description="This session can view domain settings. Changes are unavailable here."
+          reason="Your current session cannot change domain settings."
+          requiredRole="Your signed-in loan officer session with access to change these settings."
+          responsibleParty="Account support can help restore access for your session."
+        />
       ) : null}
       {state && !state.available ? (
-        <Card padding="lg">
-          <h2>Domain connection is unavailable</h2>
-          <p>
-            Domain management needs platform setup before you can connect or check a domain. Your
-            saved record is shown below; disconnect remains available when this session can edit it.
-          </p>
-        </Card>
+        <AsyncState
+          kind="degraded"
+          surface="card"
+          title="Domain connection is unavailable"
+          description="Domain management needs platform setup before you can connect or check a domain. Your saved record is shown below; disconnect remains available when this session can edit it."
+        />
       ) : null}
       {state && !saved ? (
         <Card padding="lg" className={styles.stack}>
           <h2>Connect your domain</h2>
           <p className={styles.muted}>
-            Use a domain you control. You will add DNS records with your existing DNS provider.
+            Use a domain you control. You will add records in your existing DNS settings.
           </p>
           <form
             className={styles.stack}
@@ -346,7 +361,7 @@ export function DomainScreen() {
                   <h3>Prove domain control</h3>
                   <p>
                     Keep the ownership TXT record in DNS. Copy the exact name and value; your DNS
-                    provider may ask for a relative record name.
+                    settings may ask for a relative record name.
                   </p>
                   <div className={styles.records}>
                     {domain.records

@@ -36,9 +36,25 @@ export function publicDomainAuthority(
 ): { origin: string; domainHost: string | null } {
   const incoming = new URL(url),
     platform = new URL(platformDomainOrigin(environment));
+  if (incoming.username || incoming.password) throw new FunnelPublicError(404);
+  const config = RoutingEnvironmentSchema.parse(environment);
+  // Next's locally configured fetch hostname/port can describe its loopback transport,
+  // while Host names the TLS gateway. Normalize only that exact local platform authority.
+  // Neither forwarded-host nor a customer hostname can establish this exception.
+  if (
+    config.OALO_ENVIRONMENT === "local" &&
+    platform.protocol === "https:" &&
+    incoming.protocol === platform.protocol &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(platform.hostname) &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(incoming.hostname) &&
+    platform.port !== "" &&
+    incoming.port !== "" &&
+    hostHeader === platform.host
+  ) {
+    return { origin: platform.origin, domainHost: null };
+  }
   if (hostHeader !== null && hostHeader !== incoming.host) throw new FunnelPublicError(404);
   if (incoming.origin === platform.origin) return { origin: platform.origin, domainHost: null };
-  const config = RoutingEnvironmentSchema.parse(environment);
   const host = normalizeFunnelDomain(incoming.hostname);
   if (
     config.OALO_FUNNEL_DOMAINS !== "enabled" ||

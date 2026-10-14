@@ -297,3 +297,152 @@ All originals are under `test-results/product-review-frames/webinar-preparation/
 | --- | --- |
 | test-results/webinar-final-preparation-capture/build.log | 8398322274ef7cd5d1e0dbe5dc0ef887baf936f862183b525771f1d77dafaad7 |
 | test-results/webinar-final-preparation-capture/browser.log | fceb0bae344dc10a463a86931362d0f3a58cde8b01e3791db4f13ce0043484aa |
+
+## Canonical Chromium difference classification, October 14, 2026 UTC
+
+Bounded visual equivalence PASS; approve zero baseline replacements. Independently compared all 74 original PNG files in `test-results/webinar-canonical-chromium/` from canonical run `38498933268`, artifact `11865835228`, captured at `679ce978dd86011120bdab5da3db95e38d881531`, against the same exact names in `tests/visual/screens/chromium/`. Current source head is `3967adbbd2dee1ac282bf1deb89de6a6f418a942`; its subsequent correction is test-only. Before this appendix, the worktree was clean. Sixty-four PNGs match SHA-256 exactly. The ten remaining candidates were each opened as a whole original, then compared with the whole tracked counterpart, 20 individually inspected images total. All original dimensions match their counterpart. No image was changed, copied, transformed, composited or substituted.
+
+The governing `04-screens/campaign-studio.md` UX-007 requires screenshot updates limited to intended screen changes on canonical Linux; UX-005 preserves layout and both themes. None of these ten images contains an intended visual change. Raw RGBA comparison using the installed Sharp decoder finds only 15 to 80 changed pixels per image, every channel difference at most 2 out of 255. The nine account-pill differences are confined to antialiased rounded-border edges. The campaign list difference is confined to 15 pixels on its top-right rounded corner. Every other pixel, including glyphs, dates and masks, layout, content, artwork and the Ads library region, matches exactly. These are observable raster/compositing noise, not evidence of changed date/time, font, copy or intended Ads library link styling.
+
+The account pill's unchanged border source is `apps/web/src/features/shell/components/app-shell.module.css:232-247`, with `--bd-hairline` and `--radius-pill`; the campaign table's unchanged border is `apps/web/src/features/campaigns/components/campaign-list.module.css:129-131`, with `--bd-hairline` and `--radius-control`. Neither stylesheet changed between the pre-feature head `5eb7fef` and `679ce97`. The Home start card likewise has no source diff in that range. The pixel locations identify those rounded borders, but this review does not establish the exact browser raster mechanism. The capture helper waits for fonts and settled transitions at `tests/browser/helpers/design-quality.ts:775-817`; `playwright.config.ts:92-101` disables screenshot animations and retains the existing 0.001 difference ratio. Calling this transient transition timing or font loading would exceed this evidence.
+
+Recommendation: retain all ten tracked baselines. No intended whole-image replacement is approved, and no product or capture normalization fix is justified by these tiny edge differences alone. If a stricter exact-image policy later requires normalization, discuss a bounded capture change before implementing or accepting it. The successful snapshot-update job by itself does not approve these differences. This assessment does not relax screenshot thresholds, change acceptance criteria or grant seeded review/approval journey, live provider, lender or product-completion credit. The pending reviewer artifact and 24 saved-journey originals remain open for their own inspection. Independent source pins from prior Security/Quality remain intact.
+
+### Exact changed-pixel measurements
+
+Bounds use original image coordinates, inclusive `(x0,y0)-(x1,y1)`. Counts include any raw RGBA byte difference, without tolerance.
+
+| Original | Dimensions | Changed pixels | Bounds | Maximum channel delta | Classification |
+| --- | --- | --- | --- | --- | --- |
+| campaign-detail--default--1440--dark.png | 1440x3508 | 80 | (1210,10)-(1287,53) | 2 | Account-pill rounded border |
+| campaign-detail--default--768--dark.png | 768x5551 | 52 | (658,10)-(735,39) | 2 | Account-pill rounded border |
+| campaign-detail--permission-restricted--1440--light.png | 1440x1693 | 76 | (1210,10)-(1287,53) | 2 | Account-pill rounded border |
+| campaigns--populated--1180--light.png | 1180x900 | 15 | (1139,529)-(1146,537) | 2 | Table rounded corner |
+| overview--default--1180--dark.png | 1180x1772 | 80 | (1070,10)-(1147,53) | 2 | Account-pill rounded border |
+| overview--default--1180--light.png | 1180x1772 | 76 | (1070,10)-(1147,53) | 2 | Account-pill rounded border |
+| overview--default--1440--dark.png | 1440x1772 | 80 | (1210,10)-(1287,53) | 2 | Account-pill rounded border |
+| overview--default--1440--light.png | 1440x1772 | 76 | (1210,10)-(1287,53) | 2 | Account-pill rounded border |
+| overview--default--768--dark.png | 768x2411 | 52 | (658,10)-(735,39) | 2 | Account-pill rounded border |
+| overview--default--768--light.png | 768x2411 | 51 | (658,10)-(735,40) | 2 | Account-pill rounded border |
+
+### Exact originals and tracked counterpart pins
+
+Actual files are under `test-results/webinar-canonical-chromium/`; baseline files are under `tests/visual/screens/chromium/`. These pins preserve the originals reviewed here, without authorizing replacements.
+
+| Filename | Actual SHA-256 | Tracked baseline SHA-256 |
+| --- | --- | --- |
+| campaign-detail--default--1440--dark.png | 3e547dfed5add8c9400d47b71705fc33530142a27355f2a02840181a9f3c6ce1 | d87242527f656a02aaef4b04f1ac011de899356c552f0716a26d908b2b70493d |
+| campaign-detail--default--768--dark.png | 635c7f47b76cc3b76916647343d2fd664158f938e151b6705eb0707a9c6cb2ae | 1a6dcc2c40fa7ecff212dc48c66b31aaa9d230a5cdf32f107964af713a4a3b4f |
+| campaign-detail--permission-restricted--1440--light.png | 71538b36e79f586d3fb05dade653da8559f64141f9483150fa9a197f7cf48e7e | 1b1c8fd2f662f4d6d40a2f30516d49a25f45e41d9ee738a158161864d5a15d4f |
+| campaigns--populated--1180--light.png | dae71512184204c6fa4c947baa065f632d9709b1e8c934be43d70e37bb9464ef | 2cb021d0e120f8a9e256075917ae933f22b65fe7e28e7f53e09a22a7d05661e3 |
+| overview--default--1180--dark.png | 831bed348f0e1ddb97404687cf2f8fd31872a49afcd332770cc49f1713abae6d | 14e1179da2a5b4a2b61b5197185cada060f17d64c9f5f58ed503c1e00030a2ee |
+| overview--default--1180--light.png | 41caab419ae1b2364227b082c6537289c05c8fc7cd7272e48aded475f55da5ea | 3fd0fd92e5dbeee1dce341d294ba1b3b8097c736af460e41e90734c30ac29d8a |
+| overview--default--1440--dark.png | 932f15d9410ce78b2574ea2edde85d489448443b8ef905ae47799425142800ed | 33eb3a5250dda5c004c307b6ebd7f31a1c5765e7c639a0e362eebed77074901c |
+| overview--default--1440--light.png | 35a77615fdc88186c8a9d49b6edc124cb67165d03937bc904eaa7484f78560f1 | 6ab3b1e02b025e8065b6e42f77503697558682333ab25db11824a1e1e4275158 |
+| overview--default--768--dark.png | d2a91251bac003c2e68d09d1e775ed770f99791f5c4ae0dc3f9f227a13f1b6aa | 2c80dd6dcbba68222d23c8ce547968bb3497873704ca229ffb0815b2df1a3ae4 |
+| overview--default--768--light.png | 4d9ca79bc6ee78023b3f89943d418041ae3f6370e2fc6decb703477f6824637e | 5546ecf294c0c2bba7f9e14db4288bedd9c67022fe10d70a0c3ff1e8a9ba04f0 |
+
+### Classification source pins
+
+| Source | SHA-256 |
+| --- | --- |
+| apps/web/src/features/shell/components/app-shell.module.css | fbe1f513197b2e6cad2bf7809c0b33f12faef99478d001bad93277339694c76f |
+| apps/web/src/features/campaigns/components/campaign-list.module.css | cd3b71c0b0c32fcc1a6da9513e7c95d4e03d59d67c5d3c5c75e42748258622ae |
+| apps/web/src/features/overview/components/home-start-card.tsx | 6141730dc6b230a4e0573f3b03f0ce7a5a63f521609737bbf4f04ffe2d4aee9a |
+| tests/browser/helpers/design-quality.ts | 60459303c3deb7558e7c68a2446acdc50c30bc26b54dda6e9783e247f7ac23bc |
+| playwright.config.ts | 40d0dab1adcead7ea5ebd493056c4ddf5d53dd262a736fe7bf9d15202501a1f9 |
+
+Only this report was appended. No source, test, baseline, original image, server, commit or prior review text was changed.
+
+## Actual saved-review and download UX qualification, October 14, 2026 UTC
+
+PASS for the real disposable-database, authenticated seeded-account journey shown by artifact `11865965933` from CI run `38498931146` at `679ce978dd86011120bdab5da3db95e38d881531`. Individually opened every actual original in `test-results/webinar-ci-saved-review/`: 24 whole screenshots (eight setup, eight saved review and eight approval recorded) plus 16 native downloaded PNGs. This closes the earlier pending actual saved-review/download/recorded-decision visual gap for these eight seeded journeys. It does not qualify every refusal state, live providers, owner approval or lender review.
+
+Source comparison `git diff 679ce978 3967adb --name-only` shows only the foundation unit test, ledger and Security/Quality reports changed. Production application and browser source are identical at current `3967adbbd2dee1ac282bf1deb89de6a6f418a942`. Existing UX governance applies: design brief sections 13-16, campaign/artifact workflow's exact immutable preview/download and approval-summary rules, and campaign lifecycle's version/approval/public-output invariants.
+
+All eight setup originals retain edited Facebook headline, requested end and saved brand. The actual saved review then names version 1 and renders both exact shape labels and download links, immutable original lettering, separately saved Facebook headline/body/CTA/disclosure/consent, published webinar, destination, expiry and capped stop time. The requested 2090 end is replaced by the displayed actual publication expiry in 2027, with a plain explanation of the cap. At 1440/1180 the image/copy card and context cards sit side by side; at 768 context stacks below; at 390 the two shapes also stack. The long destination wraps inside its card, and all facts and actions remain contained in both themes.
+
+At 390, the review's tall preview spans approximately x=37 through x=353, y=518 through y=913, and the square spans x=37 through x=353, y=1025 through y=1341. Shape labels and their separate download actions remain under the correct image. Saved body, disclosure and consent are readable in the full-width text column. Native footer details are small in these reduced previews; the full 1080px downloads, independently inspected, provide the complete identity/disclosure image. No claim is made that thumbnail-sized licensing text substitutes for examining the original.
+
+All eight approved originals replace the amber awaiting-review label with the green Approval recorded label and retain textual decision identity/date in Your recorded decision and the saved version entry. They remove the approval controls after the seeded authorized decision. At 390 the recorded-decision card remains inside approximately x=16 through x=374, y=3160 through y=3341; the text wraps without clipping. Launch unavailable and its no-publication/no-spend explanation remain visible. The creator's earlier review has disabled approval plus account-access guidance, using account wording rather than customer team-role setup. These captures verify recorded test-account decisions, not Jonathan's approval of an ad.
+
+All 16 downloaded native originals retain the original headline/illustration plus seeded Review creator identity, NMLS 1234567, Review location (not connected), NMLS 7654321 and Equal Housing Opportunity disclosure. The company wraps to two lines without touching the creator name or NMLS. Square is 1080x1080 and tall is 1080x1350. Square footer begins near y=842, with disclosure near y=1035; tall footer begins at y=1080, with disclosure near y=1305. Both retain bottom inset and complete lettering. Every square download has the same SHA-256, and every tall download has the same SHA-256 across all four viewports and both themes. The artwork and footer match the saved-review previews visually and are never recolored by dashboard theme. The saved review uses the same art URL for preview and download at `apps/web/src/features/webinar-ads/review.tsx:79-95`; the CI test at `tests/browser/review/webinar-ads.spec.ts:177-204` verifies both response and actual downloaded bytes against each immutable manifest digest. This is a producer-run assertion inspected alongside the originals, not a fresh reviewer request.
+
+Actual retained log `test-results/webinar-ci-failed.log:3172-3179` records all eight seeded persistence/reload/review/download/approval journeys passing, with the exact individual durations below. It also records 28 webinar destination pgTAP assertions passing at lines 2622-2627 and 11 actual PostgreSQL tests (five prepare plus six destination) passing at lines 2775 and 2786. These are separate counts and do not describe the whole product or the whole job. The overall PostgreSQL job failed: the sample-catalog and real-empty-catalog screenshot expectations stopped on separate outdated Ads library baselines. The passing webinar journeys and retained originals do not convert that job result into a full green report. Those catalog captures await their own independent qualification.
+
+The saved-review implementation's exact-image/copy and review-standing explanation is now rendered evidence at `review.tsx:74-139`; decision and launch boundaries are rendered at `review.tsx:213-249`. Copy saved Facebook words is visible, but these eight browser cases do not click it or verify clipboard contents. No new clipboard qualification is granted. The on-demand publication is a seeded local-origin destination, with fixture external video URL, and no evidence here verifies playback, conversion, hosted delivery, lender authorization, external creative acceptance, paid launch or spend. Other current-unavailable, withdrawal, historical-version and image-load-refusal visual cases remain outside this 40-original set.
+
+No new blocking visual finding or source edit is requested. Release this bounded artifact review to the orchestrator for the remaining canonical catalog qualification and Security/Quality closeout. Historical RED diagnostics, prior native raster evidence, all existing source pins and earlier report text remain preserved. Only this report is appended; no image, source, test, server, baseline or commit was changed by this reviewer.
+
+### Actual seeded journey timings
+
+All cases are `tests/browser/review/webinar-ads.spec.ts:118:7`, PASS. Durations are individual cases, not an aggregate suite claim.
+
+| Retained log line | Width | Theme | Duration |
+| --- | --- | --- | --- |
+| 3172 | 1440 | Light | 11.6s |
+| 3173 | 1440 | Dark | 11.2s |
+| 3174 | 1180 | Light | 11.0s |
+| 3175 | 1180 | Dark | 11.1s |
+| 3176 | 768 | Light | 11.0s |
+| 3177 | 768 | Dark | 10.9s |
+| 3178 | 390 | Light | 10.3s |
+| 3179 | 390 | Dark | 10.3s |
+
+### Individually inspected actual screenshot and native-download pins
+
+All files are the original artifact files under `test-results/webinar-ci-saved-review/`. Dimensions and SHA-256 were independently read from each original, including all 16 duplicate-by-shape downloads.
+
+| Original | Dimensions | SHA-256 |
+| --- | --- | --- |
+| approved-1180-dark.png | 1180x1815 | f0573d9864bbb3d8bc848bd5c240ed89ebdad84df042a21aa74376d422db20e1 |
+| approved-1180-light.png | 1180x1815 | a97d1dda32967303e21d54ceeb193574aadeb88b2a1f831d871b314d2038bea4 |
+| approved-1440-dark.png | 1440x1811 | 732e8a812add2c18c3dfd5c85249bafa7818152e0c17511e4d84f4d0a4dd5a5f |
+| approved-1440-light.png | 1440x1811 | cedeb8209cbd50cb3670657aaf78447ae6356bdd76df2d642a43bd78ae9f3c67 |
+| approved-390-dark.png | 390x3789 | d6cbdb50f9411267d488575ad99f17314b04666c594a2a49c6000abb1dedcc54 |
+| approved-390-light.png | 390x3789 | a10e39de1602cda57c069a22076e4224b4e5420ac41a4847765f8b6817af1a3a |
+| approved-768-dark.png | 768x3067 | 5f2baea8d9c70349abf934a284bd68c384c05ca420f766a81eaa48b9e101c11e |
+| approved-768-light.png | 768x3067 | e9848fcf4046fb7b4c0f27c24452aa7a0fb0785a372de99d3e51beb2b6fe9d2d |
+| download-1180-dark-square.png | 1080x1080 | dc608f7e7b57d25c7ddd4bb683af565b3d1db5ef184eeeff9675f8a7d36c245c |
+| download-1180-dark-tall.png | 1080x1350 | bf8cacf4f049691f36b444e71d9e9deb1949677143b5500bb94d783b6268def4 |
+| download-1180-light-square.png | 1080x1080 | dc608f7e7b57d25c7ddd4bb683af565b3d1db5ef184eeeff9675f8a7d36c245c |
+| download-1180-light-tall.png | 1080x1350 | bf8cacf4f049691f36b444e71d9e9deb1949677143b5500bb94d783b6268def4 |
+| download-1440-dark-square.png | 1080x1080 | dc608f7e7b57d25c7ddd4bb683af565b3d1db5ef184eeeff9675f8a7d36c245c |
+| download-1440-dark-tall.png | 1080x1350 | bf8cacf4f049691f36b444e71d9e9deb1949677143b5500bb94d783b6268def4 |
+| download-1440-light-square.png | 1080x1080 | dc608f7e7b57d25c7ddd4bb683af565b3d1db5ef184eeeff9675f8a7d36c245c |
+| download-1440-light-tall.png | 1080x1350 | bf8cacf4f049691f36b444e71d9e9deb1949677143b5500bb94d783b6268def4 |
+| download-390-dark-square.png | 1080x1080 | dc608f7e7b57d25c7ddd4bb683af565b3d1db5ef184eeeff9675f8a7d36c245c |
+| download-390-dark-tall.png | 1080x1350 | bf8cacf4f049691f36b444e71d9e9deb1949677143b5500bb94d783b6268def4 |
+| download-390-light-square.png | 1080x1080 | dc608f7e7b57d25c7ddd4bb683af565b3d1db5ef184eeeff9675f8a7d36c245c |
+| download-390-light-tall.png | 1080x1350 | bf8cacf4f049691f36b444e71d9e9deb1949677143b5500bb94d783b6268def4 |
+| download-768-dark-square.png | 1080x1080 | dc608f7e7b57d25c7ddd4bb683af565b3d1db5ef184eeeff9675f8a7d36c245c |
+| download-768-dark-tall.png | 1080x1350 | bf8cacf4f049691f36b444e71d9e9deb1949677143b5500bb94d783b6268def4 |
+| download-768-light-square.png | 1080x1080 | dc608f7e7b57d25c7ddd4bb683af565b3d1db5ef184eeeff9675f8a7d36c245c |
+| download-768-light-tall.png | 1080x1350 | bf8cacf4f049691f36b444e71d9e9deb1949677143b5500bb94d783b6268def4 |
+| review-1180-dark.png | 1180x2151 | 32e70fc81b3461265825b8001794adff19229f8eb487c4e01aedc3630213856e |
+| review-1180-light.png | 1180x2151 | c6786670721f60facab6e160cd787e6ca60a0491199d7c29ce9ec050df7d3395 |
+| review-1440-dark.png | 1440x2147 | afa91d0cabbc8f227621983490c8d44ccc18182c35cf1c8bf829eb19a7cab954 |
+| review-1440-light.png | 1440x2147 | d45749c7612c526f5aa188791663e3070271d119b447c133f51b7be08bb408f3 |
+| review-390-dark.png | 390x4114 | f9b921d0d937e3ea4c3e1817ae9d7acfea9c6dcde61ed27bd2cbbd14185cd80b |
+| review-390-light.png | 390x4114 | 5f9e2fcf506a97e8ddca30581a6c61295744718bdb8cddb00d4fd2394b0b5539 |
+| review-768-dark.png | 768x3382 | 3b7ce050f844fe86aa8014ba371a6c940e1dd886244a8398ac8f27a09f839ff3 |
+| review-768-light.png | 768x3382 | 4ebd2e4551f97d00d2c44293f8f5e8883f09da91dde3bfd0eb6080eb29c77c82 |
+| setup-1180-dark.png | 1180x1485 | 2ffdc0950bd7f61b8617c62f287940a6b8474711e0f0f8a704069c7a7e351e6b |
+| setup-1180-light.png | 1180x1485 | d52637f124744cf5be2ed0c2a9752a64c46a095614ca0e294a6855aef0206af7 |
+| setup-1440-dark.png | 1440x1498 | 27d899f97dfb963c29da8d587e89c073f19e1d03b50be2d931592b34b35e9898 |
+| setup-1440-light.png | 1440x1498 | 19a3d4cedd99f75680ff85b60a8347332e9bb50a83e151d9de405ffa5d6a0de1 |
+| setup-390-dark.png | 390x2294 | 250168bd386615151965f1e976e2eabd17048df5b06b2b76cd7754272dc30c31 |
+| setup-390-light.png | 390x2294 | 916931f7bd77bfd3d607e7a8c99ad00929383db39b1c3ad8d99d777c3137aafe |
+| setup-768-dark.png | 768x2475 | 5be26466f11c7d4e79a3bce840d08f37e6f7bb74e46779e48ac971a482aa877b |
+| setup-768-light.png | 768x2475 | 276288f39eb2845f4ea57e471194c01afc736ad391bbba084182a9db55000690 |
+
+### Current saved-review source and producer log pins
+
+| Source or log | SHA-256 |
+| --- | --- |
+| apps/web/src/features/webinar-ads/preparation.tsx | 7dfc24bc7ac509e3271c06bbbf68e13cb6d76f6f6219a5d5c67ebb1034a31507 |
+| apps/web/src/features/webinar-ads/review.tsx | 07491245c68938ca1f5993cea13f83626e6dab9018674b1d06891ae2a9c7e3ec |
+| apps/web/src/features/webinar-ads/preparation.module.css | fbc519c7c09891a9936847463f7f810adedbbd88f7302d81f73ae10d97002dad |
+| apps/web/src/features/campaigns/components/campaign-approval-controls.tsx | ea4268376542c733209b43aefec99dba03b1ea2b8a5fc10eb36c4775f8d40bff |
+| tests/browser/review/webinar-ads.spec.ts | 67687a8d087905fc2148ac1dcdd00ea6a013a7939c69a5957cfea9b102a2bf02 |
+| test-results/webinar-ci-failed.log | dc55730f236b8f2dc53a03854195497a9a6ac7ce86737bc79d22cc1487549820 |

@@ -34,7 +34,7 @@ A defining property of this pillar: most of its weapons mutate LIVE client state
 | Email deliverability preflight, launch/webinar sequences, a send bounced or got suspended | `email-marketing-weapon` | `assistable-sms-weapon` (SMS channel) or `newsletter-platform-weapon` (Pillar 6, platform selection for a newsletter product) |
 | Pushing/scheduling posts to social accounts via API, a post auto-published without approval | `social-publishing-weapon` | `social-creative-weapon` (makes the asset, never publishes) |
 | Generating on-brand cards/crops/overlays/video from a brand guide | `social-creative-weapon` | `social-publishing-weapon` (pushes the finished asset) or `design-system-weapon` (Pillar 1, product design systems) |
-| Tearing down a competitor product, gap analysis, capturing their UI with evidence | `competitor-recon-weapon` | `code-forensics-weapon` (Pillar 6, legal/damages investigation) |
+| Tearing down a competitor product, gap analysis, capturing their UI with evidence | `competitor-recon-weapon` | `code-forensics-guardian` from the installed Guild, not vendored in this repo (legal/damages investigation) |
 
 ### Canonical multi-weapon sequences
 
@@ -64,6 +64,6 @@ A defining property of this pillar: most of its weapons mutate LIVE client state
 - Generic (non-GHL) CRM integration is **Pillar 2: Backend, Data & APIs** (`crm-integration-weapon`); the SMS engine's backend stack (Next.js/Inngest/Supabase mechanics) also routes to Pillar 2.
 - Security review of credentials, webhooks, and PII handling in any of these live integrations is **Pillar 3: Security, Quality & Code Review**.
 - General deploy mechanics and runbook craft are **Pillar 4: Deploy & Live Operations**; this pillar's `live-event-ops-weapon` is the event-specific operate-and-verify specialization, and Pillar 4's `release-deploy-weapon` owns Vercel/Supabase app cutovers.
-- Organic social strategy and copy are **Pillar 6: Business, Growth & GTM** (`social-media-marketing-organic-weapon`); legal/damages investigation is Pillar 6's `code-forensics-weapon`.
+- Organic social strategy and copy are **Pillar 6: Business, Growth & GTM** (`social-media-marketing-organic-weapon`); legal/damages investigation goes to `code-forensics-guardian` from the installed Guild (not vendored in this repo).
 - PRD authorship fed by recon output is **Pillar 7: Product Process & Documentation** (`library-weapon`).
 - The mobile app layer (Expo/React Native) that some client builds need is **Pillar 1: Frontend & Design Systems** (`expo-react-native-weapon`).

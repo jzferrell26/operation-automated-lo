@@ -46,7 +46,7 @@ Basis: `research/internal/2026-07-02-assistable-chatwidget-mit-fork.md`, `resear
 
 ## 7. Route, do not render
 
-This weapon gathers evidence, verifies it, and ranks gaps with a phased build-order suggestion. It never renders the ship/iterate/watch/kill strategy verdict (white-council-guardian), never authors the PRD that closes a gap (library-guardian), and never draws a forensic/legal conclusion (code-forensics-guardian). When a finding crosses into any of those, package the evidence and route.
+This weapon gathers evidence, verifies it, and ranks gaps with a phased build-order suggestion. It never renders the ship/iterate/watch/kill strategy verdict (white-council-guardian), never authors the PRD that closes a gap (library-guardian), and never draws a forensic/legal conclusion (code-forensics-guardian, from the installed Guild, not vendored in this repo). When a finding crosses into any of those, package the evidence and route.
 
 Basis: `research/internal/2026-07-02-assistable-parity-gap-analysis.md` (its Part 3 ends by routing to other Guardians); `research/external/2026-07-02-reverse-engineering-saas-legal-boundaries.md` (legal questions escalate).
 

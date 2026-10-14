@@ -189,6 +189,28 @@ export const HomePropertySchema = z
     lastError: z.string().max(300).nullable(),
   })
   .strict();
+/** Presentation capabilities only. These never authorize a report command or provider request. */
+export const HomeReadinessSchema = z
+  .object({
+    storage: z.enum(["ready", "unavailable", "unknown"]),
+    writeAccess: z.enum(["allowed", "read_only", "unknown"]),
+    valuation: z.enum(["ready", "setup_unavailable", "unknown"]),
+    freshLookup: z.enum([
+      "ready",
+      "setup_unavailable",
+      "zero_allowance",
+      "allowance_exhausted",
+      "unknown",
+    ]),
+  })
+  .strict();
+export type HomeReadiness = z.infer<typeof HomeReadinessSchema>;
+export const UNKNOWN_HOME_READINESS: Readonly<HomeReadiness> = Object.freeze({
+  storage: "unknown",
+  writeAccess: "unknown",
+  valuation: "unknown",
+  freshLookup: "unknown",
+});
 export const HomeWorkspaceSchema = z
   .object({
     mode: z.enum(["demo", "live", "unconfigured"]),
@@ -198,6 +220,7 @@ export const HomeWorkspaceSchema = z
     deliveryEnabled: z.boolean().default(false),
     monthlyLookupLimit: z.number().int().nonnegative(),
     lookupsThisMonth: z.number().int().nonnegative(),
+    readiness: HomeReadinessSchema.default(() => ({ ...UNKNOWN_HOME_READINESS })),
     properties: z.array(HomePropertySchema).max(200),
   })
   .strict();

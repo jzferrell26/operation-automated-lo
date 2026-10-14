@@ -141,6 +141,29 @@ describe("homeowner report commands", () => {
     }
     expect(deps.valuation!.estimate).not.toHaveBeenCalled();
   });
+  it("does not require fresh allowance for a cached create or a property-only saved-snapshot revision", async () => {
+    const deps = dependencies();
+    deps.monthlyLimit = 0;
+    const raw = { ...input(), association: "property_only" as const, contactId: "property-only" };
+    vi.mocked(deps.repository.reserve).mockResolvedValue({
+      kind: "reserved",
+      status: "pending",
+      cached: homeownerValuation(now),
+      report: null,
+    });
+    await generateHomeReport(raw, deps);
+    await generateHomeReport(
+      raw,
+      { ...deps, contacts: null, valuation: null },
+      { reuseReportId: `hreport_${"a".repeat(32)}` },
+    );
+    expect(deps.valuation!.estimate).not.toHaveBeenCalled();
+    expect(deps.contacts!.get).not.toHaveBeenCalled();
+    expect(deps.repository.complete).toHaveBeenCalledTimes(2);
+    expect(deps.repository.reserve).toHaveBeenLastCalledWith(
+      expect.objectContaining({ monthlyLimit: 0, reuseReportId: `hreport_${"a".repeat(32)}` }),
+    );
+  });
   it("refuses missing connections, bad contacts and future balances before paid work", async () => {
     const deps = dependencies();
     await expect(generateHomeReport(input(), { ...deps, contacts: null })).rejects.toMatchObject({

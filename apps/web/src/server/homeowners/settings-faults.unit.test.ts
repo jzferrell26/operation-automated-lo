@@ -82,6 +82,7 @@ const request = () => new Request("https://app.example.test/homeowners");
 
 beforeEach(() => {
   vi.resetAllMocks();
+  PRINCIPAL.role = "location_admin";
   mocks.repository.summaries.mockResolvedValue([]);
   mocks.repository.usage.mockResolvedValue(3);
   mocks.repository.list.mockResolvedValue([]);
@@ -144,6 +145,67 @@ describe("the report workspace, while a homeowner setting is mistyped", () => {
       valuationConnected: true,
       monthlyLookupLimit: 25,
       lookupsThisMonth: 3,
+      readiness: {
+        storage: "ready",
+        writeAccess: "allowed",
+        valuation: "ready",
+        freshLookup: "ready",
+      },
+    });
+  });
+  it.each([
+    ["0", 0, "zero_allowance"],
+    ["3", 3, "allowance_exhausted"],
+    ["3", 4, "allowance_exhausted"],
+  ])(
+    "returns configured allowance state without claiming storage or provider failure",
+    async (limit, used, state) => {
+      mocks.repository.usage.mockResolvedValue(used);
+      const response = await handleHomeWorkspace(request(), {
+        ...WELL_FORMED,
+        OALO_HOMEOWNER_MONTHLY_LOOKUP_LIMIT: limit,
+      });
+      expect(response.status).toBe(200);
+      const answer: unknown = await response.json();
+      expect(answer).toMatchObject({
+        valuationConnected: true,
+        readiness: { storage: "ready", freshLookup: state },
+      });
+      expect(JSON.stringify(answer)).not.toMatch(/OALO_|fixture-key|00000000-0000-4000/u);
+    },
+  );
+  it("keeps viewer reads but refuses their writes before storage or provider work", async () => {
+    PRINCIPAL.role = "viewer";
+    const read = await handleHomeWorkspace(request(), WELL_FORMED);
+    expect(await read.json()).toMatchObject({
+      canWrite: false,
+      readiness: { writeAccess: "read_only" },
+    });
+    mocks.repository.list.mockClear();
+    const write = await handleHomeWorkspace(
+      new Request(request(), { method: "POST" }),
+      WELL_FORMED,
+    );
+    expect(write.status).toBe(403);
+    expect(mocks.repository.list).not.toHaveBeenCalled();
+  });
+  it("does not claim storage ready when storage reads fail, and distinguishes reports switched off", async () => {
+    mocks.repository.list.mockRejectedValueOnce(new Error("operator-only database detail"));
+    const failed = await handleHomeWorkspace(request(), WELL_FORMED);
+    expect(failed.status).toBe(503);
+    const answer = await failed.json();
+    expect(answer).toMatchObject({
+      readiness: { storage: "unknown", writeAccess: "unknown", freshLookup: "unknown" },
+    });
+    expect(JSON.stringify(answer)).not.toContain("operator-only");
+    const disabled = await handleHomeWorkspace(request(), {
+      ...WELL_FORMED,
+      OALO_HOMEOWNER_REPORTS: "disabled",
+    });
+    expect(disabled.status).toBe(503);
+    expect(await disabled.json()).toMatchObject({
+      error: "REPORTS_NOT_CONFIGURED",
+      readiness: { storage: "unavailable" },
     });
   });
 });

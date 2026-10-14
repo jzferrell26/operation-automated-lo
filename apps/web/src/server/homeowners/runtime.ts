@@ -74,7 +74,7 @@ export async function homeRuntime(
     throw new HomeownerError(
       "REPORT_ACCESS_DENIED",
       403,
-      "Your role cannot perform this report action. Ask your workspace owner.",
+      "This report action is unavailable for your account. Check report availability again. Contact support if this continues.",
     );
   // A setting that cannot be read is the operator's fault to fix, not the caller's. A raw validation
   // error here would tell a loan officer to "check the required report fields" and name the setting.
@@ -90,7 +90,7 @@ export async function homeRuntime(
     throw new HomeownerError(
       "REPORTS_NOT_CONFIGURED",
       503,
-      "Homeowner reports need to be enabled for this workspace.",
+      "Homeowner reports need to be enabled for your account.",
     );
   const pool = campaignDatabasePool(environment);
   const authority = createPrincipalBoundTenantContextAuthority(

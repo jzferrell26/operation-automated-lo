@@ -15,6 +15,7 @@ import { HOME_REPORT_HEADERS, HomeownerError, readBoundedJson } from "./errors.j
 import { canWriteHomeReports, homeHash, homeReportsEnabled, homeRuntime } from "./runtime.js";
 import { generateHomeReport, handoffHomeReport, shareHomeReport } from "./service.js";
 import { consumeSharedReportBudget } from "./share-throttle.js";
+import { homeReadiness, homeReadinessRefusal } from "./readiness.js";
 
 const ActionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("create"), input: HomeReportInputSchema }).strict(),
@@ -92,7 +93,10 @@ export function homeJson(
 }
 export function homeError(error: unknown): Response {
   if (error instanceof HomeownerError)
-    return homeJson({ error: error.code, message: error.message }, error.status);
+    return homeJson(
+      { error: error.code, message: error.message, readiness: homeReadinessRefusal(error.code) },
+      error.status,
+    );
   if (error instanceof HomeownerStoreError) {
     const messages: Record<string, string> = {
       LOOKUP_LIMIT:
@@ -144,6 +148,7 @@ export function homeError(error: unknown): Response {
       error: "REPORTS_UNAVAILABLE",
       message:
         "Homeowner reports are unavailable right now. Your existing data has not been replaced.",
+      readiness: homeReadinessRefusal(),
     },
     503,
   );
@@ -160,17 +165,27 @@ export async function handleHomeWorkspace(
   try {
     const runtime = await homeRuntime(request, request.method !== "GET", environment);
     const { repository, config, contacts, valuation, principal } = runtime;
-    if (request.method === "GET")
+    if (request.method === "GET") {
+      const canWrite = canWriteHomeReports(principal);
+      const lookupsThisMonth = await repository.usage();
+      const properties = await repository.list();
       return homeJson({
         mode: "live",
-        canWrite: canWriteHomeReports(principal),
+        canWrite,
         valuationConnected: valuation !== null,
         ghlConnected: contacts !== null,
         deliveryEnabled: config.OALO_HOMEOWNER_DELIVERY_ENABLED === "enabled",
         monthlyLookupLimit: config.OALO_HOMEOWNER_MONTHLY_LOOKUP_LIMIT,
-        lookupsThisMonth: await repository.usage(),
-        properties: await repository.list(),
+        lookupsThisMonth,
+        properties,
+        readiness: homeReadiness(
+          canWrite,
+          valuation !== null,
+          config.OALO_HOMEOWNER_MONTHLY_LOOKUP_LIMIT,
+          lookupsThisMonth,
+        ),
       });
+    }
     const action = ActionSchema.parse(await body(request));
     const dependencies = {
       repository,

@@ -333,5 +333,45 @@ Five previously unchanged files join the original inventory: provider-side-effec
 
 Quality appended only this report. Changed-file whitespace passed. No source, baseline, test configuration, commit, push, database, customer, deployment or provider operation was performed by this audit. Focused runner and report ownership are released to root.
 
+## Fresh Quality recheck: PR #94 application coverage
 
+**PASS for the test-only coverage correction above `679ce978dd86011120bdab5da3db95e38d881531`.** Security's coverage addendum completed before this fresh recheck. The actual App CI failure in run `38498931146` remains historical failed-run evidence until root obtains green CI for a new head; this local result does not convert that run into a pass or close the whole PRD.
 
+### Source invariance and meaningful regression behavior
+
+On entry, the only diff against that exact head was 67 added lines in `tooling/tests/unit/webinar-ads/webinar-foundation.test.ts` and the Security report append. No assertion was deleted. `vitest.config.ts`, package/lockfile, application implementation, production readers/writers, threshold configuration, renderer, migration and workflow had no diff. All 80 superseding Security pins matched independently. The unchanged approval command SHA256 is `5b6a53a57be5a763eb1252db27c9f1cf2adead290fa9576f4f066ec36300bfc8`.
+
+The added tests use the real public application command and its existing repository/evidence ports, rather than replacing validation or staleness logic:
+
+| Case | Required behavior and observed assertion | Source |
+| --- | --- | --- |
+| Invalid stored preflight, first decision and approved replay | Actual ZodError propagates after exactly one fresh current-evidence call. No commit or false denied-role event occurs; original decision and its preflight hash remain intact. | `webinar-foundation.test.ts:287-316`; unchanged command `:383-388` |
+| Existing approval manifest hash mismatch | Replay throws CampaignApprovalStaleError after current evidence; no new commit or denied event and neither conflicting nor original hash is overwritten. | `webinar-foundation.test.ts:317-352`; unchanged command `:390-395` |
+| Existing approval preflight-result hash mismatch | Separate parameterized case exercises the second hash comparison with the same refusal, sequencing and no-write guarantees. | Same parameterized test, independent field case |
+
+The first malformed-preflight test covers both first decision and replay. The two hash fields generate two distinct test cases, three additions total. The unchanged line that rethrows an unexpected validation error and the independent stored-approval comparisons are now exercised through observable command behavior. Current evidence is an explicit application-port fixture, so these tests prove application sequencing and refusal, not live publication or database authorization.
+
+Quality independently ran all **30 foundation cases**, one file, all passed in 1.38 seconds. Log: `test-results/webinar-quality/coverage-correction-recheck.log`. Scoped oxlint, Prettier and changed-file whitespace checks passed. No build or full coverage rerun was performed by Quality.
+
+### Actual required coverage evidence
+
+Quality independently parsed retained RED and GREEN coverage summaries and read both complete-run result counts. The unchanged `pnpm test:unit` RED run passed 3,003 unit cases in 200 files but exited unsuccessfully because application coverage was 99.75% lines, 99.77% statements and 99.72% branches against the existing 100% gate. At the approval command itself, RED covered 83/85 lines, 87/89 statements, 17/17 functions and 91/93 branches.
+
+The GREEN run passed **3,006 unit cases in 200 files**. Every one of the **16 application files** reports **100% lines, statements, functions and branches**, with no skipped instrumented item. The approval command specifically covers 85/85 lines, 89/89 statements, 17/17 functions and 93/93 branches. Quality confirmed the retained GREEN summary is byte-identical to current `coverage/coverage-summary.json`. These are application-file metrics, not a claim of 100% coverage for the whole repository; the other existing package thresholds remain unchanged.
+
+| Retained evidence | SHA256 |
+| --- | --- |
+| `test-results/webinar-coverage-red-summary.json` | `6b809e42eb94cd11bfe7d6b3e056c4be79934afc03081deb67137914fde9d067` |
+| `test-results/webinar-coverage-green-summary.json` | `dd7bb203b9c2b0668c1cbcbbe671e33a23ea95dd071dd0cb8d0f7b6090ff9902` |
+| `test-results/webinar-coverage-red.log` | `ce2b5b8bcc9a45fb32789d008f1a005ef74b5fb20b0dd742beb99c379bab505b` |
+| `test-results/webinar-coverage-green.log` | `5554c159aafdc47f6d355194864061f865d64ae332b1a3d5e1de986d2271c496` |
+
+This reviewer inspected the implementer's retained full coverage result, not reran it. Its count overlaps the independent 30-case subset and prior full regressions and is not additive.
+
+### Verdict and remaining gates
+
+No new Critical, Warning or Suggestion arises from this test-only delta. The bounded source verdict remains PASS with prior nonblocking WQ-02; WQ-01 remains closed. CTR-002 section 6.4 replay/current-evidence refusal receives stronger behavioral proof without changing authority or provenance.
+
+The superseding test pin is `tooling/tests/unit/webinar-ads/webinar-foundation.test.ts`, SHA256 `ccae214a5966478d7d7dbd015b696f9a5e39d29d25cf4980c8c01dde8f255e4f`. No production or presentation pin is superseded. Prior raster/local preparation UX qualification is therefore unchanged, while actual saved-review/RSC and approval/refusal captures still require their own real database/CI evidence.
+
+Current GitHub CI, actual PG/canonical runs at the previous head, new-head reconciliation/MERGEABLE and any hosted/provider qualification remain governed by root's evidence. None was cancelled, altered or credited here. This audit changes only this report append and ignored review logs; no source/test edit, threshold exclusion, baseline change, commit, push, migration, deployment or provider operation occurred. Report and focused runner ownership are released.

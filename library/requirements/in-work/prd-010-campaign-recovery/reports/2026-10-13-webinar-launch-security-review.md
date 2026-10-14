@@ -238,3 +238,23 @@ No new Critical, High, Medium or Low security finding detected; no Security sour
 | `apps/web/src/features/http/user-messages.ts` | `5962b8a5aa7af638c6a4fa9a89ecdc1fb0035685e8400190c33f2d3ee9af4824` |
 | `apps/web/src/features/http/user-messages.unit.test.ts` | `da70aa666dce2ce4a5bc913a8fed704d204f2e0cd613c10d1e0159a02e75676c` |
 | `apps/web/src/copy/campaign-image-messages.unit.test.ts` | `962c5e4578ef4c94e46728c035adbad8a2b83b2ffc5ba180eaecd3771738b559` |
+
+## Focused recheck: PR #94 application coverage correction
+
+PR #94's App CI run 38498931146 failed the required application coverage gate at two approval-command lines. Root assigned a new test-only Security and fresh Quality cycle above head `679ce978dd86011120bdab5da3db95e38d881531`. On entry, the only working-tree source difference was `tooling/tests/unit/webinar-ads/webinar-foundation.test.ts`: two imports and 65 lines of behavioral tests, with no deleted assertion or production/config/threshold edit. Earlier source acceptance does not establish current CI success; the coverage correction requires fresh review.
+
+The three added cases exercise real `executeHumanCampaignApproval` behavior through its existing repository/evidence seams:
+
+- Invalid stored preflight datetime yields the actual Zod validation error on both first decision and previously approved replay. Fresh current evidence is invoked exactly once first. Neither approval commits nor false role-denial events occur, and the original decision's provenance/hash remains intact.
+- A mismatched stored approval manifest hash rejects replay with the actual stale-approval error after fresh evidence, without committing or rewriting the original approval.
+- A mismatched stored approval preflight-result hash independently rejects the same replay path with no commit. Both cases preserve the original matching hash and conflicting hash, making an accidental overwrite detectable.
+
+These cases do not mock or replace the command's validation, staleness or write logic. The authoritative current evidence adapter is an explicit application-port fixture, so this run tests application sequencing and refusal, not actual PostgreSQL/publication availability. The guard checks at `packages/application/src/campaign-approval-command.ts:387` and `:394` are unchanged; its SHA256 remains `5b6a53a57be5a763eb1252db27c9f1cf2adead290fa9576f4f066ec36300bfc8`. No new privacy, authorization, integrity or provider behavior is introduced.
+
+Security independently ran 30 foundation unit cases, all passed, in `test-results/webinar-security/coverage-correction-recheck.log`; scoped lint, formatting and diff checks passed. The implementer's retained full coverage run reports 3,006 passing cases in 200 files. Security parsed its `webinar-coverage-green-summary.json` and independently confirmed all 16 application files report 100% lines, statements, functions and branches. That retained full run was not rerun by Security. The unchanged threshold and test-only diff are explicit, not a lowered acceptance gate.
+
+No security finding detected; test/report ownership and the focused runner are released for fresh Quality. Current GitHub CI, canonical capture and actual PG results remain governed by root's pending runs, which were not cancelled or altered. No source fix, commit, push, deployment or provider effect occurred under this Security recheck.
+
+| File | Superseding SHA256 |
+| --- | --- |
+| `tooling/tests/unit/webinar-ads/webinar-foundation.test.ts` | `ccae214a5966478d7d7dbd015b696f9a5e39d29d25cf4980c8c01dde8f255e4f` |

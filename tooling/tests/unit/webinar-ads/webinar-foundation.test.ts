@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { ZodError } from "zod";
 import {
   CampaignManifestSchema,
   WebinarAdPreparationRequestSchema,
@@ -7,6 +8,7 @@ import {
 } from "@oalo/contracts";
 import {
   canonicalCampaignHash,
+  CampaignApprovalStaleError,
   createApprovalDecision,
   executeHumanCampaignApproval,
   freezeAuthenticatedPrincipal,
@@ -282,6 +284,71 @@ describe("CTR-002 webinar foundation", () => {
       executeHumanCampaignApproval(command(evidence), principal, replay.repo, catalog),
     ).rejects.toThrow("Current webinar");
   });
+  it("preserves malformed stored-check validation errors on first decision and replay without writes", async () => {
+    const base = await webinarEvidence();
+    const committed = repository(base);
+    await executeHumanCampaignApproval(command(base), principal, committed.repo, catalog, {
+      assertCurrent: async () => {},
+    });
+    const decision = committed.commits[0]?.decision;
+    if (!decision) throw new Error("Missing fixture decision");
+    const invalid = { ...base, preflight: { ...base.preflight, evaluatedAt: "not-a-date" } };
+    for (const evidence of [
+      invalid,
+      { ...invalid, state: "approved" as const, rowVersion: 2, existingApproval: decision },
+    ]) {
+      const state = repository(evidence);
+      const assertCurrent = vi.fn(async () => {});
+      await expect(
+        executeHumanCampaignApproval(command(evidence), principal, state.repo, catalog, {
+          assertCurrent,
+        }),
+      ).rejects.toBeInstanceOf(ZodError);
+      expect(assertCurrent).toHaveBeenCalledExactlyOnceWith({
+        version: evidence.version,
+        checkedAt: WEBINAR_NOW,
+      });
+      expect(state.commits).toEqual([]);
+      expect(state.denied).not.toHaveBeenCalled();
+    }
+    expect(committed.commits).toHaveLength(1);
+    expect(decision.preflightResultHash).toBe(base.preflight.resultHash);
+  });
+  it.each(["manifestHash", "preflightResultHash"] as const)(
+    "refuses replay when the existing approval's %s differs from current saved evidence",
+    async (field) => {
+      const evidence = await webinarEvidence();
+      const committed = repository(evidence);
+      await executeHumanCampaignApproval(command(evidence), principal, committed.repo, catalog, {
+        assertCurrent: async () => {},
+      });
+      const decision = committed.commits[0]?.decision;
+      if (!decision) throw new Error("Missing fixture decision");
+      const conflicting = { ...decision, [field]: "f".repeat(64) };
+      const replay = repository({
+        ...evidence,
+        state: "approved",
+        rowVersion: 2,
+        existingApproval: conflicting,
+      });
+      const assertCurrent = vi.fn(async () => {});
+      await expect(
+        executeHumanCampaignApproval(command(evidence), principal, replay.repo, catalog, {
+          assertCurrent,
+        }),
+      ).rejects.toBeInstanceOf(CampaignApprovalStaleError);
+      expect(assertCurrent).toHaveBeenCalledExactlyOnceWith({
+        version: evidence.version,
+        checkedAt: WEBINAR_NOW,
+      });
+      expect(replay.commits).toEqual([]);
+      expect(replay.denied).not.toHaveBeenCalled();
+      expect(conflicting[field]).toBe("f".repeat(64));
+      expect(decision[field]).toBe(
+        field === "manifestHash" ? evidence.version.manifestHash : evidence.preflight.resultHash,
+      );
+    },
+  );
   it("checks role before evidence and denies a revoked reviewer even on replay", async () => {
     const evidence = await webinarEvidence();
     const state = repository(evidence);

@@ -37,6 +37,7 @@ describe("the words in a browser tab", () => {
       brand: "Brand",
       connections: "Connections",
       settings: "Settings",
+      domains: "Domains",
       partners: "Realtor partners",
       routing: "Where new leads go",
       billing: "Plan and usage",
@@ -54,7 +55,7 @@ describe("the words in a browser tab", () => {
   });
 
   it("hold no title this file has not read, so a new page is read before it ships", () => {
-    expect(Object.keys(PAGE_TITLES)).toHaveLength(15);
+    expect(Object.keys(PAGE_TITLES)).toHaveLength(16);
   });
 
   it("describe the product in plain words, with the approval saved by name", () => {

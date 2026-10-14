@@ -1,5 +1,10 @@
 import { libraryAdPlacesProblem } from "./library-ad-places.js";
 import {
+  evaluateWebinarAdRules,
+  type WebinarAdRuleContext,
+  type WebinarAdRuleInput,
+} from "./webinar-ad-ruleset.js";
+import {
   evaluateLibraryAdRules,
   type LibraryAdRuleContext,
   type LibraryAdRuleInput,
@@ -78,7 +83,10 @@ interface FinancingCampaignManifest extends CampaignManifestCommon {
   readonly blueprintId: "financing-comparison";
 }
 type CampaignManifest =
-  OpenHouseCampaignManifest | LibraryAdCampaignManifest | FinancingCampaignManifest;
+  | OpenHouseCampaignManifest
+  | LibraryAdCampaignManifest
+  | FinancingCampaignManifest
+  | WebinarAdRuleInput;
 
 interface PreflightFinding {
   readonly severity: "blocking" | "warning";
@@ -103,6 +111,7 @@ interface PreflightRules {
   readonly warnings: readonly Omit<PreflightFinding, "severity">[];
   /** PRD-009d D5. Present exactly when the rules are the library-ad ruleset's. */
   readonly libraryAd?: LibraryAdRuleContext | undefined;
+  readonly webinarAd?: WebinarAdRuleContext | undefined;
 }
 
 interface CampaignVersion {
@@ -271,6 +280,30 @@ export function evaluateCampaignPreflight(
   manifest: CampaignManifest,
   rules: PreflightRules,
 ): readonly PreflightFinding[] {
+  if (manifest.blueprintId === "webinar-ad") {
+    if (rules.webinarAd === undefined)
+      throw new CampaignPolicyError("A webinar ad requires the webinar-ad ruleset");
+    const findings: PreflightFinding[] = [
+      ...evaluateWebinarAdRules(manifest, rules.webinarAd, rules.evaluatedAt),
+    ];
+    const text = `${manifest.content.headline}\n${manifest.content.body}`.toLocaleLowerCase("en");
+    const banned = rules.bannedPhrases.find((phrase) =>
+      text.includes(phrase.toLocaleLowerCase("en")),
+    );
+    if (banned !== undefined)
+      findings.push(
+        finding(
+          "BRAND_BANNED_PHRASE",
+          "The ad contains prohibited language.",
+          "content",
+          `Remove the prohibited phrase: ${banned}`,
+        ),
+      );
+    findings.push(
+      ...rules.warnings.map((warning) => ({ ...warning, severity: "warning" as const })),
+    );
+    return Object.freeze(findings);
+  }
   const libraryAd = libraryAdContext(manifest, rules);
   const findings: PreflightFinding[] = [];
   if (manifest.blueprintId === "financing-comparison") {

@@ -1,6 +1,7 @@
 import { createCampaignTenantContext, type AuthenticatedPrincipal } from "@oalo/application";
 import { CorrelationReferenceSchema, formatSessionRef } from "@oalo/contracts";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { PostgresDatabasePool } from "@oalo/db";
 
 import { createLocalSyntheticPrincipal } from "./authenticated-principal.js";
 import { OALO_REVIEW_SURFACE_AUTHORIZED } from "./authenticated-workspace-data.js";
@@ -24,6 +25,7 @@ const store = createTemporaryCampaignStore("oalo-persist-runtime-");
 afterEach(async () => {
   await resetCampaignDatabasePoolForTests();
   await store.restore();
+  vi.restoreAllMocks();
 });
 
 describe("campaign persistence adapter selection", () => {
@@ -93,6 +95,54 @@ describe("campaign persistence adapter selection", () => {
     };
     const first = campaignDatabasePool(environment);
     expect(campaignDatabasePool(environment)).toBe(first);
+  });
+
+  it("changes the cached diagnostic mode only for the exact opt-in", () => {
+    const environment = {
+      OALO_ENVIRONMENT: "local",
+      OALO_DATABASE_URL: "postgresql://runtime:secret@127.0.0.1:5432/oalo",
+      OALO_DATABASE_SSL_MODE: "disable",
+    };
+    const silent = campaignDatabasePool(environment);
+    expect(campaignDatabasePool({ ...environment, OALO_RUNTIME_TIMING_DIAGNOSTICS: "TRUE" })).toBe(
+      silent,
+    );
+    const enabled = campaignDatabasePool({
+      ...environment,
+      OALO_RUNTIME_TIMING_DIAGNOSTICS: "true",
+    });
+    expect(enabled).not.toBe(silent);
+    expect(campaignDatabasePool({ ...environment, OALO_RUNTIME_TIMING_DIAGNOSTICS: "true" })).toBe(
+      enabled,
+    );
+  });
+
+  it("handles a replaced pool shutdown failure without logging its private exception", async () => {
+    const environment = {
+      OALO_ENVIRONMENT: "local",
+      OALO_DATABASE_URL: "postgresql://runtime:secret@127.0.0.1:5432/oalo",
+      OALO_DATABASE_SSL_MODE: "disable",
+      OALO_RUNTIME_TIMING_DIAGNOSTICS: "false",
+    };
+    const first = campaignDatabasePool(environment);
+    const sink = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const privateFailure = new Error("private driver shutdown, SQL and credentials");
+    const close = vi.spyOn(first, "close").mockRejectedValueOnce(privateFailure);
+    const replacement = campaignDatabasePool({
+      ...environment,
+      OALO_RUNTIME_TIMING_DIAGNOSTICS: "true",
+    });
+    expect(replacement).toBeInstanceOf(PostgresDatabasePool);
+    expect(replacement).not.toBe(first);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(sink).toHaveBeenCalledExactlyOnceWith("oalo-runtime-timing", {
+      stage: "campaign_pool",
+      outcome: "cleanup_failed",
+      elapsedMilliseconds: 0,
+    });
+    expect(JSON.stringify(sink.mock.calls)).not.toContain(privateFailure.message);
+    close.mockRestore();
+    await first.close();
   });
 });
 

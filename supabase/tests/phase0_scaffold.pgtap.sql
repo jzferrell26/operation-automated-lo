@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(23);
 
 create function pg_temp.assert_is(actual anyelement, expected anyelement, description text)
 returns text
@@ -91,9 +91,11 @@ select is(
         )
       )
   ),
-  29,
-  'the expected twenty-nine tenant tables, including approved funnel publications and encrypted inquiries, are present'
+  32,
+  'the expected thirty-two tenant tables, including approved funnel publications, encrypted inquiries, financing media, revocations and exact-owner domain claims, are present'
 );
+
+select has_table('campaign', 'funnel_domains', 'the thirty-second tenant table is the exact-owner domain claim store');
 
 select has_table(
   'campaign',

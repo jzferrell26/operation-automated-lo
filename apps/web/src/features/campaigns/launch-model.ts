@@ -299,6 +299,11 @@ export const FIX_TARGETS: Readonly<Record<PreflightRuleCode, RuleTarget>> = Obje
   OPEN_HOUSE_DATES_INVALID: { step: 1 },
   PARTNER_PERMISSION_REQUIRED: { step: 1 },
   PROPERTY_PERMISSION_REQUIRED: { step: 1 },
+  WEBINAR_SOURCE_CHANGED: { step: 1 },
+  WEBINAR_RASTER_CHANGED: { step: 1 },
+  WEBINAR_DESTINATION_CHANGED: { step: 1 },
+  WEBINAR_DESTINATION_EXPIRED: { step: 1 },
+  WEBINAR_SCHEDULE_INVALID: { step: 2, at: "budget" },
 });
 
 const WORD_PATHS: ReadonlySet<string> = new Set(["content.headline", "content.body"]);

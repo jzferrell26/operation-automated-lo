@@ -450,6 +450,7 @@ describe("runtime shell session", () => {
   async function shellForDisplayPort(
     role: AuthenticatedPrincipal["role"],
     sessionDisplay: SessionDisplayPort,
+    environment: unknown = REVIEW_ENV,
   ) {
     const gate = resolveRuntimeCampaignCommandPorts(REVIEW_ENV).mutation;
     if (gate === undefined) throw new Error("The review composition must supply a mutation gate");
@@ -469,7 +470,7 @@ describe("runtime shell session", () => {
       new Request("https://review.operation-automated-lo.test/overview", {
         headers: cookieHeaders(),
       }),
-      REVIEW_ENV,
+      environment,
       {
         identityDirectory: denyingIdentityDirectory(),
         roleBindings: denyingRoleBindings(),
@@ -538,6 +539,27 @@ describe("runtime shell session", () => {
     expect(shell.session?.user.displayName).toBe(SESSION_USER_FALLBACK);
     expect(shell.session?.location.displayName).toBe(SESSION_WORKSPACE_FALLBACK);
     expect(shell.session?.user.roleLabel).toBe("Campaign creator");
+  });
+
+  it("records a failed display stage before preserving the truthful neutral fallback", async () => {
+    const sink = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const error = new Error("private display and session details");
+    const { shell } = await shellForDisplayPort(
+      "campaign_creator",
+      {
+        async resolve() {
+          throw error;
+        },
+      },
+      { ...REVIEW_ENV, OALO_RUNTIME_TIMING_DIAGNOSTICS: "true" },
+    );
+    expect(shell.authenticated).toBe(true);
+    expect(shell.session?.user.displayName).toBe(SESSION_USER_FALLBACK);
+    expect(sink.mock.calls.map((call) => call[1])).toEqual([
+      { stage: "shell_display", outcome: "started", elapsedMilliseconds: 0 },
+      { stage: "shell_display", outcome: "failed", elapsedMilliseconds: expect.any(Number) },
+    ]);
+    expect(JSON.stringify(sink.mock.calls)).not.toContain(error.message);
   });
 
   it("never projects a shell session in synthetic mode", async () => {

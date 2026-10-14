@@ -1,6 +1,8 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 import {
+  FinancingMediaRecordSchema,
+  type FinancingMediaRecord,
   ArtifactRecordSchema,
   ArtifactTypeSchema,
   PublishedCampaignProjectionSchema,
@@ -10,6 +12,8 @@ import {
 } from "@oalo/contracts";
 import { z } from "zod";
 import { createAbortContext, raceWithAbort } from "@oalo/config";
+
+import { financingMediaKey } from "./financing-media-storage.js";
 
 import type { ProductionObjectStoreAdapter } from "./production-object-store.js";
 import { privateArtifactKey, publishedArtifactPrefix } from "./production-storage.js";
@@ -118,12 +122,13 @@ interface SafeHeaders {
 export interface R2HttpResponse {
   readonly status: number;
   readonly headers: SafeHeaders;
+  readonly body?: ReadableStream<Uint8Array> | null;
 }
 
 export type R2FetchTransport = (
   url: string,
   init: Readonly<{
-    method: "DELETE" | "HEAD" | "PUT";
+    method: "DELETE" | "HEAD" | "PUT" | "GET";
     headers: Readonly<Record<string, string>>;
     body?: string | Uint8Array;
     signal: AbortSignal;
@@ -146,6 +151,8 @@ export interface SignedPrivateTransfer {
 
 export interface R2ObjectStoreClient extends ProductionObjectStoreAdapter {
   store(input: z.input<typeof PrivateArtifactWriteSchema>): Promise<string>;
+  putPrivateMedia(record: FinancingMediaRecord, bytes: Uint8Array): Promise<void>;
+  readPrivateMedia(record: FinancingMediaRecord): Promise<Uint8Array>;
   probe(signal?: AbortSignal): Promise<R2ObjectStoreProbeResult>;
   createSignedPrivateTransfer(
     input: Readonly<{
@@ -264,7 +271,7 @@ function endpointHost(config: R2ObjectStoreConfig): string {
 function signRequest(
   input: Readonly<{
     config: R2ObjectStoreConfig;
-    method: "DELETE" | "HEAD" | "PUT";
+    method: "DELETE" | "HEAD" | "PUT" | "GET";
     bucket: string;
     objectKey?: string;
     payload: string | Uint8Array;
@@ -457,7 +464,7 @@ export function createR2ObjectStoreClient(
 
   const execute = async (
     input: Readonly<{
-      method: "DELETE" | "HEAD" | "PUT";
+      method: "DELETE" | "HEAD" | "PUT" | "GET";
       bucket: string;
       objectKey?: string;
       payload?: string | Uint8Array;
@@ -564,6 +571,66 @@ export function createR2ObjectStoreClient(
   };
 
   const client: R2ObjectStoreClient = {
+    async putPrivateMedia(input, bytes) {
+      const record = FinancingMediaRecordSchema.parse(input);
+      if (bytes.length !== record.byteSize || sha256(bytes) !== record.sha256)
+        throw new R2ObjectStoreError("conflict");
+      const objectKey = financingMediaKey(record);
+      const response = await execute({
+        method: "PUT",
+        bucket: config.privateBucket,
+        objectKey,
+        payload: bytes,
+        headers: {
+          "content-type": record.mimeType,
+          "if-none-match": "*",
+          "x-amz-meta-sha256": record.sha256,
+        },
+      });
+      assertSuccessful(response, [200, 201, 204, 412]);
+      await verifyObjectMetadata({
+        bucket: config.privateBucket,
+        objectKey,
+        sha256: record.sha256,
+        byteSize: record.byteSize,
+      });
+    },
+    async readPrivateMedia(input) {
+      const record = FinancingMediaRecordSchema.parse(input);
+      const response = await execute({
+        method: "GET",
+        bucket: config.privateBucket,
+        objectKey: financingMediaKey(record),
+      });
+      assertSuccessful(response, [200]);
+      if (!response.body) throw new R2ObjectStoreError("provider_unavailable");
+      const reader = response.body.getReader();
+      const context = createAbortContext({
+        controller: new AbortController(),
+        timeoutMilliseconds: config.requestTimeoutMs,
+        timeoutReason: new Error("Private media read timeout"),
+        scheduleTimeout: setTimeout,
+        cancelTimeout: clearTimeout,
+      });
+      const output = new Uint8Array(record.byteSize);
+      let offset = 0;
+      try {
+        while (true) {
+          const chunk = await raceWithAbort(reader.read(), context.signal);
+          if (chunk.done) break;
+          if (offset + chunk.value.length > output.length) throw new R2ObjectStoreError("conflict");
+          output.set(chunk.value, offset);
+          offset += chunk.value.length;
+        }
+        if (offset !== record.byteSize || sha256(output) !== record.sha256)
+          throw new R2ObjectStoreError("conflict");
+        return output;
+      } finally {
+        context.dispose();
+        await reader.cancel().catch(() => undefined);
+        reader.releaseLock();
+      }
+    },
     async probe(signal) {
       try {
         const responses = await Promise.all(

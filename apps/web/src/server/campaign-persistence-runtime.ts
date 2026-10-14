@@ -25,6 +25,7 @@ import {
 import { z } from "zod";
 
 import { campaignPersistenceKind } from "./authenticated-workspace-data.js";
+import { runtimePoolObserver } from "./runtime-timing.js";
 import {
   createFilesystemCampaignReadRepository,
   createLocalCampaignApprovalRepository,
@@ -94,14 +95,20 @@ export function campaignDatabasePool(input: unknown = process.env): PostgresData
   const caFingerprint = createHash("sha256")
     .update(configuration.caCertificatePem ?? "")
     .digest("hex");
-  const fingerprint = `${configuration.deploymentEnvironment}:${configuration.sslMode}:${configuration.connectionString}:${caFingerprint}`;
+  const diagnosticEnabled = z
+    .object({ OALO_RUNTIME_TIMING_DIAGNOSTICS: z.literal("true") })
+    .safeParse(input).success;
+  const fingerprint = `${configuration.deploymentEnvironment}:${configuration.sslMode}:${configuration.connectionString}:${caFingerprint}:${diagnosticEnabled}`;
   if (cachedPool !== undefined && cachedFingerprint === fingerprint) {
     return cachedPool;
   }
   const previous = cachedPool;
-  cachedPool = createPostgresPool(configuration);
+  const observer = runtimePoolObserver(input, "campaign_pool");
+  cachedPool = createPostgresPool(configuration, observer);
   cachedFingerprint = fingerprint;
-  void previous?.close();
+  void previous
+    ?.close()
+    .catch(() => observer({ outcome: "cleanup_failed", elapsedMilliseconds: 0 }));
   return cachedPool;
 }
 

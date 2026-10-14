@@ -1,0 +1,97 @@
+.screen {
+  display: grid;
+  gap: var(--space-6);
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  color: var(--tx-strong);
+  font-size: var(--text-body-size);
+  line-height: var(--leading-normal);
+}
+.screen h1,
+.screen h2,
+.screen h3,
+.screen p {
+  margin: 0;
+}
+.screen h1 {
+  font-size: var(--text-page-size);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-page);
+  line-height: var(--leading-tight);
+}
+.screen h2 {
+  font-size: var(--text-section-size);
+  font-weight: var(--weight-semibold);
+}
+.screen h3 {
+  font-size: var(--text-card-size);
+  font-weight: var(--weight-semibold);
+}
+.stack {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+.back {
+  justify-self: start;
+}
+.muted {
+  color: var(--tx-body);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.check {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  min-block-size: var(--target-min-size);
+}
+.check input {
+  order: -1;
+  accent-color: var(--ac-primary);
+  inline-size: var(--space-5);
+  block-size: var(--space-5);
+}
+.check input:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+.steps {
+  display: grid;
+  gap: var(--space-5);
+  padding-inline-start: var(--space-6);
+  margin: 0;
+}
+.record {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--bd-hairline);
+  border-radius: var(--radius-control);
+  background: var(--sf-sunken);
+  min-inline-size: 0;
+}
+.record dl {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+.record dt {
+  color: var(--tx-body);
+  font-size: var(--text-secondary-size);
+}
+.record dd {
+  margin: 0;
+  word-break: break-word;
+}
+.records {
+  display: grid;
+  gap: var(--space-3);
+}
+.alert {
+  color: var(--st-critical-fg);
+}

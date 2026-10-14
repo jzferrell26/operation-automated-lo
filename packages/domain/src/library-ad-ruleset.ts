@@ -1,4 +1,9 @@
 import { normaliseLibraryAdText } from "./library-ad-text.js";
+import {
+  WEBINAR_AD_RULE_CODES,
+  WEBINAR_AD_RULESET_REF,
+  type WebinarAdRuleCode,
+} from "./webinar-ad-rule-codes.js";
 import { evaluateLibraryAdWords, type LibraryAdWordFinding } from "./library-ad-words.js";
 
 /**
@@ -53,7 +58,7 @@ export type LibraryAdRuleCode =
   (typeof SHARED_RULE_CODES)[number] | (typeof LIBRARY_AD_ONLY_RULE_CODES)[number];
 export type OpenHouseRuleCode =
   (typeof SHARED_RULE_CODES)[number] | (typeof OPEN_HOUSE_ONLY_RULE_CODES)[number];
-export type PreflightRuleCode = LibraryAdRuleCode | OpenHouseRuleCode;
+export type PreflightRuleCode = LibraryAdRuleCode | OpenHouseRuleCode | WebinarAdRuleCode;
 
 /** The library-ad ruleset reference (`apps/web/src/features/ads-library/server/library-ad-ruleset.ts`). */
 export const LIBRARY_AD_RULESET_REF = "ruleset_libraryAd001";
@@ -63,15 +68,19 @@ export const OPEN_HOUSE_RULESET_REF = "ruleset_openHouseFounding001";
 export const PREFLIGHT_RULESET_REGISTRY: Readonly<{
   ruleset_libraryAd001: readonly LibraryAdRuleCode[];
   ruleset_openHouseFounding001: readonly OpenHouseRuleCode[];
+  ruleset_webinarAd001: readonly WebinarAdRuleCode[];
 }> = Object.freeze({
   [LIBRARY_AD_RULESET_REF]: Object.freeze([...SHARED_RULE_CODES, ...LIBRARY_AD_ONLY_RULE_CODES]),
   [OPEN_HOUSE_RULESET_REF]: Object.freeze([...SHARED_RULE_CODES, ...OPEN_HOUSE_ONLY_RULE_CODES]),
+  [WEBINAR_AD_RULESET_REF]: WEBINAR_AD_RULE_CODES,
 });
 
 /** The rule codes a ruleset runs, or `undefined` for a ruleset the registry does not know. */
 export function rulesetRuleCodes(
   rulesetVersionRef: string,
 ): readonly PreflightRuleCode[] | undefined {
+  if (rulesetVersionRef === WEBINAR_AD_RULESET_REF)
+    return PREFLIGHT_RULESET_REGISTRY.ruleset_webinarAd001;
   if (rulesetVersionRef === LIBRARY_AD_RULESET_REF)
     return PREFLIGHT_RULESET_REGISTRY.ruleset_libraryAd001;
   if (rulesetVersionRef === OPEN_HOUSE_RULESET_REF) {

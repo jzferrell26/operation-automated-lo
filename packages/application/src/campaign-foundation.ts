@@ -32,10 +32,16 @@ import {
   evaluateCampaignPreflight,
   evaluatePaidAdBrandBoundary,
   validateApprovalLink,
+  WEBINAR_AD_RULESET_REF,
 } from "@oalo/domain";
 import { z } from "zod";
 
 import { canonicalCampaignHash } from "./canonical-hash.js";
+import {
+  assertWebinarAdEvidenceCurrent,
+  assertWebinarAdPreflightCurrent,
+  type WebinarAdEvidencePort,
+} from "./webinar-ad-evidence.js";
 import {
   libraryAdCopyRef,
   libraryAdCreativeRef,
@@ -287,6 +293,12 @@ export function runCampaignPreflight(
 ): Readonly<PreflightResult> {
   const version = CampaignVersionSchema.parse(untrustedVersion);
   const rules = PreflightRulesSchema.parse(untrustedRules);
+  if (
+    version.manifest.blueprintId === "webinar-ad" &&
+    (rules.rulesetVersionRef !== WEBINAR_AD_RULESET_REF || !("webinarAd" in rules))
+  ) {
+    throw new Error("A webinar ad requires the dedicated webinar ruleset");
+  }
   if (hash(version.manifest) !== version.manifestHash) {
     throw new Error("Campaign manifest hash does not match its immutable content");
   }
@@ -342,6 +354,40 @@ function approvalSnapshotFor(
     dailyBudgetMinor: manifest.meta.dailyBudgetMinor,
     totalBudgetMinor: manifest.meta.totalBudgetMinor,
   });
+  if (manifest.blueprintId === "webinar-ad") {
+    const [tall, square] = manifest.images;
+    return ApprovalSnapshotSchema.parse({
+      blueprintId: "webinar-ad",
+      templateId: manifest.template.id,
+      templateVersion: manifest.template.version,
+      templateSourceHash: manifest.template.sourceHash,
+      tallSha256: tall.contentSha256,
+      squareSha256: square.contentSha256,
+      destinationHash: manifest.destinationHash,
+      publicationId: manifest.destination.publicationId,
+      sourceRevision: manifest.destination.sourceRevision,
+      snapshotHash: manifest.destination.snapshotHash,
+      publicUrl: manifest.destination.publicUrl,
+      brandHash: hash(manifest.advertiser),
+      copyHash: hash({
+        headline: manifest.content.headline,
+        primaryText: manifest.content.body,
+        callToAction: manifest.content.callToAction,
+      }),
+      disclosureHash: hash({
+        disclosureText: manifest.content.disclosureText,
+        consentText: manifest.content.consentText,
+      }),
+      endsAt: manifest.schedule.endsAt,
+      targetingHash: hash({
+        targeting: manifest.meta.targeting,
+        placements: manifest.meta.placements,
+      }),
+      budgetHash,
+      datesHash: hash(manifest.schedule),
+      ...approver,
+    });
+  }
   if (manifest.blueprintId === "library-ad") {
     const [tall, square] = manifest.images;
     return ApprovalSnapshotSchema.parse({
@@ -409,6 +455,7 @@ export async function createApprovalDecision(
     approverDisplayName: string | undefined;
   }>,
   authority: ApprovalAuthorityPort,
+  webinarEvidence?: WebinarAdEvidencePort,
 ): Promise<Readonly<ApprovalDecision>> {
   const version = CampaignVersionSchema.parse(input.campaignVersion);
   const preflight = PreflightResultSchema.parse(input.preflight);
@@ -431,6 +478,8 @@ export async function createApprovalDecision(
     actorRef: input.actorRef,
     actorRole: input.actorRole,
   });
+  await assertWebinarAdEvidenceCurrent(version, input.decidedAt, webinarEvidence);
+  assertWebinarAdPreflightCurrent(version, preflight);
   const snapshot = approvalSnapshotFor(version.manifest, input.approverDisplayName);
   return deepFreeze(
     ApprovalDecisionSchema.parse({

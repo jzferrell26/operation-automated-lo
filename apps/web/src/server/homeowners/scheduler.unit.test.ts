@@ -157,6 +157,17 @@ describe("who may start the monthly job", () => {
 });
 
 describe("when the monthly job does nothing", () => {
+  it("spends nothing when a leased property was removed before the scheduler reads it", async () => {
+    mocks.list.mockResolvedValue([]);
+    const response = await handleHomeSchedule(call(), ENVIRONMENT);
+    expect(response.status).toBe(200);
+    expect(await body(response)).toMatchObject({ claimed: 1, updated: 0, paused: 1 });
+    expect(mocks.list).toHaveBeenCalledOnce();
+    expect(mocks.connections).not.toHaveBeenCalled();
+    expect(mocks.generate).not.toHaveBeenCalled();
+    expect(mocks.handoff).not.toHaveBeenCalled();
+    expect(mocks.advance).not.toHaveBeenCalled();
+  });
   it.each([
     ["reports are not switched on", { OALO_HOMEOWNER_REPORTS: undefined }],
     ["live data is not switched on", { OALO_HOMEOWNER_LIVE_DATA: undefined }],
@@ -230,6 +241,35 @@ describe("what the monthly job checks before it spends a lookup", () => {
 });
 
 describe("a monthly refresh that goes ahead", () => {
+  it("does not hand off a completed refresh if its property was removed before the delivery check", async () => {
+    const started = Promise.withResolvers<void>();
+    const completed = Promise.withResolvers<{ id: string }>();
+    const enrolled = property({ enrollment: { deliverUpdates: true } });
+    let removed = false;
+    mocks.list.mockImplementation(async () => (removed ? [] : [enrolled]));
+    mocks.connections.mockResolvedValue({
+      valuation: provider(),
+      contacts: contactPort(true),
+      connectionIssue: null,
+    });
+    mocks.generate.mockImplementation(async () => {
+      started.resolve();
+      return completed.promise;
+    });
+    const pending = handleHomeSchedule(call(), ENVIRONMENT);
+    await started.promise;
+    expect(mocks.handoff).not.toHaveBeenCalled();
+    removed = true;
+    // Generation may already have completed. Removing the property before the fresh delivery
+    // check must still stop a new handoff; it cannot recall an external request already sent.
+    completed.resolve({ id: `hreport_${"d".repeat(32)}` });
+    const response = await pending;
+    expect(response.status).toBe(200);
+    expect(await body(response)).toMatchObject({ claimed: 1, updated: 1, paused: 0 });
+    expect(mocks.generate).toHaveBeenCalledOnce();
+    expect(mocks.list).toHaveBeenCalledTimes(2);
+    expect(mocks.handoff).not.toHaveBeenCalled();
+  });
   it("refreshes a property-only valuation under a stable request, and never hands it to HighLevel", async () => {
     mocks.list.mockResolvedValue([
       property({ association: "property_only", enrollment: { deliverUpdates: true } }),

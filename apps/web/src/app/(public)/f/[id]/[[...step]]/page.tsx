@@ -18,7 +18,10 @@ export default async function PublicFunnelPage({
   if (!z.uuid().safeParse(input.id).success || (input.step?.length ?? 0) > 1) notFound();
   let result;
   try {
-    result = await publicSnapshot(input.id, (await headers()).get("cookie") ?? "", process.env);
+    const requestHeaders = await headers();
+    const host = requestHeaders.get("host");
+    if (!host) notFound();
+    result = await publicSnapshot(input.id, requestHeaders.get("cookie") ?? "", process.env, host);
   } catch {
     notFound();
   }

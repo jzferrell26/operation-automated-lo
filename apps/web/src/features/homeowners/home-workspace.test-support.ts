@@ -58,6 +58,10 @@ export function liveWorkspace(
   properties: readonly HomeProperty[],
   overrides: Partial<HomeWorkspace> = {},
 ): HomeWorkspace {
+  const canWrite = overrides.canWrite ?? true;
+  const valuationConnected = overrides.valuationConnected ?? true;
+  const limit = overrides.monthlyLookupLimit ?? 10;
+  const used = overrides.lookupsThisMonth ?? 1;
   return {
     mode: "live",
     canWrite: true,
@@ -67,6 +71,18 @@ export function liveWorkspace(
     monthlyLookupLimit: 10,
     lookupsThisMonth: 1,
     properties: [...properties],
+    readiness: {
+      storage: "ready",
+      writeAccess: canWrite ? "allowed" : "read_only",
+      valuation: valuationConnected ? "ready" : "setup_unavailable",
+      freshLookup: !valuationConnected
+        ? "setup_unavailable"
+        : limit === 0
+          ? "zero_allowance"
+          : used >= limit
+            ? "allowance_exhausted"
+            : "ready",
+    },
     ...overrides,
   };
 }

@@ -41,6 +41,7 @@ export const PAGE_TITLES = Object.freeze({
    */
   connections: "Connections",
   settings: "Settings",
+  domains: "Domains",
   partners: "Realtor partners",
   routing: "Where new leads go",
   billing: "Plan and usage",

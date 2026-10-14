@@ -20,6 +20,12 @@ import { campaignCommandAuthErrorResponse, jsonCommandError } from "./campaign-c
 import { createCampaignPersistenceAdapter } from "./campaign-persistence-runtime.js";
 import { correlationReferenceForRequest, withCorrelationHeaders } from "./correlation-boundary.js";
 import { resolveRuntimeCampaignCommandPorts } from "./runtime-authentication.js";
+import { createWebinarAdEvidencePort } from "./webinar-ad-evidence.js";
+import { webinarFailure } from "./webinar-ad-http.js";
+import { CampaignWebinarEvidenceUnavailableError } from "@oalo/application";
+import { WebinarPreparationError } from "./webinar-ad-prepare.js";
+import { WebinarDestinationError } from "./webinar-destination.js";
+import { WebinarAdRasterError } from "@oalo/rendering";
 
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/u);
 
@@ -127,6 +133,7 @@ export async function handleCampaignApproval(
       // PRD-009c D4: the required catalog port, composed from the ads library loader under the
       // same raw environment, so a deployment resolves only real ads.
       createLibraryAdCatalogPort(environment),
+      createWebinarAdEvidencePort(principal, environment),
     );
     if (result.kind === "denied") {
       return withCorrelationHeaders(jsonCommandError(403, "FORBIDDEN"), correlation);
@@ -148,6 +155,13 @@ export async function handleCampaignApproval(
       correlation,
     );
   } catch (error) {
+    if (
+      error instanceof CampaignWebinarEvidenceUnavailableError ||
+      error instanceof WebinarPreparationError ||
+      error instanceof WebinarDestinationError ||
+      error instanceof WebinarAdRasterError
+    )
+      return withCorrelationHeaders(webinarFailure(error), correlation);
     if (error instanceof CampaignLibraryAdRefusedError) {
       return withCorrelationHeaders(
         jsonCommandError(409, LIBRARY_AD_REFUSAL_CODES[error.reason]),

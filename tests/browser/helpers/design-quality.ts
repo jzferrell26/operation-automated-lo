@@ -917,8 +917,12 @@ export const DATE_SELECTOR = "time, input[type='date']";
  * header date. All accessibility/layout checks run first on the real date; datetime, stored
  * campaign data, clocks, and adjacent text stay untouched. Restore the original even on failure.
  *
- * Scope is deliberately narrow: the library-ad header and campaign-list dates, whose schedules
- * and save timestamps originate in the rolling browser fixture. October 6's Linux comparison
+ * Scope is deliberately narrow: the library-ad header, approval/version timestamps, the approved
+ * launch-step-3 decision, and campaign-list dates, whose values originate in rolling fixtures.
+ * October 13's Linux comparison also exposed rolling approval/save timestamps: a two-digit day
+ * changed the inline date mask's width and the approval sentence's wrapping. Use Oct 4, 2026 for
+ * those timestamp labels, matching the single-digit October shape of the original October 4
+ * baselines. Every surrounding word still participates in the comparison. October 6's comparison
  * found that masking the list's date text still allowed its width to shift the adjacent Topic
  * column. Normalize only those existing date nodes during capture; other dates, controls,
  * property pages, stored values and clocks are unchanged. Tests exercise restoration and scope.
@@ -931,20 +935,31 @@ export async function withStableCampaignScheduleDates<T>(
     "[data-campaign-page='library-ad'] > header time",
     "[data-campaigns-page] [data-campaign-table] tbody time",
     "[data-campaigns-page] [data-campaign-cards] time",
+    "[data-campaign-page='library-ad'] [data-approval-section] > div > p > time",
+    "[data-campaign-page='library-ad'] [data-versions] > div > ol > li > p > time",
+    "[data-launch-step='3'][data-review-state='approved'] [data-decision-card='approved'] > p > time",
   ].join(", ");
   const originalAttribute = "data-review-original-schedule-label";
+  let applied = false;
   try {
     await page.locator(selector).evaluateAll((elements, attribute) => {
       for (const element of elements) {
+        const isList = element.closest("[data-campaigns-page]") !== null;
+        const isHeader = element.matches("[data-campaign-page='library-ad'] > header time");
         if (
           element.hasAttribute(attribute) ||
           element.childNodes.length !== 1 ||
           element.firstChild?.nodeType !== Node.TEXT_NODE ||
           !(
-            element.closest("[data-campaigns-page]") === null
+            isHeader
               ? /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [A-Z][a-z]{2} \d{1,2}, \d{4}$/u
-              : /^[A-Z][a-z]{2} \d{1,2}(?:, \d{4})?$/u
-          ).test(element.textContent ?? "")
+              : isList
+                ? /^[A-Z][a-z]{2} \d{1,2}(?:, \d{4})?$/u
+                : /^[A-Z][a-z]{2} \d{1,2}, \d{4}$/u
+          ).test(element.textContent ?? "") ||
+          (!isList &&
+            !isHeader &&
+            !/^\d{4}-\d{2}-\d{2}T/u.test(element.getAttribute("datetime") ?? ""))
         ) {
           throw new Error("Campaign schedule screenshot expects a single readable date label");
         }
@@ -953,26 +968,31 @@ export async function withStableCampaignScheduleDates<T>(
         element.setAttribute(attribute, element.textContent ?? "");
         if (element.firstChild !== null) {
           const isList = element.closest("[data-campaigns-page]") !== null;
+          const isHeader = element.matches("[data-campaign-page='library-ad'] > header time");
           const isTimestamp = element.getAttribute("datetime")?.includes("T") === true;
           element.firstChild.nodeValue = isList
             ? isTimestamp
               ? "Oct 2"
               : "Oct 16"
-            : "Fri, Oct 16, 2026";
+            : isHeader
+              ? "Fri, Oct 16, 2026"
+              : "Oct 4, 2026";
         }
       }
     }, originalAttribute);
+    applied = true;
     return await capture();
   } finally {
-    await page.locator(`[${originalAttribute}]`).evaluateAll((elements, attribute) => {
-      for (const element of elements) {
-        const original = element.getAttribute(attribute);
-        if (original !== null && element.firstChild?.nodeType === Node.TEXT_NODE) {
-          element.firstChild.nodeValue = original;
+    if (applied)
+      await page.locator(selector).evaluateAll((elements, attribute) => {
+        for (const element of elements) {
+          const original = element.getAttribute(attribute);
+          if (original !== null && element.firstChild?.nodeType === Node.TEXT_NODE) {
+            element.firstChild.nodeValue = original;
+          }
+          element.removeAttribute(attribute);
         }
-        element.removeAttribute(attribute);
-      }
-    }, originalAttribute);
+      }, originalAttribute);
   }
 }
 

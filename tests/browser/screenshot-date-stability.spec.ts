@@ -115,3 +115,122 @@ test("failed list captures restore dates and malformed content is not normalized
   );
   await expect(page.locator("time")).toHaveText("Unexpected status");
 });
+
+const timestampFixture = `<main style="font:16px Arial;width:358px">
+  <section data-campaign-page="library-ad">
+    <section data-approval-section><div><p>Approved by Dana Reyes, workspace owner, on <time datetime="2026-10-04T14:00:00Z">Oct 4, 2026</time>.</p></div></section>
+    <section data-versions><div><ol><li><p>Saved on <time datetime="2026-10-04T13:00:00Z">Oct 4, 2026</time> by you</p><p>Approved by Dana on <time datetime="2026-10-04T14:00:00Z">Oct 4, 2026</time>.</p></li></ol></div></section>
+  </section>
+  <section data-launch-step="3" data-review-state="approved"><section data-decision-card="approved"><p>Approved by Dana Reyes on <time datetime="2026-10-04T14:00:00Z">Oct 4, 2026</time>. The approval covers this version only.</p></section></section>
+  <section data-launch-step="3" data-review-state="retired"><section data-decision-card="retired"><p>Retired on <time datetime="2026-10-04">Oct 4, 2026</time>.</p></section></section>
+  <section data-campaign-page="earlier-flow"><section data-versions><div><ol><li><p>Saved on <time datetime="2026-10-04T13:00:00Z">Oct 4, 2026</time></p></li></ol></div></section></section>
+  <p id="unrelated">Other event <time datetime="2030-12-25">Dec 25, 2030</time></p>
+</main>`;
+
+const timestampSelector =
+  "[data-campaign-page='library-ad'] time, [data-review-state='approved'] time";
+
+test("rolling approval and version timestamps keep capture geometry without changing their records", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setContent(timestampFixture);
+  const dates = page.locator(timestampSelector);
+  await expect(dates).toHaveCount(4);
+  const render = () => page.locator("main").screenshot({ animations: "disabled" });
+  const reference = await render();
+  const unchanged = await page
+    .locator("[data-review-state='retired'], [data-campaign-page='earlier-flow'], #unrelated")
+    .evaluateAll((elements) => elements.map((element) => element.outerHTML));
+
+  for (const [label, iso] of [
+    ["Oct 13, 2026", "2026-10-13T14:00:00Z"],
+    ["Sep 30, 2030", "2030-09-30T14:00:00Z"],
+    ["Dec 25, 2040", "2040-12-25T14:00:00Z"],
+  ] as const) {
+    await dates.evaluateAll(
+      (elements, value) => {
+        for (const element of elements) {
+          element.textContent = value.label;
+          element.setAttribute("datetime", value.iso);
+        }
+      },
+      { label, iso },
+    );
+    expect((await render()).equals(reference)).toBe(false);
+    const datetimeBefore = await dates.evaluateAll((elements) =>
+      elements.map((element) => element.getAttribute("datetime")),
+    );
+    const captured = await withStableCampaignScheduleDates(page, async () => {
+      for (const date of await dates.all()) await expect(date).toHaveText("Oct 4, 2026");
+      expect(
+        await dates.evaluateAll((elements) =>
+          elements.map((element) => element.getAttribute("datetime")),
+        ),
+      ).toEqual(datetimeBefore);
+      expect(
+        await page
+          .locator("[data-review-state='retired'], [data-campaign-page='earlier-flow'], #unrelated")
+          .evaluateAll((elements) => elements.map((element) => element.outerHTML)),
+      ).toEqual(unchanged);
+      return render();
+    });
+    expect(captured.equals(reference)).toBe(true);
+    for (const date of await dates.all()) await expect(date).toHaveText(label);
+    expect(
+      await dates.evaluateAll((elements) =>
+        elements.map((element) => element.getAttribute("datetime")),
+      ),
+    ).toEqual(datetimeBefore);
+    await expect(page.locator("[data-review-original-schedule-label]")).toHaveCount(0);
+  }
+
+  await page.locator("[data-decision-card='approved'] p").evaluate((element) => {
+    if (element instanceof HTMLElement) element.style.fontSize = "20px";
+  });
+  expect((await withStableCampaignScheduleDates(page, render)).equals(reference)).toBe(false);
+});
+
+test("failed timestamp captures restore every label and reject malformed nodes before mutation", async ({
+  page,
+}) => {
+  await page.setContent(timestampFixture);
+  const before = await page.locator("main").innerHTML();
+  await expect(
+    withStableCampaignScheduleDates(page, async () => {
+      throw new Error("Timestamp capture failed");
+    }),
+  ).rejects.toThrow("Timestamp capture failed");
+  expect(await page.locator("main").innerHTML()).toBe(before);
+
+  await page.locator("[data-decision-card='approved'] time").evaluate((element) => {
+    element.innerHTML = "<strong>Oct 4, 2026</strong>";
+  });
+  const malformed = await page.locator("main").innerHTML();
+  await expect(withStableCampaignScheduleDates(page, async () => undefined)).rejects.toThrow(
+    "single readable date label",
+  );
+  expect(await page.locator("main").innerHTML()).toBe(malformed);
+
+  await page.setContent(timestampFixture);
+  await page.locator("[data-approval-section] time").evaluate((element) => {
+    element.removeAttribute("datetime");
+  });
+  const missingTimestamp = await page.locator("main").innerHTML();
+  await expect(withStableCampaignScheduleDates(page, async () => undefined)).rejects.toThrow(
+    "single readable date label",
+  );
+  expect(await page.locator("main").innerHTML()).toBe(missingTimestamp);
+});
+
+test("unexpected existing normalization markers are refused and preserved", async ({ page }) => {
+  await page.setContent(timestampFixture);
+  await page.locator("[data-approval-section] time").evaluate((element) => {
+    element.setAttribute("data-review-original-schedule-label", "Owned by another capture");
+  });
+  const before = await page.locator("main").innerHTML();
+  await expect(withStableCampaignScheduleDates(page, async () => undefined)).rejects.toThrow(
+    "single readable date label",
+  );
+  expect(await page.locator("main").innerHTML()).toBe(before);
+});

@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import type { FinancingMediaError } from "@oalo/application";
 
 import { findVocabularyHits } from "../../copy/forbidden-vocabulary.js";
 import { SUPPORT_DETAILS_SUMMARY } from "../../copy/user-language.js";
@@ -65,6 +66,18 @@ const APPROVE_LIBRARY_AD_REFUSALS: readonly string[] = [
   "LIBRARY_AD_REPLACED",
   "LIBRARY_AD_ART_CHANGED",
 ];
+/** Covers the complete typed error boundary, including dynamically forwarded route codes. */
+const FINANCING_MEDIA_REFUSALS = {
+  FINANCING_MEDIA_INVALID: true,
+  FINANCING_MEDIA_TOO_LARGE: true,
+  FINANCING_MEDIA_UNSUPPORTED: true,
+  FINANCING_MEDIA_NOT_FOUND: true,
+  FINANCING_MEDIA_CONFLICT: true,
+  FINANCING_MEDIA_REVOKED: true,
+  FINANCING_MEDIA_INTEGRITY_FAILED: true,
+  FINANCING_MEDIA_BUSY: true,
+  FINANCING_MEDIA_UNAVAILABLE: true,
+} satisfies Record<FinancingMediaError["code"], true>;
 
 async function collectEmittedCodes(): Promise<readonly string[]> {
   const codes = new Set<string>();
@@ -94,6 +107,58 @@ async function collectEmittedCodes(): Promise<readonly string[]> {
 }
 
 describe("error codes become sentences", () => {
+  it.each([
+    "DOMAIN_METHOD",
+    "DOMAIN_INVALID",
+    "DOMAIN_FORBIDDEN",
+    "DOMAIN_UNAVAILABLE",
+    "DOMAIN_CONFLICT",
+    "DOMAIN_NOT_FOUND",
+  ])("maps domain refusal %s without raw provider details", (code) => {
+    expect(isMappedErrorCode(code)).toBe(true);
+    expect(userMessageForCode(code)).not.toBe(UNKNOWN_ERROR_MESSAGE);
+    expect(userMessageForCode(code).whatToDo.length).toBeGreaterThan(10);
+    expect(findVocabularyHits(userMessageSentence(code))).toEqual([]);
+    expect(userMessageSentence(code)).not.toMatch(/DOMAIN_|token|challenge|stack|projectId/u);
+  });
+  it.each(Object.keys(FINANCING_MEDIA_REFUSALS))(
+    "maps financing photograph refusal %s without internal details",
+    (code) => {
+      expect(isMappedErrorCode(code)).toBe(true);
+      expect(userMessageForCode(code)).not.toBe(UNKNOWN_ERROR_MESSAGE);
+      const message = userMessageForCode(code);
+      expect(message.what.length).toBeGreaterThan(10);
+      expect(message.whatToDo.length).toBeGreaterThan(10);
+      expect(findVocabularyHits(userMessageSentence(code))).toEqual([]);
+      expect(userMessageSentence(code)).not.toMatch(
+        /FINANCING_MEDIA_|media_[a-f0-9]|sha256|bucket|requestHash|storage key/u,
+      );
+    },
+  );
+  it.each([
+    "DESTINATION_UNAVAILABLE",
+    "WEBINAR_EVIDENCE_UNAVAILABLE",
+    "WEBINAR_INVALID",
+    "WEBINAR_UNAVAILABLE",
+    "WEBINAR_VERSION_CONFLICT",
+  ])("maps webinar refusal %s without the generic fallback or implementation terms", (code) => {
+    expect(isMappedErrorCode(code)).toBe(true);
+    const message = userMessageForCode(code);
+    expect(message).not.toBe(UNKNOWN_ERROR_MESSAGE);
+    expect(message.what.length).toBeGreaterThan(10);
+    expect(message.whatToDo.length).toBeGreaterThan(10);
+    expect(findVocabularyHits(userMessageSentence(code))).toEqual([]);
+  });
+
+  it("distinguishes retrying an uncertain save from reviewing a conflicting version", () => {
+    expect(userMessageForCode("WEBINAR_UNAVAILABLE").whatToDo).toContain("retry the same save");
+    expect(userMessageForCode("WEBINAR_VERSION_CONFLICT").whatToDo).toContain(
+      "review the latest saved version before preparing another version",
+    );
+    expect(userMessageForCode("WEBINAR_EVIDENCE_UNAVAILABLE").whatToDo).toContain(
+      "before approving",
+    );
+  });
   it("has a sentence pair for every code a route can hand the browser", async () => {
     const excluded = new Set(NOT_SHOWN_TO_A_USER.map((entry) => entry.code));
     const unmapped = (await collectEmittedCodes()).filter(

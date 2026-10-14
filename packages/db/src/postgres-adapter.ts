@@ -41,6 +41,7 @@ export class PostgresAdapterError extends Error {
   readonly code:
     | "DB_CONFIGURATION_INVALID"
     | "DB_POOL_CLOSED"
+    | "DB_ACQUISITION_TIMEOUT"
     | "DB_CONNECTION_RELEASED"
     | "DB_PREPARED_STATEMENT_FORBIDDEN"
     | "DB_DRIVER_RESULT_INVALID";
@@ -52,12 +53,31 @@ export class PostgresAdapterError extends Error {
   }
 }
 
+export interface PostgresAcquisitionObservation {
+  readonly outcome:
+    | "started"
+    | "succeeded"
+    | "failed"
+    | "timed_out"
+    | "closed"
+    | "late_released"
+    | "cleanup_failed";
+  readonly elapsedMilliseconds: number;
+}
+
+export type PostgresAcquisitionObserver = (observation: PostgresAcquisitionObservation) => void;
+
 export class PostgresDatabasePool implements DatabasePool {
   readonly #driver: Sql;
+  readonly #acquisitionTimeoutMilliseconds: number;
+  readonly #observer: PostgresAcquisitionObserver | undefined;
+  readonly #pending = new Set<() => void>();
   #closed = false;
 
-  constructor(untrustedConfiguration: unknown) {
+  constructor(untrustedConfiguration: unknown, observer?: PostgresAcquisitionObserver) {
     const configuration = validateConfiguration(untrustedConfiguration);
+    this.#acquisitionTimeoutMilliseconds = configuration.connectTimeoutSeconds * 1_000;
+    this.#observer = observer;
     this.#driver = postgres(configuration.connectionString, {
       connect_timeout: configuration.connectTimeoutSeconds,
       connection: {
@@ -82,18 +102,90 @@ export class PostgresDatabasePool implements DatabasePool {
     if (this.#closed) {
       throw new PostgresAdapterError("DB_POOL_CLOSED", "Database pool is closed");
     }
-    return new PostgresDatabaseConnection(await this.#driver.reserve());
+    const started = performance.now();
+    const observe = (outcome: PostgresAcquisitionObservation["outcome"]) => {
+      try {
+        this.#observer?.(
+          Object.freeze({
+            outcome,
+            elapsedMilliseconds: Math.max(0, Math.round(performance.now() - started)),
+          }),
+        );
+      } catch {
+        // Diagnostics are optional and may never change authorization or reservation cleanup.
+      }
+    };
+    observe("started");
+    return new Promise<DatabaseConnection>((resolve, reject) => {
+      let settled = false;
+      const finish = () => {
+        settled = true;
+        clearTimeout(timer);
+        this.#pending.delete(cancel);
+      };
+      const cancel = () => {
+        if (settled) return;
+        finish();
+        observe("closed");
+        reject(new PostgresAdapterError("DB_POOL_CLOSED", "Database pool is closed"));
+      };
+      const timer = setTimeout(() => {
+        finish();
+        observe("timed_out");
+        reject(
+          new PostgresAdapterError(
+            "DB_ACQUISITION_TIMEOUT",
+            "Database connection acquisition timed out",
+          ),
+        );
+      }, this.#acquisitionTimeoutMilliseconds);
+      this.#pending.add(cancel);
+      // reserve() has no queue cancellation API. Both continuations remain attached after timeout
+      // or close so a late connection is released and a late rejection is always handled.
+      const reservation = Promise.resolve().then(() => {
+        if (this.#closed)
+          throw new PostgresAdapterError("DB_POOL_CLOSED", "Database pool is closed");
+        return this.#driver.reserve();
+      });
+      void reservation.then(
+        (driver) => {
+          if (settled || this.#closed) {
+            try {
+              driver.release();
+              observe("late_released");
+            } catch {
+              // No caller remains to receive this cleanup failure. Emit only the fixed diagnostic.
+              observe("cleanup_failed");
+            }
+            return;
+          }
+          finish();
+          observe("succeeded");
+          resolve(new PostgresDatabaseConnection(driver));
+        },
+        (error: unknown) => {
+          if (settled) return;
+          finish();
+          observe("failed");
+          reject(error);
+        },
+      );
+    });
   }
 
   async close(): Promise<void> {
     if (this.#closed) return;
     this.#closed = true;
+    for (const cancel of this.#pending) cancel();
     await this.#driver.end({ timeout: 5 });
   }
 }
 
-export function createPostgresPool(untrustedConfiguration: unknown): PostgresDatabasePool {
-  return new PostgresDatabasePool(untrustedConfiguration);
+export function createPostgresPool(
+  untrustedConfiguration: unknown,
+  observer?: PostgresAcquisitionObserver,
+): PostgresDatabasePool {
+  return new PostgresDatabasePool(untrustedConfiguration, observer);
 }
 
 class PostgresDatabaseConnection implements DatabaseConnection {

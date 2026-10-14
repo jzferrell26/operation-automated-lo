@@ -34,6 +34,8 @@ export interface ReviewPass {
 
 /** PRD-009g, 009G-AC-001. The two passes of the browser project, in the order they run. */
 export const REVIEW_PASSES: readonly ReviewPass[];
+export const REVIEW_PASS_ARTIFACT_DIRECTORY: "test-results/browser-passes";
+export function preserveReviewPassOutput(repositoryRoot: string, catalog: string): Promise<boolean>;
 
 export function reviewServerEnvironment(
   databaseUrl: string,

@@ -222,13 +222,13 @@ begin
  perform campaign.webinar_publisher_authorize(identity);
  if method='pending' then
   if ((input->>'limit')::integer between 1 and 50) is not true then raise exception 'PUBLISHER_LIMIT_INVALID'; end if;
-  return coalesce((select jsonb_agg(p.payload) from (
-   select b.payload from integration.webinar_publisher_outbox b
-    join campaign.webinar_publisher_operations o on o.location_id=b.location_id and o.operation_ref=b.operation_ref
-    join campaign.webinar_publisher_launches l on l.location_id=o.location_id and l.projection_ref=o.projection_ref
-   where b.location_id=platform.current_location_id() and l.actor_id=platform.current_actor_id()
-    and l.installation_id=(identity->>'installationId')::uuid and o.active and b.processed_at is null
-   order by b.created_at,b.operation_ref limit (input->>'limit')::integer) p),'[]'::jsonb);
+  return coalesce((select jsonb_agg(pending_rows.payload) from (
+   select outbox_row.payload from integration.webinar_publisher_outbox outbox_row
+    join campaign.webinar_publisher_operations operation_row on operation_row.location_id=outbox_row.location_id and operation_row.operation_ref=outbox_row.operation_ref
+    join campaign.webinar_publisher_launches launch_row on launch_row.location_id=operation_row.location_id and launch_row.projection_ref=operation_row.projection_ref
+   where outbox_row.location_id=platform.current_location_id() and launch_row.actor_id=platform.current_actor_id()
+    and launch_row.installation_id=(identity->>'installationId')::uuid and operation_row.active and outbox_row.processed_at is null
+   order by outbox_row.created_at,outbox_row.operation_ref limit (input->>'limit')::integer) pending_rows),'[]'::jsonb);
  end if;
  if method='evidence' then return campaign.webinar_publisher_evidence(input->>'campaignRef'); end if;
  if method='selection' then

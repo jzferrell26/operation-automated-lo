@@ -14,10 +14,10 @@ import {
 
 // Required env fails closed during module load. Never runs against a production database.
 const url = requiredTestDatabaseUrl();
-async function fixture() {
+async function fixture(sharedPool) {
   const f = publisherFixture();
   const evidence = await publisherEvidenceFixture(f);
-  const pool = testPool(url);
+  const pool = sharedPool ?? testPool(url);
   const installationId = parseInstallationRef(f.principal.installationRef);
   await withMigrationOwnerTransaction(pool, async (c) => {
     await c.execute(
@@ -222,13 +222,47 @@ async function fixture() {
     });
     // Disposable integration database is dropped by the canonical gate; leave original immutable
     // source evidence in place instead of introducing a second privileged cleanup implementation.
-    await pool.close();
+    if (sharedPool === undefined) await pool.close();
   }
   await repo.run(f.principal, (tx) => tx.insertSummary(f.summary));
   await admit("qualification", f.proof);
   return { ...f, evidence, pool, repo, admin, admit, reserve, cleanup };
 }
 describe("native webinar publisher real PostgreSQL fences", { concurrency: false }, () => {
+  it("discovers only owned unprocessed active tasks and removes canceled lineage from pending work", async () => {
+    const f = await fixture();
+    // Reuse the same pool so alternating tenant requests also exercise context restoration.
+    const other = await fixture(f.pool);
+    try {
+      assert.deepEqual(await f.repo.pendingTasks(f.principal), []);
+      const own = await f.reserve();
+      const foreign = await other.reserve();
+      assert.deepEqual(await f.repo.pendingTasks(f.principal, 1), [own.task]);
+      assert.deepEqual(await other.repo.pendingTasks(other.principal), [foreign.task]);
+      await f.admin(
+        "update integration.webinar_publisher_outbox set processed_at=clock_timestamp() where location_id=$1::uuid and operation_ref=$2::text",
+        [f.principal.locationId, own.operation.operationRef],
+      );
+      assert.deepEqual(await f.repo.pendingTasks(f.principal), []);
+      assert.deepEqual(await other.repo.pendingTasks(other.principal), [foreign.task]);
+      const cancel = await f.reserve("cancel", 2, "reserved");
+      assert.deepEqual(await f.repo.pendingTasks(f.principal), [cancel.task]);
+      assert.deepEqual(await other.repo.pendingTasks(other.principal), [foreign.task]);
+      const stopped = await f.repo.claim(f.principal, {
+        task: cancel.task,
+        workerRef: "worker_pendingStop001",
+        leaseSeconds: 60,
+      });
+      assert.equal(stopped.status, "leased");
+      assert.equal(stopped.operation.stage, "complete");
+      assert.equal(stopped.launch.state, "cancelled");
+      assert.deepEqual(await f.repo.pendingTasks(f.principal), []);
+      assert.deepEqual(await other.repo.pendingTasks(other.principal), [foreign.task]);
+    } finally {
+      await other.cleanup();
+      await f.cleanup();
+    }
+  });
   it("loads the actual strict version, preflight and SDK approval without stripping nested nulls", async () => {
     const f = await fixture();
     try {

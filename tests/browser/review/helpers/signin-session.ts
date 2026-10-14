@@ -209,7 +209,8 @@ async function currentProof(page: Page): Promise<Proof | undefined> {
   };
 }
 
-/** Only webinar preparation calls this. Authentication journeys always call signInExisting directly. */
+/** Visual and webinar preparation may reuse a freshly verified session.
+ * Authentication journeys always call signInExisting directly. */
 export async function signInForReviewPreparation(
   page: Page,
   email: string,

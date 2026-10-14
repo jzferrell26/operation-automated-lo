@@ -163,3 +163,60 @@ The paths share `tests/visual/screens/review/homeowners--empty-account--` and `.
 GitHub run `38480000153` independently reports overall failure at the same old head. The parent attributes its successful migration/pgTAP, 22 PostgreSQL files and 295 route tests plus four new browser cases to that run; those component results are not independently rerun here. The original twelve detail pictures include the two UX-rejected zero-allowance mobile states. The isolated old-CSS RED4/new-CSS GREEN4 probe is diagnostic evidence only. Neither those old pictures nor the canonical empty-account images qualify fresh full-product detail rendering after this CSS change. HR-PROOF, final CI, hosted/provider behavior, customer approval and L-5/L-15/L-16 remain open as already recorded.
 
 Cleared for fresh Quality on this frozen delta, with zero unresolved Medium-or-higher security findings. The orchestrator should perform its repository-health/release checks before commit or push and retain the pending fresh browser and CI evidence limits.
+
+## Single loan officer direction source review
+
+Security reopened before fresh Quality for the eight-file source/test delta from `d0a8bc539470f7edfc13babf10f6d4fd1954120c` and the new accepted owner-direction record. Prior Quality entries qualify earlier cycles only. No current-cycle Quality report existed on entry; no `library/qa` report was found. The reviewer loaded the native Guardian, paired Weapon, principles, integrated authorization/tenancy guide, current source and exact diff. This appendix is a focused re-evaluation of the newly changed behavior, not a second full application audit.
+
+**No Critical, High, Medium or Low finding detected in this delta.** Account, setup and support wording replaces team-role instructions. The sole new control condition hides the failed-first-lookup creation link when existing `canWrite` is false at `apps/web/src/features/homeowners/workspace.tsx:441`. That condition strengthens presentation; it does not grant server authority. The only server changes are the two refusal message literals in `apps/web/src/server/homeowners/runtime.ts:77,93`. Status codes, authentication, mutation authorization, provider setup and quotas are unchanged.
+
+### Authentication, single-account access and contact scope
+
+None detected. `runtime.ts:68-73` still resolves a current authenticated principal through the separate read/mutation gates before repository creation, refuses platform support, and requires the existing internal write capability for mutations. The unchanged mutation resolver checks origin and CSRF in `apps/web/src/server/authenticated-principal.ts:293-302`. Removing customer-facing role administration does not turn these internal capabilities into onboarding roles or authorize foreign-account reads.
+
+The account connection is selected with the authenticated location key, then checked against the repository's HighLevel location at `runtime.ts:130-133`. The paid-provider allowlist and flags remain at `runtime.ts:142-149`. HighLevel contact search sends that verified location at `apps/web/src/server/homeowners/highlevel.ts:161`; every returned contact passes `project`, which rejects a different location at `:115`. There is no per-user contact-owner or team visibility filter. This supports searching the connected account's contacts, within the existing query/page limits and provider authorization. It does not imply that every contact is fetched into one response.
+
+Repository report reads bind location and report ID at `packages/db/src/homeowner-repository.ts:80,163`. Creation receives `principal.locationId` in the unchanged HTTP service dependencies. Removal uses both authenticated location and property ID at `:508-518`. No client location, balance-access toggle, role override, credential or arbitrary URL is introduced by this delta. Current source retains the signed-in LO's permitted access and the legacy internal refusal cases.
+
+### Removal, sharing, scheduling and retained usage
+
+None detected in the revised wording. Both removal dialogs retain an explicit confirmation checkbox; the server delete schema requires literal `confirmed: true` at `apps/web/src/server/homeowners/http.ts:79-85`, and the mutation gate runs before parsing or removal. The unchanged repository deletes only the scoped property. Existing foreign keys in `supabase/migrations/20260924010000_homeowner_reports.sql:57,76,101,114,131` cascade report history, unfinished requests, shares, events and delivery records. Schedule data lives on the deleted property, so it is removed from subsequent scheduler selection. Existing lookup usage events at `:84-90` do not depend on that property and remain recorded.
+
+The new text at `workspace.tsx:456,800` correctly says the account's property/report history/share links are removed and its schedule stops; it expressly preserves the HighLevel contact and lookup usage and says downloaded copies cannot be recalled. No new HighLevel delete request, purge task, retention interval, provider call or live deletion was added. This source check does not establish cancellation of an already-running provider request or erase copies previously obtained by a recipient. The owner record correctly leaves automatic retention and broader L-15 qualification unresolved.
+
+### Remaining security categories
+
+- Secrets, PII and financial exposure: none detected in the scoped diff. Static React text adds no balance fields, log, public identifier, persistent cache or raw error detail. Fresh repository secret audit passed.
+- Injection, transport and configuration: none detected. No executable HTML, SQL, path, URL, session configuration, provider flag or environment value changed.
+- Dependencies and supply chain: no dependency or lockfile change. Fresh production registry audit returned zero advisories at all severities. The Weapon's April 24 watchlist remains stale, as recorded in the preceding reviews; this focused cycle neither refreshes it nor claims a full current-CVE intelligence review.
+
+### Independent verification
+
+| Check | Result |
+| --- | --- |
+| Readiness, refusal-message and report-action integration files | 32 tests passed, including explicit removal confirmation and no creation/removal control when account write access is unavailable |
+| Adapter, refusal-message and readiness unit files | 31 tests passed, including foreign HighLevel contact refusal and safe error projection |
+| Runtime/settings fault unit file | 10 tests passed, including permitted account reads and denied writes before storage/provider work |
+| Authenticated principal unit file | 5 tests passed |
+| Production dependency audit | Exit zero; all severity counts zero |
+| Repository secret audit and `git diff --check` | Passed |
+
+Ignored evidence: `test-results/single-lo-security-{integration,unit,authority,principal}.log` and `single-lo-security-audit.json`. Actual PostgreSQL isolation/deletion tests were inspected, not independently rerun locally. Independently read GitHub run `38485526367`: overall success at `d0a8bc5`, Application verification, real PostgreSQL migration/pgTAP and release/recovery jobs succeeded; Preview smoke was skipped. That older head does not qualify this new wording/control delta. New twelve-frame review, canonical baselines and complete new CI remain pending.
+
+### Frozen source pins
+
+Paths in the first six rows are under `apps/web/src/features/homeowners/`.
+
+| Reviewed file | SHA-256 |
+| --- | --- |
+| builder.tsx | 2ff6c3f4d426f16ed9d594e136d7434fb51e99f06e0fa44c1b133d1b0a17f341 |
+| readiness.integration.test.tsx | 60e0c5f469dfe34b847fa06c8317798789951daa95abc2451be6df01dcd53dcc |
+| readiness.ts | 0085fb811ab3d78e6396901311a3fb0a89fdbf079f80bb01bab6ddab737ebab8 |
+| refusal-messages.integration.test.tsx | 9d37b4b8ad1d2b55a5af5b5891640613678877d59d108cb240c787530ba0c0e3 |
+| report-actions.integration.test.tsx | 0471747b4d9031d19689d392d651ec9410a5c686cf7026805f366ba2cc0db942 |
+| workspace.tsx | 58c8b70e7502e12c035c298d112b28a9d0ff58341c5a3489198726439c6f1f82 |
+| apps/web/src/server/homeowners/runtime.ts | 5ba28a71c875bad136e34c0eb55c5cb02b67a440e74f7af829b36ebfb224fa6f |
+| tests/browser/review/homeowner-readiness.spec.ts | 5f8a93b69273e098435115192a1410a29bda66e215cb5163e16289fd5eea2f76 |
+| single-lo-owner-direction-2026-10-13.md | 24b335dd36675180a4d78b6fc691e77e59869356902dca5ffc98a69dd1a8aa6c |
+
+Cleared for fresh Quality with zero unresolved Medium-or-higher security findings. No source, baseline or provider modification was made by this reviewer. Only this assigned report was appended. The orchestrator retains fresh visual/CI and repository-health checks before release qualification.

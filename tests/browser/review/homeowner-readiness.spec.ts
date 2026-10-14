@@ -151,12 +151,12 @@ for (const frame of REVIEW_FRAMES) {
       },
     };
     await page.getByRole("button", { name: "Check report availability", exact: true }).click();
-    await expect(page.getByText("Valuations are unavailable for this workspace")).toBeVisible();
+    await expect(page.getByText("Valuations are unavailable for your account")).toBeVisible();
     await expect(page.getByRole("button", { name: "Download PDF", exact: true })).toBeEnabled();
     await expect(page.locator('a[href="/settings/connections"]')).toHaveCount(0);
     await expectAxeClean(page);
     await expectNoHorizontalOverflow(page);
-    await expectReadableMobileNotice(page, "Valuations are unavailable for this workspace", width);
+    await expectReadableMobileNotice(page, "Valuations are unavailable for your account", width);
     await settleForScreenshot(page);
     await warmFullPageCapture(page);
     await page.screenshot({

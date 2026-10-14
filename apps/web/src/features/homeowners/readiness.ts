@@ -33,28 +33,28 @@ export function homeReadinessNotice(
     };
   if (state.storage === "unavailable")
     return {
-      title: "Connect the report workspace",
-      body: "Homeowner reports are unavailable for this workspace. Ask your workspace administrator or contact support to finish report setup, then check again. HighLevel is optional for property valuations.",
+      title: "Set up homeowner reports",
+      body: "Homeowner reports are unavailable for your account. Contact support to finish report setup, then check again. HighLevel is optional for property valuations.",
     };
   if (!workspace.canWrite || state.writeAccess === "read_only")
     return {
-      title: "You have read-only report access",
-      body: "You can open saved reports and download their PDFs. Ask your workspace administrator if you need to create or change reports.",
+      title: "Report changes are unavailable for your account",
+      body: "You can open saved reports and download their PDFs. Check report availability again before making changes. Contact support if this continues.",
     };
   if (state.valuation === "setup_unavailable")
     return {
-      title: "Valuations are unavailable for this workspace",
-      body: "Ask your workspace administrator or contact support to finish valuation setup, then check again. Saved reports and PDF downloads remain available. Sharing still checks the saved report's source dates.",
+      title: "Valuations are unavailable for your account",
+      body: "Contact support to finish valuation setup, then check again. Saved reports and PDF downloads remain available. Sharing still checks the saved report's source dates.",
     };
   if (state.freshLookup === "zero_allowance")
     return {
       title: "New valuations need a lookup allowance",
-      body: "Ask your workspace administrator to arrange a valuation allowance. You can update saved loan details or create a report if a recent value for that address can be reused. No fresh lookup can run yet.",
+      body: "Contact support to arrange a valuation allowance for your account. You can update saved loan details or create a report if a recent value for that address can be reused. No fresh lookup can run yet.",
     };
   if (state.freshLookup === "allowance_exhausted")
     return {
       title: "This month's valuation allowance is used",
-      body: "New valuations can resume next month if your workspace allowance permits them. You can update saved loan details or create a report if a recent value for that address can be reused. Ask your workspace administrator if you need more lookups.",
+      body: "New valuations can resume next month if your account allowance permits them. You can update saved loan details or create a report if a recent value for that address can be reused. Contact support if you need more lookups.",
     };
   if (
     state.writeAccess === "unknown" ||

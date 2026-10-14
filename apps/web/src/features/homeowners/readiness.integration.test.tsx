@@ -62,15 +62,15 @@ describe("homeowner readiness without new provider authority", () => {
   it.each([
     [
       { ghlConnected: false, deliveryEnabled: true },
-      "HighLevel contact access is unavailable for this workspace.",
+      "HighLevel contact access is unavailable for your account.",
     ],
     [
       { ghlConnected: true, deliveryEnabled: false },
-      "HighLevel report delivery is unavailable for this workspace.",
+      "HighLevel report delivery is unavailable for your account.",
     ],
     [
       { ghlConnected: true, deliveryEnabled: true, canWrite: false },
-      "You have read-only access to this report.",
+      "HighLevel handoff is unavailable for your account.",
     ],
   ])(
     "explains an unavailable linked-report handoff without dispatching it",
@@ -207,7 +207,7 @@ describe("homeowner readiness without new provider authority", () => {
   it("keeps snapshot editing and sharing while valuation setup is unavailable", async () => {
     workspace = liveWorkspace(workspace.properties, { valuationConnected: false });
     render(<HomeownerWorkspace view="detail" propertyId={property.id} />);
-    expect(await screen.findByText("Valuations are unavailable for this workspace")).toBeVisible();
+    expect(await screen.findByText("Valuations are unavailable for your account")).toBeVisible();
     expect(screen.getByRole("button", { name: "Update loan details" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Share report" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Refresh value" })).toBeDisabled();
@@ -216,7 +216,9 @@ describe("homeowner readiness without new provider authority", () => {
   it("explains viewer access without offering report creation or changes", async () => {
     workspace = liveWorkspace(workspace.properties, { canWrite: false });
     render(<HomeownerWorkspace />);
-    expect(await screen.findByText("You have read-only report access")).toBeVisible();
+    expect(
+      await screen.findByText("Report changes are unavailable for your account"),
+    ).toBeVisible();
     expect(screen.queryByRole("link", { name: /Create.*report/u })).toBeNull();
     cleanup();
     render(<HomeownerWorkspace view="detail" propertyId={property.id} />);

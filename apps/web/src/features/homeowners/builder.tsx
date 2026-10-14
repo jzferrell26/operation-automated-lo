@@ -181,9 +181,9 @@ export function HomeReportBuilder({
       </header>
       {!demo && !createHomeReportAvailable(data.workspace) ? (
         <p className={styles.note}>
-          You can prepare the report details now. Report creation needs confirmed workspace access
-          and valuation setup. Ask your workspace administrator or contact support, then check
-          again.
+          You can prepare the report details now. Report creation needs confirmed account access and
+          valuation setup. Check report availability again. Contact support if creation remains
+          unavailable.
         </p>
       ) : null}
       <nav className={styles.builderSteps} aria-label="Report creation progress">
@@ -210,7 +210,7 @@ export function HomeReportBuilder({
                       ? "Enter an address to retrieve its estimated value, range and comparable listings. A HighLevel connection is not required."
                       : demo
                         ? "Choose a fictional sample contact to try the complete workflow."
-                        : "Search the existing contacts in this workspace's HighLevel location."}
+                        : "Search the contacts in your connected HighLevel account."}
                   </p>
                 </div>
                 <Select
@@ -397,7 +397,7 @@ export function HomeReportBuilder({
                 <p className={styles.note}>
                   {demo
                     ? "This creates a fictional sample report on this device. No paid valuation is requested."
-                    : "Creating a report may use one valuation lookup from your workspace allowance. Viewing and downloading saved reports do not request a new valuation."}
+                    : "Creating a report may use one valuation lookup from your account allowance. Viewing and downloading saved reports do not request a new valuation."}
                 </p>
               </>
             )}
@@ -482,7 +482,7 @@ export function HomeReportBuilder({
           <small>
             {demo
               ? "Sample data is fictional and stays on this device."
-              : "Live reports stay within your authenticated workspace."}
+              : "Live reports stay within your signed-in account."}
           </small>
         </aside>
       </div>

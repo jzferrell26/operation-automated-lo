@@ -217,7 +217,20 @@ describe("report actions", () => {
     expect(screen.getByLabelText("Private report link")).toHaveValue(url);
   });
 
-  it("lets an owner remove a failed first lookup and keeps viewer roles read-only", async () => {
+  it("requires removal confirmation and denies changes when account access is unavailable", async () => {
+    const savedReportUser = await openReport();
+    await savedReportUser.click(screen.getByRole("button", { name: "Remove property" }));
+    const savedReportDialog = screen.getByRole("dialog");
+    expect(savedReportDialog).toHaveTextContent("all saved report history and its share links");
+    expect(savedReportDialog).toHaveTextContent("stops its scheduled updates");
+    expect(savedReportDialog).toHaveTextContent("does not delete the HighLevel contact");
+    expect(savedReportDialog).toHaveTextContent("erase recorded lookup usage");
+    expect(savedReportDialog).toHaveTextContent("recall downloaded copies");
+    const removeSaved = within(savedReportDialog).getByRole("button", { name: "Remove property" });
+    expect(removeSaved).toBeDisabled();
+    await savedReportUser.click(removeSaved);
+    expect(mocked.post).not.toHaveBeenCalled();
+    cleanup();
     property.reports = [];
     property.lastError = "VALUATION_NOT_FOUND";
     const user = await openReport();
@@ -236,6 +249,7 @@ describe("report actions", () => {
     workspace.canWrite = false;
     await openReport();
     expect(screen.queryByRole("button", { name: "Remove property" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Create a report" })).not.toBeInTheDocument();
   });
 
   it("rejects an overlapping mutation before dispatch and releases the guard after a failure", async () => {

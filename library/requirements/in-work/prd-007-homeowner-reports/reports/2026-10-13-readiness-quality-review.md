@@ -223,3 +223,78 @@ This delta inventory is relative to `140a3e...`. Quality appended only this repo
 - `tests/visual/screens/review/homeowners--empty-account--390--light.png` (M): whole approved canonical frame.
 - `tests/visual/screens/review/homeowners--empty-account--768--dark.png` (M): whole approved canonical frame.
 - `tests/visual/screens/review/homeowners--empty-account--768--light.png` (M): whole approved canonical frame.
+
+## Single loan officer direction: fresh source Quality review
+
+**Plan document:** `library/requirements/in-work/prd-007-homeowner-reports/single-lo-owner-direction-2026-10-13.md`
+**Audit date:** 2026-10-13
+**Base:** `d0a8bc539470f7edfc13babf10f6d4fd1954120c`
+**Head:** `codex/homeowner-readiness`, eight uncommitted source/test files and accepted owner-direction record
+**Auditor:** quality-guardian
+**Ordering:** The completed Single loan officer Security appendix precedes this review. All nine source/document SHA-256 values independently match its frozen pins.
+
+### Summary
+
+PASS for the bounded single-LO wording and control delta, with no new implementation finding. The account notices, confirmed removal explanation and unavailable-action controls match the owner's direction while preserving internal authentication and account authority. Cleared for a source commit; fresh twelve-frame inspection, canonical acceptance, final CI and release qualification remain OPEN.
+
+### Scorecard
+
+| Category | Status | Notes |
+| --- | --- | --- |
+| Completeness | ✅ | Every homeowner requirement of the accepted direction is traced below; webinar implementation is outside this assigned delta. |
+| Correctness | ✅ | Independent 32 integration and 51 unit tests pass; unchanged removal storage agrees with the revised explanation. |
+| Alignment | ✅ | Customer instructions use their account and support, without a separate administrator or role configuration. |
+| Gaps | ⚠️ | Fresh rendered captures and final CI are still required; broader retained-audit and automatic retention policy evidence remain open. |
+| Detrimental | ✅ | Server diff changes exactly two refusal literals; quotas, connections, schemas, ownership, consent and provider checks remain intact. |
+
+### Critical Issues (must fix)
+
+None in this frozen source delta.
+
+### Warnings (should fix)
+
+Existing HR-PROOF and HR-PR qualification remain OPEN. The browser source now expects the corrected account heading at `tests/browser/review/homeowner-readiness.spec.ts:154,162`, but this reviewer did not execute or approve new browser images. Final CI and fresh twelve-frame review must qualify this source before a ship verdict. The parent-reported successful run `38485526367` belongs to the preceding `d0a8bc5` head and is not current-delta proof.
+
+No new source warning. L-15 remains a broader retention/export/audit qualification: this review checks manual removal wording and source semantics, without inventing an automatic deletion interval or claiming cancellation of already-running provider work.
+
+### Suggestions (consider improving)
+
+None within the assigned delta.
+
+### Plan Item Traceability
+
+| Item | Requirement | Result | Implementation and evidence |
+| --- | --- | --- | --- |
+| Direction: contacts / L-5 | All connected-account contacts, without per-user ownership or team visibility configuration | ✅ | `builder.tsx:213` accurately describes the connected account. Unchanged `apps/web/src/server/homeowners/highlevel.ts:113-142,154-167` sends the verified connection location, projects every contact and rejects foreign locations. Search is query/page limited, not a claim to fetch every contact at once. Adapter tests independently pass. |
+| Direction: balances and management / L-16 | The LO can view their own balances, add and remove reports; no second user or configurable role required | ✅ | `workspace.tsx:436-445,506-562,661-837` uses existing account capabilities and report actions. `runtime.ts:57-78` preserves internal principal authority, with no new reviewer or role-setup step. Independent report-action/readiness integration checks cover retained balance input, permitted cached creation, share access and confirmed removal. Legacy refusal fixtures remain internal security tests. |
+| Direction: isolation and provider limits | Preserve authentication, account isolation, connection authorization, provider allowances, consent and revocation | ✅ | Exact server diff at `runtime.ts:77,93` changes only text. Unchanged `runtime.ts:68-106,130-149` binds principal and connected location, then checks paid-provider flags/allowlist. `packages/db/src/homeowner-repository.ts:508-518` deletes with authenticated location and property ID. Independent settings, adapter, service and scheduler tests pass. |
+| Direction: product language | Own-account setup/support; no separate workspace administrator or team-role instructions | ✅ | `readiness.ts:34-57`, `builder.tsx:184-187`, `workspace.tsx:594-628,756-757,920-928` provide account recheck/support explanations. A scoped search of non-test homeowner TSX found no administrator, workspace-owner or customer role instructions; ARIA role attributes remain appropriate. |
+| Direction: unavailable actions | Preserve denial checks without offering creation when account write access is unavailable | ✅ | New `workspace.tsx:441-443` guard hides the failed-first-lookup create link under existing `canWrite`. `report-actions.integration.test.tsx:249-252` checks that both removal and creation controls are absent when that capability is false. No server privilege was granted. |
+| Direction: explicit removal | Explain report history, shares and schedule removal; preserve contact and usage | ✅ | `workspace.tsx:453-476,798-837` keeps confirmation and states the effects. New `report-actions.integration.test.tsx:220-247` verifies the text, disabled unconfirmed submission, no dispatch and confirmed failed-lookup deletion. Unchanged delete schema at `http.ts:79-85` requires literal confirmation. |
+| Direction: removal semantics | Report/share objects and future schedule selection end; usage records remain and downloads cannot be recalled | ✅ for source | Scoped property deletion at `homeowner-repository.ts:508-518`, cascade references at `supabase/migrations/20260924010000_homeowner_reports.sql:57,76,101,114,131`, retained usage at `84-90` and scheduler selection at `187-201` support the copy. Existing PostgreSQL isolation/deletion/share tests were inspected, not executed here. Download recall is expressly disclaimed at `workspace.tsx:800`. |
+| Direction: export and retention / L-15 | Preserve manual removal; no invented automatic interval or compliance claim | ✅ for delta; broader audit OPEN | No retention job, schema, export implementation or provider call changed. `workspace.tsx:800` distinguishes saved objects from usage and downloaded copies. The direction record's Retention and evidence section correctly leaves broader obligations unresolved. |
+| Direction: beyond homeowners | Webinar preparation/review follows the same single-LO model | 🟦 | Outside this eight-file homeowner source assignment. No webinar acceptance is inferred from this report. |
+| Evidence requirements | Prove source behavior, keep fresh visual/CI qualification separate | ✅ for source; rendering/CI OPEN | Independent checks and frozen pins below. No source, baseline, database, live contact or provider mutation performed by Quality. |
+
+### Independent verification
+
+- `pnpm exec vitest run --project integration` against readiness, refusal-message and report-action integration files: **3 files, 32 tests passed**. The invocation also named a nonexistent `forms.integration.test.tsx` filter; Vitest discovered only the three listed actual files. No forms-file execution is credited. Ignored evidence: `test-results/single-lo-quality-integration.log`.
+- `pnpm exec vitest run --project unit` against adapter, settings-fault, readiness, service and scheduler unit files: **5 files, 51 tests passed**. Ignored evidence: `test-results/single-lo-quality-unit.log`.
+- Independent diff inventory, scoped customer-language search and `git diff --check` passed. All eight source/test files and the direction record match the Security SHA-256 pins: builder `2ff6c3f4...`, readiness integration `60e0c5f4...`, readiness `0085fb81...`, refusal integration `9d37b4b8...`, report-action integration `0471747b...`, workspace `58c8b70e...`, runtime `5ba28a71...`, browser spec `5f8a93b6...`, direction `24b335dd...`. Full hashes remain in the preceding Security appendix.
+- Inspected the unchanged real PostgreSQL isolation, retained-usage, share and scheduler tests and supporting SQL. No local PostgreSQL, browser server, provider request, live report removal or hosted qualification was executed by this reviewer.
+
+### Files Changed
+
+Inventory is relative to `d0a8bc5`; Quality owns only this appendix. No source or baseline edits were made.
+
+- `apps/web/src/features/homeowners/builder.tsx` (M): own-account setup, connected contacts and allowance text.
+- `apps/web/src/features/homeowners/readiness.integration.test.tsx` (M): corrected account explanations, with original authority assertions retained.
+- `apps/web/src/features/homeowners/readiness.ts` (M): account recheck/support notices without a separate administrator.
+- `apps/web/src/features/homeowners/refusal-messages.integration.test.tsx` (M): exact updated refusal and setup-state text checks.
+- `apps/web/src/features/homeowners/report-actions.integration.test.tsx` (M): removal-effect/confirmation assertions and unavailable creation-control check.
+- `apps/web/src/features/homeowners/workspace.tsx` (M): account terminology, explicit removal effects and failed-lookup create-link guard.
+- `apps/web/src/server/homeowners/runtime.ts` (M): exactly two refusal message literals; existing checks unchanged.
+- `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-10-13-readiness-quality-review.md` (M): this fresh Quality appendix.
+- `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-10-13-readiness-security-review.md` (M): preceding independent Security clearance and source pins.
+- `library/requirements/in-work/prd-007-homeowner-reports/single-lo-owner-direction-2026-10-13.md` (A): root-owned accepted direction and retained-policy limits.
+- `tests/browser/review/homeowner-readiness.spec.ts` (M): two expected-heading literals; geometry and browser safeguards unchanged.

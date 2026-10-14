@@ -29,6 +29,10 @@ export type UserMessage = Readonly<{
  * pair.
  */
 export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Object.freeze({
+  INVALID: {
+    what: "Some report details are missing or have changed.",
+    whatToDo: "Open the saved report, check its details and try again.",
+  },
   DESTINATION_UNAVAILABLE: {
     what: "This published webinar could not be confirmed.",
     whatToDo:

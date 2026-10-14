@@ -1,8 +1,5 @@
 import { financingSourceFixture } from "../../../../packages/db/test/financing-release-fixture.mjs";
-import {
-  canonicalCampaignHash as hash,
-  calculateFinancingComparison,
-} from "../../../../packages/application/dist/index.js";
+import { canonicalCampaignHash as hash, calculateFinancingComparison } from "@oalo/application";
 
 export function outputFixture(count = 1, images = []) {
   const source = financingSourceFixture({

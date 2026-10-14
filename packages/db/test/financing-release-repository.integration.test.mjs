@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { describe, it } from "node:test";
+import { afterEach, describe, it } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import {
   prepareFinancingRelease,
@@ -36,42 +36,128 @@ import {
 } from "./financing-release-fixture.mjs";
 
 const databaseUrl = requiredTestDatabaseUrl();
-async function fixture(lifetime) {
+if (!/^\/oalo_test_[a-z0-9_]{1,40}$/u.test(new URL(databaseUrl).pathname))
+  throw new Error(
+    "Financing fixture cleanup requires an explicitly disposable oalo_test_ database",
+  );
+const ownedFixtureClosers = new Set();
+afterEach(async () => {
+  const failures = [];
+  for (const close of ownedFixtureClosers) {
+    try {
+      await close();
+    } catch (error) {
+      failures.push(error);
+    }
+  }
+  if (failures.length) throw new AggregateError(failures, "Owned financing fixture cleanup failed");
+});
+async function fixture(lifetime, sharedPool) {
   const tenant = tenantFixture("finrelease", randomUUID().replaceAll("-", "").slice(0, 10));
-  const pool = testPool(databaseUrl);
-  let principal = principalFixture(tenant, "location_admin");
-  await seedTenant(pool, tenant, "Synthetic financing release");
-  const binding = await withMigrationOwnerTransaction(pool, (connection) =>
-    connection.execute(
-      request(
-        "test.finance-current-role",
-        "select platform.current_role_version($1::uuid,$2::uuid,'location_admin') as role_version",
-        [tenant.locationId, tenant.actorId],
-      ),
-    ),
-  );
-  principal = { ...principal, roleVersion: Number(binding.rows[0].role_version) };
-  const source = financingSourceFixture(principal, lifetime);
-  await createPostgresCampaignVersionRepository(pool, {
-    resolveTenantDatabaseContext: async () => tenant,
-  }).run(async (tx) => {
-    await tx.append(source.sourceVersion);
-  });
-  const repository = new PostgresFinancingReleaseRepository(
-    pool,
-    principal,
-    tenant.correlationId,
-    cryptoFixture(),
-  );
-  return {
-    pool,
-    principal: { actorRef: principal.actorRef, locationRef: principal.locationRef },
-    tenant,
-    source,
-    repository,
-    ports: releasePorts(repository, source),
-    prepare: prepareRequest(source),
+  const pool = sharedPool ?? testPool(databaseUrl);
+  let seeded = false,
+    retired = false,
+    closed = false,
+    bindingId;
+  const displayName = "Synthetic financing release";
+  const close = async () => {
+    if (closed) return;
+    try {
+      if (seeded && !retired) {
+        await withMigrationOwnerTransaction(pool, async (connection) => {
+          if (bindingId === undefined) {
+            const binding = await connection.execute(
+              request(
+                "test.finance-owned-binding",
+                "select id from platform.role_bindings where location_id=$1::uuid and user_id=$2::uuid and role='location_admin'",
+                [tenant.locationId, tenant.actorId],
+              ),
+            );
+            assert.equal(binding.rows.length, 1);
+            bindingId = binding.rows[0].id;
+          }
+          for (const [name, text, values, expectedId] of [
+            [
+              "location",
+              "update platform.locations set status='deleted' where id=$1::uuid and display_name=$2::text returning id",
+              [tenant.locationId, displayName],
+              tenant.locationId,
+            ],
+            [
+              "actor",
+              "update platform.app_users set status='deleted' where id=$1::uuid and safe_display_name=$2::text returning id",
+              [tenant.actorId, displayName],
+              tenant.actorId,
+            ],
+            [
+              "binding",
+              "update platform.role_bindings set revoked_at=coalesce(revoked_at,clock_timestamp()) where id=$1::uuid and location_id=$2::uuid and user_id=$3::uuid returning id",
+              [bindingId, tenant.locationId, tenant.actorId],
+              bindingId,
+            ],
+          ]) {
+            const result = await connection.execute(
+              request(`test.finance-retire-${name}`, text, values),
+            );
+            assert.equal(result.rows.length, 1);
+            assert.equal(result.rows[0].id, expectedId);
+          }
+        });
+        retired = true;
+      }
+    } finally {
+      closed = true;
+      ownedFixtureClosers.delete(close);
+      if (sharedPool === undefined) await pool.close();
+    }
   };
+  try {
+    let principal = principalFixture(tenant, "location_admin");
+    await seedTenant(pool, tenant, displayName);
+    seeded = true;
+    ownedFixtureClosers.add(close);
+    const binding = await withMigrationOwnerTransaction(pool, (connection) =>
+      connection.execute(
+        request(
+          "test.finance-current-role",
+          "select id,platform.current_role_version($1::uuid,$2::uuid,'location_admin') as role_version from platform.role_bindings where location_id=$1::uuid and user_id=$2::uuid and role='location_admin' and revoked_at is null",
+          [tenant.locationId, tenant.actorId],
+        ),
+      ),
+    );
+    assert.equal(binding.rows.length, 1);
+    bindingId = binding.rows[0].id;
+    principal = { ...principal, roleVersion: Number(binding.rows[0].role_version) };
+    const source = financingSourceFixture(principal, lifetime);
+    await createPostgresCampaignVersionRepository(pool, {
+      resolveTenantDatabaseContext: async () => tenant,
+    }).run(async (tx) => {
+      await tx.append(source.sourceVersion);
+    });
+    const repository = new PostgresFinancingReleaseRepository(
+      pool,
+      principal,
+      tenant.correlationId,
+      cryptoFixture(),
+    );
+    return {
+      pool,
+      close,
+      principal: { actorRef: principal.actorRef, locationRef: principal.locationRef },
+      tenant,
+      source,
+      repository,
+      ports: releasePorts(repository, source),
+      prepare: prepareRequest(source),
+    };
+  } catch (error) {
+    try {
+      await close();
+    } catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], "Financing fixture setup and cleanup failed");
+    }
+    throw error;
+  }
 }
 async function admitted(f) {
   for (const [kind, proof] of sourceEvidence(f.source))
@@ -150,12 +236,71 @@ async function anotherPrivateSource(f) {
   await f.repository.saveSource(source);
   return { source, ports: releasePorts(f.repository, source), prepare: prepareRequest(source) };
 }
-// Fixtures intentionally remain in this disposable oalo_test_ database until the gate drops it.
+// Immutable source/release evidence remains until the disposable gate drops this database.
 // No new test receives trigger/role bypass capabilities or a hosted database URL.
 describe("public financing PostgreSQL persistence", { concurrency: false }, () => {
+  it("retired fixture close affects only its exact identities and preserves immutable release evidence", async () => {
+    const pool = testPool(databaseUrl);
+    const f = await admitted(await fixture(undefined, pool));
+    const other = await admitted(await fixture(undefined, pool));
+    try {
+      const publishedRecord = await published(f);
+      await f.close();
+      const first = await ownerSql(
+        f,
+        "test.finance-owned-close",
+        "select id,status from platform.locations where id in ($1::uuid,$2::uuid)",
+        [f.tenant.locationId, other.tenant.locationId],
+      );
+      assert.equal(first.rows.find((row) => row.id === f.tenant.locationId).status, "deleted");
+      assert.equal(first.rows.find((row) => row.id === other.tenant.locationId).status, "active");
+      const versions = await ownerSql(
+        f,
+        "test.finance-retained-source",
+        "select count(*)::integer as total from campaign.campaign_versions where location_id=$1::uuid",
+        [f.tenant.locationId],
+      );
+      assert.equal(versions.rows[0].total, 1);
+      const evidence = await ownerSql(
+        f,
+        "test.finance-retained-admissions",
+        "select count(*)::integer as total from campaign.financing_release_evidence where location_id=$1::uuid",
+        [f.tenant.locationId],
+      );
+      assert.equal(evidence.rows[0].total, sourceEvidence(f.source).length);
+      const release = await ownerSql(
+        f,
+        "test.finance-retained-release",
+        "select release_ref from campaign.financing_releases where location_id=$1::uuid",
+        [f.tenant.locationId],
+      );
+      assert.equal(release.rows[0].release_ref, publishedRecord.snapshot.releaseRef);
+      const principal = await ownerSql(
+        f,
+        "test.finance-retired-principal",
+        "select u.status,r.revoked_at from platform.app_users u join platform.role_bindings r on r.user_id=u.id where u.id=$1::uuid and r.location_id=$2::uuid",
+        [f.tenant.actorId, f.tenant.locationId],
+      );
+      assert.equal(principal.rows[0].status, "deleted");
+      assert.ok(principal.rows[0].revoked_at instanceof Date);
+      await assert.rejects(f.repository.transaction(f.principal.locationRef, async () => {}));
+      await other.close();
+      const remaining = await ownerSql(
+        f,
+        "test.finance-both-retired",
+        "select count(*)::integer as total from platform.locations where id in ($1::uuid,$2::uuid) and status='active'",
+        [f.tenant.locationId, other.tenant.locationId],
+      );
+      assert.equal(remaining.rows[0].total, 0);
+    } finally {
+      await other.close();
+      await f.close();
+      await pool.close();
+    }
+  });
   it("raw anonymous SQL cannot widen a legitimate scope by clearing/replacing flags or forging tenant/actor context", async () => {
     const f = await admitted(await fixture()),
-      foreign = await admitted(await fixture());
+      foreign = await admitted(await fixture(undefined, f.pool));
     try {
       const live = await published(f),
         foreignLive = await published(foreign),
@@ -305,8 +450,8 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
       );
       assert.equal(unchanged.deliveryState, "pending");
     } finally {
-      await foreign.pool.close();
-      await f.pool.close();
+      await foreign.close();
+      await f.close();
     }
   });
   it("forged anonymous settings without a scope, expired scope and prior-transaction scope cannot authorize reads", async () => {
@@ -357,7 +502,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
       });
       assert.equal(await findPublicFinancingRelease(f.pool, ...contextArgs), null);
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("refuses setup without independently admitted evidence and binds exact existing campaign version", async () => {
@@ -371,7 +516,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
       changed.sourceVersion.manifestHash = hash(changed.sourceVersion.manifest);
       await assert.rejects(f.repository.saveSource(changed), { code: "INELIGIBLE" });
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("strict verifier service dedupes exact records, refuses conflicting provenance, and runtime cannot admit", async () => {
@@ -412,12 +557,12 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
       );
       assert.equal(result.rows[0].allowed, false);
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("persists prepare, exact retry, self approval and publication with foreign tenant/host refusal", async () => {
     const f = await admitted(await fixture()),
-      foreign = await fixture();
+      foreign = await fixture(undefined, f.pool);
     try {
       const record = await release(f);
       assert.deepEqual(await release(f), record);
@@ -458,8 +603,8 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
         { code: "CONFLICT" },
       );
     } finally {
-      await foreign.pool.close();
-      await f.pool.close();
+      await foreign.close();
+      await f.close();
     }
   });
   it("rolls back a partially reserved operation and saved record after a later failure", async () => {
@@ -490,7 +635,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
         { state: "new" },
       );
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("serializes concurrent same-key preparation and resumes original publication after serialization refusal", async () => {
@@ -513,7 +658,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
       );
       assert.equal(count.rows[0].count, 1);
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("CAS refuses stale independent approvals and immutable snapshot replacement", async () => {
@@ -532,7 +677,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
         { code: "CONFLICT" },
       );
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("withdrawn quote denies previously successful preparation retry, public lookup and new capture", async () => {
@@ -565,7 +710,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
         "revoked",
       );
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("locks admitted evidence while capture work runs, then withdrawal denies the next operation", async () => {
@@ -604,7 +749,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
         { code: "INELIGIBLE" },
       );
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("server-clock expiry during transaction work prevents committing the operation", async () => {
@@ -628,7 +773,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
       );
       assert.equal(count.rows[0].count, 0);
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("encrypted inquiry, original receipt and delivery operation commit atomically and changed content conflicts", async () => {
@@ -691,7 +836,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
         { code: "INELIGIBLE" },
       );
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("revocation retains owner unexpired export and stops anonymous access", async () => {
@@ -715,7 +860,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
         null,
       );
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("anonymous capture resolves exact owner without a synthetic session and has no private command capability", async () => {
@@ -760,7 +905,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
       );
       assert.deepEqual(permissions.rows[0], { authorize: false, raw: false });
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("new qualified evidence revision withdraws the previous source while retaining its history", async () => {
@@ -801,7 +946,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
       );
       assert.deepEqual(history.rows[0], { total: 2, withdrawn: 1 });
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("exports exactly the latest 1000 unexpired actual encrypted captures in deterministic order", async () => {
@@ -864,7 +1009,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
       const clean = await purgeExpiredMarketingInquiries(f.pool);
       assert.ok(clean.total <= 25000 && clean.total === clean.funnel + clean.financing);
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("expires access before bounded physical purge and retains sanitized delivery tombstone", async () => {
@@ -898,7 +1043,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
       );
       assert.deepEqual(retained.rows[0], { pii: 0, audit: 1 });
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
   it("bounds each physical purge to 5000 expired ciphertext rows", async () => {
@@ -939,7 +1084,7 @@ describe("public financing PostgreSQL persistence", { concurrency: false }, () =
       );
       assert.equal(second.rows[0].count, 1);
     } finally {
-      await f.pool.close();
+      await f.close();
     }
   });
 });

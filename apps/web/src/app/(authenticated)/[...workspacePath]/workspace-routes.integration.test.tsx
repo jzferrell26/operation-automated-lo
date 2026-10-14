@@ -84,12 +84,13 @@ describe("009F-AC-003: the addresses that stay still serve their page", () => {
   });
 });
 
-describe("009F-AC-004: Settings is one page with three cards", () => {
-  it("names Account, Connections with HighLevel and Meta, and where new leads go in HighLevel", async () => {
+describe("009F-AC-004 and domain setup: Settings keeps its core cards alongside Domains", () => {
+  it("names Domains, Account, Connections with HighLevel and Meta, and where new leads go in HighLevel", async () => {
     await open("/settings");
 
     const cards = screen.getAllByRole("heading", { level: 2 });
     expect(cards.map((card) => card.textContent)).toEqual([
+      "Domains",
       "Account",
       "Connections",
       "Where new leads go in HighLevel",
@@ -105,6 +106,7 @@ describe("009F-AC-004: Settings is one page with three cards", () => {
       "/settings/account",
       "/settings/billing",
       "/settings/connections",
+      "/settings/domains",
       "/settings/routing",
     ]);
     const account = screen.getByRole("heading", { name: "Account" }).closest("section")!;

@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { expect, type Page } from "@playwright/test";
+import { captureSuccessfulReviewSignIn } from "./signin-session.js";
 
 /**
  * PRD-006c D9. The shared machinery for the review specs: the typing model, the sign-up and sign-in
@@ -240,4 +241,5 @@ export async function signInExisting(page: Page, email: string, password: string
     await page.getByRole("button").first().click();
     await page.waitForURL("**/overview");
   }
+  await captureSuccessfulReviewSignIn(page, email);
 }

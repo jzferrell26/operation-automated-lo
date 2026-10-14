@@ -1,0 +1,317 @@
+[
+  {
+    "id": "webinar-first-home-plan",
+    "version": 1,
+    "status": "pending-review",
+    "name": "Your first home, a clear plan",
+    "goal": "planning",
+    "learningConnection": "Matches the webinar's personal buying plan and practical next steps.",
+    "headline": "Your first home starts with a clear plan.",
+    "primaryText": "Explore the homebuying journey in a first-time homebuyer webinar. Learn what to ask, what to prepare and how to build a plan around your goals.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-first-home-plan/v1/tall.png",
+        "sha256": "a5206e5f702f236502bab3d433fbff9177217e113b02ecb67395aa51c16c5e0e"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-first-home-plan/v1/square.png",
+        "sha256": "d389111051ee5cd10fec2993eb47453dbc8a2ef39d24325d7b2c11d66b4e8e45"
+      },
+      "alt": "Your first home. Your next step. A clearer plan. First-time homebuyer webinar, with an original house illustration."
+    }
+  },
+  {
+    "id": "webinar-renting-next-chapter",
+    "version": 1,
+    "status": "pending-review",
+    "name": "From renting to a buying plan",
+    "goal": "planning",
+    "learningConnection": "Matches the live webinar's renting-to-homeownership offer without promising qualification.",
+    "headline": "Thinking about a move beyond renting?",
+    "primaryText": "Learn how to turn homebuying questions into practical next steps. This first-time homebuyer webinar covers planning, preparation and the path toward a home of your own.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-renting-next-chapter/v1/tall.png",
+        "sha256": "5ece63e683cd18b0972b024e18b80b082879ad11e7993c2813923d666a1112bc"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-renting-next-chapter/v1/square.png",
+        "sha256": "d0e9f422a7baf09f37dbfcf24b620fa68fe476fcc739461eefecb406832c162a"
+      },
+      "alt": "A new chapter starts with a buying plan. First-time homebuyer webinar, with an original key illustration."
+    }
+  },
+  {
+    "id": "webinar-questions-first",
+    "version": 1,
+    "status": "pending-review",
+    "name": "Bring the questions",
+    "goal": "planning",
+    "learningConnection": "Matches the webinar's invitation to bring real homebuying questions.",
+    "headline": "Homebuying questions? Start here.",
+    "primaryText": "A first-time homebuyer webinar that makes room for the questions people ask before buying. Explore the process and prepare for a useful conversation about your next move.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-questions-first/v1/tall.png",
+        "sha256": "57c16b930f4a34c7e26c72505aa453e5585964339977b15b50ac707dbe24772e"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-questions-first/v1/square.png",
+        "sha256": "fbca3b6aa69e1b650ddeb17dab5319dcd03d3f1a4696effbf29a9b06026ff6c6"
+      },
+      "alt": "Big questions. Clearer next steps. First-time homebuyer webinar, with an original chat illustration."
+    }
+  },
+  {
+    "id": "webinar-budget-beyond-price",
+    "version": 1,
+    "status": "pending-review",
+    "name": "Look beyond the purchase price",
+    "goal": "budget",
+    "learningConnection": "Matches the webinar's distinction between purchase price, housing budget and cash to close.",
+    "headline": "A homebuying budget is more than a price tag.",
+    "primaryText": "Explore the difference between a purchase price, a housing budget and the cash needed to close. Get a clearer starting point in a first-time homebuyer webinar.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-budget-beyond-price/v1/tall.png",
+        "sha256": "1238a58e78b979ea0bc112f2a3465058112e8657b2b284aba6e33b1e01a337eb"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-budget-beyond-price/v1/square.png",
+        "sha256": "f476caf41ac1bf7f1c78e8b9dfdcf7193875c9fdfebe2a7a512b7e2c20ebdba9"
+      },
+      "alt": "Look beyond the price tag. First-time homebuyer webinar, with an original checklist illustration."
+    }
+  },
+  {
+    "id": "webinar-cash-to-close",
+    "version": 1,
+    "status": "pending-review",
+    "name": "Understand cash to close",
+    "goal": "budget",
+    "learningConnection": "Matches the webinar's explanation of upfront costs and cash needed for closing.",
+    "headline": "What belongs in a homebuying budget?",
+    "primaryText": "Down payment questions are a starting point. Learn which other costs to discuss and what cash to close means in a first-time homebuyer webinar. Build a better list of questions before you buy.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-cash-to-close/v1/tall.png",
+        "sha256": "b8a678b622bb09376369524d57a00f0f6d5e65919b9616d5e22b428998a3f8dd"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-cash-to-close/v1/square.png",
+        "sha256": "8b2d3954ae05d737160dd4e44ae141afc6a66e82848cb2c30ba129837cee970c"
+      },
+      "alt": "The down payment is a starting point. First-time homebuyer webinar, with an original folder illustration."
+    }
+  },
+  {
+    "id": "webinar-budget-your-life",
+    "version": 1,
+    "status": "pending-review",
+    "name": "A budget that fits your goals",
+    "goal": "budget",
+    "learningConnection": "Matches personal planning and the webinar's housing-budget learning outcome.",
+    "headline": "Start with your goals. Then explore the budget.",
+    "primaryText": "Your homebuying plan begins with what matters to you. Explore housing-budget questions and the buying process in a first-time homebuyer webinar, then prepare for a conversation about your situation.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-budget-your-life/v1/tall.png",
+        "sha256": "041512dc8102650559c8dbefc4a029465253c2476e2b1b07830678b4af529fe6"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-budget-your-life/v1/square.png",
+        "sha256": "71aba1ff51a00f042c0b09b2ff5e392e3dda7c4ae738d8e218bbd06f05a8800f"
+      },
+      "alt": "Your priorities. Your buying plan. First-time homebuyer webinar, with an original house illustration."
+    }
+  },
+  {
+    "id": "webinar-credit-questions",
+    "version": 1,
+    "status": "pending-review",
+    "name": "Make space for credit questions",
+    "goal": "credit",
+    "learningConnection": "Matches the webinar's credit-question education, without promising a score change or approval.",
+    "headline": "Make room for your credit questions.",
+    "primaryText": "Explore the questions to ask about credit as you prepare for homebuying. A first-time homebuyer webinar can help you organize your next steps before a personal mortgage conversation.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-credit-questions/v1/tall.png",
+        "sha256": "5e0a6d204bbdadcf35ba7765c1e05c449c25ea1c9575a2b9bf9e80c45296502d"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-credit-questions/v1/square.png",
+        "sha256": "dc5889044c847d0cafb7d530ebfed374e0c08833924d5a08f1cca63e4a5719b9"
+      },
+      "alt": "Credit questions belong in the conversation. First-time homebuyer webinar, with an original chat illustration."
+    }
+  },
+  {
+    "id": "webinar-credit-preparation",
+    "version": 1,
+    "status": "pending-review",
+    "name": "Prepare before the application",
+    "goal": "credit",
+    "learningConnection": "Matches the webinar's preparation before preapproval and individual credit questions.",
+    "headline": "A useful next step before you apply.",
+    "primaryText": "Learn what to prepare and which credit questions to bring to a mortgage conversation. Explore the homebuying process in an educational webinar. A loan application is a separate step.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-credit-preparation/v1/tall.png",
+        "sha256": "cea2b15ee0d1cfe780a6227bb436f761766ec9f75446fbe13d4aa0c2cb33d035"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-credit-preparation/v1/square.png",
+        "sha256": "23441546a98cc58727b0f5e5c76c4431a45a46fa0533f220dde29c92afdea908"
+      },
+      "alt": "Before you apply, get your questions organized. First-time homebuyer webinar, with an original checklist illustration."
+    }
+  },
+  {
+    "id": "webinar-credit-next-step",
+    "version": 1,
+    "status": "pending-review",
+    "name": "Questions before assumptions",
+    "goal": "credit",
+    "learningConnection": "Matches the webinar's credit education and guidance to discuss individual circumstances.",
+    "headline": "Start with questions, then explore your options.",
+    "primaryText": "Homebuying preparation is personal. Explore credit questions, planning and the process in a first-time homebuyer webinar. Leave with topics to discuss about your own situation.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-credit-next-step/v1/tall.png",
+        "sha256": "092ef7eb994540b9759fe7269730a520a92b7dae243822165d0c9ff297356b02"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-credit-next-step/v1/square.png",
+        "sha256": "5d4b67e3e5b68233a6e34c4ed64ef7ff5a89cb66b0a9c03a488dc6dfbcd02977"
+      },
+      "alt": "More clarity. Fewer assumptions. First-time homebuyer webinar, with an original compass illustration."
+    }
+  },
+  {
+    "id": "webinar-preapproval-explained",
+    "version": 1,
+    "status": "pending-review",
+    "name": "Understand preapproval",
+    "goal": "preapproval",
+    "learningConnection": "Matches the webinar's explanation of the process from preapproval to closing.",
+    "headline": "What does preapproval actually mean?",
+    "primaryText": "Explore where preapproval fits in the buying process, what to prepare and which questions to ask. Get a clearer picture in a first-time homebuyer webinar. Eligibility requires an individual review.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-preapproval-explained/v1/tall.png",
+        "sha256": "0800c4eeb7d713164a5b03de34f8bdc86402c1156964785daf6d5eaf882e048a"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-preapproval-explained/v1/square.png",
+        "sha256": "b6b2707953e54fe208a03763616cee2e01dc22e5930da09bb3133d13d21ffa14"
+      },
+      "alt": "Preapproval. Start with understanding. First-time homebuyer webinar, with an original folder illustration."
+    }
+  },
+  {
+    "id": "webinar-before-home-search",
+    "version": 1,
+    "status": "pending-review",
+    "name": "Before the home search",
+    "goal": "preapproval",
+    "learningConnection": "Matches the webinar's preparation for the first mortgage conversation and making an offer.",
+    "headline": "Before the home search, build your plan.",
+    "primaryText": "Learn how a mortgage conversation fits into the homebuying journey. Explore preparation, preapproval and making an offer in a first-time homebuyer webinar, without a promise of loan approval.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-before-home-search/v1/tall.png",
+        "sha256": "eb1d9226c4180796fd50c837ad02da19d5bab52d89a82a15e38be8a89dc84abf"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-before-home-search/v1/square.png",
+        "sha256": "71aa1aedb3bfcef7425fc31b6bb08ccbc887993fb88357d88b5814b253b1edd9"
+      },
+      "alt": "Before the search, start with a plan. First-time homebuyer webinar, with an original house illustration."
+    }
+  },
+  {
+    "id": "webinar-paperwork-path",
+    "version": 1,
+    "status": "pending-review",
+    "name": "Make sense of preparation",
+    "goal": "preapproval",
+    "learningConnection": "Matches the webinar's next steps and preparation for a personal mortgage discussion.",
+    "headline": "Make sense of the steps before buying.",
+    "primaryText": "A clearer process starts with knowing what to ask. Explore homebuying preparation and the role of preapproval in an educational webinar, then prepare for a conversation tailored to your circumstances.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-paperwork-path/v1/tall.png",
+        "sha256": "62815b5265deb8f4acd3072756f0a52b83237447fc287042b2abccce5d1535a8"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-paperwork-path/v1/square.png",
+        "sha256": "89178497e8bc98448b1f38c8a173b9372905c276ef2e12d08bed535b42893ca7"
+      },
+      "alt": "From questions to preparation to a plan. First-time homebuyer webinar, with an original checklist illustration."
+    }
+  },
+  {
+    "id": "webinar-path-to-closing",
+    "version": 1,
+    "status": "pending-review",
+    "name": "See the path to closing",
+    "goal": "closing",
+    "learningConnection": "Matches the webinar's walkthrough from the first mortgage conversation to closing.",
+    "headline": "See the path from questions to closing.",
+    "primaryText": "Explore how the homebuying process fits together, from a mortgage conversation to making an offer and preparing for closing. Learn the steps in a first-time homebuyer webinar.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-path-to-closing/v1/tall.png",
+        "sha256": "b73589bc8529bfa32b353bafc4f6672927013e70aeff52a5dc1871ab5332fe9b"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-path-to-closing/v1/square.png",
+        "sha256": "ea155cdd03364cbf0c91e820f5a083e5f847b78ecafa53d9a95ba9846ca55775"
+      },
+      "alt": "Understand the journey to closing. First-time homebuyer webinar, with an original key illustration."
+    }
+  },
+  {
+    "id": "webinar-offer-to-keys",
+    "version": 1,
+    "status": "pending-review",
+    "name": "From an offer toward the keys",
+    "goal": "closing",
+    "learningConnection": "Matches the webinar's offer and closing preparation, without a guaranteed outcome.",
+    "headline": "What happens after making an offer?",
+    "primaryText": "Homebuying includes more than the home search. Explore the questions to ask about the steps toward closing in a first-time homebuyer webinar and prepare for a more informed conversation.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-offer-to-keys/v1/tall.png",
+        "sha256": "cb761935ae1eb78581a8327b1684245d768062d51fa004a048998d715397238e"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-offer-to-keys/v1/square.png",
+        "sha256": "d46226dc5fee75d8311a3741eba3044a6e81a6f6f632f87c75d0ce32b38a8e33"
+      },
+      "alt": "The offer is part of the journey. First-time homebuyer webinar, with an original calendar illustration."
+    }
+  },
+  {
+    "id": "webinar-closing-checklist",
+    "version": 1,
+    "status": "pending-review",
+    "name": "Prepare for the final steps",
+    "goal": "closing",
+    "learningConnection": "Matches the webinar's cash-to-close education and understanding what happens before closing day.",
+    "headline": "Make the closing process less unfamiliar.",
+    "primaryText": "Explore what to discuss before closing, including cash to close and the steps along the way. A first-time homebuyer webinar helps you prepare questions for your own buying journey.",
+    "art": {
+      "tall": {
+        "path": "/webinar-ads/webinar-closing-checklist/v1/tall.png",
+        "sha256": "3f6493b1ddd6b2a80c6a3fdc99f2a72bc47cf93c19d02a6489e25c3dbd0a4c78"
+      },
+      "square": {
+        "path": "/webinar-ads/webinar-closing-checklist/v1/square.png",
+        "sha256": "020025447a924c207e847aff4c4dbb1d90ee1c8326c64fbe3eff1d7d396769e9"
+      },
+      "alt": "Closing day starts with preparation. First-time homebuyer webinar, with an original compass illustration."
+    }
+  }
+]

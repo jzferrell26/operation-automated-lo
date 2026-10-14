@@ -148,3 +148,108 @@ No changed pixel falls in the shell header. All changed regions are confined to 
 - A separate real Chromium isolated DOM probe ran the exact new geometry helper against the HEAD and corrected notice CSS, real token and button styles, two notice copies and both themes at 390. All four old-style cases were RED (98.14px text beside 203.86px action in that isolated Arial fixture); all four corrected cases were GREEN (318px full text column, action below copy with the existing 16px gap). This probe has no seeded shell, database or hosted-provider claim and does not replace fresh product captures.
 
 Only the two specifically authorized source files and this report were changed. No baseline, ledger, contract, workflow, permission, provider configuration, commit, push or deployment was performed. Independent Security then fresh Quality and new actual twelve-frame capture are required before closing UX-R01's rendered status or HR-PROOF.
+
+## Single-LO current-head visual qualification, October 14 UTC
+
+Target commit: `64954db7061554bed1494aed3068a0c04c17ac4b`, draft PR #91. Governing owner direction: `single-lo-owner-direction-2026-10-13.md`, Required behavior. It requires account/loan-officer language without a separate workspace administrator or configurable product roles. The existing Design Brief sections 14, 15 and 18 and homeowner report screen spec remain the visual authority.
+
+**PASS for the twelve actual current-head readiness/refusal images. UX-R01 is now CLOSED in rendered evidence.** Individually opened eight zero-allowance detail originals in both themes at all four widths and four setup-unavailable originals captured in Dark. Source folder: `test-results/homeowner-single-lo-ci-review/homeowner-readiness/`. The report estimates, debts, dates and RentCast label are synthetic API fixtures inside a real seeded authenticated shell; they are not licensed provider or live customer evidence.
+
+At 390px in Light and Dark, the allowance notice's explanatory copy fills the approximately 318px content column at x=36 through x=354, around y=111 through y=253. Check report availability appears below it at approximately x=36, y=274, with its 44px target. The former compressed one-word strip is gone. The setup-unavailable notice likewise gives the copy the full column and places its action below around y=253. Both states clearly state the account limitation, contact-support remedy, and retained saved-report/PDF or cached-value behavior. The property title, saved history, download, print, share, revision and schedule controls remain visible below the notice; disabled fresh refresh and standalone HighLevel handoff have adjacent truthful explanations. All twelve originals preserve readable report figures, assumptions, source dates and account wording without clipped or covered controls.
+
+Source governing these changes: `apps/web/src/features/homeowners/readiness.ts:34-57` supplies account/support titles and explanations. `workspace.tsx:908-929` changes the empty-account subtitle/title/body while preserving the shared EmptyState and one existing availability action. `homeowners.module.css:819-830` supplies the scoped mobile notice stack introduced for UX-R01; it is unchanged by the single-LO copy commit. `builder.tsx:182-187`, `:213` and `:400` use account/contact/allowance language. `workspace.tsx:623-629`, `:756` and `:800` supply corresponding account, delivery and explicit removal scope. The removal confirmation is source-inspected only, not exercised or captured by these twelve images.
+
+Observed static axes 1 (hierarchy), 2 (spacing), 3 (typography), 7 (responsive composition), 8 (both themes) and 10 (product consistency) support 3 for these twelve scoped frames. This supersedes the earlier mobile score of 1 for UX-R01. Existing semantic color/contrast checks and browser axe evidence remain separately attributed; no new numerical contrast measurement was run here. Hover, focus traversal, all dialogs, reduced motion, print, actual report mutation and full D9 remain outside this capture verdict.
+
+### Exactly eight canonical originals approved
+
+**APPROVE only the eight whole `homeowners--empty-account--{1440,1180,768,390}--{light,dark}.png` originals pinned below in `test-results/homeowner-single-lo-canonical/`.** Independently opened each and its currently tracked counterpart in `tests/visual/screens/review/`, sixteen individual images. No other canonical candidate is approved by this review.
+
+The intended changes are the shorter account subtitle, Set up homeowner reports title and single-LO support/setup body. The one Check report availability button remains. At 768 and 390 the shorter body moves the button/card lower edge upward by one text line. All frames keep readable text, the existing light/dark card treatment, spacing and one next action. No unrelated header, account-control, navigation or background drift was seen.
+
+Independently decoded both versions with Sharp into raw RGBA and measured every changed pixel. Dimensions match for every pair; zero changed pixels occur in each shell header. The bounds below include all anti-alias differences and the intended tablet/mobile card-edge movement. These are raw exact counts, not Playwright's thresholded comparison counts. No image bytes were transformed, composited, copied or edited.
+
+| Exact approved filename | Dimensions | Changed pixels | Changed bounds (x,y through x,y) | Header pixels changed |
+| --- | --- | ---: | --- | ---: |
+| homeowners--empty-account--1180--dark.png | 1180x900 | 12821 | 52,146 through 1126,323 | 0 |
+| homeowners--empty-account--1180--light.png | 1180x900 | 12730 | 52,146 through 1126,323 | 0 |
+| homeowners--empty-account--1440--dark.png | 1440x900 | 12821 | 172,146 through 1246,323 | 0 |
+| homeowners--empty-account--1440--light.png | 1440x900 | 12730 | 172,146 through 1246,323 | 0 |
+| homeowners--empty-account--390--dark.png | 390x844 | 26566 | 14,138 through 375,470 | 0 |
+| homeowners--empty-account--390--light.png | 390x844 | 26000 | 15,138 through 374,469 | 0 |
+| homeowners--empty-account--768--dark.png | 768x1024 | 36209 | 30,199 through 737,483 | 0 |
+| homeowners--empty-account--768--light.png | 768x1024 | 35300 | 31,199 through 736,482 | 0 |
+
+### Execution provenance and boundaries
+
+Parent identifies canonical workflow `38491866451` as successful in both jobs at the target commit. Parent identifies CI `38491869012`: Application/release pass, pgTAP and 295 route cases pass, four readiness browser cases pass, with the aggregate failing only the intended stale empty-account baseline. Read the retained `test-results/homeowner-single-lo-ci-failed.log`, which records the empty-account screenshot failure, 130 preceding browser cases passing and four readiness cases passing in 54.4 seconds. This report does not call that pre-replacement aggregate green. No tests, browser, server, provider or hosted deployment were rerun by this reviewer.
+
+These eight exact images may proceed to the root's bounded whole-original baseline copy, followed by independent Security and fresh Quality hash rechecks and current-head CI. This review performs no copy or commit. Full customer acceptance, licensed valuation, reports against a live connected account, print/share/removal execution, retention/export audit and entire-project completion remain unestablished.
+
+### Current-head individually inspected originals
+
+Paths in the first twelve rows are relative to `test-results/homeowner-single-lo-ci-review/homeowner-readiness/`. The final eight rows are relative to `test-results/homeowner-single-lo-canonical/` and are the only approved replacement originals.
+
+| Original | Dimensions | SHA-256 |
+| --- | --- | --- |
+| readiness-1180-Dark.png | 1180x2713 | 1547f4450723a5a181fd86a94f72893ed7e52eb8cc3412b952ceaa706ab769ef |
+| readiness-1180-Light.png | 1180x2713 | 3eb72e17bb1f6d4ab9583185f0221738c1407ad5eb9b53e9bd50f53a5bbb3c5c |
+| readiness-1440-Dark.png | 1440x2729 | 0ecb5a1091550f2f1015e8b6323a2629db2be80052026b06dbe3c734057bc069 |
+| readiness-1440-Light.png | 1440x2729 | 4cfe91f92bc8ad8fc8496a82e1d84d78d58973aab1b60671d51776939d06dd24 |
+| readiness-390-Dark.png | 390x4103 | 293b36d99039ad5da2be09a426711d0b86084362a1a0cb27a604a61dee5d89bd |
+| readiness-390-Light.png | 390x4103 | 84d715e900aa7279bd594fc89358d525b7da2d054790d46977b903b0791afa85 |
+| readiness-768-Dark.png | 768x2990 | efd483c41151ddd7d1cd145ada25f1cd8311c731d7a24b7993f513e8cbd7f1a5 |
+| readiness-768-Light.png | 768x2990 | 54c017db4da452466c109058e7519fdd44dc6bf7d003c5bc43846e46671acc23 |
+| setup-unavailable-1180.png | 1180x2713 | 625844e14026328883c1a0c2e0b688f56125582e9836061d8bda9ff829f771b2 |
+| setup-unavailable-1440.png | 1440x2729 | f7276167d98734ca579ec5a7484793357c4069a856dc741c9b6dd2310ab656c9 |
+| setup-unavailable-390.png | 390x4082 | ce67ac0773f47f51272c1de62357ef14f8844f7ccf2e6e1ea8c1dfdfc2cfbff7 |
+| setup-unavailable-768.png | 768x2969 | e23741a679e4a0e36f0c30fa7516b409be7d2bb4274ceb15870330a8691a535b |
+| homeowners--empty-account--1180--dark.png | 1180x900 | 49e758097b6026fffc8bd98c3dac303e195ddf37ffca4402f32ab4e34290c271 |
+| homeowners--empty-account--1180--light.png | 1180x900 | 910271c010532c5e71e28cc569f84c1679fb5012f767754543e8fe1ea2d976dd |
+| homeowners--empty-account--1440--dark.png | 1440x900 | 1f245abbae88d41b2a8d717cb1538763257a865a5bcdca18aa8a01bdc640c7a2 |
+| homeowners--empty-account--1440--light.png | 1440x900 | e39067ed33ff4d09ca18e7e5f3f716c38bae8a9517d6f4dcc1f0747657306914 |
+| homeowners--empty-account--390--dark.png | 390x844 | bf9a3e687bdae837466cd696acfd8a463a01e81e913f2a43127fb41996d7e187 |
+| homeowners--empty-account--390--light.png | 390x844 | 715b8f404d7e57871d8714623dfdd47ca10aaa094d1442d74adc6743986a8e71 |
+| homeowners--empty-account--768--dark.png | 768x1024 | f7d16da1d1493b279848c1e18d4e830d4792c8d7d28c920ac47194e5d63a1b6a |
+| homeowners--empty-account--768--light.png | 768x1024 | 1d3d5234f3af69d34f5dc3f2cc134d982b0182824101c0f582d2ec4c6fb11bff |
+
+### Tracked counterpart pins before replacement
+
+| Tracked filename | SHA-256 |
+| --- | --- |
+| homeowners--empty-account--1180--dark.png | 0a579ae3fad21526931c723177ab5a0d85135691cf0c7d2f6082b5dbc99debdc |
+| homeowners--empty-account--1180--light.png | 410994023490bffcf19d0e7356e393e9111a2941a829e478e2d0cf460fd60ab4 |
+| homeowners--empty-account--1440--dark.png | d484b2dcc97121e05fa55890f42c51bf02fae607ac2d2614c68b0c17d9f870ec |
+| homeowners--empty-account--1440--light.png | fdfdd2c11be4211258e9d8128ab7f6758a2a7364921e703dbcdffd65eb915c62 |
+| homeowners--empty-account--390--dark.png | 4a872fb681fd0f515cb8f40276e0aa020f3dea68d492c0d294dea425ee666ad9 |
+| homeowners--empty-account--390--light.png | 86ca230618558dad3b0fc1b32065f8055740c16db251c184cdf895e517fb8f65 |
+| homeowners--empty-account--768--dark.png | 4aa069d6b8f819eb22bc3c8777339f0d143aacf4c84c83690a2e2e61a1be6f90 |
+| homeowners--empty-account--768--light.png | 0ec60d8192b81df2de4be38def0fc09f12b4f9a1ed9286336f21e6afed7d3eaf |
+
+
+### Inspected source pins at this review
+
+| Source | SHA-256 |
+| --- | --- |
+| apps/web/src/features/homeowners/readiness.ts | 0085fb811ab3d78e6396901311a3fb0a89fdbf079f80bb01bab6ddab737ebab8 |
+| apps/web/src/features/homeowners/workspace.tsx | 58c8b70e7502e12c035c298d112b28a9d0ff58341c5a3489198726439c6f1f82 |
+| apps/web/src/features/homeowners/builder.tsx | 2ff6c3f4d426f16ed9d594e136d7434fb51e99f06e0fa44c1b133d1b0a17f341 |
+| apps/web/src/features/homeowners/homeowners.module.css | 3dd2f7b1fee53d4df95ba628fb0c17422fec8eab890f19f560f9fdd73b6d67ff |
+| apps/web/src/server/homeowners/runtime.ts | 5ba28a71c875bad136e34c0eb55c5cb02b67a440e74f7af829b36ebfb224fa6f |
+| tests/browser/review/homeowner-readiness.spec.ts | 5f8a93b69273e098435115192a1410a29bda66e215cb5163e16289fd5eea2f76 |
+| library/requirements/in-work/prd-007-homeowner-reports/single-lo-owner-direction-2026-10-13.md | 24b335dd36675180a4d78b6fc691e77e59869356902dca5ffc98a69dd1a8aa6c |
+
+### CI attribution correction, October 13, 2026
+
+The preceding single-LO visual qualification incorrectly attributed `4 passed (54.4s)` to the homeowner readiness cases. That aggregate belongs to the separate real-catalog first-impression suite in `test-results/homeowner-single-lo-ci-failed.log:2448-2453`, with cases from `tests/browser/review/real-catalog/first-impression.spec.ts:150-181`.
+
+The actual four homeowner readiness cases are recorded in `test-results/homeowner-single-lo-ci-failed.log:2262-2265`. Each invokes `tests/browser/review/homeowner-readiness.spec.ts:57:3` and passes:
+
+| Log line | Viewport width | Result | Individual case duration |
+| --- | --- | --- | --- |
+| 2262 | 1440px | PASS | 17.5s |
+| 2263 | 1180px | PASS | 17.6s |
+| 2264 | 768px | PASS | 17.2s |
+| 2265 | 390px | PASS | 17.1s |
+
+These are individual case durations; this correction makes no homeowner suite aggregate-time claim. It preserves the original trace history, source and image hash pins, bounded synthetic-fixture qualification, visual verdict, and approval of exactly eight canonical originals. Only the CI evidence attribution is corrected. No source, baseline, frame, test execution, or acceptance criterion changed.

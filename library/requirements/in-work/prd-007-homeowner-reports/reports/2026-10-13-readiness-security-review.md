@@ -220,3 +220,39 @@ Paths in the first six rows are under `apps/web/src/features/homeowners/`.
 | single-lo-owner-direction-2026-10-13.md | 24b335dd36675180a4d78b6fc691e77e59869356902dca5ffc98a69dd1a8aa6c |
 
 Cleared for fresh Quality with zero unresolved Medium-or-higher security findings. No source, baseline or provider modification was made by this reviewer. Only this assigned report was appended. The orchestrator retains fresh visual/CI and repository-health checks before release qualification.
+
+## Single-LO final baseline integrity cycle, October 14 UTC
+
+**PASS. No Critical, High, Medium or Low finding detected in this bounded image/report delta. Cleared for fresh Quality.** This cycle follows source Security and source Quality at `64954db7061554bed1494aed3068a0c04c17ac4b`; those historical source passes do not qualify the new screenshot bytes. Fresh image Quality is required after this review. `library/qa` is absent. No source remediation was required or performed.
+
+Scope is exactly eight whole empty-account baseline PNG replacements and the independently authored UX qualification appendix. Earlier source Security pins remain unchanged for all nine pinned implementation/test/owner-direction files. The readiness CSS pin also agrees with the current UX/source review. No additional baseline, runtime, test, permission, database, workflow, dependency, provider configuration or ledger change was present on entry. This reviewer appends only this report and writes ignored integrity evidence.
+
+### Independent provenance and exact image verification
+
+Queried GitHub directly: Screen baselines run `38491866451` completed successfully in both Synthetic screens and Account screens jobs at exactly the source head above. Its unexpired `screen-baselines-review` artifact is ID `11863506507`, digest `sha256:64cd5ab7757ea5bb60533339298fee09e3f54c36db64b4e65b328ee8b6a47116`. Independently downloaded the artifact into `test-results/homeowner-final-security-canonical`, separate from the root and UX copies.
+
+Every destination under `tests/visual/screens/review/` is byte-for-byte identical to the corresponding independent artifact PNG and the UX-approved SHA-256. The UX report itself matches the assigned frozen hash `590c5071ee0982471c5d1bab0a542df5829c343c3be10cf6b15aec33b0fcc991`. Exactly eight PNGs were changed; no other baseline was copied. All eight decode successfully, retain their original dimensions, have valid PNG chunk bounds and CRCs, contain only IHDR/IDAT/IEND chunks, and terminate exactly at IEND. No ancillary EXIF, text, XMP, metadata or appended payload was found.
+
+Independent raw RGBA comparisons against the tracked HEAD images reproduce every changed-pixel count and bound in the UX table: 12821/12730 at 1180 and 1440, 26566/26000 at 390 and 36209/35300 at 768 (Dark/Light). Every comparison reports zero changed header pixels. Changed regions stay within the intended account subtitle and setup explanation/card layout. Opened the independently downloaded 390 Light and 1440 Dark originals; both show the seeded synthetic empty account, with no property financial figures, credentials, tokens or real customer record. UX retains ownership of all-eight visual acceptance and the separate twelve-frame detail/refusal acceptance.
+
+| Exact replacement filename | SHA-256 |
+| --- | --- |
+| homeowners--empty-account--1180--dark.png | 49e758097b6026fffc8bd98c3dac303e195ddf37ffca4402f32ab4e34290c271 |
+| homeowners--empty-account--1180--light.png | 910271c010532c5e71e28cc569f84c1679fb5012f767754543e8fe1ea2d976dd |
+| homeowners--empty-account--1440--dark.png | 1f245abbae88d41b2a8d717cb1538763257a865a5bcdca18aa8a01bdc640c7a2 |
+| homeowners--empty-account--1440--light.png | e39067ed33ff4d09ca18e7e5f3f716c38bae8a9517d6f4dcc1f0747657306914 |
+| homeowners--empty-account--390--dark.png | bf9a3e687bdae837466cd696acfd8a463a01e81e913f2a43127fb41996d7e187 |
+| homeowners--empty-account--390--light.png | 715b8f404d7e57871d8714623dfdd47ca10aaa094d1442d74adc6743986a8e71 |
+| homeowners--empty-account--768--dark.png | f7d16da1d1493b279848c1e18d4e830d4792c8d7d28c920ac47194e5d63a1b6a |
+| homeowners--empty-account--768--light.png | 1d3d5234f3af69d34f5dc3f2cc134d982b0182824101c0f582d2ec4c6fb11bff |
+
+### Security categories and execution limits
+
+- Authentication, authorization, tenant isolation and financial/PII exposure: none detected in the scoped delta. Prior reviewed source hashes are unchanged. PNGs carry no executable or ancillary payload; the inspected seeded empty-account views expose no report balance or customer record.
+- Injection, secrets, transport, storage and provider configuration: none detected in this delta. No executable source or configuration changed. No new data access, persistent cache, consent authority or paid-provider request is introduced by baseline replacement.
+- Dependencies and supply chain: no dependency or lockfile change. Provenance is the current-head GitHub workflow and its independently downloaded artifact; this cycle does not repeat or extend the earlier application dependency/CVE audit.
+- Remediation/re-evaluation: none required. `git diff --check` passed, source pins matched and the exact changed-file scope was checked before appending this report. No broad test or build was run for this image-only cycle.
+
+Independently read CI run `38491869012`: overall failure at the same source head; Application verification and Release and recovery contract passed, Preview smoke was skipped, and the combined PostgreSQL/browser job failed. The parent and UX log inspection attribute the successful pgTAP/295 PostgreSQL routes and four readiness browser cases to that job and its failure to the stale empty-account comparisons. Those component executions were not rerun here, and this pre-replacement aggregate is not described as green.
+
+Machine evidence is retained in ignored `test-results/homeowner-final-security-png-verification.json` with all eight dimensions, hashes, chunks, exact pixel counts/bounds and nine source pins. Actual provider behavior, live customer data, production report setup, customer acceptance, deletion/export/retention qualification and whole-project completion remain outside this image integrity clearance. The orchestrator retains fresh Quality, current-head CI and repository-health/mergeability checks before release qualification.

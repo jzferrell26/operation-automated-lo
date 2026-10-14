@@ -298,3 +298,102 @@ Inventory is relative to `d0a8bc5`; Quality owns only this appendix. No source o
 - `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-10-13-readiness-security-review.md` (M): preceding independent Security clearance and source pins.
 - `library/requirements/in-work/prd-007-homeowner-reports/single-lo-owner-direction-2026-10-13.md` (A): root-owned accepted direction and retained-policy limits.
 - `tests/browser/review/homeowner-readiness.spec.ts` (M): two expected-heading literals; geometry and browser safeguards unchanged.
+
+## Single-LO final baseline packet: fresh Quality, October 14 UTC
+
+**Plan documents:** `HOMEOWNER_READINESS_LEDGER.md`, HR-ACTIONS, HR-READS, HR-DESTINATION, HR-PROOF, HR-SECURITY, HR-QUALITY and HR-PR; `single-lo-owner-direction-2026-10-13.md`, Required behavior and Retention and evidence.
+**Audit date:** 2026-10-14 UTC
+**Base/head:** `64954db7061554bed1494aed3068a0c04c17ac4b`, `codex/homeowner-readiness`, with eight uncommitted whole-PNG replacements and review/ledger appendices.
+**Auditor:** fresh quality-guardian context
+**Ordering:** The final baseline Security appendix at `2026-10-13-readiness-security-review.md:224` precedes this review and clears the exact image packet. No security remediation or implementation change intervened.
+
+### Summary
+
+PASS for the bounded source and canonical baseline packet, with zero new implementation findings. Exactly eight tracked replacements match the current-head canonical artifact copies, all twelve UX-accepted readiness/refusal originals match their pinned hashes, and all nine prior source/direction pins plus the readiness CSS remain unchanged. Cleared for the root's bounded commit; final new-head CI and release/hosted qualification remain OPEN.
+
+### Scorecard
+
+| Category | Status | Notes |
+| --- | --- | --- |
+| Completeness | PASS for packet | All eight authorized empty-account variants are present; twelve current detail/refusal frames have independent UX acceptance. |
+| Correctness | PASS | Exact image hashes, decoded dimensions, pixel counts and bounds agree with the canonical/UX/Security evidence. |
+| Alignment | PASS | Single-LO account wording is visible in the approved originals; no extra baseline, source or authority change is present. |
+| Gaps | OPEN final qualification | Prior-head aggregate CI failed on the stale intended baseline. It cannot qualify a future committed head. |
+| Detrimental | PASS for packet | Whole original images preserve unrelated header pixels and leave reviewed source, safeguards and configuration untouched. |
+
+### Critical Issues (must fix)
+
+None in this frozen packet. UX-R01 is closed in rendered current-head evidence, as independently recorded by UX at `2026-10-13-readiness-ux-review.md:156-162`; the old rejected mobile images no longer govern this packet.
+
+### Warnings (should fix)
+
+No new implementation warning. HR-PROOF and HR-PR retain their final CI/release qualification limits. The parent-owned ledger now records inspected captures and baseline provenance, but the corrected final committed head must obtain its own aggregate CI result and current-main mergeability check. Licensed valuation, live connected-account operation, monthly/provider delivery, customer acceptance, retention/export/removal qualification and full D9 remain unestablished.
+
+Evidence clarification: the UX appendix's attribution of four readiness cases to a 54.4-second summary is imprecise. `test-results/homeowner-single-lo-ci-failed.log:2448-2453` belongs to the separate real-catalog four-case suite. The actual four homeowner-readiness cases pass at `:2262-2265`, at 1440, 1180, 768 and 390px respectively (17.5s, 17.6s, 17.2s and 17.1s). This correction changes neither the verified readiness pass nor the twelve-frame acceptance. It is communicated to the parent; Quality does not edit the UX-owned report.
+
+### Suggestions (consider improving)
+
+None within this packet.
+
+### Plan Item Traceability
+
+| Item | Requirement | Result | Implementation/evidence and limit |
+| --- | --- | --- | --- |
+| HR-ACTIONS / HR-DESTINATION | Accurate account/support next action without role administration | PASS | Source pins for `readiness.ts`, `workspace.tsx`, `builder.tsx` and the accepted direction are unchanged. UX individually accepted account wording and one Check report availability action in all eight empty-account originals at `2026-10-13-readiness-ux-review.md:164-187`. |
+| HR-READS | Retain saved reports and permitted outputs in refusal/readiness states | PASS for existing reviewed source and rendered states | Four actual readiness cases passed at the current source head. Twelve retained detail/refusal hashes agree with the individually inspected UX originals. Figures are synthetic API fixtures in a seeded authenticated shell; actual provider or live customer behavior is not inferred. |
+| PRD-007 responsive item / UX-R01 | Give long mobile copy a readable column and action below | PASS, rendered defect closed | `homeowners.module.css:819-830` remains at the prior reviewed hash. `homeowner-readiness.spec.ts:25-51` still measures copy width, action position and shared starting edge. UX accepts all twelve current frames, including both zero-allowance themes and setup-unavailable at 390. |
+| Canonical scope | Replace only the eight approved whole actual PNGs | PASS | Exactly eight tracked PNG changes match root canonical and independently downloaded Security artifact copies and UX-approved hashes. Independent decode confirms dimensions and all changed-pixel bounds below; every pair has zero header drift. |
+| HR-PROOF | Trace actual current-head execution and retained evidence | PASS for recorded components; final aggregate OPEN | GitHub independently confirms both canonical jobs succeeded at `64954db`. CI `38491869012` passed Application and release checks; retained log shows successful pgTAP, 22 PostgreSQL files/295 cases, four readiness cases and 130 aggregate browser passes. The browser aggregate has one stale intended empty-account failure, so overall CI is failed. |
+| HR-SECURITY / HR-QUALITY | Fresh Security followed by fresh Quality | PASS for frozen packet | Latest Security appendix precedes this Quality review. All eight image hashes, nine source/direction hashes, CSS and the UX report hash independently match its evidence. |
+| HR-PR | Final required CI and current-main MERGEABLE status | OPEN | This reviewer performs no commit, push, workflow dispatch, merge or hosted deployment. A source-head canonical success cannot stand in for the new final-head aggregate. |
+| Non-goals / retained policies | Preserve internal isolation, provider limits and manual retention semantics | PASS for packet | No source, migration, dependency, workflow, role/permission, quota, consent, provider configuration or retention timer changed. Prior bounded source acceptance remains intact. Broader L-15 evidence remains open. |
+
+### Independent verification and exact pins
+
+Independently queried GitHub: canonical run `38491866451` is SUCCESS in both Synthetic screens and Account screens at `64954db7061554bed1494aed3068a0c04c17ac4b`. Its unexpired artifact `11863506507` is `screen-baselines-review`, digest `sha256:64cd5ab7757ea5bb60533339298fee09e3f54c36db64b4e65b328ee8b6a47116`. This reviewer compared files from the root and Security's independent download; Quality did not claim a third download.
+
+Independently queried CI `38491869012`: same source head, overall FAILURE, Application verification and Release and recovery contract SUCCESS, combined PostgreSQL/browser job FAILURE, Preview smoke SKIPPED. Inspected retained job log: pgTAP success at lines 1664-1777; 22 files and 295 PostgreSQL cases passed at 1932-1933; the four readiness passes at 2262-2265; only the intended stale empty-account comparison failed at 2435-2436, with 130 browser cases passed at 2438. A separate real-catalog suite passed four cases in 54.4 seconds at 2453. No execution is credited to this reviewer.
+
+Independent Node SHA-256 verification matched all eight tracked replacements against both actual canonical copies, all twelve UX-accepted frame files, all nine source/direction pins and the CSS pin. Independent Sharp raw RGBA comparison against the tracked HEAD reproduced each dimension, changed-pixel count, bound and zero header drift. These are decoded verification operations; no image bytes were rewritten or composited. `git diff --check` passed. No broad tests, browser server or production build were repeated for this PNG-only delta.
+
+| Approved tracked filename | Dimensions | SHA-256 | Changed pixels | Bounds (x,y through x,y) |
+| --- | --- | --- | ---: | --- |
+| homeowners--empty-account--1180--dark.png | 1180x900 | 49e758097b6026fffc8bd98c3dac303e195ddf37ffca4402f32ab4e34290c271 | 12821 | 52,146 through 1126,323 |
+| homeowners--empty-account--1180--light.png | 1180x900 | 910271c010532c5e71e28cc569f84c1679fb5012f767754543e8fe1ea2d976dd | 12730 | 52,146 through 1126,323 |
+| homeowners--empty-account--1440--dark.png | 1440x900 | 1f245abbae88d41b2a8d717cb1538763257a865a5bcdca18aa8a01bdc640c7a2 | 12821 | 172,146 through 1246,323 |
+| homeowners--empty-account--1440--light.png | 1440x900 | e39067ed33ff4d09ca18e7e5f3f716c38bae8a9517d6f4dcc1f0747657306914 | 12730 | 172,146 through 1246,323 |
+| homeowners--empty-account--390--dark.png | 390x844 | bf9a3e687bdae837466cd696acfd8a463a01e81e913f2a43127fb41996d7e187 | 26566 | 14,138 through 375,470 |
+| homeowners--empty-account--390--light.png | 390x844 | 715b8f404d7e57871d8714623dfdd47ca10aaa094d1442d74adc6743986a8e71 | 26000 | 15,138 through 374,469 |
+| homeowners--empty-account--768--dark.png | 768x1024 | f7d16da1d1493b279848c1e18d4e830d4792c8d7d28c920ac47194e5d63a1b6a | 36209 | 30,199 through 737,483 |
+| homeowners--empty-account--768--light.png | 768x1024 | 1d3d5234f3af69d34f5dc3f2cc134d982b0182824101c0f582d2ec4c6fb11bff | 35300 | 31,199 through 736,482 |
+
+Nine source/direction full hashes remain in Security's Frozen source pins table and independently verified `test-results/homeowner-final-quality-png-verification.json`. CSS SHA-256 is `3dd2f7b1fee53d4df95ba628fb0c17422fec8eab890f19f560f9fdd73b6d67ff`; browser spec SHA-256 is `5f8a93b69273e098435115192a1410a29bda66e215cb5163e16289fd5eea2f76`. UX report SHA-256 at verification is `590c5071ee0982471c5d1bab0a542df5829c343c3be10cf6b15aec33b0fcc991`. Pixel evidence is retained in `test-results/homeowner-final-quality-rgba-verification.json`.
+
+### Files Changed
+
+The bounded uncommitted packet relative to `64954db` comprises the following. Quality changes only its assigned report; root ownership of the ledger is preserved.
+
+- `HOMEOWNER_READINESS_LEDGER.md` (M): root-owned actual current-head execution and open final qualification checkpoint.
+- `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-10-13-readiness-quality-review.md` (M): this fresh Quality appendix.
+- `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-10-13-readiness-security-review.md` (M): independent final whole-image integrity clearance.
+- `library/requirements/in-work/prd-007-homeowner-reports/reports/2026-10-13-readiness-ux-review.md` (M): twelve current frames and exact eight-original acceptance.
+- `tests/visual/screens/review/homeowners--empty-account--1180--dark.png` (M): whole approved current-head canonical original.
+- `tests/visual/screens/review/homeowners--empty-account--1180--light.png` (M): whole approved current-head canonical original.
+- `tests/visual/screens/review/homeowners--empty-account--1440--dark.png` (M): whole approved current-head canonical original.
+- `tests/visual/screens/review/homeowners--empty-account--1440--light.png` (M): whole approved current-head canonical original.
+- `tests/visual/screens/review/homeowners--empty-account--390--dark.png` (M): whole approved current-head canonical original.
+- `tests/visual/screens/review/homeowners--empty-account--390--light.png` (M): whole approved current-head canonical original.
+- `tests/visual/screens/review/homeowners--empty-account--768--dark.png` (M): whole approved current-head canonical original.
+- `tests/visual/screens/review/homeowners--empty-account--768--light.png` (M): whole approved current-head canonical original.
+
+### Documentation correction pending at handoff
+
+The parent will hold the bounded commit until the UX owner appends the log-attribution correction identified above. Source/PNG integrity clearance is complete; final documentation-packet release awaits a short fresh hash/diff verification of that appendix. The UX report still has SHA-256 `590c5071ee0982471c5d1bab0a542df5829c343c3be10cf6b15aec33b0fcc991` at this handoff. Quality leaves the UX report untouched and preserves final-head CI and hosted qualification as OPEN.
+
+### Fresh documentation correction verification and packet release
+
+PASS. The UX owner's appended evidence correction is accurate: retained log lines 2262-2265 identify `homeowner-readiness.spec.ts:57:3` passing at 1440/1180/768/390px with individual 17.5/17.6/17.2/17.1-second durations. Lines 2448-2453 identify the separate `real-catalog/first-impression.spec.ts` suite and its four-case 54.4-second summary. The correction preserves historical text and makes no readiness aggregate-time claim.
+
+Independently verified the corrected UX report SHA-256 `66c682425d704204fbe584a5f3c12a31a75430f8f065915811e8c76918fdd815`. Rechecked all nine source/direction pins, the CSS pin, eight tracked PNGs and twelve retained frame hashes: all remain unchanged from this Quality packet. No tests, build, browser, image download, source or baseline edits were performed during this documentation-only follow-up. `git diff --check` passed.
+
+The documentation hold above is resolved. The bounded source/PNG/review packet is cleared for the root's commit with no new finding. CI `38491869012` remains a recorded failed aggregate; required final new-head CI, current-main mergeability and hosted/provider qualification remain OPEN. This release replaces only the earlier pending-documentation condition and does not grant a ship or full-product completion verdict.

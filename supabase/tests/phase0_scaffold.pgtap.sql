@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(30);
 
 create function pg_temp.assert_is(actual anyelement, expected anyelement, description text)
 returns text
@@ -91,9 +91,18 @@ select is(
         )
       )
   ),
-  31,
-  'the expected thirty-one tenant tables, including approved funnel publications, encrypted inquiries, financing media and revocations, are present'
+  39,
+  'the expected thirty-nine tenant tables, including eight public financing release and protected scope tables, are present'
 );
+
+select has_table('campaign', 'financing_release_evidence', 'authoritative public financing evidence is present');
+select has_table('campaign', 'financing_release_sources', 'immutable public financing sources are present');
+select has_table('campaign', 'financing_release_source_evidence', 'source evidence bindings are present');
+select has_table('campaign', 'financing_releases', 'public financing releases are present');
+select has_table('campaign', 'financing_release_public_scopes', 'protected public transaction scopes are present');
+select has_table('campaign', 'financing_release_operations', 'financing release operations are present');
+select has_table('campaign', 'financing_release_inquiries', 'temporary financing inquiries are present');
+select has_table('campaign', 'financing_release_delivery', 'financing inquiry delivery records are present');
 
 select has_table(
   'campaign',

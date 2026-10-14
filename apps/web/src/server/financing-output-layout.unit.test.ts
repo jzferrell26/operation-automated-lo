@@ -238,7 +238,8 @@ describe("versioned private financing output", () => {
       );
       expect(png).toBeDefined();
       const pixels = await sharp(media[1]!.bytes).removeAlpha().raw().toBuffer();
-      expect(Buffer.from(decodePDFRawStream(png!).decode())).toEqual(pixels);
+      // Compare all decoded bytes directly. Deep object equality enumerates 720,000 numeric keys.
+      expect(Buffer.from(decodePDFRawStream(png!).decode()).equals(pixels)).toBe(true);
       const { text } = readPdfText(pdf);
       for (const group of financingGroups(report.manifest))
         for (const row of group.rows) for (const value of row.values) expect(text).toContain(value);

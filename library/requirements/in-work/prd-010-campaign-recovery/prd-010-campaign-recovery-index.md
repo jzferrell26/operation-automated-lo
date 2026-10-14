@@ -75,3 +75,7 @@ Batch A is preparation, not a completed campaign and not a launch-ready product.
 - `apps/web/src/server/campaign-page-data.ts`: historical property campaigns currently lose their property context in the displayed projection.
 
 The three PRD-008 hosted migrations are unverified in repository records, not proven absent from the hosted database. Provider activation and hosted migration checks are separate from this local batch. No new production-ready claim follows from a passing local test.
+
+## Contract dependencies
+
+The new prepared webinar ad consumer pins [CTR-002](../../../knowledge/private/contracts/CTR-002-webinar-ad-destination.md), CTR-002 revision 2, accepted October 13, 2026. It governs tenant-owned publication binding, immutable ad evidence, branded output and actual tenant review. This contract adds engineering obligations and does not close lender, provider or owner acceptance.

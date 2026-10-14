@@ -1,5 +1,10 @@
 import { contractVersion } from "@oalo/contracts";
 export {
+  createWebinarPublicationRepository,
+  WebinarPublicationRowSchema,
+  type WebinarPublicationRow,
+} from "./webinar-publication-repository.js";
+export {
   PostgresHomeownerRepository,
   HomeownerStoreError,
   readSharedHomeReport,

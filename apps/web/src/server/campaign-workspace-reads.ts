@@ -29,6 +29,8 @@ import { packageSummary, readVerifiedPropertyPackage } from "./property-package-
 import { createFinancingMediaRuntime } from "./financing-media-runtime.js";
 import { resolveFinancingMedia } from "./financing-media-service.js";
 import { financingReportIsTextOnly } from "./financing-output-media.js";
+import { buildWebinarAdReview } from "./webinar-ad-read.js";
+import { createWebinarAdEvidencePort, webinarCurrentEvidence } from "./webinar-ad-evidence.js";
 
 export async function listWorkspaceCampaigns(
   principal: Readonly<AuthenticatedPrincipal>,
@@ -95,16 +97,24 @@ export async function listCampaignRows(
     adapter.readRepository.listForLocation(),
     loadAdsLibrary({ environment }),
   ]);
-  return sortCampaignListRows(
-    records.flatMap((record) => {
-      try {
-        return [buildCampaignListRow(record, principal, adapter.kind, library)];
-      } catch (error) {
-        if (error instanceof CampaignResourceNotAccessibleError) return [];
-        throw error;
-      }
-    }),
-  );
+  const rows: CampaignListRow[] = [];
+  for (const record of records) {
+    try {
+      projectCampaignWorkspace(record, principal, adapter.kind);
+      const current =
+        record.version.manifest.blueprintId === "webinar-ad"
+          ? await webinarCurrentEvidence(
+              record.version,
+              createWebinarAdEvidencePort(principal, environment),
+            )
+          : undefined;
+      rows.push(buildCampaignListRow(record, principal, adapter.kind, library, current));
+    } catch (error) {
+      if (error instanceof CampaignResourceNotAccessibleError) continue;
+      throw error;
+    }
+  }
+  return sortCampaignListRows(rows);
 }
 
 /**
@@ -233,6 +243,13 @@ export async function loadCampaignPage(
       loadAdsLibrary({ environment }),
       brandToCompare(principal, record.version, versionNo, environment),
     ]);
+    const shown = versions.find(
+      (item) => item.version.versionNo === (versionNo ?? record.version.versionNo),
+    );
+    const webinarReview =
+      shown?.version.manifest.blueprintId === "webinar-ad"
+        ? await buildWebinarAdReview(shown, principal, environment)
+        : undefined;
     const page = buildCampaignPage({
       record,
       versions,
@@ -241,6 +258,7 @@ export async function loadCampaignPage(
       library,
       ...(versionNo === undefined ? {} : { versionNo }),
       brand,
+      ...(webinarReview === undefined ? {} : { webinarReview }),
     });
     if (
       page?.kind === "financing-comparison" &&

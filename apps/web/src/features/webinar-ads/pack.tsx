@@ -76,6 +76,9 @@ export function WebinarAdsPack({ advertiser }: Readonly<{ advertiser: LaunchBand
             Original artwork and ready-to-edit words that match your webinar. Choose an angle,
             prepare your message and review it in your brand.
           </p>
+          <Link href="/marketing/campaigns/webinar" variant="action">
+            Prepare a saved webinar ad
+          </Link>
         </div>
         <Badge tone="warning">Pending review</Badge>
       </header>

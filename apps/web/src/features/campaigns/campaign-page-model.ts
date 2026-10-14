@@ -15,6 +15,7 @@ import type { CampaignApprovalControlsProps } from "./components/campaign-approv
 import type { LaunchBand } from "./launch-model.js";
 import type { PropertyPackagePanelState } from "../property-campaigns/package-model.js";
 import type { FinancingReportView } from "../financing/model.js";
+import type { WebinarAdReview } from "../../server/webinar-ad-read.js";
 
 /**
  * PRD-009e. What the two Campaigns pages are handed: plain data, already read under the session's
@@ -164,7 +165,14 @@ export interface FinancingCampaignPage extends CampaignPageCommon {
   readonly report: FinancingReportView;
   readonly canReuse: boolean;
 }
+export interface WebinarAdCampaignPage extends CampaignPageCommon {
+  readonly kind: "webinar-ad";
+  readonly review: WebinarAdReview;
+  readonly approvalControls: CampaignApprovalControlsProps | undefined;
+  readonly canMakeNewVersion: boolean;
+}
 export type CampaignPageData =
+  | WebinarAdCampaignPage
   | LibraryAdCampaignPage
   | EarlierFlowCampaignPage
   | PropertyPreparationCampaignPage

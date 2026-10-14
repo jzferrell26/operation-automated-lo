@@ -1,0 +1,118 @@
+.page,
+.stack,
+.header,
+.cardBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+.page {
+  gap: var(--space-6);
+}
+.page :where(h1, h2, h3, p, figure) {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.header h1 {
+  font-size: var(--text-page-size);
+}
+.page :where(h2, h3) {
+  font-size: var(--text-card-size);
+}
+.header p,
+.stack p,
+.cardBody p {
+  color: var(--tx-body);
+}
+.eyebrow {
+  font-size: var(--text-caption-size);
+  font-weight: var(--weight-semibold);
+  color: var(--st-info-fg) !important;
+}
+.note {
+  font-size: var(--text-secondary-size);
+}
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.creative {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  block-size: 100%;
+  overflow: hidden;
+}
+.cardBody {
+  padding: var(--space-5);
+}
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+fieldset.stack {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.facts {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+}
+.facts > div {
+  display: grid;
+  gap: var(--space-2);
+}
+.facts dt {
+  font-size: var(--text-secondary-size);
+  color: var(--tx-body);
+}
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.raster {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  max-inline-size: 27rem;
+  border-radius: var(--radius-card);
+}
+.images {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-5);
+}
+.images figure {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+@media (max-width: 63.99rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 47.99rem) {
+  .grid,
+  .images {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

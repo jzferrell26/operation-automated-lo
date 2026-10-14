@@ -1,0 +1,131 @@
+import { WebinarAdCampaignManifestSchema } from "@oalo/contracts";
+import type { WebinarAdCampaignPage } from "../campaigns/campaign-page-model.js";
+
+/** Synthetic frozen DTO for React behavior only. Hashes are not raster verification evidence. */
+export function webinarReviewFixture(): WebinarAdCampaignPage {
+  const campaignRef = "campaign_webinar001",
+    campaignVersionRef = "campaignversion_webinar001";
+  const publicationId = "00000000-0000-4000-8000-000000000801";
+  const manifest = WebinarAdCampaignManifestSchema.parse({
+    schemaVersion: 1,
+    blueprintId: "webinar-ad",
+    requestHash: "1".repeat(64),
+    template: {
+      id: "webinar-first-home-plan",
+      version: 1,
+      goal: "planning",
+      sourceHash: "2".repeat(64),
+      tallSha256: "3".repeat(64),
+      squareSha256: "4".repeat(64),
+      rightsBasis: "platform-original",
+    },
+    destination: {
+      publicationId,
+      kind: "live-webinar",
+      sourceRevision: "00000000-0000-4000-8000-000000000802",
+      publisherActorRef: "principal_example001",
+      snapshotHash: "a".repeat(64),
+      publicUrl: "https://example.test/f/" + publicationId,
+      publishedAt: "2026-10-01T12:00:00.000Z",
+      expiresAt: "2026-10-15T18:00:00.000Z",
+      eventStartsAt: "2026-10-12T18:00:00.000Z",
+    },
+    destinationHash: "a".repeat(64),
+    content: {
+      headline: "Make a homebuying plan",
+      body: "Learn the path from planning to closing.",
+      callToAction: "Learn more",
+      disclosureText: "Equal Housing Opportunity.",
+      consentText: "You agree to be contacted about this webinar.",
+      claims: [],
+      mergeTokens: [],
+      financingTerms: [],
+    },
+    images: [
+      {
+        shape: "tall",
+        assetRef: "webinarimage_tall001",
+        rendererVersion: "1.0.0",
+        contentSha256: "5".repeat(64),
+        width: 1080,
+        height: 1350,
+        byteLength: 9000,
+        altText: "Homebuying education with lender identity",
+      },
+      {
+        shape: "square",
+        assetRef: "webinarimage_square001",
+        rendererVersion: "1.0.0",
+        contentSha256: "6".repeat(64),
+        width: 1080,
+        height: 1080,
+        byteLength: 8000,
+        altText: "Homebuying education with lender identity",
+      },
+    ],
+    advertiser: {
+      name: "Alex Morgan",
+      title: "Loan officer",
+      company: "Example Lending",
+      nmls: "1234567",
+      companyNmls: "7654321",
+      colorPresetId: "navy",
+    },
+    schedule: { startsAt: null, endsAt: "2026-10-12T18:00:00.000Z" },
+    meta: {
+      enabled: false,
+      specialAdCategory: "HOUSING",
+      platform: "meta",
+      placements: ["facebook_feed"],
+      targeting: {
+        country: "US",
+        regions: ["TX"],
+        cities: [],
+        zipCodes: [],
+        customAudienceRefs: [],
+        protectedDimensions: [],
+      },
+      dailyBudgetMinor: 1000,
+      totalBudgetMinor: 10000,
+    },
+  });
+  const detailHref = "/marketing/campaigns/" + campaignRef;
+  return {
+    kind: "webinar-ad",
+    campaignRef,
+    campaignVersionRef,
+    detailHref,
+    versionNo: 1,
+    isLatest: true,
+    standing: "awaiting_approval",
+    state: "awaiting_approval",
+    savedAt: "2026-10-01T12:00:00.000Z",
+    savedByViewer: true,
+    versions: [],
+    fixes: [],
+    canMakeNewVersion: true,
+    approvalControls: {
+      campaignHref: detailHref,
+      campaignRef,
+      campaignVersionRef,
+      manifestHash: "b".repeat(64),
+      preflightResultHash: "c".repeat(64),
+      rowVersion: 1,
+      canApprove: true,
+      blocking: false,
+      state: "awaiting_approval",
+    },
+    review: {
+      manifest,
+      current: { available: true },
+      publication: { title: "Homebuying essentials", learningSummary: "A clear path to closing." },
+      providerEnabled: false,
+      art: {
+        tall: "/api/campaigns/webinar-ads/" + campaignRef + "/" + campaignVersionRef + "/tall",
+        square: "/api/campaigns/webinar-ads/" + campaignRef + "/" + campaignVersionRef + "/square",
+      },
+      effectiveEndsAt: manifest.schedule.endsAt,
+      incompleteSave: false,
+    },
+  };
+}

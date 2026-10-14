@@ -375,3 +375,58 @@ No new Critical, Warning or Suggestion arises from this test-only delta. The bou
 The superseding test pin is `tooling/tests/unit/webinar-ads/webinar-foundation.test.ts`, SHA256 `ccae214a5966478d7d7dbd015b696f9a5e39d29d25cf4980c8c01dde8f255e4f`. No production or presentation pin is superseded. Prior raster/local preparation UX qualification is therefore unchanged, while actual saved-review/RSC and approval/refusal captures still require their own real database/CI evidence.
 
 Current GitHub CI, actual PG/canonical runs at the previous head, new-head reconciliation/MERGEABLE and any hosted/provider qualification remain governed by root's evidence. None was cancelled, altered or credited here. This audit changes only this report append and ignored review logs; no source/test edit, threshold exclusion, baseline change, commit, push, migration, deployment or provider operation occurred. Report and focused runner ownership are released.
+
+## Fresh Quality qualification: actual CI saved journey and approved baselines
+
+Reviewed after the independent final artifact Security append, at source head `3967adbbd2dee1ac282bf1deb89de6a6f418a942`. **PASS for the bounded actual saved-journey evidence and exact 24 baseline replacements.** Prior source clearance remains qualified by WQ-02's nonblocking Suggestion. Required final current-head CI/comparison and the later combined integration Security/Quality cycle are still OPEN; neither this checkpoint nor the canonical write run marks the full product or PRD finished.
+
+### Independent provenance and failure attribution
+
+Quality independently queried GitHub run and artifact metadata, then read the retained actual job results:
+
+| Evidence | Exact identity and actual result | What it establishes |
+| --- | --- | --- |
+| CI `38498931146` | workflow_dispatch, commit `679ce978dd86011120bdab5da3db95e38d881531`, overall Failure; App/database Failure, release contract Success, preview smoke Skipped | Passing stages are creditable individually; the run/job is not reclassified as green. |
+| Saved output artifact `11865965933` | `webinar-ads-review-frames`, same CI/commit, unexpired at inspection | Actual retained saved/decision screenshots and browser downloads. |
+| Canonical `38498933268` | same capture commit, overall Success, both review and chromium write jobs Success | Actual capture production, not comparison acceptance. |
+| Canonical review artifact `11866380590` | `screen-baselines-review`, same canonical run/commit, unexpired at inspection | 402 original candidate PNGs. |
+
+The retained `test-results/webinar-ci-failed.log` reports the new webinar pgTAP file PASS with **28 assertions** (`:2622-2627`); **306 actual PostgreSQL cases in 24 files passed**, including **5 preparation and 6 destination cases** (`:2795-2796` and their file results). Its eight seeded saved-review/download/decision cases all passed at `:3172-3179`. The subsequent database job failed the stale Ads library comparison in `empty-account.spec.ts:250`: expected 1440x5792, actual 1440x5852. The repeated failure is screenshot comparison, not a failed saved-ad database journey. App failed the old required coverage gate at `:453-455`; the already reviewed three-case correction restored the unchanged gate locally, not retroactively in this CI run.
+
+Production, browser, migration, runtime and workflow sources are unchanged between the capture commit and current head. Independent scoped git diff finds only the reviewed foundation test addition among executable/test source changes. All **80 final Security source pins** match current bytes; the superseding foundation pin remains `ccae214a5966478d7d7dbd015b696f9a5e39d29d25cf4980c8c01dde8f255e4f`.
+
+### Actual saved capability and private output qualification
+
+Read the executed `tests/browser/review/webinar-ads.spec.ts:118-229`. These cases use actual disposable PostgreSQL, seeded accounts, native sessions and saved Brand/publication, without route mocks. They require authenticated 201 save, saved campaign navigation and reload, private review 200/current availability, the same publication UUID and effective end, both API byte digests and actual browser-download SHA256 equal to immutable manifest evidence. A distinct authorized seeded reviewer confirms the actual approval command and reloads the persisted decision. Disabled launch and unchanged unfiltered axe/overflow checks are asserted. Local-origin guards prohibit provider/network effects.
+
+Quality independently inspected all **40 artifact files** against the independent UX table: **24 setup/review/approved screenshots** and **16 real PNG downloads**. Every SHA256, IHDR dimension and complete PNG structure matches. Each file contains only IHDR/IDAT/IEND, with no metadata or trailing payload. The eight square downloads are 1080x1080, SHA256 `dc608f7e7b57d25c7ddd4bb683af565b3d1db5ef184eeeff9675f8a7d36c245c`; the eight tall downloads are 1080x1350, SHA256 `bf8cacf4f049691f36b444e71d9e9deb1949677143b5500bb94d783b6268def4`. Duplicate-by-shape files were all checked individually, not counted from a representative sample.
+
+Independent UX individually opened all 40 originals and recorded bounded PASS in its latest saved-review append (`:357-446`). Quality verified that report SHA256 `78126370ef7018d22318fd52f61a652870f3294733f2107408c6e91b6da80a5f`; the final Security report SHA256 is `cfff451ed0eb9b9b42962047a8454daf4e23152d861a04b1bedcf5003ad42374`. Quality did not rerun the database/browser or duplicate UX's visual judgment.
+
+This closes the previously unexecuted new database suites and positive saved/reload/review/download/decision journey for the tested CI source. It does not establish clipboard-button behavior, video uptime, conversion, every withdrawn/history/refusal visual state, a live borrower account, owner/lender creative approval or hosted/provider execution. The actual negative database cases complement their existing source/unit refusal evidence; visual acceptance is limited to the captured states.
+
+### Exact canonical replacement boundary
+
+Quality read the independent canonical review, SHA256 `67c66be3660f1efa04f40b4fecac5fd8a0b6013eda5b546404b7ef3fee9ac527`. Its **107 changed review candidates** are classified as **24 approved Ads library originals**, **48 rejected rolling end-date mask differences** and **35 rejected unrelated raster-noise candidates**. All ten changed chromium noise candidates remain excluded as recorded in the independent Chromium classification; no chromium PNG appears in the working diff.
+
+The only tracked PNG changes are exactly the expected Cartesian set: Ads library states **all / one-topic / real-catalog**, widths **1440 / 1180 / 768 / 390**, themes **Light / Dark**, 24 filenames under `tests/visual/screens/review/`. Quality independently compared each tracked PNG, original canonical candidate and recorded approved hash, all equal. It also read each old counterpart from capture-commit Git history and confirmed its recorded old hash. Every candidate is exactly 60px taller with the same width, and complete metadata-free PNG structure passes.
+
+The attributed source is `apps/web/src/features/webinar-ads/pack.tsx:79-81`, the governed Prepare a saved webinar ad Link. Existing 44px target plus 16px grid gap explains the 60px expansion. UX verified an unchanged prefix and lower section translation, and explicitly bounded the sparse antialias differences in moved glyph/art/control edges (361-912 pixels, maximum channel delta 6-57). These whole-original acceptance bounds do not authorize unrelated changes. Quality verifies source attribution and byte provenance, not a regenerated aligned image or a new pixel transform.
+
+No date-mask/noise candidate was copied, and no current production/test/helper/style source was changed to conceal a comparison. Canonical write success alone supplied no acceptance. Final comparison-mode success must be obtained on root's final head.
+
+### Traceability delta and remaining release evidence
+
+| Plan item | Latest bounded status | Remaining limit |
+| --- | --- | --- |
+| CTR-002 publication provider | Actual CI PG/pgTAP verified | Hosted database rollout and final-head CI remain separate. |
+| WA-SAVE | Actual seeded native save/reload verified | Local CI fixture authority, not a live customer's account. |
+| WA-ART | Actual Linux CI regeneration/API/browser downloads equal stored evidence | Actual hosted function execution and external creative approval remain open. |
+| WA-REVIEW | Actual separate seeded human decision persisted after reload | Additional refusal/history visual states and final-current-head regression remain open. |
+| WA-JOURNEY | Positive real saved journey and 40 original images qualified | Other states retain only their stated unit/database/local evidence. |
+| WA-SECURITY / WA-QUALITY | This exact artifact/baseline checkpoint qualified after Security | Combined integration review still follows at root. |
+| WA-PR | OPEN | Required new-head green CI, main reconciliation and MERGEABLE not inferred here. |
+
+Machine-readable independent read-only verification is `test-results/webinar-quality/final-artifact-qualification.json`, SHA256 `edb43ae8f4121bbe57a84a9a7bc28156a4d7b15c3f9b5fafa8c2ab41bde91171`. It records all 24 exact baseline filenames/hashes/dimensions and all 40 saved artifact filenames/hashes/dimensions, plus the current source/report pins and 402-candidate count. The exact whole-original baseline hashes remain in the canonical and Security reports and match that verification.
+
+No new Critical or Warning detected in this checkpoint; WQ-01 remains closed and WQ-02 remains nonblocking. Quality appends only this report and writes ignored verification evidence. No image, production source, test, baseline, commit, push, database, deployment or provider effect was performed by this audit. Report and verification ownership are released to root.

@@ -258,3 +258,58 @@ No security finding detected; test/report ownership and the focused runner are r
 | File | Superseding SHA256 |
 | --- | --- |
 | `tooling/tests/unit/webinar-ads/webinar-foundation.test.ts` | `ccae214a5966478d7d7dbd015b696f9a5e39d29d25cf4980c8c01dde8f255e4f` |
+
+## Final bounded artifact and baseline qualification
+
+Reviewed at head `3967adbbd2dee1ac282bf1deb89de6a6f418a942` before root's final current-head CI. The only executable-source difference from capture/test commit `679ce978dd86011120bdab5da3db95e38d881531` is the already reviewed three-case coverage addition; its SHA256 remains `ccae214a5966478d7d7dbd015b696f9a5e39d29d25cf4980c8c01dde8f255e4f`. Working-tree production, browser, configuration, migration and workflow sources are unchanged. Root copied only approved image originals; Security writes only this report. Fresh Quality follows this qualification.
+
+### Independently verified CI provenance and limits
+
+GitHub run inspection confirms CI `38498931146` used commit `679ce978` and finished Failure: Application and database jobs failed, release contract passed and dispatch preview smoke was skipped. Retained actual job logs independently confirm the new reserved webinar pgTAP file passed all 28 assertions; all 306 real PostgreSQL cases in 24 files passed, including five preparation and six destination cases; all eight seeded saved/reload/review/download/decision browser cases passed. The database job subsequently failed existing Ads library comparisons, so none of those passing stages is mislabeled as an overall green job. Application failed required coverage at approval lines 387/394; the reviewed test correction's local coverage evidence is recorded separately above, not fabricated as a rerun of that old CI.
+
+Canonical run `38498933268` at the same capture commit completed Success with both write jobs successful. Write-mode success proves capture production, not comparison acceptance. The candidate review artifact is `11866380590`, 402 PNGs under `test-results/webinar-canonical-review`. Independent UX's exact canonical report SHA256 is `67c66be3660f1efa04f40b4fecac5fd8a0b6013eda5b546404b7ef3fee9ac527`. Its 107 changed review candidates comprise 24 approved original Ads library files, 48 rejected end-date mask changes and 35 rejected unrelated noise candidates. No chromium baseline replacement was made.
+
+### Exact baseline replacement boundary
+
+Security parsed the approved table and independently verified the entire expected Cartesian set: three Ads library states (all, one-topic, real-catalog), four widths and both themes. The working-tree PNG diff contains exactly those 24 filenames in `tests/visual/screens/review`, with zero additional PNG replacements. Every copied baseline SHA256 equals both its original canonical candidate and the approved report hash. Each PNG's IHDR dimensions match its reviewed width/height, and each approved candidate is exactly 60 pixels taller than its old counterpart, as attributed to the governed saved-preparation CTA. No replacement, cropping, compositing or raster regeneration was performed by Security.
+
+PNG signature/chunk bounds and end-of-file checks pass; the copied baselines contain only IHDR/IDAT/IEND and no text, EXIF, XMP or other metadata chunks. Rejected date-mask/noise candidates and all other tracked images remain outside the replacement set. Exact copied hashes are listed below; local machine-readable verification is `test-results/webinar-security/artifact-qualification.json` with its read-only inspection script alongside it.
+
+### Saved private output evidence
+
+Artifact `11865965933` from the actual seeded browser stage contains exactly 40 PNGs under `test-results/webinar-ci-saved-review`: 24 setup/review/approved screenshots and 16 actual downloaded images. Independent UX individually inspected all 40; its appended report SHA256 is `78126370ef7018d22318fd52f61a652870f3294733f2107408c6e91b6da80a5f`. Security independently checked every file hash against that review, its dimensions and complete bounded PNG structure. All files contain only IHDR/IDAT/IEND. Each of eight square downloads is exactly 1080x1080 and has SHA256 `dc608f7e7b57d25c7ddd4bb683af565b3d1db5ef184eeeff9675f8a7d36c245c`; each tall download is exactly 1080x1350 and has SHA256 `bf8cacf4f049691f36b444e71d9e9deb1949677143b5500bb94d783b6268def4`.
+
+The actual seeded browser assertions save through authenticated 201, reload the stored record, require current destination/effective-stop evidence, compare both API and real browser-download digests with the manifest, approve through a distinct authorized seeded principal and require persisted decision after reload. They assert no enabled launch and use the unchanged unfiltered axe check. Tests seed disposable account/Brand/publication fixtures and do not expose live borrower records, credentials or gated access URLs in retained output. This establishes local CI database/native-reader/decision composition, not owner/lender creative permission or hosted provider effects. Copy-button clipboard behavior, video uptime, conversion and every withdrawn/history/refusal visual case are not inferred from this particular positive journey.
+
+Source pins retained for the newly executed database/browser qualification: migration `8165cd4d7f27776d902a56ccf9f95818e1419239b972db9af7374f51059a3620`, pgTAP `d965ffbdebdb4d8e5706b340f422d29744aac7d519459f1d91aef0c0ec4f24e0`, seeded browser spec `67687a8d087905fc2148ac1dcdd00ea6a013a7939c69a5957cfea9b102a2bf02`. These production/test sources are unchanged between captured and current head except the separately identified foundation coverage test.
+
+No new security finding detected. The artifact set and exact baseline copies are released for fresh Quality. Required final current-head CI/comparison pass, mergeability, actual hosted/native execution and external owner/lender/provider authorization remain separate root-owned qualifications. Security did not commit, push, deploy, cancel a run, mutate a provider or spend money.
+
+### Copied whole-original baseline SHA256
+
+| Filename | SHA256 |
+| --- | --- |
+| `ads-library--all--1180--dark.png` | `f34ed1208bc604d5bc7b7f244584140f8d27369c5bcdd2c4d80efe7ad08e0bd9` |
+| `ads-library--all--1180--light.png` | `646ba16aa4a27eeeb35532f6a020361782358143b76486082d4944419a5c4624` |
+| `ads-library--all--1440--dark.png` | `8e7ef4f7af7acd6066cea6f81469e91cf457e3602e95637fa967a543295ad2b0` |
+| `ads-library--all--1440--light.png` | `6ad2bc0e7903241d71e4f2c4b0a4110b78b695c1d77c6e6f3b03a41d5dc14b10` |
+| `ads-library--all--390--dark.png` | `51805b02373f723cb6c16f076890e1a40298956c57da913b351cc135a0e49e51` |
+| `ads-library--all--390--light.png` | `911072b7db2b335ff6f313de0d6dbe280130ff7ab7a0592512af788f232410a8` |
+| `ads-library--all--768--dark.png` | `4b84e4700e2dd1ccef3563d81763606667ceec6bb5a69536a19e11399a872fcd` |
+| `ads-library--all--768--light.png` | `ed64c1ab2cca9bee63c4f424d59dee9d4bd0e903b25c79ee94608d965a70307b` |
+| `ads-library--one-topic--1180--dark.png` | `395259af93f6b6088f584250fee0e921ecdaed11987da2c2d073a95cec919ba4` |
+| `ads-library--one-topic--1180--light.png` | `3fcda7cd7c32548a1a0cbdaf3bd9117bed3a6fc8355ea8a58daa011f3bad12b8` |
+| `ads-library--one-topic--1440--dark.png` | `ad6b4a9ece4d8c97fa21ef87c03c26fe4d6ea34aea30a91c5d2117808efdaa7d` |
+| `ads-library--one-topic--1440--light.png` | `0f8881cf1bbd4aef9655aad96f14a2f7000b433b9b204eba051e5fcc42e24766` |
+| `ads-library--one-topic--390--dark.png` | `1eba383b96aa9054415839979908c4b8eb84361bba8db7c57c7cfe3f6816cc44` |
+| `ads-library--one-topic--390--light.png` | `e2eedbb168aec571256454aae0be13a3a5e43884f2e209064d9ee864bdbde50f` |
+| `ads-library--one-topic--768--dark.png` | `b50356481f6d78a17688b7a6c37c86c612945f22f3abd7f8274641de37bffdf3` |
+| `ads-library--one-topic--768--light.png` | `41ed6d715c81e0a4865120ed4c481472e11bb00a55b578bef289600c40222d12` |
+| `ads-library--real-catalog--1180--dark.png` | `bba46178d24c0897ae008772ccac6ecfe13cda309b6229cbaac9c8a699cc4ce0` |
+| `ads-library--real-catalog--1180--light.png` | `813c0d281895a264f339321d97b961b5d0598eb16dd095a3bf405370796d60ef` |
+| `ads-library--real-catalog--1440--dark.png` | `070f2bf0b747f7d70b61f449262ab87b73dba462fb9e79507088ada419b813ff` |
+| `ads-library--real-catalog--1440--light.png` | `fe800c112385126226dfce619b32ea3889e2d5a98fa45f00e214a0cb8af33f85` |
+| `ads-library--real-catalog--390--dark.png` | `75990299cfaf663d2a1377ccbb17327b38b640302024342d240c7e21f5a14d76` |
+| `ads-library--real-catalog--390--light.png` | `9c7a63a582866d2c84998fa930c1b1ff21cd5bc61a3dc29d0d372aba9833b311` |
+| `ads-library--real-catalog--768--dark.png` | `149a68b6e8f90040486edde43ac30a1a9b198936c4e391d6fbf3e21a0f2f5f02` |
+| `ads-library--real-catalog--768--light.png` | `a21946d98bf7e5b78f2f810a137860bd18f1ce5398ecb50b230be33a5022f2d9` |

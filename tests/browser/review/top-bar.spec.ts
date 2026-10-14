@@ -22,6 +22,7 @@ import {
   signInExisting,
 } from "./helpers/guided-setup-journey.js";
 import { chooseThemeFromTheHeader } from "./helpers/review-session.js";
+import { signInForReviewPreparation } from "./helpers/signin-session.js";
 
 /**
  * PRD-009a, the review halves of 009A-AC-004, 009, 011, and 013, signed in as the seeded creator.
@@ -91,7 +92,9 @@ test("the check for a connection statement can fail, and a workspace name is not
 async function signIn(page: Page): Promise<void> {
   const { creatorEmail, password } = seededCredentials();
   await page.setViewportSize({ width: 1440, height: 900 });
-  await signInExisting(page, creatorEmail, password);
+  await signInForReviewPreparation(page, creatorEmail, () =>
+    signInExisting(page, creatorEmail, password),
+  );
 }
 
 test("the review top bar holds six labels, Help, and an account that names only the person", async ({

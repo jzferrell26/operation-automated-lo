@@ -113,3 +113,9 @@ export {
   type WebinarPublisherAdmission,
   type WebinarPublisherWorkerRecord,
 } from "./webinar-publisher-repository.js";
+export {
+  PostgresWebinarPublisherCommandAuthenticationRepository,
+  PostgresWebinarPublisherAuthenticationResolver,
+  WebinarPublisherAuthenticationError,
+  type WebinarPublisherCommandAuthenticationVerifier,
+} from "./webinar-publisher-authentication-repository.js";

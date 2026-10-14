@@ -4,6 +4,8 @@
 export const REVIEW_HTTP_PORT: 3100;
 export const REVIEW_HTTPS_PORT: 3443;
 export const REVIEW_APP_URL: string;
+export function createReviewSessionDirectory(): Promise<string>;
+export function removeReviewSessionDirectory(directory: string): Promise<void>;
 
 export interface ReviewSeededCredentials {
   readonly creatorEmail: string;

@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { connect } from "node:net";
-import { cp, lstat, mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
+import { chmod, cp, lstat, mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -34,6 +34,33 @@ const HOST = "127.0.0.1";
 export const REVIEW_HTTP_PORT = 3100;
 export const REVIEW_HTTPS_PORT = 3443;
 export const REVIEW_APP_URL = `https://${HOST}:${String(REVIEW_HTTPS_PORT)}`;
+
+/** Private per-invocation setup sessions never enter the browser artifact directories. */
+const ownedReviewSessionDirectories = new Set();
+export async function createReviewSessionDirectory() {
+  const directory = await mkdtemp(join(tmpdir(), "oalo-review-sessions-"));
+  await chmod(directory, 0o700);
+  const owned = await realpath(directory);
+  ownedReviewSessionDirectories.add(owned);
+  return owned;
+}
+
+export async function removeReviewSessionDirectory(directory) {
+  const target = resolve(directory);
+  const info = await lstat(target);
+  if (
+    !ownedReviewSessionDirectories.has(target) ||
+    dirname(target) !== (await realpath(tmpdir())) ||
+    !/^oalo-review-sessions-[A-Za-z0-9]+$/u.test(target.slice(dirname(target).length + 1)) ||
+    !info.isDirectory() ||
+    info.isSymbolicLink() ||
+    (await realpath(target)) !== target
+  ) {
+    throw new Error("Refuse cleanup outside the owned review session directory");
+  }
+  await rm(target, { recursive: true, force: true });
+  ownedReviewSessionDirectories.delete(target);
+}
 const SERVER_READY_TIMEOUT_MS = 180_000;
 const SERVER_POLL_INTERVAL_MS = 500;
 const REVIEW_BUILD_COMMIT = "local";
@@ -381,6 +408,7 @@ export async function runReviewBrowserSuite(options) {
      * still fails, naming each pass that did.
      */
     for (const pass of REVIEW_PASSES) {
+      const sessionDirectory = await createReviewSessionDirectory();
       try {
         server = spawnProcess(
           node,
@@ -399,6 +427,7 @@ export async function runReviewBrowserSuite(options) {
             env: {
               OALO_REVIEW_BROWSER_RUN: "true",
               OALO_REVIEW_APP_URL: REVIEW_APP_URL,
+              OALO_REVIEW_SESSION_CACHE_DIR: sessionDirectory,
               OALO_TEST_SEEDED_CREATOR_EMAIL: options.seededCredentials.creatorEmail,
               OALO_TEST_SEEDED_APPROVER_EMAIL: options.seededCredentials.approverEmail,
               OALO_TEST_SEEDED_PASSWORD: options.seededCredentials.password,
@@ -413,6 +442,11 @@ export async function runReviewBrowserSuite(options) {
       } catch (error) {
         failures.push(error instanceof Error ? error.message : String(error));
       } finally {
+        try {
+          await removeReviewSessionDirectory(sessionDirectory);
+        } catch {
+          failures.push("Private review session directory cleanup failed");
+        }
         try {
           await preserveReviewPassOutput(repositoryRoot, pass.catalog);
         } catch (error) {

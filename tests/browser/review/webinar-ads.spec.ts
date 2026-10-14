@@ -27,6 +27,7 @@ import {
   signInExisting,
 } from "./helpers/guided-setup-journey.js";
 import { saveBrandDetails } from "./helpers/saved-brand.js";
+import { signInForReviewPreparation } from "./helpers/signin-session.js";
 
 // Actual disposable PostgreSQL, account sessions, native publication and campaign commands.
 // No route is mocked. Video URLs are fixture destinations, not uptime or conversion proof.
@@ -63,8 +64,12 @@ test.describe.serial("real saved webinar ads", () => {
     creatorGuard = await guardLocalOrigin(creator);
     approverGuard = await guardLocalOrigin(approver);
     const credentials = seededCredentials();
-    await signInExisting(creator, credentials.creatorEmail, credentials.password);
-    await signInExisting(approver, credentials.approverEmail, credentials.password);
+    await signInForReviewPreparation(creator, credentials.creatorEmail, () =>
+      signInExisting(creator, credentials.creatorEmail, credentials.password),
+    );
+    await signInForReviewPreparation(approver, credentials.approverEmail, () =>
+      signInExisting(approver, credentials.approverEmail, credentials.password),
+    );
     await saveBrandDetails(creator);
     const draftResponse = await creator.request.get("/api/funnels");
     expect(draftResponse.status()).toBe(200);

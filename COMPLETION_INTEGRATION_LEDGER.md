@@ -18,7 +18,7 @@ This isolated integration branch combines the reviewed source batches. It does n
 | Single LO homeowner readiness           | `4b53122af2e2aab9d5ad2c686aa93cd2f0bf8814` | `a96162c4cf3b4aaa51be70b1b0cce1d984901839` |
 | Webinar ad preparation and saved review | `3967adbbd2dee1ac282bf1deb89de6a6f418a942` | `fd36804b6622a515215c163f6e694368c81ff27c` |
 
-The webinar head intentionally precedes its pending final canonical image acceptance. Those later images and the final UX report must be integrated by the orchestrator after their own qualification.
+The initial webinar head preceded its final canonical image acceptance. The follow-up below records the later qualified images and reports after they were released by the orchestrator.
 
 ## Conflict resolutions
 
@@ -55,6 +55,25 @@ The four resolved files passed Prettier checks. Their SHA-256 digests at the com
 
 All five requested incoming heads are verified ancestors of `fd36804b6622a515215c163f6e694368c81ff27c`. There are no unmerged paths or source edits beyond the documented union resolutions. Initial local checks found no reproducible source failure in the combined tree. The final ledger commit only records provenance and these results.
 
-The Git integration owner releases the worktree and ledger after recording this packet. The orchestrator owns subsequent canonical image integration, actual database/browser CI qualification, combined Security review, fresh Quality review and PR publication. The initial concurrent failures remain recorded and are not counted as passes.
+The Git integration owner releases the worktree and ledger after recording this packet. The orchestrator owns actual combined database/browser CI qualification, combined Security review, fresh Quality review and PR publication. The initial concurrent failures remain recorded and are not counted as passes.
+
+## Final webinar evidence integration
+
+The released webinar evidence commit `d0503a8f872716a3a72d7800034ce7eeb62a2e39` was merged with an ordinary local merge into the existing integration branch. Resulting merge commit: `40f5fa040f4e7c66a9381cbc5a275d3a2ecf4511`. No conflict occurred.
+
+The incoming delta contains exactly 24 whole canonical Ads Library PNGs, four review reports and `WEBINAR_LAUNCH_LEDGER.md`. The verified image set is `all`, `one-topic` and `real-catalog`, each at widths 390, 768, 1180 and 1440 in both light and dark themes. All 24 integration image blobs exactly match the released incoming commit. No unrelated review image or synthetic baseline changed in this merge.
+
+The four resolved source SHA-256 pins above remain unchanged. All five initially requested heads and the final webinar evidence commit are verified ancestors of the integration branch. No source or test code changed in the final evidence merge, so the 4,220-test regression and 3,100-test coverage results above still qualify the same code. These suites were not needlessly repeated for image/report-only changes. `git diff --check` and Prettier checks on all five incoming Markdown files passed.
+
+Feature qualification observed directly through read-only GitHub run metadata at this handoff:
+
+| Feature evidence                  | Exact run/head                                                     | Observed status            |
+| --------------------------------- | ------------------------------------------------------------------ | -------------------------- |
+| Homeowner full CI                 | Run `38501022852`, head `4b53122af2e2aab9d5ad2c686aa93cd2f0bf8814` | Completed, success         |
+| Runtime full CI                   | Run `38499455661`, head `8e039dc3afe6dde9fc6128713f60ba0819f1e41d` | Completed, success         |
+| Webinar canonical screen workflow | Run `38498933268`, head `679ce978dd86011120bdab5da3db95e38d881531` | Completed, success         |
+| Final webinar full CI             | Run `38504191342`, head `d0503a8f872716a3a72d7800034ce7eeb62a2e39` | In progress, no conclusion |
+
+The released webinar packet records independent UX, Security and fresh Quality qualification, including the actual seeded saved/review/approval journeys. These feature proofs do not replace combined Security/Quality or combined database/browser CI. No current combined CI success is claimed. No push, PR creation, hosted migration or deployment was performed by this Git integration task.
 
 Logs are ignored local artifacts. Actual PostgreSQL, pgTAP, production browser journeys, canonical visual acceptance, combined Security/Quality review and hosted behavior are not proven by these initial local checks.

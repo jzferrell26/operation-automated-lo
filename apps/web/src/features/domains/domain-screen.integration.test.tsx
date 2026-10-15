@@ -1,9 +1,23 @@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DomainScreen } from "./domain-screen.js";
 import { domainFixture, domainState } from "./domain.test-support.js";
 import { type DomainState, type DomainStatus } from "./model.js";
+beforeEach(() => {
+  // jsdom has no layout observer; real-browser coverage checks the shared popup.
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(16, 120, 240, 44),
+  );
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+});
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -23,6 +37,65 @@ async function loaded() {
   await screen.findByText("Latest saved domain state loaded.");
 }
 describe("guided domain setup", () => {
+  it("retains the chosen funnel after cancelling and permits an explicit reconnect choice", async () => {
+    const current = domainFixture({ status: "disconnected", defaultKind: "refinance" });
+    const network = requests(domainState(current), [
+      Response.json({ domain: domainFixture({ defaultKind: "buyer" }) }),
+    ]);
+    const user = userEvent.setup();
+    render(<DomainScreen />);
+    await loaded();
+    const chooser = screen.getByRole("combobox", { name: "Funnel at this address" });
+    expect(chooser).toHaveTextContent("Refinance");
+    await user.click(chooser);
+    await user.click(await screen.findByRole("option", { name: "Buyer" }));
+    await user.type(screen.getByLabelText("Domain or subdomain"), current.hostname);
+    await user.click(screen.getByRole("button", { name: "Review connection" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(network).toHaveBeenCalledTimes(1);
+    expect(chooser).toHaveTextContent("Buyer");
+    await user.click(screen.getByRole("button", { name: "Review connection" }));
+    await user.click(screen.getByRole("button", { name: "Confirm connection" }));
+    await screen.findByText("Connection saved. Add the ownership record to continue.");
+    expect(JSON.parse(String(network.mock.calls[1]?.[1]?.body)).defaultKind).toBe("buyer");
+  });
+  it("keeps the new connection chooser disabled when platform setup is unavailable", async () => {
+    requests(domainState(null, { available: false }));
+    render(<DomainScreen />);
+    await loaded();
+    expect(screen.getByRole("combobox", { name: "Funnel at this address" })).toBeDisabled();
+  });
+  it.each([
+    ["live-webinar", "Live webinar"],
+    ["on-demand", "On-demand webinar"],
+    ["buyer", "Buyer"],
+    ["refinance", "Refinance"],
+    ["lead-magnet", "Lead magnet"],
+  ] as const)("confirms and saves the selected %s funnel", async (kind, label) => {
+    const network = requests(domainState(), [
+      Response.json({ domain: domainFixture({ defaultKind: kind }) }),
+    ]);
+    const user = userEvent.setup();
+    render(<DomainScreen />);
+    await loaded();
+    await user.type(screen.getByLabelText("Domain or subdomain"), "offers.loanoffice.com");
+    await user.click(screen.getByRole("combobox", { name: "Funnel at this address" }));
+    await user.click(await screen.findByRole("option", { name: label }));
+    await user.click(screen.getByRole("button", { name: "Review connection" }));
+    const modal = screen.getByRole("dialog", { name: "Connect this domain?" });
+    expect(modal).toHaveTextContent(`Funnel at this address: ${label}`);
+    expect(network).toHaveBeenCalledTimes(1);
+    await user.click(within(modal).getByRole("button", { name: "Confirm connection" }));
+    await screen.findByText("Connection saved. Add the ownership record to continue.");
+    expect(JSON.parse(String(network.mock.calls[1]?.[1]?.body))).toEqual({
+      action: "connect",
+      hostname: "offers.loanoffice.com",
+      apex: false,
+      defaultKind: kind,
+      confirmed: true,
+    });
+    expect(screen.getByText(`Default funnel: ${label}`)).toBeVisible();
+  });
   it("announces a blocked initial read through the shared loading card without offering writes", () => {
     vi.stubGlobal(
       "fetch",

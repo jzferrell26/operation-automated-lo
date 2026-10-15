@@ -45,6 +45,7 @@ describe("public domain authority and private route refusal", () => {
   });
   it("only allows the finite public funnel journey, static assets and its inquiry POST", () => {
     for (const path of [
+      "/",
       `/f/${id}`,
       `/f/${id}/thanks`,
       `/f/${id}/confirmation`,
@@ -71,5 +72,7 @@ describe("public domain authority and private route refusal", () => {
       expect(isCustomerDomainPath(path, "GET"), path).toBe(false);
     expect(isCustomerDomainPath(`/api/funnel-public/${id}`, "GET")).toBe(false);
     expect(isCustomerDomainPath(`/f/${id}`, "POST")).toBe(false);
+    expect(isCustomerDomainPath("/", "HEAD")).toBe(true);
+    expect(isCustomerDomainPath("/", "POST")).toBe(false);
   });
 });

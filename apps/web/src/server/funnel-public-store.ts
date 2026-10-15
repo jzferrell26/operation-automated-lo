@@ -130,6 +130,7 @@ export function decryptVisitor(
   );
 }
 const FUNCTION_SQL = {
+  domainDefault: "select campaign.funnel_domain_default($1) as value",
   domainBinding: "select campaign.funnel_domain_binding($1) as value",
   domainRead: "select campaign.funnel_domain_snapshot($1,$2::uuid) as value",
   domainAccept:

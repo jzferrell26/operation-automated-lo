@@ -8,6 +8,16 @@ function request(path: string, headers: Record<string, string> = {}) {
   return new NextRequest(new Request(`https://learn.example.org${path}`, { headers }));
 }
 describe("domain private-page proxy refusal", () => {
+  it("allows only a no-store public root consumer, never a customer root POST", () => {
+    const response = proxy(request("/"));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow, noarchive");
+    expect(
+      proxy(new NextRequest(new Request("https://learn.example.org/", { method: "POST" }))).status,
+    ).toBe(404);
+  });
   it.each([
     "/overview",
     "/settings/domains",

@@ -26,7 +26,7 @@ import {
 import { handleFunnelDomains } from "./funnel-domain-http.js";
 import { handleVisitor, publicSnapshot } from "./funnel-public-http.js";
 import { publicationStore } from "./funnel-public-store.js";
-import { readCurrentDomainBinding } from "./funnel-domain-routing.js";
+import { domainRootDestination, readCurrentDomainBinding } from "./funnel-domain-routing.js";
 const environment = routeEnvironment({
   OALO_FUNNEL_PUBLICATION: "enabled",
   OALO_FUNNEL_DATA_KEY: randomBytes(32).toString("base64url"),
@@ -249,6 +249,20 @@ describe("real Postgres domain authority", () => {
     };
     const published = await publicationStore(own, environment).publish(snapshot, randomUUID()),
       outside = await publicationStore(other, environment).publish(snapshot, randomUUID());
+    expect(await domainRootDestination(host, environment)).toEqual({
+      kind: "customer",
+      path: `/f/${published.id}`,
+    });
+    const refinance = {
+      ...snapshot,
+      kind: "refinance" as const,
+      fields: structuredClone(FUNNELS.find((item) => item.kind === "refinance")!.defaults),
+    };
+    await publicationStore(own, environment).publish(refinance, randomUUID());
+    expect(await domainRootDestination(host, environment)).toEqual({
+      kind: "customer",
+      path: `/f/${published.id}`,
+    });
     expect(await publicSnapshot(published.id, "", environment, host)).not.toBeNull();
     expect(await publicSnapshot(outside.id, "", environment, host)).toBeNull();
     const visitor = {
@@ -280,7 +294,22 @@ describe("real Postgres domain authority", () => {
     expect(response.status).toBe(200);
     const receipt = response.headers.get("set-cookie")!.split(";")[0]!;
     expect((await publicSnapshot(published.id, receipt, environment, host))?.hasAccess).toBe(true);
+    const latest = await publicationStore(own, environment).publish(snapshot, randomUUID());
+    expect(await domainRootDestination(host, environment)).toEqual({
+      kind: "customer",
+      path: `/f/${latest.id}`,
+    });
+    await publicationStore(own, environment).revoke(latest.id);
+    expect(await domainRootDestination(host, environment)).toEqual({
+      kind: "customer",
+      path: null,
+    });
+    expect(await publicSnapshot(published.id, "", environment, host)).not.toBeNull();
     await a.command("disconnect", ready.id, ready.revision);
+    expect(await domainRootDestination(host, environment)).toEqual({
+      kind: "customer",
+      path: null,
+    });
     const next = await create(b, host);
     await checkFunnelDomain(b, provider, next.id, next.revision);
     expect(await publicSnapshot(published.id, receipt, environment, host)).toBeNull();
@@ -288,6 +317,22 @@ describe("real Postgres domain authority", () => {
       404,
     );
     expect(await publicSnapshot(outside.id, "", environment, host)).not.toBeNull();
+    expect(await domainRootDestination(host, environment)).toEqual({
+      kind: "customer",
+      path: `/f/${outside.id}`,
+    });
+    await withMigrationOwnerTransaction(pool, (connection) =>
+      connection.execute({
+        statementName: "domain-test.expire-default-publication",
+        text: "update campaign.funnel_publications set created_at=now()-interval '2 days',expires_at=now()-interval '1 hour' where id=$1::uuid",
+        values: [outside.id],
+        preparedStatementMode: "unnamed",
+      }),
+    );
+    expect(await domainRootDestination(host, environment)).toEqual({
+      kind: "customer",
+      path: null,
+    });
     await disconnect(b);
   });
 });

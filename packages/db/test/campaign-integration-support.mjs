@@ -90,10 +90,18 @@ export async function publisherAuthenticationCapabilities() {
   const roles = ["publisher_authentication_runtime", "publisher_authentication_resolver"];
   try {
     const context = await connection.execute(
-      request("test.publisher-capabilities.context", "select current_database() as database"),
+      request(
+        "test.publisher-capabilities.context",
+        "select current_database() as database, pg_catalog.quote_ident(current_user) as member",
+      ),
     );
     if (context.rows[0]?.database !== target.pathname.slice(1))
       throw new Error("Private test capability setup requires a loopback disposable database");
+    // Supabase's role statement hooks can crash on CURRENT_USER role specifications.
+    // Use only the server-quoted authenticated identifier, never a caller-supplied role.
+    const member = context.rows[0]?.member;
+    if (typeof member !== "string" || member.length === 0)
+      throw new Error("Private test capability setup requires an authenticated role");
     for (const role of roles) {
       const prior = await connection.execute(
         request(
@@ -106,14 +114,14 @@ export async function publisherAuthenticationCapabilities() {
       await connection.execute(
         request(
           "test.publisher-capabilities.grant",
-          `grant ${role} to current_user with inherit false, set true`,
+          `grant ${role} to ${member} with inherit false, set true`,
         ),
       );
       restored.push(async () => {
         const sql =
           original === undefined
-            ? `revoke ${role} from current_user granted by current_user`
-            : `grant ${role} to current_user with inherit ${original.inherit_option ? "true" : "false"}, set ${original.set_option ? "true" : "false"}`;
+            ? `revoke ${role} from ${member} granted by ${member}`
+            : `grant ${role} to ${member} with inherit ${original.inherit_option ? "true" : "false"}, set ${original.set_option ? "true" : "false"}`;
         await connection.execute(request("test.publisher-capabilities.restore", sql));
       });
     }

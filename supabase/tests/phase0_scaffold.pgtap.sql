@@ -1,6 +1,6 @@
 begin;
 
-select plan(23);
+select plan(38);
 
 create function pg_temp.assert_is(actual anyelement, expected anyelement, description text)
 returns text
@@ -91,11 +91,26 @@ select is(
         )
       )
   ),
-  32,
-  'the expected thirty-two tenant tables, including approved funnel publications, encrypted inquiries, financing media, revocations and exact-owner domain claims, are present'
+  47,
+  'the expected forty-seven tenant tables include current domain, publisher authentication and public financing inquiry stores'
 );
 
-select has_table('campaign', 'funnel_domains', 'the thirty-second tenant table is the exact-owner domain claim store');
+select has_table('campaign', 'funnel_domains', 'the exact-owner domain claim store is present');
+select has_table('campaign', 'webinar_publisher_admissions', 'verified publisher admissions are present');
+select has_table('campaign', 'webinar_publisher_launches', 'immutable publisher launch summaries are present');
+select has_table('campaign', 'webinar_publisher_operations', 'publisher operation identities are present');
+select has_table('integration', 'webinar_publisher_outbox', 'the publisher task outbox is present');
+select has_table('campaign', 'webinar_publisher_attempts', 'unique publisher stage attempts are present');
+select has_table('campaign', 'webinar_publisher_authentications', 'immutable original publisher authentication is present');
+select has_table('campaign', 'financing_release_evidence', 'authoritative public financing evidence is present');
+select has_table('campaign', 'financing_release_sources', 'immutable public financing sources are present');
+select has_table('campaign', 'financing_release_source_evidence', 'source evidence bindings are present');
+select has_table('campaign', 'financing_releases', 'public financing releases are present');
+select has_table('campaign', 'financing_release_public_scopes', 'protected public transaction scopes are present');
+select has_table('campaign', 'financing_release_operations', 'financing release operations are present');
+select has_table('campaign', 'financing_release_inquiries', 'temporary financing inquiries are present');
+select has_table('campaign', 'financing_release_delivery', 'financing inquiry delivery records are present');
+select has_table('campaign', 'financing_public_inquiry_admissions', 'protected public financing inquiry admissions are present');
 
 select has_table(
   'campaign',

@@ -1,6 +1,12 @@
 # PRD 001e: Meta Ad Launch Through HighLevel
 
+## Contract dependencies
+
+CTR-003 revision 1 is accepted by Jonathan Ferrell on October 14, 2026 UTC for the separate webinar publisher boundary. The [accepted publisher agreement][ctr003-publisher] has SHA-256 `dfc912bfa9f00892641936794ce0488adc1fdea3df6bdf7a997cb8f00a48fe23`. It adds exact launch/spend confirmation, current evidence, native draft/readback/uncertainty and stop/resume obligations. Existing property-ad and lender-only identity requirements remain in force. This pin does not establish implementation, provider qualification, lender approval or ad-spend authorization.
+
 ## Goal
+
+[ctr003-publisher]: ../../../knowledge/private/contracts/CTR-003-webinar-highlevel-publisher.md
 
 Discover the location's connected Meta assets, create a campaign draft from an approved Open House Boost version, require an exact final confirmation, publish through HighLevel, and report live state.
 

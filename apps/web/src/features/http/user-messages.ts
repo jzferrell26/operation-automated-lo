@@ -55,6 +55,10 @@ export const USER_MESSAGES_BY_CODE: Readonly<Record<string, UserMessage>> = Obje
     what: "That saved domain could not be found.",
     whatToDo: "Load the latest saved state before connecting or checking a domain.",
   },
+  INVALID: {
+    what: "Some report details are missing or have changed.",
+    whatToDo: "Open the saved report, check its details and try again.",
+  },
   DESTINATION_UNAVAILABLE: {
     what: "This published webinar could not be confirmed.",
     whatToDo:

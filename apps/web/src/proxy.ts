@@ -23,10 +23,23 @@ const TOKEN_BEARING_PATHS = Object.freeze([
   "/verify-email",
   "/home-report",
   "/f",
+  "/p",
 ]);
 
 function isTokenBearingPath(pathname: string): boolean {
   return TOKEN_BEARING_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
+/** Only these route handlers own an immutable, script-free response policy. Invalid paths and
+ * unsupported methods keep the application nonce policy, including framework not-found pages. */
+function isSealedFinancingHandler(request: NextRequest): boolean {
+  const pathname = request.nextUrl.pathname;
+  const uuid = "[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}";
+  return (
+    (["GET", "HEAD"].includes(request.method) &&
+      new RegExp(`^/p/${uuid}(?:/report\\.pdf|/media/[a-f0-9]{64})?$`, "u").test(pathname)) ||
+    (request.method === "POST" && new RegExp(`^/p/${uuid}/inquiry$`, "u").test(pathname))
+  );
 }
 
 /**
@@ -75,7 +88,10 @@ export function proxy(request: NextRequest): NextResponse {
     },
   });
 
-  response.headers.set(cspHeaderName, contentSecurityPolicy);
+  // Preserve the request nonce on every path. Applying the app's response policy here would
+  // overwrite the sealed report's style hash and block its embedded, hash-pinned font.
+  if (!isSealedFinancingHandler(request))
+    response.headers.set(cspHeaderName, contentSecurityPolicy);
   if (isTokenBearingPath(request.nextUrl.pathname)) {
     response.headers.set("Referrer-Policy", "no-referrer");
     response.headers.set("Cache-Control", "no-store");

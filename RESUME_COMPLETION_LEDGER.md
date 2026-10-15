@@ -1,0 +1,58 @@
+# Completion resume, October 14, 2026
+
+Branch: codex/completion-resume-20261014, based on current main ccc705e7462948309e4e98f26304b9d84d5d324a. Human resumed completion after the restart. Work proceeds inline and sequentially under the updated AGENTS.md. Reviews performed by this author are self-reviews and must never be described as independent.
+
+## Scope of this integration checkpoint
+
+Bring the preserved PR96 and PR98 source and frozen WIP onto the actual merged checkpoint, preserve domain source and accepted CTR003/CTR004 revision1, and close the demonstrated integration failures before building further customer flow. This checkpoint is not whole-product completion or hosted release.
+
+| Step                          | Guardian and execution                           | Required outcome                                                                                                                                                          | State                                     |
+| ----------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Reconcile preserved work      | git-guardian, inline current GPT-6               | New main-based managed worktree; original worktrees and backup intact; union source/export/tenant assertions retain both branches                                         | Implemented                               |
+| Publisher lock repair         | db-guardian, inline current GPT-6                | Native RED reproduces separate-pool self-lock; additive repair preserves current authorization and immutable identity; real read/claim and revocation/identity tests pass | Native proof passes                       |
+| Canonical auth capabilities   | db-guardian, inline current GPT-6                | Test-only private capability grants use the single sanctioned harness; exact grantor-specific prior options restored; ordinary runtime never receives private membership  | Restricted native proof passes            |
+| Public inquiry composition    | typescript-node-guardian, inline source adoption | Preserve exact Host/origin/path/nonce/body/identity controls; configured exported POST reaches native admission/encrypted capture; missing qualification still refuses    | 158 focused cases pass                    |
+| Financing fixture duplication | typescript-node-guardian, inline                 | Shared synthetic publication helper retains original assertions, cleanup and independent connections; zero threshold remains                                              | 155 combined native cases and zero clones |
+| Security                      | security-guardian, inline self-review            | Inspect final code, native ordering, capability scope, encrypted inquiry and default-off boundaries; deterministic checks and source pins                                 | Report follows implementation             |
+| Quality                       | quality-guardian, inline self-review             | Trace this scoped plan and original acceptance obligations to actual evidence; explicitly preserve incomplete customer/provider requirements                              | After Security                            |
+| PR closeout                   | code-review-pr-guardian and git-guardian, inline | Reviewable provenance and current main ancestry, no full-project claim; full current-head canonical CI required                                                           | Pending                                   |
+
+The model matrix uses older Cursor/Claude aliases unavailable in this Codex host. Execution stays on the inherited current GPT-6 rather than inventing a model identifier. No subagents were spawned.
+
+## Executed evidence
+
+- Main post-merge CI succeeded before this resume. PR90-95 are closed as included in97;96/98 remain draft and are preserved. Their old branches now conflict with main and are not declared shippable. PR87/88/89/99 are not this checkpoint's implementation scope.
+- Full unit suite:3906 cases,236 files,137.64s. Full contracts:158 cases,15 files. Task/public focused totals117 and158 are overlapping subsets, not additional unique totals.
+- Full combined native PostgreSQL17.11:155 cases, five files,66.40s, zero skip. It includes105 publisher,16 authentication and34 financing cases. This preceded the final test-harness URL-guard narrowing; all16 authentication cases then passed again under a separate restricted login with final guard and all25 migrations. No whole canonical pgTAP/browser pass is claimed locally.
+- Restricted login has no superuser, RLS bypass, inheritance, create-role or create-database privilege. Its private-role ADMIN-only/SET-false memberships match exactly before and after the16-case suite. Temporary SET grants affect only self-granted test memberships, never production/app roles.
+- Fresh native schema catalog:47 tenant tables with forced RLS. The initial diagnostic omitted platform.locations because it only searched for a location_id column, yielding46; correcting that diagnostic to match the existing scaffold predicate gives47. No assertion threshold was reduced.
+- Lock regression fails before repair after about3.2s, then passes with distinct actual backend PIDs, read and claim pre-commit rechecks, immutable identity refusals and revoked-session refusal. Migration20261014160000_publisher_authentication_lock_order.sql replaces only the resolver. It retains existing definer/ACL and current session/binding/actor/location/install locks; the immutable launch/operation identity join takes no second-connection lineage locks. Existing mutable worker fencing is unchanged.
+- A first restricted harness restoration attempted to change an upstream grantor's ADMIN membership and failed. The final helper records/restores only the current grantor's own SET/INHERIT row; its original ADMIN grants are untouched and the exact all-grantor membership comparison passes. Failure log retained in tmp/native-restricted-auth-restore-red.log.
+- Broad jscpd:zero clones. The original200-token fixture clone was reproduced and removed through a shared test-only publication helper; no test assertion, timeout, threshold, exclusion or source scan regex was weakened.
+  -16 package typechecks, web/task/tooling types, lint, secret, type-boundary and architecture checks pass. Initial cold parallel source scans hit existing5s limits; unchanged serial contract execution passed, followed by all158 contracts. No timeout was raised.
+  -81 transferred files required line-ending normalization. Canonical Git blobs before and after Prettier are identical for all81; no functional source changes are hidden in the formatting repair. Full formatting now passes.
+- Production dependency audit:zero vulnerabilities. Existing stale April Security catalog and monorepo scanner root-only Next-config limitation are disclosed; actual Next16.3.8/React19.3.0 and proxy/route headers were inspected. Full repo audit and canonical CI remain separate.
+
+## Preserved evidence and constraints
+
+Original frozen reports remain unchanged. Exact existing CRLF receipt paths use whitespace=cr-at-eol; three specific existing Quality receipts retain their frozen final blank line using a path-local whitespace attribute. This does not exempt source or whole directories. No baseline screenshot was regenerated or adopted. Canonical current-main136 PNGs remain the baseline.
+
+The historical automatic approval rejection of the enabled whole-app fixture-only startup remains in force, recorded as blocked by policy; it was not retried or repackaged. Native PostgreSQL, controlled Request/Response seams and isolated artifact evidence are not enabled whole-app hosting proof. Live values, rights and provider actions remain separately qualified. No purchase, live ad launch, customer message, hosted migration, deployed environment change or activation occurred.
+
+Memory recall was attempted through the allowed Bash entry points. The hook rejected the wrapper and the Windows Bash executable reports missing /bin/bash; no unsupported VFS bypass was used. The local Claude project memory directory has no matching note files. The on-disk restart handoff, immutable receipts and current Git/source/CI were reconciled instead.
+
+## Work still required for completion
+
+- Publisher: actual authenticated web producer/verifier and provisioned original-owner authority; concrete qualified source/raster/stored media lease/admission capture; safe scheduled reconciliation/pause; customer launch/progress/control flow; authorized current HighLevel/Meta qualification and deliberate spend action.
+- Property: actual owner setup and reference admission for saved source, lender/preset/quote/disclosure/media rights; exact reviewed generation/approval/publication flow; one-page flyer; current attributed HighLevel delivery; actual hosted Chromium/R2/header qualification. Queued inquiry is not delivered contact.
+- Homeowner: shared provider billing-period cap and approved provider allowance/account rights. No RentCast account or paid subscription has been acquired.
+- Domains: automatic rechecks, hostname-root default selection/routing, setup timing and controlled owned-host proof.
+- Live app: signed-in walkthrough and production migration/configuration inventory. The connected Supabase app currently lists other projects but no project identified as AutomatedLO; no different project's database was selected or changed.
+
+Keep G1/G4/G8 accepted, G2 actual provider qualification parked, single LO/no customer roles, HighLevel CRM and QR ownership, explicit budget confirmation, and current rights checks. Do not turn missing evidence into generic verified presets or forged source/capture.
+
+## Closeout of the integration checkpoint
+
+Security self-review0e752fe8514af7a3c373e3ada605c79665364b4d03205434b9e7271cb0dd4492 completed before Quality self-review1fcf76caa65047a0fed4eeef14c7182e6b3b035dd7ec2893f6bf44983abf5694. The final source pins remained unchanged. All16 package builds pass in65.01seconds and58 compiled DB connectionless cases pass. These self-reviews do not claim independent authorship or whole-product completion.
+
+Read-only repository closeout used local clone plus gh CLI: current main is an ancestor, no unresolved source paths, CODEOWNERS and locked CI/PR template remain, no repository settings/workflows/dependencies were changed by the repair. The adoption diff is large because it includes preserved PR96/98 implementations and original reports. Reviewer focus is the named16 repair/composition pins and the preserved dependency reports, not a claim that33000lines received independent new review. No new visual baseline was adopted. Full current-head canonical CI and MERGEABLE remain required.

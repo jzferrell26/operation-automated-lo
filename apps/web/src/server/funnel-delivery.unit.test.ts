@@ -159,7 +159,9 @@ describe("funnel retention while public collection is disabled", () => {
     expect(await response.json()).toEqual({ error: "RETENTION_UNAVAILABLE" });
   });
   it("still deletes expired ciphertext through the scheduler boundary without decrypting it", async () => {
-    const execute = vi.fn().mockResolvedValue({ rows: [{ removed: 3 }] });
+    const execute = vi.fn().mockResolvedValue({
+      rows: [{ counts: { funnel: 3, financing: 0, total: 3 } }],
+    });
     const release = vi.fn();
     mock.connect.mockResolvedValue({ execute, release });
     const secret = randomBytes(32).toString("base64url");
@@ -176,7 +178,7 @@ describe("funnel retention while public collection is disabled", () => {
     );
     expect(execute).toHaveBeenCalledWith(
       expect.objectContaining({
-        text: "select campaign.purge_expired_funnel_inquiries() as removed",
+        text: "select campaign.purge_expired_marketing_inquiries() as counts",
       }),
     );
     expect(release).toHaveBeenCalledTimes(1);

@@ -2,3 +2,15 @@
 
 *.png binary
 *.webp binary
+
+# Preserve original bytes of frozen publisher handoffs referenced by review hashes.
+library/requirements/reports/2026-10-14-webinar-publisher-worker-handoff.md -text whitespace=cr-at-eol
+library/requirements/reports/2026-10-14-webinar-publisher-bindings-relay-handoff.md -text whitespace=cr-at-eol
+# Frozen review receipts retain the original bytes covered by their evidence pins.
+library/requirements/reports/2026-10-14-financing-output-final-security-review.md -text whitespace=cr-at-eol
+library/requirements/reports/2026-10-14-financing-output-repair-security-review.md -text whitespace=cr-at-eol
+library/requirements/reports/2026-10-14-public-financing-output-handoff.md -text whitespace=cr-at-eol
+# Retain the exact final newline bytes of these already frozen review receipts.
+library/requirements/reports/2026-10-14-financing-release-foundation-quality-review.md whitespace=-blank-at-eof
+library/requirements/reports/2026-10-14-webinar-publisher-command-quality-review.md whitespace=-blank-at-eof
+library/requirements/reports/2026-10-14-webinar-publisher-foundation-quality-review.md whitespace=-blank-at-eof

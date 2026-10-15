@@ -63,9 +63,15 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   transpilePackages: ["@oalo/application", "@oalo/config", "@oalo/ui"],
-  outputFileTracingIncludes: Object.fromEntries(
-    WEBINAR_RASTER_CONSUMERS.map((route) => [route, WEBINAR_RASTER_FILES]),
-  ),
+  outputFileTracingIncludes: Object.fromEntries([
+    ...WEBINAR_RASTER_CONSUMERS.map((route) => [route, WEBINAR_RASTER_FILES]),
+    ...[
+      "/p/\\[publicationId\\]",
+      "/p/\\[publicationId\\]/report.pdf",
+      "/p/\\[publicationId\\]/media/\\[assetRef\\]",
+      "/p/\\[publicationId\\]/inquiry",
+    ].map((route) => [route, ["./public/fonts/webinar/AutomatedLOWebinarInter.ttf"]]),
+  ]),
   async headers() {
     return [{ source: "/:path*", headers: [...securityHeaders] }];
   },

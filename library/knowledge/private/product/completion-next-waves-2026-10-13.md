@@ -6,7 +6,19 @@ This execution plan scopes the next increments for webinar launch, photo-led pro
 
 **Related:** [Current completion ledger](../../../../COMPLETION_LEDGER.md), [completion review](completion-review-2026-10-13.md), [PRD-010](../../../requirements/in-work/prd-010-campaign-recovery/prd-010-campaign-recovery-index.md), [PRD-007](../../../requirements/in-work/prd-007-homeowner-reports/prd-007-homeowner-reports-index.md).
 
-## Starting point and execution order
+## Current direction, October 14 UTC
+
+The sections below retain the original wave plan and its starting-state observations. Subsequent work has changed that state: PRs #90 through #94 have passed their scoped source CI, and the combined source is under review in [PR #95](https://github.com/jzferrell26/operation-automated-lo/pull/95). The combined branch still needs its own final CI qualification. No main merge or hosted rollout is implied.
+
+The owner settled the homeowner product direction as a single-LO account with no customer roles. All of that account's connected contacts and its own report balances/add/remove actions are in scope. Preserve internal tenant isolation. Do not reopen L-5/L-16 as a customer role questionnaire. Per-report PDF and manual removal are already implemented; no automatic report-retention interval has been selected. See [single-LO direction](../../../requirements/in-work/prd-007-homeowner-reports/single-lo-owner-direction-2026-10-13.md) for the current interpretation.
+
+The owner has no RentCast account and requested a recommendation. [The provider plan](homeowner-provider-plan-2026-10-13.md) proposes a platform-owned API account, free-plan qualification, a bounded first pilot and a 100-attempt allowance after paid-plan authorization. Those are recommendations; live settings still default to disabled/zero. A shared provider-account budget remains source work before enabling multiple LOs.
+
+The owner reminded us that this is a HighLevel plugin and can use its QR capability. Prefer canonical public listing URLs with HighLevel Sites QR creation/management, without another QR-management screen. Optional placement of an externally supplied QR in a flyer needs actual artifact/destination proof. Automatic QR API integration has not been established. Library will amend the exact QR acceptance criteria with the agreed public-release contract before closing them.
+
+The next missing source is the native HighLevel webinar publisher and public financing release, including evidence, exact output approval, public site/PDF and attributed consented inquiry delivery. Jonathan accepted CTR-003 revision 1 and CTR-004 revision 1 on October 14 UTC through the exact linked design question, answering "Adopt both plans (Recommended)". Their accepted files and SHA-256 pins are recorded in the affected PRDs and the native publisher/property release ledgers. Foundation source is in work; no runtime, lender or provider completion is implied. Missing source must not be mislabeled as a credential-only blocker. Existing PR #87 has four partial domain files; persistent owner binding, UI/routing and full qualification remain unfinished and require completion before custom-domain proof.
+
+## Original starting point and execution order
 
 The current ledger records fifteen pending-review webinar variants with thirty raster files, a preparation interface, clearer report entry points, a dependency patch and local security/quality close-out. [PR #90](https://github.com/jzferrell26/operation-automated-lo/pull/90) still needs its remaining CI and baseline qualification. Finish that owned batch before allocating new changes on top of it. A preparation download is not a branded provider-ready export, an approved catalog entry or a campaign bound to a published webinar.
 

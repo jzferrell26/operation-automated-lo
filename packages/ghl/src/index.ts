@@ -11,6 +11,11 @@ export * from "./meta-adapter.js";
 export * from "./production-meta-read-transport.js";
 export * from "./sanitization.js";
 export * from "./signed-context.js";
+export * from "./webinar-publisher-compiler.js";
+export * from "./webinar-publisher-dtos.js";
+export * from "./webinar-publisher-media.js";
+export * from "./webinar-publisher-transport.js";
+export * from "./webinar-publisher-wire.js";
 
 export const highLevelPackage = Object.freeze({
   contractVersion,

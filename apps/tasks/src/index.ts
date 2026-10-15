@@ -3,6 +3,23 @@ export {
   validateRenderFixturesCore,
   type FixtureValidationResult,
 } from "./core/validate-render-fixtures.js";
+export {
+  runWebinarPublisherWorker,
+  WebinarPublisherWorkerError,
+  type WebinarPublisherWorkerPorts,
+  type WebinarPublisherWorkerResult,
+} from "./core/webinar-publisher-worker.js";
+export {
+  createWebinarPublisherWorkerRuntime,
+  WebinarPublisherWorkerRequestSchema,
+  WebinarPublisherWorkerEnvelopeSchema,
+  type WebinarPublisherRuntimeDependencies,
+  type WebinarPublisherWorkerRuntime,
+} from "./core/webinar-publisher-runtime.js";
+export {
+  executeWebinarPublisherTask,
+  webinarPublisherCommand,
+} from "./tasks/webinar-publisher-command.js";
 export { validateRenderFixtures } from "./tasks/validate-render-fixtures.js";
 export {
   PdfRenderTaskRequestSchema,

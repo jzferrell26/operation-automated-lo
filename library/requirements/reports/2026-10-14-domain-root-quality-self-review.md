@@ -18,4 +18,4 @@ The read-only hosted-runtime report confirms production still serves ccc705e and
 
 Technical-writing review: the plan and inventory reports use reference/explanation modes, lead with their confirmed scope, name the observed commit/project, distinguish historical from current state, and retain unverified limits. Mode, opening, evidence examples, voice, reader prerequisites and completeness pass at this increment's scope.
 
-Whole-product completion remains open in the completion ledger. This increment does not add automatic domain rechecks, change a connected domain's selected kind, establish public conversion proof, bind missing publisher services or activate RentCast/HighLevel/Meta.
+Whole-product completion remains open in the completion ledger. The existing connection form starts with Live webinar, or preserves the previous disconnected record's kind; it has no kind chooser yet. The new root consumes the stored kind. This increment does not add that chooser, automatic domain rechecks, change a connected domain's kind, establish public conversion proof, bind missing publisher services or activate RentCast/HighLevel/Meta.

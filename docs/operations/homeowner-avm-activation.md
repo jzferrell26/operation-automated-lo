@@ -8,6 +8,8 @@ The AVM source is implemented and qualified with synthetic provider responses an
 
 The inspected Vercel project and local workspace still have no RentCast credential. No real valuation call or customer message was made during qualification. Hosted activation and final deployment evidence are recorded in the release follow-up report. Do not treat a configured adapter, successful synthetic lookup, or saved report template as live valuation evidence.
 
+The database qualification above describes September 24. A [read-only October14 inventory](../../library/requirements/reports/2026-10-14-hosted-migration-inventory.md) confirms17 applied migrations through October6; the completion branch has26. Recheck the inventory and provider configuration before activation. The historical ten-migration snapshot does not establish that later migrations are applied.
+
 ## Connect the authenticated workspace
 
 Use an explicitly designated database for AutomatedLO. Apply the repository migrations in timestamp order using the existing migration role procedure, including `supabase/migrations/20260924010000_homeowner_reports.sql`. Existing installations require only unapplied migrations. Never reset a hosted database to install this feature.
@@ -43,6 +45,8 @@ Set these through the hosting provider's secret/environment interface. Never com
 | `OALO_RENTCAST_API_KEY` | RentCast API credential with the required valuation/report-display rights. |
 | `OALO_HOMEOWNER_MONTHLY_LOOKUP_LIMIT` | Explicit per-workspace lookup-attempt allowance. Default `0` blocks fresh lookups. Choose the allowance deliberately; this is not a subscription price. |
 
+Apply `20261014170000_homeowner_provider_budget.sql` and configure the shared account budget below before authorizing fresh lookups. A key and workspace allowance alone do not enable paid calls.
+
 Redeploy after configuration. In Homeowner reports, choose Create report, then **Property valuation (no contact required)**. Enter and confirm an address, leave mortgage data unknown or supply verified inputs, review the company details, and create the report.
 
 The first report makes one request to `https://api.rentcast.io/v1/avm/value` with `lookupSubjectAttributes=true` and `compCount=5`. The adapter checks the returned street/unit, state and ZIP against the requested property. Address mismatch, missing estimates or invalid data produce an error; they never substitute the fictional sample.
@@ -50,6 +54,35 @@ The first report makes one request to `https://api.rentcast.io/v1/avm/value` wit
 For the first controlled live qualification, check the source is RentCast, verify the address and comparable listings, reload the report, download the PDF, and retry the same request. Reopening, PDF creation and exact retries must not add a valuation request. A fresh valuation for the same address can be reused for 30 days within its workspace. Explicit Refresh value authorizes a new lookup.
 
 Provider attempts are reserved durably before network access, including attempts whose outcome is uncertain. An interrupted request can require human review. The allowance is a cost-control mechanism, not a claim that every provider attempt was billed or that a customer was charged. No Stripe charge or new subscription is implemented here.
+
+## Configure the shared provider budget
+
+Only the operator who manages the platform's RentCast account configures this budget, using the existing migration-owner procedure against the confirmed AutomatedLO database. Record the approved account, actual billing-period boundaries in UTC, and attempt cap in the release evidence. Keep the credential in the secret store. No budget is seeded by the migration and no paid plan or recommended allowance has been approved by this increment.
+
+Within a migration-owner transaction, bind the approved period and cap as SQL parameters. This statement creates the first period or starts a subsequent period only after the previous period has ended. It cannot reset a counter during its current period:
+
+```sql
+insert into homeowner.provider_account_budgets
+  (provider_key, billing_period_start, billing_period_end, lookup_limit, enabled)
+values ('rentcast', $1::timestamptz, $2::timestamptz, $3::integer, true)
+on conflict (provider_key) do update set
+  billing_period_start = excluded.billing_period_start,
+  billing_period_end = excluded.billing_period_end,
+  lookup_limit = excluded.lookup_limit,
+  reserved_attempts = 0,
+  enabled = true,
+  updated_at = clock_timestamp()
+where homeowner.provider_account_budgets.billing_period_end <= clock_timestamp()
+  and excluded.billing_period_start >= homeowner.provider_account_budgets.billing_period_end
+returning provider_key, billing_period_start, billing_period_end,
+  lookup_limit, reserved_attempts, enabled;
+```
+
+The statement must return one row with the approved values. Zero rows means the existing period has not ended or the new period overlaps it; investigate before proceeding. Save the previous period's final count in the operator evidence before rollover. The application never rolls periods forward automatically. Calls outside AutomatedLO, including manual account tests or other integrations, are not counted here; reserve headroom for them and compare this counter with the provider's actual usage.
+
+A new valuation atomically reserves one shared slot in the same transaction as the workspace attempt. Concurrent workspaces cannot spend the same slot. Exact request retries, recent cached values, saved report reads and PDF creation do not reserve another slot. A committed attempt keeps its slot after a provider failure or property removal. A local transaction rollback restores it. The per-workspace UTC monthly allowance remains an additional limit and does not define the provider's billing cycle.
+
+To stop fresh lookups, set `enabled=false` on the RentCast budget through the same operator procedure. Do not reduce the counter or delete the row to resume a current period. Saved reports and PDFs remain available. Runtime accounts cannot read or reset the table; authenticated availability exposes only a boolean, and each attempt rechecks the cap atomically.
 
 ## Optional monthly updates and HighLevel handoff
 

@@ -101,6 +101,8 @@ export function homeError(error: unknown): Response {
     const messages: Record<string, string> = {
       LOOKUP_LIMIT:
         "Your monthly valuation allowance has been reached. Existing reports are still available.",
+      PROVIDER_LOOKUP_LIMIT:
+        "Valuation lookups are temporarily unavailable. Your existing reports are still available.",
       PROPERTY_LIMIT: "This workspace has reached its tracked-property limit.",
       LOOKUP_STILL_ACTIVE:
         "This lookup may still be running. Wait at least five minutes before closing it.",
@@ -121,7 +123,7 @@ export function homeError(error: unknown): Response {
         error: error.code,
         message: messages[error.code] ?? "The report could not be saved. Please try again.",
       },
-      error.code === "NOT_FOUND" ? 404 : 409,
+      error.code === "NOT_FOUND" ? 404 : error.code === "PROVIDER_LOOKUP_LIMIT" ? 503 : 409,
     );
   }
   if (error instanceof z.ZodError)
@@ -169,10 +171,11 @@ export async function handleHomeWorkspace(
       const canWrite = canWriteHomeReports(principal);
       const lookupsThisMonth = await repository.usage();
       const properties = await repository.list();
+      const lookupAvailable = valuation !== null && (await repository.providerLookupAvailable());
       return homeJson({
         mode: "live",
         canWrite,
-        valuationConnected: valuation !== null,
+        valuationConnected: lookupAvailable,
         ghlConnected: contacts !== null,
         deliveryEnabled: config.OALO_HOMEOWNER_DELIVERY_ENABLED === "enabled",
         monthlyLookupLimit: config.OALO_HOMEOWNER_MONTHLY_LOOKUP_LIMIT,
@@ -180,7 +183,7 @@ export async function handleHomeWorkspace(
         properties,
         readiness: homeReadiness(
           canWrite,
-          valuation !== null,
+          lookupAvailable,
           config.OALO_HOMEOWNER_MONTHLY_LOOKUP_LIMIT,
           lookupsThisMonth,
         ),

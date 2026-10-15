@@ -34,6 +34,7 @@ describe("a refusal from the homeowner report server", () => {
   /** Every code `homeError` maps itself, plus one it has never heard of. */
   const STORE_CODES = [
     "LOOKUP_LIMIT",
+    "PROVIDER_LOOKUP_LIMIT",
     "PROPERTY_LIMIT",
     "LOOKUP_STILL_ACTIVE",
     "LOOKUP_ALREADY_ATTEMPTED",
@@ -61,6 +62,13 @@ describe("a refusal from the homeowner report server", () => {
     expect(status).toBe(409);
     expect(message).toBe(
       "This saved request was already used with different details. Start a new report request.",
+    );
+  });
+  it("keeps shared account exhaustion temporary and preserves access to saved reports", async () => {
+    const result = await refusal(new HomeownerStoreError("PROVIDER_LOOKUP_LIMIT"));
+    expect(result.status).toBe(503);
+    expect(result.message).toBe(
+      "Valuation lookups are temporarily unavailable. Your existing reports are still available.",
     );
   });
 

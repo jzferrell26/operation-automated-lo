@@ -89,6 +89,7 @@ const reserveResponses = () => ({
   "homeowner.pending-lookup": [{ count: 0 }],
   "homeowner.cached-valuation": [],
   "homeowner.usage": [{ count: 0 }],
+  "homeowner.reserve-provider": [{ allowed: true }],
   "homeowner.property-count": [{ count: 0 }],
   "homeowner.insert-property": [{ id: propertyId }],
   "homeowner.reserve-lookup": [{ id: propertyId }],
@@ -96,6 +97,22 @@ const reserveResponses = () => ({
 });
 
 describe("homeowner database failure boundaries", () => {
+  it("refuses an exhausted shared account before reserving a property or lookup", async () => {
+    const exhausted = driver({
+      ...reserveResponses(),
+      "homeowner.reserve-provider": [{ allowed: false }],
+    });
+    await expect(exhausted.repository.reserve(reservation)).rejects.toMatchObject({
+      code: "PROVIDER_LOOKUP_LIMIT",
+    });
+    expect(exhausted.calls.at(-1)?.statementName).toBe("transaction.rollback");
+    expect(exhausted.calls.some((call) => call.statementName === "homeowner.insert-property")).toBe(
+      false,
+    );
+    expect(exhausted.calls.some((call) => call.statementName === "homeowner.reserve-lookup")).toBe(
+      false,
+    );
+  });
   it("reserves usage atomically and rolls everything back when the usage write fails", async () => {
     const success = driver(reserveResponses());
     expect((await success.repository.reserve(reservation)).kind).toBe("reserved");

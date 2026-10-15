@@ -45,9 +45,9 @@ Memory recall was attempted through the allowed Bash entry points. The hook reje
 
 - Publisher: actual authenticated web producer/verifier and provisioned original-owner authority; concrete qualified source/raster/stored media lease/admission capture; safe scheduled reconciliation/pause; customer launch/progress/control flow; authorized current HighLevel/Meta qualification and deliberate spend action.
 - Property: actual owner setup and reference admission for saved source, lender/preset/quote/disclosure/media rights; exact reviewed generation/approval/publication flow; one-page flyer; current attributed HighLevel delivery; actual hosted Chromium/R2/header qualification. Queued inquiry is not delivered contact.
-- Homeowner: shared provider billing-period cap and approved provider allowance/account rights. No RentCast account or paid subscription has been acquired.
+- Homeowner: the shared provider billing-period cap is implemented in this branch, with native concurrency, rollback, cache/retry, private ACL and availability checks. Hosted migration/configuration and approved provider allowance/account rights remain open. No RentCast account or paid subscription has been acquired.
 - Domains: automatic rechecks, hostname-root default selection/routing, setup timing and controlled owned-host proof.
-- Live app: signed-in walkthrough and production migration/configuration inventory. The connected Supabase app currently lists other projects but no project identified as AutomatedLO; no different project's database was selected or changed.
+- Live app: signed-in walkthrough and production configuration inventory. Using the saved project ID, read-only access to the correct AutomatedLO project succeeded after its omission from the initial connector list. Its17 recorded migrations leave9 source versions unapplied. The catalog confirms absent new tables. See the hosted inventory report. No hosted database was changed. Browser inventory remains empty.
 
 Keep G1/G4/G8 accepted, G2 actual provider qualification parked, single LO/no customer roles, HighLevel CRM and QR ownership, explicit budget confirmation, and current rights checks. Do not turn missing evidence into generic verified presets or forged source/capture.
 

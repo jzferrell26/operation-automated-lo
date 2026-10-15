@@ -183,6 +183,22 @@ export class PostgresHomeownerRepository {
       async (tx) => (await tx.read(usage, [tx.context.locationId]))[0]?.count ?? 0,
     );
   }
+  async providerLookupAvailable(): Promise<boolean> {
+    return this.transaction(
+      async (tx) =>
+        (
+          await tx.read(
+            statement(
+              "provider-available",
+              "read",
+              "select homeowner.provider_lookup_available() as allowed",
+              z.object({ allowed: z.boolean() }),
+            ),
+            [],
+          )
+        )[0]?.allowed === true,
+    );
+  }
   async ghlLocation(): Promise<string | null> {
     return this.transaction(
       async (tx) =>
@@ -269,6 +285,18 @@ export class PostgresHomeownerRepository {
           (await tx.read(cachedValuation, [location, options.addressHash]))[0]?.valuation ?? null;
       if (!cached && ((await tx.read(usage, [location]))[0]?.count ?? 0) >= options.monthlyLimit)
         throw new HomeownerStoreError("LOOKUP_LIMIT");
+      if (cached === null) {
+        const budget = await tx.write(
+          statement(
+            "reserve-provider",
+            "write",
+            "select homeowner.reserve_provider_lookup() as allowed",
+            z.object({ allowed: z.boolean() }),
+          ),
+          [],
+        );
+        if (budget[0]?.allowed !== true) throw new HomeownerStoreError("PROVIDER_LOOKUP_LIMIT");
+      }
       if (!existing) {
         const count =
           (

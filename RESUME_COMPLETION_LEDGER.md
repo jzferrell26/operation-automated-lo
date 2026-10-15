@@ -4,6 +4,10 @@ Branch: codex/completion-resume-20261014, based on current main ccc705e746294830
 
 ## Scope of this integration checkpoint
 
+October15 follow-up: canonical run38678749544 passed174 native database cases,323 route cases and its browser journeys (163 review and4 empty-catalog cases), but failed the old seven-table homeowner pgTAP inventory. The test repair retains the seven tenant policy sets, requires all eight exact tables and forced RLS, pins the new shared table's migration-owner-only policy and direct runtime/API access refusal, and increases the plan244 to247. Native PostgreSQL17.11 catalog checks pass; the full updated pgTAP file requires a new canonical CI run. Security self-review precedes Quality self-review in the two October15 homeowner-pgtap receipts. No merge is claimed.
+
+Jonathan approved the narrow two-migration production packet on October15. Fresh preflight confirmed the exact production Vercel build/commit and unchanged artifact/manifest hashes. Supabase get-project and list-migrations both returned "You do not have permission to perform this action" at approximately10:42UTC, so execution stopped before linking or applying anything. No hosted mutation occurred. Connector access restoration and a fresh exact-identity/inventory preflight are required before execution; the packet's30-minute window must still be respected. Approval and this access failure do not authorize later source migrations or provider activation.
+
 Bring the preserved PR96 and PR98 source and frozen WIP onto the actual merged checkpoint, preserve domain source and accepted CTR003/CTR004 revision1, and close the demonstrated integration failures before building further customer flow. This checkpoint is not whole-product completion or hosted release.
 
 | Step                          | Guardian and execution                           | Required outcome                                                                                                                                                          | State                                     |

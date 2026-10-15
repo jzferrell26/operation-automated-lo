@@ -1,0 +1,15 @@
+# Home runtime Security self-review
+
+Author review under the project's sequential recovery instruction, not independent review. Scope: packages/rendering/src/playwright-browser.ts and tooling/tests/unit/rendering-import-boundary.test.ts, against current main ccc705e and the Home runtime repair plan.
+
+Actual production /overview logs on October15 report a missing playwright-core/browsers.json module during the eager rendering-barrel import. The new regression first failed at that import with a deliberately unavailable browser runtime. An earlier dynamic-import test put compilation inside a five-second assertion and timed out; moving package import to ordinary suite setup exposed the intended dependency error without changing timeouts.
+
+The fix at playwright-browser.ts:3 makes Page/Route imports type-only. Lines193 onward load the same pinned Playwright package only when preparePage reaches its existing launch. There is no catch/fallback, alternate browser, relaxed request guard, network permission, asset check, changed cleanup or dependency version. Existing render() input validation still precedes browser preparation. Ordinary package consumers and constructing the adapter no longer initialize Playwright.
+
+Checks:35 focused rendering cases and67 Home cases pass; all16 workspace typechecks plus tooling types, lint, formatting, secret and package-boundary audits pass. Full production build16/16 passes in70.65seconds. With Next's documented node-environment bootstrap, importing the compiled Home route passes while Module._load refuses Playwright packages. The initial compiled import without that bootstrap failed Next's AsyncLocalStorage invariant and is not a pass. No server was started by this check.
+
+Managed security scan.ts completed. No hardcoded secret, JWT/prototype/SQL/shell injection hit; unchanged scanner/template and theme/local-storage fixtures are outside this five-line source delta. Unicode scan is clean. Its root-only Next-config discovery misses apps/web/next.config.ts, which was inspected directly and is unchanged. Its fixed CVE watchlist is historical, not current vulnerability intelligence. Fresh production audit is zero across153 production/optional dependencies; the inherited development-only braces advisory acceptance is unchanged. No migration, lockfile, environment, runtime grant or browser provisioning changed.
+
+Security categories: access control, authentication, tenant/financial/PII exposure, injection, crypto, filesystem/network/render sandbox, dependencies, logging and configuration. No new sink or weakened boundary exists in this delta. No unresolved Security finding in scope. Hosted renderer provisioning and actual post-deploy Home verification remain required; this report does not certify the whole product or an enabled renderer.
+
+Source SHA256 b61e4b6a66cbb040c6e79fd4d3d9303a3cedde6e3120baad47ef836029a5b9e9. Test SHA25638eacdcb6384e0690c156fdcfb40cde204e1639ba0f75a5d74843d410b486815. Quality follows this receipt on unchanged bytes.

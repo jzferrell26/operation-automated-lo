@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { chromium, type Page, type Route } from "@playwright/test";
+import type { Page, Route } from "@playwright/test";
 import type { PaidAdRenderAsset, RenderManifest } from "@oalo/contracts";
 import sharp from "sharp";
 
@@ -190,6 +190,9 @@ export class PlaywrightBrowserAdapter implements DeterministicBrowserPort {
     source: RenderSourceDocument,
     viewport = source.viewport,
   ): Promise<PreparedPage> {
+    // Ordinary web reads import this package without a provisioned browser runtime.
+    // Load it only when an authorized render actually reaches the launch boundary.
+    const { chromium } = await import("@playwright/test");
     const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ deviceScaleFactor: 1, viewport });
     let routeFailure: string | undefined;

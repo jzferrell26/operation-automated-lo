@@ -77,7 +77,7 @@ for (const { width, height } of REVIEW_FRAMES)
         expect(result.violations).toEqual([]);
         await page.screenshot({
           path: join(captures, `${width}-${theme}-${name}-synthetic.png`),
-          fullPage: true,
+          fullPage: !openChooser,
         });
       }
       await page.goto("/settings/domains");

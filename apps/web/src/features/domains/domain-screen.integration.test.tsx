@@ -4,20 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DomainScreen } from "./domain-screen.js";
 import { domainFixture, domainState } from "./domain.test-support.js";
 import { type DomainState, type DomainStatus } from "./model.js";
-beforeEach(() => {
-  // jsdom has no layout observer; real-browser coverage checks the shared popup.
-  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
-    new DOMRect(16, 120, 240, 44),
-  );
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-});
+import { installSelectLayoutForTest } from "../../testing/select-layout.test-support.js";
+beforeEach(() => installSelectLayoutForTest());
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();

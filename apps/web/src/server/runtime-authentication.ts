@@ -1,7 +1,11 @@
 import { z } from "zod";
 
-import type { AuthenticatedPrincipal } from "@oalo/application";
-import { createSessionBoundCsrfToken } from "@oalo/auth";
+import { CampaignPrincipalInvalidError, type AuthenticatedPrincipal } from "@oalo/application";
+import {
+  BrowserSessionPolicyError,
+  SessionPolicyError,
+  createSessionBoundCsrfToken,
+} from "@oalo/auth";
 import type { ApplicationRole } from "@oalo/contracts";
 import { createPostgresPool, type DatabasePool } from "@oalo/db";
 
@@ -19,6 +23,7 @@ import type { Capability } from "../features/ui-foundation/model/synthetic-ui.js
 import {
   createDefaultCampaignCommandPorts,
   resolveAuthenticatedReadPrincipal,
+  UnauthenticatedPrincipalError,
   type BrowserMutationGate,
   type CampaignCommandPorts,
   type EmbeddedSessionPort,
@@ -626,6 +631,9 @@ export async function resolveRuntimeShellSession(
   portsOverride?: CampaignCommandPorts,
 ): Promise<RuntimeShellSession> {
   const composition = resolveRuntimeAuthenticationComposition(input);
+  if (composition.failedVariable !== undefined) {
+    return Object.freeze({ mode: "unavailable", ...UNAUTHENTICATED_SHELL });
+  }
   if (composition.mode !== "review") {
     return Object.freeze({ mode: composition.mode, ...UNAUTHENTICATED_SHELL });
   }
@@ -633,8 +641,14 @@ export async function resolveRuntimeShellSession(
   let principal: Readonly<AuthenticatedPrincipal>;
   try {
     principal = await resolveAuthenticatedReadPrincipal(request, input, ports);
-  } catch {
-    return Object.freeze({ mode: composition.mode, ...UNAUTHENTICATED_SHELL });
+  } catch (error) {
+    const refused =
+      error instanceof UnauthenticatedPrincipalError ||
+      error instanceof SessionPolicyError ||
+      error instanceof BrowserSessionPolicyError ||
+      error instanceof CampaignPrincipalInvalidError;
+    // An unavailable mandatory read cannot prove sign-out or supply a remembered identity.
+    return Object.freeze({ mode: refused ? "review" : "unavailable", ...UNAUTHENTICATED_SHELL });
   }
   const gate = ports.mutation;
   const csrfToken =

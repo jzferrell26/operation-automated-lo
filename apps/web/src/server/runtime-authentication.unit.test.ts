@@ -1,8 +1,14 @@
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 
-import type { AuthenticatedPrincipal } from "@oalo/application";
-import { createSessionBoundCsrfToken, FIRST_PARTY_SESSION_COOKIE } from "@oalo/auth";
+import { CampaignPrincipalInvalidError, type AuthenticatedPrincipal } from "@oalo/application";
+import {
+  BrowserSessionPolicyError,
+  SessionPolicyError,
+  createSessionBoundCsrfToken,
+  FIRST_PARTY_SESSION_COOKIE,
+} from "@oalo/auth";
+import { PostgresAdapterError } from "@oalo/db";
 import {
   formatActorRef,
   formatInstallationRef,
@@ -17,6 +23,7 @@ import type {
   SessionDisplayNames,
   SessionDisplayPort,
 } from "./authenticated-principal.js";
+import { UnauthenticatedPrincipalError } from "./authenticated-principal.js";
 import { SESSION_USER_FALLBACK, SESSION_WORKSPACE_FALLBACK } from "../copy/user-language.js";
 import { OALO_REVIEW_SURFACE_AUTHORIZED } from "./authenticated-workspace-data.js";
 import { handleCampaignApproval } from "./campaign-approval-handler.js";
@@ -419,6 +426,96 @@ describe("runtime authentication at the exported handlers", () => {
 });
 
 describe("runtime shell session", () => {
+  it("discards a previously verified shell when the next real session lookup is unavailable", async () => {
+    const previous = await shellForDisplay("location_admin", {
+      userDisplayName: "Previously verified user",
+      locationDisplayName: "Previously verified workspace",
+    });
+    expect(previous.shell.authenticated).toBe(true);
+    const actual = original.module;
+    if (actual === undefined) throw new Error("The principal module must be loaded");
+    ports.resolveAuthenticatedReadPrincipal.mockImplementation(
+      actual.resolveAuthenticatedReadPrincipal,
+    );
+    const getActive = vi
+      .fn()
+      .mockRejectedValue(
+        new PostgresAdapterError("DB_ACQUISITION_TIMEOUT", "synthetic backend detail"),
+      );
+    const resolveDisplay = vi.fn();
+    const shell = await resolveRuntimeShellSession(
+      new Request("https://review.operation-automated-lo.test/overview", {
+        headers: cookieHeaders(),
+      }),
+      REVIEW_ENV,
+      {
+        identityDirectory: denyingIdentityDirectory(),
+        roleBindings: denyingRoleBindings(),
+        firstPartySessions: { getActive },
+        sessionDisplay: { resolve: resolveDisplay },
+      },
+    );
+    expect(getActive).toHaveBeenCalledOnce();
+    expect(resolveDisplay).not.toHaveBeenCalled();
+    expect(shell).toEqual({
+      mode: "unavailable",
+      authenticated: false,
+      session: undefined,
+      csrfToken: undefined,
+    });
+  });
+
+  it.each([
+    new PostgresAdapterError("DB_ACQUISITION_TIMEOUT", "synthetic backend detail"),
+    new Error("synthetic backend detail"),
+  ])("reports unavailable after an unexpected principal read failure", async (failure) => {
+    ports.resolveAuthenticatedReadPrincipal.mockRejectedValueOnce(failure);
+    const shell = await resolveRuntimeShellSession(
+      new Request("https://review.operation-automated-lo.test/overview", {
+        headers: cookieHeaders(),
+      }),
+      REVIEW_ENV,
+    );
+    expect(shell).toEqual({
+      mode: "unavailable",
+      authenticated: false,
+      session: undefined,
+      csrfToken: undefined,
+    });
+    expect(JSON.stringify(shell)).not.toContain("synthetic backend detail");
+  });
+
+  it.each([
+    new UnauthenticatedPrincipalError(),
+    new SessionPolicyError(),
+    new BrowserSessionPolicyError(),
+    new CampaignPrincipalInvalidError(),
+  ])("keeps confirmed authentication refusals signed out", async (failure) => {
+    ports.resolveAuthenticatedReadPrincipal.mockRejectedValueOnce(failure);
+    const shell = await resolveRuntimeShellSession(
+      new Request("https://review.operation-automated-lo.test/overview", {
+        headers: cookieHeaders(),
+      }),
+      REVIEW_ENV,
+    );
+    expect(shell).toEqual({
+      mode: "review",
+      authenticated: false,
+      session: undefined,
+      csrfToken: undefined,
+    });
+  });
+
+  it("does not claim signed out when runtime composition is unavailable", async () => {
+    const shell = await resolveRuntimeShellSession(
+      new Request("https://review.operation-automated-lo.test/overview"),
+      withoutVariable("OALO_DATABASE_URL"),
+    );
+    expect(shell.mode).toBe("unavailable");
+    expect(shell.authenticated).toBe(false);
+    expect(shell.session).toBeUndefined();
+    expect(shell.csrfToken).toBeUndefined();
+  });
   it("reports an unauthenticated shell in review mode without a session", async () => {
     const shell = await resolveRuntimeShellSession(
       new Request("https://review.operation-automated-lo.test/overview"),

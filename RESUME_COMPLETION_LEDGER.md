@@ -1,5 +1,7 @@
 # Completion resume, October 14, 2026
 
+October15 session-availability increment: mandatory lookup failures and missing auth composition now produce unavailable, without a false signed-out claim or remembered principal. The actual layout shows the existing auth frame, explicit read refresh and no protected content, account controls, CSRF or forms.41 runtime and47 related UI cases pass, including a real session-port failure after prior verification. Types, web build, lint, source formatting, secrets/boundaries and zero clones pass. The full integration attempt passed959 with one skipped and four reset-fixture failures; those corrected cases pass in the related selection. Ordered Security then Quality author reviews are recorded in the session-availability reports. Fresh exact-head CI, hosted visual/recovery proof, acquisition root cause and unfinished product flows remain open. No deployment or external activation occurred.
+
 Branch: codex/completion-resume-20261014, based on current main ccc705e7462948309e4e98f26304b9d84d5d324a. Human resumed completion after the restart. Work proceeds inline and sequentially under the updated AGENTS.md. Reviews performed by this author are self-reviews and must never be described as independent.
 
 ## Scope of this integration checkpoint

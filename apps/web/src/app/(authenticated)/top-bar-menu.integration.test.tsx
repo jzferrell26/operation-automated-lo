@@ -27,9 +27,13 @@ import {
 
 let pathname = "/overview";
 let shell: RuntimeShellSession;
+const unavailableRefresh = vi.hoisted(() => vi.fn());
 
 vi.mock("next/headers.js", () => ({ headers: () => Promise.resolve(new Headers()) }));
-vi.mock("next/navigation.js", () => ({ usePathname: () => pathname }));
+vi.mock("next/navigation.js", () => ({
+  usePathname: () => pathname,
+  useRouter: () => ({ refresh: unavailableRefresh }),
+}));
 vi.mock("../../theme/index.js", () => themeModuleStub("Appearance theme"));
 vi.mock("../../server/runtime-authentication.js", (importOriginal) =>
   runtimeAuthenticationModuleStub(importOriginal, () => shell),
@@ -77,6 +81,23 @@ function signedIn(
 async function renderLayout() {
   return render(await AuthenticatedLayout({ children: <h1>Page</h1> }));
 }
+
+describe("unavailable sign-in status", () => {
+  useReviewModeEnvironment();
+  it("shows an unavailable sign-in read without claiming sign-out or rendering protected content", async () => {
+    shell = { mode: "unavailable", authenticated: false, session: undefined, csrfToken: undefined };
+    unavailableRefresh.mockClear();
+    const { container } = await renderLayout();
+    expect(screen.getByRole("heading", { name: "We couldn't check your sign-in" })).toBeVisible();
+    expect(screen.queryByText("You're signed out")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /^Page$/u })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Your account/u })).not.toBeInTheDocument();
+    expect(container.querySelector('meta[name="oalo-csrf-token"], form')).toBeNull();
+    expect(unavailableRefresh).not.toHaveBeenCalled();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Reload page" }));
+    expect(unavailableRefresh).toHaveBeenCalledOnce();
+  });
+});
 
 function mainMenuLabels(): readonly string[] {
   const main = screen.getByRole("navigation", { name: "Main" });

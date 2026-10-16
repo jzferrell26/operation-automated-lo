@@ -6,7 +6,10 @@ import {
   domainFixture,
   domainState,
 } from "../../apps/web/src/features/domains/domain.test-support.js";
-import type { DomainState } from "../../apps/web/src/features/domains/model.js";
+import {
+  DomainCommandSchema,
+  type DomainState,
+} from "../../apps/web/src/features/domains/model.js";
 import { chooseThemeFromTheHeader } from "./review/helpers/review-session.js";
 import { REVIEW_FRAMES } from "./helpers/design-quality.js";
 
@@ -33,7 +36,12 @@ for (const { width, height } of REVIEW_FRAMES)
       await page.route("**/api/funnel-domains", async (route) => {
         if (route.request().method() === "POST") {
           writes++;
-          state = domainState(domainFixture());
+          const command = DomainCommandSchema.parse(route.request().postDataJSON());
+          state = domainState(
+            domainFixture({
+              defaultKind: command.action === "connect" ? command.defaultKind : "live-webinar",
+            }),
+          );
           await route.fulfill({ json: { domain: state.domain } });
         } else {
           if (pendingRead) await pendingRead;
@@ -46,10 +54,19 @@ for (const { width, height } of REVIEW_FRAMES)
       page.on("pageerror", (error) => errors.push(error.message));
       const captures = join(process.cwd(), "test-results", "product-review-frames", "domain-setup");
       await mkdir(captures, { recursive: true });
-      async function frame(name: string, loaded = true) {
+      async function frame(name: string, loaded = true, openChooser = false) {
         if (loaded) await expect(page.getByText("Latest saved domain state loaded.")).toBeVisible();
-        await page.evaluate(() => window.scrollTo(0, 0));
-        await expect(page.getByRole("heading", { name: "Domains", exact: true })).toBeInViewport();
+        if (openChooser) {
+          // Keep the trigger in view. Scrolling it off-screen correctly dismisses the popup.
+          await expect(
+            page.getByRole("combobox", { name: "Funnel at this address" }),
+          ).toBeInViewport();
+        } else {
+          await page.evaluate(() => window.scrollTo(0, 0));
+          await expect(
+            page.getByRole("heading", { name: "Domains", exact: true }),
+          ).toBeInViewport();
+        }
         expect(
           await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
         ).toBe(true);
@@ -60,25 +77,37 @@ for (const { width, height } of REVIEW_FRAMES)
         expect(result.violations).toEqual([]);
         await page.screenshot({
           path: join(captures, `${width}-${theme}-${name}-synthetic.png`),
-          fullPage: true,
+          fullPage: !openChooser,
         });
       }
       await page.goto("/settings/domains");
       await expect(page.getByRole("heading", { name: "Domains", exact: true })).toBeVisible();
       await chooseThemeFromTheHeader(page, theme);
       await frame("empty");
+      const chooser = page.getByRole("combobox", { name: "Funnel at this address" });
+      await chooser.click();
+      await expect(page.getByRole("option")).toHaveCount(5);
+      await frame("funnel-choice", true, true);
+      await expect(chooser).toHaveAttribute("aria-expanded", "true");
+      await expect(page.getByRole("option")).toHaveCount(5);
+      await page.getByRole("option", { name: "On-demand webinar", exact: true }).click();
       await page.getByLabel("Domain or subdomain").fill("offers.loanoffice.com");
       const trigger = page.getByRole("button", { name: "Review connection" });
       await trigger.click();
       await expect(page.getByRole("dialog", { name: "Connect this domain?" })).toBeVisible();
+      await expect(page.getByRole("dialog")).toContainText(
+        "Funnel at this address: On-demand webinar",
+      );
       await page.keyboard.press("Escape");
       await expect(trigger).toBeFocused();
       expect(writes).toBe(0);
+      await expect(chooser).toContainText("On-demand webinar");
       await trigger.click();
       await page.getByRole("button", { name: "Confirm connection" }).click();
       await expect(
         page.getByText("Connection saved. Add the ownership record to continue."),
       ).toBeVisible();
+      await expect(page.getByText("Default funnel: On-demand webinar")).toBeVisible();
       for (const status of [
         "ownership_needed",
         "dns_needed",

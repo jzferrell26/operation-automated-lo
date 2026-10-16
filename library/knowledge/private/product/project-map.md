@@ -2,6 +2,14 @@
 
 > Category: Product Operations | Version: 1.26 | Date: October 13, 2026 | Status: Active
 
+## October 14 active execution
+
+Jonathan accepted CTR-003 revision 1 (native webinar publication) and CTR-004 revision 1 (public financing release) through the exact response "Adopt both plans (Recommended)". These records settle the build policies: one selected Facebook-feed webinar ad with exact spending confirmation, bounded best-effort pause after destination withdrawal, expiry/revocation enforcement for public financing, HighLevel QR creation and the existing 30-day transient inquiry policy. The product remains one LO per workspace with no customer role administration.
+
+[Combined source PR #95](https://github.com/jzferrell26/operation-automated-lo/pull/95) contains the reviewed ad preparation/catalog, private financing photos/PDF, homeowner readiness and database acquisition increments. Its current source head is `82cf5a2`; full combined CI run `38517997602` is pending. Earlier failing runs remain recorded, including the measured PDF assertion correction, a reproduced preparation test focus race and an unresolved browser sign-in navigation failure. Source and independent review evidence do not imply current production behavior.
+
+The authenticated production Ads Library was directly readable on October 14 and still displayed "No ads in the library yet". The corrected catalog has not been promoted into production. Native publication commands/persistence/workers/UI, public financing storage/rendering/routes/delivery/setup, customer domains and controlled provider/hosted qualification remain active implementation work. Passing foundation fixtures do not close these outcomes. RentCast account and allowance recommendations are recorded separately; no account purchase, provider secret or lookup allowance has been activated.
+
 ## October 13 completion takeover
 
 The owner requested librarian reconciliation followed by Gauntlet execution, prioritizing fifteen webinar ads, listing marketing reports and usable homeowner reports. The [completion review](completion-review-2026-10-13.md) inventories all ten PRDs and records their remaining customer outcomes. The [new completion ledger](../../../../COMPLETION_LEDGER.md) owns this execution batch without replacing historical criterion evidence.

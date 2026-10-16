@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { SIGN_OUT_LABEL, SIGNED_OUT_HEADING, SIGNED_OUT_PROMPT } from "../../copy/user-language.js";
 import { UnverifiedEmailNotice } from "../../features/auth/components/unverified-email-notice.js";
+import { SessionUnavailable } from "../../features/auth/components/session-unavailable.js";
 import { AppShell } from "../../features/shell/components/app-shell.js";
 import {
   mainMenuNavigation,
@@ -91,6 +92,7 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
   const incoming = await headers();
   const request = new Request("https://oalo.local/", { headers: incoming });
   const shell = await resolveRuntimeShellSession(request, process.env);
+  if (shell.mode === "unavailable") return <SessionUnavailable />;
   const session = shell.session ?? SIGNED_OUT_SESSION;
 
   /**

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { normalizeFunnelDomain, DOMAIN_KINDS } from "../features/domains/model.js";
 import { campaignDatabasePool } from "./campaign-persistence-runtime.js";
-import { funnelCapability, FunnelPublicError } from "./funnel-public-store.js";
+import { funnelCapability, FunnelPublicError, publicFunnelConfig } from "./funnel-public-store.js";
 const RoutingEnvironmentSchema = z
   .object({
     OALO_APP_URL: z.url(),
@@ -71,6 +71,7 @@ export function isCustomerDomainPath(pathname: string, method: string): boolean 
   if (pathname.split("/").some((segment) => segment === ".." || segment === ".")) return false;
   if (["GET", "HEAD"].includes(method))
     return (
+      pathname === "/" ||
       /^\/f\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?:\/(?:landing|confirmation|watch|book|thanks))?\/?$/iu.test(
         pathname,
       ) ||
@@ -107,4 +108,20 @@ export async function readCurrentDomainBinding(hostname: string, environment: un
     hostname,
   ]);
   return value === null ? null : BindingSchema.parse(value);
+}
+
+/** Only public owner-checked destinations are returned. No caller can choose a tenant or ID. */
+export async function domainRootDestination(
+  host: string | null,
+  environment: unknown,
+): Promise<{ kind: "platform" } | { kind: "customer"; path: string | null }> {
+  const platform = new URL(platformDomainOrigin(environment));
+  if (host === platform.host) return { kind: "platform" };
+  if (host === null || normalizeFunnelDomain(host) !== host) throw new FunnelPublicError(404);
+  const authority = publicDomainAuthority(`https://${host}/`, host, environment);
+  if (authority.domainHost === null) throw new FunnelPublicError(404);
+  publicFunnelConfig(environment);
+  const value = await funnelCapability(campaignDatabasePool(environment), "domainDefault", [host]);
+  const destination = value === null ? null : z.object({ id: z.uuid() }).strict().parse(value);
+  return { kind: "customer", path: destination === null ? null : `/f/${destination.id}` };
 }

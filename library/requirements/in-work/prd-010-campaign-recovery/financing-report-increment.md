@@ -9,7 +9,11 @@ Status: Implemented on the branch; verification and review are recorded in the a
 
 The additive October 13 private property-photo increment pins [CTR-001 revision 1](../../../knowledge/private/contracts/CTR-001-financing-property-media.md), Accepted for engineering implementation by the orchestrator. Preserve this document's original text-only v1 evidence; the pin provides no v2 runtime or hosted completion claim. [The photo increment ledger](../../../../FINANCING_PHOTOS_LEDGER.md) tracks its separate proof.
 
+CTR-004 revision 1 is accepted by Jonathan Ferrell on October 14, 2026 UTC for the separate public release envelope. The [accepted public-release agreement][ctr004-public-release] has SHA-256 `59d0b203159f5c6c440621437bcd244f664f7a64901924b9a8b952a6a4d70dfa`. This adds future public producer/consumer obligations without rewriting this historical private increment, its source versions or its delivered evidence.
+
 ## What this increment delivers
+
+[ctr004-public-release]: ../../../knowledge/private/contracts/CTR-004-public-financing-release.md
 
 The [payment/report/site requirement](payment-flyers-and-co-branded-sites.md) now has a working financing comparison, rather than an open-house document with invented event dates. The new `/marketing/campaigns/financing` screen saves one to five fixed-rate purchase scenarios, a property, the author's saved lender identity and the selected saved Realtor identity. It has no ad-budget step and requires no open-house time.
 

@@ -10,8 +10,10 @@ import { buildHomeChecklist } from "../../../features/overview/model/home-checkl
 import type { HomeData } from "../../../features/overview/model/home-view.js";
 import { loadSyntheticUiFixture } from "../../../features/ui-foundation/data/load-synthetic-ui.js";
 import { loadAuthenticatedWorkspace } from "../../../server/authenticated-workspace-data.js";
-import AuthenticatedLayout from "../layout.js";
-import { useReviewModeEnvironment } from "../review-mode-test-support.js";
+import {
+  runtimeAuthenticationModuleStub,
+  useReviewModeEnvironment,
+} from "../review-mode-test-support.js";
 import {
   collectFixtureStrings,
   forbiddenReviewStrings,
@@ -23,9 +25,21 @@ import {
 
 vi.mock("next/headers.js", () => ({ headers: () => Promise.resolve(new Headers()) }));
 vi.mock("next/navigation.js", () => ({ usePathname: () => "/overview" }));
+// This sweep covers a confirmed unsigned visitor. Missing runtime configuration is instead an
+// unavailable session read, covered by the runtime and actual-layout availability regressions.
+vi.mock("../../../server/runtime-authentication.js", (importOriginal) =>
+  runtimeAuthenticationModuleStub(importOriginal, () => ({
+    mode: "review",
+    authenticated: false,
+    session: undefined,
+    csrfToken: undefined,
+  })),
+);
 vi.mock("../../../theme/index.js", () => ({
   ThemeControl: () => <div aria-label="Theme control">Theme control</div>,
 }));
+
+const { default: AuthenticatedLayout } = await import("../layout.js");
 
 /**
  * Every synthetic UI fixture string that may legitimately reach a rendered review surface. Nothing

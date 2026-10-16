@@ -2,7 +2,7 @@
 -- supabase/migrations/20260924010000_homeowner_reports.sql (PRD-007), the one
 -- migration that shipped without its own.
 --
---   008D-AC-001  all seven homeowner tables have row level security enabled and forced.
+--   008D-AC-001  all homeowner tables have row level security enabled and forced.
 --   008D-AC-002  tenant isolation on every table, for reads and writes, under app_runtime
 --                with platform.set_app_context; support and collaborator roles read no
 --                homeowner financial data (PRD-007 acceptance 1).
@@ -39,7 +39,7 @@
 
 begin;
 
-select plan(244);
+select plan(247);
 
 create function pg_temp.assert_is(actual anyelement, expected anyelement, description text)
 returns text
@@ -597,7 +597,7 @@ select pg_temp.assert_ok(
   )
 )
 from pg_catalog.unnest(
-  array['properties', 'reports', 'lookup_requests', 'usage_events', 'shares', 'events', 'deliveries']
+  array['properties', 'reports', 'lookup_requests', 'usage_events', 'shares', 'events', 'deliveries', 'provider_account_budgets']
 ) as homeowner_table(table_name);
 
 select pg_temp.assert_is(
@@ -608,8 +608,21 @@ select pg_temp.assert_is(
     where schema_row.nspname = 'homeowner'
       and class_row.relkind in ('r', 'p')
   ),
-  array['deliveries', 'events', 'lookup_requests', 'properties', 'reports', 'shares', 'usage_events'],
-  'the homeowner schema holds exactly these seven tables, so none escapes the seven checks above'
+  array['deliveries', 'events', 'lookup_requests', 'properties', 'provider_account_budgets', 'reports', 'shares', 'usage_events'],
+  'the homeowner schema holds exactly these eight tables, so none escapes the eight RLS checks above'
+);
+-- The shared provider budget has no tenant rows or direct runtime access.
+select pg_temp.assert_is(
+  (
+    select pg_catalog.array_agg(
+      pg_catalog.format('%s:%s', policy_row.polname, policy_row.polroles::regrole[])
+      order by policy_row.polname
+    )
+    from pg_catalog.pg_policy as policy_row
+    where policy_row.polrelid = 'homeowner.provider_account_budgets'::regclass
+  ),
+  array['provider_budget_owner:{migration_owner}'],
+  'the shared provider budget carries only its operator policy'
 );
 select pg_temp.assert_is(
   (
@@ -740,14 +753,15 @@ from (values
   ('usage_events', 'insert,select'),
   ('shares', 'insert,select,update'),
   ('events', 'insert,select'),
-  ('deliveries', 'insert,select,update')
+  ('deliveries', 'insert,select,update'),
+  ('provider_account_budgets', null::text)
 ) as surface(table_name, expected_privileges);
 
 select pg_temp.assert_is(
   (
     select coalesce(pg_catalog.array_agg(homeowner_table.table_name order by homeowner_table.table_name), array[]::text[])
     from pg_catalog.unnest(
-      array['properties', 'reports', 'lookup_requests', 'usage_events', 'shares', 'events', 'deliveries']
+      array['properties', 'reports', 'lookup_requests', 'usage_events', 'shares', 'events', 'deliveries', 'provider_account_budgets']
     ) as homeowner_table(table_name)
     cross join pg_catalog.unnest(array['select', 'insert', 'update', 'delete']) as privilege
     where has_table_privilege(

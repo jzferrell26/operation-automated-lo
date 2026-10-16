@@ -1,0 +1,13 @@
+# Merge gate health and PR self-review
+
+Data collection: local clone plus authenticated gh CLI, read-only repository/PR/ruleset/check access. Scope is branch protection and the current merge gate, not a full eight-dimension repository audit. No settings, rules or workflow were modified. This report follows Security then Quality for the schedule-capture delta.
+
+The legacy branch-protection endpoint returned404, but active ruleset20013790 governs the branch. Its required checks are Application verification, Real PostgreSQL migrations and pgTAP, Release and recovery contract, and Preview smoke contract. Strict current-base checks, PR workflow, resolved review threads, stale-review dismissal, linear history, branch-deletion and force-push protection are present. Required reviewer count is zero, consistent with the owner's explicitly authorized inline recovery; this is not independent approval. Squash/rebase are allowed. Scoped branch-rule result:10/10 for the observed merge requirements, not an overall repository security score.
+
+Repository auto-merge is disabled. Do not change that setting or treat zero required reviewers as permission to skip any required job. Jonathan explicitly authorized merging when ready on October16. Merge only after all four checks pass for the exact current head, origin/main is reconciled, the PR is MERGEABLE and review threads are resolved. Use a squash merge with a matching-head guard. A follow-up may check readiness, but must never merge a changed or failing candidate merely to meet the weekend target.
+
+PR100 currently reconciles the preserved publisher/report runtime plus source/test repairs. Preserve its integration scope and explicit limitations: three unfinished end-to-end flows, live-provider qualification, separate approval/publication and eight unapplied later hosted migrations. Source merge does not authorize any of those external effects. The existing accepted dependency advisory is unchanged.
+
+Reviewer focus: final capture label only inside the existing try/finally, actual font-backed geometry rather than the old self-referential Arial fixture, restoration of real values and preservation of PNGs/tolerance. Current signed-in Home proof, Linux output-test passes and inspected mobile selector pictures are recorded with their respective source/environment limits. Author reviews are labelled as such.
+
+The current main was fetched and verified as an ancestor before this delta. Preserve the unrelated untracked COMPLETION_RESUME_NOTES.md. The final commit/check result must be recorded after push; this pre-push receipt is not a shippable claim.

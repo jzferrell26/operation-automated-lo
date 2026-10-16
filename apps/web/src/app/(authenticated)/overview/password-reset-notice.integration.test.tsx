@@ -3,12 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 
 import { RESET_PASSWORD } from "../../../copy/auth-messages.js";
 import {
-  OVERVIEW_AFTER_PASSWORD_RESET_PATH,
-  OVERVIEW_PATH,
-} from "../../../server/password-authentication-handler.js";
-import AuthenticatedLayout from "../layout.js";
-import { useReviewModeEnvironment } from "../review-mode-test-support.js";
-import OverviewPage from "./page.js";
+  runtimeAuthenticationModuleStub,
+  useReviewModeEnvironment,
+} from "../review-mode-test-support.js";
 
 /**
  * PRD-006b D10 and the writing review's F-03.
@@ -34,6 +31,21 @@ vi.mock("next/navigation.js", () => ({
 vi.mock("../../../theme/index.js", () => ({
   ThemeControl: () => <div aria-label="Theme control">Theme control</div>,
 }));
+// Both the page read below and its shell model the signed-in reset recipient. Missing auth
+// configuration is an unavailable read, not a successful password-reset fixture.
+vi.mock("../../../server/runtime-authentication.js", (importOriginal) =>
+  runtimeAuthenticationModuleStub(importOriginal, () => ({
+    mode: "review",
+    authenticated: true,
+    csrfToken: undefined,
+    session: {
+      safety: { dataMode: "synthetic", writesEnabled: false, disclosure: "Test fixture" },
+      emailVerification: "verified",
+      user: { displayName: "Alex", roleLabel: "Workspace owner", capabilities: [] },
+      location: { displayName: "Reset recipient's workspace", source: "Test fixture" },
+    },
+  })),
+);
 /**
  * Home's read is the page's other dependency and has nothing to do with the notice. It is answered
  * here rather than stood up, so this suite fails for one reason only: a signed-in owner of a
@@ -61,6 +73,11 @@ vi.mock("../../../server/home-reads.js", () => ({
 }));
 
 const D10_SUCCESS_NOTICE = "Your password is saved. You're signed in.";
+
+const { OVERVIEW_AFTER_PASSWORD_RESET_PATH, OVERVIEW_PATH } =
+  await import("../../../server/password-authentication-handler.js");
+const { default: AuthenticatedLayout } = await import("../layout.js");
+const { default: OverviewPage } = await import("./page.js");
 
 /** The reset route exists only on a review deployment, so that is the workspace measured here. */
 useReviewModeEnvironment();

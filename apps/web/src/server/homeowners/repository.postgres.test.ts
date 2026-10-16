@@ -98,6 +98,10 @@ const seed = async (repo: PostgresHomeownerRepository, contactId: string, limit 
   return { input, propertyId, options, report };
 };
 beforeAll(async () => {
+  // Synthetic operator allowance, only in this disposable test database.
+  await admin(
+    "insert into homeowner.provider_account_budgets(provider_key,billing_period_start,billing_period_end,lookup_limit,enabled) values('rentcast',clock_timestamp()-interval '1 hour',clock_timestamp()+interval '1 day',10000,true) on conflict(provider_key) do nothing",
+  );
   await admin(
     "insert into platform.locations(id,display_name,status,ghl_location_id) values($1::uuid,'Home report test A','active',$3),($2::uuid,'Home report test B','active',$4)",
     [locationA, locationB, `ghl-${locationA}`, `ghl-${locationB}`],
@@ -611,7 +615,8 @@ describe.sequential("real homeowner persistence", () => {
     const tables = await admin(
       "select relname,relrowsecurity,relforcerowsecurity from pg_class join pg_namespace on pg_namespace.oid=relnamespace where nspname='homeowner' and relkind='r' order by relname",
     );
-    expect(tables).toHaveLength(7);
+    expect(tables).toHaveLength(8);
+    expect(tables).toContainEqual(expect.objectContaining({ relname: "provider_account_budgets" }));
     for (const table of tables)
       expect(table).toMatchObject({ relrowsecurity: true, relforcerowsecurity: true });
     expect(

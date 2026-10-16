@@ -1,0 +1,9 @@
+# Session availability plan
+
+During the live Campaigns acquisition failure, the shell said "You're signed out" even though no sign-out occurred. Current resolveRuntimeShellSession converts every principal-read exception into the same unsigned shell. Fix that presentation without accepting a principal whose verification failed.
+
+Continue inline and sequentially on the main-based completion branch. Auth owns classification; the existing React/auth-panel and AsyncState contracts own the unavailable view. Reuse the existing RuntimeAuthenticationMode unavailable value, with authenticated false, no identity and no CSRF token. Confirmed authentication-policy failures retain the existing signed-out behavior. Unexpected backend/read failures and invalid runtime composition produce unavailable. No session/token/cookie mutation, credential cache, remembered identity, provider, schema or customer-role change.
+
+1. Add runtime regressions for database/general read failures, known invalid-session classes, and missing composition. Add a real-layout regression proving the unavailable state shows no signed-out claim, account identity, protected child, CSRF or mutation form, with a user-triggered read refresh.
+2. Implement the classification and a neutral unavailable view using existing AuthPanel, AsyncState and Button. It requests a fresh current-page server read only after the user clicks Reload page. Existing signed-in and confirmed signed-out shell behavior stays.
+3. Run the new regressions and related runtime/layout cases, types, lint, build and audits. Perform UX source alignment, Security then Quality author reviews, then PR review. Fetch/reconcile main and require a new exact-head canonical gate before a shippable claim. Hosted outage/root-cause resolution and independent visual approval are not inferred from this source increment.

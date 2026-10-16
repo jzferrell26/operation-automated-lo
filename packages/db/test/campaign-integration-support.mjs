@@ -70,6 +70,95 @@ export function request(statementName, text, values = []) {
   });
 }
 
+/** Test-only private role setup. Restore exact prior membership options after the suite. */
+export async function publisherAuthenticationCapabilities() {
+  const target = new URL(requiredTestDatabaseUrl());
+  if (
+    !LOOPBACK_DATABASE_HOSTNAMES.has(target.hostname.replace(/^\[|\]$/gu, "")) ||
+    !/^\/oalo_test_[a-z0-9_]{1,40}$/u.test(target.pathname)
+  )
+    throw new Error("Private test capability setup requires a loopback disposable database");
+  const pool = testPool(target.href);
+  let connection;
+  try {
+    connection = await pool.connect();
+  } catch (error) {
+    await pool.close();
+    throw error;
+  }
+  const restored = [];
+  const roles = ["publisher_authentication_runtime", "publisher_authentication_resolver"];
+  try {
+    const context = await connection.execute(
+      request(
+        "test.publisher-capabilities.context",
+        "select current_database() as database, pg_catalog.quote_ident(current_user) as member",
+      ),
+    );
+    if (context.rows[0]?.database !== target.pathname.slice(1))
+      throw new Error("Private test capability setup requires a loopback disposable database");
+    // Supabase's role statement hooks can crash on CURRENT_USER role specifications.
+    // Use only the server-quoted authenticated identifier, never a caller-supplied role.
+    const member = context.rows[0]?.member;
+    if (typeof member !== "string" || member.length === 0)
+      throw new Error("Private test capability setup requires an authenticated role");
+    for (const role of roles) {
+      const prior = await connection.execute(
+        request(
+          "test.publisher-capabilities.prior",
+          "select membership.inherit_option,membership.set_option from pg_catalog.pg_auth_members membership join pg_catalog.pg_roles capability on capability.oid=membership.roleid join pg_catalog.pg_roles member_role on member_role.oid=membership.member where capability.rolname=$1::text and member_role.rolname=current_user and membership.grantor=member_role.oid",
+          [role],
+        ),
+      );
+      const original = prior.rows[0];
+      await connection.execute(
+        request(
+          "test.publisher-capabilities.grant",
+          `grant ${role} to ${member} with inherit false, set true`,
+        ),
+      );
+      restored.push(async () => {
+        const sql =
+          original === undefined
+            ? `revoke ${role} from ${member} granted by ${member}`
+            : `grant ${role} to ${member} with inherit ${original.inherit_option ? "true" : "false"}, set ${original.set_option ? "true" : "false"}`;
+        await connection.execute(request("test.publisher-capabilities.restore", sql));
+      });
+    }
+  } catch (error) {
+    const failures = [error];
+    for (const restore of restored.reverse()) {
+      try {
+        await restore();
+      } catch (restoreError) {
+        failures.push(restoreError);
+      }
+    }
+    await connection.release();
+    await pool.close();
+    throw failures.length === 1
+      ? error
+      : new AggregateError(failures, "Private test capability setup failed");
+  }
+  return async () => {
+    const failures = [];
+    try {
+      for (const restore of restored.reverse()) {
+        try {
+          await restore();
+        } catch (error) {
+          failures.push(error);
+        }
+      }
+      if (failures.length)
+        throw new AggregateError(failures, "Private test capability restoration failed");
+    } finally {
+      await connection.release();
+      await pool.close();
+    }
+  };
+}
+
 /**
  * The foundation migration grants `migration_owner` to the login role `WITH SET TRUE, INHERIT
  * FALSE` (supabase/migrations/20260721010000_platform_foundation.sql:51-65), so the login role

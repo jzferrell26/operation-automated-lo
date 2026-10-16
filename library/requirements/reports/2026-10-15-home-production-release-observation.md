@@ -1,0 +1,17 @@
+# Home hotfix production observation
+
+The owner said "Lets rock" in direct response to qualifying and deploying the concrete isolated Home fix in PR101. Chief operated and owns rollback. Scope: the exact reviewed browser-import repair, no database/configuration/provider changes. The execution window began October15 at09:52:38America/Chicago and the verified production build was ready by10:13:38, within30minutes. This records scoped operation authorization, not approval of PR100's unfinished feature release.
+
+All four canonical jobs passed on6524e9bbf806b0d4243ce86da87fe2ea17aad6c1 in run38754334361. Security and Quality author self-review receipt SHA256s are d18bc84a1d245aba13f35f40b011e64bb158080d4cf6532e22dee85801097c14 and176be3c9d4972c56922768259aaaca222c330ed2b474e35068c997b0f99eb8ff. Current main was fetched, ancestry and MERGEABLE confirmed, then PR101 marked ready and squash-merged with the exact reviewed head enforced. No administrator override was used.
+
+Merged commit1bb964455cd01cd23f3e678ee2966c01e8016abf has exact reviewed tree81549f3afa30cd539528d1e297710d1a3b10f4f3. Vercel production build dpl_B6Rp5G1t59mXFC82r6MtvmHwWT7L reports READY on that commit and assigns operation-automated-lo-web.vercel.app. Candidate preview was READY build dpl_8se2NXmtFVM7pMhvqUgxn6MvuppR on the reviewed head. The previous production checkpoint remains dpl_6jCZMp9cq9U7YZdhGwzLGDVtJAbQ on ccc705e. No preview authentication bypass was generated or promoted into production.
+
+Unauthenticated HTTP checks of /overview, /sign-in, /marketing/campaigns/library and /homeowners returned200 with sign-in content and no observed server-error body. The new deployment's error-log query returned no entries in its initial observation window. These are correct unauthenticated responses, not proof of the saved Home data or an authenticated customer journey.
+
+The authenticated in-app browser navigation timed out. Reattaching its existing tab failed CDP focus setup, and a fresh same-browser tab failed webview attachment with a browser-runtime networking/security error. No browser security challenge was bypassed, browser profile/cookie was extracted, or alternate hidden authenticated client was used. The owner was asked to open signed-in /overview and confirm whether it loads. That final signed-in visual/read check is still PENDING. Do not claim the whole app or hosted browser renderer is qualified from the READY label or anonymous checks.
+
+No further database migration was applied. The19-version production database, existing configuration and all provider gates remain unchanged. Rollback owner Chief stops rollout on demonstrated new regression and can restore the named prior deployment while retaining additive schema/data. Its known old Home failure is disclosed; rollback contains a new regression rather than restoring an already healthy Home.
+
+## Later authenticated observation
+
+The in-app browser connection recovered during the October15 continuation. A fresh tab opened the exact production /overview URL using the existing signed-in session. The returned Home title, navigation, welcome, property-campaign hero, five-funnel link, setup state and empty campaign sections rendered. An actual screenshot confirmed the light Home layout and hero without a server-error screen. This closes the pending authenticated Home render observation above. It does not qualify unfinished campaign publication, the report renderer, provider connections or all customer journeys. No credentials were extracted and no form was submitted.

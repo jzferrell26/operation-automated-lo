@@ -10,6 +10,8 @@ import { createAnthropicMessagesProviderClient } from "../../packages/ai/src/ant
 import { createLeadConnectorV2HttpTransport } from "../../packages/ghl/src/leadconnector-v2-http-transport.js";
 import { createLiveCaptureAdapter } from "../../packages/ghl/src/live-capture.js";
 import { createR2ObjectStoreClient } from "../../packages/storage/src/r2-object-store-client.js";
+import { createFinancingReleaseArtifactStore } from "../../apps/web/src/server/financing-release-artifacts.js";
+import { outputFixture } from "../../apps/web/src/server/financing-release-output-fixture.js";
 
 const requiredThreatIds = new Set([
   "TENANT-LOCATION-SWAP",
@@ -96,14 +98,24 @@ describe("Phase 0 security coverage and traffic boundary", () => {
 
     expect(findings.sort()).toEqual(
       [
+        // Per-operation authority wrapper around the injected native adapter only.
+        // Missing operation authentication refuses before transport; the fixed GHL
+        // endpoints and network implementation remain in the adapter below.
+        "apps/tasks/src/core/webinar-publisher-runtime.ts",
         // PRD-006a D6. The product's own account emails: one POST to Resend's send endpoint,
         // composed only when an operator has set both email variables on the deployment, and
         // never composed in synthetic mode. `tests/security/auth-email-default-off.test.ts`
         // proves the default-off behaviour and that this file is its only caller. The allowlist
         // stays closed: any other file that acquires an outbound transport still fails here.
         "apps/web/src/server/email/resend-email-adapter.ts",
+        // CTR-004 owned output adapter: private, exact-account signed R2 reads,
+        // bounded MIME/size/hash verification and required server-owned source/config.
+        "apps/web/src/server/financing-release-artifacts.ts",
         "packages/ai/src/anthropic-messages-provider.ts",
         "packages/ghl/src/leadconnector-v2-http-transport.ts",
+        // CTR-003 native adapter, independently reviewed with its injected-only transport
+        // and authority/refusal tests. This exact path adds no live-provider permission.
+        "packages/ghl/src/webinar-publisher-transport.ts",
         "packages/storage/src/r2-object-store-client.ts",
       ].sort(),
     );
@@ -145,6 +157,16 @@ describe("Phase 0 security coverage and traffic boundary", () => {
 
     expect(() => createAnthropicMessagesProviderClient({}, { fetch: network })).toThrow();
     expect(() => createR2ObjectStoreClient({}, { fetch: network })).toThrow();
+    expect(() =>
+      createFinancingReleaseArtifactStore(
+        outputFixture(),
+        {},
+        {
+          fetch: network,
+          resolveMedia: async () => undefined,
+        },
+      ),
+    ).toThrow();
 
     const leadConnector = createLeadConnectorV2HttpTransport({}, { fetch: network });
     await expect(

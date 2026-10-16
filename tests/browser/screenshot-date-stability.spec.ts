@@ -1,6 +1,100 @@
 import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 import { readableDay } from "../../apps/web/src/features/campaigns/launch-model.js";
 import { withStableCampaignScheduleDates } from "./helpers/design-quality.js";
+
+test("launch summary capture preserves the original Inter date wrapping", async ({ page }) => {
+  const font = (await readFile("apps/web/public/fonts/InterVariable.woff2")).toString("base64");
+  await page.setContent(`<style>
+    @font-face {font-family:ReviewInter;src:url(data:font/woff2;base64,${font}) format('woff2');font-weight:100 900}
+    main {font:500 14px/21px ReviewInter} dl,dd {margin:0}
+    dd {overflow-wrap:anywhere;text-wrap:pretty}
+    dl>div {display:grid;grid-template-columns:128px 246px;gap:12px}
+    time {font-variant-numeric:tabular-nums;white-space:nowrap}
+    </style><main data-launch-step="3"><dl><div><dt>Dates</dt><dd>From launch until <time datetime="2026-10-30">Fri, Oct 30, 2026</time></dd></div></dl></main>`);
+  await page.evaluate(() => document.fonts.ready);
+  const geometry = () =>
+    page.locator("time").evaluate((date) => {
+      const parent = date.parentElement;
+      if (parent === null) throw new Error("Expected schedule value");
+      const prefix = document.createRange();
+      prefix.selectNodeContents(parent.firstChild ?? parent);
+      return {
+        offset: date.getBoundingClientRect().top - parent.getBoundingClientRect().top,
+        width: date.getBoundingClientRect().width,
+        valueWidth: parent.getBoundingClientRect().width,
+        font: getComputedStyle(date).font,
+        text: date.textContent,
+        prefixWidth: prefix.getBoundingClientRect().width,
+      };
+    });
+  expect((await geometry()).offset).toBeLessThan(21);
+  await withStableCampaignScheduleDates(page, async () => {
+    // The unchanged Linux original has a125px mask on the second21px line, not an inline date.
+    const actual = await geometry();
+    expect(actual.offset, JSON.stringify(actual)).toBeGreaterThanOrEqual(21);
+    expect(actual.offset).toBeLessThan(42);
+    expect(actual.width).toBeGreaterThanOrEqual(125);
+    expect(actual.width).toBeLessThan(134);
+    await expect(page.locator("time")).toHaveAttribute("datetime", "2026-10-30");
+    await expect(page.locator("dd")).toContainText("From launch until");
+  });
+  await expect(page.locator("time")).toHaveText("Fri, Oct 30, 2026");
+  await expect(page.locator("[data-review-original-schedule-label]")).toHaveCount(0);
+});
+
+test("rolling launch-review summary dates preserve the original wrapping in every decision state", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 300 });
+  for (const state of ["needs-changes", "ready", "approved", "sent-back", "retired"]) {
+    await page.setContent(`<main data-launch-step="3" data-review-state="${state}">
+      <dl style="font:16px Arial;width:230px"><div><dt>Dates</dt><dd>From launch until <time datetime="2026-11-18">Wed, Nov 18, 2026</time></dd></div></dl>
+      <p id="unrelated">Other event <time datetime="2030-12-25">Dec 25, 2030</time></p></main>`);
+    const date = page.locator("dl time");
+    const render = () => page.locator("main").screenshot({ animations: "disabled" });
+    const reference = await render();
+    await date.evaluate((element) => {
+      element.setAttribute("datetime", "2026-10-30");
+      element.textContent = "Fri, Oct 30, 2026";
+    });
+    expect((await render()).equals(reference)).toBe(false);
+    const normalized = await withStableCampaignScheduleDates(page, async () => {
+      await expect(date).toHaveAttribute("datetime", "2026-10-30");
+      await expect(page.locator("#unrelated")).toHaveText("Other event Dec 25, 2030");
+      return render();
+    });
+    expect(normalized.equals(reference), state).toBe(true);
+    await expect(date).toHaveText("Fri, Oct 30, 2026");
+    await expect(page.locator("[data-review-original-schedule-label]")).toHaveCount(0);
+    await expect(
+      withStableCampaignScheduleDates(page, async () => {
+        throw new Error("Intentional summary capture failure");
+      }),
+    ).rejects.toThrow("Intentional summary capture failure");
+    await expect(date).toHaveText("Fri, Oct 30, 2026");
+    await page.locator("dt").evaluate((element) => {
+      element.textContent = "Dates changed";
+    });
+    expect((await withStableCampaignScheduleDates(page, render)).equals(reference)).toBe(false);
+  }
+});
+
+test("launch-review date capture refuses malformed content before changing the page", async ({
+  page,
+}) => {
+  await page.setContent(`<main data-launch-step="3"><dl><div><dd>
+    <time datetime="2026-10-30"><strong>Fri, Oct 30, 2026</strong></time>
+    </dd></div></dl></main>`);
+  let captured = false;
+  await expect(
+    withStableCampaignScheduleDates(page, async () => {
+      captured = true;
+    }),
+  ).rejects.toThrow("single readable date label");
+  expect(captured).toBe(false);
+  await expect(page.locator("time strong")).toHaveText("Fri, Oct 30, 2026");
+});
 
 /** Isolated harness regression, not a new product screenshot baseline or a mocked campaign flow. */
 test("a rolling campaign date cannot move adjacent copy in its screenshot", async ({ page }) => {

@@ -1,8 +1,10 @@
 import { Link } from "@oalo/ui";
-import { redirect } from "next/navigation.js";
+import { headers } from "next/headers.js";
+import { notFound, redirect } from "next/navigation.js";
 
 import { canRenderReviewSurface } from "../server/authenticated-workspace-data.js";
 import { canRenderDashboardPreview } from "../server/dashboard-preview.js";
+import { domainRootDestination } from "../server/funnel-domain-routing.js";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +17,19 @@ export const dynamic = "force-dynamic";
  * PRD-006d, axis 4: the background comes from `--sf-canvas` through `globals.css`, a semantic
  * token, not a literal hex value.
  */
-export default function HomePage() {
+export default async function HomePage() {
+  if (process.env.OALO_APP_URL) {
+    let destination;
+    try {
+      destination = await domainRootDestination((await headers()).get("host"), process.env);
+    } catch {
+      notFound();
+    }
+    if (destination.kind === "customer") {
+      if (destination.path === null) notFound();
+      redirect(destination.path);
+    }
+  }
   if (canRenderReviewSurface() || canRenderDashboardPreview()) {
     redirect("/overview");
   }

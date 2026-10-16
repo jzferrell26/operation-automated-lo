@@ -17,7 +17,13 @@ import { handleHomeWorkspace } from "./http.js";
  */
 
 const mocks = vi.hoisted(() => ({
-  repository: { summaries: vi.fn(), usage: vi.fn(), list: vi.fn(), ghlLocation: vi.fn() },
+  repository: {
+    summaries: vi.fn(),
+    usage: vi.fn(),
+    list: vi.fn(),
+    ghlLocation: vi.fn(),
+    providerLookupAvailable: vi.fn(),
+  },
 }));
 const PRINCIPAL = {
   role: "location_admin",
@@ -32,6 +38,7 @@ vi.mock("@oalo/db", async (importOriginal) => ({
     usage = mocks.repository.usage;
     list = mocks.repository.list;
     ghlLocation = mocks.repository.ghlLocation;
+    providerLookupAvailable = mocks.repository.providerLookupAvailable;
   },
 }));
 vi.mock("../authenticated-workspace-data.js", async (importOriginal) => ({
@@ -87,6 +94,7 @@ beforeEach(() => {
   mocks.repository.usage.mockResolvedValue(3);
   mocks.repository.list.mockResolvedValue([]);
   mocks.repository.ghlLocation.mockResolvedValue(null);
+  mocks.repository.providerLookupAvailable.mockResolvedValue(true);
 });
 
 describe("a workspace page, while a homeowner setting is mistyped", () => {
@@ -124,6 +132,20 @@ describe("a workspace page, while a homeowner setting is mistyped", () => {
 });
 
 describe("the report workspace, while a homeowner setting is mistyped", () => {
+  it("keeps saved reports readable while an unavailable shared budget disables new lookups", async () => {
+    mocks.repository.providerLookupAvailable.mockResolvedValue(false);
+    const response = await handleHomeWorkspace(request(), WELL_FORMED);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      valuationConnected: false,
+      properties: [],
+      readiness: {
+        storage: "ready",
+        valuation: "setup_unavailable",
+        freshLookup: "setup_unavailable",
+      },
+    });
+  });
   it.each(MISTYPED)(
     "answers that reports are unavailable, with no field and no setting named, for %s",
     async (_name, change) => {

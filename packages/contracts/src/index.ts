@@ -294,3 +294,6 @@ export {
 } from "./canonical-reference.js";
 export * from "./financing-comparison.js";
 export * from "./financing-media.js";
+export * from "./webinar-provider-launch.js";
+export * from "./webinar-publisher-command.js";
+export * from "./financing-release.js";

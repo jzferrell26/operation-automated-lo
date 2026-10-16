@@ -18,6 +18,21 @@ function assignmentSource(source: string): { readonly filePath: string; readonly
 }
 
 describe("public environment secret boundary", () => {
+  it.each([
+    "OALO_FINANCING_CLIENT_IDENTITY_PROFILE",
+    "OALO_FINANCING_VERCEL_PROJECT_ID",
+    "OALO_FINANCING_VERCEL_ENVIRONMENT",
+  ])("keeps trusted public inquiry configuration %s server-owned", (name) => {
+    expect(SERVER_ONLY_SECRET_ENVIRONMENT_VARIABLE_NAMES).toContain(name);
+    expect(() => assertPublicEnvironmentAllowlistSecure([`NEXT_PUBLIC_${name}`])).toThrow(
+      /must not mirror server-only secret/u,
+    );
+    expect(
+      collectAssignmentViolationsInSource(
+        assignmentSource(`process.env.NEXT_PUBLIC_OALO_BRIDGE = process.env.${name};`),
+      ),
+    ).not.toEqual([]);
+  });
   it("accepts the canonical public allowlist", () => {
     expect(() =>
       assertPublicEnvironmentAllowlistSecure(PUBLIC_ENVIRONMENT_VARIABLE_NAMES),

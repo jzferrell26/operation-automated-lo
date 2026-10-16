@@ -1,17 +1,38 @@
 "use client";
-import { AsyncState, Badge, Button, Card, Dialog, FormField, Link, TextField } from "@oalo/ui";
+import {
+  AsyncState,
+  Badge,
+  Button,
+  Card,
+  Dialog,
+  FormField,
+  Link,
+  Select,
+  TextField,
+} from "@oalo/ui";
 import { useEffect, useRef, useState } from "react";
 import { DomainClientError, domainErrorMessage, loadDomain, writeDomain } from "./client.js";
 import {
   isReadyDomain,
   normalizeFunnelDomain,
+  DOMAIN_KINDS,
   type DomainDnsRecord,
   type DomainState,
   type DomainStatus,
+  type FunnelDomain,
 } from "./model.js";
 import styles from "./domains.module.css";
 import { SupportReference } from "../shell/components/support-details.js";
 import type { InternalRefusal } from "../http/internal-api.js";
+
+const funnelLabels: Record<FunnelDomain["defaultKind"], string> = {
+  "live-webinar": "Live webinar",
+  "on-demand": "On-demand webinar",
+  buyer: "Buyer",
+  refinance: "Refinance",
+  "lead-magnet": "Lead magnet",
+};
+const funnelOptions = DOMAIN_KINDS.map((value) => ({ value, label: funnelLabels[value] }));
 
 const statuses: Record<DomainStatus, { label: string; detail: string }> = {
   ownership_needed: {
@@ -96,6 +117,7 @@ function DnsRecord({
 export function DomainScreen() {
   const [state, setState] = useState<DomainState | null>(null);
   const [hostname, setHostname] = useState("");
+  const [draftKind, setDraftKind] = useState<FunnelDomain["defaultKind"]>();
   const [apex, setApex] = useState(false);
   const [error, setError] = useState("");
   const [refusal, setRefusal] = useState<InternalRefusal | undefined>();
@@ -143,6 +165,7 @@ export function DomainScreen() {
     };
   }, []);
   const domain = state?.domain ?? null;
+  const defaultKind = draftKind ?? domain?.defaultKind ?? "live-webinar";
   const saved = domain !== null && domain.status !== "disconnected";
   const editable = state?.canEdit === true;
   const enabled = editable && state?.available === true && !busy && !mustReload;
@@ -170,13 +193,14 @@ export function DomainScreen() {
               action,
               hostname: normalized!,
               apex,
-              defaultKind: domain?.defaultKind ?? "live-webinar",
+              defaultKind,
               confirmed: true,
             }
           : { action, id: domain!.id, expectedRevision: domain!.revision },
       );
       if (active.current) {
         setState({ ...state, domain: next });
+        setDraftKind(undefined);
         setDialog(null);
         setNotice(
           action === "connect"
@@ -312,6 +336,17 @@ export function DomainScreen() {
                 />
               )}
             </FormField>
+            <Select
+              label="Funnel at this address"
+              value={defaultKind}
+              options={funnelOptions}
+              onValueChange={(value) => {
+                const kind = DOMAIN_KINDS.find((item) => item === value);
+                if (kind) setDraftKind(kind);
+              }}
+              disabled={!enabled}
+              description="Choose what visitors see when they open your domain. Domain verification and an eligible published funnel are still required."
+            />
             <p className={styles.muted}>
               If this address already serves a website, use a separate subdomain. Connecting here
               will not update DNS or move an existing domain from another hosting project.
@@ -327,6 +362,7 @@ export function DomainScreen() {
       {domain ? (
         <Card padding="lg" className={styles.stack}>
           <h2>{domain.hostname}</h2>
+          <p>Default funnel: {funnelLabels[domain.defaultKind]}</p>
           <div>
             <Badge
               tone={ready ? "success" : domain.status === "disconnected" ? "neutral" : "warning"}
@@ -464,6 +500,7 @@ export function DomainScreen() {
           </div>
         }
       >
+        {dialog === "connect" ? <p>Funnel at this address: {funnelLabels[defaultKind]}</p> : null}
         <p>
           {dialog === "disconnect"
             ? "This stops serving your funnels on this domain. It does not change DNS or your existing platform-hosted publication links. A later connection needs new proof of control."

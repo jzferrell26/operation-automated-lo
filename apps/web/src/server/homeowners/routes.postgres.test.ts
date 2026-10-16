@@ -28,6 +28,7 @@ import {
 } from "../campaign-route-postgres-support.js";
 import { resetCampaignDatabasePoolForTests } from "../campaign-persistence-runtime.js";
 import { homeownerInput, rentCastFixture } from "./homeowner-fixtures.js";
+import { withMigrationOwnerTransaction } from "../../../../../packages/db/test/route-seeding-bridge.js";
 
 const environment = routeEnvironment({
   OALO_HOMEOWNER_REPORTS: "enabled",
@@ -73,6 +74,15 @@ async function create() {
 }
 
 beforeAll(async () => {
+  // Synthetic operator allowance, never a production seed or default budget.
+  await withMigrationOwnerTransaction(pool, (connection) =>
+    connection.execute({
+      statementName: "test.homeowner-provider-budget",
+      text: "insert into homeowner.provider_account_budgets(provider_key,billing_period_start,billing_period_end,lookup_limit,enabled) values('rentcast',clock_timestamp()-interval '1 hour',clock_timestamp()+interval '1 day',10000,true) on conflict(provider_key) do nothing",
+      values: [],
+      preparedStatementMode: "unnamed",
+    }),
+  );
   restoreEnvironment = applyRouteEnvironment(environment);
   csrfServerSecret = csrfSecretFor(environment);
   const location = await seedLocation(pool, "AVM route fixture");

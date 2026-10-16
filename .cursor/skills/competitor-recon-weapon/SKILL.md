@@ -27,7 +27,7 @@ Then walk the capture and archaeology guides (`02` through `06`) as the specific
 4. **Verify across multiple account states before recording a gap.** The canonical cautionary tale is the Assistable billing tab: absent in one account, present on a re-billed account, ultimately gated by membership. Basis: `research/internal/2026-07-02-assistable-parity-gap-analysis.md`.
 5. **PII handling discipline.** Redact or exclude real personal data; every reference corpus ships a README stating repo privacy, PII contents, and the no-paste-to-external-tools rule. Basis: `research/internal/2026-07-02-assistable-reference-corpus-readme.md`.
 6. **License scope is per-artifact, not per-repo-label.** An MIT repo label does not grant trademark/branding rights or cover bundled third-party assets. Basis: `research/internal/2026-07-02-assistable-chatwidget-mit-fork.md` and `research/external/2026-07-02-mit-license-scope-fonts-branding.md`.
-7. **Route, do not render.** Strategy verdicts go to white-council-guardian; PRD authorship to library-guardian; forensic/legal investigation to code-forensics-guardian. This weapon gathers evidence and ranks gaps only.
+7. **Route, do not render.** Strategy verdicts go to white-council-guardian; PRD authorship to library-guardian; forensic/legal investigation to code-forensics-guardian from the installed Guild (not vendored in this repo). This weapon gathers evidence and ranks gaps only.
 8. **No em dashes, in any report, corpus README, or prose output, ever.**
 
 ## The pipeline this weapon runs
@@ -94,7 +94,7 @@ competitor-recon-weapon/
 | Command Brief | `ai-tools/command-briefs/competitor-recon-guardian-command-brief.md` |
 | Strategy verdict (routed) | `white-council-guardian` |
 | PRD authorship (routed) | `library-guardian` |
-| Forensic/legal (routed) | `code-forensics-guardian` |
+| Forensic/legal (routed) | `code-forensics-guardian` (from the installed Guild, not vendored in this repo) |
 
 ---
 

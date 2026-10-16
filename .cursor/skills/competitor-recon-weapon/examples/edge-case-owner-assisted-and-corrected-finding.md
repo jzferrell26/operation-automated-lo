@@ -50,7 +50,7 @@ While mining the client bundle, you find the widget is an open-source fork under
 1. Read the actual `LICENSE` copyright line: it names a THIRD party (e.g., "Rowy"), not the competitor.
 2. Notice the README/branding describes an unrelated upstream product (e.g., "BuildShip"), while `package.json` names it `@competitor/chat-widget`. Three origins in one repo.
 3. Flag this as a FACT in the report: "repo LICENSE names {third party}; README describes {unrelated upstream}; confirm reuse terms against the true upstream, not the fork's label."
-4. Do NOT rule on whether reuse is lawful, and do NOT accuse. If it becomes a legal/forensic question, route to code-forensics-guardian (Hard Rule 7).
+4. Do NOT rule on whether reuse is lawful, and do NOT accuse. If it becomes a legal/forensic question, route to code-forensics-guardian from the installed Guild, not vendored in this repo (Hard Rule 7).
 
 ### Rule demonstrated
 

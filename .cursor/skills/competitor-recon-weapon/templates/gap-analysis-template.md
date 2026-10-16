@@ -44,4 +44,4 @@ Ranked by (impact x exposure) / effort. This is a RECOMMENDATION; the build deci
 
 - Strategy verdict (ship/iterate/watch/kill): white-council-guardian
 - PRD authorship for a phase: library-guardian
-- Any legal/forensic question surfaced: code-forensics-guardian
+- Any legal/forensic question surfaced: code-forensics-guardian (from the installed Guild, not vendored in this repo)

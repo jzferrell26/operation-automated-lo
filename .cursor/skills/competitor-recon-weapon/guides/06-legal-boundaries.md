@@ -42,7 +42,7 @@ Basis: `research/internal/2026-07-02-assistable-chatwidget-mit-fork.md`; `resear
 
 ## When to route to code-forensics-guardian
 
-Stop gathering and route the evidence when a finding crosses from UX/feature observation into a legal/forensic judgment: a suspected ToS breach with damages, a trade-secret question, code-lifting/plagiarism, or anything that would become evidence in a dispute. This weapon packages the facts; code-forensics-guardian does the forensic investigation. Do not render the legal conclusion yourself (Hard Rule 7).
+Stop gathering and route the evidence when a finding crosses from UX/feature observation into a legal/forensic judgment: a suspected ToS breach with damages, a trade-secret question, code-lifting/plagiarism, or anything that would become evidence in a dispute. This weapon packages the facts; code-forensics-guardian (from the installed Guild, not vendored in this repo) does the forensic investigation. Do not render the legal conclusion yourself (Hard Rule 7).
 
 ## Example
 

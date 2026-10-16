@@ -26,7 +26,7 @@ Basis: `research/external/2026-07-02-js-sourcemap-feature-flag-mining.md`.
 ## Discipline
 
 - **Feature-flag names are the richest roadmap signal, but they are not proof.** A flag in the bundle does not mean the feature is shipped or enabled. Map every bundle finding to the verify-across-states directive (guide 05): confirm in live UI across account states before recording as a real capability.
-- **Fact extraction only, never exploitation.** This is reading publicly-served files for structural facts, not credential theft. If you find a secret (API key, token) in a bundle, do NOT use it: log it and route to security-guardian / code-forensics-guardian. Using a leaked secret crosses from recon into unauthorized access.
+- **Fact extraction only, never exploitation.** This is reading publicly-served files for structural facts, not credential theft. If you find a secret (API key, token) in a bundle, do NOT use it: log it and route to security-guardian / code-forensics-guardian (the latter from the installed Guild, not vendored in this repo). Using a leaked secret crosses from recon into unauthorized access.
 - **Read facts, never copy prose** (Hard Rule 2). Extract the module tree and endpoint list, not any embedded copy.
 
 ## Boundary

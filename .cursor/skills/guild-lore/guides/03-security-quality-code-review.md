@@ -37,7 +37,7 @@ This pillar is the close-out and hygiene layer that sits over every other pillar
    **This order is load-bearing and non-negotiable.** Running quality before security is a documented anti-pattern because security fixes can invalidate a QA snapshot that was taken before the fixes landed. `quality-weapon` explicitly checks for this: if a QA report already exists with a newer mtime than the last commit and security hasn't run since, it stops and flags the ordering violation rather than silently re-running.
 2. **PR hygiene close-out:** `branching-strategy-weapon` confirms the right model is in play → `code-review-pr-weapon` checks the PR description and size → `github-repo-health-weapon` periodically audits the repo-level guardrails (branch protection, CODEOWNERS) that make the above enforceable, not just aspirational.
 3. **Supply-chain gate:** `dependency-audit-weapon` runs the scanner and triages findings by CVSS + exploitability → anything that is an application-code-level exploitation path (not just an outdated package) escalates to `security-weapon`.
-4. **Dispute/forensic escalation (rare, one-way only):** if a security or quality audit surfaces evidence of vendor fraud or gross negligence rather than an ordinary bug, that becomes a matter for `code-forensics-weapon` (Pillar 6), not a continuation of this pillar's normal loop.
+4. **Dispute/forensic escalation (rare, one-way only):** if a security or quality audit surfaces evidence of vendor fraud or gross negligence rather than an ordinary bug, that becomes a matter for `code-forensics-guardian` from the installed Guild (not vendored in this repo), not a continuation of this pillar's normal loop.
 
 ### Load-bearing hard rules and gotchas
 
@@ -54,5 +54,5 @@ This pillar is the close-out and hygiene layer that sits over every other pillar
 
 - Every other pillar's implementation work terminates in this pillar's security-then-quality loop; treat this as the universal final step, not an optional add-on.
 - Deploy-time secret handling and CI security (OIDC, secret scanning in Actions) lives in **Pillar 4: Deploy & Live Operations** (`devops-weapon`).
-- Forensic/legal-grade investigation of vendor fraud (as opposed to routine security audit) escalates to **Pillar 6: Business, Growth & GTM** (`code-forensics-weapon`).
+- Forensic/legal-grade investigation of vendor fraud (as opposed to routine security audit) escalates to `code-forensics-guardian` from the installed Guild (not vendored in this repo).
 - Factory-pipeline governance (how a brand-new Guardian/Weapon pair itself gets built and registered) is **Pillar 10: Factory & Orchestration** and follows its own separate five-phase discipline, not this pillar's loop.

@@ -933,6 +933,7 @@ export async function withStableCampaignScheduleDates<T>(
 ): Promise<T> {
   const selector = [
     "[data-campaign-page='library-ad'] > header time",
+    "[data-launch-step='3'] dl > div > dd > time",
     "[data-campaigns-page] [data-campaign-table] tbody time",
     "[data-campaigns-page] [data-campaign-cards] time",
     "[data-campaign-page='library-ad'] [data-approval-section] > div > p > time",
@@ -946,19 +947,23 @@ export async function withStableCampaignScheduleDates<T>(
       for (const element of elements) {
         const isList = element.closest("[data-campaigns-page]") !== null;
         const isHeader = element.matches("[data-campaign-page='library-ad'] > header time");
+        const isLaunchSchedule = element.matches("[data-launch-step='3'] dl > div > dd > time");
         if (
           element.hasAttribute(attribute) ||
           element.childNodes.length !== 1 ||
           element.firstChild?.nodeType !== Node.TEXT_NODE ||
           !(
-            isHeader
+            isHeader || isLaunchSchedule
               ? /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [A-Z][a-z]{2} \d{1,2}, \d{4}$/u
               : isList
                 ? /^[A-Z][a-z]{2} \d{1,2}(?:, \d{4})?$/u
                 : /^[A-Z][a-z]{2} \d{1,2}, \d{4}$/u
           ).test(element.textContent ?? "") ||
+          (isLaunchSchedule &&
+            !/^\d{4}-\d{2}-\d{2}$/u.test(element.getAttribute("datetime") ?? "")) ||
           (!isList &&
             !isHeader &&
+            !isLaunchSchedule &&
             !/^\d{4}-\d{2}-\d{2}T/u.test(element.getAttribute("datetime") ?? ""))
         ) {
           throw new Error("Campaign schedule screenshot expects a single readable date label");
@@ -969,12 +974,13 @@ export async function withStableCampaignScheduleDates<T>(
         if (element.firstChild !== null) {
           const isList = element.closest("[data-campaigns-page]") !== null;
           const isHeader = element.matches("[data-campaign-page='library-ad'] > header time");
+          const isLaunchSchedule = element.matches("[data-launch-step='3'] dl > div > dd > time");
           const isTimestamp = element.getAttribute("datetime")?.includes("T") === true;
           element.firstChild.nodeValue = isList
             ? isTimestamp
               ? "Oct 2"
               : "Oct 16"
-            : isHeader
+            : isHeader || isLaunchSchedule
               ? "Fri, Oct 16, 2026"
               : "Oct 4, 2026";
         }

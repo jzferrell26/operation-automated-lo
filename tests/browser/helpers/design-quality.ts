@@ -926,6 +926,10 @@ export const DATE_SELECTOR = "time, input[type='date']";
  * found that masking the list's date text still allowed its width to shift the adjacent Topic
  * column. Normalize only those existing date nodes during capture; other dates, controls,
  * property pages, stored values and clocks are unchanged. Tests exercise restoration and scope.
+ * October 16's trace proved the step3 summary was normalized, but the header's short weekday
+ * still fitted on one line where the original125px mask occupied the next21px line. That summary
+ * uses a representative longer weekday/month label, checked with the actual Inter font. The
+ * masked original does not establish its day; its wrapping, surrounding copy and PNG stay fixed.
  */
 export async function withStableCampaignScheduleDates<T>(
   page: Page,
@@ -980,9 +984,11 @@ export async function withStableCampaignScheduleDates<T>(
             ? isTimestamp
               ? "Oct 2"
               : "Oct 16"
-            : isHeader || isLaunchSchedule
-              ? "Fri, Oct 16, 2026"
-              : "Oct 4, 2026";
+            : isLaunchSchedule
+              ? "Wed, Nov 18, 2026"
+              : isHeader
+                ? "Fri, Oct 16, 2026"
+                : "Oct 4, 2026";
         }
       }
     }, originalAttribute);

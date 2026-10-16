@@ -1,7 +1,7 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { chromium, type Page } from "@playwright/test";
+import type { Browser, Page } from "@playwright/test";
 import sharp from "sharp";
 import { raceWithAbort } from "@oalo/config";
 import {
@@ -92,8 +92,9 @@ async function withOutputPage<T>(
 ): Promise<T> {
   outputAssert(activeBrowsers < 2, "LIMIT");
   activeBrowsers++;
-  let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
+  let browser: Browser | undefined;
   try {
+    const { chromium } = await import("@playwright/test");
     browser = await chromium.launch({ headless: true, timeout: 15000 });
     const context = await browser.newContext({
       javaScriptEnabled: false,

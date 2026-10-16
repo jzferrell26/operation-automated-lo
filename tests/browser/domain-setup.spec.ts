@@ -54,10 +54,19 @@ for (const { width, height } of REVIEW_FRAMES)
       page.on("pageerror", (error) => errors.push(error.message));
       const captures = join(process.cwd(), "test-results", "product-review-frames", "domain-setup");
       await mkdir(captures, { recursive: true });
-      async function frame(name: string, loaded = true) {
+      async function frame(name: string, loaded = true, openChooser = false) {
         if (loaded) await expect(page.getByText("Latest saved domain state loaded.")).toBeVisible();
-        await page.evaluate(() => window.scrollTo(0, 0));
-        await expect(page.getByRole("heading", { name: "Domains", exact: true })).toBeInViewport();
+        if (openChooser) {
+          // Keep the trigger in view. Scrolling it off-screen correctly dismisses the popup.
+          await expect(
+            page.getByRole("combobox", { name: "Funnel at this address" }),
+          ).toBeInViewport();
+        } else {
+          await page.evaluate(() => window.scrollTo(0, 0));
+          await expect(
+            page.getByRole("heading", { name: "Domains", exact: true }),
+          ).toBeInViewport();
+        }
         expect(
           await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
         ).toBe(true);
@@ -78,7 +87,9 @@ for (const { width, height } of REVIEW_FRAMES)
       const chooser = page.getByRole("combobox", { name: "Funnel at this address" });
       await chooser.click();
       await expect(page.getByRole("option")).toHaveCount(5);
-      await frame("funnel-choice");
+      await frame("funnel-choice", true, true);
+      await expect(chooser).toHaveAttribute("aria-expanded", "true");
+      await expect(page.getByRole("option")).toHaveCount(5);
       await page.getByRole("option", { name: "On-demand webinar", exact: true }).click();
       await page.getByLabel("Domain or subdomain").fill("offers.loanoffice.com");
       const trigger = page.getByRole("button", { name: "Review connection" });

@@ -21,6 +21,7 @@ import {
   warmFullPageCapture,
 } from "../helpers/design-quality.js";
 import { chooseThemeFromTheHeader } from "./helpers/review-session.js";
+import { signInForReviewPreparation } from "./helpers/signin-session.js";
 
 async function expectReadableMobileNotice(page: Page, title: string, width: number) {
   if (width !== 390) return;
@@ -61,7 +62,9 @@ for (const frame of REVIEW_FRAMES) {
     const evidenceDirectory = resolve("test-results/product-review-frames/homeowner-readiness");
     await mkdir(evidenceDirectory, { recursive: true });
     const { creatorEmail, password } = seededCredentials();
-    await signInExisting(page, creatorEmail, password);
+    await signInForReviewPreparation(page, creatorEmail, () =>
+      signInExisting(page, creatorEmail, password),
+    );
     const now = new Date();
     const report = buildHomeReport(
       {
